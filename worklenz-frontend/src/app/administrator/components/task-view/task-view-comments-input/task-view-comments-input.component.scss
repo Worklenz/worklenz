@@ -1,0 +1,10 @@
+textarea {
+  &:focus {
+    outline: none;
+    box-shadow: none;
+  }
+}
+
+nz-mention {
+  cursor: text;
+}

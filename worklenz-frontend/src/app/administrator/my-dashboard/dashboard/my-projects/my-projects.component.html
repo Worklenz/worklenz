@@ -1,0 +1,56 @@
+<div class="card-top">
+  <div class="d-flex">
+    <div>
+      <p nz-typography class="mb-0 card-title" style="margin-top: 3px">Projects ({{projects.length}})</p>
+    </div>
+    <div class="ms-auto">
+      <nz-space>
+        <button *nzSpaceItem nz-button nz-tooltip nzShape="circle" nzTooltipTitle="Refresh tasks"
+                nzType="default" (click)="getProjects()">
+          <span [nzSpin]="loading" nz-icon nzTheme="outline" nzType="sync"></span>
+        </button>
+        <nz-segmented *nzSpaceItem [nzOptions]="options" [(ngModel)]="activeFilter"
+                      (ngModelChange)="handleViewChange($event)"></nz-segmented>
+      </nz-space>
+    </div>
+  </div>
+</div>
+
+<div class="card-data">
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading">
+    <nz-table
+      class="custom-table homepage-table mt-2">
+      <tr *ngFor="let project of projects; trackBy: trackBy" class="actions-row">
+        <td *ngIf="project.id" class="projects-td">
+          <div>
+            <nz-space>
+              <nz-rate *nzSpaceItem nz-tooltip
+                       [nzTooltipTitle]="project.favorite ? 'Remove from favorites' : 'Add to favorites'"
+                       [nzCount]="1"
+                       [ngModel]="project.favorite ? 1 : 0"
+                       (click)="toggleFavorite(project.id)"
+                       class="me-2"></nz-rate>
+              <span *nzSpaceItem class="d-flex align-items-center p-name" style="margin-top: 4px"
+                    (click)="selectProject(project.id)">
+                  <nz-badge class="project-dot" [nzColor]='project.color_code'></nz-badge>
+                  <p nz-typography class="mb-0 font-400">{{project.name}}</p>
+                </span>
+            </nz-space>
+            <!--              <div class="project-progress">-->
+            <!--                <nz-progress class="home-project-progress" [nzPercent]='project.progress' class="w-100"></nz-progress>-->
+            <!--              </div>-->
+          </div>
+        </td>
+      </tr>
+    </nz-table>
+
+    <ng-container *ngIf="projects.length === 0">
+      <div class="no-data-img-holder mx-auto mb-3">
+        <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+      </div>
+      <div class="text-center mb-3">
+        <span nz-typography class="no-data-text">You have not assigned to any project yet.</span>
+      </div>
+    </ng-container>
+  </nz-skeleton>
+</div>

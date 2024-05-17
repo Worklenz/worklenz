@@ -1,0 +1,25 @@
+.archived-toggler {
+  padding: 7px 15px;
+  font-size: 14px;
+  border-radius: 4px;
+  background: whitesmoke;
+}
+
+.archived-toggler label {
+  position: relative;
+}
+
+.archived-toggler label::after {
+  position: absolute;
+  content: "";
+  right: -5px;
+  top: -1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 10px;
+  background: #f5222d;
+}
+
+.archived-toggler.archived label::after {
+  background: #52c41a;
+}

@@ -1,0 +1,18 @@
+.completed {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.task-list-filter-button {
+  width: 140px;
+  text-align: left;
+  float: right;
+  margin-right: 10px;
+}
+
+.todo-list-item {
+  max-width: 0;
+  overflow: hidden;
+  width: 100%;
+  text-overflow: ellipsis;
+}

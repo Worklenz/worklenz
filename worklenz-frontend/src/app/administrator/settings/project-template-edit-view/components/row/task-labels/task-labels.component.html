@@ -1,0 +1,49 @@
+<div class="editable w-100 h-100 d-flex align-items-center ps-2 pe-0 label-tag-container"
+     [nzOverlayClassName]="'custom-shadow'" nz-dropdown
+     [nzTrigger]="'click'"
+     [nzClickHide]="false"
+     [nzDropdownMenu]="labelsDropdown"
+     (nzVisibleChange)="handleLabelsVisibleChange($event, element)" #element>
+  <ng-container *ngFor="let item of task.labels; trackBy: trackById">
+    <ng-container [ngSwitch]="item | endNameCheckPT">
+      <nz-tag *ngSwitchCase="true" nz-tooltip
+              class="text-dark task-list-label"
+              [nzColor]="item.color_code | withAlpha"
+              [nzTooltipTitle]="item.names | safeString"><span>{{item.name | ellipsis:10}}</span></nz-tag>
+      <nz-tag *ngSwitchCase="false" class="text-dark task-list-label"
+              nz-tooltip
+              [nzTooltipTitle]="item.name | ellipsisTooltipTitlePT:5"
+              [nzColor]="item.color_code | withAlpha">
+        <span>{{item.name | ellipsis:10}}</span>
+      </nz-tag>
+    </ng-container>
+  </ng-container>
+
+  <nz-tag class="text-dark avatar-dashed empty-label task-list-label">
+    <span nz-typography [nzType]="'secondary'">
+      <span nz-icon [nzType]="'plus'" [nzTheme]="'outline'"></span>
+    </span>
+  </nz-tag>
+</div>
+
+<nz-dropdown-menu #labelsDropdown="nzDropdownMenu">
+  <div *ngIf="show" class="bg-white px-3 py-2" [class.border-bottom]="hasFilteredLabel">
+    <input type="text" [(ngModel)]="searchText" (keydown.enter)="createLabel()" placeholder="Search or create"
+           nz-input
+           #labelsSearchInput>
+    <span *ngIf="!hasFilteredLabel" nz-typography nzType="secondary">
+      Hit enter to create!
+    </span>
+  </div>
+  <ul *ngIf="show" style="box-shadow: none;" class="dropdown-ul" nz-menu>
+    <li nz-checkbox nz-menu-item
+        *ngFor="let item of filteredLabels; trackBy: trackById"
+        [(nzChecked)]="item.selected"
+        (nzCheckedChange)="handleLabelChange(item)" class="m-0">
+      <nz-badge [nzColor]="item.color_code" [nzText]="item?.name || null"></nz-badge>
+    </li>
+  </ul>
+  <div class="bg-white d-flex justify-content-end p-2 border-top">
+    <button nz-button nzType="primary" nzSize="small" (click)="closeDropdown()">OK</button>
+  </div>
+</nz-dropdown-menu>

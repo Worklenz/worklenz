@@ -1,0 +1,24 @@
+<nz-form-item *ngIf="service.model.task" class="w-100 mb-0" nz-row>
+  <nz-form-label>Time Estimation</nz-form-label>
+  <nz-form-control>
+    <div class="d-inline-flex" style="position: relative;top: -12px;">
+      <nz-form-control class="me-3">
+        <small nz-typography nzType="secondary" class="d-block">Hours</small>
+        <nz-input-number [(ngModel)]="service.model.task.total_hours" (nzBlur)="handleTimeEstimationChange()"
+                         [nzFormatter]="utils.toRound"
+                         [nzMin]="0"
+                         [nzPlaceHolder]="'Hours'"
+                         [nzStep]="1"></nz-input-number>
+      </nz-form-control>
+      <nz-form-control>
+        <small nz-typography nzType="secondary" class="d-block">Minutes</small>
+        <nz-input-number [(ngModel)]="service.model.task.total_minutes" (nzBlur)="handleTimeEstimationChange()"
+                         [nzFormatter]="utils.toRound"
+                         [nzMax]="60"
+                         [nzMin]="0"
+                         [nzPlaceHolder]="'Minutes'"
+                         [nzStep]="1"></nz-input-number>
+      </nz-form-control>
+    </div>
+  </nz-form-control>
+</nz-form-item>

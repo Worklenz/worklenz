@@ -1,0 +1,51 @@
+$bar-height: 16px;
+$progress-color: #75C997;
+
+.progress-container-td {
+  width: 180px;
+  border-radius: 4px;
+  overflow: hidden;
+  height: $bar-height;
+
+  .progress-container {
+    width: 100%;
+    background-color: #EDEDED;
+    position: relative;
+
+    small {
+      position: absolute;
+      font-size: 10px;
+      line-height: $bar-height;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: auto auto auto auto;
+      min-width: 20px;
+      z-index: 8;
+      word-wrap: normal;
+      font-weight: 600;
+      color: rgba(0, 0, 0, 0.85);
+    }
+
+    .todo,
+    .doing,
+    .done {
+      position: relative;
+      text-align: center;
+      height: $bar-height;
+    }
+
+    .done {
+      background-color: lighten($progress-color, 10%);
+    }
+
+    .doing {
+      background-color: lighten($progress-color, 20%);
+    }
+
+    .todo {
+      background-color: lighten($progress-color, 30%);
+    }
+  }
+}

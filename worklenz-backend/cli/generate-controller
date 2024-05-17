@@ -1,0 +1,106 @@
+#!/usr/bin/env node
+
+const fs = require("fs");
+const path = require("path");
+
+const arg = process.argv[2];
+
+function camelize(str) {
+  return str.replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+    return index === 0 ? word.toLowerCase() : word.toUpperCase();
+  }).replace(/[\W]/g, "");
+}
+
+function toPascalCase(string) {
+  return `${string}`
+    .toLowerCase()
+    .replace(new RegExp(/[-_]+/, "g"), "")
+    .replace(new RegExp(/[^\w\s]/, "g"), "")
+    .replace(
+      new RegExp(/\s+(.)(\w*)/, "g"),
+      ($1, $2, $3) => `${$2.toUpperCase() + $3}`
+    )
+    .replace(new RegExp(/\w/), s => s.toUpperCase());
+}
+
+const name = arg.trim();
+const fileName = name.toLowerCase();
+const varName = camelize(name);
+const Controller = `${toPascalCase(name)}Controller`;
+
+const content = `
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
+
+import db from "../config/db";
+import { ServerResponse } from "../models/server-response";
+import WorklenzControllerBase from "./worklenz-controller-base";
+import HandleExceptions from "../decorators/handle-exceptions";
+
+export default class ${Controller} extends WorklenzControllerBase {
+  @HandleExceptions()
+  public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = \`\`;
+    const result = await db.query(q, []);
+    const [data] = result.rows;
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
+  public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = \`\`;
+    const result = await db.query(q, []);
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = \`\`;
+    const result = await db.query(q, []);
+    const [data] = result.rows;
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
+  public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = \`\`;
+    const result = await db.query(q, []);
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = \`\`;
+    const result = await db.query(q, []);
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+}
+`;
+
+const fullName = `${name}-controller`;
+
+const apis = `
+import express from "express";
+
+import ${Controller} from "../../controllers/${fullName}";
+
+const ${varName}ApiRouter = express.Router();
+
+${varName}ApiRouter.post("/", ${Controller}.create);
+${varName}ApiRouter.get("/", ${Controller}.get);
+${varName}ApiRouter.get("/:id", ${Controller}.getById);
+${varName}ApiRouter.put("/:id", ${Controller}.update);
+${varName}ApiRouter.delete("/:id", ${Controller}.deleteById);
+
+export default ${varName}ApiRouter;
+`;
+
+fs.writeFileSync(path.join(__dirname, "../src/controllers", `${fullName}.ts`), content.trim(), "utf8");
+fs.writeFileSync(path.join(__dirname, "../src/routes/apis/", `${fileName}-api-router.ts`), apis.trim(), "utf8");
+
+let api = fs.readFileSync(path.join(__dirname, "../src/routes/apis", "index.ts"), "utf8");
+api = api.replace("\nconst api = express.Router();", `import ${varName}ApiRouter from "./${fileName}-api-router";\n\nconst api = express.Router();`);
+api = api.replace("export default api;", `api.use("/${fileName}", ${varName}ApiRouter);\n\nexport default api;`);
+fs.writeFileSync(path.join(__dirname, "../src/routes/apis", "index.ts"), api, "utf8");
+
+console.log(`${fullName} generated`);

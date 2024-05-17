@@ -1,0 +1,42 @@
+.card-content {
+  padding-top: 8px;
+}
+
+.ant-card-bordered {
+  // border: 1px solid #d9d9d9;
+}
+
+h4 {
+  font-size: 16px;
+}
+
+p {
+  margin-bottom: 8px;
+}
+
+.b-65 {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.left-td {
+  width: 250px;
+}
+
+.number-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  min-width: 200px;
+  width: 100%;
+}
+
+.edit-btn {
+  cursor: pointer;
+  color: #1890ff;
+}
+
+.text-btn {
+  line-height: 32px;
+  cursor: pointer;
+  color: #188fff
+}

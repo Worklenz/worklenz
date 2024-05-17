@@ -1,0 +1,41 @@
+<nz-form-item *ngIf="service.model.task" class="w-100" nz-row>
+  <nz-form-label [nzSm]="6" [nzXs]="24">Due Date</nz-form-label>
+  <nz-form-control class="ms-custom-def">
+    <div *ngIf="service.model.task" class="d-flex align-items-center">
+      <div *ngIf="showStartDateSection" class="start-date-section" #std_Section>
+        <span nz-typography class="date-text">{{service.model.task.start_date | dateFormatter}}</span>
+        <nz-date-picker
+          [(ngModel)]="service.model.task.start_date"
+          (ngModelChange)="handleStartDateChange($event)"
+          (keydown.enter)="handleStartDateChange(service.model.task.start_date)"
+          [attr.id]="utils.isTestServer() ? 'task-start-date' : null"
+          [nzDisabledDate]="utils.checkForMaxDate(service.model.task.end_date)"
+          [nzPlaceHolder]="'Start date'"
+          class="task-form-date-picker start-date-picker-input task-modal-dp"
+          nzFormat="MMM dd,yyyy"></nz-date-picker>
+        <span class="ms-2 me-2"> - </span>
+      </div>
+
+      <div class="position-relative">
+        <span nz-typography class="date-text"
+              [class.past-date]="checkForPastDate(service.model.task.end_date)"
+              [class.soon-date]="checkForSoonDate(service.model.task.end_date)">{{service.model.task.end_date | dateFormatter}}</span>
+
+        <nz-date-picker
+          [(ngModel)]="service.model.task.end_date"
+          (ngModelChange)="handleEndDateChange($event)"
+          (keydown.enter)="handleEndDateChange(service.model.task.end_date)"
+          [attr.id]="utils.isTestServer() ? 'task-end-date' : null"
+          [nzDisabledDate]="utils.checkForMinDate(service.model.task.start_date)"
+          [nzPlaceHolder]="'End date'"
+          class="task-form-date-picker task-modal-dp"
+          nzFormat="MMM dd,yyyy"></nz-date-picker>
+
+      </div>
+
+      <button nz-button nzType="link" (click)="showStartDate()"
+              [ngClass]="showStartDateSection ? 'text-danger' : ''">{{currentDateToggleBtnText}}</button>
+
+    </div>
+  </nz-form-control>
+</nz-form-item>

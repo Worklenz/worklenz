@@ -1,0 +1,101 @@
+<nz-card [nzTitle]="deadlineCardTitle" class="h-100">
+  <ng-template #deadlineCardTitle>
+    <span>
+      Project Deadline
+      <span nz-typography [nzType]="'secondary'" *ngIf="deadlineStats.project_end_date">
+        ({{getProjectEndDate(deadlineStats.project_end_date)}})
+      </span>
+    </span>
+  </ng-template>
+
+  <nz-row [nzGutter]="16" class="justify-content-between">
+    <nz-col [nzSpan]="12">
+      <nz-card class="h-100" [nzBodyStyle]="{'padding-right': 0}">
+        <nz-skeleton [nzLoading]="loading" [nzActive]="true" [nzTitle]="false" [nzParagraph]="{ rows: 3 }"
+                     [nzAvatar]="{ size: 'large', shape: 'square' }"></nz-skeleton>
+        <nz-row *ngIf="!loading" [nzGutter]="16">
+          <nz-col [nzSpan]="6" class="d-flex justify-content-center align-items-center">
+            <div class="icon-img-holder">
+              <img src="/assets/images/warning.png" alt="" class="img-fluid">
+            </div>
+          </nz-col>
+          <nz-col [nzSpan]="18">
+            <h5 class="m-0 fw-normal" nz-typography>Overdue tasks (hours)
+              <span nz-icon
+                    nzType="info-circle"
+                    nzTheme="outline"
+                    [nz-tooltip]="'true'"
+                    [nzTooltipTitle]="'Tasks that has time logged past the end date of the project'"
+                    style="color: #3587ff; font-size: 14px;">
+            </span>
+            </h5>
+            <h2 class="m-0" nz-typography>{{deadlineStats.deadline_logged_hours_string}}</h2>
+          </nz-col>
+        </nz-row>
+      </nz-card>
+    </nz-col>
+    <nz-col [nzSpan]="12">
+      <nz-card class="h-100">
+        <nz-skeleton [nzLoading]="loading" [nzActive]="true" [nzTitle]="false" [nzParagraph]="{ rows: 3 }"
+                     [nzAvatar]="{ size: 'large', shape: 'square' }"></nz-skeleton>
+        <nz-row *ngIf="!loading" [nzGutter]="16">
+          <nz-col [nzSpan]="6" class="d-flex justify-content-center align-items-center">
+            <div class="icon-img-holder">
+              <img src="/assets/images/warning.png" alt="" class="img-fluid">
+            </div>
+          </nz-col>
+          <nz-col [nzSpan]="18">
+            <h5 class="m-0 fw-normal" nz-typography>Overdue tasks
+              <span nz-icon
+                    nzType="info-circle"
+                    nzTheme="outline"
+                    [nz-tooltip]="'true'"
+                    [nzTooltipTitle]="'Tasks that are past the end date of the project'"
+                    style="color: #3587ff; font-size: 14px;">
+            </span>
+            </h5>
+            <h2 class="m-0" nz-typography>{{deadlineStats.deadline_tasks_count || 0}}</h2>
+          </nz-col>
+        </nz-row>
+      </nz-card>
+    </nz-col>
+  </nz-row>
+
+  <nz-table #tasksTable [nzData]="deadlineStats.tasks || []" [nzLoading]="loading" [nzSize]="'small'"
+            nzPaginationType="small" class="mt-3" [nzHideOnSinglePage]="true" [nzNoResult]="noDataTemplate">
+    <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Status</th>
+      <th scope="col">End Date</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let data of tasksTable.data">
+      <td>
+        {{data.name}}
+      </td>
+      <td>
+        <nz-tag [nzColor]="data.status_color" class="text-dark rounded-pill task-list-label">{{data.status}}</nz-tag>
+      </td>
+      <td>
+        {{(data.end_date | date: 'mediumDate') || '-'}}
+      </td>
+    </tr>
+    </tbody>
+  </nz-table>
+
+</nz-card>
+
+<ng-template #noDataTemplate>
+
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/confetti (1).png" class="img-fluid" alt="">
+    </div>
+    <div><span nz-typography class="no-data-text">All tasks completed on time.</span></div>
+  </div>
+
+</ng-template>
+
+<worklenz-project-form-modal (onDelete)="back()" (onUpdate)="get()"></worklenz-project-form-modal>

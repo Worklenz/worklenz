@@ -1,0 +1,19 @@
+#!/usr/bin/env node
+
+const fs = require("fs");
+const path = require("path");
+
+// Preview
+
+function inline(folder) {
+  const controllers = fs.readdirSync(path.join(__dirname, folder)).filter(f => f.split(".").pop() === "js");
+  const replacer = (match, p1, p2, p3, offset, string) => match.split(/\n/g).map(s => s.trim()).join(" ").trim();
+  for (const item of controllers) {
+    const controller = fs.readFileSync(path.join(__dirname, folder, item), "utf8");
+    const q = controller.replace(/(?<=q\s+=(.*?)`)([\s\S]*?)(?=`;)/g, replacer);
+    fs.writeFileSync(path.join(__dirname, folder, item), q, "utf8");
+  }
+}
+
+// inline("../build/controllers");
+// inline("../build/passport");

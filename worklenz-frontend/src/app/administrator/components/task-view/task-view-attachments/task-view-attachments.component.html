@@ -1,0 +1,28 @@
+<nz-form-item class="w-100 mb-0" *ngIf="projectId" nz-row>
+  <nz-form-control [nzSpan]="null">
+
+    <div class="ant-upload-list ant-upload-list-picture-card"
+             (drop)="onDrop($event, fileInput, uploadBtn)"
+             (dragover)="onDragOver($event, uploadBtn)"
+    #uploadBtn>
+      <worklenz-task-view-attachments-thumb
+        *ngFor="let item of fileList"
+        [attachment]="item"
+        (onDelete)="delete($event)"
+      ></worklenz-task-view-attachments-thumb>
+
+      <div class="ant-upload ant-upload-select ant-upload-select-picture-card ">
+        <div class="ant-upload" tabindex="0" role="button"
+             (click)="fileInput.click()">
+          <input type="file" style="display: none;" (change)="uploadFile(fileInput)" #fileInput>
+          <div>
+            <span *ngIf="!uploading" nz-icon nzType="plus" nzTheme="outline"></span>
+            <span *ngIf="uploading" nz-icon nzType="loading" nzTheme="outline"></span>
+            <div style="margin-top: 8px; font-size: 11px; margin-left: auto; margin-right: auto; padding-left: 8px;padding-right: 8px;">{{uploading ? 'Uploading' : 'Choose or drop file to upload'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </nz-form-control>
+</nz-form-item>

@@ -1,0 +1,38 @@
+nz-page-header-title {
+  max-width: 60%;
+}
+
+nz-page-header-subtitle {
+  max-width: 35%;
+}
+
+.project-title {
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-subtitle.ellipsis-on {
+  max-width: 75%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.updates-badge {
+  position: absolute;
+  top: 6px;
+  right: 2px;
+  background-color: #ff4d4f;
+  width: 6px;
+  height: 6px;
+  border-radius: 100%;
+}
+
+.tab-text, .pin-icon {
+  color: #1890ff;
+}
+
+.rotated {
+  transform: rotateZ(-45deg);
+  transition: 0.15s all;
+}

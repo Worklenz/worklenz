@@ -1,0 +1,20 @@
+<div class="d-block">
+  <label class="ms-1">Group by: </label>
+  <button nz-button nz-dropdown [nzTrigger]="'click'" class="ms-1" [nzDropdownMenu]="groupByMenu"
+          [nzClickHide]="true">
+        <span nz-tooltip [nzTooltipTitle]="selectedGroup.label">
+          {{selectedGroup.label | ellipsis: 15}}
+        </span>
+    <span nz-icon [nzType]="'caret-down'"></span>
+  </button>
+</div>
+
+<nz-dropdown-menu #groupByMenu>
+  <ul nz-menu>
+    <li *ngFor="let item of service.GROUP_BY_OPTIONS; trackBy: trackById" class="m-0"
+        [nzSelected]="item.value === selectedGroup.value"
+        (click)="changeGroup(item)" nz-menu-item>
+      <span nz-typography>{{item.label}}</span>
+    </li>
+  </ul>
+</nz-dropdown-menu>

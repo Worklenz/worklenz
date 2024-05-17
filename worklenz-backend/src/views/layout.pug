@@ -1,0 +1,53 @@
+- let title = "Worklenz | One stop tool for managing your tasks and resources to boost your productivity."
+- const description = "The only tool you need to open in the morning to get your work done."
+- const keywords = "Resource management, worklenz, project management, task management, gantt chart, kanban"
+
+block vars
+
+doctype html
+html(lang='en')
+  head
+    base(href="/")
+    meta(charset='utf-8')
+    meta(http-equiv='X-UA-Compatible' content='IE=edge')
+    meta(name='viewport' content='width=device-width, initial-scale=1')
+
+    title=title
+
+    meta(name='title' content=title)
+    meta(name='description' content=description)
+
+    meta(name="keywords" content=keywords)
+    meta(name='robots' content='index, follow')
+    //- Open Graph / Facebook
+    meta(property='og:type' content='website')
+    meta(property='og:subdomain' content='')
+    meta(property='og:title' content=title)
+    meta(property='og:description' content=description)
+    meta(property='og:image' content='https://worklenz.com/assets/images/worklenz-banner.png')
+    //- Twitter
+    meta(property='twitter:card' content='summary_large_image')
+    meta(property='twitter:subdomain' content='')
+    meta(property='twitter:title' content=title)
+    meta(property='twitter:description' content=description)
+    meta(property='twitter:image' content='https://worklenz.com/assets/images/worklenz-banner.png')
+
+    link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css', referrerpolicy='no-referrer')
+    link(href='/assets/css/bootstrap.min.css', rel='stylesheet')
+    link(href='/assets/css/owl.theme.default.min.css')
+    link(rel='stylesheet' href='/assets/css/style.css')
+
+    link(rel="shortcut icon", href="/favicon.ico", type="image/x-icon")
+
+    include _scripts
+
+  body.is-boxed.has-animations
+    include _header
+    block content
+    include _footer
+    script(src='/assets/js/jquery-3.6.0.min.js')
+    script(src='/assets/js/bootstrap.bundle.min.js')
+    script(src='/assets/js/owl.carousel.min.js')
+    script(src='/assets/js/main.js')
+
+    include _hubspot

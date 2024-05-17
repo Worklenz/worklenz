@@ -1,0 +1,23 @@
+<div class="container">
+  <nz-page-header [nzGhost]="false" class="px-0">
+    <nz-page-header-title>Settings</nz-page-header-title>
+  </nz-page-header>
+  <nz-layout class="inner-layout">
+    <nz-sider [nzWidth]="'240px'">
+      <ul class="border-0" nz-menu [nzMode]="'vertical'">
+        <li
+          *ngFor="let item of navigation"
+          [routerLink]="[item.url]"
+          [nzIcon]="item.icon"
+          [nzTitle]="item.label"
+          [routerLinkActive]="['ant-menu-item-selected']"
+          class="rounded-4"
+          nz-submenu
+        ></li>
+      </ul>
+    </nz-sider>
+    <nz-content class="px-4 bg-white">
+      <router-outlet></router-outlet>
+    </nz-content>
+  </nz-layout>
+</div>

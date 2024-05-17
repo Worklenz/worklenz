@@ -36,6 +36,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 3. **Run the frontend:**
    ```bash
    npm start
+   ```
    
 4. Navigate to [http://localhost:4200](http://localhost:4200)
 
@@ -56,7 +57,12 @@ Getting started with development is a breeze! Follow these steps and you'll be c
    - Create a copy of the `.env.template` file and name it `.env`.
    - Update the required fields in `.env` with the specific information.
 
-4. **Install Dependencies:**
+4. **Restore Database**
+   - Create a new database named `worklenz_db` on your local PostgreSQL server. 
+   - Update the `DATABASE_NAME` and `PASSWORD` in the  `database/6_user_permission.sql` with your DB credentials.
+   - Open a query console and execute the queries from the .sql files in the `database` directories, following the provided order.
+
+5. **Install Dependencies:**
 
    ```bash
    npm install
@@ -64,7 +70,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 
    This command installs all the necessary libraries required to run the project.
 
-5. **Run the Development Server:**
+6. **Run the Development Server:**
 
    **a. Start the TypeScript compiler:**
 
@@ -86,7 +92,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 
    This starts the development server allowing you to work on the project.
 
-6. **Run the Production Server:**
+7. **Run the Production Server:**
 
    **a. Compile TypeScript to JavaScript:**
 

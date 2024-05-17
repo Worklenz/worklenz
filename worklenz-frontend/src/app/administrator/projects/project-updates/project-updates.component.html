@@ -1,0 +1,9 @@
+<worklenz-project-updates-list [projectId]="projectId"></worklenz-project-updates-list>
+
+<worklenz-task-view
+  [(show)]="showTaskDrawer"
+  (showChange)="onShowChange($event)"
+  [selfResetTaskId]="false"
+  [projectId]="projectId || null"
+  [taskId]="selectedTaskId"
+></worklenz-task-view>

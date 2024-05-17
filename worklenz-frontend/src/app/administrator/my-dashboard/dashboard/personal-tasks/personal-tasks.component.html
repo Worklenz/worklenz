@@ -1,0 +1,37 @@
+<div class="card-top">
+  <div class="d-flex">
+    <nz-space class="align-items-center">
+      <p *nzSpaceItem nz-typography class="mb-0 card-title">To do list ({{homePageService.personal_tasks.length}})</p>
+    </nz-space>
+    <div class="ms-auto">
+      <button nz-button nz-tooltip nzShape="circle" nzTooltipTitle="Refresh tasks"
+              nzType="default" (click)="getPersonalTasks(true)">
+        <span [nzSpin]="homePageService.loadingPersonalTasks" nz-icon nzTheme="outline" nzType="sync"></span>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="card-data">
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading">
+    <worklenz-task-add-container [isPersonal]="true"></worklenz-task-add-container>
+    <nz-table
+      class="custom-table homepage-table mt-2">
+      <tr *ngFor="let task of homePageService.personal_tasks; trackBy: trackBy;" class="actions-row">
+        <td class="task-done-btn">
+          <worklenz-task-done [task]="task"></worklenz-task-done>
+        </td>
+        <td class="tasks-td name-td">
+          <worklenz-task-name [task]="task"></worklenz-task-name>
+        </td>
+      </tr>
+    </nz-table>
+    <ng-container *ngIf="homePageService.personal_tasks.length === 0">
+      <div class="no-data-img-holder mx-auto mb-3">
+        <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+      </div>
+      <div class="text-center mb-3">
+        <span nz-typography class="no-data-text">No tasks to show.</span>
+      </div>
+    </ng-container>
+  </nz-skeleton>
+</div>

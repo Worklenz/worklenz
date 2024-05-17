@@ -1,0 +1,45 @@
+<nz-skeleton [nzLoading]="loading" [nzActive]="true" class="d-block">
+  <nz-input-group style="width: 250px" class="mb-3" [nzSuffix]="suffixIconSearch">
+    <input type="text" nz-input placeholder="Search by name" [(ngModel)]="searchText"/>
+  </nz-input-group>
+  <ng-template #suffixIconSearch>
+    <span nz-icon nzType="search"></span>
+  </ng-template>
+
+  <nz-table [nzSize]="'small'" [nzData]="members | searchByName: searchText" [nzShowPagination]="true"
+            [nzHideOnSinglePage]="true"
+            [nzScroll]="{ x: '200px' }"
+            #membersTable>
+    <thead>
+    <tr>
+      <th nzLeft [nzWidth]="'260px'">Name</th>
+      <th [nzWidth]="'120px'" class="text-center">Tasks Count</th>
+      <th [nzWidth]="'120px'" class="text-center">Completed Tasks</th>
+      <th [nzWidth]="'120px'" class="text-center">Incomplete Tasks</th>
+      <th [nzWidth]="'120px'" class="text-center">Overdue Tasks</th>
+      <th [nzWidth]="'180px'">Contribution</th>
+      <th [nzWidth]="'180px'">Progress</th>
+      <th [nzWidth]="'120px'" class="text-center">Logged Time</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let data of membersTable.data trackBy: trackBy" class="cursor-pointer"
+        (click)="openMember(data)">
+      <td nzLeft>{{ data.name }}</td>
+      <td class="text-center">{{ data.tasks_count }}</td>
+      <td class="text-center">{{ data.completed }}</td>
+      <td class="text-center">{{ data.incompleted }}</td>
+      <td class="text-center">{{ data.overdue }}</td>
+      <td class="px-3">
+        <nz-progress [nzPercent]="data.contribution" nzSize="small"></nz-progress>
+      </td>
+      <td class="px-3">
+        <nz-progress [nzPercent]="data.progress" nzSize="small"></nz-progress>
+      </td>
+      <td class="text-center">
+        {{data.time_logged}}
+      </td>
+    </tr>
+    </tbody>
+  </nz-table>
+</nz-skeleton>

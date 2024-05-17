@@ -1,0 +1,207 @@
+<worklenz-filters (onGroupBy)="onGroupByChange($event)"></worklenz-filters>
+<nz-skeleton [nzActive]="true" [nzLoading]="loading">
+  <div *ngIf="!groups.length" class="d-block mt-3 px-3">
+    <ng-container>
+      <div class="pt-4 pb-5 text-center">
+        <div class="no-data-img-holder mx-auto mb-3">
+          <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+        </div>
+        <span nz-typography class="no-data-text">No groups.</span>
+      </div>
+    </ng-container>
+  </div>
+  <div class="gannt mt-3">
+    <div class="d-flex">
+      <div class="fixed-left-column" #fixed_left_column>
+        <div class="top-left-placeholder"></div>
+        <div class="tasks">
+          <div *ngFor="let group of groups; trackBy: trackById" class="task-name-row cursor-pointer">
+            <div (click)="toggleCollapse(group.id)" class="single-group d-flex align-items-center"
+                 [ngClass]="group.is_expanded ? 'active' :  ''"
+                 [style.background-color]="group.color_code">
+              <span nz-icon [nzType]="group.is_expanded ? 'down' :  'right'" nzTheme="outline"
+                    class="me-2"></span>
+              {{group.name}} ({{group.tasks.length}})
+            </div>
+            <div *ngIf="group.is_expanded">
+              <div *ngIf="!group.tasks.length" class="no-tasks">
+                <span nz-typography nzType="secondary">No tasks available</span>
+              </div>
+              <div *ngFor="let task of group.tasks" class="single-group-task"
+                   [ngClass]="{'hidden': !isVisible(elm)}" #elm>
+                <div class="d-flex align-items-center h-default">
+                  <div class="subtasks-arrow">
+                    <div *ngIf="!task.is_sub_task"
+                         (click)="displaySubTasks(task, group.id);$event.stopPropagation()"
+                         class="d-flex align-items-center justify-content-center sub-tasks-arrow dropdown-highlight">
+                      <ng-container>
+                          <span [style.color]="task | subTasksArrowColor"
+                                [class.hidden-arrow]="!task.sub_tasks_count && !task.show_sub_tasks"
+                                class="align-items-center align-self-center cursor-pointer d-flex sub-arrow">
+
+                            <span *ngIf="!task.sub_tasks_loading" style="font-size: 12px" nz-icon
+                                  [nzType]="task.show_sub_tasks | subTasksArrowIcon"
+                                  [nzTheme]="'outline'"></span>
+                            <span *ngIf="task.sub_tasks_loading" nz-icon [nzType]="'loading'"></span>
+                          </span>
+                      </ng-container>
+                    </div>
+                  </div>
+                  <div class="t-name h-default">
+                    <worklenz-rm-task-name [task]="task" (openTask)="openTask($event)"></worklenz-rm-task-name>
+                  </div>
+                  <div class="t-start-date h-default">
+                    <worklenz-rm-start-date [task]="task" [group]="group"></worklenz-rm-start-date>
+                  </div>
+                  <div class="t-end-date h-default">
+                    <worklenz-rm-end-date [task]="task" [group]="group"></worklenz-rm-end-date>
+                  </div>
+                </div>
+                <div *ngIf="task.sub_tasks && task.show_sub_tasks">
+                  <nz-skeleton [nzActive]="true" [nzLoading]="task.sub_tasks_loading ? true : false" style="box-shadow: 0px -1px #f0f0f0;">
+                    <div *ngFor="let subTask of task.sub_tasks;" class="single-group-task-subtasks">
+                      <div class="d-flex align-items-center h-default">
+                        <div class="t-name h-default">
+                          <worklenz-rm-task-name [task]="subTask" (openTask)="openTask($event)"></worklenz-rm-task-name>
+                        </div>
+                        <div class="t-start-date h-default">
+                          <worklenz-rm-start-date [task]="subTask" [group]="group"></worklenz-rm-start-date>
+                        </div>
+                        <div class="t-end-date h-default">
+                          <worklenz-rm-end-date [task]="subTask" [group]="group"></worklenz-rm-end-date>
+                        </div>
+                      </div>
+                    </div>
+                  </nz-skeleton>
+                  <div class="add-parent-task-section d-flex align-items-center ps-2 add-subtask">
+                    <worklenz-rm-add-task-input
+                      [label]="'Add Subtask'"
+                      [projectId]="projectId"
+                      [parentTask]="task.id ? task.id : ''"
+                      [groupId]="group.id"
+                      [chartStart]="chartStart"
+                    ></worklenz-rm-add-task-input>
+                  </div>
+                </div>
+              </div>
+              <div class="add-parent-task-section d-flex align-items-center ps-1">
+                <worklenz-rm-add-task-input
+                  [projectId]="projectId"
+                  [groupId]="group.id"
+                  [chartStart]="chartStart"
+                ></worklenz-rm-add-task-input>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="fixed-right-column" #fixed_right_column>
+        <div class="top" [style.width]="this.numberOfDays * GANNT_COLUMN_WIDTH + 'px'">
+          <div class="highlighter" [style.transform]="'translateX('+service.highlighterLeft+'px)'" [style.width]="service.highlighterWidth+'px'" [style.min-width]="service.highlighterWidth > 0 ? '32px' : '0px'"></div>
+          <div class="d-flex month-name">
+            <div class="d-flex" *ngFor="let m of months">
+              <div class="month-boundary" [style.min-width]="m.days.length * GANNT_COLUMN_WIDTH + 'px'">
+                {{m.month}}
+              </div>
+            </div>
+          </div>
+          <div class="d-flex" style="min-height: 45px; max-height: 45px">
+            <div class="d-flex" *ngFor="let m of months">
+              <div *ngFor="let d of m.days" class="day-boundary" [style.min-width]="GANNT_COLUMN_WIDTH + 'px'"
+                   [style.max-width]="GANNT_COLUMN_WIDTH + 'px'">
+                <div class="d-block text-center"
+                     [ngClass]="[d.isWeekend ? 'weekend' : '', d.isToday ? 'today today-bg' : '']">
+                  <div class="d-name">
+                    {{d.name}}
+                  </div>
+                  <div class="d-day">
+                    {{d.day}}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="middle" [style.width]="this.numberOfDays * GANNT_COLUMN_WIDTH + 'px'">
+          <div class="day-cells d-flex">
+            <div *ngFor="let m of months" class="d-flex">
+              <div *ngFor="let d of m.days" [ngClass]="[d.isWeekend ? 'weekend' : '', d.isToday ? 'today' : '']"
+                   class="inner-day-cell"
+                   [style.min-width]="GANNT_COLUMN_WIDTH + 'px'">
+              </div>
+            </div>
+          </div>
+          <div class="placeholder-drag" [style.width]="service.width+'px'" [style.left]="service.left+'px'" [style.top]="service.top+'px'" [style.opacity]="service.opacity"></div>
+          <div *ngFor="let group of groups; trackBy: trackById" class="task-name-row">
+            <div class="single-group d-flex align-items-center"
+                 [ngClass]="group.is_expanded ? 'active' :  ''"
+                 [style.background-color]="group.color_code">
+            </div>
+            <div *ngIf="group.is_expanded" class="single-group-tasks">
+              <div *ngIf="!group.tasks.length" class="no-tasks"></div>
+              <div *ngFor="let task of group.tasks; trackBy: trackById" class="single-group-task">
+                <div class="d-flex align-items-center h-default">
+                  <worklenz-task-bar
+                    [task]="task"
+                    [group]="group"
+                    [chartStart]="chartStart"
+                    [chartEnd]="chartEnd"
+                    (openTask)="openTask($event)"
+                    (refreshChart)="init($event)"
+                    (scrollChange)="afterViewScrollHandler($event)"
+                    class="parent-task-element"
+                    #task_elem
+                  >
+                  </worklenz-task-bar>
+                </div>
+                <div *ngIf="task.sub_tasks && task.show_sub_tasks">
+                  <nz-skeleton [nzActive]="true" [nzLoading]="task.sub_tasks_loading ? true : false" style="box-shadow: 0px -1px #f0f0f0;">
+                    <div *ngFor="let subTask of task.sub_tasks;" class="single-group-task-subtasks">
+                      <div class="d-flex align-items-center h-default">
+                        <worklenz-task-bar
+                          [task]="subTask"
+                          [parentTask]="task.id ? task.id : null"
+                          [group]="group"
+                          [chartStart]="chartStart"
+                          [chartEnd]="chartEnd"
+                          (openTask)="openTask($event)"
+                          (refreshChart)="init($event)"
+                          (scrollChange)="afterViewScrollHandler($event)">
+                        </worklenz-task-bar>
+                      </div>
+                    </div>
+                  </nz-skeleton>
+                  <div class="add-parent-task-section add-subtask">
+                    <worklenz-add-task-row
+                      [projectId]="projectId"
+                      [groupId]="group.id"
+                      [parentTask]="task.id ? task.id : null"
+                      [chartStart]="chartStart"
+                      (openTask)="openTask($event)">
+                    </worklenz-add-task-row>
+                  </div>
+                </div>
+              </div>
+              <div class="add-parent-task-section">
+                <worklenz-add-task-row
+                  [projectId]="projectId"
+                  [groupId]="group.id"
+                  [chartStart]="chartStart"
+                  (openTask)="openTask($event)">
+                </worklenz-add-task-row>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nz-skeleton>
+
+<worklenz-task-view
+  [(show)]="showTaskModal"
+  (showChange)="onShowChange($event)"
+  [selfResetTaskId]="false"
+  [projectId]="selectedTask?.project_id || null"
+  [taskId]="selectedTask?.id || null"
+></worklenz-task-view>

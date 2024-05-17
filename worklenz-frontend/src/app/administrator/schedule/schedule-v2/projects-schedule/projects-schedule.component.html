@@ -1,0 +1,149 @@
+<nz-skeleton [nzActive]="true" [nzLoading]="loading">
+  <div *ngIf="!service.projects.length" class="mt-3">
+    <ng-container>
+      <div class="no-data-img-holder mx-auto mb-3">
+        <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+      </div>
+      <div class="text-center mb-3">
+        <div nz-typography class="no-data-text mb-0">No Projects to show.</div>
+        <div nz-typography>
+          <a href="worklenz/projects">Go to create projects.</a>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+  <div *ngIf="service.projects.length" class="gannt">
+    <div class="d-flex">
+      <div class="fixed-left-column" #fixed_left_column>
+        <div class="top-left-placeholder"></div>
+        <div class="projects">
+          <div *rxFor="let project of service.projects; let i = index" class="task-name-row">
+            <div (click)="toggleProject(project)"
+                 [ngClass]="project.is_expanded ? 'project-active' : ''"
+                 class="single-project d-flex align-items-center ps-3 cursor-pointer hover-light-blue">
+              <span nz-icon [nzType]="project.is_expanded ? 'down' :  'right'" nzTheme="outline"
+                    class="me-2"></span>
+              <nz-badge [nzColor]="project.color_code" [nzText]=""></nz-badge>
+              <span>{{project.name}}</span>
+            </div>
+            <div *ngIf="project.is_expanded" class="single-project-members">
+              <ng-container *ngIf="project.members.length">
+                <div *ngFor="let member of project.members"
+                     class="single-project-member cursor-pointer"
+                     (click)="openMember(member, project.id)">
+                  <div class="project-member-container ps-4 d-flex align-items-center">
+                    <nz-avatar *ngIf="member.name" [nzSize]="28"
+                               [nzText]="member.name | firstCharUpper"
+                               [style.background-color]="member.avatar_url ? '#ececec' : getColor(member.name)"
+                               [nzSrc]="member.avatar_url"
+                               class="me-2"></nz-avatar>
+                    {{member.name}}
+                    <small *ngIf="member.pending_invitation" nz-typography nzType="danger" class="ms-1">(Pending Invitation)</small>
+                  </div>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="!project.members.length">
+                <div class="single-project-member cursor-pointer ps-3 pt-2">
+                  <span nz-typography nzType="secondary">
+                  No members assigned to the project.
+                  </span>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="fixed-right-column" #fixed_right_column>
+        <div class="top" [style.width]="this.numberOfDays * common.GANNT_COLUMN_WIDTH + 'px'">
+          <div class="highlighter" [style.transform]="'translateX('+service.highlighterLeft+'px)'"
+               [style.width]="service.highlighterWidth+'px'"
+               [style.min-width]="service.highlighterWidth > 0 ? '32px' : '0px'"></div>
+          <div class="d-flex month-name">
+            <div class="d-flex" *ngFor="let m of months">
+              <div class="month-boundary"
+                   [style.min-width]="m.days.length * common.GANNT_COLUMN_WIDTH + 'px'">
+                {{m.month}}
+              </div>
+            </div>
+          </div>
+          <div class="d-flex" style="min-height: 45px; max-height: 45px">
+            <div class="d-flex" *ngFor="let m of months">
+              <div *ngFor="let d of m.days" class="day-boundary"
+                   [style.min-width]="common.GANNT_COLUMN_WIDTH + 'px'"
+                   [style.max-width]="common.GANNT_COLUMN_WIDTH + 'px'">
+                <div class="d-block text-center"
+                     [ngClass]="[d.isWeekend ? 'weekend' : '', d.isToday ? 'today today-bg' : '']">
+                  <div class="d-name">
+                    {{d.name}}
+                  </div>
+                  <div class="d-day">
+                    {{d.day}}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="middle" [style.width]="this.numberOfDays * common.GANNT_COLUMN_WIDTH + 'px'">
+          <div class="day-cells d-flex">
+            <div *ngFor="let m of months" class="d-flex">
+              <div *ngFor="let d of m.days"
+                   [ngClass]="[d.isWeekend ? 'weekend' : '', d.isToday ? 'today' : '']"
+                   class="inner-day-cell"
+                   [style.min-width]="common.GANNT_COLUMN_WIDTH + 'px'">
+              </div>
+            </div>
+          </div>
+          <div *rxFor="let project of service.projects" class="project-name-row">
+            <div class="single-project position-relative"
+                 [ngClass]="project.is_expanded ? 'project-active' : ''"
+            >
+              <worklenz-project-indicator [project]="project"></worklenz-project-indicator>
+            </div>
+            <div *ngIf="project.is_expanded" class="single-project-members">
+              <ng-container *ngIf="project.members.length">
+                <div *ngFor="let member of project.members"
+                     class="single-project-member position-relative ps-0">
+                  <div class="project-member-container position-relative">
+                    <div class="add-member-allocation">
+                      <worklenz-add-member-allocation [projectId]="project.id"
+                                                      [teamMemberId]="member.team_member_id"></worklenz-add-member-allocation>
+                    </div>
+                    <ng-container *ngFor="let allocation of member.allocations">
+                      <worklenz-member-indicator [allocation]="allocation"
+                                                 [teamMemberId]="member.team_member_id"
+                                                 [projectId]="project.id"></worklenz-member-indicator>
+                    </ng-container>
+                  </div>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="!project.members.length">
+                <div class="single-project-member position-relative ps-0">
+                  <div class="project-member-container position-relative"></div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nz-skeleton>
+
+<worklenz-schedule-project-member-tasks-drawer
+  (onOpenTask)="openTask($event)"
+  [(show)]="showMemberModal"
+  [projectId]="selectedProjectId"
+  [teamMember]="selectedTeamMember"
+>
+</worklenz-schedule-project-member-tasks-drawer>
+
+<worklenz-task-view
+  [(show)]="showTaskModal"
+  (showChange)="onShowChange($event)"
+  [selfResetTaskId]="false"
+  [projectId]="selectedTask?.project_id || null"
+  [taskId]="selectedTask?.id || null"
+></worklenz-task-view>
+
+<worklenz-context-menu></worklenz-context-menu>

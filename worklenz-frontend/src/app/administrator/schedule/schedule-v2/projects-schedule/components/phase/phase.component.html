@@ -1,0 +1,20 @@
+<div class="py-0">
+  <nz-select
+    [style.background-color]="task.phase_color"
+    [(ngModel)]="task.phase_id"
+    (ngModelChange)="handleChange($event, task.id)"
+    [nzLoading]="loading"
+    [nzDropdownMatchSelectWidth]="false"
+    [nzSize]="'small'"
+    (nzOpenChange)="handleOpen($event)"
+    [nzPlaceHolder]="'Select'"
+    class="rounded-pill custom-select"
+    nzAllowClear
+  >
+    <nz-option *ngFor="let item of phases; trackBy: trackById" [nzValue]="item.id"
+               [nzLabel]="item.name | truncateIfLong:12"
+               nzCustomContent>
+      <nz-badge [nzColor]="item.color_code | safeString" [nzText]="item?.name || null"></nz-badge>
+    </nz-option>
+  </nz-select>
+</div>

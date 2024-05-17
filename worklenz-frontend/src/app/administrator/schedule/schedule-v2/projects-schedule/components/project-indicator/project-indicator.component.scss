@@ -1,0 +1,10 @@
+.duration-indicator {
+  position: absolute;
+  border-radius: 4px;
+  top: 10px;
+  bottom: 10px;
+  overflow: hidden;
+  z-index: 0;
+  transition: 0.125s all;
+  border: none;
+}

@@ -1,0 +1,169 @@
+<form [nzLayout]="'vertical'" nz-form>
+  <div nz-row [nzAlign]="'bottom'" [nzJustify]="'space-between'">
+    <div nz-col>
+
+      <!-- Search -->
+      <button nz-button nz-dropdown class="me-2" [nzDropdownMenu]="taskSearchDropdown" [nzTrigger]="'click'"
+              (nzVisibleChange)="onSearchDropdownVisibleChange($event)"
+              [class.filter-active]="!!taskSearch">
+        <span nz-icon nzType="search" nzTheme="outline"></span>
+      </button>
+      <nz-dropdown-menu #taskSearchDropdown="nzDropdownMenu">
+        <form (submit)="search()" class="bg-white shadow rounded-4 p-2">
+          <input type="text" nz-input name="search" id="task-search-input" placeholder="Search by name"
+                 [(ngModel)]="taskSearch"/>
+          <nz-space class="mt-2">
+            <button *nzSpaceItem nz-button [nzSize]="'small'" type="submit" [nzType]="'primary'">
+              Search
+            </button>
+            <button *nzSpaceItem nz-button [nzSize]="'small'" type="button" (click)="reset()">
+              Reset
+            </button>
+          </nz-space>
+        </form>
+      </nz-dropdown-menu>
+
+      <!-- Sort -->
+      <button nz-button nz-dropdown [nzTrigger]="'click'" class="me-2 button-mobile" [nzDropdownMenu]="sortMenu"
+              [class.filter-active]="sortFiltersActive"
+              [nzClickHide]="false">
+        <span nz-icon [nzType]="'sort-ascending'" [nzTheme]="'outline'" class="lg-only"></span>
+        Sort
+        <nz-badge class="ms-1 me-2" [nzCount]="sortedColumnsCount" [nzStyle]="COUNTS_LABELS_STYLE"
+                  [nzSize]="'small'"
+                  nzStandalone></nz-badge>
+        <span nz-icon [nzType]="'caret-down'"></span>
+      </button>
+      <nz-dropdown-menu #sortMenu>
+        <ul nz-menu>
+          <li *ngFor="let item of sortableColumns; trackBy: trackById" class="d-flex justify-content-between"
+              nz-menu-item>
+            <label nz-checkbox [(nzChecked)]="item.selected"
+                   (nzCheckedChange)="onSortFilterChange()">{{item.label}}</label>
+            <button nz-button [nzType]="'default'" [nzSize]="'small'" (click)="onSortOrderChange(item)">
+              <span nz-icon [nzType]="sortOrderCls(item)" [nzTheme]="'outline'"></span>
+            </button>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+
+      <!-- Priority -->
+      <button nz-button nz-dropdown [nzTrigger]="'click'" class="me-2 button-mobile" [class.filter-active]="prioritiesFiltersActive"
+              [nzClickHide]="false"
+              [nzDropdownMenu]="priorityMenu">
+        Priority
+
+        <nz-badge class="ms-1 me-2" [nzCount]="selectedPrioritiesCount" [nzStyle]="COUNTS_LABELS_STYLE"
+                  [nzSize]="'small'"
+                  nzStandalone></nz-badge>
+        <span nz-icon nzType="caret-down"></span>
+      </button>
+      <nz-dropdown-menu #priorityMenu>
+        <ul nz-menu>
+          <li *ngFor="let item of priorities; trackBy: trackById" class="m-0" nz-checkbox
+              [(nzChecked)]="item.selected"
+              (nzCheckedChange)="onPriorityFilterChange()" nz-menu-item>
+            <div class="d-flex align-items-center">
+              <nz-badge class="ms-1" [nzColor]="item.color_code | safeString" [nzSize]="'small'"
+                        nzStandalone></nz-badge>
+              <span class="d-block" nz-typography>{{item.name}}</span>
+            </div>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+
+      <!-- Labels -->
+      <button nz-button nz-dropdown [nzTrigger]="'click'" class="me-2 drop-down-btn active button-mobile" [nzClickHide]="false"
+              [class.filter-active]="labelsFiltersActive"
+              [nzDropdownMenu]="labelsMenu">
+        Labels
+        <nz-badge class="ms-1 me-2" [nzCount]="selectedLabelsCount" [nzStyle]="COUNTS_LABELS_STYLE" [nzSize]="'small'"
+                  nzStandalone></nz-badge>
+        <span nz-icon [nzType]="'caret-down'"></span>
+      </button>
+      <nz-dropdown-menu #labelsMenu>
+        <ul style="max-height:250px;overflow: hidden;overflow-y: auto;" nz-menu>
+          <li class="px-3 py-2">
+            <input type="text" [(ngModel)]="labelsSearchText" name="label" placeholder="Search by name" nz-input>
+          </li>
+          <li *ngFor="let item of labels | searchByName: labelsSearchText; trackBy: trackById"
+              [(nzChecked)]="item.selected" (nzCheckedChange)="onLabelsFilterChange()" class="m-0" nz-checkbox
+              nz-menu-item>
+            <div class="d-flex align-items-center justify-content-center user-select-none">
+              <nz-badge [nzColor]="item.color_code | safeString" [nzText]="item.name"></nz-badge>
+            </div>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+
+      <!-- Members -->
+      <button nz-button nz-dropdown [nzTrigger]="'click'" class="me-2 drop-down-btn active button-mobile" [nzClickHide]="false"
+              [class.filter-active]="membersFiltersActive"
+              [nzDropdownMenu]="membersMenu">
+        Members
+        <nz-badge class="ms-1 me-2" [nzCount]="selectedMembersCount" [nzStyle]="COUNTS_LABELS_STYLE" [nzSize]="'small'"
+                  nzStandalone></nz-badge>
+        <span nz-icon nzType="caret-down"></span>
+      </button>
+      <nz-dropdown-menu #membersMenu>
+        <ul class="members-menu" nz-menu>
+          <li class="px-3 py-2">
+            <input type="text" [(ngModel)]="memberSearchText" name="member" placeholder="Search by name" nz-input>
+          </li>
+          <li class="m-0" *ngFor="let item of members | searchByName: memberSearchText; trackBy: trackById"
+              [(nzChecked)]="item.selected"
+              (nzCheckedChange)="onMembersFilterChange()" nz-checkbox
+              nz-menu-item>
+            <div class="d-flex align-items-center justify-content-center user-select-none">
+              <nz-avatar nz-tooltip [nzSize]="28" [nzText]="item.name | firstCharUpper"
+                         [nzSrc]="item.avatar_url"
+                         [nzTooltipTitle]="item.name | safeString"
+                         [style.background-color]="item.avatar_url ? '#ececec' : item.color_code"
+                         [nzTooltipPlacement]="'top'" class="mt-auto mb-auto me-2"></nz-avatar>
+              <div style="line-height: 15px;">
+                <span class="d-block" nz-typography>{{item.name}}</span>
+                <small nz-typography [nzType]="'secondary'">{{item.email}}</small>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+
+      <nz-divider [nzType]="'vertical'" class="mob-p-0"></nz-divider>
+
+      <!-- Group by -->
+      <label class="ms-1">Group by: </label>
+      <button nz-button nz-dropdown [nzTrigger]="'click'" class="ms-1 button-mobile" [nzDropdownMenu]="groupByMenu"
+              [nzClickHide]="true">
+        <span nz-tooltip [nzTooltipTitle]="selectedGroup.label">
+          {{selectedGroup.label | ellipsis: 15}}
+        </span>
+        <span nz-icon [nzType]="'caret-down'"></span>
+      </button>
+      <nz-dropdown-menu #groupByMenu>
+        <ul nz-menu>
+          <li *ngFor="let item of service.GROUP_BY_OPTIONS; trackBy: trackById" class="m-0"
+              [nzSelected]="item.value === selectedGroup.value"
+              (click)="changeGroup(item)" nz-menu-item>
+            <span nz-typography>{{item.label}}</span>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+
+      <button
+        *ngIf="isGroupByPhase() && (auth.isOwnerOrAdmin() || isProjectManager())" nz-button [nzType]="'link'" class="ps-1 button-mobile" nz-tooltip
+        [nzTooltipTitle]="phaseLabel + ' settings'"
+        (click)="phaseSettingsClick()">
+        <span nz-icon [nzType]="'setting'" [nzTheme]="'outline'"></span>
+      </button>
+
+      <button
+        *ngIf="isGroupByStatus() && (auth.isOwnerOrAdmin() || isProjectManager())" nz-button [nzType]="'link'" class="ps-1 button-mobile" nz-tooltip
+        [nzTooltipTitle]="'Status settings'"
+        (click)="statusSettingsClick()">
+        <span nz-icon [nzType]="'setting'" [nzTheme]="'outline'"></span>
+      </button>
+
+    </div>
+  </div>
+</form>

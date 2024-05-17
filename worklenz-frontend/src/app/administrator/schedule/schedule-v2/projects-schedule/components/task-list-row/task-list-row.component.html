@@ -1,0 +1,83 @@
+<div class="flex-table rows" [ngClass]="task.is_sub_task ? '' : 'main-task'">
+  <!-- Checkbox -->
+  <div class="flex-row task-check">
+      <span nz-checkbox [(nzChecked)]="selected" (nzCheckedChange)="onCheckChange($event)"
+            class="p-0"></span>
+  </div>
+
+     <div class="flex-row task-name ps-0" #tr1>
+    <div class="inner-task-name-container">
+      <div *ngIf="editId !== task.id" class="editable-cell pointer-text ps-1 w-100">
+        <!-- Name block -->
+        <div class="d-flex w-100">
+          <div>
+            <div *ngIf="editId !== task.id"
+                 (click)="onTaskNameClick($event, tr1, task)"
+                 nz-tooltip
+                 [nzTooltipMouseEnterDelay]="0.5"
+                 [nzTooltipTitle]="task.name | safeString"
+                 class="task-name-text">
+              <small *ngIf="task.is_sub_task" nz-typography
+                     [nzType]="'secondary'">
+                <span nz-icon [nzType]="'double-right'" [nzTheme]="'outline'"></span>
+              </small>
+              {{ task.name }} &nbsp;
+            </div>
+          </div>
+
+          <!-- Task name end icons -->
+          <div class="inner-icon-cont">
+            <nz-tag *ngIf="!task.is_sub_task && !service.isSubtasksIncluded"
+                    [nzColor]="'default'" class="me-1 px-1 double-arrow"
+                    (click)="$event.stopPropagation();openSubTasks()">
+              <span style="color: #6d6e6f;">
+                {{task.sub_tasks_count}} <span nz-icon [nzType]="'double-right'" style="font-size: 10px"
+                                               [nzTheme]="'outline'">
+              </span>
+              </span>
+            </nz-tag>
+          </div>
+        </div>
+      </div>
+
+      <input *ngIf="editId === task.id" nz-input
+             (focus)="selectCol(tr1)" [(ngModel)]="task.name"
+             (blur)="handleNameChange(task);deselectCol(tr1)"
+             (keydown.enter)="handleNameChange(task);deselectCol(tr1)"
+             class="ps-1 name-input" style="min-width: 365px; max-width: 365px;"
+             [nzBorderless]="true"/>
+
+      <button *ngIf="!editId" nz-tooltip nz-button (click)="openTask(task)"
+              [nzTooltipTitle]="'Click open task form'"
+              [nzTooltipPlacement]="'top'" [nzTooltipMouseEnterDelay]="2"
+              class="px-1 task-open-btn"
+              [nzType]="'text'">
+        <span nz-icon [nzType]="'expand-alt'" [nzTheme]="'outline'"></span>
+        Open
+      </button>
+    </div>
+  </div>
+
+  <ng-container>
+    <worklenz-schedule-status [task]="task"></worklenz-schedule-status>
+  </ng-container>
+
+  <ng-container>
+    <worklenz-schedule-priority [task]="task"></worklenz-schedule-priority>
+  </ng-container>
+
+  <ng-container>
+    <worklenz-schedule-phase [task]="task"></worklenz-schedule-phase>
+  </ng-container>
+
+  <ng-container>
+    <worklenz-schedule-start-date [task]="task"></worklenz-schedule-start-date>
+  </ng-container>
+
+  <!-- Due date -->
+  <ng-container>
+    <worklenz-schedule-end-date [task]="task"></worklenz-schedule-end-date>
+  </ng-container>
+
+
+</div>

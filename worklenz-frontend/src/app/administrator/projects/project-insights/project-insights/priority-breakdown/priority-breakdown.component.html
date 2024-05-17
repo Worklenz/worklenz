@@ -1,0 +1,14 @@
+<nz-spin *ngIf="loading"></nz-spin>
+<!--<div #statusOverviewChart></div>-->
+
+<div *ngIf="priorityStats.length" class="position-relative" style="max-width: 350px">
+  <canvas baseChart
+          [width]="chartWidth"
+          [height]="350"
+          [data]="barChartData"
+          [options]="barChartOptions"
+          [plugins]="barChartPlugins"
+          [legend]="false"
+          [type]="'bar'" id="chart-view">
+  </canvas>
+</div>

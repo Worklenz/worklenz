@@ -1,0 +1,72 @@
+<nz-collapse nzGhost>
+  <nz-collapse-panel [nzHeader]="'Details'" [nzActive]="true">
+
+    <nz-form-item *ngIf="service.model.task" class="w-100 mb-2" nz-row>
+      <nz-form-label>Task Key</nz-form-label>
+      <nz-form-control style="user-select: text">
+        <nz-tag>{{service.model.task.task_key}}</nz-tag>
+      </nz-form-control>
+    </nz-form-item>
+
+    <worklenz-task-view-phase></worklenz-task-view-phase>
+    <worklenz-task-view-assignees></worklenz-task-view-assignees>
+    <worklenz-task-view-due-date></worklenz-task-view-due-date>
+    <worklenz-task-view-estimation></worklenz-task-view-estimation>
+    <worklenz-task-view-priority></worklenz-task-view-priority>
+    <worklenz-task-view-labels></worklenz-task-view-labels>
+    <worklenz-task-view-notify-to-user></worklenz-task-view-notify-to-user>
+  </nz-collapse-panel>
+
+  <nz-collapse-panel [nzHeader]="'Description'" [nzActive]="true">
+    <worklenz-task-view-description></worklenz-task-view-description>
+  </nz-collapse-panel>
+
+  <nz-collapse-panel *ngIf="!isSubTask()" [nzHeader]="subTasksHeader" [nzActive]="true">
+    <worklenz-task-view-sub-tasks></worklenz-task-view-sub-tasks>
+
+    <ng-template #subTasksHeader>
+      <div class="d-flex align-items-center justify-content-between w-100 mb-2">
+        <span>Sub-Tasks</span>
+        <button nz-button [nzSize]="'small'" [nzShape]="'circle'" nz-tooltip [nzTooltipTitle]="'Refresh'"
+                (click)="refreshSubTasks($event)">
+          <span nz-icon [nzType]="'reload'" [nzTheme]="'outline'"></span>
+        </button>
+      </div>
+    </ng-template>
+  </nz-collapse-panel>
+
+  <nz-collapse-panel [nzHeader]="getAttachmentsHeader()" [nzActive]="true">
+    <worklenz-task-view-attachments></worklenz-task-view-attachments>
+  </nz-collapse-panel>
+
+  <nz-collapse-panel [class.pb-3]="!commentsInputFocused" [style.padding-bottom.px]="commentsInputFocused ? 110 : null"
+                     [nzHeader]="'Comments'" [nzActive]="true">
+    <worklenz-task-view-comments #commentsView></worklenz-task-view-comments>
+  </nz-collapse-panel>
+
+</nz-collapse>
+
+<div class="d-block pt-4 px-4 comments-block">
+  <worklenz-task-view-comments-input (focusChange)="onCommentsInputFocus($event)"
+                                     class="d-block pb-1"></worklenz-task-view-comments-input>
+
+  <ng-container *ngIf="isEditTask() && isTaskAvailable()">
+    <div class="d-flex justify-content-between align-items-center pb-1">
+        <span *ngIf="service.model.task?.created_at" class="mb-0" nz-typography
+              nzType="secondary">
+          <small nz-tooltip [nzTooltipPlacement]="'right'"
+                 [nzTooltipTitle]="service.model.task?.created_at | date: 'medium'">
+            Created {{service.model.task?.created_at | fromNow}} by {{service.model.task?.reporter}}
+          </small>
+        </span>
+      <span *ngIf="service.model.task?.updated_at" class="mb-0"
+            nz-typography
+            nzType="secondary">
+          <small nz-tooltip [nzTooltipPlacement]="'right'"
+                 [nzTooltipTitle]="service.model.task?.updated_at | date: 'medium'">
+            Updated {{service.model.task?.updated_at | fromNow}}
+          </small>
+        </span>
+    </div>
+  </ng-container>
+</div>

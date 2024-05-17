@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  .container
+    div(style='display: flex;position: absolute;top: 0;bottom: 0;height: 100vh;align-items: center;')
+      div
+        img(src='/assets/images/worklenz-logo.png' style='width: 140px;margin-bottom: 10px;')
+        if error_title
+          h2.hero-title.h2-mobile.mt-0.is-revealing(style='margin-bottom: 0;')=error_title
+        if error_message
+          p(style='font-size: 18px;margin-bottom: 0;')=error_message
+        if error_message2
+          p(style='font-size: 18px;')=error_message2
+      if error_image
+        img(src=error_image style='width: 210px;margin-bottom: 40px;')

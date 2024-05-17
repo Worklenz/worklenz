@@ -1,0 +1,54 @@
+<nz-content class="page-data mb-0 mt-3">
+  <div>
+    <nz-segmented (nzValueChange)="changeViewMode($event)" [nzDisabled]="loadingTasks" [nzOptions]="options">
+    </nz-segmented>
+    <button (click)="scrollToDate(todayIndex)" [disabled]="loadingTasks" class="ms-3" nz-button nzType="default">Today
+    </button>
+
+    <nz-skeleton [nzActive]="true" [nzLoading]="loadingTasks"></nz-skeleton>
+
+    <div *ngIf="projects.length && !loadingTasks" class="mt-4">
+      <div class="container p-0">
+        <div class="chart">
+          <div class="chart-row chart-month py-1">
+            <span *ngFor="let month of months; let i = index;" [style.grid-column]="getMonthRange(month.min, month.max)"
+                  class="align-self-center h-100 month"
+                  style="border-left: 2px solid silver !important; height: 22px;">
+              <span>{{month.month_name}}</span>
+            </span>
+          </div>
+          <div *ngIf="viewMode !== ganttChartScaleModes.QUARTERS" class="chart-row chart-period">
+            <span *ngFor="let date of dates;"
+                  [class.today-header]="date.isToday"><span>{{date.date | date: 'dd'}}</span></span>
+          </div>
+          <div class="chart-row chart-lines">
+            <span *ngFor="let date of dates; let i = index;" [class.today]="date.isToday" id="date_{{i}}"></span>
+          </div>
+          <div *ngFor="let project of projects;" class="chart-row">
+            <ul class="chart-row-bars">
+              <li [nzPopoverContent]="contentTemplate" [nzPopoverMouseEnterDelay]="1"
+                  [nzPopoverTitle]="project.name | safeString"
+                  [style.background-color]="project.color_code"
+                  [style.grid-column]="setRange(project.min_date, project.max_date)"
+                  nz-popover style="height: 22px;">
+                <span [nzContent]="project.name" class="text-white" nz-typography nzEllipsis
+                      style="pointer-events: none;"></span>
+                <ng-template #contentTemplate>
+                  <div *ngIf="project.min_date && project.max_date">
+                    <p>Project Timeline</p>
+                    <p><span *ngIf="project.min_date && project.max_date">{{project.min_date | date:'mediumDate'}}
+                      - {{project.max_date | date:'mediumDate'}}</span>
+                    </p>
+                  </div>
+                  <div *ngIf="!project.min_date && !project.max_date">
+                    No timeline available.
+                  </div>
+                </ng-template>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nz-content>

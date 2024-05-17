@@ -1,0 +1,10 @@
+<div class="d-flex justify-content-center mx-auto">
+  <nz-progress
+    *ngIf="!task.is_sub_task"
+    [nzPercent]="percent"
+    [nzType]="'circle'"
+    [nzWidth]="width"
+    [nzStrokeWidth]="strokeWidth" nz-tooltip
+    [nzTooltipTitle]="tooltipTitle"
+  ></nz-progress>
+</div>

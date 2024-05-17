@@ -1,0 +1,104 @@
+<nz-card class="mt-3" [nzTitle]="'Tasks by members'">
+  <div class="row mx-0 mt-3 g-4 mt-0">
+    <div class="col-md-12 mt-0 pe-0 pd-mobile-pe-0">
+      <nz-spin *ngIf="loading"></nz-spin>
+      <div class="table" *ngIf="!loading">
+        <div class="table-header table-row">
+          <div class="td"></div>
+          <div class="td"></div>
+          <div class="td">Name</div>
+          <div class="td">Task Count</div>
+          <div class="td">Contribution</div>
+          <div class="td">Completed</div>
+          <div class="td">Incomplete</div>
+          <div class="td">Overdue</div>
+          <div class="td">Progress</div>
+        </div>
+
+        <div *ngIf="!projectMembers.length" class="pt-4 pb-5">
+          <div class="no-data-img-holder mx-auto mb-3">
+            <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+          </div>
+          <span nz-typography class="mx-auto d-block no-data-text" style="width: max-content;">The project does not have any members yet.</span>
+        </div>
+
+        <div class="table-row" *ngFor="let member of projectMembers; let i = index;">
+          <div>
+            <div class="td" [class.clickable]="isRowClickable(member)" (click)="rowClicked(member)"
+                 *ngIf="isRowClickable(member)">
+              <span *ngIf="isRowClickable(member)">
+                <span *ngIf="expanded[member.id]" nz-icon nzType="down" nzTheme="outline"></span>
+                <span *ngIf="!expanded[member.id]" nz-icon nzType="right" nzTheme="outline"></span>
+              </span>
+            </div>
+            <div class="td" *ngIf="!isRowClickable(member)"></div>
+            <div class="td">
+              <span *ngIf="overdueTasksPresent(member)" nz-tooltip [nzTooltipTitle]="'This member has overdue tasks.'"
+                    nz-icon [nzType]="'exclamation-circle'"
+                    [nzTheme]="'outline'"
+                    class="overdue-tasks-present">
+              </span>
+            </div>
+            <div class="td">{{member.name}}</div>
+            <div class="td">{{member.task_count || 0}}</div>
+            <div class="td">
+              <nz-progress [nzPercent]="member.contribution"></nz-progress>
+            </div>
+            <div class="td">{{member.done_task_count || 0}}</div>
+            <div class="td">{{member.pending_task_count || 0}}</div>
+            <div class="td">{{member.overdue_task_count || 0}}</div>
+            <div class="td">
+              <nz-progress [nzPercent]="member.progress"></nz-progress>
+            </div>
+            <!-- <div *ngIf="expanded[row.id]"> -->
+
+            <div [@detailExpand]="expanded[member.id] ? 'expanded' : 'collapsed'" *ngIf="member.task_count"
+                 class="expanded-panel">
+
+              <div class="child-row">
+                <div>
+                  <div class="table-header table-row">
+                    <div class="child-td"></div>
+                    <div class="child-td">Name</div>
+                    <div class="child-td">Status</div>
+                    <div class="child-td">Due Date</div>
+                    <div class="child-td text-center">Days Overdue</div>
+                    <div class="child-td text-center">Completed Date</div>
+                    <div class="child-td text-center">Total Allocation</div>
+                    <div class="child-td text-center">Over Logged Time</div>
+                  </div>
+                  <div class="table-row mb-0" *ngFor="let task of member.tasks;">
+                    <div class="child-td">
+                      <span *ngIf="task.is_overdue" nz-tooltip
+                            [nzTooltipTitle]="'This task is overdue.'"
+                            nz-icon [nzType]="'exclamation-circle'"
+                            [nzTheme]="'outline'"
+                            class="overdue-tasks-present">
+                      </span>
+                    </div>
+                    <div class="child-td mb-0">
+                      <nz-row nz-typography nzEllipsis [nz-tooltip]="'true'" [nzTooltipTitle]="task.name">
+                        {{task.name}}
+                      </nz-row>
+                    </div>
+                    <div class="child-td">
+                      <span class="rounded-pill custom-select py-1 px-2"
+                            [style.background-color]="task.status_color">{{task.status}}</span>
+                    </div>
+                    <div class="child-td" #elementDueDate>
+                      {{task.end_date | date: 'MMM dd, yyyy'}}
+                    </div>
+                    <div class="child-td text-center">{{task.days_overdue}}</div>
+                    <div class="child-td text-center">{{(task.completed_at | date: 'MMM dd, yyyy') || 'N/A'}}</div>
+                    <div class="child-td text-center">{{task.total_minutes}}</div>
+                    <div class="child-td text-center">{{task.overlogged_time}}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nz-card>

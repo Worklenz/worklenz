@@ -1,0 +1,39 @@
+<nz-form-item *ngIf="service.model.task" class="mb-0" nz-row>
+  <nz-form-label>Labels</nz-form-label>
+  <nz-form-control class="task-view-right-max-col">
+    <span (nzVisibleChange)="handleLabelsVisibleChange($event)" [nzClickHide]="false"
+          [nzDropdownMenu]="labelsDropdown" [nzTrigger]="'click'" nz-dropdown>
+      <ng-container *ngIf="service.model.task.labels?.length">
+        <nz-tag *ngFor="let item of service.model.task.labels;trackBy: trackById" [nzColor]="item.color_code + '69'"
+                class="text-dark task-list-label task-view-label mt-1 cursor-pointer">{{item.name}}</nz-tag>
+        <nz-tag class="text-dark avatar-dashed empty-label
+                      task-list-label mt-1 task-form-pointer-elem" style="margin-top: 4px;">
+            <span nz-typography nzType="secondary">
+              <span nz-icon nzTheme="outline" nzType="plus"></span>
+            </span>
+        </nz-tag>
+      </ng-container>
+      <nz-tag *ngIf="!(service.model.task.labels?.length)" class="text-dark avatar-dashed empty-label task-list-label">
+          <span nz-typography nzType="secondary">
+            <span nz-icon nzTheme="outline" nzType="plus"></span>
+          </span>
+      </nz-tag>
+      <nz-dropdown-menu #labelsDropdown="nzDropdownMenu">
+        <ul class="members-dropdown" nz-menu>
+          <li class="px-3 py-2">
+            <input [(ngModel)]="labelsSearchText" class="border-default-color dropdown-search-input"
+                   nz-input placeholder="Search or create" type="text" (keydown.enter)="createLabel()"  #labelSearchInput>
+            <span *ngIf="!hasFilteredLabel" nz-typography nzType="secondary">
+              Hit enter to create!
+            </span>
+          </li>
+          <li (nzCheckedChange)="handleLabelChange(item)"
+              *ngFor="let item of filteredLabels; trackBy: trackById"
+              [(nzChecked)]="item.selected" class="m-0" nz-checkbox nz-menu-item>
+            <nz-badge [nzColor]="item.color_code" [nzText]="item?.name || null"></nz-badge>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+    </span>
+  </nz-form-control>
+</nz-form-item>

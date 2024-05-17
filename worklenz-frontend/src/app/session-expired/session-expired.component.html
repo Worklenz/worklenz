@@ -1,0 +1,22 @@
+<div class="align-items-center d-flex h-100 justify-content-center">
+  <div class="row w-100 mx-0 auth-page">
+    <div class="col-md-5 col-sm-8 col-xl-3 mx-auto pe-5 ps-5">
+      <div class="w-360">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="py-5">
+              <div class="text-center">
+                <img alt="Worklenz" height="50" src="/assets/images/logo.png">
+              </div>
+              <h5 class="text-center mb-4" nz-typography>Please sign in again</h5>
+              <p class="text-center mb-4" nz-typography>
+                You were signed out of your account. Please press 'Reload' to sign in to the Worklenz again.
+              </p>
+              <button (click)="reload()" [nzLoading]="loading" [nzType]="'primary'" nz-button nzBlock>Reload</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

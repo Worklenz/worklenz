@@ -1,0 +1,64 @@
+<form [nzLayout]="'vertical'" nz-form>
+  <div nz-row [nzAlign]="'bottom'" [nzJustify]="'space-between'">
+    <div nz-col>
+
+      <!-- Search -->
+      <button nz-button nz-dropdown class="me-2" [nzDropdownMenu]="taskSearchDropdown" [nzTrigger]="'click'"
+              (nzVisibleChange)="onSearchDropdownVisibleChange($event)"
+              [class.filter-active]="!!taskSearch">
+        <span nz-icon nzType="search" nzTheme="outline"></span>
+      </button>
+      <nz-dropdown-menu #taskSearchDropdown="nzDropdownMenu">
+        <form (submit)="search()" class="bg-white shadow rounded-4 p-2">
+          <input type="text" nz-input name="search" id="task-search-input" placeholder="Search by name"
+                 [(ngModel)]="taskSearch"/>
+          <nz-space class="mt-2">
+            <button *nzSpaceItem nz-button [nzSize]="'small'" type="submit" [nzType]="'primary'">
+              Search
+            </button>
+            <button *nzSpaceItem nz-button [nzSize]="'small'" type="button" (click)="reset()">
+              Reset
+            </button>
+          </nz-space>
+        </form>
+      </nz-dropdown-menu>
+
+      <nz-divider [nzType]="'vertical'"></nz-divider>
+
+      <!-- Group by -->
+      <label class="ms-1">Group by: </label>
+      <button nz-button nz-dropdown [nzTrigger]="'click'" class="ms-1 me-2" [nzDropdownMenu]="groupByMenu"
+              [nzClickHide]="true">
+        <span nz-tooltip [nzTooltipTitle]="selectedGroup.label">
+          {{selectedGroup.label | ellipsis: 15}}
+        </span>
+        <span nz-icon [nzType]="'caret-down'"></span>
+      </button>
+      <nz-dropdown-menu #groupByMenu>
+        <ul nz-menu>
+          <li *ngFor="let item of service.GROUP_BY_OPTIONS; trackBy: trackById" class="m-0"
+              [nzSelected]="item.value === selectedGroup.value"
+              (click)="changeGroup(item)" nz-menu-item>
+            <span nz-typography>{{item.label}}</span>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+
+      <button
+        *ngIf="isGroupByStatus() && auth.isOwnerOrAdmin()" nz-button [nzType]="'primary'" class="ms-0" nz-tooltip
+        [nzTooltipTitle]="'Create status'"
+        (click)="createStatusClick()">
+        Add Status
+      </button>
+
+      <button
+        *ngIf="isGroupByPhase() && auth.isOwnerOrAdmin()" nz-button [nzType]="'primary'" class="ms-0" nz-tooltip
+        [nzTooltipTitle]="phaseLabel + ' settings'"
+        (click)="phaseSettingsClick()">
+        Add Phase
+      </button>
+
+
+    </div>
+  </div>
+</form>

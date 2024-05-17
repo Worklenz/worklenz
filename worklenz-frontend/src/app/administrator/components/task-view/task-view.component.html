@@ -1,0 +1,67 @@
+<nz-drawer
+  (nzOnClose)="handleCancel()"
+  (nzVisibleChange)="onVisibilityChange($event)"
+  [(nzVisible)]="show"
+  [nzSize]="'large'"
+  [nzExtra]="taskActions"
+  [nzBodyStyle]="BODY_STYLE"
+  [nzCloseIcon]="iconTemplate"
+  [nzTitle]="titleTemplate"
+  [nzWrapClassName]="'task-form-drawer-opened task-view'"
+>
+  <ng-container *nzDrawerContent>
+    <nz-skeleton [nzActive]="true" [nzLoading]="loading" [class.p-4]="loading">
+      <ng-container *ngIf="task">
+
+        <!-- Tabs -->
+        <nz-tabset [nzAnimated]="false" [nzType]="'card'" class="task-drawer-tabset pb-4">
+          <nz-tab [nzTitle]="'Info'">
+            <ng-template nz-tab>
+              <worklenz-task-view-info class="d-block px-4"></worklenz-task-view-info>
+            </ng-template>
+          </nz-tab>
+          <nz-tab [nzTitle]="'Time Log'">
+            <ng-template nz-tab>
+              <worklenz-task-view-time-log
+                class="d-block px-4"
+                [projectId]="projectId"
+                [timerStartTime]="task.timer_start_time || null"
+                [taskId]="taskId"
+                [parentTaskId]="task.parent_task_id"
+              ></worklenz-task-view-time-log>
+            </ng-template>
+          </nz-tab>
+          <nz-tab [nzTitle]="'Activity Log'">
+            <ng-template nz-tab>
+              <worklenz-task-view-activity-log [taskId]="taskId"></worklenz-task-view-activity-log>
+            </ng-template>
+          </nz-tab>
+        </nz-tabset>
+
+      </ng-container>
+
+    </nz-skeleton>
+  </ng-container>
+</nz-drawer>
+
+<ng-template [ngSwitch]="isSubTask()" #iconTemplate>
+  <span *ngSwitchCase="false" nz-icon [nzType]="'close'" [nzTheme]="'outline'"></span>
+  <div *ngSwitchCase="true" (click)="onBackClick()" nz-tooltip [nzTooltipTitle]="'Back to parent task'">
+    <span nz-icon [nzType]="'left'" [nzTheme]="'outline'"></span> Back
+  </div>
+</ng-template>
+
+<ng-template #taskActions>
+  <button style="top: -6px;" nz-button [nzType]="'text'" nz-dropdown [nzDropdownMenu]="menu" [nzTrigger]="'click'">
+    <span nz-icon [nzType]="'ellipsis'" [nzTheme]="'outline'"></span>
+  </button>
+  <nz-dropdown-menu #menu="nzDropdownMenu">
+    <ul nz-menu nzSelectable>
+      <li (click)="deleteTask()" nz-menu-item nzDanger>Delete task</li>
+    </ul>
+  </nz-dropdown-menu>
+</ng-template>
+
+<ng-template #titleTemplate>
+  <worklenz-task-view-name *ngIf="task"></worklenz-task-view-name>
+</ng-template>
