@@ -698,47 +698,4 @@ export default class ProjectsController extends WorklenzControllerBase {
     return result.rows || [];
   }
 
-  public static async updateExistPhaseColors() {
-    const q = `SELECT id, name FROM project_phases`;
-    const phases = await db.query(q);
-
-    phases.rows.forEach((phase) => {
-      phase.color_code = getColor(phase.name);
-    });
-
-    const body = {
-      phases: phases.rows
-    };
-
-    const q2 = `SELECT update_existing_phase_colors($1)`;
-    await db.query(q2, [JSON.stringify(body)]);
-
-  }
-
-  public static async updateExistSortOrder() {
-    const q = `SELECT id, project_id FROM project_phases ORDER BY name`;
-    const phases = await db.query(q);
-
-    const sortNumbers: any = {};
-
-    phases.rows.forEach(phase => {
-        const projectId = phase.project_id;
-
-        if (!sortNumbers[projectId]) {
-            sortNumbers[projectId] = 0;
-        }
-
-        phase.sort_number = sortNumbers[projectId]++;
-    });
-
-    const body = {
-      phases: phases.rows
-    };
-
-    const q2 = `SELECT update_existing_phase_sort_order($1)`;
-    await db.query(q2, [JSON.stringify(body)]);
-    // return phases;
-
-  }
-
 }
