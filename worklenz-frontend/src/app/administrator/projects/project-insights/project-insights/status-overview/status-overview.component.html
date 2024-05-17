@@ -1,0 +1,35 @@
+<nz-spin *ngIf="loading"></nz-spin>
+<!--<div #statusOverviewChart></div>-->
+
+<div *ngIf="!isChartEmpty" class="d-flex p-3">
+  <div class="position-relative" style="max-width: 350px">
+    <canvas *ngIf="!isChartEmpty" baseChart
+            [width]="chartWidth"
+            [height]="300"
+            [data]="chartData"
+            [options]="chartOptions"
+            [plugins]="chartPlugins"
+            [legend]="false"
+            [type]="'doughnut'">
+    </canvas>
+  </div>
+  <div class="chart-details ms-3">
+    <ul class="ps-0">
+      <li *ngFor="let item of statusCounts"
+          class="border-bottom-0 status-list list-unstyled mb-2 d-flex align-items-center">
+        <nz-badge [nzColor]="item.color"></nz-badge>
+        <p nz-typography class="mb-0" nz-tooltip [nzTooltipTitle]="item.name">{{item.name | ellipsis : 20}} ({{item.y}})</p>
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+<ng-container *ngIf="isChartEmpty">
+  <div class="pt-4 pb-5 text-center">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">No tasks to show.</span>
+  </div>
+</ng-container>

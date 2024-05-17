@@ -1,0 +1,85 @@
+<nz-card [nzExtra]="searchTemplate" [nzTitle]="titleTemplate">
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading">
+    <nz-table
+      #table
+      (nzQueryParams)="onQueryParamsChange($event)"
+      [nzData]="model.data || []"
+      [nzFrontPagination]="false"
+      [nzLoading]="loading"
+      [nzPageIndex]="pageIndex"
+      [nzPageSizeOptions]="paginationSizes"
+      [nzPageSize]="pageSize"
+      [nzScroll]="{ y: '300px', x: 'auto' }"
+      [nzTotal]="total"
+      class="custom-table thead-height-0"
+      nzShowSizeChanger
+      nzSize="small"
+    >
+      <thead>
+      <tr>
+        <th colspan="3" nzAlign="left" scope="col"></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr (click)="goToProject(data.project_id)" *ngFor="let data of table.data" class="actions-row">
+        <td class="cursor-pointer" nz-typography>
+          <nz-space class="d-flex align-items-center w-100">
+            <strong *nzSpaceItem [style.color]="data.project_color">{{data.name}}</strong>
+            <span *nzSpaceItem nz-tooltip nz-typography nzTooltipTitle="Project name"
+                  nzType="secondary">{{data.project_name}}</span>
+          </nz-space>
+          <nz-space *ngIf="data.start_date || data.end_date">
+            <small *ngIf="data.start_date" class="me-2" nz-typography
+                   nzType="secondary">Start date: {{(data.start_date | date: "mediumDate") || "-"}}</small>
+            <small *ngIf="data.end_date" nz-typography
+                   nzType="secondary">End date: {{(data.end_date | date: "mediumDate") || "-"}}</small>
+          </nz-space>
+        </td>
+        <td>
+          <nz-badge [nzColor]="data.status_color" [nzText]="data.status" nzStandalone></nz-badge>
+        </td>
+        <td>
+          <span *ngIf="!data.names?.length">
+            <button
+              nz-tooltip
+              nzTooltipTitle="No members assigned to this task"
+              nzSize="small"
+              nz-button
+              nzType="dashed"
+              nzShape="circle"
+            >
+              <span nz-typography nzType="secondary">
+                <span nz-icon nzType="user" nzTheme="outline"></span>
+              </span>
+            </button>
+          </span>
+          <worklenz-avatars [names]="data.names || []"></worklenz-avatars>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</nz-card>
+
+<ng-template #titleTemplate>
+  <span nz-tooltip [nzTooltipTitle]="title">{{title}}</span>
+</ng-template>
+
+<ng-template #searchTemplate>
+  <nz-space nzAlign="center">
+    <button (click)="get()" *nzSpaceItem nz-button nz-tooltip nzShape="circle"
+            nzTooltipTitle="Refresh tasks" nzType="default">
+      <span [nzSpin]="loading" nz-icon nzTheme="outline" nzType="sync"></span>
+    </button>
+    <nz-segmented *nzSpaceItem [(ngModel)]="activeFilter" (ngModelChange)="get()"
+                  [nzOptions]="options"></nz-segmented>
+    <form *nzSpaceItem [formGroup]="searchForm" [nzLayout]="'vertical'" nz-form>
+      <nz-input-group [nzSuffix]="suffixIconSearch">
+        <input [formControlName]="'search'" nz-input placeholder="Search by name" type="text"/>
+      </nz-input-group>
+      <ng-template #suffixIconSearch>
+        <span nz-icon nzType="search"></span>
+      </ng-template>
+    </form>
+  </nz-space>
+</ng-template>

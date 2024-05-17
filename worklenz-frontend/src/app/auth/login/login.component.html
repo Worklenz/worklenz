@@ -1,0 +1,62 @@
+<ng-container *ngIf="!validating">
+  <div class="text-center">
+    <img alt="Worklenz" height="50" [ngSrc]="'/assets/images/logo.png'" width="235">
+  </div>
+  <div class="text-muted mb-4 mt-1 text-center">
+    Log Into your account.
+  </div>
+  <form (submit)="login()" [formGroup]="form" class="login-form" nz-form>
+
+    <nz-form-item>
+      <nz-form-control [nzErrorTip]="'Please input your email!'">
+        <nz-input-group [nzPrefixIcon]="'user'" [nzSize]="'large'">
+          <input #emailInput [formControlName]="'email'" nz-input placeholder="Email" type="email"/>
+        </nz-input-group>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-control [nzErrorTip]="'Please input your Password!'">
+        <nz-input-group [nzSuffix]="suffixTemplate" [nzPrefixIcon]="'lock'" [nzSize]="'large'">
+          <input [formControlName]="'password'" [type]="passwordVisible ? 'text' : 'password'" nz-input
+                 placeholder="Password"/>
+        </nz-input-group>
+        <ng-template #suffixTemplate>
+        <span (click)="passwordVisible = !passwordVisible" [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
+              nz-icon></span>
+        </ng-template>
+      </nz-form-control>
+    </nz-form-item>
+
+    <div class="login-form-margin" nz-row>
+      <div [nzSpan]="12" nz-col>
+        <label [formControlName]="'remember'" nz-checkbox>
+          <span>Remember me</span>
+        </label>
+      </div>
+      <div [nzSpan]="12" nz-col>
+        <a class="login-form-forgot" [routerLink]="['/auth/reset-password']">Forgot password?</a>
+      </div>
+    </div>
+
+    <button [nzLoading]="loading" [nzType]="'primary'" class="mt-1" nz-button [nzBlock]="true" [nzSize]="'large'">
+      Log in
+    </button>
+    <div class="text-center mt-2">
+      OR
+    </div>
+    <button (click)="signInWithGoogle()" [nzLoading]="loadingGoogle" [nzType]="'default'" class="mt-1" nz-button
+            [nzBlock]="true" [nzSize]="'large'" type="button">
+      <img alt="Worklenz" class="me-2" [ngSrc]="'/assets/images/google-icon.png'" width="18" height="18">
+      Sign in with Google
+    </button>
+    <nz-form-item></nz-form-item>
+    <nz-form-item class="mb-0">
+      <nz-form-control>
+        <p class="mb-0">
+          Don’t have an account? <a [routerLink]="['/auth/signup']" rel="noopener">Sign Up</a>
+        </p>
+      </nz-form-control>
+    </nz-form-item>
+  </form>
+</ng-container>

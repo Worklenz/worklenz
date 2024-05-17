@@ -1,0 +1,17 @@
+<nz-row>
+  <nz-segmented class="float-start" [nzNoAnimation]="true" [nzOptions]="options"
+                (nzValueChange)="handleIndexChange($event)"></nz-segmented>
+  <div class="float-end ms-auto">
+    <span class="me-2 archived-toggler" [ngClass]="includeArchived ? 'archived' : ''">
+      <label nz-checkbox [(ngModel)]="includeArchived" (ngModelChange)="archivedChoiceChanged($event)">Include Archived Tasks</label>
+    </span>
+    <button nz-button nzType="primary" (click)="exportPdf()" [nzLoading]="isLoading"><span
+      nz-icon nzType="download"></span>Export
+    </button>
+  </div>
+</nz-row>
+
+<worklenz-project-overview *ngIf="selectedMode === modes.overview" [archived]="archived"></worklenz-project-overview>
+<worklenz-project-insights-member-overview [archived]="archived"
+                                           *ngIf="selectedMode === modes.members"></worklenz-project-insights-member-overview>
+<worklenz-task-insights *ngIf="selectedMode === modes.tasks" [archived]="archived"></worklenz-task-insights>

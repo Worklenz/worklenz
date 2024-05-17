@@ -1,0 +1,18 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: "DESTINATION_HERE"
+permissions:
+  - object: "OBJECT_PATH_HERE"
+    pattern: "*.sh"
+    # owner: root
+    # group: root
+    mode: 775
+    type:
+      - file
+hooks:
+  AfterInstall:
+    - location: build.sh
+      timeout: 3600
+      runas: root

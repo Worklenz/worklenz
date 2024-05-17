@@ -1,0 +1,113 @@
+<div class="ant-upload-list-picture-card-container" *ngIf="attachment">
+  <div nz-tooltip
+       [nzTooltipTitle]="tooltipTitleContent"
+       [nzTooltipPlacement]="'bottom'"
+       class="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card ng-trigger ng-trigger-itemState">
+
+    <ng-template #tooltipTitleContent>
+      <small>
+        <p class="mb-0">{{attachment.name}}</p>
+        <p class="mb-0">{{attachment.size}}</p>
+        <p class="mb-0">{{attachment.created_at | date: "medium"}}</p>
+      </small>
+    </ng-template>
+
+    <div class="ant-upload-list-item-info">
+      <img [src]="'/assets/images/files/' + getFileIcon(attachment.type)" class="file-icon" alt="">
+      <div class="ant-upload-span" [style.background-image]="isImageFile() ? 'url('+attachment.url+')' : ''">
+<!--        <img *ngIf="isImageFile()" [src]="attachment.url" alt="image.png"-->
+<!--             class="ant-upload-list-item-image">-->
+        <a target="_blank" rel="noopener noreferrer"
+           class="ant-upload-list-item-thumbnail"
+           [href]="attachment.url">
+          <span *ngIf="!isImageFile()" nz-icon nzType="file-unknown" nzTheme="outline"
+                style="font-size: 34px;margin-top: 23px;color: #cccccc;"></span>
+        </a>
+      </div>
+    </div>
+
+    <span class="ant-upload-list-item-actions">
+
+      <button nz-button nzType="text" nzSize="small"
+              type="button" title="Preview file" (click)="previewFile(attachment.url, attachment.id, attachment.name)">
+          <span nz-icon nzType="eye" nzTheme="outline"></span>
+      </button>
+
+      <button nz-button nzType="text" nzSize="small"
+              type="button"
+              (click)="download(attachment.id, attachment.name)"
+              [nzLoading]="downloading"
+              class="ant-upload-list-item-card-actions-btn"
+              title="Download file">
+          <span nz-icon nzType="download" nzTheme="outline"></span>
+      </button>
+
+      <button type="button" nz-button nztype="text" nzSize="small"
+              nz-popconfirm
+              [nzOkText]="'Yes'"
+              [nzPopconfirmTitle]="'Are you sure?'"
+              (nzOnConfirm)="delete(attachment.id)"
+              [nzLoading]="deleting"
+              class="ant-btn ant-upload-list-item-card-actions-btn ant-btn-text ant-btn-sm ant-btn-icon-only "
+              title="Remove file">
+          <span nz-icon nzType="delete" nzTheme="outline"></span>
+      </button>
+
+    </span>
+
+  </div>
+</div>
+
+<nz-modal [(nzVisible)]="isVisible" [nzTitle]="title" nzCentered (nzOnCancel)="handleCancel()" [nzWidth]="previewWidth"
+          class="attachment-preview-modal">
+  <ng-container *nzModalContent>
+    <div class="preview-container text-center position-relative">
+      <div class="loader">
+        <ng-template #indicatorTemplate>
+          <span nz-icon nzType="loading" style="font-size: 24px;"></span>
+        </ng-template>
+      </div>
+      <!-- image type preview-->
+      <ng-container *ngIf="currentFileType === 'image'">
+        <nz-spin nzSimple [nzIndicator]="indicatorTemplate"></nz-spin>
+        <img [src]="currentFileUrl" class="img-fluid position-relative"/>
+      </ng-container>
+      <!-- video type preview-->
+      <ng-container *ngIf="currentFileType === 'video'">
+        <nz-spin nzSimple [nzIndicator]="indicatorTemplate"></nz-spin>
+        <video class="position-relative" controls>
+          <source [src]="currentFileUrl" type="video/mp4"/>
+        </video>
+      </ng-container>
+      <!-- audio type preview-->
+      <ng-container *ngIf="currentFileType === 'audio'">
+        <nz-spin nzSimple [nzIndicator]="indicatorTemplate"></nz-spin>
+        <audio class="position-relative" controls>
+          <source [src]="currentFileUrl" type="audio/mpeg"/>
+        </audio>
+      </ng-container>
+      <!-- document type preview-->
+      <ng-container
+        *ngIf="currentFileType === 'document'">
+        <nz-spin nzSimple [nzIndicator]="indicatorTemplate"></nz-spin>
+        <ngx-doc-viewer *ngIf="currentFileUrl" [url]="currentFileUrl" viewer="google"
+                        class="w-100 position-relative"></ngx-doc-viewer>
+      </ng-container>
+      <!-- no preview-->
+      <ng-container *ngIf="currentFileType === 'unknown'">
+        <p>The preview for this file type is not available.</p>
+      </ng-container>
+    </div>
+  </ng-container>
+  <div *nzModalFooter>
+    <button *ngIf="previewdFileId && previewdFileName" nz-button nzType="default"
+            (click)="download(previewdFileId, previewdFileName)" [nzLoading]="downloading">
+      <span nz-icon nzType="download" nzTheme="outline"></span>
+      Download
+    </button>
+  </div>
+</nz-modal>
+<ng-template #title>
+  <span nz-typography>{{attachment?.name}}</span>
+  <!--    <button nz-button nzType="link"><span nz-icon nzType="download"></span>Download</button>-->
+</ng-template>

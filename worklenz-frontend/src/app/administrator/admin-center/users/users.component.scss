@@ -1,0 +1,45 @@
+.you-text {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.admin-text {
+  font-size: 12px;
+  background-color: rgba(250, 173, 20, 0.1);
+  font-weight: 500;
+  padding: 0px 4px;
+  border-radius: 12px;
+  color: #FAAD14;
+}
+
+.ant-dropdown {
+  position: relative;
+  margin: 0;
+  padding: 4px 0;
+  text-align: left;
+  list-style-type: none;
+  background-color: #fff;
+  background-clip: padding-box;
+  border-radius: 2px;
+  outline: none;
+  box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
+}
+
+.ant-form-item-label > label {
+  float: left !important;
+}
+
+.role-selector {
+  margin-top: 24px;
+}
+
+nz-page-header-subtitle {
+  color: hsla(0, 0%, 0%, 0.85);
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.no-data-img-holder {
+  width: 100px;
+  margin-top: 42px;
+}

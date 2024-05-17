@@ -1,0 +1,48 @@
+<nz-drawer
+  [nzBodyStyle]="{ overflow: 'auto' }"
+  [nzWidth]="650"
+  [nzVisible]="drawerVisible"
+  [nzTitle]="'Import tasks'"
+  [nzFooter]="footerTpl"
+  (nzOnClose)="closeDrawer()"
+  (nzVisibleChange)="onVisibleChange($event)"
+>
+  <form nz-form *nzDrawerContent [formGroup]="form">
+    <div nz-row [nzGutter]="8">
+      <div nz-col nzSpan="24">
+        <nz-form-item class="mb-4">
+          <nz-form-label>Select Template</nz-form-label>
+          <nz-form-control nzErrorTip="Please select a template!">
+            <nz-select name="template" [nzPlaceHolder]="'Please select a template to load tasks'" #templateSelect
+                       [formControlName]="'template'" [nzLoading]="loadingTemplates">
+              <nz-option *ngFor="let template of templates; let i = index;" [nzLabel]="template.name | safeString"
+                         [nzValue]="template.id"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-divider></nz-divider>
+        <span nz-typography class="fw-bold">Selected Tasks ({{tasks.length}})</span>
+        <ul nz-list nzBordered class="mt-4" [nzDataSource]="tasks" [nzLoading]="loadingData"
+            [nzNoResult]="'No template selected! Please select a template to load tasks.'">
+          <li nz-list-item *ngFor="let task of tasks; let i = index;">
+            <ul nz-list-item-actions>
+              <nz-list-item-action>
+                <a (click)="removeTask(i)">Remove</a>
+              </nz-list-item-action>
+            </ul>
+            {{task.name}}
+          </li>
+        </ul>
+
+      </div>
+    </div>
+  </form>
+
+  <ng-template #footerTpl>
+    <div style="float: right">
+      <button nz-button style="margin-right: 8px;" (click)="closeDrawer()">Cancel</button>
+      <button nz-button nzType="primary" (click)="importFromTemplate()" [nzLoading]="importing">Import</button>
+    </div>
+  </ng-template>
+</nz-drawer>

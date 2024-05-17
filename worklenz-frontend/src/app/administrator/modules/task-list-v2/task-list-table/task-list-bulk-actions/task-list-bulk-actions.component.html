@@ -1,0 +1,214 @@
+<div class="bulk-actions" [class.open]="isOpen">
+
+  <div class="bulk-actions-inner align-items-center d-flex justify-content-between w-100">
+    <div>{{label}}</div>
+
+    <div class="d-flex align-items-center position-relative justify-content-center">
+
+      <button nz-button nzShape="circle" nzType="text" nz-tooltip
+              [nzTooltipTitle]="'Change Status / Priority / Phase'"
+              [nzTrigger]="'click'"
+              [nzClickHide]="true"
+              [(nzVisible)]="groupChangeVisible"
+              nz-dropdown [nzDropdownMenu]="groupDropdown">
+        <span nz-icon [nzType]="changingStatus || changingPriority || changingPhase ? 'loading' : 'retweet'" nzTheme="outline"></span>
+      </button>
+
+      <nz-dropdown-menu #groupDropdown="nzDropdownMenu">
+        <ul style="max-height: 250px;overflow: hidden;overflow-y: auto;min-width: 110px;" nz-menu>
+          <li nz-submenu nzTitle="Status">
+            <ul style="max-height: 250px;overflow: hidden;overflow-y: auto;">
+              <li nz-menu-item *ngFor="let item of statuses" (click)="changeStatus(item.id)" style="min-height: 32px;">
+                <nz-badge [nzColor]="item.color_code | safeString" [nzText]="item?.name || null"></nz-badge>
+              </li>
+            </ul>
+          </li>
+          <li nz-submenu nzTitle="Priority">
+            <ul style="max-height: 250px;overflow: hidden;overflow-y: auto;">
+              <li nz-menu-item *ngFor="let item of priorities" (click)="changePriority(item.id)" style="min-height: 32px;">
+                <nz-badge [nzColor]="item.color_code | safeString" [nzText]="item?.name || null"></nz-badge>
+              </li>
+            </ul>
+          </li>
+          <li nz-submenu nzTitle="Phase">
+            <ul style="max-height: 250px;overflow: hidden;overflow-y: auto;">
+              <li nz-menu-item *ngFor="let item of phases" (click)="changePhase(item.id)" style="min-height: 32px;">
+                <nz-badge [nzColor]="item.color_code | safeString" [nzText]="item?.name || null"></nz-badge>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+
+<!--      <nz-select-->
+<!--        nz-tooltip-->
+<!--        class="hidden-select"-->
+<!--        [nzShowArrow]="false"-->
+<!--        [nzDropdownMatchSelectWidth]="false"-->
+<!--        [nzTooltipTitle]="'Change status'"-->
+<!--        [nzLoading]="changingStatus"-->
+<!--        [nzCustomTemplate]="custom"-->
+<!--        [ngModel]="selectedStatus"-->
+<!--        (ngModelChange)="changeStatus($event)"-->
+<!--        nzBorderless-->
+<!--      >-->
+<!--        <nz-option *ngFor="let item of statuses" [nzValue]="item.id" [nzLabel]="item?.name || null" nzCustomContent>-->
+<!--          <nz-badge [nzColor]="item.color_code | safeString" [nzText]="item?.name || null"></nz-badge>-->
+<!--        </nz-option>-->
+
+<!--      </nz-select>-->
+
+      <ng-template #custom>
+        <span nz-icon [nzType]="changingStatus ? 'loading' : 'retweet'" nzTheme="outline"></span>
+      </ng-template>
+
+      <!-- START: Labels dropdown -->
+      <button nz-button nzShape="circle" nzType="text" nz-tooltip
+              [nzTooltipTitle]="labelsTooltipTitle"
+              [nzTrigger]="'click'"
+              [nzClickHide]="false"
+              [(nzVisible)]="labelsDropdownVisible"
+              (nzVisibleChange)="handleLabelsDropdown($event)"
+              nz-dropdown [nzDropdownMenu]="labelsDropdown">
+        <span nz-icon [nzType]="assigningLabel ? 'loading' : 'tags'" nzTheme="outline"></span>
+      </button>
+
+      <ng-template #labelsTooltipTitle>
+        <ng-container [ngSwitch]="!!service.labels.length">
+          <span *ngSwitchCase="true">Change label</span>
+          <div *ngSwitchCase="false">
+            <p class="mb-0">No labels available!</p>
+            <small>Labels can be created while updating or creating tasks.</small>
+          </div>
+        </ng-container>
+      </ng-template>
+
+      <nz-dropdown-menu #labelsDropdown="nzDropdownMenu">
+        <ul style="max-height: 250px;overflow: hidden;overflow-y: auto;"
+            *ngIf="service.labels.length && !newLabel" nz-menu>
+          <li class="m-0" *ngFor="let item of service.labels;" [(nzChecked)]="item.selected" nz-checkbox
+              nz-menu-item>
+            <nz-badge [nzColor]="item.color_code | safeString" [nzText]="item?.name || null"></nz-badge>
+          </li>
+        </ul>
+
+        <ul nz-menu>
+          <li class="m-0" (submit)="createLabel()" nz-menu-item>
+            <form class="w-100" nz-form [formGroup]="newLabelForm">
+              <input type="text" [formControlName]="'label'" nz-input nzSize="small" placeholder="+ Create label">
+              <small *ngIf="newLabel" nz-typography nzType="secondary">Hit enter to create!</small>
+            </form>
+          </li>
+          <li *ngIf="service.labels.length && !newLabel" class="m-0" (click)="bulkAssignLabel()" nz-menu-item>
+            <button nz-button nzType="primary" nzShape="round" nzBlock nzSize="small" [nzLoading]="assigningLabel">
+              Apply
+            </button>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+      <!-- END: Labels dropdown -->
+
+      <button nz-button nzShape="circle" nzType="text" nz-tooltip [nzTooltipTitle]="'Assign to me'"
+              [nzLoading]="assigningTasks"
+              (click)="bulkAssignMe()">
+        <span nz-icon nzType="user-add" nzTheme="outline"></span>
+      </button>
+
+
+      <button nz-button nzShape="circle" nzType="text" nz-tooltip
+              [nzTooltipTitle]="membersTooltipTitle"
+              [nzTrigger]="'click'"
+              [nzClickHide]="false"
+              [(nzVisible)]="membersDropdownVisible"
+              (nzVisibleChange)="handleMembersDropdown($event)"
+              nz-dropdown [nzDropdownMenu]="membersDropdown">
+        <span nz-icon [nzType]="assigningLabel ? 'loading' : 'usergroup-add'" nzTheme="outline"></span>
+      </button>
+
+      <ng-template #membersTooltipTitle>
+        <ng-container>
+          <span>Assign members</span>
+        </ng-container>
+      </ng-template>
+
+      <nz-dropdown-menu #membersDropdown="nzDropdownMenu">
+        <ul style="max-height: 250px;overflow: hidden;overflow-y: auto;"
+            *ngIf="service.members.length" nz-menu>
+          <li class="m-0" *ngFor="let item of service.members;"
+              [nzDisabled]="item.is_pending && !item.selected"
+              [ngClass]="item.is_pending && !item.selected ? 'disable' : ''"
+              [(nzChecked)]="item.selected" nz-checkbox
+              nz-menu-item>
+            <div class="d-flex align-items-center justify-content-center user-select-none">
+              <nz-avatar
+                nz-tooltip
+                [nzSize]="26"
+                [nzText]="item.name | firstCharUpper"
+                [nzTooltipTitle]="item.name"
+                [style.background-color]="item.avatar_url ? '#ececec' : item.color_code"
+                [nzSrc]="item.avatar_url"
+                [nzTooltipPlacement]="'top'"
+                class="mt-auto mb-auto me-2"
+              ></nz-avatar>
+              <div style="line-height: 15px;">
+                <span class="d-block" nz-typography>{{item.name}}</span>
+                <small nz-typography [nzType]="'secondary'">
+                  {{item.email}} <small *ngIf="item.is_pending" nz-typography nzType="danger">(Pending
+                  Invitation)</small>
+                </small>
+              </div>
+            </div>
+          </li>
+        </ul>
+
+        <ul nz-menu>
+          <li class="m-0" (click)="bulkAssignMembers()" nz-menu-item>
+            <button nz-button nzType="primary" nzShape="round" nzBlock nzSize="small" [nzLoading]="assigningMembers">
+              Apply
+            </button>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+
+
+      <button *ngIf="!isSelectionHasSubTasks()" nz-button nzShape="circle" nzType="text" nz-tooltip
+              [nzTooltipTitle]="filteredAsArchived ? 'Unarchive' : 'Archive'"
+              [nzLoading]="archivingTasks"
+              (click)="bulkArchive()"
+      >
+        <span nz-icon nzType="inbox" nzTheme="outline"></span>
+      </button>
+      <button nz-button nzShape="circle" nzType="text" nz-tooltip [nzTooltipTitle]="'Delete'"
+              [nzLoading]="deletingTasks"
+              [nzPopconfirmShowArrow]="true"
+              [nzPopconfirmBackdrop]="true"
+              nz-popconfirm [nzPopconfirmTitle]="deleteConfirmationMessage"
+              (nzOnConfirm)="bulkDelete()"
+      >
+        <span nz-icon nzType="delete" nzTheme="outline"></span>
+      </button>
+    </div>
+
+    <ng-container *ngIf="isOwnerOrAdmin()">
+      <button nz-button nzShape="circle" nzType="text" nz-tooltip
+              [nzTooltipTitle]="'More options'"
+              [nzTrigger]="'click'"
+              [nzClickHide]="true"
+              nz-dropdown [nzDropdownMenu]="moreOptionsDropdown">
+        <span nz-icon [nzType]="'more'" nzTheme="outline"></span>
+      </button>
+      <nz-dropdown-menu #moreOptionsDropdown="nzDropdownMenu">
+        <ul style="max-height: 250px;overflow: hidden;overflow-y: auto;" nz-menu>
+          <li class="m-0" nz-menu-item>
+            <span (click)="taskTemplateClicked.emit(true)">Create Task Template</span>
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+    </ng-container>
+
+    <button (click)="close()" nz-button nzShape="circle" nzType="text" nz-tooltip
+            [nzTooltipTitle]="'Deselect all'">
+      <span nz-icon nzType="close-circle" nzTheme="outline"></span>
+    </button>
+  </div>
+</div>

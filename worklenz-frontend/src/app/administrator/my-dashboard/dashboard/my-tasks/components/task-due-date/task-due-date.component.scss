@@ -1,0 +1,30 @@
+nz-date-picker {
+  max-width: 160px;
+  border-color: transparent !important;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  &:hover {
+    border-color: #d9d9d9 !important;
+  }
+}
+
+.editable {
+  position: relative;
+}
+
+.date-text {
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+}
+
+.past-date {
+  color: #ff4d4f;
+}
+
+.soon-date {
+  color: #52c41a;
+}

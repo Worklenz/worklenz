@@ -1,0 +1,168 @@
+<nz-skeleton [nzLoading]="loading" [nzActive]="true" class="d-block">
+  <nz-input-group style="width: 250px" class="mb-3" [nzSuffix]="suffixIconSearch">
+    <input type="text" nz-input placeholder="Search by name" [(ngModel)]="searchText" (ngModelChange)="getProjects(false)"/>
+  </nz-input-group>
+  <ng-template #suffixIconSearch>
+    <span nz-icon nzType="search"></span>
+  </ng-template>
+
+  <div>
+    <nz-table #table
+              [nzData]="projects"
+              [nzFrontPagination]="false"
+              [nzLoading]="loading"
+              [nzPageIndex]="pageIndex"
+              [nzPageSizeOptions]="paginationSizes"
+              [nzPageSize]="pageSize"
+              [nzTotal]="total"
+              [nzShowSizeChanger]="true"
+              [nzHideOnSinglePage]="true"
+              [nzScroll]="{ x: '300px' }"
+              (nzQueryParams)="onQueryParamsChange($event)">
+      <thead>
+      <tr>
+        <th nzLeft [nzWidth]="'300px'" style="z-index: 11" [nzSortFn]="true" [nzColumnKey]="'name'" scope="col">
+          Project
+        </th>
+        <th [nzWidth]="'230px'" scope="col" *ngIf="estimatedActive">Estimated vs Actual</th>
+        <th [nzWidth]="'200px'" scope="col" *ngIf="progressActive">Tasks Progress</th>
+        <th [nzWidth]="'250px'" scope="col" *ngIf="lastActivityActive">Last Activity</th>
+        <th [nzWidth]="'150px'" [nzSortFn]="true" [nzColumnKey]="'status_id'" scope="col" *ngIf="statusActive">Status
+        </th>
+        <th [nzWidth]="'275px'" scope="col" *ngIf="startEndDateActive">Start/End dates</th>
+        <th [nzWidth]="'170px'" scope="col" *ngIf="daysLeftActive">Days Left/Overdue</th>
+        <th [nzWidth]="'170px'" [nzSortFn]="true" [nzColumnKey]="'project_health'" scope="col" *ngIf="healthActive">
+          Project Health
+        </th>
+        <th [nzWidth]="'150px'" scope="col" *ngIf="categoryActive">Category</th>
+        <th [nzWidth]="'250px'" scope="col" *ngIf="updateActive">Project Update</th>
+        <th [nzWidth]="'160px'" [nzSortFn]="true" [nzColumnKey]="'client'" scope="col" *ngIf="clientActive">Client</th>
+        <th [nzWidth]="'150px'" [nzSortFn]="true" [nzColumnKey]="'team_name'" scope="col" *ngIf="teamActive">Team</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of table.data trackBy: trackBy" class="cursor-pointer">
+
+        <!-- Project -->
+        <td nzLeft (click)="openProject(data)" style="z-index: 11">
+          <div class="position-relative w-100">
+            <nz-space>
+              <nz-badge *nzSpaceItem [nzColor]="data.color_code"></nz-badge>
+              <span *nzSpaceItem class="ellipsis" style="max-width: 260px">{{data.name}}</span>
+            </nz-space>
+            <button nz-button nzType="default" class="open-btn">
+              Open
+              <span nz-icon nzType="arrows-alt" nzTheme="outline"></span>
+            </button>
+          </div>
+          <!--          <nz-badge [nzColor]="data.color_code" [nzText]="data.name"></nz-badge>-->
+        </td>
+
+        <!-- estimated vs actual-->
+        <td *ngIf="estimatedActive">
+          <worklenz-estimated-vs-actual-chart-common *ngIf="data.actual_time && data.estimated_time"
+                                                     [id]="data.id"
+                                                     [actualTime]="data.actual_time || 0"
+                                                     [estimatedTime]="data.estimated_time * 60 || 0"
+                                                     [actualTimeString]="data.actual_time_string || null"
+                                                     [estimatedTimeString]="data.estimated_time_string || null">
+          </worklenz-estimated-vs-actual-chart-common>
+          <worklenz-na *ngIf="!data.actual_time || !data.estimated_time"></worklenz-na>
+        </td>
+
+        <!-- progress-->
+        <td *ngIf="progressActive">
+          <worklenz-tasks-progress-bar
+            *ngIf="(data.tasks_stat.todo || data.tasks_stat.doing || data.tasks_stat.done); else naTemplate"
+            [todoProgress]="data.tasks_stat.todo"
+            [doingProgress]="data.tasks_stat.doing"
+            [doneProgress]="data.tasks_stat.done"
+          ></worklenz-tasks-progress-bar>
+        </td>
+
+        <!-- last activity-->
+        <td *ngIf="lastActivityActive" [ngSwitch]="!!data.last_activity">
+          <ng-container *ngSwitchCase="true">
+            <span class="ellipsis" nz-tooltip [nzTooltipTitle]="data.last_activity.last_activity_string">
+              {{data.last_activity.last_activity_string}}.
+            </span>
+          </ng-container>
+          <worklenz-na *ngSwitchCase="false"></worklenz-na>
+        </td>
+
+        <!-- Status -->
+        <td *ngIf="statusActive">
+          <worklenz-project-status
+            [projStatuses]="projectStatuses"
+            [project]="data">
+          </worklenz-project-status>
+        </td>
+
+        <!-- Start/End dates -->
+        <td *ngIf="startEndDateActive">
+          <worklenz-project-start-end-dates
+            [project]="data">
+          </worklenz-project-start-end-dates>
+        </td>
+
+        <!-- Days left -->
+        <td *ngIf="daysLeftActive">
+          <ng-container *ngIf="data.days_left !== null; else naTemplate">
+            <ng-container [ngSwitch]="data.is_overdue">
+              <span *ngSwitchCase="true" style="color: #f37070;">{{ data.days_left }} days overdue</span>
+              <span *ngSwitchCase="false">
+                <span *ngIf="data.is_today" style="color: #80ca79;">Today</span>
+                <span *ngIf="!data.is_today" style="color: #80ca79;"> {{ data.days_left }} days left</span>
+              </span>
+            </ng-container>
+          </ng-container>
+        </td>
+
+        <!-- project health-->
+        <td *ngIf="healthActive">
+          <worklenz-project-health-selector
+            [project]="data"
+            [projHealths]="projHealths">
+          </worklenz-project-health-selector>
+        </td>
+
+        <!-- Category -->
+        <td *ngIf="categoryActive">
+          <worklenz-project-category
+            [teamId]="data.team_id"
+            [project]="data">
+          </worklenz-project-category>
+        </td>
+
+        <!-- project update-->
+        <td [ngSwitch]="!!data.comment" (click)="openUpdates(data)" *ngIf="updateActive">
+          <ng-container *ngSwitchCase="true">
+            <span class="ellipsis" [innerHTML]="data.comment" nz-tooltip [nzTooltipTitle]="commentTooltip"></span>
+          </ng-container>
+          <worklenz-na *ngSwitchCase="false"></worklenz-na>
+
+          <ng-template #commentTooltip>
+            <span class="tooltip-comment" [innerHTML]="data.comment"></span>
+          </ng-template>
+        </td>
+
+        <!-- Client -->
+        <td *ngIf="clientActive">
+          <ng-container *ngIf="data.client; else naTemplate">{{ data.client }}</ng-container>
+        </td>
+
+        <!-- Team -->
+        <td *ngIf="teamActive">
+          <nz-tag [nzColor]="'blue'">
+            {{data.team_name}}
+          </nz-tag>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </div>
+</nz-skeleton>
+
+<ng-template #naTemplate>
+  <worklenz-na></worklenz-na>
+</ng-template>

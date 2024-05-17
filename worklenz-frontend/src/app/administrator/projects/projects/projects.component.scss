@@ -1,0 +1,21 @@
+.actions-row {
+  td {
+    padding: 5px 8px !important;
+  }
+}
+
+.project-name-col {
+  //height: 34px;
+  display: flex;
+  align-items: center;
+}
+
+.no-data-img-holder {
+  width: 100px;
+}
+
+.category-tag {
+  &:hover {
+    text-decoration: underline;
+  }
+}

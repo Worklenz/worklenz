@@ -1,0 +1,75 @@
+<nz-page-header [nzGhost]="false" class="px-0">
+  <nz-page-header-title>Overview</nz-page-header-title>
+</nz-page-header>
+<nz-card>
+  <h4>Organization Name</h4>
+  <div class="card-content">
+    <p nz-typography nzEditable [(nzContent)]="organizationDetails.name"
+       (nzContentChange)="updateOrganizationName();"></p>
+  </div>
+</nz-card>
+<div class="mt-4"></div>
+<nz-card>
+  <h4>Organization Owner</h4>
+  <div class="card-content">
+    <nz-skeleton [nzLoading]="loadingName" [nzActive]="true" [nzParagraph]="{rows: 3}">
+      <p nz-typography>{{organizationDetails.owner_name}}</p>
+      <div>
+        <nz-space class="align-items-center">
+          <span *nzSpaceItem nz-icon nzType="mail" nzTheme="outline" nz-tooltip
+                [nzTooltipTitle]="'Email Address'"></span>
+          <span *nzSpaceItem nz-typography>{{organizationDetails.email}}</span>
+        </nz-space>
+      </div>
+      <div class="mt-2">
+        <nz-space class="align-items-center" style="margin-left: -4px">
+          <span *nzSpaceItem nz-icon nzType="phone" nzTheme="outline" nz-tooltip
+                [nzTooltipTitle]="'Contact Number'"></span>&nbsp;
+          <span *nzSpaceItem>
+            <nz-space class="align-items-center">
+              <div *nzSpaceItem class="position-relative" style="min-height: 32px">
+
+                <span *ngIf="organizationDetails.contact_number && !isNumberEditing" nz-typography
+                      style="line-height: 32px">{{organizationDetails.contact_number}}</span>
+                <span *ngIf="!organizationDetails.contact_number && !isNumberEditing" (click)="focusNumberInput()"
+                      nz-typography class="text-btn">Add Contact Number</span>
+
+                <div *ngIf="isNumberEditing" class="number-input">
+                  <input nz-input type="tel" placeholder="Add Contact Number"
+                         [(ngModel)]="organizationDetails.contact_number"
+                         (input)="sanitizeContactNumber($event)"
+                         (blur)="updateOwnerContactNumber();"
+                         (keydown.enter)="updateOwnerContactNumber()"
+                         maxlength="20" #numberInput/>
+                </div>
+              </div>
+              <ng-container *nzSpaceItem>
+                <ng-container *ngIf="organizationDetails.contact_number">
+                  <span *ngIf="!isNumberEditing" (click)="focusNumberInput()" nz-icon nzType="edit"
+                        nzTheme="outline" class="edit-btn"></span>
+                </ng-container>
+              </ng-container>
+            </nz-space>
+          </span>
+        </nz-space>
+      </div>
+    </nz-skeleton>
+  </div>
+</nz-card>
+<div class="mt-4"></div>
+<nz-card>
+  <h4>Organization Admins</h4>
+  <div class="card-content">
+    <nz-skeleton [nzLoading]="loadingAdmins" [nzActive]="true" [nzParagraph]="{rows: 5}">
+      <nz-table [nzNoResult]="" [nzData]="organizationAdmins" [nzPaginationType]="'small'" #adminsTable>
+        <tbody>
+        <tr *ngFor="let item of adminsTable.data">
+          <td class="left-td">{{item.name}} <span nz-typography *ngIf="item.is_owner" nzType="secondary">(Owner)</span>
+          </td>
+          <td class="b-65">{{item.email}}</td>
+        </tr>
+        </tbody>
+      </nz-table>
+    </nz-skeleton>
+  </div>
+</nz-card>

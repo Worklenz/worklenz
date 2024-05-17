@@ -1,0 +1,280 @@
+<nz-drawer
+  (nzOnClose)="handleClose()"
+  [nzClosable]="true"
+  [nzTitle]="title"
+  [nzVisible]="show"
+  [nzPlacement]="'right'"
+  (nzVisibleChange)="onVisibilityChange($event)"
+>
+  <ng-container *nzDrawerContent>
+    <nz-spin [nzSpinning]="isLoading()">
+      <nz-alert *ngIf="isMember" class="mb-3" [nzType]="'warning'"
+                [nzMessage]="'Members do not have permissions to change settings.'"></nz-alert>
+
+      <form [formGroup]="form" [nzLayout]="'vertical'" nz-form>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="null" nzRequired>Name</nz-form-label>
+          <nz-form-control [nzSpan]="null" nzErrorTip="Please enter a name!">
+            <input #projectName [formControlName]="'name'" nz-input placeholder="Name"/>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item *ngIf="projectId">
+          <nz-form-label [nzSpan]="null" nzRequired>Key</nz-form-label>
+          <nz-form-control [nzSpan]="null">
+            <input [formControlName]="'key'" [maxlength]="5" (keyup)="onKeyChange()" nz-input
+                   placeholder="Key"/>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label class="pb-0" [nzSpan]="null" nzRequired>Project color
+            <nz-tag [nzColor]="activeColorCode" nz-dropdown [nzDropdownMenu]="menu" [nzDisabled]="isMember"
+                    [nzTrigger]="'click'"
+                    class="ms-2 rounded-circle cursor-pointer"
+                    style="width: 20px;height: 20px;">&nbsp;
+            </nz-tag>
+          </nz-form-label>
+          <nz-dropdown-menu #menu="nzDropdownMenu">
+            <ul style="max-height: 200px;overflow: hidden;overflow-y: auto;" nz-menu nzSelectable>
+              <li nz-menu-item *ngFor="let item of COLOR_CODES" (click)="setColorCode(item)">
+                <nz-tag
+                  [nzColor]="item"
+                  class="me-1 w-100 rounded-pill"
+                  style="height: 16px !important;width: 16px !important;">&nbsp;
+                </nz-tag>
+              </li>
+            </ul>
+          </nz-dropdown-menu>
+          <!--          <nz-form-control [nzSpan]="null">-->
+          <!--            <nz-select [formControlName]="'color_code'">-->
+          <!--              <nz-option *ngFor="let item of colorCodes" [nzLabel]="'Select a color'" [nzValue]="item" nzCustomContent>-->
+          <!--                <nz-tag [nzColor]="item" class="me-1 w-100 rounded-pill" style="height: 16px;">&nbsp;</nz-tag>-->
+          <!--              </nz-option>-->
+          <!--            </nz-select>-->
+          <!--          </nz-form-control>-->
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="null">Status</nz-form-label>
+          <nz-form-control [nzSpan]="null">
+            <nz-select [formControlName]="'status_id'" [nzLoading]="loadingProjStatuses">
+              <nz-option *ngFor="let item of statuses" [nzLabel]="item.name | safeString" [nzValue]="item.id"
+                         nzCustomContent>
+                <span nz-icon [nzType]="item.icon | safeString" [style.color]="item.color_code"></span>
+                {{item.name}}
+              </nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="null">Health</nz-form-label>
+          <nz-form-control [nzSpan]="null">
+            <nz-select [formControlName]="'health_id'" [nzLoading]="loadingProjHealths">
+              <nz-option *ngFor="let item of healths" [nzLabel]="item.name | safeString" [nzValue]="item.id"
+                         nzCustomContent>
+                <nz-badge [nzColor]="item.color_code+'69'" [nzText]="item.name"></nz-badge>
+              </nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <worklenz-project-categories-autocomplete
+          [(categoryId)]="categoryId"
+          [disabled]="isMember"
+        ></worklenz-project-categories-autocomplete>
+
+        <!--        <nz-form-item>-->
+        <!--          <nz-form-label [nzSpan]="null">Folder</nz-form-label>-->
+        <!--          <nz-form-control [nzSpan]="null">-->
+        <!--            <nz-select [formControlName]="'folder_id'" [nzPlaceHolder]="'Select a folder for the project'"-->
+        <!--                       [nzLoading]="loadingFolders" nzAllowClear>-->
+        <!--              <nz-option *ngFor="let item of folders" [nzLabel]="item.name | safeString" [nzValue]="item.id"-->
+        <!--                         nzCustomContent>-->
+        <!--                {{item.name}}-->
+        <!--              </nz-option>-->
+        <!--              <nz-option [nzValue]="'add'" nzCustomContent>-->
+        <!--                <button nz-button [nzType]="'dashed'" nzBlock [nzSize]="'small'" (click)="newFolder()">-->
+        <!--                  <span nz-icon [nzType]="'plus'" [nzTheme]="'outline'"></span> New folder-->
+        <!--                </button>-->
+        <!--              </nz-option>-->
+        <!--            </nz-select>-->
+        <!--          </nz-form-control>-->
+        <!--        </nz-form-item>-->
+
+        <!--        <worklenz-project-folders-autocomplete></worklenz-project-folders-autocomplete>-->
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="null">Notes</nz-form-label>
+          <nz-form-control [nzSpan]="null">
+            <textarea [formControlName]="'notes'" nz-input placeholder="Notes"></textarea>
+          </nz-form-control>
+        </nz-form-item>
+
+        <worklenz-clients-autocomplete
+          *ngIf="!isMember && (!edit || !loading)"
+          [name]="clientName"
+          (nameChange)="onNameChangeSubmit($event)"
+        ></worklenz-clients-autocomplete>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="null">
+            Project Manager
+            <div (nzVisibleChange)="handleOwnerVisibleChange($event)" [nzClickHide]="false"
+              [nzDropdownMenu]="projectManagerDropDown"
+              [nzTrigger]="'click'" [nzDisabled]="isMember || (!isOwnerOrAdmin() && isProjectManager())"  nz-dropdown>
+              <div class="d-flex h-100 align-items-center manager-input" #projectManagerSelector>
+                <ng-container *ngIf="projectManager">
+                  <nz-avatar
+                    [nzSize]="24"
+                    [nzSrc]="projectManager.avatar_url"
+                    [nzText]="projectManager.name | firstCharUpper"
+                    [nzTooltipPlacement]="'top'"
+                    [nzTooltipTitle]="projectManager.name"
+                    [style.background-color]="projectManager.avatar_url ? '#ececec' : projectManager.color_code"
+                    class="mt-auto mb-auto mx-2"
+                    nz-tooltip></nz-avatar>
+                  <span nz-typography>{{projectManager.name}}</span>
+                  <span class="mx-2 remove-icon" (click)="handleMemberChange(null)" nz-typography>
+                    <span nz-icon nzType="close-circle" nzTheme="fill"></span>
+                  </span>
+                </ng-container>
+                <span *ngIf="!projectManager" nz-typography nzType="secondary">
+                  <nz-avatar [nzSize]="26" class="avatar-dashed mx-2 bg-white" [nzIcon]="'plus'"></nz-avatar>
+                </span>
+              </div>
+
+              <nz-dropdown-menu #projectManagerDropDown="nzDropdownMenu">
+                <ul *ngIf="teamMembers.length" class="members-dropdown pt-0"
+                    nz-menu>
+                  <li class="px-3 py-2 position-sticky top-0 bg-white z-top">
+                    <input class="border-default-color dropdown-search-input"
+                           nz-input placeholder="Search by name" type="text"
+                           (input)="getTeamMembers()"
+                           #memberSearchInput>
+                  </li>
+                  <li *ngFor="let item of teamMembers | searchByName: searchingName; trackBy: trackById"
+                      [nzDisabled]="item.pending_invitation"
+                      (click)="handleMemberChange(item)"
+                      class="m-0"
+                      nz-menu-item>
+                    <div class="d-flex align-items-center justify-content-center user-select-none">
+                      <nz-avatar
+                        [nzSize]="24"
+                        [nzSrc]="item.avatar_url"
+                        [nzText]="item.name | firstCharUpper"
+                        [nzTooltipPlacement]="'top'"
+                        [nzTooltipTitle]="item.name"
+                        [style.background-color]="item.avatar_url ? '#ececec' : item.color_code"
+                        class="mt-auto mb-auto me-2"
+                        nz-tooltip></nz-avatar>
+                      <div style="line-height: 15px;">
+                        <span class="d-block mem-name" nz-typography>{{item.name}}</span>
+                        <small nz-typography nzType="secondary">
+                          {{item.email}} <small *ngIf="item.pending_invitation" nz-typography nzType="danger">(Pending
+                          Invitation)</small>
+                        </small>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+              </nz-dropdown-menu>
+            </div>
+          </nz-form-label>
+        </nz-form-item>
+
+        <div #outsideClicker></div>
+
+        <nz-input-group [nzSize]="'default'">
+          <div nz-row [nzGutter]="8">
+            <div nz-col [nzSpan]="12">
+              <nz-form-item>
+                <nz-form-label [nzSpan]="null">Start date</nz-form-label>
+                <nz-form-control [nzSpan]="null">
+                  <nz-date-picker
+                    [formControlName]="'start_date'" [nzDisabledDate]="utils.checkForMaxDate(endDate)"
+                    class="w-100" (nzOnOpenChange)="calculateManDays()"></nz-date-picker>
+                </nz-form-control>
+              </nz-form-item>
+            </div>
+            <div nz-col [nzSpan]="12">
+              <nz-form-item>
+                <nz-form-label [nzSpan]="null">End date</nz-form-label>
+                <nz-form-control [nzSpan]="null">
+                  <nz-date-picker
+                    [formControlName]="'end_date'"
+                    [nzDisabledDate]="utils.checkForMinDate(startDate)"
+                    class="w-100" (nzOnOpenChange)="calculateManDays()"></nz-date-picker>
+                </nz-form-control>
+              </nz-form-item>
+            </div>
+            <div nz-col [nzSpan]="24">
+              <nz-form-item>
+                <nz-form-label [nzSpan]="null" nzRequired class="star-none">Estimated working days</nz-form-label>
+                <nz-form-control [nzSpan]="null" nzErrorTip="Field cannot be empty!">
+                  <nz-input-number [formControlName]="'working_days'" [nzMin]="0" [maxlength]="5" nz-input
+                                   placeholder="Estimated Working Days" class="w-100"></nz-input-number>
+                </nz-form-control>
+              </nz-form-item>
+            </div>
+            <div nz-col [nzSpan]="24">
+              <nz-form-item>
+                <nz-form-label [nzSpan]="null" nzRequired class="star-none">Estimated man days</nz-form-label>
+                <nz-form-control [nzSpan]="null" nzErrorTip="Field cannot be empty!">
+                  <nz-input-number [formControlName]="'man_days'" [nzMin]="0" [maxlength]="10" nz-input
+                                   placeholder="Estimated Man Days" class="w-100"></nz-input-number>
+                </nz-form-control>
+              </nz-form-item>
+            </div>
+            <div nz-col [nzSpan]="24">
+              <nz-form-item>
+                <nz-form-label [nzSpan]="null" nzRequired class="star-none">Hours per day</nz-form-label>
+                <nz-form-control [nzSpan]="null" nzErrorTip="Field cannot be empty!">
+                  <nz-input-number [formControlName]="'hours_per_day'" [nzMin]="0" [nzMax]="24" [maxlength]="2" nz-input
+                                   placeholder="Hours Per Day" class="w-100"></nz-input-number>
+                </nz-form-control>
+              </nz-form-item>
+            </div>
+          </div>
+        </nz-input-group>
+
+        <ng-container *ngIf="!isMember">
+          <button [nzLoading]="updatingProject" nz-button nzBlock [nzType]="'primary'"
+                  (click)="submit()"
+                  type="button">{{submitButtonText}}</button>
+          <button (nzOnConfirm)="delete()" *ngIf="projectId" [nzLoading]="deletingProject" class="mt-2"
+                  nz-button nz-popconfirm nzDanger
+                  nzBlock [nzOkText]="'ok'" [nzPopconfirmTitle]="'Are you sure?'" [nzType]="'dashed'" type="button">
+            Delete Project
+          </button>
+        </ng-container>
+      </form>
+
+      <ng-container *ngIf="projectId">
+        <nz-divider class="mt-3 mb-2"></nz-divider>
+        <div class="pb-1">
+          <div *ngIf="model.created_at" class="mb-0" nz-typography
+               nzType="secondary">
+            <small nz-tooltip [nzTooltipPlacement]="'right'"
+                   [nzTooltipTitle]="model.created_at | date: 'medium'">
+              Created {{model.created_at | fromNow}} by {{model.project_owner}}
+            </small>
+          </div>
+          <div *ngIf="model.updated_at" class="mb-0"
+               nz-typography
+               nzType="secondary">
+            <small nz-tooltip [nzTooltipPlacement]="'right'"
+                   [nzTooltipTitle]="model.updated_at | date: 'medium'">
+              Updated {{model.updated_at | fromNow}}
+            </small>
+          </div>
+        </div>
+      </ng-container>
+    </nz-spin>
+  </ng-container>
+</nz-drawer>
+
+<worklenz-team-members-form (onCreateOrUpdate)="getTeamMembers()"
+                            [(show)]="showTeamMemberModal"></worklenz-team-members-form>

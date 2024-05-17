@@ -1,0 +1,13 @@
+<div class="container">
+  <nz-page-header [nzGhost]="false" class="px-0">
+    <nz-page-header-title>Admin Center</nz-page-header-title>
+  </nz-page-header>
+  <nz-layout class="inner-layout">
+    <nz-sider [nzWidth]="'240px'">
+      <worklenz-admin-center-sidebar></worklenz-admin-center-sidebar>
+    </nz-sider>
+    <nz-content class="px-4 bg-white">
+      <router-outlet></router-outlet>
+    </nz-content>
+  </nz-layout>
+</div>

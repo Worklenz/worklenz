@@ -1,0 +1,13 @@
+<div class="priority-section">
+  <div class="priority-tab priority-tab-medium me-1">
+        <span class="high-priority" nz-icon
+              nzType="double-left" nz-tooltip
+              *ngIf="task.priority_color === '#f3707069'"></span>
+    <span class="medium-priority" nz-icon nzType="pause"
+          nz-tooltip
+          *ngIf="task.priority_color === '#fbc84c69'"></span>
+    <span class="low-priority" nz-icon nzType="minus"
+          nz-tooltip
+          *ngIf="task.priority_color === '#75c99769'"></span>
+  </div>
+</div>

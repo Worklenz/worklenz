@@ -1,0 +1,19 @@
+.estimated-time-span {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  width: 100%;
+  color:hsla(0, 0%, 0%, 0.85) !important;
+}
+
+.actual-time-span {
+  position: absolute;
+  bottom: 1px;
+  left: 4px;
+  font-size: 12px;  
+  font-weight: 500;
+  width: 100%;
+  color:hsla(0, 0%, 0%, 0.85) !important;
+}

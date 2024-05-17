@@ -1,0 +1,25 @@
+.bg-ant-grey {
+  background: #FAFAFA;
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+}
+
+.w-360 {
+  width: 450px;
+  z-index: 1;
+}
+
+.border-radius-4 {
+  border: 1px solid #FAFAFA;
+  border-radius: 4px;
+}
+
+@media(max-width: 660px) {
+  .w-360 {
+    width: 90%;
+  }
+}

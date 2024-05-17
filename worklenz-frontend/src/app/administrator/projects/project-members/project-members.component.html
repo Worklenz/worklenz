@@ -1,0 +1,111 @@
+<nz-skeleton [nzActive]="true" [nzLoading]="loading">
+  <nz-card [nzExtra]="projectMembersForm" [nzTitle]="title">
+    <nz-table
+      #table
+      (nzQueryParams)="onQueryParamsChange($event)"
+      [nzData]="model.data || []"
+      [nzFrontPagination]="false"
+      [nzPageIndex]="pageIndex"
+      [nzPageSizeOptions]="paginationSizes"
+      [nzPageSize]="pageSize"
+      [nzTotal]="total"
+      nzShowSizeChanger
+      [nzSize]="'small'"
+      class="custom-table" [nzNoResult]="noDataTemplate"
+    >
+      <thead>
+      <tr>
+        <th [nzSortFn]="true" [nzColumnKey]="'name'" scope="col">Name</th>
+        <th [nzSortFn]="true" [nzColumnKey]="'job_title'" scope="col">Job Title</th>
+        <th [nzSortFn]="true" [nzColumnKey]="'email'" scope="col">Email</th>
+        <th scope="col" [nzAlign]="'center'">Tasks</th>
+        <th [nzWidth]="'200px'" scope="col">Tasks Progress</th>
+        <th [nzSortFn]="true" [nzAlign]="'left'" [nzColumnKey]="'access'" colspan="2" scope="col">Access</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of table.data" class="actions-row">
+        <td (click)="selectMember(data.team_member_id)">
+          <nz-avatar *ngIf="data.name" [nzSize]="28"
+                     [nzText]="data.name | firstCharUpper"
+                     [style.background-color]="data.avatar_url ? '#ececec' : getColor(data.name)"
+                     [nzSrc]="data.avatar_url"
+                     class="me-2"></nz-avatar>
+          {{data.name}}
+        </td>
+        <td>{{data.job_title || "-"}}</td>
+        <td (click)="selectMember(data.team_member_id)">
+          <span *ngIf="data.email && !data.pending_invitation">{{data.email}}</span>
+          <span *ngIf="!data.email && !data.pending_invitation">-</span>
+          <em *ngIf="data.email && data.pending_invitation" nz-typography>
+            {{data.email}} <span nz-typography nzType="secondary">(Pending Invitation)</span>
+          </em>
+        </td>
+        <td nzAlign="center" (click)="selectMember(data.team_member_id)">
+          {{ data.completed_tasks_count || 0 }}/{{data.all_tasks_count || 0}}
+        </td>
+        <td (click)="selectMember(data.team_member_id)">
+          <nz-progress [nzPercent]="data.progress"></nz-progress>
+        </td>
+        <td (click)="selectMember(data.team_member_id)">{{ data.access || "-" }}</td>
+
+        <td class="actions-col">
+          <div class="actions" *ngIf="isOwnerOrAdmin() || isProjectManager()">
+            <nz-space>
+              <button
+                (nzOnConfirm)="removeMember(data.id)"
+                *nzSpaceItem nz-button nz-popconfirm nz-tooltip
+                [nzOkText]="'OK'"
+                [nzPopconfirmTitle]="'Member will also removes from assigned tasks.'"
+                [nzSize]="'small'"
+                [nzTooltipPlacement]="'top'"
+                [nzTooltipTitle]="'Remove from project'"
+                [nzType]="'default'"
+                [disabled]="data.team_member_id === auth.getCurrentSession()?.team_member_id"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+</nz-skeleton>
+
+<ng-template #projectMembersForm>
+  <nz-space>
+    <button (click)="get()" *nzSpaceItem nz-button nz-tooltip nzShape="circle"
+            nzTooltipTitle="Refresh members" nzType="default">
+      <span [nzSpin]="loading" nz-icon nzTheme="outline" nzType="sync"></span>
+    </button>
+    <!--    <form *nzSpaceItem [formGroup]="searchForm" [nzLayout]="'vertical'" nz-form>-->
+    <!--      <nz-input-group [nzSuffix]="suffixIconSearch">-->
+    <!--        <input [formControlName]="'search'" nz-input placeholder="Search by name" type="text"/>-->
+    <!--      </nz-input-group>-->
+    <!--      <ng-template #suffixIconSearch>-->
+    <!--        <span nz-icon nzType="search"></span>-->
+    <!--      </ng-template>-->
+    <!--    </form>-->
+  </nz-space>
+</ng-template>
+
+
+<ng-template #noDataTemplate>
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">No members found in the project.</span>
+  </div>
+</ng-template>
+
+
+<worklenz-task-view
+  [(show)]="showTaskDrawer"
+  (showChange)="onShowChange($event)"
+  [selfResetTaskId]="false"
+  [projectId]="projectId || null"
+  [taskId]="selectedTaskId"
+></worklenz-task-view>

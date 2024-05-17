@@ -1,0 +1,28 @@
+<nz-dropdown-menu #contextMenuDropdown="nzDropdownMenu">
+  <ul nz-menu>
+
+    <li (click)="removeMember()" nz-menu-item>
+      <span class="me-2" nz-icon [nzType]="removing ? 'loading' : 'user-delete'"
+            [nzTheme]="'outline'"></span>
+      Remove from member
+    </li>
+
+    <!-- Move To -->
+    <li nz-submenu [nzTitle]="titleTemplate">
+      <ul>
+        <li class="m-0" *ngFor="let item of groups;"
+            (click)="changeGroup(item.id);" nz-menu-item>
+          <nz-badge [nzColor]="item.color_code | safeString"
+                    [nzText]="textTmpl"></nz-badge>
+          <ng-template #textTmpl>
+            {{item?.name || null}}
+          </ng-template>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+<ng-template #titleTemplate>
+  <span nz-icon class="me-2" nzType="retweet" nzTheme="outline"></span> Move to
+</ng-template>

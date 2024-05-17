@@ -1,0 +1,192 @@
+<div class="align-items-center d-flex justify-content-between mb-3" *ngIf="projectId">
+  <worklenz-task-list-filters
+    [projectId]="projectId"
+    (onGroupBy)="onGroupByChange($event)"
+    (onFilterByMember)="handleFilterByMember($event)"
+    (onFilterByLabel)="handleFilterByLabel($event)"
+    (onFilterByPriority)="handleFilterByPriority($event)"
+    (onFilterSortBy)="handleFilterSortBy($event)"
+    (onFilterSearch)="handleFilterSearch($event)"
+    (onPhaseSettingsClick)="openAddColumnDrawer()"
+    (onStatusSettingsClick)="openStatusSettingsDrawer()"
+  ></worklenz-task-list-filters>
+  <div class="d-flex align-items-center flex-row-reverse">
+    <worklenz-task-list-columns-toggle [projectId]="projectId"></worklenz-task-list-columns-toggle>
+
+    <ng-container [ngSwitch]="loadingArchived">
+      <div class="me-2" *ngSwitchCase="true">
+        <span nz-icon [nzType]="'loading'"></span>
+        Show archived
+      </div>
+      <label
+        *ngSwitchCase="false"
+        nz-checkbox
+        [(nzChecked)]="showArchived"
+        (nzCheckedChange)="onArchiveChange()"
+        class="me-2"
+      >Show archived</label>
+    </ng-container>
+  </div>
+</div>
+
+<nz-skeleton [nzActive]="true" [nzLoading]="loading">
+
+  <div *ngIf="!groups.length" class="pt-5 pb-5">
+    <div class="no-data-img-holder mx-auto mb-4">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="mx-auto d-block text-center no-data-text" style="width: max-content;"
+          [ngSwitch]="isGroupByPhase()">
+      <ng-container *ngSwitchCase="false">
+        There are no status groups to show in this project. <br> Please go to the <b>"Board"</b> section to create status groups as you desire.
+      </ng-container>
+      <ng-container *ngSwitchCase="true">
+        There are no phases to show in this project.
+        <br> You can <button nz-button class="p-0" nzType="link"
+                             (click)="openAddColumnDrawer()"><b><u>Create</u></b></button> Phases as you desire.
+      </ng-container>
+    </span>
+  </div>
+
+  <div class="tasks-wrapper" cdkDropListGroup>
+    <div *rxFor="let group of groups; trackBy: trackById" class="mb-3">
+      <div class="container px-0">
+
+        <worklenz-task-list-group-settings
+          [group]="group"
+          [projectId]="projectId"
+          [categories]="categories"
+          (toggle)="toggleGroup($event, panel)"
+        ></worklenz-task-list-group-settings>
+
+        <div class="panel position-relative" [style.max-height]="!group.tasks.length ? 0 : undefined" #panel>
+          <span class="panel-left-border" [style.background]="group.color_code"></span>
+
+          <div class="tasks-table position-relative">
+            <div class="container px-0 table-container table-1"
+                 cdkDropList
+                 [id]="group.id"
+                 [cdkDropListConnectedTo]="groupIds"
+                 [cdkDropListData]="group"
+                 (cdkDropListDropped)="onDrop($event)" (scroll)="onScroll(scrollPanel)" #scrollPanel>
+              <div class="border-right">
+
+                <!-- Group header -->
+                <worklenz-task-list-header
+                  [groupId]="group.id"
+                  (selectChange)="selectTasksInGroup($event, group)"
+                  (phaseSettingsClick)="openAddColumnDrawer()"
+                ></worklenz-task-list-header>
+
+                <div class="tasks-empty-placeholder d-flex align-items-center mb-0 ps-3"
+                     *ngIf="!group.tasks.length" nz-typography nzType="secondary">
+                  No tasks available
+                </div>
+
+                <!-- Group tasks -->
+                <ng-container *ngFor="let task of group.tasks; trackBy: trackById">
+                  <worklenz-task-list-row
+                    [task]="task"
+                    (onShowSubTasks)="displaySubTasks($event, row, group.id)"
+                    (onOpenTask)="openTask($event)"
+                    [class.selected]="selectedTask?.id === task.id"
+                    #row
+                  ></worklenz-task-list-row>
+
+                  <ng-container *ngIf="task.sub_tasks && task.show_sub_tasks">
+                    <div>
+                      <worklenz-task-list-row
+                        *ngFor="let subTask of task.sub_tasks; trackBy: trackById"
+                        [task]="subTask"
+                        (onOpenTask)="openTask($event)"
+                      ></worklenz-task-list-row>
+
+                      <ng-container *ngIf="!showArchived && projectId && task.id && task.show_sub_tasks">
+                        <div class="d-flex inner-subtask-create cursor-pointer sub-task-background-color" #td>
+                          <div class="new-subtask-divider">
+                            &nbsp;
+                          </div>
+                          <div class="w-100">
+                            <worklenz-task-list-add-task-input
+                              [projectId]="projectId"
+                              [label]="'Add sub-task'"
+                              [parentTask]="task.id"
+                              [groupId]="group.id"
+                              [subTaskInput]="true"
+                              (focusChange)="quickTaskFocusChange($event, td, subTaskInput)"
+                              #subTaskInput>
+                            </worklenz-task-list-add-task-input>
+                          </div>
+                        </div>
+                      </ng-container>
+                    </div>
+                  </ng-container>
+                </ng-container>
+
+              </div>
+            </div>
+
+            <div *ngIf="!showArchived" class="new-task-input" #td1>
+              <worklenz-task-list-add-task-input
+                *ngIf="projectId"
+                [projectId]="projectId"
+                [groupId]="group.id"
+                (focusChange)="handleFocusChange($event, td1)"
+              ></worklenz-task-list-add-task-input>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--  <button class="add-field-button" [nzShape]="'round'" [nzSize]="'small'" [nzType]="'dashed'"-->
+  <!--          (click)="openAddColumnDrawer()" nz-button>-->
+  <!--    <span nz-icon [nzType]="'plus-circle'" [nzTheme]="'outline'"></span> Add field-->
+  <!--  </button>-->
+</nz-skeleton>
+
+<worklenz-task-view
+  [(show)]="showTaskModal"
+  (showChange)="onShowChange($event)"
+  [selfResetTaskId]="false"
+  [projectId]="selectedTask?.project_id || null"
+  [taskId]="selectedTask?.id || null"
+></worklenz-task-view>
+
+<worklenz-task-list-bulk-actions
+  [selectedStatus]="defaultStatus"
+  [filteredAsArchived]="showArchived"
+  (bulkUpdateSuccess)="bulkUpdateSuccess()"
+  (labelsUpdate)="getLabels()"
+  (taskTemplateClicked)="toggleTaskTemplateDrawer($event)"
+></worklenz-task-list-bulk-actions>
+
+<worklenz-task-template-drawer
+  [drawerVisible]="showTaskTemplatesDrawer"
+  (onCreateOrUpdate)="onTaskTemplateCreate()"
+  (onCancelClick)="taskTemplateCancel($event)"
+></worklenz-task-template-drawer>
+
+<worklenz-task-list-context-menu
+  [archived]="showArchived"
+  [projectId]="projectId"
+  [groups]="groups"
+></worklenz-task-list-context-menu>
+
+<worklenz-task-list-phase-settings-drawer
+  *ngIf="projectId"
+  [projectId]="projectId"
+  [(show)]="displayPhaseModal"
+  (getGroups)="refreshWithoutLoad()"
+></worklenz-task-list-phase-settings-drawer>
+
+<worklenz-status-form
+  *ngIf="projectId"
+  (onCancel)="showStatusModal = false;"
+  (onCreateOrUpdate)="onStatusCreateOrUpdate()"
+  action="Create"
+  [show]="showStatusModal"
+  [showStatusGroups]="false"
+  [statusId]="null"
+  [projectId]="projectId"></worklenz-status-form>

@@ -1,0 +1,228 @@
+<div #tasksInsightsExportDiv>
+  <worklenz-project-stats [archived]="archived"></worklenz-project-stats>
+
+
+  <nz-row [nzGutter]="16" class="mt-3">
+    <nz-col [nzSpan]="12">
+      <nz-card [nzTitle]="overdueTitleTemplate" [nzExtra]="lastExtraTemplate" class="h-100">
+        <ng-template #overdueTitleTemplate>
+          Overdue Tasks
+          <span
+            nz-icon
+            nzType="info-circle"
+            nzTheme="outline"
+            [nz-tooltip]="'true'"
+            [nzTooltipTitle]="'Tasks that are past their due date'"
+            style="color: #3587ff; font-size: 14px;">
+        </span>
+        </ng-template>
+        <ng-template #lastExtraTemplate>
+          <a (click)="goToList()">See all</a>
+        </ng-template>
+
+        <nz-table #tasksTable [nzData]="overdueTasks" [nzHideOnSinglePage]="true"
+                  [nzLoading]="loadingOverdue" [nzSize]="'small'"
+                  nzPaginationType="small" [nzNoResult]="noDataTemplate1">
+          <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Status</th>
+            <th scope="col">End Date</th>
+            <th scope="col" class="text-center">Days overdue</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let data of tasksTable.data">
+            <td>
+              {{data.name}}
+            </td>
+            <td>
+              <nz-tag [nzColor]="data.status_color"
+                      class="text-dark rounded-pill task-list-label">{{data.status_name}}</nz-tag>
+            </td>
+            <td>
+              {{(data.end_date | date: 'mediumDate') || '-'}}
+            </td>
+            <td class="text-center">{{data.days_overdue}}</td>
+          </tr>
+          </tbody>
+        </nz-table>
+      </nz-card>
+    </nz-col>
+    <nz-col [nzSpan]="12">
+      <nz-card [nzTitle]="titleTemplate" [nzExtra]="lastExtraTemplate" class="h-100">
+
+        <ng-template #titleTemplate>
+          Over logged Tasks
+          <span
+            nz-icon
+            nzType="info-circle"
+            nzTheme="outline"
+            [nz-tooltip]="'true'"
+            [nzTooltipTitle]="'Tasks that has time logged past their estimated time'"
+            style="color: #3587ff; font-size: 14px;">
+        </span>
+        </ng-template>
+        <ng-template #lastExtraTemplate>
+          <a (click)="goToList()">See all</a>
+        </ng-template>
+
+        <nz-table #overLogTasksTable [nzData]="overloggedTasks" [nzHideOnSinglePage]="true"
+                  [nzLoading]="loadingOverlogged" [nzSize]="'small'"
+                  nzPaginationType="small" [nzNoResult]="noDataTemplate2">
+          <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Status</th>
+            <th scope="col">Members</th>
+            <th scope="col">Over Logged Time</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let task of overLogTasksTable.data">
+            <td>
+              {{task.name}}
+            </td>
+            <td>
+              <nz-tag [nzColor]="task.status_color"
+                      class="text-dark rounded-pill task-list-label">{{task.status_name}}</nz-tag>
+            </td>
+            <td nz-dropdown [nzClickHide]="false" [nzTrigger]="'click'"
+                class="py-0 editable" #tr>
+              <div class="d-flex">
+                <!--suppress TypeScriptValidateTypes -->
+                <worklenz-avatars *ngIf="task.names?.length"
+                                  [names]="task.names || []" class="d-flex"></worklenz-avatars>
+                <nz-avatar *ngIf="!task.assignees?.length" [nzSize]="28"
+                           class="avatar-dashed bg-white"
+                           [nzIcon]="'plus'"></nz-avatar>
+
+              </div>
+              <nz-dropdown-menu #membersDropdown="nzDropdownMenu">
+                <ul class="members-dropdown" *ngIf="members.length" nz-menu>
+                  <li class="px-3 py-2">
+                    <input type="text" [(ngModel)]="memberSearchText"
+                           placeholder="Search by name" nz-input
+                           #memberSearchInput>
+                  </li>
+                </ul>
+              </nz-dropdown-menu>
+            </td>
+            <td>{{task.overlogged_time_string}}</td>
+          </tr>
+          </tbody>
+        </nz-table>
+      </nz-card>
+    </nz-col>
+  </nz-row>
+  <nz-row [nzGutter]="16" class="mt-3">
+    <nz-col [nzSpan]="12">
+      <nz-card [nzTitle]="'Tasks completed early'" [nzExtra]="lastExtraTemplate" class="h-100">
+
+        <ng-template #lastExtraTemplate>
+          <a (click)="goToList()">See all</a>
+        </ng-template>
+
+        <nz-table #earlyTasksTable [nzData]="earlyTasks" [nzHideOnSinglePage]="true"
+                  [nzLoading]="loadingEarlyTasks" [nzSize]="'small'"
+                  nzPaginationType="small" [nzNoResult]="noDataTemplate3">
+          <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Status</th>
+            <th scope="col">End Date</th>
+            <th scope="col">Completed At</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let data of earlyTasksTable.data">
+            <td>
+              {{data.name}}
+            </td>
+            <td>
+              <nz-tag [nzColor]="data.status_color"
+                      class="text-dark rounded-pill task-list-label">{{data.status_name}}</nz-tag>
+            </td>
+            <td>
+              {{(data.end_date | date: 'mediumDate') || '-'}}
+            </td>
+            <td>{{data.completed_at | date: 'MMM d, y'}}</td>
+          </tr>
+          </tbody>
+        </nz-table>
+      </nz-card>
+    </nz-col>
+    <nz-col [nzSpan]="12">
+      <nz-card [nzTitle]="'Tasks completed late'" [nzExtra]="lastExtraTemplate" class="h-100">
+
+        <ng-template #lastExtraTemplate>
+          <a (click)="goToList()">See all</a>
+        </ng-template>
+
+        <nz-table #lateTasksTable [nzData]="lateTasks" [nzHideOnSinglePage]="true"
+                  [nzLoading]="loadingLateTasks" [nzSize]="'small'"
+                  [nzPaginationType]="'small'" [nzNoResult]="noDataTemplate4">
+          <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Status</th>
+            <th scope="col">End Date</th>
+            <th scope="col">Completed At</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let data of lateTasksTable.data">
+            <td>
+              {{data.name}}
+            </td>
+            <td>
+              <nz-tag [nzColor]="data.status_color"
+                      class="text-dark rounded-pill task-list-label">{{data.status_name}}</nz-tag>
+            </td>
+            <td>
+              {{(data.end_date | date: 'mediumDate') || '-'}}
+            </td>
+            <td>{{data.completed_at | date: 'MMM d, y'}}</td>
+          </tr>
+          </tbody>
+        </nz-table>
+      </nz-card>
+    </nz-col>
+  </nz-row>
+</div>
+
+<ng-template #noDataTemplate1>
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/confetti (1).png" class="img-fluid" alt="">
+    </div>
+    <div><span nz-typography class="no-data-text">All tasks completed on time.</span></div>
+  </div>
+</ng-template>
+
+<ng-template #noDataTemplate2>
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/confetti (1).png" class="img-fluid" alt="">
+    </div>
+    <div><span nz-typography class="no-data-text">All tasks completed on time.</span></div>
+  </div>
+</ng-template>
+
+<ng-template #noDataTemplate3>
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">No tasks completed early in the project.</span>
+  </div>
+</ng-template>
+
+<ng-template #noDataTemplate4>
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/confetti (1).png" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">All tasks completed on time.</span>
+  </div>
+</ng-template>

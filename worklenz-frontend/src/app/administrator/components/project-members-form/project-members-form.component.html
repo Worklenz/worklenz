@@ -1,0 +1,58 @@
+<nz-drawer
+  (nzOnClose)="closeModal()"
+  [(nzVisible)]="show"
+  (nzVisibleChange)="onVisibleChange($event)"
+  [nzClosable]="true"
+  [nzPlacement]="'right'"
+  [nzTitle]="'Project Members'"
+>
+  <ng-container *nzDrawerContent>
+    <nz-spin [nzSpinning]="false">
+      <form [nzLayout]="'vertical'" nz-form>
+        <worklenz-team-members-autocomplete
+          (membersChange)="membersChange($event)"
+          (refresh)="getMembers()"
+          [label]="'Add members by adding their name or email'"
+          [placeholder]="'Type name or email...'"
+          [autofocus]="autofocus"
+          [disableTeamInvites]="adminAndManager()"
+        ></worklenz-team-members-autocomplete>
+      </form>
+      <nz-list *ngIf="members.length" class="scrollable-list mb-4" nzBordered nzSize="small">
+        <nz-list-item *ngFor="let member of members; trackBy: trackById" class="default-list-item-p-11">
+          <div class="d-flex align-items-center user-select-none">
+            <nz-avatar
+              nz-tooltip
+              [nzSize]="28"
+              [nzText]="member.name | firstCharUpper"
+              [nzTooltipTitle]="member.name | safeString"
+              [style.background-color]="member.avatar_url ? '#ececec' : member.color_code"
+              [nzSrc]="member.avatar_url"
+              [nzTooltipPlacement]="'top'"
+              class="mt-auto mb-auto me-2"
+            ></nz-avatar>
+            <div style="line-height: 15px;">
+              <span class="d-block" nz-typography>{{member.name}}</span>
+              <small nz-typography nzType="secondary">{{member.email}}</small>
+            </div>
+          </div>
+
+          <button
+            (nzOnConfirm)="removeMember(member.id)"
+            nz-button
+            nz-popconfirm
+            nz-tooltip
+            [nzOkText]="'OK'"
+            [nzPopconfirmTitle]="'Member will also removes from assigned tasks.'"
+            [nzSize]="'small'"
+            [nzTooltipPlacement]="'top'"
+            [nzTooltipTitle]="'Remove from project'"
+            [nzType]="'default'"
+          >
+            <span nz-icon nzType="delete"></span>
+          </button>
+        </nz-list-item>
+      </nz-list>
+    </nz-spin>
+  </ng-container>
+</nz-drawer>

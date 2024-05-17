@@ -1,0 +1,43 @@
+<div class="grid-list">
+  <div class="d-flex">
+    <div class="mb-1 task-name d-flex justify-content-between">
+      <worklenz-kanban-task-name [task]="task"></worklenz-kanban-task-name>
+    </div>
+    <div class="progress-container ms-auto" style="max-width: 30px; height: 30px;">
+      <worklenz-kanban-task-progress [task]="task"></worklenz-kanban-task-progress>
+    </div>
+  </div>
+
+  <div class="d-flex">
+
+    <worklenz-kanban-task-priority [task]="task"></worklenz-kanban-task-priority>
+
+    <worklenz-kanban-task-labels [task]="task"></worklenz-kanban-task-labels>
+
+    <worklenz-kanban-task-subtask-count [task]="task"></worklenz-kanban-task-subtask-count>
+
+  </div>
+
+  <div class="task-footer d-flex mt-2 pt-1">
+
+    <worklenz-kanban-task-end-date [task]="task"></worklenz-kanban-task-end-date>
+
+    <worklenz-kanban-task-members [task]="task" [projectId]="projectId" class="ms-auto"></worklenz-kanban-task-members>
+
+  </div>
+
+  <!-- <div class="d-flex">
+
+  </div>
+
+  <div class="task-footer d-flex mt-2 pt-1">
+    <div class="due-date-section">
+      <span *ngIf="item.end_date" nz-typography nz-tooltip
+        [nzTooltipTitle]="'Due date ' + (item.end_date | date: 'MMM d, y')">{{item.end_date
+        | date: 'MMM d, y'}}</span>
+    </div>
+    <worklenz-avatars class="ms-auto kanban-avatars"
+      [avatarClass]="'teams-dropdown-avatar'"
+      [names]="item.names || []"></worklenz-avatars>
+  </div> -->
+</div>

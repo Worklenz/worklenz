@@ -1,0 +1,16 @@
+<nz-skeleton [nzLoading]="loadingStatuses" [nzParagraph]="{ rows: 5 }">
+  <div *ngFor="let status of taskStatuses; let i = index;">
+    <div class="tasks-table">
+      <div class="tasks-table-body">
+        <div class="tasks-table-row">
+          <div class="tasks-table-cell">
+            <img title="down-chevron" width="15" src="assets/images/chevron-down-solid.svg" class="mb-1"/>
+            <span class="ms-2" nz-typography>
+              <strong>{{status.name}}</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nz-skeleton>

@@ -1,0 +1,34 @@
+<div class="d-flex">
+  <div class="right ms-auto">
+    <div class="text-end">
+      <button nz-button nz-dropdown [nzDropdownMenu]="timeSelector"
+              [nzTrigger]="'click'" [nzPlacement]="'bottomRight'">
+        {{durationLabel}} <span nz-icon [nzType]="'down'"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<nz-dropdown-menu #timeSelector="nzDropdownMenu">
+  <ul nz-menu style="max-height: 330px; overflow-y: auto;" nzSelectable>
+    <li *ngFor="let item of service.durations" (click)="onDurationChange(item)"
+        [nzSelected]="item.key === (service.selectedDuration?.key ? service.selectedDuration?.key : service.durations[0].key) && !service.dateRange.length"
+        nz-menu-item>
+      {{item.label}}
+    </li>
+    <li nz-menu-divider></li>
+    <li class="px-2 pb-2 pt-2 mt-1 custom-dropdown-range-li">
+      <form nz-form>
+        <label>Custom range</label>
+        <div class="d-block mt-1">
+          <nz-range-picker [(ngModel)]="service.dateRange" [ngModelOptions]="{standalone: true}"
+                           class="w-100"></nz-range-picker>
+        </div>
+        <button class="mt-2 ms-auto d-block" nz-button [nzType]="'primary'" [nzSize]="'small'"
+                (click)="customDateChange()">
+          Filter
+        </button>
+      </form>
+    </li>
+  </ul>
+</nz-dropdown-menu>

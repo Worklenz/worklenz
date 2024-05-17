@@ -1,0 +1,39 @@
+doctype html
+html(lang="en" data-critters-container v=release)
+  head
+    meta(charset='utf-8')
+    title Worklenz
+    base(href='/')
+    meta(name='viewport' content='width=device-width, initial-scale=1')
+
+    meta(name='theme-color' content='#1976d2')
+
+    link(rel='preconnect' href='https://fonts.googleapis.com')
+    link(rel='preconnect' href='https://fonts.gstatic.com' crossorigin='')
+    link(rel='manifest' href='/manifest.webmanifest')
+
+    link(rel="shortcut icon", href="/favicon.ico", type="image/x-icon")
+
+    include _fonts
+    include _styles
+    link(rel='stylesheet' href='/styles.c78b93a1a5b19d7f.css' media='print' onload="this.media='all'")
+    noscript
+      link(rel='stylesheet' href='/styles.c78b93a1a5b19d7f.css')
+
+    style.
+      .inner-subtask-create[_ngcontent-ng-c279964727] {
+      overflow: hidden !important;
+      }
+
+    include ../_scripts
+  body
+    //- include _maintenance
+    block content
+    noscript Please enable JavaScript to continue using this application.
+
+    script(src='/runtime.9997dc39514a207d.js' type='module')
+    script(src='/polyfills.f07f6ddac0a4feb2.js' type='module')
+    //- script(src='/scripts.9a11919855e8efc3.js' defer)
+    script(src='/main.91ef34cb24678df1.js' type='module')
+
+    include ../_hubspot

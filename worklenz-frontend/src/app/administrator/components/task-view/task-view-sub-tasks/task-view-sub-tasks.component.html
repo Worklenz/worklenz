@@ -1,0 +1,90 @@
+<nz-skeleton *ngIf="taskId" [nzActive]="true" [nzLoading]="loading">
+  <nz-card class="body-padding-0 border-0">
+    <nz-progress class="sub-tasks-progress" [nzPercent]="getSubTasksProgress()"></nz-progress>
+    <nz-table
+      #table
+      class="custom-table thead-height-0"
+      [nzSize]="'small'"
+      [nzData]="tasks"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      [nzNoResult]="subTasksEmptyTemplate"
+    >
+      <tbody>
+      <!--suppress TypeScriptValidateTypes -->
+      <tr *ngFor="let data of table.data; trackBy: trackBy" class="actions-row">
+        <td class="cursor-pointer" (click)="editTask(data)" nz-typography>{{data.name}}</td>
+        <td class="cursor-pointer" (click)="editTask(data)" nz-typography>
+          <nz-tag class="text-dark task-list-label" [nzColor]="data.priority_color">{{data.priority_name}}</nz-tag>
+        </td>
+        <td class="cursor-pointer" (click)="editTask(data)">
+          <nz-tag class="text-dark task-list-label" [nzColor]="data.status_color">
+            {{data.status_name}}
+          </nz-tag>
+        </td>
+        <td class="cursor-pointer" (click)="editTask(data)">
+          <span *ngIf="!data.names?.length">
+            <button
+              nz-tooltip
+              [nzTooltipTitle]="'No members assigned to this task'"
+              [nzSize]="'small'"
+              nz-button
+              [nzType]="'dashed'"
+              [nzShape]="'circle'"
+            >
+              <span nz-typography [nzType]="'secondary'">
+                <span nz-icon nzType="user" nzTheme="outline"></span>
+              </span>
+            </button>
+          </span>
+          <worklenz-avatars [names]="data.names || []"></worklenz-avatars>
+        </td>
+        <td class="actions-col py-0" nzAlign="center">
+          <div class="actions">
+            <nz-space>
+              <button (nzOnConfirm)="deleteTask(data.id, data)" *nzSpaceItem
+                      nz-button nz-popconfirm nz-tooltip [nzOkText]="'Yes'"
+                      [nzPopconfirmTitle]="'Are you sure?'" [nzSize]="'small'" [nzTooltipPlacement]="'top'"
+                      [nzTooltipTitle]="'Delete'"
+                      [nzType]="'default'">
+                <span nz-icon [nzType]="'delete'"></span>
+              </button>
+              <button (click)="editTask(data)" *nzSpaceItem nz-button nz-tooltip nzSize="small"
+                      [nzTooltipPlacement]="'top'"
+                      [nzTooltipTitle]="'Edit'"
+                      [nzType]="'default'">
+                <span nz-icon nzType="edit"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+
+      <ng-container *ngIf="service.model.task && service.model.task.project_id">
+        <tr class="cursor-pointer sub-task-background-color">
+          <td class="p-1 ps-3" colspan="5">
+            <!--            <worklenz-quick-task-->
+            <!--              [projectId]="service.model.task.project_id"-->
+            <!--              [label]="'Add sub-task'"-->
+            <!--              [parentTask]="service.model.task.id || null"-->
+            <!--              [subTaskInput]="true"-->
+            <!--              #subTaskInput-->
+            <!--            ></worklenz-quick-task>-->
+            <worklenz-task-list-add-task-input
+              [projectId]="service.model.task.project_id"
+              [groupId]="groupId"
+              [label]="'Add sub-task'"
+              [parentTask]="service.model.task.id || null"
+              [subTaskInput]="true"
+              #subTaskInput
+            ></worklenz-task-list-add-task-input>
+          </td>
+        </tr>
+      </ng-container>
+
+      </tbody>
+    </nz-table>
+  </nz-card>
+</nz-skeleton>
+
+<ng-template #subTasksEmptyTemplate><span></span></ng-template>

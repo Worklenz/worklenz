@@ -1,0 +1,137 @@
+<worklenz-rpt-header [title]="'Estimated vs Actual'" [showExport]="true" [isPngOnly]="true"
+                     (isDurationLabelSelected)="isDurationLabelSelected = $event"
+                     (exportFile)="export()"></worklenz-rpt-header>
+
+<nz-content>
+  <nz-card [nzLoading]="loading" [nzTitle]="projectsTitle" [nzExtra]="toggleSection">
+    <ng-template #projectsTitle>
+      <nz-space>
+        <button *nzSpaceItem [nzDropdownMenu]="teamsSelector" [nzClickHide]="false" [nzLoading]="loadingTeams"
+                [nzTrigger]="'click'" nz-button nz-dropdown>
+          Teams
+          <span nz-icon nzType="caret-down"></span>
+        </button>
+
+        <button *nzSpaceItem [nzDropdownMenu]="categorySelector" [nzClickHide]="false" [nzLoading]="loadingCategories"
+                [nzTrigger]="'click'" nz-button nz-dropdown>
+          Categories
+          <span nz-icon nzType="caret-down"></span>
+        </button>
+
+        <button *nzSpaceItem [nzDropdownMenu]="projectsSelector" [nzClickHide]="false" [nzLoading]="loadingProjects"
+                [nzTrigger]="'click'" nz-button nz-dropdown>
+          Projects
+          <span nz-icon nzType="caret-down"></span>
+        </button>
+      </nz-space>
+    </ng-template>
+
+    <div *ngIf="projects.length" class="position-relative" [style.height]="chartHeight+'px'">
+      <div class="chartWrapper">
+        <div class="chartAreaWrapper"
+             [style.height]="chartHeight+'px'"
+             [style.width]="chartWidth+'px'" #chartContainer>
+          <canvas baseChart
+                  [data]="barChartData"
+                  [options]="barChartOptions"
+                  [plugins]="barChartPlugins"
+                  [legend]="false"
+                  [type]="'bar'"
+                  #exportChartCanvas>
+          </canvas>
+        </div>
+      </div>
+    </div>
+
+    <nz-empty *ngIf="!projects.length"></nz-empty>
+
+    <ng-template #toggleSection>
+      <nz-segmented [nzOptions]="toggleOptions" (nzValueChange)="handleIndexChange($event)"
+                    nz-tooltip
+                    [nzTooltipTitle]="'The adjustment of values such as man-days and working days can be done through the project settings.'">
+
+      </nz-segmented>
+    </ng-template>
+
+  </nz-card>
+</nz-content>
+
+<nz-dropdown-menu #teamsSelector="nzDropdownMenu">
+  <ul class="pt-0" style="max-height: 330px; overflow-y: auto;" nz-menu>
+    <li class="px-3 py-2 sticky-top bg-white">
+      <input [(ngModel)]="teamSearchText" (ngModelChange)="detectChanges()" type="text"
+             placeholder="Search by team name" nz-input #teamSearchInput>
+    </li>
+    <li
+      class="m-0 align-items-baseline"
+      [(nzChecked)]="selectAllTeams"
+      (nzCheckedChange)="selectAllTeamsChecked($event)"
+      nz-checkbox nz-menu-item>Select all
+    </li>
+    <li nz-menu-divider></li>
+    <li *ngFor="let item of teamsDropdown | searchByName: teamSearchInput.value" class="m-0 align-items-baseline"
+        [(nzChecked)]="item.selected"
+        (nzCheckedChange)="checkTeam()"
+        nz-checkbox nz-menu-item>
+      {{item.name}}
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+<!--<canvas class="d-none" #exportChartCanvas></canvas>-->
+
+<nz-dropdown-menu #projectsSelector="nzDropdownMenu">
+  <ul class="pt-0" nz-menu style="max-height: 330px;overflow-y: auto;">
+    <li class="px-3 py-2">
+      <input [(ngModel)]="projectSearchText" (ngModelChange)="detectChanges()" type="text"
+             placeholder="Search by project name" nz-input #projectSearchInput>
+    </li>
+    <li
+      class="m-0 align-items-baseline"
+      [(nzChecked)]="selectAllProjects"
+      (nzCheckedChange)="selectAllProjectsChecked($event)"
+      nz-checkbox nz-menu-item>Select all
+    </li>
+    <li nz-menu-divider></li>
+    <li *ngFor="let item of projectsDropdown | searchByName: projectSearchInput.value"
+        [(nzChecked)]="item.selected" (nzCheckedChange)="checkProject()" class="m-0 align-items-baseline" nz-checkbox
+        nz-menu-item>
+      <div class="d-flex align-items-center justify-content-center user-select-none">
+        <div>
+          <span class="d-block" nz-typography>{{item.name}}</span>
+        </div>
+      </div>
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+
+<nz-dropdown-menu #categorySelector="nzDropdownMenu">
+  <ul class="pt-0" nz-menu style="max-height: 330px;overflow-y: auto;">
+    <li class="px-3 py-2 sticky-top bg-white">
+      <input [(ngModel)]="categorySearchText" (ngModelChange)="detectChanges()" type="text"
+             placeholder="Search by category name" nz-input #categorySearchInput>
+    </li>
+    <li
+      class="m-0 align-items-baseline"
+      [(nzChecked)]="selectAllCategories"
+      (nzCheckedChange)="selectAllCategoriesChecked($event)"
+      nz-checkbox nz-menu-item>Select all
+    </li>
+    <li nz-menu-divider></li>
+    <li class="m-0 align-items-baseline" [(nzChecked)]="selectNoCategory" (nzCheckedChange)="checkCategory()" nz-checkbox nz-menu-item>
+      No Category
+    </li>
+    <li *ngFor="let item of categoriesDropdown | searchByName: categorySearchInput.value"
+        [(nzChecked)]="item.selected" (nzCheckedChange)="checkCategory()" class="m-0 align-items-baseline" nz-checkbox
+        nz-menu-item>
+      <div class="d-flex align-items-center justify-content-center user-select-none">
+        <div>
+          <span class="d-block">
+            <nz-badge [nzColor]="item.color_code" [nzText]="item.name"></nz-badge>
+          </span>
+        </div>
+      </div>
+    </li>
+  </ul>
+</nz-dropdown-menu>

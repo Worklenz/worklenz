@@ -1,0 +1,37 @@
+$dark-white: #FAFBFC;
+
+.layout {
+  min-height: 100vh;
+}
+
+nz-content {
+  margin-top: 64px;
+  background: #ffffff;
+}
+
+.inner-content {
+  background: #ffffff;
+  min-height: 380px;
+  padding: 0 24px 24px;
+
+  &:has(.reporting-tab-module) {
+    padding: 0 24px 0 0px;
+  }
+}
+
+nz-header {
+  position: fixed;
+  width: 100vw;
+  background: #FFFFFF;
+  z-index: 11;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 100%;
+    height: 4px;
+    background: linear-gradient(rgba(9, 30, 66, 0.13) 0px, rgba(9, 30, 66, 0.13) 1px, rgba(9, 30, 66, 0.08) 1px, rgba(9, 30, 66, 0) 4px);
+  }
+}

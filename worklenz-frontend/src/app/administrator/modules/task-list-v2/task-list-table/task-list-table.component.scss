@@ -1,0 +1,395 @@
+// :host {
+//   overflow: hidden;
+//   display: block;
+//   overflow-x: auto;
+// }
+
+.task-status-color {
+  border-width: 1.4px;
+  border-style: solid;
+  border-radius: 4px;
+  width: 1px;
+}
+
+.task-name-color {
+  height: 20px;
+  margin: auto;
+  border-color: rgb(169, 169, 169);
+  background-color: rgb(169, 169, 169);
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-width: 1.2px;
+}
+
+.editable-cell {
+  white-space: nowrap;
+  max-width: 255px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+nz-date-picker {
+  background: transparent;
+}
+
+//.dropdown-animation {
+//  //transition: all .05s ease-in;
+//}
+
+.expanded {
+  transform: rotate(-90deg);
+}
+
+.dropdown-highlight {
+  padding: 1px;
+}
+
+.highlight-col {
+  border: 1px solid #1890ff !important;
+}
+
+.dropdown-highlight:hover {
+  background-color: rgba(208, 238, 250, 0.33);
+  border: #5587f5 1px solid;
+  border-radius: 3px;
+}
+
+.pointer-text {
+  cursor: text;
+}
+
+.plus-icon {
+  display: none;
+  position: absolute;
+  right: 0;
+  z-index: 9;
+  background-color: #e2e7ea;
+}
+
+tr:hover .plus-icon {
+  display: block;
+}
+
+.selected {
+  background: #1890ff14 !important;
+
+  .task-name,
+  .task-drag-handler {
+    background: #1890ff14 !important;
+  }
+}
+
+.sub-task-background-color {
+  background-color: #f5f5f58a;
+}
+
+.drop-down-btn {
+  padding: 4px 11px;
+
+  .anticon-caret-down {
+    color: rgba(0, 0, 0, 0.65);
+  }
+}
+
+.status-color {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  margin-right: 7px;
+}
+
+div {
+  box-sizing: border-box;
+}
+
+.flex-table {
+  display: flex;
+  width: max-content;
+}
+
+.table-container {
+  overflow: auto;
+  display: flex;
+  // flex-direction: column;
+}
+
+.tasks-table {
+  width: max-content;
+  margin-left: 3px;
+  border-right: 1px solid #f0f0f0;
+}
+
+.column-trigger {
+  background-color: #F4F5F7;
+  height: 40px;
+  width: 40px;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  margin-bottom: 0px;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 2;
+
+  .flex-row {
+    padding: 4px 11px;
+    background-color: #fafafa;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    border-right: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+  }
+}
+
+.br-right {
+  border-right: 1px solid #f0f0f0;
+}
+
+.task-check {
+  text-align: center;
+  padding: 8px 6px 8px 0px !important;
+  position: sticky;
+  left: 24px;
+  z-index: 1;
+}
+
+.task-key {
+  width: 85px;
+}
+
+.task-arrow {
+  width: 24px;
+  padding: 0px !important;
+  display: flex;
+  align-items: center;
+  border: none !important;
+  position: sticky;
+  left: 47px;
+  z-index: 1;
+}
+
+.task-name {
+  width: 450px;
+  min-width: 450px;
+  position: sticky;
+  left: 71px;
+  z-index: 1;
+  background-color: white;
+
+  nz-filter-trigger {
+    margin-left: auto;
+  }
+}
+
+.task-description {
+  width: 225px;
+}
+
+.task-progress {
+  width: 80px;
+}
+
+.task-members {
+  width: 160px;
+}
+
+.task-labels {
+  width: 210px;
+}
+
+.task-status {
+  width: 120px;
+}
+
+.task-priority {
+  width: 120px;
+}
+
+.task-time-tracking {
+  width: 120px;
+}
+
+.task-estimation {
+  width: 120px;
+}
+
+.task-start-date, .task-due-date, .task-completed-date, .task-created-date, .task-update-date {
+  width: 150px;
+}
+
+.task-drag-handler {
+  padding: 0px 0px 0px 4px !important;
+  width: 24px;
+  border-bottom: 1px solid #f0f0f0;
+  border-right: none !important;
+  position: sticky;
+  left: 0px;
+}
+
+.inner-subtask-create {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  max-width: 1316px;
+  overflow: hidden;
+  background-color: rgb(250 250 250);
+  position: sticky;
+  left: 0;
+  border-bottom: 1px solid #eaeaea;
+  border-top: 1px solid #eaeaea;
+  @media(max-width: 1400px) {
+    max-width: 1136px;
+  }
+  @media(max-width: 1200px) {
+    max-width: 956px;
+  }
+
+  &.highlight-col {
+    background-color: white;
+  }
+}
+
+.new-subtask-divider {
+  width: 50px;
+
+  &.divider-large {
+    width: 135px;
+  }
+}
+
+worklenz-quick-task {
+  display: block;
+}
+
+
+.overflow-x-auto {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.panel {
+  padding: 0 0;
+  background-color: white;
+  max-height: calc(100% + 8px);
+  overflow: hidden;
+  transition: max-height 0.1s ease-out;
+  border-right: 1px solid #f0f0f0;
+  // &.show {
+  //   height: auto;
+  //   transition: height 0.05s ease-out;
+  // }
+}
+
+.panel-left-border {
+  position: absolute;
+  content: '';
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  z-index: 3;
+  border-bottom-left-radius: 4px;
+}
+
+.collapse.btn .collapse-icon {
+  transition: transform 0.1s;
+  transform: rotate(0);
+}
+
+.collapse.btn.active .collapse-icon {
+  transition: transform 0.1s;
+  transform: rotate(90deg);
+}
+
+
+.drop-down-btn {
+  padding: 4px 11px;
+
+  .anticon-caret-down {
+    color: #d9d9d9;
+  }
+}
+
+.status-color {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  margin-right: 7px;
+}
+
+.drop-down-btn {
+  nz-badge {
+    margin-top: -2px;
+  }
+
+  &.active {
+    color: #1890ff;
+    border-color: #1890ff;
+    background-color: #E6F7FF;
+
+    .drop-down-btn {
+      .anticon-caret-down {
+        color: #1890ff;
+      }
+    }
+  }
+}
+
+.ant-badge-count-sm {
+  font-size: 11px;
+}
+
+.tab-name-edit {
+  // width: 0px;
+  overflow: hidden;
+
+  span {
+    margin-right: 0px;
+    font-size: 14px;
+  }
+
+  svg {
+    margin-right: 0px;
+  }
+}
+
+.new-task-input {
+  // height: 32px;
+  padding-left: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #f0f0f0;
+  border-top: 1px solid #f0f0f0;
+  max-width: 1316px;
+  overflow-x: auto;
+  @media(max-width: 1400px) {
+    max-width: 1136px;
+  }
+  @media(max-width: 1200px) {
+    max-width: 956px;
+  }
+}
+
+.tasks-empty-placeholder {
+  width: 100%;
+  height: 42px;
+  background: #fafafa;
+}
+
+.no-data-img-holder {
+  width: 100px;
+  margin-top: 42px;
+}
+
+.add-field-button {
+  position: absolute;
+  top: 46px;
+  right: 0;
+}

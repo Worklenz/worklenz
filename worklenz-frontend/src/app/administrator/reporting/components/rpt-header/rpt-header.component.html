@@ -1,0 +1,65 @@
+<div class="site-page-header-ghost-wrapper">
+  <nz-page-header class="px-0" [nzGhost]="false">
+    <nz-page-header-title>{{title}}</nz-page-header-title>
+    <nz-page-header-extra>
+      <nz-space>
+        <ng-container *nzSpaceItem>
+          <button *ngIf="showArchivedToggle" nz-button [ngClass]="includeArchived ? 'archived' : ''">
+            <label nz-checkbox [(ngModel)]="includeArchived" (ngModelChange)="onArchiveChange($event)">
+              Include Archived Projects
+            </label>
+          </button>
+        </ng-container>
+
+        <ng-container *nzSpaceItem>
+          <ng-container *ngIf="showDuration">
+            <nz-space>
+              <button *nzSpaceItem nz-button nz-dropdown [nzDropdownMenu]="timeSelector"
+                      [nzTrigger]="'click'" [nzPlacement]="'bottomRight'">
+                {{durationLabel}} <span nz-icon [nzType]="'down'"></span>
+              </button>
+            </nz-space>
+          </ng-container>
+          <ng-container *nzSpaceItem>
+            <button *ngIf="showExport" nz-button [nzType]="'primary'" [nzLoading]="exporting" nz-dropdown
+                    [nzTrigger]="'click'"
+                    [nzDropdownMenu]="exportMenu"
+                    [nzPlacement]="'bottomRight'">
+              Export
+              <span nz-icon [nzType]="'down'"></span>
+            </button>
+            <nz-dropdown-menu #exportMenu="nzDropdownMenu">
+              <ul nz-menu>
+                <li nz-menu-item *ngIf="!isPngOnly" (click)="export()">Excel</li>
+                <li nz-menu-item *ngIf="isPngOnly" (click)="export()">PNG</li>
+              </ul>
+            </nz-dropdown-menu>
+          </ng-container>
+        </ng-container>
+      </nz-space>
+    </nz-page-header-extra>
+  </nz-page-header>
+</div>
+
+<nz-dropdown-menu #timeSelector="nzDropdownMenu">
+  <ul nz-menu style="max-height: 330px; overflow-y: auto;" nzSelectable>
+    <li *ngFor="let item of durations" (click)="onDurationChange(item)"
+        [nzSelected]="item.key === selectedDuration?.key && !dateRange.length" nz-menu-item>
+      {{item.label}} <small class="ms-auto text-secondary"> {{item.dates}}</small>
+    </li>
+    <li nz-menu-divider></li>
+    <li class="px-2 pb-2 pt-2 mt-1 custom-dropdown-range-li">
+      <form nz-form>
+        <label>Custom range</label>
+        <div class="d-block mt-1">
+          <nz-range-picker [(ngModel)]="dateRange" [ngModelOptions]="{standalone: true}"
+                           class="w-100"></nz-range-picker>
+        </div>
+        <button class="mt-2 ms-auto d-block" nz-button [nzType]="'primary'" [nzSize]="'small'"
+                (click)="customDateChange()">
+          Filter
+        </button>
+      </form>
+    </li>
+  </ul>
+</nz-dropdown-menu>

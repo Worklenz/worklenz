@@ -1,0 +1,8 @@
+<div class="d-flex justify-content-between" *ngIf="name">
+  <span nz-typography class="me-2">{{name}}</span>
+  <ng-container [ngSwitch]="name">
+    <span *ngSwitchCase="'Low'" class="low-priority position-relative center-hr" nz-icon nzType="minus"></span>
+    <span *ngSwitchCase="'Medium'" class="medium-priority position-relative center-hr" nz-icon nzType="pause"></span>
+    <span *ngSwitchCase="'High'" class="high-priority position-relative center-hr" nz-icon nzType="double-left"></span>
+  </ng-container>
+</div>

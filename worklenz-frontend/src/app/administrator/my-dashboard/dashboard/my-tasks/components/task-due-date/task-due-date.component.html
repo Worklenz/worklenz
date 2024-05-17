@@ -1,0 +1,17 @@
+<div *ngIf="task && task.is_task" class="editable h-100 d-flex w-100" #elementDueDate>
+                    <span nz-typography class="date-text w-100"
+                          [class.past-date]="checkForPastDate(task.end_date)"
+                          [class.soon-date]="checkForSoonDate(task.end_date)">{{task.end_date | dateFormatter}}</span>
+  <nz-date-picker
+    class="border-0 bg-transparent w-100 task-list-date-picker home-date-picker"
+    [(ngModel)]="task.end_date"
+    (ngModelChange)="handleEndDateChange($event, task)"
+    [nzFormat]="'MMM dd,yyyy'"
+    [nzSuffixIcon]="''"
+    [nzPlaceHolder]="'Set a due date'"
+    [nzDisabledDate]="task.start_date | validateMinDate"
+    (nzOnOpenChange)="toggleHighlightCls($event, elementDueDate)"
+    [nzDisabledDate]="task.start_date | validateMinDate"
+  >
+  </nz-date-picker>
+</div>

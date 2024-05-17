@@ -1,0 +1,52 @@
+.task-name-input, .name-text {
+  font-size: 16px;
+  font-weight: 500;
+  transition: none;
+  border: 1px solid transparent;
+  padding-left: 7px;
+  padding-right: 7px;
+
+  &:hover, &:focus {
+    cursor: text;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+  }
+
+  &:focus {
+    border: 1px solid #1890ff;
+  }
+}
+
+.name-text {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.length-alert {
+  position: absolute;
+  right: 0;
+  bottom: -15px;
+
+  &.warn {
+    color: red;
+  }
+}
+
+.error {
+  border: 1px solid red !important;
+}
+
+.custom-status-pill {
+  max-width: 120px;
+  min-width: 100px;
+  text-align: center;
+
+  & nz-select-top-control {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  & * {
+    max-width: 120px;
+  }
+}

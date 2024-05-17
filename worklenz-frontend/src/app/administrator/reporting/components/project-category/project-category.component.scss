@@ -1,0 +1,43 @@
+nz-tag {
+  font-size: 13px;
+
+  &:hover {
+    & .clear-btn {
+      opacity: 1;
+    }
+  }
+}
+
+input {
+  min-width: 225px;
+  max-width: 225px;
+}
+
+.clear-btn {
+  max-width: 14px;
+  position: absolute;
+  right: 6px;
+  top: 0;
+  bottom: 0;
+  margin-top: auto;
+  margin-bottom: auto;
+  line-height: 14px;
+  max-height: 14px;
+  background: #ededed;
+  padding: 0;
+  border-radius: 100%;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s;
+
+  & span {
+    color: #959595;
+    margin-top: -2px;
+  }
+}
+.ellipsis {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

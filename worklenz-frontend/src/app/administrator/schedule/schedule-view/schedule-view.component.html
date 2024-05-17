@@ -1,0 +1,36 @@
+<div>
+  <div class="py-4 container-fluid d-flex justify-content-between">
+<!--    <div class="left-column">-->
+<!--      <nz-segmented [nzOptions]="options" (nzValueChange)="handleIndexChange($event)"></nz-segmented>-->
+<!--    </div>-->
+    <div class="right-column ms-auto">
+      <nz-space>
+        <div *nzSpaceItem>
+          <button nz-button nzType="default" (click)="scrollToday()">Today</button>
+          <nz-divider nzType="vertical" class="me-0"></nz-divider>
+        </div>
+        <div *nzSpaceItem>
+          <nz-select [(ngModel)]="dateModeModel" (ngModelChange)="dateModeChange($event)">
+            <nz-option *ngFor="let item of dateModes" [nzValue]="item.value" [nzLabel]="item.label"></nz-option>
+          </nz-select>
+        </div>
+        <div *nzSpaceItem>
+          <nz-date-picker [nzMode]="dateModeModel === 0 ? 'week' : 'month'" [(ngModel)]="dateRange" (ngModelChange)="onChange($event)"
+                          [nzFormat]="dateModeModel === 0 ? 'YYYY - \'Week\' ww' : 'YYYY - MMM'" [nzDisabledDate]="disabledDate"></nz-date-picker>
+
+        </div>
+      </nz-space>
+
+    </div>
+  </div>
+
+  <!--  <worklenz-project-schedule *ngIf="selectedChartType === resourceGanttTypes.Projects"-->
+  <!--                             [selectedWeek]="selectedWeek"></worklenz-project-schedule>-->
+
+<!--  <worklenz-team-schedule *ngIf="selectedChartType === resourceGanttTypes.Teams"-->
+<!--                          [selectedWeek]="selectedWeek"></worklenz-team-schedule>-->
+
+  <worklenz-projects-schedule></worklenz-projects-schedule>
+
+</div>
+

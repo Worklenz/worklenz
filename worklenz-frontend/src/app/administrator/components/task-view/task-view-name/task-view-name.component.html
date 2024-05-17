@@ -1,0 +1,46 @@
+<div *ngIf="service.model.task" [nzGutter]="8" nz-row>
+  <div nz-col [nzSpan]="19">
+    <nz-form-item class="mb-0 pe-2">
+      <nz-form-control [nzSpan]="null">
+        <ng-container *ngIf="!showTaskNameInput">
+          <p nz-typography class="mb-0 name-text"
+             (click)="showTaskNameInput = true;focusInput();">{{service.model.task.name}}</p>
+        </ng-container>
+        <ng-container *ngIf="showTaskNameInput">
+          <input
+            nz-input
+            [(ngModel)]="service.model.task.name"
+            placeholder="Type your task"
+            class="task-name-input"
+            [nzBorderless]="true"
+            (focus)="addFocusCls(input)"
+            (blur)="handleNameChange(service.model.task);removeFocusCls(input);showTaskNameInput = false;"
+            (keyup.enter)="input.blur()"
+            [class.error]="(service.model.task.name?.length || 0) >   MAX_LEN"
+            [maxlength]="MAX_LEN"
+            #input
+          />
+          <small *ngIf="hasCls(input)" class="length-alert" nz-typography
+                 [class.warn]="(service.model.task.name?.length || 0) >= MAX_LEN"
+                 nzType="secondary">
+            {{service.model.task.name?.length || 0}} / {{MAX_LEN}}
+          </small>
+        </ng-container>
+      </nz-form-control>
+    </nz-form-item>
+  </div>
+  <div class="pe-0" nz-col [nzSpan]="5">
+    <nz-form-item class="mb-0">
+      <nz-form-control class="text-right mt-1" [nzErrorTip]="'Status is required!'">
+        <nz-select [nzDropdownMatchSelectWidth]="false" [style.background-color]="service.model.task.status_color"
+                   [(ngModel)]="service.model.task.status_id"
+                   (ngModelChange)="handleStatusChange($event, service.model.task)"
+                   class="w-auto rounded-pill custom-status-pill custom-select"
+                   [nzPlaceHolder]="'Select status'">
+          <nz-option *ngFor="let item of service.model.statuses" [nzValue]="item.id"
+                     [nzLabel]="item.name | safeString"></nz-option>
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+  </div>
+</div>

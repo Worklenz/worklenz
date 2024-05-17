@@ -1,0 +1,51 @@
+<div class="d-flex align-items-center justify-content-center">
+  <div class="row w-100 mx-0 auth-page">
+    <div class="col-md-5 col-sm-8 col-xl-3 mx-auto pe-5 ps-5">
+      <div class="w-360">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="py-5">
+              <div class="text-center">
+                <img alt="Worklenz" height="50" src="/assets/images/logo.png">
+              </div>
+              <div class="text-muted mb-4 mt-1 text-center">
+                Enter your new password
+              </div>
+              <div aria-labelledby="auth-tab-content">
+                <form (submit)="resetPassword()" [formGroup]="form" class="login-form" nz-form>
+                  <nz-form-item>
+                    <nz-form-control nzErrorTip="Please input your Password!" [nzExtra]="passwordNote">
+                      <nz-input-group [nzSuffix]="suffixTemplate" nzPrefixIcon="lock" nzSize="large">
+                        <input [formControlName]="'password'" [type]="passwordVisible ? 'text' : 'password'" nz-input
+                               placeholder="Enter your new password"/>
+                      </nz-input-group>
+                      <ng-template #suffixTemplate>
+                        <span (click)="passwordVisible = !passwordVisible"
+                              [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
+                              nz-icon></span>
+                      </ng-template>
+                    </nz-form-control>
+                  </nz-form-item>
+                  <ng-template #passwordNote>
+                    <span nz-typography [nzType]="'secondary'" style="font-size: 12px;">{{passwordPolicy}}</span>
+                  </ng-template>
+                  <button [nzLoading]="loading" [nzType]="'primary'" class="mt-1" nz-button nzBlock nzSize="large">
+                    Reset Password
+                  </button>
+                  <div class="text-center mt-2">
+                    OR
+                  </div>
+                  <button [routerLink]="['/auth/reset-password']" [nzType]="'default'" class="mt-1" nz-button
+                          nzBlock nzSize="large" type="button">
+                    Resend reset email
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

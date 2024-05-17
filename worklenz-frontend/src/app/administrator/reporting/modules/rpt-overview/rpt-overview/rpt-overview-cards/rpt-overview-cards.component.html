@@ -1,0 +1,54 @@
+<div class="container-fluid">
+  <div class="row">
+    <!-- Teams -->
+    <nz-card class="col-3 me-2" [nzLoading]="loading">
+      <nz-card-meta
+        [nzTitle]="model.teams?.count + ' Teams'"
+        [nzDescription]="tmDescriptionTmpl"
+        [nzAvatar]="tmAvatarTmpl"
+      ></nz-card-meta>
+    </nz-card>
+    <ng-template #tmAvatarTmpl>
+      <span class="card-icon" nz-icon [nzType]="'bank'" style="color: #70a6f3;" [nzTheme]="'outline'"></span>
+    </ng-template>
+    <ng-template #tmDescriptionTmpl>
+      <p class="mb-0" nz-typography [nzType]="'secondary'">{{model.teams?.projects}} Projects</p>
+      <p class="mb-0" nz-typography [nzType]="'secondary'">{{model.teams?.members}} Members</p>
+    </ng-template>
+
+    <!-- Projects -->
+    <nz-card class="col-3 me-2" [nzLoading]="loading">
+      <nz-card-meta
+        [nzTitle]="model.projects?.count + ' Projects'"
+        [nzDescription]="projDescriptionTmpl"
+        [nzAvatar]="projAvatarTmpl"
+      ></nz-card-meta>
+    </nz-card>
+    <ng-template #projAvatarTmpl>
+      <span class="card-icon" nz-icon [nzType]="'file'" style="color: #74c3bb;" [nzTheme]="'outline'"></span>
+    </ng-template>
+    <ng-template #projDescriptionTmpl>
+      <p class="mb-0" nz-typography [nzType]="'secondary'">{{model.projects?.active}} Active Projects</p>
+      <p class="mb-0" nz-typography [nzType]="'secondary'" style="color: #f37070;">{{model.projects?.overdue}} Overdue
+        Projects</p>
+    </ng-template>
+
+    <!-- Members -->
+    <nz-card class="col-4 me-2" [nzLoading]="loading">
+      <nz-card-meta
+        [nzTitle]="model.members?.count + ' Members'"
+        [nzDescription]="mbrDescriptionTmpl"
+        [nzAvatar]="mbrAvatarTmpl"
+      ></nz-card-meta>
+    </nz-card>
+    <ng-template #mbrAvatarTmpl>
+      <span class="card-icon" nz-icon [nzType]="'usergroup-add'" style="color: #8d7a9b;" [nzTheme]="'outline'"></span>
+    </ng-template>
+    <ng-template #mbrDescriptionTmpl>
+      <p class="mb-0" nz-typography [nzType]="'secondary'">{{model.members?.unassigned}} Unassigned Members</p>
+      <p class="mb-0" nz-typography [nzType]="'secondary'" style="color: #f37070;">
+        {{model.members?.overdue}} Members with Overdue Tasks
+      </p>
+    </ng-template>
+  </div>
+</div>

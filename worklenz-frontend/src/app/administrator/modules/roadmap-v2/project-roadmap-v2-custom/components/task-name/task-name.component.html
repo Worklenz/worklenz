@@ -1,0 +1,25 @@
+<div *ngIf="task" class="task-name-block position-relative h-default ms-1">
+  <div *ngIf="!isEditing" class="name-holder h-default" (click)="enableEdit()">
+    <div class="border-input ellipsis d-flex align-items-center h-default" nz-tooltip [nzTooltipTitle]="task.name">
+      <div class="d-block task-name ellipsis">
+        <span *ngIf="task.is_sub_task" nz-icon [nzType]="'double-right'" style="font-size: 10px; top: -1px" [nzTheme]="'outline'" class="position-relative"></span>
+        {{task.name}}
+      </div>
+      <nz-tag *ngIf="!task.is_sub_task" [nzColor]="'default'" class="ms-1 px-1 double-arrow">
+        <span style="color: #6d6e6f;">
+          {{task.sub_tasks_count}}
+          <span nz-icon [nzType]="'double-right'" style="font-size: 10px" [nzTheme]="'outline'"></span>
+        </span>
+      </nz-tag>
+    </div>
+  </div>
+  <div *ngIf="isEditing" class="name-editor d-flex align-items-center h-default">
+    <input nz-input placeholder="Enter task name" [(ngModel)]="task.name" (blur)="validateName()"
+           (keydown.enter)="validateName()" type="text" #input/>
+  </div>
+  <button *ngIf="!isEditing" nz-tooltip nz-button (click)="openTask.emit(task)" class="task-open-btn px-1 h-default"
+          [nzType]="'text'">
+    <span nz-icon [nzType]="'expand-alt'" [nzTheme]="'outline'"></span>
+    Open
+  </button>
+</div>

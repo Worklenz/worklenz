@@ -1,0 +1,8 @@
+<nz-dropdown-menu #contextMenuDropdown="nzDropdownMenu">
+  <ul nz-menu>
+    <li (click)="delete()" nz-menu-item>
+      <span class="me-2" nz-icon [nzType]="deleting ? 'loading' : 'delete'" [nzTheme]="'outline'"></span>
+      Delete
+    </li>
+  </ul>
+</nz-dropdown-menu>

@@ -1,0 +1,41 @@
+<div class="editable w-100 h-100 d-flex align-items-center justify-content-center"
+     [nzOverlayClassName]="'custom-shadow'" nz-dropdown
+     [nzTrigger]="'click'"
+     [nzClickHide]="false"
+     [nzDropdownMenu]="estimationDropdown"
+     (nzVisibleChange)="handleLabelsVisibleChange($event, element)" #element>
+  <ng-container>
+    <p nz-typography class="mb-0">{{task.total_time_string}}</p>
+  </ng-container>
+</div>
+
+<nz-dropdown-menu #estimationDropdown="nzDropdownMenu">
+  <div *ngIf="show" class="bg-white pt-3 px-3">
+    <nz-form-item class="w-100 mb-0" nz-row>
+      <nz-form-control>
+        <div class="d-inline-flex" style="position: relative;top: -12px;">
+          <nz-form-control class="me-3">
+            <small nz-typography nzType="secondary" class="d-block">Hours</small>
+            <nz-input-number [(ngModel)]="task.total_hours"
+                             [nzFormatter]="utils.toRound"
+                             [nzMin]="0"
+                             [nzPlaceHolder]="'Hours'"
+                             [nzStep]="1"></nz-input-number>
+          </nz-form-control>
+          <nz-form-control>
+            <small nz-typography nzType="secondary" class="d-block">Minutes</small>
+            <nz-input-number [(ngModel)]="task.total_minutes"
+                             [nzFormatter]="utils.toRound"
+                             [nzMax]="60"
+                             [nzMin]="0"
+                             [nzPlaceHolder]="'Minutes'"
+                             [nzStep]="1"></nz-input-number>
+          </nz-form-control>
+        </div>
+      </nz-form-control>
+    </nz-form-item>
+  </div>
+  <div class="bg-white d-flex justify-content-end p-2 border-top">
+    <button nz-button nzType="primary" nzSize="small" (click)="submit()">OK</button>
+  </div>
+</nz-dropdown-menu>

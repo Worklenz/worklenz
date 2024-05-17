@@ -1,0 +1,93 @@
+<div class="d-flex">
+  <div class="side-menu">
+    <nz-skeleton [nzActive]="true" [nzLoading]="loadingList">
+      <ul nz-menu nzMode="inline" class="br-0">
+        <li *ngFor="let item of templateList; let i = index"
+            [nzSelected]="i === 0"
+            nz-menu-item
+            (click)="onSelectTemplate(item.id || '', i)"
+            class="ps-2">
+          <span>{{item.name}}</span>
+        </li>
+      </ul>
+    </nz-skeleton>
+  </div>
+  <div class="temp-details px-4 py-3">
+    <h4 nz-typography>Details</h4>
+    <nz-skeleton [nzActive]="true" [nzLoading]="loadingDetails">
+
+      <!--  template preview    -->
+      <div class="preview">
+        <img [src]="templateDetails.image_url" alt="preview" class="img-fluid">
+      </div>
+
+      <!--  template description    -->
+      <div class="d-flex mb-3">
+        <div class="worklenz_key_sec">
+          <span nz-typography>Description</span>
+        </div>
+        <div class="worklenz_value_sec">
+          <span nz-typography>{{templateDetails.description}}</span>
+        </div>
+      </div>
+
+      <!--  template phases    -->
+      <div class="d-flex mb-4">
+        <div class="worklenz_key_sec">
+          <span nz-typography>Phases</span>
+        </div>
+        <div class="worklenz_value_sec">
+          <nz-tag *ngFor="let item of templateDetails.phases" [nzColor]="item.color_code"
+                  class="me-2">{{item.name}}</nz-tag>
+        </div>
+      </div>
+
+      <!--  template statuses    -->
+      <div class="d-flex mb-4">
+        <div class="worklenz_key_sec">
+          <span nz-typography>Statuses</span>
+        </div>
+        <div class="worklenz_value_sec">
+          <nz-tag *ngFor="let item of templateDetails.status" [nzColor]="item.color_code"
+                  class="me-2">{{item.name}}</nz-tag>
+        </div>
+      </div>
+
+      <!--  template priorities    -->
+      <div class="d-flex mb-4">
+        <div class="worklenz_key_sec">
+          <span nz-typography>Priorities</span>
+        </div>
+        <div class="worklenz_value_sec">
+          <nz-tag *ngFor="let item of templateDetails.priorities" [nzColor]="item.color_code"
+                  class="me-2">{{item.name}}</nz-tag>
+        </div>
+      </div>
+
+      <!--  template labels    -->
+      <div class="d-flex mb-4">
+        <div class="worklenz_key_sec">
+          <span nz-typography>Labels</span>
+        </div>
+        <div class="worklenz_value_sec">
+          <nz-tag *ngFor="let item of templateDetails.labels" [nzColor]="item.color_code"
+                  class="me-2">{{item.name}}</nz-tag>
+        </div>
+      </div>
+
+
+      <!--  template tasks    -->
+      <div class="worklenz_key_sec">
+        <span nz-typography>Tasks</span>
+      </div>
+      <div class="mt-2">
+        <ul nz-list>
+          <li *ngFor="let item of templateDetails.tasks" nz-list-item>
+            {{item.name}}
+          </li>
+        </ul>
+      </div>
+
+    </nz-skeleton>
+  </div>
+</div>

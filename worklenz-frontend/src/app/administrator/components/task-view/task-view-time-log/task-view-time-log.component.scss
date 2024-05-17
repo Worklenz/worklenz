@@ -1,0 +1,73 @@
+nz-list-item-meta-title,
+nz-list-item-meta-description,
+.log-description {
+  user-select: text;
+}
+
+nz-list-item {
+  border-radius: 4px;
+
+  * {
+    transition: none !important;
+  }
+
+  [nz-list-item-actions] {
+    visibility: hidden;
+  }
+
+  &:hover {
+    background: #fafafa;
+
+    [nz-list-item-actions] {
+      visibility: visible;
+    }
+  }
+}
+
+.log-form {
+  background: #FAFAFA;
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  padding: 1.0rem 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+nz-affix {
+  position: absolute;
+  bottom: 0;
+  left: 24px;
+  right: 24px;
+  z-index: 1;
+}
+
+.highlight {
+  border-bottom: 1px solid #1890ff !important;
+  border: 1px solid #1890ff;
+}
+
+.no-data-img-holder {
+  width: 100px;
+}
+
+.item-meta-title {
+  font-size: 15px !important;
+}
+
+.item-meta-description {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px !important;
+}
+
+.description-container {
+  margin-left: 42px;
+  margin-top: 4px;
+}
+
+.error-text {
+  position: absolute;
+  bottom: -16px;
+  font-size: 13px;
+  margin-left: 12px;
+  animation-name: slideDown;
+  animation-duration: 0.125s;
+}

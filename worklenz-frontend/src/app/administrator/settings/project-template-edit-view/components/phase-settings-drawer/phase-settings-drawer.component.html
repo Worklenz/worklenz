@@ -1,0 +1,78 @@
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="show"
+  [nzPlacement]="'right'"
+  [nzTitle]="'Configure Phases'"
+  (nzOnClose)="close()"
+  (nzVisibleChange)="onVisibleChange($event)"
+>
+  <ng-container *nzDrawerContent>
+    <nz-skeleton [nzActive]="true" [nzLoading]="loading">
+      <form [nzLayout]="'vertical'" nz-form>
+        <nz-form-item>
+          <nz-form-label [nzFor]="'label'">Phase Label:</nz-form-label>
+          <nz-form-control>
+            <input nz-input id="label" placeholder="Enter a name for label" name="label" [(ngModel)]="phaseLabel"
+                   (focus)="oldLabel = phaseLabel"
+                   (blur)="updateLabel(phaseLabel)" required/>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+
+      <nz-divider class="mb-3"></nz-divider>
+
+      <form nz-form>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-block">
+            <nz-form-label>
+              Phase Options
+            </nz-form-label>
+          </div>
+          <div class="d-block ms-auto">
+            <button type="button" [nzType]="'primary'" nz-button [nzLoading]="creating" (click)="addNewOption()" nzBlock>
+              <span nz-icon [nzType]="'plus'" [nzTheme]="'outline'"></span>
+              Add Option
+            </button>
+          </div>
+        </div>
+        <nz-form-item *ngFor="let option of options; let i = index" class="d-flex align-items-center mb-3">
+          <nz-form-control>
+            <input
+              nz-input
+              [name]="'opt' + i"
+              [(ngModel)]="option.name"
+              [minLength]="2"
+              [maxLength]="30"
+              (focus)="input.select();setNameCache(option.id, option.name)"
+              (blur)="updateOption(option)"
+              (keyup.enter)="input.blur()"
+              [disabled]="deleting[option.id]"
+              #input/>
+          </nz-form-control>
+          <nz-tag [nzColor]="option.color_code" nz-dropdown [nzDropdownMenu]="menu"
+                              [nzTrigger]="'click'"
+                              class="ms-2 rounded-circle cursor-pointer"
+                              style="width: 20px;height: 20px;">&nbsp;
+          </nz-tag>
+          <nz-dropdown-menu #menu="nzDropdownMenu">
+            <ul style="max-height: 200px;overflow: hidden;overflow-y: auto;" nz-menu nzSelectable>
+              <li nz-menu-item *ngFor="let item of COLOR_CODES" (click)="setColorCode(option, item)">
+                <nz-tag
+                  [nzColor]="item+'69'"
+                  class="me-1 w-100 rounded-pill"
+                  style="height: 16px !important;width: 16px !important;">&nbsp;
+                </nz-tag>
+              </li>
+            </ul>
+          </nz-dropdown-menu>
+          <nz-form-label [nzNoColon]="true">
+            <button type="button" nz-button [nzShape]="'circle'" [nzType]="'text'" [nzLoading]="deleting[option.id]"
+                    (click)="removeOption(option.id)">
+              <span nz-icon [nzType]="'close-circle'" [nzTheme]="'outline'"></span>
+            </button>
+          </nz-form-label>
+        </nz-form-item>
+      </form>
+    </nz-skeleton>
+  </ng-container>
+</nz-drawer>

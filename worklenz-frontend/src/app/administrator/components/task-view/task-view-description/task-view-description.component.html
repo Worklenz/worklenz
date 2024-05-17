@@ -1,0 +1,20 @@
+<nz-form-item *ngIf="service.model.task" class="w-100 task-description-editor" [class.editing]="isEditing" nz-row>
+  <nz-form-control class="description-hover position-relative">
+    <div *ngIf="!isEditing" class="description-editor-preview" [class.empty]="!this.isEditing && isEmpty()"
+         (click)="toggleEdit(true)"
+         [innerHTML]="service.model.task.description"></div>
+    <span
+      *ngIf="!this.isEditing && isEmpty()"
+      class="ps-1 description-editor-placeholder"
+      nz-typography nzType="secondary">Add a more detailed description...</span>
+    <editor
+      class="description-editor"
+      [class.editing]="isEditing"
+      [init]="CONFIG"
+      [apiKey]="apiKey"
+      [(ngModel)]="service.model.task.description"
+      (onBlur)="onDescriptionInputBlur()"
+      #descriptionEditor
+    ></editor>
+  </nz-form-control>
+</nz-form-item>

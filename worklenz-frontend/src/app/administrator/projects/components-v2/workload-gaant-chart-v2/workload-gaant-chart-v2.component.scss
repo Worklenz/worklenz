@@ -1,0 +1,316 @@
+.gannt {
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.top, .top-left-placeholder {
+  max-height: 70px;
+  min-height: 70px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: white;
+}
+
+.top-left-placeholder {
+  width: 100%;
+  right: 0;
+  box-shadow: 0px 1px #f0f0f0;
+}
+
+.fixed-left-column, .fixed-right-column {
+  overflow-y: auto;
+  min-height: calc(100vh - 220px);
+  max-height: calc(100vh - 220px);
+  will-change: transform;
+  transition: scroll-behavior 0.125s ease;
+}
+
+.fixed-left-column {
+  min-width: 500px;
+  max-width: 500px;
+  overflow-x: scroll;
+  box-shadow: 10px 0px 8px -8px #00000026;
+  border-left: 1px solid #f0f0f0;
+  z-index: 9;
+}
+
+.member-details {
+  max-width: 270px;
+  min-width: 270px;
+}
+
+.scroll-animation {
+  scroll-behavior: smooth;
+}
+
+.fixed-right-column {
+  position: relative;
+  overflow-x: scroll;
+  box-shadow: 1px 0px #f0f0f0;
+}
+
+.single-member, .day-boundary-inner, .single-member-task, .h-default {
+  min-height: 60px;
+  max-height: 60px;
+}
+
+.single-member-task {
+  box-shadow: 1px 1px #f0f0f0;
+}
+
+.single-member {
+  border-bottom: 1px solid #f0f0f0;
+  padding-left: 7px;
+  transition: 0.25s all;
+
+  &.active {
+    background: #f8f7f9;
+  }
+}
+
+.m-t-name {
+  min-width: 270px;
+  max-width: 270px;
+}
+
+.m-t-start-date, .m-t-end-date {
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.task-bar {
+  background: #d9d9d9;
+  position: absolute;
+  min-height: 22px;
+  max-height: 22px;
+  border-radius: 4px;
+  overflow: hidden;
+  z-index: 0;
+  cursor: move;
+  transition: 0.125s all;
+}
+
+.duration-indicator {
+  position: absolute;
+  border-radius: 4px;
+  top: 10px;
+  bottom: 10px;
+  overflow: hidden;
+  z-index: 0;
+  transition: 0.125s all;
+  border: 1px solid;
+}
+
+.day-boundary {
+  position: relative;
+  box-shadow: -1px 1px #f0f0f0;
+}
+
+.month-boundary {
+  box-shadow: -1px 0px #f0f0f0;
+  padding-left: 14px;
+  background: #e6f7ff;
+}
+
+
+.resize-handle {
+  position: absolute;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  background-color: #ccc;
+}
+
+.left-handle {
+  left: 0;
+}
+
+.right-handle {
+  right: 0;
+}
+
+.active-hover-bg {
+  cursor: pointer;
+}
+
+table {
+  position: absolute;
+  top: 0;
+  height: 100%
+}
+
+.weekend {
+  background: linear-gradient(-45deg, rgb(230 230 230 / 50%) 12.5%, transparent 12.5%, transparent 50%, rgb(230 230 230 / 50%) 50%, rgb(230 230 230 / 50%) 62.5%, transparent 62.5%, transparent) 0% 0%/5px 5px;
+}
+
+.middle {
+  position: relative;
+}
+
+.day-cells {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  height: 100%;
+  z-index: -1;
+}
+
+.inner-day-cell {
+  box-shadow: -1px 1px #f0f0f0;
+  height: 100%;
+}
+
+.bar-top {
+  padding-top: 11px;
+}
+
+.name-ellipsis {
+  max-width: 200px;
+  line-height: 14px;
+}
+
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-indicator, .indicator-bars {
+  border-radius: 4px;
+}
+
+.indicator-bars {
+  min-width: 185px;
+  max-width: 185px;
+}
+
+.stat-indicator, .indicator-bars, .bar-no-start-date, .bar-no-end-date, .bar-no-start-end-date, .bar-have-start-end-date {
+  min-height: 26px;
+  max-height: 26px;
+}
+
+.bar-no-start-date {
+  background: rgb(248 169 169 / 55%);
+  transition: 0.2s all;
+
+  &:hover {
+    background: rgb(248 146 146 / 85%);
+  }
+}
+
+.bar-no-end-date {
+  background: rgb(249 160 160 / 75%);
+  transition: 0.2s all;
+
+  &:hover {
+    background: rgb(248 146 146 / 90%);
+  }
+}
+
+.bar-no-start-end-date {
+  background: rgb(247 167 167 / 90%);
+  transition: 0.2s all;
+
+  &:hover {
+    background: rgb(248 146 146);
+  }
+}
+
+.bar-have-start-end-date {
+  background: #f0f0f0;
+  transition: 0.2s all;
+}
+
+.m-duration-text {
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 12px;
+}
+
+.today {
+  position: relative;
+
+  &::after {
+    position: absolute;
+    content: "";
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    z-index: -1;
+    background: #188ff9a6;
+  }
+}
+
+.today-bg {
+  background: #188ff9a6;
+
+  &::after {
+    display: none;
+  }
+
+  & div {
+    color: white;
+  }
+}
+
+.highlighter {
+  position: absolute;
+  top: 25px;
+  bottom: 0;
+  z-index: -1;
+}
+
+.d-name {
+  font-size: 13px
+}
+
+.d-day {
+  line-height: 25px
+}
+
+.month-name {
+  min-height: 25px;
+  max-height: 25px
+}
+
+.hover-light-blue {
+  transition: 0.25s all;
+
+  &:hover {
+    background-color: #f8f7f9;
+  }
+}
+
+
+.custom-tooltip-element {
+  position: absolute;
+  opacity: 0;
+  scale: 0;
+  z-index: 999;
+  padding: 6px 8px;
+  color: #fff;
+  text-align: left;
+  text-decoration: none;
+  word-wrap: break-word;
+  background-color: #4a4a4a;
+  border-radius: 4px;
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  transition: 0.25s scale;
+}
+
+.no-data-img-holder {
+  max-width: 100px;
+}
+
+.navigator {
+  transition: 0.25s all;
+  &:hover {
+    color: #1890ff;
+  }
+}
+
+.th-text {
+  color: #000000d9;
+  font-weight: 500;
+}

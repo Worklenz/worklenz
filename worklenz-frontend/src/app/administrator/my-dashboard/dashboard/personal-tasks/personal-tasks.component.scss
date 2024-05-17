@@ -1,0 +1,83 @@
+.ant-card-bordered {
+  transition: 0.3s all;
+  border: 1px solid #e5e5e5;
+}
+
+.ant-card-bordered:hover {
+  border: 1px solid #c5c5c5;
+}
+
+tr {
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.ant-table table {
+  border-collapse: collapse !important;
+}
+
+.ant-table-cell {
+  background: #fff !important;
+}
+
+.text-grey {
+  color: #757B81;
+  font-size: 14px;
+  line-height: 25px;
+  margin-bottom: 0px !important;
+}
+
+.no-data-img-holder {
+  width: 64px;
+  margin-top: 24px;
+}
+
+.project-card {
+  width: 20%;
+  cursor: pointer;
+}
+
+.font-400 {
+  font-weight: 400;
+}
+
+.card-data {
+  padding: 24px;
+}
+
+.projects-td {
+  padding: 4px 11px;
+  height: 44px;
+}
+
+.card-top {
+  padding: 14px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.tasks-td {
+  padding: 4px 11px;
+  height: 44px;
+}
+
+.task-done-btn {
+  max-width: 20px;
+  width: 20px;
+}
+
+.homepage-table {
+  overflow-y: auto;
+  max-height: 420px;
+}
+
+th {
+  font-weight: 500;
+}
+
+.card-data {
+  padding: 12px 24px;
+}

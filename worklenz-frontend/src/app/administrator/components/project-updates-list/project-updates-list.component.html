@@ -1,0 +1,51 @@
+<nz-skeleton [nzLoading]="loading">
+  <ng-container *ngIf="updates.length" class="comments-list">
+    <nz-comment *ngFor="let item of updates" [nzAuthor]="item.created_by"
+                [nzDatetime]="item.created_at | fromNow">
+      <nz-avatar nz-comment-avatar
+                 [style.background-color]="utils.getColor(item.created_by)"
+                 [nzSrc]="item.avatar_url"
+                 [nzText]="item.created_by | firstCharUpper"></nz-avatar>
+      <nz-comment-content *ngIf="item.content">
+        <p class="mention-text" [innerHTML]="item.content"></p>
+      </nz-comment-content>
+      <nz-comment-action *ngIf="canDelete(item.user_id)">
+          <span nz-popconfirm [nzPopconfirmTitle]="'Are you sure?'" (nzOnConfirm)="deleteComment(item.id)">
+            Delete
+          </span>
+      </nz-comment-action>
+    </nz-comment>
+  </ng-container>
+  <form nz-form [formGroup]="form" (submit)="submit()">
+    <nz-mention
+      [nzSuggestions]="projectMembers"
+      [nzValueWith]="valueWith"
+      [nzLoading]="loadingMembers"
+      (nzOnSearchChange)="onSearchChange($event)"
+      [nzNotFoundContent]="'No members found!'"
+      (nzOnSelect)="onSelect($event)"
+      (click)="setFocus(true)"
+    >
+      <nz-textarea-count
+        [nzMaxCharacterCount]="2000">
+      <textarea
+        nz-input
+        placeholder="Add a comment..."
+        [formControlName]="'content'"
+        [maxlength]="2000"
+        [rows]="rows"
+        [nzAutosize]="{ minRows: rows, maxRows: rows }"
+        class="border-0"
+        nzMentionTrigger
+        #input
+      ></textarea>
+      </nz-textarea-count>
+    </nz-mention>
+    <div class="mt-3 justify-content-end d-flex" *ngIf="commentsInputFocused">
+      <nz-space>
+        <button *nzSpaceItem type="button" (click)="cancel()" nz-button nzType="default">Cancel</button>
+        <button *nzSpaceItem [disabled]="!isValid()" type="submit" nz-button nzType="primary">Add</button>
+      </nz-space>
+    </div>
+  </form>
+</nz-skeleton>

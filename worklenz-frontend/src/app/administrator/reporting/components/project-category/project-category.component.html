@@ -1,0 +1,42 @@
+<nz-tag
+  [nzColor]="project?.category_color" class="rounded-pill position-relative" nz-dropdown nzTrigger="click"
+  [nzDropdownMenu]="categoriesDropdown" (nzVisibleChange)="handleLabelsVisibleChange($event)"
+  [nzClickHide]="false" [nzVisible]="show">
+  <nz-space class="align-items-center">
+    <span *nzSpaceItem class="ellipsis" style="max-width: 100px">
+      <ng-container *ngIf="project?.category_name">
+        {{ project?.category_name }}
+      </ng-container>
+      <ng-container *ngIf="!project?.category_name">
+        Set Category
+      </ng-container>
+    </span>
+    <span *nzSpaceItem nz-icon nzType="down" nzTheme="outline"></span>
+    <button *ngIf="project?.category_name" nz-button nzType="text" (click)="$event.stopPropagation();remove()"
+            class="clear-btn">
+      <span nz-icon nzType="close-circle" nzTheme="outline"></span>
+    </button>
+  </nz-space>
+</nz-tag>
+
+<nz-dropdown-menu #categoriesDropdown="nzDropdownMenu">
+  <ul class="members-dropdown" nz-menu>
+    <li class="px-3 py-2">
+      <div>
+        <input [(ngModel)]="categorySearchText" class="border-default-color dropdown-search-input"
+               (keydown.enter)="create()"
+               nz-input placeholder="Search by name" type="text" #searchInput>
+      </div>
+      <span *ngIf="!hasFilteredCategories" nz-typography nzType="secondary">
+        Hit enter to create!
+      </span>
+    </li>
+    <li *ngFor="let item of filteredCategories; trackBy: trackById"
+        (click)="update(item.id)" class="m-0"
+        nz-menu-item>
+      <nz-badge [nzColor]="item.color_code" [nzText]="item?.name || null"></nz-badge>
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+<ng-template #indicatorTemplate><span nz-icon nzType="loading"></span></ng-template>

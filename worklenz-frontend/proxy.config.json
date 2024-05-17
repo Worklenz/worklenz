@@ -1,0 +1,24 @@
+{
+  "/api": {
+    "target": "http://127.0.0.1:3000/",
+    "headers": {
+      "language": "en",
+      "Accept": "application/json",
+      "Content-Type": "application/json; charset=utf-8"
+    },
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/secure": {
+    "target": "http://127.0.0.1:3000/",
+    "headers": {
+      "language": "en",
+      "Accept": "application/json",
+      "Content-Type": "application/json; charset=utf-8"
+    },
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

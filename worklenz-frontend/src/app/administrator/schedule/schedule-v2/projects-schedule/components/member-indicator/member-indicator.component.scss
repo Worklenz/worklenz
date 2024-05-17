@@ -1,0 +1,54 @@
+.duration-indicator {
+  position: absolute;
+  border-radius: 4px;
+  top: 10px;
+  bottom: 10px;
+  overflow: hidden;
+  z-index: 0;
+  transition: 0.125s all;
+  border: none;
+  background: #d9e3ee;
+  &:hover .resize-handle {
+    opacity: 1;
+  }
+}
+
+.resize-handle {
+  position: absolute;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  background-color: #7cb8fb;
+  transition: all 0.15s ease;
+  z-index: 1;
+  opacity: 0;
+
+  &:hover {
+    width: 8px;
+  }
+
+  &::before {
+    position: absolute;
+    content: ':';
+    left: 1px;
+    color: white;
+  }
+}
+
+.left-handle {
+  left: 0;
+}
+
+.right-handle {
+  right: 0;
+}
+
+.log-indicator {
+  background-color: #8fd688;
+  border: none;
+  border-radius: 4px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+}

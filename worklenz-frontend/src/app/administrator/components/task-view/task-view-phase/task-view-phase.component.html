@@ -1,0 +1,22 @@
+<nz-form-item *ngIf="task" class="w-100 mb-2" nz-row>
+  <nz-form-label>Phase</nz-form-label>
+  <nz-form-control>
+    <nz-select
+      [nzCustomTemplate]="taskPriorityTemplate"
+      [nzDropdownMatchSelectWidth]="false"
+      [nzShowArrow]="true"
+      [(ngModel)]="task.phase_id"
+      (ngModelChange)="handleChange($event, task.id)"
+      class="w-auto"
+      [nzPlaceHolder]="'Select phase'"
+      [nzAllowClear]="true"
+    >
+      <nz-option *ngFor="let item of phases" [nzLabel]="item.name" [nzValue]="item.id" nzCustomContent>
+        {{item.name}}
+      </nz-option>
+    </nz-select>
+    <ng-template #taskPriorityTemplate let-selected>
+      <div class="ant-select-selection-item-content d-flex align-items-center">{{selected.nzLabel}}</div>
+    </ng-template>
+  </nz-form-control>
+</nz-form-item>

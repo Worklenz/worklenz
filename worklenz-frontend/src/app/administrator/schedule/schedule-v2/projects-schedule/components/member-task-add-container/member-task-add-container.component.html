@@ -1,0 +1,21 @@
+<ng-container [ngSwitch]="taskInputVisible">
+  <form *ngSwitchCase="true" [formGroup]="form">
+    <input
+      nz-input
+      (blur)="onInputBlur()"
+      (keyup.enter)="addInstantTask()"
+      type="text"
+      tabindex="1"
+      placeholder="Type your task and hit enter"
+      [nzBorderless]="true"
+      [formControlName]="'name'"
+      [readOnly]="creating"
+      #taskInput
+    />
+  </form>
+  <div *ngSwitchCase="false" [attr.id]="id" class="editable-row d-block w-25 task-name"
+       (click)="focusTaskInput()">
+    <span nz-icon class="input-icon" [nzType]="creating ? 'loading' : 'plus'" [nzTheme]="'outline'"></span>
+    <span> {{label}}</span>
+  </div>
+</ng-container>

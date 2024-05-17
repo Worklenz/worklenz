@@ -1,0 +1,56 @@
+<nz-dropdown-menu #contextMenuDropdown="nzDropdownMenu">
+  <ul nz-menu>
+    <!-- Assign to me -->
+    <li (click)="assignMe()" nz-menu-item>
+      <span class="me-2" nz-icon [nzType]="assigning ? 'loading' : 'user-add'"
+            [nzTheme]="'outline'"></span>
+      Assign to me
+    </li>
+
+    <!-- Move To -->
+    <ng-container [ngSwitch]="hasSubTasks">
+      <li *ngSwitchCase="false" nz-submenu [nzTitle]="titleTemplate">
+        <ul>
+          <li class="m-0" *ngFor="let item of groups;"
+              (click)="changeGroup(item.id);" nz-menu-item>
+            <nz-badge [nzColor]="item.color_code | safeString"
+                      [nzText]="textTmpl"></nz-badge>
+            <ng-template #textTmpl>
+              {{item?.name || null}}
+            </ng-template>
+          </li>
+        </ul>
+      </li>
+      <li *ngSwitchCase="false" (click)="archive()" nz-menu-item>
+        <span class="me-2" nz-icon [nzType]="archiving ? 'loading' : 'inbox'"
+              [nzTheme]="'outline'"></span>
+        {{archived ? ' Unarchived' : ' Archive'}}
+      </li>
+      <li *ngSwitchCase="true" (click)="convertToTask()" nz-menu-item>
+        <span class="me-2" nz-icon [nzType]="converting ? 'loading' : 'retweet'" [nzTheme]="'outline'"></span>
+        Convert to a Task
+      </li>
+
+      <ng-container *ngSwitchCase="false">
+        <ng-container *ngIf="selectedTask?.sub_tasks_count === 0">
+          <li (click)="showTasksModal()" nz-menu-item>
+            <span class="me-2" nz-icon nzType="double-right" nzTheme="outline"></span>
+            Convert to Sub task
+          </li>
+        </ng-container>
+      </ng-container>
+
+    </ng-container>
+
+    <li (click)="delete()" nz-menu-item>
+      <span class="me-2" nz-icon [nzType]="deleting ? 'loading' : 'delete'" [nzTheme]="'outline'"></span>
+      Delete
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+<ng-template #titleTemplate>
+  <span nz-icon class="me-2" nzType="retweet" nzTheme="outline"></span> Move to
+</ng-template>
+
+<worklenz-convert-to-subtask-modal></worklenz-convert-to-subtask-modal>
