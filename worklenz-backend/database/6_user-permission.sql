@@ -1,7 +1,11 @@
+-- Default ROLE : worklenz_client
+-- Default USER : worklenz_backend
+-- Change DATABASE_NAME, ROLE, PASSWORD and USER as needed.
+
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 CREATE ROLE worklenz_client;
 
-GRANT CONNECT ON DATABASE "DATABASE_NAME" TO worklenz_client;
+GRANT CONNECT ON DATABASE 'DATABASE_NAME' TO worklenz_client;
 GRANT INSERT, SELECT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO worklenz_client;
 
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO worklenz_client;

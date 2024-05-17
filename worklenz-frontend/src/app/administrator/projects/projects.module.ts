@@ -105,7 +105,6 @@ import {
 import {
   ProjectTemplateImportDrawerComponent
 } from "@admin/components/project-template-import-drawer/project-template-import-drawer.component";
-import { MigrateTemplatesComponent } from './projects/migrate-templates/migrate-templates.component';
 import {WorkloadGaantChartV2Component} from './components-v2/workload-gaant-chart-v2/workload-gaant-chart-v2.component';
 import {TaskNameComponent} from './components-v2/workload-gaant-chart-v2/components/task-name/task-name.component';
 import {WLStartDateComponent} from './components-v2/workload-gaant-chart-v2/components/start-date/start-date.component';
@@ -131,10 +130,6 @@ import { MemberTaskAddContainerComponent } from './components-v2/workload-gaant-
 import { TaskListHeaderComponent } from './components-v2/workload-gaant-chart-v2/components/task-list-header/task-list-header.component';
 import { WLContextMenuComponent } from './components-v2/workload-gaant-chart-v2/components/context-menu/context-menu.component';
 import {GanttChartV2Module} from "../modules/roadmap-v2/gantt-chart-v2.module";
-import { MigrateMemberAllocationsComponent } from './projects/migrate-member-allocations/migrate-member-allocations.component';
-import { MigrateProjectPhasesComponent } from './projects/migrate-project-phases/migrate-project-phases.component';
-import { MigratePhaseSortOrderComponent } from './projects/migrate-phase-sort-order/migrate-phase-sort-order.component';
-
 
 @NgModule({
   declarations: [
@@ -171,11 +166,7 @@ import { MigratePhaseSortOrderComponent } from './projects/migrate-phase-sort-or
     OverviewTabComponent,
     MemberTaskAddContainerComponent,
     TaskListHeaderComponent,
-    WLContextMenuComponent,
-    MigrateTemplatesComponent,
-    MigrateMemberAllocationsComponent,
-    MigrateProjectPhasesComponent,
-    MigratePhaseSortOrderComponent
+    WLContextMenuComponent
   ],
   imports: [
     CommonModule,
