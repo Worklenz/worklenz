@@ -1,0 +1,25 @@
+<ng-container *ngIf="canDisplay()">
+  <div class="progress-container-td">
+    <div class="progress-container" nz-tooltip [nzTooltipTitle]="titleTemplate">
+      <div class="d-flex">
+        <div class="position-relative done" *ngIf="done" [style.width]="done | withPercentageMark">
+          <small nz-typography>{{done | withPercentageMark}}</small>
+        </div>
+        <div class="position-relative doing" *ngIf="doing" [style.width]="doing | withPercentageMark">
+          <small nz-typography>{{doing | withPercentageMark}}</small>
+        </div>
+        <div class="position-relative todo" *ngIf="todo" [style.width]="todo | withPercentageMark">
+          <small nz-typography>{{todo | withPercentageMark}}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #titleTemplate>
+    <div class="text-white">
+      <div>Done: {{done | withPercentageMark}}</div>
+      <div>Doing: {{doing | withPercentageMark}}</div>
+      <div>Todo: {{todo | withPercentageMark}}</div>
+    </div>
+  </ng-template>
+</ng-container>

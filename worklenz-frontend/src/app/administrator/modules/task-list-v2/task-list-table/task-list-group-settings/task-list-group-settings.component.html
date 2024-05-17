@@ -1,0 +1,76 @@
+<div class="d-flex justify-content-between align-items-center position-relative">
+  <!-- Drag handle -->
+  <!--  <div class="task-drag-handler" cdkDragHandle>-->
+  <!--    <div class="drag-handle">-->
+  <!--      <span nz-icon [nzType]="'holder'" [nzTheme]="'outline'"></span>-->
+  <!--    </div>-->
+  <!--  </div>-->
+
+  <div class="d-flex align-items-center">
+    <button nz-button class="collapse btn border-0" [class.active]="group.tasks.length"
+            (click)="onToggleClick($event)" [style.background-color]="group.color_code">
+      <span class="collapse-icon" nz-icon [nzType]="'right'" [nzTheme]="'outline'"></span>
+      <ng-container [ngSwitch]="edit">
+        <ng-container *ngSwitchCase="true">
+          <input
+            [id]="'group-name-' + group.id" nz-input
+            [class.bg-and-grey]="!isEditColProgress"
+            [disabled]="isEditColProgress"
+            class="p-0"
+            [(ngModel)]="group.name"
+            (keydown.enter)="onBlurEditColumn(group)"
+            (blur)="onBlurEditColumn(group)"/>
+          <span nz-icon *ngIf="isEditColProgress" [nzType]="'loading'" [nzTheme]="'outline'" class="ms-2"></span>
+        </ng-container>
+        <ng-container *ngSwitchCase="false">
+          {{group.name}} ({{group.tasks.length}})
+        </ng-container>
+      </ng-container>
+    </button>
+
+    <button *ngIf="canDisplayActions()" nz-button class="p-0" [nzType]="'text'" nz-dropdown [nzTrigger]="'click'"
+            (nzVisibleChange)="showMenu = $event"
+            [nzDropdownMenu]="menu">
+      <span nz-icon [nzType]="'ellipsis'" [nzTheme]="'outline'"></span>
+    </button>
+  </div>
+
+  <div *ngIf="isGroupByPhases && this.group.name !== 'Unmapped'" class="d-flex align-items-center me-2 ms-auto">
+    <worklenz-task-list-phase-duration [group]="group"></worklenz-task-list-phase-duration>
+  </div>
+
+  <worklenz-tasks-progress-bar
+    *ngIf="isProgressBarAvailable()"
+    [todoProgress]="group.todo_progress"
+    [doingProgress]="group.doing_progress"
+    [doneProgress]="group.done_progress"
+  ></worklenz-tasks-progress-bar>
+</div>
+
+<nz-dropdown-menu #menu="nzDropdownMenu">
+  <ul *ngIf="showMenu" nz-menu>
+    <li (click)="editGroupName()" nz-menu-item>
+      <span nz-icon class="me-2" nzType="edit" nzTheme="outline"></span>
+      Rename
+    </li>
+    <li *ngIf="isGroupByStatus" nz-submenu [nzTitle]="titleTemplate">
+      <ul>
+        <li class="m-0" *ngFor="let item of categories;" nz-tooltip [nzTooltipTitle]="item.description | safeString"
+            (click)="changeStatusCategory(group, item.id);"
+            [nzTooltipPlacement]="'right'" nz-menu-item>
+          <nz-badge [nzColor]="item.color_code | safeString" [nzText]="textTmpl"></nz-badge>
+
+          <ng-template #textTmpl>
+              <span [style.font-weight]="item.id === group.category_id ? 'bold' : null">
+                {{item?.name || null}}
+              </span>
+          </ng-template>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+<ng-template #titleTemplate>
+  <span nz-icon class="me-2" nzType="retweet" nzTheme="outline"></span> Change category
+</ng-template>

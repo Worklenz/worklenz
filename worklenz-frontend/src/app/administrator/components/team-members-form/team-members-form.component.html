@@ -1,0 +1,99 @@
+<nz-drawer
+  (nzOnClose)="handleCancel()"
+  [(nzVisible)]="show"
+  (nzVisibleChange)="visibilityChange($event)"
+  [nzClosable]="true"
+  [nzTitle]="titleTemplate"
+  [nzPlacement]="'right'"
+>
+  <ng-container *nzDrawerContent>
+    <nz-spin [nzSpinning]="isLoading()">
+      <form (submit)="handleOk()" [formGroup]="form" [nzLayout]="'vertical'" nz-form>
+
+        <nz-form-item *ngIf="!memberId">
+          <nz-form-label
+            [nzSpan]="null"
+            [nzTooltipTitle]="model.email && memberId ? 'Email cannot be changed.' : ''"
+            nzRequired
+          >
+            Email(s)
+          </nz-form-label>
+          <nz-form-control [nzSpan]="null" [nzExtra]="emailsNote">
+            <nz-select nzMode="tags" [nzNotFoundContent]="'Type an email address and hit enter...'"
+                       [nzPlaceHolder]="'Add team members by email'"
+                       [formControlName]="'email'"></nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <ng-template #emailsNote>
+          <span nz-typography nzType="secondary" style="font-size: 12px;">
+            Invitees will be added to the team either they accept the invitation or not.
+          </span>
+        </ng-template>
+
+        <worklenz-job-titles-autocomplete
+          *ngIf="canDisplayTitles()"
+          (loadingChange)="jobTitlesLoading = $event"
+          [title]="jobTitle"
+          [placeholder]="'Select the job title (Optional)'"
+          (titleChange)="jobTitle = $event"
+        ></worklenz-job-titles-autocomplete>
+
+        <nz-form-item>
+          <nz-form-label
+            [nzSpan]="null"
+            [nzTooltipTitle]="isOwnAccount() ? 'You cannot change your permissions. Ask owner to update it.' : ''"
+            nz-tooltip
+            nzRequired>Access
+          </nz-form-label>
+          <nz-form-control [nzSpan]="null">
+            <!--            <nz-switch [formControlName]="'is_admin'"></nz-switch>-->
+            <nz-select [formControlName]="'access'">
+              <nz-option nzValue="admin" nzLabel="Admin"></nz-option>
+              <nz-option nzValue="member" nzLabel="Member"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <button [nzLoading]="loading" nz-button nzBlock nzType="primary"
+                type="submit">{{okButtonText}}</button>
+
+        <button *ngIf="isResendAvailable();" [disabled]="loading || resending"
+                nz-button nzBlock nzType="dashed"
+                class="mt-2"
+                (click)="resendInvitation()"
+                type="button">Resend invitation
+        </button>
+
+        <p *ngIf="isEditMember() && model.created_at" class="mb-0 mt-3" nz-typography
+           nzType="secondary">
+          <small nz-tooltip nzTooltipPlacement="right" nzTooltipTitle="{{model.created_at | date: 'medium'}}">
+            Added {{model.created_at | fromNow}}
+          </small>
+        </p>
+        <p *ngIf="isEditMember() && model?.updated_at" class="mb-0"
+           nz-typography
+           nzType="secondary">
+          <small nz-tooltip nzTooltipPlacement="right" nzTooltipTitle="{{model.updated_at | date: 'medium'}}">
+            Updated {{model.updated_at | fromNow}}
+          </small>
+        </p>
+      </form>
+    </nz-spin>
+  </ng-container>
+</nz-drawer>
+
+<ng-template #titleTemplate>
+  <div class="d-flex align-items-center">
+    <nz-avatar *ngIf="model.name" [nzSize]="28"
+               [nzText]="model.name.charAt(0).toUpperCase()"
+               [style.background-color]="getColor(model.name)"
+               [nzSrc]="model.avatar_url"
+               class="me-2">
+    </nz-avatar>
+    <div>
+      <span class="d-block">{{title}}</span>
+      <small nz-typography nzType="secondary">{{model.email}}</small>
+    </div>
+  </div>
+</ng-template>

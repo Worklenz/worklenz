@@ -1,0 +1,53 @@
+<div class="py-0" nz-popover
+     [nzPopoverTitle]="'Time Tracking Log'"
+     (nzPopoverVisibleChange)="handleVisibleChange($event, task)"
+     [nzPopoverTrigger]="'click'"
+     [nzPopoverOverlayStyle]="{'width': '450px'}"
+     [nzPopoverPlacement]="'bottomRight'"
+     [nzPopoverContent]="contentTemplate">
+
+  <worklenz-task-timer
+    *ngIf="task.id"
+    [taskId]="task.id"
+    [projectId]="task.project_id ? task.project_id : ''"
+    [timerStartTime]="task.timer_start_time || null"
+    (changeListTime)="task.timer_start_time = $event"
+    (changeListTimeToDefault)="task.timer_start_time = 0"
+  ></worklenz-task-timer>
+
+  <ng-template #contentTemplate>
+    <nz-empty *ngIf="!timeLogs.length && !loading"></nz-empty>
+    <nz-skeleton [nzLoading]="loading" [nzActive]="true">
+      <nz-list [nzSize]="'small'" *ngIf="timeLogs.length">
+        <ng-container>
+          <nz-list-item *ngFor="let item of timeLogs">
+            <nz-list-item-meta class="m-0">
+              <nz-list-item-meta-avatar [nzSrc]="item.avatar_url">
+                <nz-avatar *ngIf="!item.avatar_url" [nzSize]="28" [nzText]="item.user_name | firstCharUpper"
+                           [style.background-color]="item.avatar_color">
+                </nz-avatar>
+              </nz-list-item-meta-avatar>
+              <nz-list-item-meta-title>
+                  <span nz-typography style="font-weight: normal">
+                    <strong>{{item.user_name}}</strong> logged <strong>{{item.time_spent_text}}</strong>
+                    {{item.logged_by_timer ? 'via Timer' : ''}} about {{item.created_at | fromNow}}
+                  </span>
+              </nz-list-item-meta-title>
+
+              <nz-list-item-meta-description>
+                <ng-container [ngSwitch]="!!item.logged_by_timer">
+                  <ng-template [ngSwitchCase]="true">
+                    {{item.start_time | date: dateFormat}} - {{item.end_time | date: dateFormat}}
+                  </ng-template>
+                  <ng-template [ngSwitchCase]="false">
+                    {{item.start_time | date: dateFormat}}
+                  </ng-template>
+                </ng-container>
+              </nz-list-item-meta-description>
+            </nz-list-item-meta>
+          </nz-list-item>
+        </ng-container>
+      </nz-list>
+    </nz-skeleton>
+  </ng-template>
+</div>

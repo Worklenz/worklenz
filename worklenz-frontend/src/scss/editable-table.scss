@@ -1,0 +1,73 @@
+.editable-cell {
+  position: relative;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.editable-row {
+  display: flex;
+  justify-content: space-between;
+
+  .plus-icon {
+    display: none;
+  }
+
+  &:hover {
+    .plus-icon {
+      display: block;
+    }
+  }
+
+  textarea {
+    width: 100%;
+  }
+}
+
+.editable-row:hover .editable-cell {
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 4px 11px;
+  cursor: text;
+  width: 100%;
+}
+
+.editable {
+  cursor: pointer;
+
+  .plus-icon {
+    display: none;
+    position: absolute;
+    right: 10px;
+    top: 0;
+    //height: 100%;
+    margin: auto;
+    bottom: 0;
+    align-items: center;
+    //font-size: 18px;
+    //color: #52c41a;
+  }
+
+  &:hover {
+    background: #f0f2f5 !important;
+
+    .plus-icon {
+      display: flex;
+    }
+  }
+
+  nz-select {
+    //position: absolute;
+    //left: 0;
+    //right: 0;
+    //top: 0;
+    //bottom: 0;
+
+    nz-select-top-control {
+      display: flex !important;
+      align-items: center !important;
+      height: 100% !important;
+      border: 0 !important;
+      background-color: transparent !important;
+    }
+  }
+}

@@ -1,0 +1,21 @@
+<div class="task-view-comments" *ngIf="taskId" #commentsView>
+  <nz-skeleton [nzLoading]="loading">
+    <ng-container *ngIf="comments.length">
+      <nz-comment *ngFor="let item of comments; trackBy: trackById" [nzAuthor]="item.member_name"
+                  [nzDatetime]="item.created_at | fromNow">
+        <nz-avatar nz-comment-avatar
+                   [style.background-color]="utils.getColor(item.member_name)"
+                   [nzSrc]="item.avatar_url"
+                   [nzText]="item.member_name | firstCharUpper"></nz-avatar>
+        <nz-comment-content>
+          <p [innerHTML]="item.content"></p>
+        </nz-comment-content>
+        <nz-comment-action *ngIf="canDelete(item.user_id)">
+          <span nz-popconfirm [nzPopconfirmTitle]="'Are you sure?'" (nzOnConfirm)="deleteComment(item.id)">
+            Delete
+          </span>
+        </nz-comment-action>
+      </nz-comment>
+    </ng-container>
+  </nz-skeleton>
+</div>

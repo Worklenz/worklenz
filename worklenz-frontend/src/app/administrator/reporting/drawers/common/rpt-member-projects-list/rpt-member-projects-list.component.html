@@ -1,0 +1,50 @@
+<nz-skeleton [nzLoading]="loading" [nzActive]="true" class="d-block">
+
+  <nz-input-group style="width: 250px" class="mb-3" [nzSuffix]="suffixIconSearch">
+    <input type="text"
+           nz-input
+           placeholder="Search by name"
+           [(ngModel)]="searchText" (ngModelChange)="search()" />
+  </nz-input-group>
+  <ng-template #suffixIconSearch>
+    <span nz-icon nzType="search"></span>
+  </ng-template>
+
+  <div>
+    <nz-table #projectsTable
+              [nzData]="model"
+              [nzLoading]="loading"
+              [nzScroll]="{ x: '260px' }">
+      <thead>
+      <tr>
+        <th nzLeft [nzWidth]="'260px'" style="z-index: 11" scope="col">Project</th>
+        <th [nzWidth]="'160px'" scope="col">Team</th>
+        <th class="text-center" [nzWidth]="'130px'" scope="col">Tasks</th>
+        <th [nzWidth]="'150px'" scope="col">Contribution</th>
+        <th class="text-center" [nzWidth]="'170px'" scope="col">Incompleted Tasks</th>
+        <th class="text-center" [nzWidth]="'170px'" scope="col">Completed Tasks</th>
+        <th class="text-center" [nzWidth]="'160px'" scope="col">Overdue Tasks</th>
+        <th [nzWidth]="'200px'" scope="col">Logged Time</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr class="cursor-pointer" *ngFor="let project of projectsTable.data" (click)="openProject(project)">
+        <td nzLeft>{{project.name}}</td>
+        <td>{{project.team}}</td>
+        <td class="text-center">{{project.task_count}}</td>
+        <td>
+          <nz-progress [nzPercent]="project.contribution" nzSize="small"></nz-progress>
+        </td>
+        <td class="text-center">{{project.incompleted}}</td>
+        <td class="text-center">{{project.completed}}</td>
+        <td class="text-center">{{project.overdue}}</td>
+        <td>{{project.time_logged}}</td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </div>
+</nz-skeleton>
+
+<ng-template #naTemplate>
+  <worklenz-na></worklenz-na>
+</ng-template>

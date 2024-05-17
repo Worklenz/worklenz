@@ -1,0 +1,5 @@
+<ng-container *ngIf="task?.id && !task?.is_task">
+  <button nz-button nzType="text" nzShape="circle" (click)="markAsDone()" nz-tooltip [nzTooltipTitle]="'Mark as done'">
+    <span nz-icon nzType="check-circle" nzTheme="outline" [ngClass]="loading ? 'green':''"></span>
+  </button>
+</ng-container>

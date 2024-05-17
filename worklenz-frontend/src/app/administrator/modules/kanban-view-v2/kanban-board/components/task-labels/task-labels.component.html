@@ -1,0 +1,15 @@
+<div *ngIf="task.labels?.length" class="labels-section">
+  <nz-tag class="ms-1"
+          nz-tooltip [nzTooltipTitle]="labelsList">
+    {{task.all_labels?.length}}
+    <span *ngIf="task.labels?.length === 1" nz-icon nzType="tag" nzTheme="outline" style="font-size: 13px;"></span>
+    <span *ngIf="task.labels && task.labels.length > 1" nz-icon nzType="tags" nzTheme="outline"
+          style="font-size: 13px;"></span>
+  </nz-tag>
+</div>
+
+<ng-template #labelsList>
+  <ng-container *ngFor="let item of task.all_labels">
+    <p class="pb-0 mb-0">{{item.name}}</p>
+  </ng-container>
+</ng-template>

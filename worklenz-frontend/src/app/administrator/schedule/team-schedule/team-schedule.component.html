@@ -1,0 +1,155 @@
+<div class="row bg-white mt-2 mx-0">
+  <div class="col-md-12 p-0">
+
+    <!-- empty template -->
+    <div *ngIf="!resourceData.length && !loading">
+      <div class="pt-5 pb-5">
+        <div class="no-data-img-holder mx-auto mb-4">
+          <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+        </div>
+        <span nz-typography class="mx-auto d-block no-data-text" style="width: max-content">The selected team has no scheduled member activities.</span>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5">
+      <nz-spin nzSimple></nz-spin>
+    </div>
+    <div *ngIf="resourceData.length && !loading">
+      <div class="grid-scroller">
+        <div class="grid">
+          <div class="grid-entry fixed-left header-bg"></div>
+          <div class="grid-entry m-0 p-0 month-grid" style="width: 0;">
+            <ng-container>
+                <span class="gantt__row-bars py-1">
+                  <span *ngFor="let month of months; let i = index;"
+                        [style.grid-column]="month.min + '/' + month.max"
+                        class="justify-content-between d-flex" style="z-index: 1;">
+                    <small *ngIf="month.days_of_week && month.days_of_week.length > 1"
+                           class="ps-2">W{{month.week_index || 0 - 1 }}</small>
+                    <span *ngIf="month.days_of_week && month.days_of_week.length > 2"
+                          class="month">{{month.month_name}}</span>
+                    <span></span>
+                  </span>
+                </span>
+            </ng-container>
+          </div>
+          <div *ngFor="let date of dates" [class.sunday]="date.isLastDayOfWeek"
+               class="grid-entry border-0 header-bg"></div>
+          <div class="grid-header fixed-left top-grid-header"></div>
+          <div class="grid-header m-0 p-0"></div>
+          <div *ngFor="let date of dates; let i = index;" [class.sunday]="date.isSunday"
+               [class.today-header]="date.isToday"
+               class="grid-header" id="date_{{i}}">{{date.date | date: 'dd'}}
+          </div>
+          <ng-container *ngFor="let resource of resourceData;">
+            <div
+              class="grid-entry gantt__row-first d-flex align-items-center justify-content-between fixed-left">
+              <div (click)="resource.collapsed = !resource.collapsed" class="float-end p-0 project-collapse-icon"
+                   nz-button nzType="text">
+                <img width="16" src="/assets/images/chevron-down-solid.svg" alt="Subtasks"
+                     class="align-self-center cursor-pointer img-fluid"
+                     [class.expanded]="!resource.collapsed"/>
+              </div>
+              <span class="project-name me-auto ms-2 d-flex">
+                <div class="avatar">
+                    <nz-avatar *ngIf="resource.name" [nzSize]="28"
+                               [nzText]="resource.name ? resource.name.charAt(0).toUpperCase() : ''"
+                               [style.background-color]="getColor(resource.name || resource.invitee_email)"
+                               class="me-2"></nz-avatar>
+                  </div>
+                <!--                Use worklenz-avatars-->
+                {{resource.name || resource.invitee_email}}</span>
+            </div>
+            <div class="grid-entry m-0 p-0 d-flex" style="width: 0;">
+              <ul class="gantt__row-bars">
+                <li *ngFor="let element of resource.schedule; let i = index;" class="px-2 py-0 resource-cell"
+                    (click)="scheduleClicked(element.scheduled_tasks, resource.id, element.date_series)"
+                    [style.grid-column]="element.min" [style.background-color]="resource.color_code">
+                </li>
+              </ul>
+            </div>
+            <div *ngFor="let date of dates" [class.weekend]="date.isWeekend" class="grid-entry">
+            </div>
+
+            <!-- project members -->
+            <ng-container *ngIf="resource.collapsed">
+              <ng-container *ngFor="let element of resource.project_members;">
+                <div class="grid-entry fixed-left d-flex align-items-center ps-4"
+                     [class.child-background-cell]="resource.collapsed">
+                  <div class="member">
+                    {{element.name}}
+                  </div>
+                </div>
+                <div *ngIf="resource.collapsed" class="grid-entry m-0 p-0 d-flex" style="width: 0;"
+                     [class.child-background-color]="resource.collapsed">
+                  <ul class="gantt__row-bars">
+                    <li *ngFor="let task of element.tasks; let i = index;" class="px-2 py-0 resource-cell"
+                        [style.grid-column]="task.min" [style.background-color]="element.color_code"
+                        (click)="scheduleClicked(task.scheduled_tasks, resource.id, task.date_series)">
+                    </li>
+                  </ul>
+                </div>
+                <div *ngFor="let date of dates" [class.weekend]="date.isWeekend" class="grid-entry "
+                     [class.child-background-color]="resource.collapsed"></div>
+              </ng-container>
+              <!-- end of project members -->
+
+              <!-- unassigned tasks -->
+              <ng-container *ngIf="resource.unassigned_tasks?.length">
+                <div class="grid-entry fixed-left d-flex align-items-center ps-4 child-background-color">
+                  <div class="avatar">
+                    <nz-avatar *ngIf="resource.unassigned_tasks" [nzSize]="28" [nzText]="'U'"
+                               [style.background-color]="getColor('Unassigned')" class="me-2"></nz-avatar>
+                  </div>
+                  <div class="member">Unassigned tasks</div>
+                </div>
+                <div *ngIf="resource.unassigned_tasks.length" class="grid-entry m-0 p-0 d-flex" style="width: 0;">
+                  <ul class="gantt__row-bars">
+                    <li *ngFor="let element of resource.unassigned_tasks; let i = index;"
+                        class="px-2 py-0 resource-cell" [style.grid-column]="element.min"
+                        [style.background-color]="resource.color_code"
+                        (click)="scheduleClicked(element.scheduled_tasks, resource.id, element.date_series)">
+                    </li>
+                  </ul>
+                </div>
+                <div *ngFor="let date of dates" [class.weekend]="date.isWeekend"
+                     class="grid-entry child-background-color"></div>
+              </ng-container>
+              <!-- end of unassigned tasks -->
+
+            </ng-container>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--<worklenz-task-form (onCancel)="selectedTaskId = null;" (onCreateOrUpdate)="onTaskCreateOrUpdate()"-->
+<!--                    [(show)]="showTaskModal"-->
+<!--                    [projectId]="projectId"-->
+<!--                    [taskId]="selectedTaskId"></worklenz-task-form>-->
+
+<worklenz-task-view
+  [(show)]="showTaskModal"
+  [projectId]="projectId"
+  [(taskId)]="selectedTaskId"
+></worklenz-task-view>
+
+<nz-drawer [nzVisible]="visible" (nzOnClose)="close()" [nzWidth]="650" [nzTitle]="title"
+           [nzOffsetX]="showTaskModal ? 180 : 0" (nzVisibleChange)="onVisibilityChange($event);">
+  <ng-container *nzDrawerContent>
+    <div class="mx-4 mt-3">
+      <ul nz-list [nzDataSource]="scheduledTasks" nzBordered>
+        <li nz-list-item *ngFor="let task of scheduledTasks" class="cursor-pointer"
+            (click)="taskSelected(task.id, task.project_id)">
+          <nz-list-item-meta [nzDescription]="task.project_name">
+            <nz-list-item-meta-title>
+              {{task.name}}
+            </nz-list-item-meta-title>
+          </nz-list-item-meta>
+        </li>
+      </ul>
+    </div>
+  </ng-container>
+</nz-drawer>

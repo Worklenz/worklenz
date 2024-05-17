@@ -1,0 +1,49 @@
+<!-- We will need this later, this is the Project-share by link UI -->
+<!--        <button *nzSpaceItem nz-button nz-tooltip nzShape="circle" nzTooltipTitle="Share project"-->
+<!--                nz-popover-->
+<!--                [nzPopoverTitle]="sharePopoverTitle"-->
+<!--                [nzPopoverContent]="sharePopoverTemplate"-->
+<!--                [nzPopoverTrigger]="'click'"-->
+<!--                [nzPopoverPlacement]="'bottom'"-->
+<!--                (nzPopoverVisibleChange)="$event ? getSharingInfo() : null"-->
+<!--                nzType="default">-->
+<!--          <span nz-icon nzTheme="outline" nzType="share-alt"></span>-->
+<!--        </button>-->
+<!--        <ng-template #sharePopoverTemplate>-->
+
+<!--          <nz-skeleton [nzLoading]="loadingSharingInfo" [nzActive]="true">-->
+<!--            <button *ngIf="!sharingEnabled" [nzLoading]="enablingSharing" nz-button nzType="primary"-->
+<!--                    (click)="enableSharing()" nzBlock>Enable-->
+<!--            </button>-->
+
+<!--            <ng-container *ngIf="sharingEnabled">-->
+
+<!--              <nz-input-group nzSearch [nzAddOnAfter]="suffixIconButton">-->
+<!--                <input type="text" nz-input-->
+<!--                       (focus)="inputElement.select()"-->
+<!--                       [ngModel]="sharedInfo.url"-->
+<!--                       readonly #inputElement/>-->
+<!--              </nz-input-group>-->
+<!--              <ng-template #suffixIconButton>-->
+<!--                <button (click)="copy(textElement)" nz-button nzType="primary" nzSearch>-->
+<!--                  <span nz-icon nzType="copy"></span> <span class="ms-1" #textElement>Copy</span>-->
+<!--                </button>-->
+<!--              </ng-template>-->
+
+<!--              <a nz-button nzType="link" class="p-0 d-flex align-items-center" [href]="sharedInfo.url" target="_blank"-->
+<!--                 rel="noopener">-->
+<!--                See a preview <img src="/assets/images/open-icon.svg" class="ms-1" style="width: 12px" alt="">-->
+<!--              </a>-->
+
+<!--              <button class="mt-2" nzSize="small" nz-button [nzLoading]="sharingCanceling" [nzType]="'dashed'" nzDanger-->
+<!--                      (click)="cancelSharing()"-->
+<!--                      nzBlock>-->
+<!--                Cancel sharing-->
+<!--              </button>-->
+<!--              <small class="d-block mt-1" nz-typography nzType="secondary">-->
+<!--                Enabled by {{sharedInfo.created_by}}, {{sharedInfo.created_at | fromNow}}-->
+<!--              </small>-->
+<!--            </ng-container>-->
+<!--          </nz-skeleton>-->
+
+<!--        </ng-template>-->

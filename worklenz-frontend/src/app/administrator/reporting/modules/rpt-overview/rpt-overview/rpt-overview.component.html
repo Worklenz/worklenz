@@ -1,0 +1,38 @@
+<worklenz-rpt-header [title]="'Overview'" [showDuration]="false" (isDurationLabelSelected)="isDurationLabelSelected = $event" [showExport]="false"></worklenz-rpt-header>
+
+<nz-content>
+  <worklenz-rpt-overview-cards class="d-block mb-4"></worklenz-rpt-overview-cards>
+
+  <nz-card [nzLoading]="loading">
+    <h3>Teams</h3>
+    <nz-table [nzSize]="'small'" [nzData]="teams" [nzShowPagination]="true" [nzHideOnSinglePage]="true" #table>
+      <thead>
+      <tr>
+        <th>Name</th>
+        <th>Projects</th>
+        <th>Members</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of table.data trackBy: trackBy" class="cursor-pointer" (click)="openTeamInfo(data)">
+        <td>{{ data.name }}</td>
+        <td>{{ data.projects_count }}</td>
+        <td>
+          <ng-container *ngIf="!data.members?.length; else avatars">
+            -
+          </ng-container>
+          <ng-template #avatars>
+            <worklenz-avatars [names]="data.members || []"></worklenz-avatars>
+          </ng-template>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+</nz-content>
+
+<worklenz-rpt-team-drawer></worklenz-rpt-team-drawer>
+<worklenz-rpt-project-drawer></worklenz-rpt-project-drawer>
+<worklenz-rpt-member-drawer></worklenz-rpt-member-drawer>
+<worklenz-rpt-tasks-drawer></worklenz-rpt-tasks-drawer>
+<worklenz-rpt-task-view-drawer></worklenz-rpt-task-view-drawer>

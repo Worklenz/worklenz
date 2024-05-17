@@ -1,0 +1,123 @@
+<div class="container">
+  <nz-page-header [nzGhost]="false" class="px-0">
+    <nz-page-header-title>{{ total || 0 }} Member{{total > 1 ? 's' : ''}}</nz-page-header-title>
+    <nz-page-header-extra>
+      <nz-space>
+        <button (click)="refresh()" *nzSpaceItem nz-button nz-tooltip nzShape="circle"
+                nzTooltipTitle="Refresh members" nzType="default">
+          <span [nzSpin]="loading" nz-icon nzTheme="outline" nzType="sync"></span>
+        </button>
+        <form (ngSubmit)="search()" *nzSpaceItem [formGroup]="searchForm" [nzLayout]="'vertical'" nz-form>
+          <nz-input-group [nzSuffix]="suffixIconSearch">
+            <input [formControlName]="'search'" nz-input placeholder="Search by name" type="text"/>
+          </nz-input-group>
+          <ng-template #suffixIconSearch>
+            <span nz-icon nzType="search"></span>
+          </ng-template>
+        </form>
+        <span *nzSpaceItem>
+          <button (click)="openAddMemberForm()" nz-button nzType="primary">Add Member</button>
+        </span>
+      </nz-space>
+    </nz-page-header-extra>
+  </nz-page-header>
+
+  <nz-card>
+    <nz-skeleton [nzActive]="true" [nzLoading]="loading" [nzParagraph]="{ rows: 6 }">
+      <nz-table
+        #table
+        (nzQueryParams)="onQueryParamsChange($event)"
+        [nzData]="model.data || []"
+        [nzFrontPagination]="false"
+        [nzLoading]="loading"
+        [nzPageIndex]="pageIndex"
+        [nzPageSizeOptions]="paginationSizes"
+        [nzPageSize]="pageSize"
+        [nzTotal]="total"
+        class="custom-table"
+        nzShowSizeChanger
+        nzSize="small"
+      >
+        <thead>
+        <tr>
+          <th [nzSortFn]="true" nzColumnKey="name" scope="col">Name</th>
+          <!--        <th [nzSortFn]="true" nzColumnKey="job_title" scope="col">Job Title</th>-->
+          <th [nzSortFn]="true" nzColumnKey="projects_count" scope="col">Projects</th>
+          <th [nzSortFn]="true" nzColumnKey="email" scope="col">Email</th>
+          <th [nzSortFn]="true" colspan="2" nzAlign="left" nzColumnKey="role_name" scope="col">Team Access</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let data of table.data" class="actions-row">
+          <td (click)="selectMember(data.id)" class="cursor-pointer">
+            <nz-avatar *ngIf="data.name" [nzSize]="28"
+                       [nzText]="data.name.charAt(0).toUpperCase()"
+                       [style.background-color]="data.avatar_url ? '#ececec' : getColor(data.name)"
+                       [nzSrc]="data.avatar_url"
+                       class="me-2"></nz-avatar>
+
+            <nz-badge [nzColor]="data.is_online ? 'green' : ''"
+                      class="d-inline-flex align-items-center flex-row-reverse" style="color: inherit">
+              {{ data.name }}
+            </nz-badge>
+            <span nz-typography nzType="warning" *ngIf="!data.active"> (Deactivated)</span>
+          </td>
+          <!--        <td (click)="selectMember(data.id)" class=cursor-pointer>{{ data.job_title || "-" }}</td>-->
+          <td (click)="selectMember(data.id)" class="cursor-pointer">{{ data.projects_count || 0 }}</td>
+
+          <td (click)="selectMember(data.id)" class="cursor-pointer">
+            <span *ngIf="data.email && !data.pending_invitation">{{data.email}}</span>
+            <span *ngIf="!data.email && !data.pending_invitation">-</span>
+            <span *ngIf="data.email && data.pending_invitation">
+              {{data.email}} <small nz-typography nzType="secondary">(Pending Invitation)</small>
+            </span>
+          </td>
+          <td (click)="selectMember(data.id)" class="cursor-pointer">
+            <span *ngIf="data.is_admin" class="admin-role" nz-typography>{{data.role_name}}</span>
+            <span *ngIf="data.is_owner" class="owner-role" nz-typography>{{data.role_name}}</span>
+            <span *ngIf="!data.is_admin && !data.is_owner" class="member-role" nz-typography>{{data.role_name}}</span>
+          </td>
+          <td class="actions-col">
+            <div *ngIf="!data.is_owner" class="actions">
+              <nz-space>
+                <button *nzSpaceItem (click)="editMember(data.id)" nz-button nz-tooltip nzSize="small"
+                        [nzTooltipPlacement]="'top'"
+                        [nzTooltipTitle]="'Edit'"
+                        [nzType]="'default'">
+                  <span nz-icon nzType="edit"></span>
+                </button>
+
+                <div *nzSpaceItem>
+                  <button *ngIf="data.id !== profile?.team_member_id" (nzOnConfirm)="toggleMemberActiveStatus(data)" nz-button nz-tooltip nz-popconfirm
+                          nzSize="small" [nzOkText]="'Yes'"
+                          [nzPopconfirmTitle]="'Are you sure?'"
+                          [nzTooltipPlacement]="'top'"
+                          [nzTooltipTitle]="data.active ? 'Deactivate' : 'Activate'"
+                          [nzType]="'default'">
+                    <span nz-icon nzType="user-switch" nzTheme="outline"></span>
+                  </button>
+                </div>
+
+                <button *nzSpaceItem (nzOnConfirm)="deleteTeamMember(data.id, data.email)"
+                        nz-button nz-popconfirm nz-tooltip [nzOkText]="'Yes'"
+                        [nzPopconfirmTitle]="'Are you sure?'" [nzSize]="'small'" [nzTooltipPlacement]="'top'"
+                        [nzTooltipTitle]="'Delete'"
+                        [nzType]="'default'">
+                  <span nz-icon nzType="delete"></span>
+                </button>
+              </nz-space>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </nz-table>
+    </nz-skeleton>
+  </nz-card>
+</div>
+
+<worklenz-team-members-form
+  (onCancel)="reset()"
+  (onCreateOrUpdate)="handleOnCreateOrUpdate($event)"
+  [(show)]="showTeamMemberModal"
+  [memberId]="selectedMemberId"
+></worklenz-team-members-form>

@@ -1,0 +1,18 @@
+.no-data-img-holder {
+  max-width: 64px;
+}
+
+.weight-500 {
+  font-weight: 500 !important;
+}
+.line-28 {
+  line-height: 28px;
+}
+
+.time-log-text {
+  cursor: pointer;
+  transition: 0.15s all;
+  &:hover {
+    color: #1890ff;
+  }
+}

@@ -1,0 +1,54 @@
+<nz-skeleton [nzActive]="true" [nzLoading]="loading">
+  <ng-container *ngIf="!projects.length">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <div class="text-center mb-3">
+      <span nz-typography class="no-data-text">You have not assigned to any project yet.Therefore you cannot create tasks or view tasks.</span>
+    </div>
+  </ng-container>
+  <ng-container *ngIf="projects.length">
+    <worklenz-task-add-container
+      *ngIf="homePageService.tasksViewConfig?.current_tab === 'All'" [isPersonal]="false"></worklenz-task-add-container>
+    <nz-table class=" mt-2">
+      <tr style="background: #fafafa;">
+        <th class="tasks-td name-td">Task</th>
+        <th class="tasks-td project-td pe-0">Project</th>
+        <th class="tasks-td status-td ps-0">Status</th>
+        <th class="tasks-td due-date-td">Due date</th>
+      </tr>
+    </nz-table>
+    <nz-table
+      class="custom-table homepage-table">
+      <tr *ngFor="let task of homePageService.tasksModel?.tasks; trackBy: trackBy;" class="actions-row">
+        <td class="tasks-td name-td">
+          <worklenz-task-name [task]="task" (onOpenTask)="openTask(task)"></worklenz-task-name>
+        </td>
+        <td *ngIf="task.is_task" class="tasks-td project-td pe-0">
+          <worklenz-task-project [task]="task"></worklenz-task-project>
+        </td>
+        <td *ngIf="task.is_task" class="tasks-td status-td ps-0">
+          <worklenz-task-status [task]="task"></worklenz-task-status>
+        </td>
+        <td *ngIf="task.is_task" class="tasks-td due-date-td">
+          <worklenz-task-due-date [task]="task"></worklenz-task-due-date>
+        </td>
+      </tr>
+    </nz-table>
+    <ng-container *ngIf="homePageService.tasksModel.tasks.length === 0">
+      <div class="no-data-img-holder mx-auto mb-3">
+        <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+      </div>
+      <div class="text-center mb-3">
+        <span nz-typography class="no-data-text">No tasks to show.</span>
+      </div>
+    </ng-container>
+  </ng-container>
+</nz-skeleton>
+
+<worklenz-task-view
+  [(show)]="showTaskModal"
+  (showChange)="onShowChange($event)"
+  [projectId]="selectedTask?.project_id || null"
+  [taskId]="selectedTask?.id || null"
+></worklenz-task-view>

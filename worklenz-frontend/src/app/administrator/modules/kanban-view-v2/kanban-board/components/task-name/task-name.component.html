@@ -1,0 +1,19 @@
+<div class="task-name-kanban">
+  <nz-tag
+    *ngIf="task.is_sub_task && task.parent_task_id"
+    (mouseover)="getParentTaskName(task.id)"
+    (nzTooltipVisibleChange)="!$event ? taskName : null"
+    nz-tooltip [nzTooltipTitle]="subTasksTitle"
+    style="cursor: help;" class="subtask-icon-main me-1">
+        <span nz-icon nzType="double-right"
+              nzTheme="outline"></span>
+  </nz-tag>
+  <span nz-typography>
+        {{task.name}}
+    </span>
+</div>
+
+<ng-template #subTasksTitle>
+  <div *ngIf="loadingName">Loading...</div>
+  <p class="mb-0" *ngIf="!loadingName">Sub-task of {{taskName}}</p>
+</ng-template>

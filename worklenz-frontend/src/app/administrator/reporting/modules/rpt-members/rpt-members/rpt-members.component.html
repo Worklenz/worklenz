@@ -1,0 +1,137 @@
+<worklenz-rpt-header [title]="'Members'" [showDuration]="true" [showArchivedToggle]="true" (isDurationLabelSelected)="isDurationLabelSelected = $event" (exportFile)="export()"></worklenz-rpt-header>
+
+<nz-content>
+  <nz-card [nzLoading]="loading" [nzTitle]="''" [nzExtra]="projectsActions">
+    <ng-template #projectsActions>
+      <nz-input-group style="width: 250px" [nzSuffix]="suffixIconSearch">
+        <input type="text" nz-input placeholder="Search by name" [(ngModel)]="searchText"
+               (ngModelChange)="searchProjects()"/>
+      </nz-input-group>
+    </ng-template>
+    <ng-template #suffixIconSearch>
+      <span nz-icon nzType="search"></span>
+    </ng-template>
+
+    <nz-table #table
+              [nzSize]="'small'"
+              [nzData]="members"
+              [nzFrontPagination]="false"
+              [nzLoading]="loading"
+              [nzPageIndex]="pageIndex"
+              [nzPageSizeOptions]="paginationSizes"
+              [nzPageSize]="pageSize"
+              [nzTotal]="total"
+              [nzShowSizeChanger]="true"
+              [nzHideOnSinglePage]="true"
+              [nzScroll]="{ x: '300px' }"
+              (nzQueryParams)="onQueryParamsChange($event)">
+      <thead>
+      <tr>
+        <th [nzWidth]="'250px'">Member</th>
+        <!--        <th-->
+        <!--          [nzWidth]="'300px'"-->
+        <!--          [nzColumnKey]="'team_name'"-->
+        <!--          [nzFilterFn]="true"-->
+        <!--          [nzCustomFilter]="true"-->
+        <!--          scope="col">-->
+        <!--          Teams-->
+        <!--          <nz-filter-trigger [(nzVisible)]="showTeamsFilter" [nzActive]="filteredByTeam"-->
+        <!--                             [nzDropdownMenu]="categoriesDropdown">-->
+        <!--            <span nz-icon [nzType]="'filter'" [nzTheme]="'fill'"></span>-->
+        <!--          </nz-filter-trigger>-->
+        <!--        </th>-->
+        <th [nzWidth]="'220px'" scope="col">Tasks Progress</th>
+        <th class="text-center" [nzWidth]="'100px'" scope="col">Tasks Assigned <span nz-icon nzType="exclamation-circle" nzTheme="outline" nz-tooltip [nzTooltipTitle]="'Tasks assigned on selected date range'" style="color: #0d6efd"></span></th>
+        <th class="text-center" [nzWidth]="'120px'" scope="col">Overdue Tasks <span nz-icon nzType="exclamation-circle" nzTheme="outline" nz-tooltip [nzTooltipTitle]="'Tasks overdue for end of the selected date range'" style="color: #0d6efd"></span></th>
+        <th class="text-center" [nzWidth]="'130px'" scope="col">Completed Tasks <span nz-icon nzType="exclamation-circle" nzTheme="outline" nz-tooltip [nzTooltipTitle]="'Tasks completed on selected date range'" style="color: #0d6efd"></span></th>
+        <th class="text-center" [nzWidth]="'120px'" scope="col">Ongoing Tasks <span nz-icon nzType="exclamation-circle" nzTheme="outline" nz-tooltip [nzTooltipTitle]="'Started tasks not completed yet'" style="color: #0d6efd"></span></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of table.data trackBy: trackBy" class="cursor-pointer" (click)="openMember(data)">
+        <!-- Member -->
+        <td>
+          <nz-space class="align-items-center">
+            <nz-avatar *nzSpaceItem [nzSrc]="data.avatar_url" [nzText]="data.name | firstCharUpper"
+                       [style.background-color]="data.color_code"></nz-avatar>
+            <span *nzSpaceItem>{{data.name}}</span>
+          </nz-space>
+        </td>
+
+        <!-- Tasks -->
+        <td>
+          <worklenz-tasks-progress-bar
+            *ngIf="(data.tasks_stat.todo || data.tasks_stat.doing || data.tasks_stat.done); else naTemplate"
+            [todoProgress]="data.tasks_stat.todo"
+            [doingProgress]="data.tasks_stat.doing"
+            [doneProgress]="data.tasks_stat.done"
+          ></worklenz-tasks-progress-bar>
+        </td>
+        <td class="text-center">{{data.tasks}}</td>
+        <td class="text-center">{{data.overdue}}</td>
+        <td class="text-center">{{data.completed}}</td>
+        <td class="text-center">{{data.ongoing}}</td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+</nz-content>
+
+<worklenz-rpt-team-drawer></worklenz-rpt-team-drawer>
+<worklenz-rpt-project-drawer></worklenz-rpt-project-drawer>
+<worklenz-rpt-single-member-drawer [isDurationLabelSelected]="isDurationLabelSelected"></worklenz-rpt-single-member-drawer>
+<worklenz-rpt-single-member-stat></worklenz-rpt-single-member-stat>
+<worklenz-rpt-single-member-projects-drawer></worklenz-rpt-single-member-projects-drawer>
+<worklenz-rpt-tasks-drawer></worklenz-rpt-tasks-drawer>
+<worklenz-rpt-task-view-drawer></worklenz-rpt-task-view-drawer>
+
+<ng-template #naTemplate>
+  <worklenz-na></worklenz-na>
+</ng-template>
+
+<nz-dropdown-menu #teamsDropdown="nzDropdownMenu">
+  <ul class="pt-0" style="max-height: 330px; overflow-y: auto;" nz-menu>
+    <li class="px-3 py-2 sticky-top bg-white">
+      <input [(ngModel)]="teamSearchText" (ngModelChange)="detectChanges()" type="text"
+             placeholder="Search by team name" nz-input #teamSearchInput>
+    </li>
+    <li
+      class="m-0 align-items-baseline"
+      [(nzChecked)]="selectAllTeams"
+      (nzCheckedChange)="selectAllTeamsChecked($event)"
+      nz-checkbox nz-menu-item>Select all
+    </li>
+    <li nz-menu-divider></li>
+    <li *ngFor="let item of teams | searchByName: teamSearchInput.value" class="m-0 align-items-baseline"
+        [(nzChecked)]="item.selected"
+        (nzCheckedChange)="checkTeam()"
+        nz-checkbox nz-menu-item>
+      {{item.name}}
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+<nz-dropdown-menu #projectsSelector="nzDropdownMenu">
+  <ul class="pt-0" nz-menu style="max-height: 330px;overflow-y: auto;">
+    <li class="px-3 py-2 sticky-top bg-white">
+      <input [(ngModel)]="projectSearchText" (ngModelChange)="detectChanges()" type="text"
+             placeholder="Search by project name" nz-input #projectSearchInput>
+    </li>
+    <li
+      class="m-0 align-items-baseline"
+      [(nzChecked)]="selectAllProjects"
+      (nzCheckedChange)="selectAllProjectsChecked($event)"
+      nz-checkbox nz-menu-item>Select all
+    </li>
+    <li nz-menu-divider></li>
+    <li *ngFor="let item of projectsDropdown | searchByName: projectSearchInput.value"
+        [(nzChecked)]="item.selected" (nzCheckedChange)="checkProject()" class="m-0 align-items-baseline" nz-checkbox
+        nz-menu-item>
+      <div class="d-flex align-items-center justify-content-center user-select-none">
+        <div>
+          <span class="d-block" nz-typography>{{item.name}}</span>
+        </div>
+      </div>
+    </li>
+  </ul>
+</nz-dropdown-menu>

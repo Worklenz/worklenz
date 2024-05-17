@@ -1,0 +1,20 @@
+<nz-affix [nzOffsetTop]="0" *ngIf="getVisible()">
+  <ng-container>
+    <nz-alert nzCloseable nzShowIcon
+              style="font-weight: 500;"
+              [nzAction]="actionTemplate1"
+              [nzMessage]="messageTemplate"
+              [nzType]="'warning'"
+              (nzOnClose)="setLicensingLastClose()">
+    </nz-alert>
+  </ng-container>
+</nz-affix>
+
+<ng-template #actionTemplate1>
+  <button nz-button [nzSize]="'small'" [routerLink]="'admin-center/billing'" *ngIf="profile.owner || profile.is_admin"
+          [nzType]="'primary'">{{profile.subscription_status === 'trialing' ? 'Upgrade now' : 'Go to Billing'}}</button>
+</ng-template>
+
+<ng-template #messageTemplate>
+  Action required! {{string1}} <b>{{string2}}</b>
+</ng-template>

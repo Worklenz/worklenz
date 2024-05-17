@@ -1,0 +1,19 @@
+nz-collapse-panel {
+  margin-bottom: 10px;
+}
+
+.comments-block {
+  position: absolute;
+  bottom: 0;
+  left: 24px;
+  right: 24px;
+  z-index: 1;
+  background: #FAFAFA;
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+nz-collapse {
+  margin-bottom: 90px;
+}

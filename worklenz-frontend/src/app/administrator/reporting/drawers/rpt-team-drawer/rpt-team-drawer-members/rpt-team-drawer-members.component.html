@@ -1,0 +1,36 @@
+<nz-skeleton [nzLoading]="loading" [nzActive]="true">
+  <nz-input-group style="width: 250px" class="mb-3" [nzSuffix]="suffixIconSearch">
+    <input type="text" nz-input placeholder="Search by name" [(ngModel)]="searchText"/>
+  </nz-input-group>
+  <ng-template #suffixIconSearch>
+    <span nz-icon nzType="search"></span>
+  </ng-template>
+
+  <nz-table [nzSize]="'small'" [nzData]="members | searchByName: searchText" [nzShowPagination]="true"
+            [nzHideOnSinglePage]="true"
+            #membersTable>
+    <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th class="text-center">Projects</th>
+      <th class="text-center">Tasks</th>
+      <th class="text-center">Overdue Tasks</th>
+      <th class="text-center">Completed Tasks</th>
+      <th class="text-center">Ongoing Tasks</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let data of membersTable.data; trackBy: trackBy" class="cursor-pointer"
+        (click)="openMember(data)">
+      <td>{{ data.name }}</td>
+      <td>{{ data.email | bindNa }}</td>
+      <td class="text-center">{{ data.projects }}</td>
+      <td class="text-center">{{ data.tasks }}</td>
+      <td class="text-center">{{ data.overdue }}</td>
+      <td class="text-center">{{ data.completed }}</td>
+      <td class="text-center">{{ data.ongoing }}</td>
+    </tr>
+    </tbody>
+  </nz-table>
+</nz-skeleton>

@@ -1,0 +1,160 @@
+<worklenz-rpt-header
+  [title]="'Time Sheet'"
+  (isDurationLabelSelected)="isDurationLabelSelected = $event"
+  (exportFile)="export()">
+</worklenz-rpt-header>
+
+<div nz-row>
+  <nz-space>
+    <button *nzSpaceItem [nzDropdownMenu]="teamsDropdown" [nzClickHide]="false" [nzLoading]="loadingTeams"
+            [nzTrigger]="'click'" nz-button nz-dropdown>
+      Teams
+      <span nz-icon nzType="caret-down"></span>
+    </button>
+    <button *nzSpaceItem [nzDropdownMenu]="categorySelector" [nzClickHide]="false" [nzLoading]="loadingCategories"
+            [nzTrigger]="'click'" nz-button nz-dropdown>
+      Categories
+      <span nz-icon nzType="caret-down"></span>
+    </button>
+    <button *nzSpaceItem [nzDropdownMenu]="projectsSelector" [nzClickHide]="false" [nzLoading]="loadingProjects"
+            [nzTrigger]="'click'" nz-button nz-dropdown>
+      Projects
+      <span nz-icon nzType="caret-down"></span>
+    </button>
+  </nz-space>
+</div>
+
+<nz-dropdown-menu #teamsDropdown="nzDropdownMenu">
+  <ul class="pt-0" style="max-height: 330px; overflow-y: auto;" nz-menu>
+    <li class="px-3 py-2 sticky-top bg-white">
+      <input type="text" [(ngModel)]="teamSearchText" placeholder="Search by team name" nz-input #teamSearchInput>
+    </li>
+    <li
+      class="m-0 align-items-baseline"
+      [(nzChecked)]="selectAllTeams"
+      (nzCheckedChange)="selectAllTeamsChecked($event)"
+      nz-checkbox nz-menu-item>Select all
+    </li>
+    <li nz-menu-divider></li>
+    <li *ngFor="let item of teamsDropDown | searchByName: teamSearchInput.value" class="m-0 align-items-baseline"
+        [(nzChecked)]="item.selected"
+        (nzCheckedChange)="checkTeam()"
+        nz-checkbox nz-menu-item>
+      {{item.name}}
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+<nz-dropdown-menu #categorySelector="nzDropdownMenu">
+  <ul class="pt-0" nz-menu style="max-height: 330px;overflow-y: auto;">
+    <li class="px-3 py-2 sticky-top bg-white">
+      <input [(ngModel)]="categorySearchText" type="text"
+             placeholder="Search by category name" nz-input #categorySearchInput>
+    </li>
+    <li
+      class="m-0 align-items-baseline"
+      [(nzChecked)]="selectAllCategories"
+      (nzCheckedChange)="selectAllCategoriesChecked($event)"
+      nz-checkbox nz-menu-item>Select all
+    </li>
+    <li nz-menu-divider></li>
+    <li class="m-0 align-items-baseline" [(nzChecked)]="selectNoCategory" (nzCheckedChange)="checkCategory()" nz-checkbox nz-menu-item>
+      No Category
+    </li>
+    <li *ngFor="let item of categoriesDropdown | searchByName: categorySearchInput.value"
+        [(nzChecked)]="item.selected" (nzCheckedChange)="checkCategory()" class="m-0 align-items-baseline" nz-checkbox
+        nz-menu-item>
+      <div class="d-flex align-items-center justify-content-center user-select-none">
+        <div>
+          <span class="d-block">
+            <nz-badge [nzColor]="item.color_code" [nzText]="item.name"></nz-badge>
+          </span>
+        </div>
+      </div>
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+
+<nz-dropdown-menu #projectsSelector="nzDropdownMenu">
+  <ul class="pt-0" nz-menu style="max-height: 330px;overflow-y: auto;">
+    <li class="px-3 py-2 sticky-top bg-white">
+      <input type="text" [(ngModel)]="projectSearchText" placeholder="Search by project name" nz-input #projectSearchInput>
+    </li>
+    <!--    <li class="m-0" nz-checkbox nz-menu-item>-->
+    <!--      <label [(ngModel)]="selectAll">Select All</label>-->
+    <!--    </li>-->
+    <li
+      class="m-0 align-items-baseline"
+      [(nzChecked)]="selectAllProjects"
+      (nzCheckedChange)="selectAllProjectsChecked($event)"
+      nz-checkbox nz-menu-item>Select all
+    </li>
+    <li nz-menu-divider></li>
+    <li *ngFor="let item of projectsDropdown | searchByName: projectSearchInput.value"
+        [(nzChecked)]="item.selected" (nzCheckedChange)="checkProject()" class="m-0 align-items-baseline" nz-checkbox
+        nz-menu-item>
+      <div class="d-flex align-items-center justify-content-center user-select-none">
+        <div>
+          <span class="d-block" nz-typography>{{item.name}}</span>
+        </div>
+      </div>
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+<nz-skeleton [nzLoading]="loading" [nzActive]="true">
+  <div class="row-fix">
+    <div class="table-container mt-3">
+      <div class="member-project-table">
+
+        <nz-empty
+          *ngIf="!loading && !members.length && !projects.length"
+          [nzNotFoundContent]="'No time logs found!'">
+        </nz-empty>
+
+        <!-- Columns -->
+        <ng-container *ngIf="members.length">
+          <div class="header-row d-flex">
+            <div class="project-name"></div>
+            <div *ngFor="let item of members" class="member-name f-500">
+              {{item.name}}
+            </div>
+            <div class="total-time text-center">Total</div>
+          </div>
+        </ng-container>
+
+        <!-- Rows -->
+        <ng-container *ngIf="projects.length">
+          <div *ngFor="let item of projects" class="table-row_ d-flex">
+            <div class="project-name">
+          <span nz-icon [nzType]="item.status_icon | safeString" [style.color]="item.status_color_code" nz-tooltip
+                [nzTooltipTitle]="item.status_name | safeString"></span>
+              <span class="ms-1">{{item.name}}</span>
+              <div class="d-block">
+                <nz-progress [nzPercent]="item.progress" [nzStrokeColor]="item.color_code | safeString"
+                             [nzTooltipTitle]="item.completed_tasks_count + ' of ' + item.all_tasks_count"
+                             nz-tooltip [nzSize]="'small'"></nz-progress>
+              </div>
+            </div>
+            <div *ngFor="let item of item.time_logs" class="member-time">
+              {{item.time_logged}}
+            </div>
+            <div class="total-time">{{item.total}}</div>
+          </div>
+        </ng-container>
+
+        <!-- total row-->
+        <div class="table-row_ d-flex bottom-row" *ngIf="members.length && projects.length">
+
+          <div class="project-name bg-bold">Total</div>
+          <div *ngFor="let item of members" class="member-total-time bg-bold">
+            {{item.total_time}}
+          </div>
+          <div class="total-time"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</nz-skeleton>

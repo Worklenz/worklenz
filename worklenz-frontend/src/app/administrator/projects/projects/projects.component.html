@@ -1,0 +1,276 @@
+<div class="container">
+  <nz-page-header [nzGhost]="false" class="px-0">
+    <nz-page-header-title>{{ total || 0 }} Project{{total > 1 ? 's' : ''}}</nz-page-header-title>
+    <nz-page-header-extra>
+      <nz-space>
+
+        <button (click)="refresh()" *nzSpaceItem nz-button nz-tooltip [nzShape]="'circle'"
+                [nzTooltipTitle]="'Refresh projects'" [nzType]="'default'">
+          <span [nzSpin]="loading" nz-icon [nzTheme]="'outline'" [nzType]="'sync'"></span>
+        </button>
+
+        <nz-segmented *nzSpaceItem [(ngModel)]="filterIndex" [nzOptions]="filters"
+                      (nzValueChange)="onFilterChange($event)"></nz-segmented>
+
+        <!--        <nz-segmented-->
+        <!--          *nzSpaceItem-->
+        <!--          [(ngModel)]="displayAs"-->
+        <!--          [nzLabelTemplate]="displayModeSegments"-->
+        <!--          [nzOptions]="displayModes"-->
+        <!--        ></nz-segmented>-->
+
+        <!--        <ng-template let-index="index" #displayModeTemplate>-->
+        <!--          <ng-container [ngSwitch]="index">-->
+        <!--            <span *ngSwitchCase="0" nz-icon style="color: #767676;" [nzType]="'hdd'" [nzTheme]="'fill'"></span>-->
+        <!--            <span *ngSwitchCase="1" nz-icon style="color: #767676;" [nzType]="'folder'" [nzTheme]="'fill'"></span>-->
+        <!--          </ng-container>-->
+        <!--        </ng-template>-->
+
+        <form (ngSubmit)="searchProjects()" *nzSpaceItem [formGroup]="searchForm" [nzLayout]="'vertical'" nz-form>
+          <nz-input-group [nzSuffix]="suffixIconSearch">
+            <input [formControlName]="'search'" nz-input placeholder="Search by name" type="text"/>
+          </nz-input-group>
+          <ng-template #suffixIconSearch>
+            <span nz-icon nzType="search"></span>
+          </ng-template>
+        </form>
+
+        <ng-container *ngIf="isOwnerOrAdmin()">
+          <span *nzSpaceItem>
+            <nz-button-group>
+              <button *ngIf="isOwnerOrAdmin()" (click)="openProjectForm()" nz-button
+                      [nzType]="'primary'"><span nz-icon nzType="edit" nzTheme="outline"></span>Create Project</button>
+              <button *ngIf="isOwnerOrAdmin()" nz-button
+                      [nzType]="'primary'" nz-dropdown [nzDropdownMenu]="menu" [nzTrigger]="'click'"
+                      [nzPlacement]="'bottomRight'">
+                <span nz-icon nzType="down" nzTheme="outline"></span>
+              </button>
+            </nz-button-group>
+          </span>
+
+          <nz-dropdown-menu #menu="nzDropdownMenu">
+            <ul nz-menu>
+              <li nz-menu-item (click)="openTemplateSelector()">
+                <span nz-icon nzType="import" nzTheme="outline" class="me-2"></span>
+                Create from template
+              </li>
+            </ul>
+          </nz-dropdown-menu>
+          <!--          <button *nzSpaceItem-->
+          <!--                  nz-button-->
+          <!--                  nz-dropdown-->
+          <!--                  [nzType]="'primary'"-->
+          <!--                  [nzDropdownMenu]="menu"-->
+          <!--                  [nzTrigger]="'click'"-->
+          <!--                  [nzClickHide]="true"-->
+          <!--                  style="padding: 4px 8px;"-->
+          <!--                  [nzPlacement]="'bottomRight'">-->
+          <!--            <span nz-icon [nzType]="'plus'" [nzTheme]="'outline'"></span> New <span nz-icon nzType="down"-->
+          <!--                                                                                    nzTheme="outline"></span>-->
+          <!--          </button>-->
+          <!--          <nz-dropdown-menu #menu="nzDropdownMenu">-->
+          <!--            <ul nz-menu>-->
+          <!--              <li (click)="openProjectForm()" nz-menu-item>-->
+          <!--                <span nz-icon [nzType]="'snippets'" style="color: #70a6f3;" [nzTheme]="'fill'"></span>-->
+          <!--                &nbsp;Project-->
+          <!--              </li>-->
+          <!--              <li (click)="openFolderForm()" nz-menu-item>-->
+          <!--                <span nz-icon [nzType]="'folder'" class="folder-icon" [nzTheme]="'fill'"></span>-->
+          <!--                &nbsp;Folder-->
+          <!--              </li>-->
+          <!--            </ul>-->
+          <!--          </nz-dropdown-menu>-->
+        </ng-container>
+      </nz-space>
+    </nz-page-header-extra>
+  </nz-page-header>
+
+  <nz-card>
+    <nz-skeleton [nzActive]="true" [nzLoading]="loading" [nzParagraph]="{ rows: 7 }">
+      <nz-table
+        (nzQueryParams)="onQueryParamsChange($event)"
+        [nzData]="projectsModel.data || []"
+        [nzFrontPagination]="false"
+        [nzLoading]="loading"
+        [nzPageIndex]="pageIndex"
+        [nzPageSizeOptions]="paginationSizes"
+        [nzPageSize]="pageSize"
+        [nzTotal]="total"
+        [nzShowSizeChanger]="true"
+        [nzSize]="'small'"
+        class="custom-table"
+        [nzNoResult]="noDataTemplate"
+        #table
+      >
+        <thead>
+        <tr>
+          <th [nzSortFn]="true" [nzColumnKey]="'name'" scope="col">Name</th>
+          <th [nzSortFn]="true" [nzColumnKey]="'client_name'" scope="col">Client</th>
+          <th [nzSortFn]="true" [nzColumnKey]="'category_id'" scope="col" [nzFilterFn]="true" [nzCustomFilter]="true">
+            Category
+            <nz-filter-trigger [(nzVisible)]="showCategoriesFilter" [nzActive]="filteredByCategory"
+                               [nzDropdownMenu]="categoriesDropdown">
+              <span nz-icon [nzType]="'filter'" [nzTheme]="'fill'"></span>
+            </nz-filter-trigger>
+          </th>
+          <th [nzSortFn]="true" [nzColumnKey]="'status_id'" scope="col" style="width: 110px" [nzFilterFn]="true" [nzCustomFilter]="true">
+            Status
+            <nz-filter-trigger [(nzVisible)]="showStatusesFilter" [nzActive]="filteredByStatus"
+                               [nzDropdownMenu]="statusesDropdown">
+              <span nz-icon [nzType]="'filter'" [nzTheme]="'fill'"></span>
+            </nz-filter-trigger>
+          </th>
+          <th class="pe-5 b-none" scope="col">Tasks Progress</th>
+          <th [nzSortFn]="true" [nzColumnKey]="'updated_at'" [nzAlign]="'left'" scope="col">Last Updated</th>
+          <th colspan="2" [nzAlign]="'left'" scope="col">Members</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!--suppress TypeScriptValidateTypes -->
+        <tr *ngFor="let data of table.data; trackBy: trackBy" class="actions-row cursor-pointer"
+            (click)="selectProject(data.id, data.team_member_default_view ? data.team_member_default_view : 'TASK_LIST')">
+          <td class="">
+            <div class="align-items-center d-flex w-100">
+              <!--              <div class="me-2">-->
+              <!--                <span class="folder-icon" nz-icon [nzType]="'folder'" [nzTheme]="'fill'"></span>-->
+              <!--              </div>-->
+              <nz-rate
+                nz-tooltip
+                [nzTooltipTitle]="data.favorite ? 'Remove from favorites' : 'Add to favorites'"
+                [nzCount]="1"
+                [ngModel]="data.favorite ? 1 : 0"
+                (click)="$event.stopPropagation();toggleFavorite(data.id)"
+                class="me-2"
+              ></nz-rate>
+              <span class="w-100 project-name-col">
+                <nz-badge [nzColor]="data.color_code" [nzSize]="'default'"></nz-badge>
+                {{ data.name }}
+                <ng-container *ngIf="data.start_date || data.end_date">
+                  <span nz-typography [nzType]="'secondary'" nz-tooltip [nzTooltipTitle]="titleContent" class="ms-1">
+                    <span nz-icon [nzType]="'calendar'" [nzTheme]="'outline'"></span>
+                  </span>
+                  <ng-template #titleContent>
+                    <div *ngIf="data.start_date">Start date : {{data.start_date | date: 'mediumDate'}}</div>
+                    <div *ngIf="data.end_date">End date : {{data.end_date | date: 'mediumDate'}}</div>
+                  </ng-template>
+                </ng-container>
+              </span>
+            </div>
+          </td>
+          <td>{{ data.client_name || "-" }}</td>
+          <td>
+            <ng-container [ngSwitch]="!!data.category_name">
+              <nz-tag *ngSwitchCase="true" class="rounded-pill category-tag"
+                      nz-tooltip
+                      [nzTooltipTitle]="data.category_name | projectFilterByTooltip"
+                      (click)="$event.stopPropagation();filterByCategory(data.category_id)"
+                      [nzColor]="data.category_color">{{data.category_name}}</nz-tag>
+              <ng-container *ngSwitchCase="false">-</ng-container>
+            </ng-container>
+          </td>
+          <td>
+            <span nz-icon [nzType]="data.status_icon | safeString" [style.color]="data.status_color"></span>
+            {{data.status}}
+          </td>
+          <td>
+            <nz-progress [nzPercent]="data.progress" [nzStrokeColor]="data.color_code"
+                         [nzTooltipTitle]="getTaskProgressTitle(data)"
+                         nz-tooltip></nz-progress>
+          </td>
+          <td>
+            <span nz-tooltip [nzTooltipTitle]="data.updated_at | date: 'medium'"
+                  [nzTooltipMouseEnterDelay]="1">{{data.updated_at_string}}</span>
+          </td>
+
+          <td>
+            <ng-container *ngIf="!data.names?.length; else avatars">
+              N/A
+            </ng-container>
+            <ng-template #avatars>
+              <worklenz-avatars [names]="data.names || []"></worklenz-avatars>
+            </ng-template>
+          </td>
+
+          <td [nzAlign]="'center'">
+            <div class="actions" *ngIf="isOwnerOrAdmin()">
+              <nz-space>
+                <button
+                  (click)="$event.stopPropagation();openProjectForm(data.id);"
+                  nz-button nz-tooltip
+                  [nzSize]="'small'" [nzTooltipPlacement]="'top'"
+                  [nzTooltipTitle]="'Settings'"
+                  [nzType]="'default'"
+                  *nzSpaceItem
+                >
+                  <span nz-icon [nzType]="'setting'"></span>
+                </button>
+                <button
+                  (click)="$event.stopPropagation();toggleArchive(data);"
+                  nz-button nz-tooltip
+                  [nzSize]="'small'" [nzTooltipPlacement]="'top'"
+                  [nzTooltipTitle]="data.archived ? 'Remove from archive' : 'Archive'"
+                  [nzLoading]="data.loading"
+                  [nzType]="'default'"
+                  *nzSpaceItem
+                >
+                  <span nz-icon [nzType]="'inbox'" [nzTheme]="'outline'"></span>
+                </button>
+              </nz-space>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </nz-table>
+    </nz-skeleton>
+  </nz-card>
+</div>
+
+<worklenz-project-form-modal
+  (onCreate)="onProjectCreate($event)"
+  (onDelete)="getProjects()"
+  (onUpdate)="onProjectUpdated()"
+></worklenz-project-form-modal>
+
+<worklenz-projects-folder-form-drawer></worklenz-projects-folder-form-drawer>
+
+<worklenz-project-template-import-drawer
+  [showBothTabs]="true"
+  (importProject)="getProjects(false)">
+</worklenz-project-template-import-drawer>
+
+<ng-template #noDataTemplate>
+  <div class="pt-5 pb-5">
+    <div class="no-data-img-holder mx-auto mb-4">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <div nz-typography class="no-data-text" [ngSwitch]="filterIndex">
+      <ng-container *ngSwitchCase="0">The team currently has no active projects.</ng-container>
+      <ng-container *ngSwitchCase="1">You're yet to mark any projects as favorites.</ng-container>
+      <ng-container *ngSwitchCase="2">The selected team has no archived projects.</ng-container>
+    </div>
+  </div>
+</ng-template>
+
+<nz-dropdown-menu #categoriesDropdown="nzDropdownMenu">
+  <ul nz-menu nzSelectable>
+    <ng-container *ngIf="categories.length">
+      <li *ngFor="let item of categories" class="m-0 d-flex align-items-baseline" nz-checkbox
+          [(nzChecked)]="item.selected"
+          (nzCheckedChange)="onCategoryFilterChange()"
+          nz-menu-item>{{item.name}}</li>
+    </ng-container>
+    <li *ngIf="!categories.length" nz-menu-item nzDisabled>No categories found</li>
+  </ul>
+</nz-dropdown-menu>
+
+<nz-dropdown-menu #statusesDropdown="nzDropdownMenu">
+  <ul nz-menu nzSelectable>
+    <ng-container *ngIf="statuses.length">
+      <li *ngFor="let item of statuses" class="m-0 d-flex align-items-baseline" nz-checkbox
+          [(nzChecked)]="item.selected"
+          (nzCheckedChange)="onStatusFilterChange()"
+          nz-menu-item>{{item.name}}</li>
+    </ng-container>
+    <li *ngIf="!statuses.length" nz-menu-item nzDisabled>No categories found</li>
+  </ul>
+</nz-dropdown-menu>

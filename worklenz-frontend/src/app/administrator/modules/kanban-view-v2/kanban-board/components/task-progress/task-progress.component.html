@@ -1,0 +1,9 @@
+<div class="task-progress-section ms-1" nz-tooltip [nzTooltipTitle]="tooltipTitle">
+  <nz-progress
+    *ngIf="!task.is_sub_task"
+    [nzPercent]="percent"
+    [nzType]="'circle'"
+    [nzStrokeWidth]="8"
+    [nzWidth]="26"
+  ></nz-progress>
+</div>

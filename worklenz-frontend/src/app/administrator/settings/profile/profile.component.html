@@ -1,0 +1,59 @@
+<nz-card>
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading || updating">
+
+    <div class="ant-upload-list ant-upload-list-picture-card mb-3">
+      <div class="ant-upload ant-upload-select ant-upload-select-picture-card" style="position: relative">
+        <div class="ant-upload" tabindex="0" role="button" (click)="fileInput.click()" nz-tooltip
+             [nzTooltipTitle]="avatarUrl ? 'Click to change the avatar' : 'Click to upload an avatar'">
+          <input type="file" accept="image/png, image/jpg, image/jpeg" style="display: none;"
+                 (change)="uploadFile(fileInput)" #fileInput>
+
+          <div *ngIf="!avatarUrl || uploading" class="avatar-upload-icon">
+            <span *ngIf="!uploading" nz-icon nzType="plus" nzTheme="outline"></span>
+            <span *ngIf="uploading" nz-icon nzType="loading" nzTheme="outline"></span>
+            <div style="margin-top: 8px;">{{uploading ? 'Uploading...' : 'Upload'}}</div>
+          </div>
+
+          <img *ngIf="avatarUrl" [alt]="profile?.name" [src]="avatarUrl" style="width: 100%"/>
+        </div>
+      </div>
+    </div>
+
+    <form (ngSubmit)="submit()" [formGroup]="form" nz-form nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label nzFor="name" nzRequired>Name</nz-form-label>
+        <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Name is required!">
+          <input [formControlName]="'name'" id="name" nz-input/>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item>
+        <nz-form-label nzFor="email" nzRequired>E-mail</nz-form-label>
+        <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="The input is not valid E-mail!">
+          <input [formControlName]="'email'" id="email" nz-input readonly/>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item class="register-area mb-3" nz-row>
+        <nz-form-control>
+          <button [disabled]="isInvalidForm() || loading" [nzLoading]="updating" nz-button nzType="primary">
+            Save Changes
+          </button>
+        </nz-form-control>
+      </nz-form-item>
+
+      <p *ngIf="profile?.joined_date" class="mb-0" nz-typography
+         nzType="secondary">
+        <small nz-tooltip nzTooltipPlacement="right" nzTooltipTitle="{{profile?.joined_date | date: 'medium'}}">
+          Joined {{profile?.joined_date | fromNow}}
+        </small>
+      </p>
+      <p *ngIf="profile?.last_updated" class="mb-0"
+         nz-typography
+         nzType="secondary">
+        <small nz-tooltip nzTooltipPlacement="right" nzTooltipTitle="{{profile?.last_updated | date: 'medium'}}">
+          Last updated {{profile?.last_updated | fromNow}}
+        </small>
+      </p>
+
+    </form>
+  </nz-skeleton>
+</nz-card>

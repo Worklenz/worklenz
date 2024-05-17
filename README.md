@@ -19,7 +19,7 @@
       <img
         src="https://worklenz.s3.amazonaws.com/assets/screenshots/hero.png"
         alt="Worklenz"
-        width="1024"
+        width="1200"
       />
     </a>
 </p>

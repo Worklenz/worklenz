@@ -1,0 +1,90 @@
+<nz-page-header [nzGhost]="false" class="px-0">
+  <nz-page-header-title>{{teams.length ? teams.length + 1 : 1}} Teams</nz-page-header-title>
+  <nz-page-header-extra>
+    <worklenz-toggle-menu-button [key]="menu.TEAMS_MENU"></worklenz-toggle-menu-button>
+  </nz-page-header-extra>
+</nz-page-header>
+
+<nz-card>
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading" [nzParagraph]="{ rows: 5 }">
+    <nz-table #table [nzData]="teams" [nzLoading]="loading" class="custom-table"
+              nzPaginationType="small" nzSize="small" [nzNoResult]="currentTeam ? noDataTemplate1  : noDataTemplate">
+      <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Created</th>
+        <th colspan="2" nzAlign="left" scope="col">Owns By</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngIf="currentTeam" class="actions-row">
+        <td><nz-badge nzColor="#52c41a" [nzText]="currentTeam.name"></nz-badge></td>
+        <td>{{currentTeam.created_at | fromNow}}</td>
+        <td>{{currentTeam.owns_by}}</td>
+        <td class="actions-col" nzAlign="center">
+          <div class="actions">
+            <nz-space>
+              <button (click)="editTeam(currentTeam)" *ngIf="currentTeam.owner" nz-button nz-tooltip nzSize="small"
+                      nzTooltipPlacement="top"
+                      nzTooltipTitle="Edit"
+                      nzType="default">
+                <span nz-icon nzType="edit"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      <tr *ngFor="let data of table.data" class="actions-row">
+        <td>{{data.name}}</td>
+        <td>{{data.created_at | fromNow}}</td>
+        <td>{{data.owns_by}}</td>
+        <td class="actions-col" nzAlign="center">
+          <div class="actions">
+            <nz-space>
+              <button (click)="editTeam(data)" *ngIf="data.owner" nz-button nz-tooltip nzSize="small"
+                      nzTooltipPlacement="top"
+                      nzTooltipTitle="Edit"
+                      nzType="default">
+                <span nz-icon nzType="edit"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</nz-card>
+
+<ng-template #actionsTemplate>
+  <worklenz-toggle-menu-button [key]="menu.TEAMS_MENU"></worklenz-toggle-menu-button>
+</ng-template>
+
+<ng-template #noDataTemplate>
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">No teams found.</span>
+  </div>
+</ng-template>
+
+<ng-template #noDataTemplate1>
+
+</ng-template>
+
+<nz-modal (nzOnCancel)="closeModal()" (nzOnOk)="handleOk()" [(nzVisible)]="showTeamEditModal"
+          [nzOkLoading]="updating" nzOkText="Update Name" nzTitle="Edit Team Name">
+  <ng-container *nzModalContent>
+
+    <form [formGroup]="form" [nzLayout]="'vertical'" nz-form>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="null" nzRequired>Name</nz-form-label>
+        <nz-form-control [nzSpan]="null" nzErrorTip="Please enter a name!">
+          <input [formControlName]="'name'" nz-input placeholder="Name"/>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+
+  </ng-container>
+</nz-modal>

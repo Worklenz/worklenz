@@ -1,0 +1,169 @@
+<div class="charts-holder">
+  <div nz-row [nzGutter]="16">
+    <div nz-col [nzSpan]="12" class="mb-2">
+      <nz-card [nzTitle]="statusCardTitle">
+        <ng-template #statusCardTitle>
+          <div class="d-flex align-items-center">
+            <div>
+              <h4 class="mb-0">Tasks By Status</h4>
+            </div>
+          </div>
+        </ng-template>
+        <div class="card-content">
+          <ng-container *ngIf="isStatusChartEmpty">
+            <div class="pt-4 pb-5 text-center">
+              <div class="no-data-img-holder mx-auto mb-3">
+                <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+              </div>
+              <span nz-typography class="no-data-text">No tasks to show.</span>
+            </div>
+          </ng-container>
+          <div *ngIf="!loading && !isStatusChartEmpty" class="d-flex">
+            <div class="position-relative"
+                 style="max-width: 200px">
+              <canvas baseChart
+                      [width]="185"
+                      [height]="185"
+                      [data]="statusChartData"
+                      [options]="chartOptions"
+                      [legend]="false"
+                      [type]="'doughnut'">
+              </canvas>
+            </div>
+            <div class="chart-details ms-3">
+              <ul class="list-unstyled">
+                <li *ngFor="let item of memberTasksStatusOverview" class="mb-1 chart-label">
+                  <nz-badge [nzColor]="item.color_code" [nzText]="item.label+'('+item.tasks_count+')'" nz-tooltip [nzTooltipTitle]="item.label"></nz-badge>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nz-card>
+    </div>
+    <div nz-col [nzSpan]="12" class="mb-2">
+      <nz-card [nzTitle]="priorityCardTitle">
+        <ng-template #priorityCardTitle>
+          <div class="d-flex align-items-center">
+            <div>
+              <h4 class="mb-0">Tasks By Priority</h4>
+            </div>
+          </div>
+        </ng-template>
+        <div class="card-content">
+          <ng-container *ngIf="isPriorityChartEmpty">
+            <div class="pt-4 pb-5 text-center">
+              <div class="no-data-img-holder mx-auto mb-3">
+                <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+              </div>
+              <span nz-typography class="no-data-text">No tasks to show.</span>
+            </div>
+          </ng-container>
+          <div *ngIf="!loading && !isPriorityChartEmpty" class="d-flex">
+            <div class="position-relative"
+                 style="max-width: 200px">
+              <canvas baseChart
+                      [width]="185"
+                      [height]="185"
+                      [data]="priorityChartData"
+                      [options]="chartOptions"
+                      [legend]="false"
+                      [type]="'doughnut'">
+              </canvas>
+            </div>
+            <div class="chart-details ms-3">
+              <ul class="list-unstyled">
+                <li *ngFor="let item of memberTasksPriorityOverview" class="mb-1 chart-label">
+                  <nz-badge [nzColor]="item.color_code" [nzText]="item.label+'('+item.tasks_count+')'" nz-tooltip [nzTooltipTitle]="item.label"></nz-badge>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nz-card>
+    </div>
+    <div nz-col [nzSpan]="12" class="mt-2 mb-2">
+      <nz-card [nzTitle]="phaseCardTitle">
+        <ng-template #phaseCardTitle>
+          <div class="d-flex align-items-center">
+            <div>
+              <h4 class="mb-0">Tasks By Phase</h4>
+            </div>
+          </div>
+        </ng-template>
+        <div class="card-content">
+          <ng-container *ngIf="isPhaseChartEmpty">
+            <div class="pt-4 pb-5 text-center">
+              <div class="no-data-img-holder mx-auto mb-3">
+                <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+              </div>
+              <span nz-typography class="no-data-text">No tasks have been assigned to phases.</span>
+            </div>
+          </ng-container>
+          <div *ngIf="!loading && !isPhaseChartEmpty" class="d-flex">
+            <div class="position-relative"
+                 style="max-width: 200px">
+              <canvas baseChart
+                      [width]="185"
+                      [height]="185"
+                      [data]="phaseChartData"
+                      [options]="chartOptions"
+                      [legend]="false"
+                      [type]="'doughnut'">
+              </canvas>
+            </div>
+            <div class="chart-details ms-3">
+              <ul class="list-unstyled">
+                <li *ngFor="let item of memberTasksPhaseOverview" class="mb-1 chart-label">
+                  <nz-badge [nzColor]="item.color_code" [nzText]="item.label+'('+item.tasks_count+')'" nz-tooltip [nzTooltipTitle]="item.label"></nz-badge>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nz-card>
+    </div>
+    <div nz-col [nzSpan]="12" class="mt-2 mb-2">
+      <nz-card [nzTitle]="datesCardTitle">
+        <ng-template #datesCardTitle>
+          <div class="d-flex align-items-center">
+            <div>
+              <h4 class="mb-0">Tasks By Dates</h4>
+            </div>
+          </div>
+        </ng-template>
+        <div class="card-content">
+          <ng-container *ngIf="isDatesChartEmpty">
+            <div class="pt-4 pb-5 text-center">
+              <div class="no-data-img-holder mx-auto mb-3">
+                <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+              </div>
+              <span nz-typography class="no-data-text">No tasks to show.</span>
+            </div>
+          </ng-container>
+          <div *ngIf="!loading && !isDatesChartEmpty" class="d-flex">
+            <div class="position-relative"
+                 style="max-width: 200px">
+              <canvas baseChart
+                      [width]="185"
+                      [height]="185"
+                      [data]="datesChartData"
+                      [options]="chartOptions"
+                      [legend]="false"
+                      [type]="'doughnut'">
+              </canvas>
+            </div>
+            <div class="chart-details ms-3">
+              <ul class="list-unstyled">
+                <li *ngFor="let item of memberTasksDatesOverview" class="mb-1 chart-label">
+                  <nz-badge [nzColor]="item.color_code"
+                            [nzText]="(item.label | ellipsis : 19)+'('+item.tasks_count+')'" nz-tooltip [nzTooltipTitle]="item.label"></nz-badge>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nz-card>
+    </div>
+  </div>
+</div>

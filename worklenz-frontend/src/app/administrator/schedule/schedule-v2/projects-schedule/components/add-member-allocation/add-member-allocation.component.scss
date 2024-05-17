@@ -1,0 +1,14 @@
+.indicator {
+  height: 25px;
+  background: rgb(217, 227, 238);
+  border: none;
+  border-radius: 4px;
+  position: absolute;
+  z-index: 9;
+  transition: 0.15s all;
+}
+
+.h-default {
+  min-height: 45px;
+  max-height: 45px;
+}

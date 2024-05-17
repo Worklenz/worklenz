@@ -1,0 +1,31 @@
+<div #overviewExportDiv>
+  <worklenz-project-stats [archived]="archived"></worklenz-project-stats>
+
+  <nz-row [nzGutter]="16" class="mt-3">
+    <nz-col [nzSpan]="12">
+      <nz-card [nzTitle]="'Status Overview'" class="h-100">
+        <worklenz-status-overview [archived]="archived"></worklenz-status-overview>
+      </nz-card>
+    </nz-col>
+    <nz-col [nzSpan]="12">
+      <nz-card [nzTitle]="'Priority Overview'" class="h-100">
+        <worklenz-priority-breakdown [archived]="archived"></worklenz-priority-breakdown>
+      </nz-card>
+    </nz-col>
+  </nz-row>
+
+  <nz-row [nzGutter]="16" class="mt-3">
+    <nz-col [nzSpan]="12">
+      <nz-card [nzExtra]="lastExtraTemplate" [nzTitle]="'Last Updated Tasks'" class="h-100">
+        <worklenz-last-updated-tasks [archived]="archived"></worklenz-last-updated-tasks>
+        <ng-template #lastExtraTemplate>
+          <a (click)="goToList()">See all</a>
+        </ng-template>
+      </nz-card>
+    </nz-col>
+
+    <nz-col [nzSpan]="12">
+      <worklenz-project-deadline [archived]="archived"></worklenz-project-deadline>
+    </nz-col>
+  </nz-row>
+</div>

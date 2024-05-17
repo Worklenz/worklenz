@@ -1,0 +1,45 @@
+<nz-drawer
+  (nzOnClose)="close()"
+  [nzClosable]="true"
+  [nzTitle]="title"
+  [nzVisible]="show"
+  [nzPlacement]="'right'"
+  (nzVisibleChange)="onVisibilityChange($event)"
+>
+  <ng-container *nzDrawerContent>
+    <nz-spin [nzSpinning]="loading">
+      <form (submit)="submit()" [formGroup]="form" [nzLayout]="'vertical'" nz-form>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="null" nzRequired>Name</nz-form-label>
+          <nz-form-control [nzSpan]="null" [nzErrorTip]="'Please enter a name!'">
+            <input [formControlName]="'name'" nz-input placeholder="Enter your folder name" #nameInput/>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label class="pb-0" [nzSpan]="null" nzRequired>Folder Color
+            <nz-tag [nzColor]="activeColor" nz-dropdown [nzDropdownMenu]="menu"
+                    [nzTrigger]="'click'"
+                    class="ms-2 rounded-circle cursor-pointer"
+                    style="width: 20px;height: 20px;">&nbsp;
+            </nz-tag>
+          </nz-form-label>
+          <nz-dropdown-menu #menu="nzDropdownMenu">
+            <ul style="max-height: 200px;overflow: hidden;overflow-y: auto;" nz-menu nzSelectable>
+              <li nz-menu-item *ngFor="let item of COLOR_CODES" (click)="setColorCode(item)">
+                <nz-tag
+                  [nzColor]="item"
+                  class="me-1 w-100 rounded-pill"
+                  style="height: 16px !important;width: 16px !important;">&nbsp;
+                </nz-tag>
+              </li>
+            </ul>
+          </nz-dropdown-menu>
+        </nz-form-item>
+
+        <button nz-button nzBlock [nzType]="'primary'" [disabled]="!valid" type="submit">{{buttonText}}</button>
+      </form>
+    </nz-spin>
+  </ng-container>
+</nz-drawer>

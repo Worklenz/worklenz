@@ -1,0 +1,32 @@
+<nz-form-item>
+  <nz-form-label [nzSpan]="null">Category</nz-form-label>
+  <nz-form-control [ngSwitch]="showCategoryInput" [nzSpan]="null"
+                   [nzExtra]="showCategoryInput ? 'Hit enter to create!' : ''">
+
+    <ng-container *ngSwitchCase="true">
+      <input nz-input placeholder="Enter a name for the category" [(ngModel)]="newCategoryName"
+             (blur)="resetInputMode()"
+             [disabled]="creating"
+             (keyup.enter)="$event.stopPropagation();create()"
+             #nameInput/>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="false">
+      <nz-select [(ngModel)]="categoryId" [nzLoading]="loading" (ngModelChange)="onCategoryChange($event)"
+                 [nzPlaceHolder]="'Add a category to the project'"
+                 [nzDisabled]="disabled"
+                 [nzAllowClear]="true">
+        <nz-option *ngFor="let item of categories" [nzLabel]="item.name | safeString" [nzValue]="item.id"
+                   nzCustomContent>
+          {{item.name}}
+        </nz-option>
+        <nz-option [nzValue]="'add'" nzCustomContent>
+          <button nz-button [nzType]="'dashed'" nzBlock [nzSize]="'small'" (click)="newCategory()">
+            <span nz-icon [nzType]="'plus'" [nzTheme]="'outline'"></span> New Category
+          </button>
+        </nz-option>
+      </nz-select>
+    </ng-container>
+
+  </nz-form-control>
+</nz-form-item>

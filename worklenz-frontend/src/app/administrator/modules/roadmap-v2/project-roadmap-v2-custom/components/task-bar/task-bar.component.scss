@@ -1,0 +1,59 @@
+.task-bar {
+  background: rgb(217, 227, 238);
+  border: 1px solid rgb(173, 181, 189);
+  position: absolute;
+  min-width: 32px;
+  min-height: 28px;
+  max-height: 28px;
+  border-radius: 4px;
+  z-index: 0;
+  cursor: move;
+  will-change: trasnsform;
+
+  & .days-indicator-left {
+    position: absolute;
+    content: '';
+    width: 1px;
+    background: rgb(217, 227, 238);
+    left: -1px;
+    bottom: 25px;
+    height: 100vh;
+  }
+  & .days-indicator-right {
+    position: absolute;
+    content: '';
+    width: 1px;
+    background: rgb(217, 227, 238);
+    right: -1px;
+    bottom: 25px;
+    height: 100vh;
+  }
+}
+
+.resize-handle {
+  position: absolute;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  background-color: #7cb8fb;
+  transition: width 0.15s ease;
+
+  &:hover {
+    width: 8px;
+  }
+
+  &::before {
+    position: absolute;
+    content: ':';
+    left: 1px;
+    color: white;
+  }
+}
+
+.left-handle {
+  left: 0;
+}
+
+.right-handle {
+  right: 0;
+}

@@ -1,0 +1,26 @@
+<form [formGroup]="form" [nzLayout]="'vertical'" nz-form>
+  <nz-form-item>
+    <nz-form-label [nzSpan]="null">{{label}}</nz-form-label>
+    <nz-form-control [nzSpan]="null">
+      <nz-select
+        (nzOnSearch)="search($event)"
+        [formControlName]="'project_names'"
+        [nzDisabled]="disabled"
+        [nzLoading]="loading"
+        [nzMode]="multiple ? 'multiple' : 'default'"
+        [nzPlaceHolder]="placeholder"
+        nzAllowClear
+        nzServerSearch
+        nzShowSearch
+      >
+        <ng-container *ngFor="let item of projects">
+          <nz-option *ngIf="!searching" [nzLabel]="item.name || null" [nzValue]="item.name"></nz-option>
+        </ng-container>
+        <nz-option *ngIf="searching" nzCustomContent nzDisabled>
+          <span class="loading-icon" nz-icon nzType="loading"></span>
+          Loading Data...
+        </nz-option>
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+</form>

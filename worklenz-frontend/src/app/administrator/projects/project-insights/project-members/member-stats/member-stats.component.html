@@ -1,0 +1,54 @@
+<nz-row [nzGutter]="16" class="mt-3 justify-content-between">
+  <nz-col [nzSpan]="8">
+    <nz-card class="h-100">
+      <nz-skeleton [nzLoading]="loading" [nzActive]="true" [nzTitle]="false" [nzParagraph]="{ rows: 2 }"
+                   [nzAvatar]="{ size: 'large', shape: 'square' }"></nz-skeleton>
+      <nz-row *ngIf="!loading" [nzGutter]="16">
+        <nz-col [nzSpan]="6" class="d-flex justify-content-center align-items-center">
+          <div class="icon-img-holder">
+            <img src="/assets/images/group.png" alt="" class="img-fluid">
+          </div>
+        </nz-col>
+        <nz-col [nzSpan]="18">
+          <h5 class="m-0 fw-normal" nz-typography>Project Members</h5>
+          <h2 class="m-0" nz-typography>{{memberStats.total_members_count}}</h2>
+        </nz-col>
+      </nz-row>
+    </nz-card>
+  </nz-col>
+  <nz-col [nzSpan]="8">
+    <nz-card class="h-100">
+      <nz-skeleton [nzLoading]="loading" [nzActive]="true" [nzTitle]="false" [nzParagraph]="{ rows: 2 }"
+                   [nzAvatar]="{ size: 'large', shape: 'square' }"></nz-skeleton>
+      <nz-row *ngIf="!loading" [nzGutter]="16">
+        <nz-col [nzSpan]="6" class="d-flex justify-content-center align-items-center">
+          <div class="icon-img-holder">
+            <img src="/assets/images/warning.png" alt="" class="img-fluid">
+          </div>
+          <!-- <span nz-icon nzType="alert" nzTheme="outline" class="fs-50" style="color: #ff7875"></span> -->
+        </nz-col>
+        <nz-col [nzSpan]="18">
+          <h5 class="m-0 fw-normal" nz-typography>Assignees with overdue tasks</h5>
+          <h2 class="m-0" nz-typography>{{memberStats.overdue_members}}</h2>
+        </nz-col>
+      </nz-row>
+    </nz-card>
+  </nz-col>
+  <nz-col [nzSpan]="8">
+    <nz-card class="h-100">
+      <nz-skeleton [nzLoading]="loading" [nzActive]="true" [nzTitle]="false" [nzParagraph]="{ rows: 2 }"
+                   [nzAvatar]="{ size: 'large', shape: 'square' }"></nz-skeleton>
+      <nz-row *ngIf="!loading" [nzGutter]="16">
+        <nz-col [nzSpan]="6" class="d-flex justify-content-center align-items-center">
+          <div class="icon-img-holder">
+            <img src="/assets/images/block-user.png" alt="" class="img-fluid">
+          </div>
+        </nz-col>
+        <nz-col [nzSpan]="18">
+          <h5 class="m-0 fw-normal" nz-typography>Unassigned Members</h5>
+          <h2 class="m-0" nz-typography>{{memberStats.unassigned_members}}</h2>
+        </nz-col>
+      </nz-row>
+    </nz-card>
+  </nz-col>
+</nz-row>

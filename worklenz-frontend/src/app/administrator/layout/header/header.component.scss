@@ -1,0 +1,207 @@
+
+.logo-holder {
+  width: 135px;
+  max-width: 135px;
+  margin-right: 7px;
+}
+
+.logo {
+  width: 120px;
+  height: 31px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 16px 24px 16px 0;
+  float: left;
+
+  img {
+    height: 27px;
+  }
+}
+
+.pt-def {
+  padding-top: 16px;
+}
+
+.pb-def {
+  padding-bottom: 16px;
+}
+
+.pl-def {
+  padding-left: 16px;
+}
+
+.pr-def {
+  padding-right: 16px;
+}
+
+[nz-menu-item] {
+  user-select: none;
+}
+
+span[nztype="bell"] {
+  font-size: 20px;
+}
+
+.team-list-item:not(:last-child) {
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.team-name-edit-icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(150, 150, 150, .1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+}
+
+.profile-details-dropdown {
+  position: absolute;
+  right: 0;
+  top: 70px;
+  background-color: white;
+  box-shadow: var(--ds-shadow-overlay, 0 4px 8px -2px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31));
+  z-index: 9;
+  border-radius: 4px;
+  width: 230px;
+
+  .account-heading h2 {
+    line-height: 20px;
+    margin-bottom: 0px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .actions h2 {
+    line-height: 20px;
+    margin-bottom: 10px;
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    padding-left: 16px;
+  }
+
+  .account-name {
+    margin-left: 12px;
+    width: 155px;
+  }
+
+  .account-name h4 {
+    line-height: 20px;
+    margin-bottom: 0px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .account-name p {
+    line-height: 20px;
+    margin-bottom: 0px;
+    font-size: 12px;
+  }
+
+  .actions {
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .actions ul {
+    margin-bottom: 6px;
+  }
+
+  .actions ul li {
+    line-height: 36px;
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+
+  .actions ul li:hover {
+    background-color: #edebf0 !important;
+  }
+
+  .account-details {
+    margin-right: 16px;
+  }
+}
+
+[nz-menu] {
+  line-height: 64px;
+}
+
+nz-content {
+  margin-top: 64px;
+  background: #ffffff;
+}
+
+.upgrade-btn {
+  background-color: #fbc84c69;
+  padding: 4px 11px;
+  border-radius: 4px;
+}
+.invite-btn {
+  color: #1890ff;
+  border-color: #1890ff;
+}
+.lg-none {
+  display: none;
+}
+.mb-none {
+  display: block;
+}
+.logo-large {
+  display: block;
+}
+.logo-small {
+  display: none;
+}
+
+.item-selected {
+  color: #188fff!important;
+  font-weight: 500;
+}
+
+.top-nav-ul-main {
+  display: block;
+}
+
+.mob-nav-main {
+  display: none;
+}
+
+@media(max-width: 1200px) {
+  .mob-nav-main {
+    display: flex;
+  }
+  .top-nav-ul-main {
+    display: none;
+  }
+  .upgrade-btn {
+    font-size: 12px;
+  }
+}
+
+@media(max-width: 1100px) {
+  .lg-none {
+    display: block;
+  }
+  .mb-none {
+    display: none;
+  }
+  .teams-switch {
+    padding-left: 7px !important;
+  }
+  .logo-holder {
+    width: 50px;
+    max-width: 50px;
+  }
+  .top-nav-ul-main.ant-menu-horizontal:not(.ant-menu-dark) > .ant-menu-item, .ant-menu-horizontal:not(.ant-menu-dark) > .ant-menu-submenu {
+    padding: 0 15px !important;
+  }
+  .top-nav-ul-secondary.ant-menu-horizontal:not(.ant-menu-dark) > .ant-menu-item, .ant-menu-horizontal:not(.ant-menu-dark) > .ant-menu-submenu {
+    padding: 0 15px !important;
+  }
+  .logo-large {
+    display: none;
+  }
+  .logo-small {
+    display: block;
+  }
+}

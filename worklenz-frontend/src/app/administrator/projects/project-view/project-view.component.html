@@ -1,0 +1,208 @@
+<div class="container">
+  <nz-page-header (nzBack)="back()" [nzGhost]="false" class="px-0
+  project-title-header" nzBackIcon>
+    <nz-page-header-title>
+      <nz-skeleton-element *ngIf="loading" nzType="input" [nzActive]="true" [nzSize]="'default'" style="width:200px">
+      </nz-skeleton-element>
+      <div class="d-flex" *ngIf="!loading">
+        <div *ngIf="project && project.name" class="project-title" nz-tooltip [nzTooltipTitle]="project.name">
+          {{project && project.name}}
+        </div>
+        <div class="project-title-icons d-flex align-items-center">
+
+          <ng-container *ngIf="project.category_name">
+            <nz-tag class="rounded-pill category-tag ms-2" [nzColor]="project.category_color">
+              {{project.category_name}}
+            </nz-tag>
+          </ng-container>
+
+          <span nz-icon [nzType]="project.status_icon | safeString" [style.color]="project.status_color" nz-tooltip
+                style="font-size: 16px; margin-top: 2px;"
+                class="ms-2"
+                [nzTooltipTitle]="project.status | safeString"></span>
+
+          <span *ngIf="project.start_date || project.end_date" nz-typography nzType="secondary">
+            <span nz-icon [nzType]="'calendar'" nz-tooltip style="font-size: 16px;" class="ms-2"
+                  [nzTooltipTitle]="titleContent"></span>
+             <ng-template #titleContent>
+                <div *ngIf="project.start_date">Start date : {{project.start_date | date: 'mediumDate'}}</div>
+                <div *ngIf="project.end_date">End date : {{project.end_date | date: 'mediumDate'}}</div>
+              </ng-template>
+          </span>
+        </div>
+      </div>
+    </nz-page-header-title>
+
+    <nz-page-header-subtitle>
+      <div class="d-flex" style="margin-top: 4px;">
+        <div class="project-subtitle" [ngClass]="project.notes && project.notes.length > 60 ? 'ellipsis-on' : '' ">
+          {{project.notes | nzEllipsis:60:'...'}}
+        </div>
+        <div class="project-subtitle-btn">
+          <button *ngIf="project.notes && project.notes.length > 60" nz-button nzType="link" class="m-0" nzSize="small"
+                  (click)="showDescriptionModel=true">
+            (Show more)
+          </button>
+        </div>
+      </div>
+    </nz-page-header-subtitle>
+
+    <nz-modal [(nzVisible)]="showDescriptionModel" (nzOnCancel)="showDescriptionModel=false" [nzFooter]="null"
+              [nzCentered]="true">
+      <ng-container *nzModalContent>
+        {{project.notes}}
+      </ng-container>
+    </nz-modal>
+
+    <nz-page-header-extra>
+      <nz-space>
+        <button *nzSpaceItem (click)="refresh();" nz-button nz-tooltip nzShape="circle"
+                [nzTooltipTitle]="'Refresh project'"
+                nzType="default">
+          <span [nzSpin]="refreshing" nz-icon [nzTheme]="'outline'" nzType="sync"></span>
+        </button>
+
+        <ng-container *ngIf="ownerOrAdmin">
+          <button *nzSpaceItem (click)="openTemplateCreateDrawer()" nz-button nz-tooltip nzShape="circle" [nzTooltipTitle]="'Save as template'" nzType="default">
+            <span nz-icon [nzTheme]="'outline'" nzType="save"></span>
+          </button>
+        </ng-container>
+
+        <ng-container>
+          <button *nzSpaceItem (click)="openProjectForm()" nz-button nz-tooltip nzShape="circle"
+                  [nzTooltipTitle]="'Project settings'" nzType="default">
+            <span nz-icon nzTheme="outline" nzType="setting"></span>
+          </button>
+        </ng-container>
+
+        <ng-container>
+          <button *nzSpaceItem nz-button nz-tooltip [nzTooltipTitle]="'Receive a project summary every evening.'"
+                  (click)="toggleProjectSubscription()" [nzShape]="'round'" [nzType]="'default'">
+            <span nz-icon nzType="bell"
+                  [nzTheme]="project.subscribed ? 'fill' : 'outline'"></span> {{project.subscribed ? 'Unsubscribe' : 'Subscribe'}}
+          </button>
+        </ng-container>
+
+        <ng-container *ngIf="ownerOrAdmin || isProjectManager()">
+          <button *nzSpaceItem (click)="openInviteMembersDrawer()" nz-button nzType="primary">
+            <span nz-icon nzType="usergroup-add" nzTheme="outline"></span> Invite
+          </button>
+        </ng-container>
+
+        <ng-container>
+          <nz-button-group *nzSpaceItem>
+            <button nz-button nzType="primary" [nzLoading]="creatingTask" (click)="openCreateTaskModal()">
+              <span nz-icon nzType="edit" nzTheme="outline"></span> Create Task
+            </button>
+            <button nz-button nz-dropdown [nzDropdownMenu]="menu1" nzPlacement="bottomRight" nzType="primary"
+                    *ngIf="ownerOrAdmin">
+              <span nz-icon nzType="down" nzTheme="outline"></span>
+            </button>
+          </nz-button-group>
+          <nz-dropdown-menu #menu1="nzDropdownMenu">
+            <ul nz-menu>
+              <li nz-menu-item (click)="openImportTasksDrawer()">
+                <span nz-icon nzType="import" nzTheme="outline"></span>&nbsp; Import Tasks
+              </li>
+            </ul>
+          </nz-dropdown-menu>
+        </ng-container>
+      </nz-space>
+    </nz-page-header-extra>
+    <nz-page-header-footer class="d-flex align-items-center justify-content-between">
+      <nz-tabset
+        [(nzSelectedIndex)]="selectedTabIndex"
+        (nzSelectedIndexChange)="tabChanged($event);"
+        [nzAnimated]="false"
+        [nzSize]="'small'"
+      >
+        <nz-tab *ngFor="let item of tabs">
+          <span *nzTabLink [queryParams]="{ tab: item.tab }" [routerLink]="['.']" nz-tab-link
+             [queryParamsHandling]="'merge'" class="me-1 tab-text" [ngClass]="selectedTabIndex === item.index ? 'active' : ''">
+            {{item.label}}
+            <button *ngIf="item.index === 0 || item.index === 1" nz-button nzType="text"
+                    (click)="$event.stopPropagation();updatePinnedView(item.index);"
+                    class="p-0" style="max-width: 20px;">
+              <span [ngClass]="item.isPinned ? 'rotated' : ''">
+                <span *ngIf="!item.isPinned" nz-icon nzType="pushpin" nzTheme="outline" class="me-0 pin-icon"></span>
+                <span *ngIf="item.isPinned" nz-icon nzType="pushpin" nzTheme="fill" class="me-0 pin-icon"></span>
+              </span>
+            </button>
+          </span>
+        </nz-tab>
+        <nz-tab>
+          <a *nzTabLink [queryParams]="{ tab: 'updates' }" [routerLink]="['.']" nz-tab-link
+             [queryParamsHandling]="'merge'" class="pe-2">Updates
+            <span *ngIf="enableBadge && selectedTabIndex !== 7" class="updates-badge"></span>
+          </a>
+        </nz-tab>
+
+<!--        <nz-tab>-->
+<!--          <a *nzTabLink [queryParams]="{ tab: 'workloadV2' }" [routerLink]="['.']" nz-tab-link-->
+<!--             [queryParamsHandling]="'merge'" class="pe-2">Workload v2</a>-->
+<!--        </nz-tab>-->
+
+<!--        <nz-tab>-->
+<!--          <a *nzTabLink [queryParams]="{ tab: 'roadmapV2' }" [routerLink]="['.']" nz-tab-link-->
+<!--             [queryParamsHandling]="'merge'" class="pe-2">Roadmap v2</a>-->
+<!--        </nz-tab>-->
+
+      </nz-tabset>
+
+      <worklenz-project-view-extra
+        [projectId]="projectId"
+        [refreshing]="refreshing"
+        (refresh)="refresh()"
+        (refreshAll)="refreshAll()"
+      ></worklenz-project-view-extra>
+    </nz-page-header-footer>
+  </nz-page-header>
+</div>
+
+<div class="container">
+  <nz-skeleton [nzActive]="true" [nzLoading]="refreshing"></nz-skeleton>
+</div>
+
+<div class="mt-3" *ngIf="!refreshing">
+  <ng-container [ngSwitch]="selectedTabIndex">
+    <div class="container">
+      <div *ngSwitchCase="0" class="position-relative" style="margin-right: -24px;">
+        <worklenz-task-list-table></worklenz-task-list-table>
+      </div>
+      <ng-container *ngSwitchCase="4">
+        <worklenz-project-insights *ngIf="project.name" [projectName]="project.name"></worklenz-project-insights>
+      </ng-container>
+      <worklenz-all-tasks-attachments *ngSwitchCase="5"></worklenz-all-tasks-attachments>
+      <worklenz-project-members *ngSwitchCase="6"></worklenz-project-members>
+      <worklenz-project-updates *ngSwitchCase="7"></worklenz-project-updates>
+    </div>
+    <div class="container-fluid">
+      <worklenz-kanban-board *ngSwitchCase="1"></worklenz-kanban-board>
+<!--      <worklenz-project-workload-v2 *ngSwitchCase="2"></worklenz-project-workload-v2>-->
+<!--      <worklenz-project-roadmap-v2 *ngSwitchCase="3"></worklenz-project-roadmap-v2>-->
+      <worklenz-workload-gaant-chart-v2 *ngSwitchCase="2"></worklenz-workload-gaant-chart-v2>
+      <worklenz-project-roadmap-v2-custom *ngSwitchCase="3"></worklenz-project-roadmap-v2-custom>
+    </div>
+  </ng-container>
+</div>
+
+<worklenz-project-form-modal (onDelete)="back()" (onUpdate)="refreshAll()"></worklenz-project-form-modal>
+
+<worklenz-project-members-form
+  *ngIf="projectId"
+  [(show)]="showInviteMembersModal"
+  [projectId]="projectId"
+  [isProjectManager]="isProjectManager()"
+></worklenz-project-members-form>
+
+<worklenz-import-tasks-template
+  *ngIf="projectId"
+  [drawerVisible]="importTemplateVisible"
+  (onImportDone)="importDone()"
+  [projectId]="projectId"
+  (onCancel)="closeImport()"
+></worklenz-import-tasks-template>
+
+<worklenz-project-updates-drawer></worklenz-project-updates-drawer>
+
+<worklenz-project-template-create-drawer [projectId]="projectId"></worklenz-project-template-create-drawer>

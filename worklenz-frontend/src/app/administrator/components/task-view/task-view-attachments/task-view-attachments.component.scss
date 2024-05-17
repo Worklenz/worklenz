@@ -1,0 +1,11 @@
+.ant-upload-list {
+  border: 1px dashed;
+  border-color: transparent;
+  transition: 0.15s all;
+  padding-top: 8px;
+  padding-left: 8px;
+}
+.focused {
+  border-color: #1890ff;
+  background-color: #FAFAFA;
+}

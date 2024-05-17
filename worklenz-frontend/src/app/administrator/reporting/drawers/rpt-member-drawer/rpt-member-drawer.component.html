@@ -1,0 +1,69 @@
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="show"
+  [nzPlacement]="'right'"
+  [nzTitle]="memberDrawerTitle"
+  [nzContent]="memberDrawerContent"
+  (nzOnClose)="close()"
+  [nzWidth]="900"
+  [nzCloseIcon]="closeIcon"
+></nz-drawer>
+
+<ng-template #memberDrawerTitle>
+  <div class="d-flex align-items-center w-100">
+    <nz-breadcrumb style="margin-left: -15px;">
+      <nz-breadcrumb-item>
+      </nz-breadcrumb-item>
+      <nz-breadcrumb-item>
+        {{member?.name}}
+      </nz-breadcrumb-item>
+    </nz-breadcrumb>
+    <div class="ms-auto">
+      <nz-space>
+        <button *nzSpaceItem nz-button [nzType]="'primary'"  nz-dropdown [nzDropdownMenu]="exportDropdown" [nzPlacement]="'bottomRight'" [nzLoading]="exporting">
+          Export <span nz-icon [nzType]="'down'"></span>
+        </button>
+        <nz-dropdown-menu #exportDropdown="nzDropdownMenu">
+          <ul nz-menu>
+            <li nz-menu-item (click)="exportProjects()">Projects</li>
+            <li nz-menu-item (click)="exportTasks()">Tasks</li>
+          </ul>
+        </nz-dropdown-menu>
+      </nz-space>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #memberDrawerContent>
+  <ng-container *ngIf="member">
+    <nz-tabset [nzType]="'card'">
+      <nz-tab [nzTitle]="'Overview'" (nzClick)="overview.get()">
+        <worklenz-rpt-member-drawer-overview [memberId]="member.id" #overview></worklenz-rpt-member-drawer-overview>
+      </nz-tab>
+      <nz-tab [nzTitle]="'Projects'">
+        <worklenz-rpt-member-drawer-projects
+          *ngIf="team"
+          [teamId]="team.id"
+          [teamMemberId]="member.id"
+          (selectProject)="onSelectProject($event)"
+        ></worklenz-rpt-member-drawer-projects>
+      </nz-tab>
+      <nz-tab [nzTitle]="'Tasks'">
+        <worklenz-rpt-member-drawer-tasks
+          [teamMemberId]="member.id"
+          [projectId]="project?.id || null"
+        ></worklenz-rpt-member-drawer-tasks>
+      </nz-tab>
+    </nz-tabset>
+  </ng-container>
+</ng-template>
+
+<ng-template #closeIcon>
+  <worklenz-rpt-drawer-title
+    *ngIf="team"
+    [title]="team.name"
+    [icon]="'bank'"
+  ></worklenz-rpt-drawer-title>
+</ng-template>
+
+

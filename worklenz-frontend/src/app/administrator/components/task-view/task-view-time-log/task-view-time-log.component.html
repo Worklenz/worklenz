@@ -1,0 +1,164 @@
+<nz-skeleton [nzActive]="true" [nzLoading]="loadingLogs">
+
+  <div class="mb-0 fw-normal d-flex align-items-center justify-content-between" style="user-select: text;" nz-typography
+       [nzType]="'secondary'">
+    <span>Total Logged: {{totalLogged}}</span>
+    <div class="d-flex align-items-center">
+      <worklenz-task-timer
+        *ngIf="taskId"
+        [taskId]="taskId"
+        [projectId]="projectId ? projectId : ''"
+        [timerStartTime]="timerStartTime"
+        (onStart)="updateTaskList();emitStart(taskId)"
+        (onStop)="updateTaskList();emitStop(taskId)"
+        class="task-view-timer"
+      ></worklenz-task-timer>
+      <button nz-button nzType="default" nzSize="small" [nzLoading]="exporting" class="ms-1" (click)="exportExcel()">
+        <span nz-icon nzType="download" nzTheme="outline"></span> Export to Excel
+      </button>
+    </div>
+  </div>
+
+  <nz-divider class="mt-2"></nz-divider>
+
+  <div *ngIf="!timeLogs.length && !loadingLogs" class="pt-4 pb-5 text-center">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">No time logs found in the task.</span>
+    <div class="d-block mt-2">
+      <button nz-button nzType="primary" (click)="setTodayAsDefault()"><span nz-icon nzType="plus"
+                                                                                 nzTheme="outline"></span>Add Timelog
+      </button>
+    </div>
+  </div>
+
+  <nz-list *ngIf="timeLogs.length" [nzItemLayout]="'vertical'" [nzSize]="'small'"
+           [style.margin-bottom.px]="showForm ? 227 : 93">
+    <nz-list-item *ngFor="let item of timeLogs" [class.highlight]="item.id === editId">
+      <nz-list-item-meta class="m-0">
+        <nz-list-item-meta-avatar [nzSrc]="item.avatar_url">
+          <nz-avatar *ngIf="!item.avatar_url" [nzSize]="26"
+                     [nzText]="item.user_name | firstCharUpper"
+                     [style.background-color]="item.avatar_color" class="mt-2"></nz-avatar>
+        </nz-list-item-meta-avatar>
+        <nz-list-item-meta-title>
+          <span nz-typography style="font-weight: normal" class="item-meta-title">
+            <strong>{{item.user_name}}</strong> logged <strong>{{item.time_spent_text}}</strong> {{item.logged_by_timer ? 'via Timer' : ''}}
+            about {{item.created_at | fromNow}}
+          </span>
+        </nz-list-item-meta-title>
+
+        <nz-list-item-meta-description>
+          <ng-container [ngSwitch]="!!item.logged_by_timer">
+            <ng-template [ngSwitchCase]="true">
+              <span nz-typography class="item-meta-description">
+                {{item.start_time | date: 'MMM d, y, h:mm a'}} - {{item.end_time | date: 'MMM d, y, h:mm a'}}
+              </span>
+            </ng-template>
+            <ng-template [ngSwitchCase]="false">
+              <span nz-typography class="item-meta-description">
+                {{item.start_time | date: 'MMM d, y, h:mm a'}} - {{item.end_time | date: 'MMM d, y, h:mm a'}}
+              </span>
+            </ng-template>
+          </ng-container>
+        </nz-list-item-meta-description>
+      </nz-list-item-meta>
+
+      <div class="description-container" *ngIf="item.description">
+        <span nz-typography>{{ item.description }}</span>
+      </div>
+
+      <div class="d-flex align-items-center justify-content-end" *ngIf="canDelete(item.user_id)">
+        <ul class="m-0" nz-list-item-actions>
+          <nz-list-item-action>
+            <button class="px-0" [disabled]="!!editId" (click)="editRecord(item)" nz-button [nzSize]="'small'"
+                    [nzType]="'link'">Edit
+            </button>
+          </nz-list-item-action>
+          <nz-list-item-action>
+            <button class="px-0" [disabled]="!!editId" nz-popconfirm [nzPopconfirmTitle]="'Are you sure?'"
+                    (nzOnConfirm)="delete(item.id)"
+                    nz-button [nzSize]="'small'"
+                    [nzType]="'link'">Delete
+            </button>
+          </nz-list-item-action>
+        </ul>
+      </div>
+      <nz-list-item-extra class="d-none"></nz-list-item-extra>
+    </nz-list-item>
+  </nz-list>
+</nz-skeleton>
+
+<nz-affix [nzOffsetBottom]="0">
+  <form class="log-form" [formGroup]="form" (submit)="submit()" [nzLayout]="'vertical'" nz-form>
+
+    <nz-form-item *ngIf="!showForm" class="mb-1">
+      <button *ngIf="timeLogs.length" nz-button nzType="primary" class="ms-1" (click)="setTodayAsDefault()">
+        <span nz-icon nzType="plus" nzTheme="outline"></span> Add Timelog
+      </button>
+    </nz-form-item>
+
+    <ng-container *ngIf="showForm">
+      <div nz-row [nzGutter]="24" class="mb-3 position-relative">
+        <div nz-col [nzSpan]="6">
+          <nz-form-item class="mb-1">
+            <nz-form-label [nzSpan]="null">Date</nz-form-label>
+            <nz-form-control [nzSpan]="null">
+              <nz-date-picker class="w-100" [formControlName]="'date'" [nzDisabledDate]="disabledDate"></nz-date-picker>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzSpan]="6">
+          <nz-form-item class="mb-1">
+            <nz-form-label [nzSpan]="null">Start time</nz-form-label>
+            <nz-form-control [nzSpan]="null">
+              <nz-time-picker class="w-100" [formControlName]="'start'" [nzFormat]="'HH:mm'"
+                              [nzMinuteStep]="1"
+                              [nzDisabledHours]="disabledStartHours" [nzDisabledMinutes]="disabledStartMinutes"
+                              #startInput></nz-time-picker>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzSpan]="6">
+          <nz-form-item class="mb-1">
+            <nz-form-label [nzSpan]="null">End time</nz-form-label>
+            <nz-form-control [nzSpan]="null">
+              <nz-time-picker class="w-100" [formControlName]="'end'" [nzFormat]="'HH:mm'"
+                              [nzMinuteStep]="1"
+                              [nzDisabledHours]="disabledEndHours"
+                              [nzDisabledMinutes]="disabledEndMinutes"></nz-time-picker>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <ng-container>
+          <span *ngIf="errorDatePair" nz-typography nzType="danger" class="error-text mt-1"> {{errorText}}</span>
+        </ng-container>
+      </div>
+      <div nz-row [nzGutter]="24">
+        <div nz-col [nzSpan]="24">
+          <nz-form-item class="mb-1">
+            <nz-form-label [nzSpan]="null">Work description</nz-form-label>
+            <nz-form-control [nzSpan]="null" nzErrorTip="Please enter a description!">
+            <textarea [attr.id]="utils.isTestServer() ? 'description' : null" [formControlName]="'description'"
+                      autofocus nz-input placeholder="Add a description"></textarea>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzSpan]="24" class="align-self-center">
+          <nz-space>
+            <button *nzSpaceItem class="mt-2" (click)="setFormVisibility(false)" nz-button nzBlock [nzType]="'default'"
+                    type="button">
+              Cancel
+            </button>
+            <button *nzSpaceItem [disabled]="!isValid()" class="mt-2" [nzLoading]="loading" nz-button nzBlock
+                    nzType="primary" type="submit">
+              <span nz-icon nzType="field-time" [nzTheme]="'outline'"></span> {{editId ? 'Update' : 'Log time'}}
+            </button>
+          </nz-space>
+        </div>
+      </div>
+    </ng-container>
+
+  </form>
+</nz-affix>

@@ -1,0 +1,8 @@
+<ng-container *ngIf="project">
+  <div class="duration-indicator cursor-pointer d-flex align-items-center"
+       [style.background-color]="project.is_expanded ? '#1890ff69' : '#d9e3ee'"
+       [style.border-color]="'#adb5bd'"
+       [style.width]="project.indicator_width+'px'"
+       [style.left]="project.indicator_offset+'px'">
+  </div>
+</ng-container>

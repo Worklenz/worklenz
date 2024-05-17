@@ -1,0 +1,106 @@
+mixin list(teams)
+	for $team of teams
+		if $team.projects.length
+			tr
+				td
+					h5(style='font-size:1em;margin-top: 12px;margin-bottom:0')
+						div(style='color:rgba(0, 0, 0, 0.45);font-size:12px')
+							img(src='https://worklenz.s3.amazonaws.com/assets/team-icon.png' style='width: 12px;height:12px;')
+							| #{$team.name}
+					for $project of $team.projects
+						b
+							a(href=$project.url style='color:inherit;text-decoration:none;color:#1890ff;color:inherit!important;text-decoration:none!important' target='_blank') #{$project.name}
+						table(width='100%')
+							for $task of $project.tasks
+								tbody
+									tr
+										td(style='color:#bfbfbe;vertical-align:top;width:15px;padding-right:5px;display:inline-block;text-align:center')
+											a(style='color:inherit;text-decoration:none;color:#1890ff;color:inherit!important;text-decoration:none!important' href=$task.url target='_blank') ▢
+										td(style='vertical-align:top;width:100%')
+											span
+												a(style='color:inherit;color:#1890ff;text-decoration:underline;' href=$task.url target='_blank')=$task.name
+											span(style='color:#6d6e6f') &nbsp;#{$task.members}
+
+doctype html
+html(lang='en')
+	head
+		meta(charset='UTF-8')
+		meta(http-equiv='X-UA-Compatible' content='IE=edge')
+		meta(name='viewport' content='width=device-width, initial-scale=1.0')
+		title Worklenz Daily Digest
+	body
+		style.
+			td {
+				font-family    : 'Helvetica Neue', helvetica, arial, sans-serif;
+				background     : #fff;
+				margin         : 0;
+				padding        : 0;
+				border         : 0;
+				border-collapse: collapse;
+				border-spacing : 0;
+			}
+		div(style="margin : 0;padding : 0;background : #fff;text-align : left;font-size  : 15px;line-height: 1.4;font-family: 'Helvetica Neue', helvetica, 'Segoe UI', arial, sans-serif;font-weight: 400;"): div(style='padding:15px 25px')
+			table(style='width: 100%;max-width: 40em;')
+				tbody
+					tr
+						td
+							table(width='100%')
+								tbody
+									tr: td: img(width='50' height='50' src='https://worklenz.s3.amazonaws.com/assets/icon-96x96.png')
+									tr: td(style='height:0.625em')
+							table(width='100%')
+								tbody
+									tr
+										td
+											h3(style='margin:0;line-height:1.2;font-size:1.3em')
+												| #{greeting}
+												br
+												| #{note}
+									tr
+										td
+											table
+												if recently_assigned && recently_assigned.length
+													tbody
+														tr
+															td
+																h3(style='display: flex;margin-top: 30px;margin-bottom: 0;font-size: 1.1em;padding-bottom: 6px;border-bottom: 1px solid #d8d8d8;color: #2b2b2b;font-weight: 500;')
+																	img(src="https://worklenz.s3.amazonaws.com/assets/clock.png" style="width: 16px;height: 16px;margin-right: 10px;margin-top: 4px;")
+																	| Recently assigned to you
+														+list(recently_assigned)
+												if overdue && overdue.length
+													tbody
+														tr
+															td
+																h3(style='display: flex;margin-top: 30px;margin-bottom: 0;font-size: 1.1em;padding-bottom: 6px;border-bottom: 1px solid #d8d8d8;color: #2b2b2b;font-weight: 500;')
+																	img(src="https://worklenz.s3.amazonaws.com/assets/clock-warn-icon.png" style="width: 16px;height: 16px;margin-right: 10px;margin-top: 4px;")
+																	| Overdue
+														+list(overdue)
+												if recently_completed && recently_completed.length
+													tbody
+														tr
+															td
+																h3(style='display: flex;margin-top: 30px;margin-bottom: 0;font-size: 1.1em;padding-bottom: 6px;border-bottom: 1px solid #d8d8d8;color: #2b2b2b;font-weight: 500;')
+																	img(src="https://worklenz.s3.amazonaws.com/assets/check-icon.png" style="width: 16px;height: 16px;margin-right: 10px;margin-top: 4px;")
+																	| Today completed
+														+list(recently_completed)
+
+									tr
+										td(style='padding-top:20px')
+											table
+												tbody
+													tr
+														td(bgcolor='#3cb371' style='display:block;height:32px;padding:0 20px;text-align:center;background-color:#1890ff;border-radius:4px;color:#fff')
+															a(href=base_url style='color:inherit;color:#1890ff;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;display:inline-block;width:100%;font-size: 15px;font-family:Helvetica,Arial,sans-serif;text-decoration:none;line-height: 32px;color:#fff' target='_blank')
+																span(style='color:#fff') Go to Worklenz
+					tr
+						td
+							table(width='100%')
+								tbody
+									tr
+										td(style='padding-bottom:10px;padding-top:20px')
+											hr(style='margin:0;border-left:0;border-right:0;border-top:0;border-bottom:1px solid #d8d8d8')
+									tr
+										td(style='padding-top:10px;padding-bottom:10px')
+											p(style='color:#000;margin:0 0 19px;font-size:12px;line-height:15px;color:#6d6d6d;margin-bottom:0')
+												| Worklenz emails this report every evening.&nbsp;
+												a(href=settings_url style='color:inherit;text-decoration:underline;color:#1890ff;color:#6d6d6d' target='_blank') Stop sending it to me.

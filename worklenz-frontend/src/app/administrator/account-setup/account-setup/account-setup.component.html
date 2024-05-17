@@ -1,0 +1,161 @@
+<div class="setup-wrapper m-auto px-3">
+  <div class="row">
+    <div class="py-5">
+      <div class="text-center">
+        <img alt="Worklenz" height="50" src="/assets/images/logo.png">
+      </div>
+      <h5 nz-typography class="mb-4 mt-1 text-center">
+        Setup your account.
+      </h5>
+      <div class="mt-4 pt-5 col-xl-8 col-lg-10 col-md-12 mx-auto bg-white">
+        <nz-space nzDirection="vertical" class="w-100">
+          <nz-skeleton *nzSpaceItem class="d-block" [nzActive]="true" [nzLoading]="verifying">
+
+            <nz-steps class="mb-3 mt-3 justify-content-center w-steps mx-auto" [nzCurrent]="index"
+                      [nzDirection]="'horizontal'" [nzSize]="'default'" (nzIndexChange)="onIndexChange($event)">
+              <nz-step [nzDisabled]="index < 0" [class.active-half]="isTeamNameValid()"></nz-step>
+              <nz-step [nzDisabled]="index < 1" [class.active-half]="isProjectNameValid()"></nz-step>
+              <nz-step [nzDisabled]="index < 2"></nz-step>
+              <nz-step [nzDisabled]="index < 3"></nz-step>
+            </nz-steps>
+
+            <form (submit)="next()" [formGroup]="form" [nzLayout]="'vertical'" nz-form
+                  class="w-600 mx-auto mt-5 mb-5 pb-3">
+
+              <ng-container [ngSwitch]="index">
+
+                <!-- workspace name step -->
+                <nz-form-item *ngSwitchCase="0">
+                  <h2 nz-typography>Name your organization.</h2>
+                  <span nz-typography class="label-description">
+                    Pick a name for your Worklenz account.
+                  </span>
+                  <nz-form-control [nzSpan]="null">
+                    <input [formControlName]="'team_name'" nz-input [placeholder]="teamSetupPlaceholder" type="text"
+                           tabindex="0" [id]="teamNameId"/>
+                  </nz-form-control>
+                </nz-form-item>
+                <!-- end of workspace name -->
+
+                <!-- project name step -->
+                <nz-form-item *ngSwitchCase="1">
+                  <h2 nz-typography>Create your first project.</h2>
+                  <span nz-typography class="label-description">
+                    What project are you working on right now?
+                  </span>
+                  <nz-form-control [nzSpan]="null">
+                    <input [formControlName]="'project_name'" nz-input [placeholder]="'e.g. Worklenz marketing plan'"
+                           [id]="projectNameId"
+                           type="text" tabindex="0"/>
+                  </nz-form-control>
+
+                  <div class="position-relative">
+                    <h4 nz-typography class="text-center mt-2 vert-text">or</h4>
+                    <div class="vert-line"></div>
+                  </div>
+
+                  <button [nzType]="'primary'" nz-button (click)="openTemplateSelector()"
+                          class="ms-auto me-auto">Import from templates
+                  </button>
+
+                </nz-form-item>
+                <!-- end of project name step -->
+
+                <!-- start of add tasks step -->
+                <div *ngSwitchCase="2">
+                  <h2 nz-typography>Create your first task.</h2>
+                  <span nz-typography class="label-description">
+                    Type few tasks that you are going to do in <span nz-typography>"<mark>{{projectName}}</mark>".</span>
+                  </span>
+                  <nz-list>
+                    <nz-list-item *ngFor="let item of getTaskControls.controls; let i = index;"
+                                  [formArrayName]="'tasks'">
+                      <input nz-input placeholder="Your Task" [attr.id]="'task-name-input-' + i" [formControlName]="i"
+                             tabindex="0"/>
+                      <ul nz-list-item-actions>
+                        <nz-list-item-action>
+                          <span nz-icon nzType="close-circle" class="dynamic-delete-button"
+                                (click)="removeTaskRow(i, $event)"></span>
+                        </nz-list-item-action>
+                      </ul>
+                    </nz-list-item>
+                    <nz-list-item>
+                      <button nz-button nzType="dashed" class="add-button" (click)="addNewTaskRow($event)">
+                        <span nz-icon nzType="plus"></span>
+                        Add another
+                      </button>
+                    </nz-list-item>
+                  </nz-list>
+                </div>
+                <!-- end of add tasks step -->
+
+                <!-- start of team members step -->
+                <nz-form-item *ngSwitchCase="3">
+                  <h2 nz-typography>
+                    Invite your team to work with <br>
+                    <span nz-typography style="font-size: 20px;font-weight:
+                      400;">
+                      <!-- use team name here -->
+                      "<mark>{{workspaceName}}</mark>".
+                    </span>
+                  </h2>
+                  <span nz-typography class="label-description">
+                  Invite with email <span class="ms-1" nz-icon nzType="mail" nzTheme="outline"></span>
+                </span>
+
+                  <nz-list>
+                    <nz-list-item *ngFor="let item of getTeamMemberControls.controls; let i = index;"
+                                  [formArrayName]="'team_members'">
+                      <ng-container>
+                        <input nz-input placeholder="Email address" [attr.id]="emailInputId"
+                               [formControlName]="i"/>
+                        <ul nz-list-item-actions>
+                          <nz-list-item-action>
+                            <span nz-icon nzType="close-circle" class="dynamic-delete-button"
+                                  (click)="removeTeamMember(i, $event)"></span>
+                          </nz-list-item-action>
+                        </ul>
+                      </ng-container>
+                    </nz-list-item>
+                    <nz-list-item>
+                      <button nz-button nzType="dashed" class="add-button" (click)="addNewTeamMemberRow($event)">
+                        <span nz-icon nzType="plus"></span>
+                        Add another
+                      </button>
+                    </nz-list-item>
+                  </nz-list>
+                </nz-form-item>
+                <!-- end of add team members step -->
+              </ng-container>
+
+              <!-- button steps for account setup -->
+              <div class="d-flex mt-5">
+                <button (click)="previous()" nz-button type="button" class="ps-0" nzType="link" *ngIf="index !== 0">
+                  Go back
+                </button>
+                <button *ngIf="index === 3 && !loading" (click)="skipInvite()" [nzLoading]="loading" nzType="text"
+                        type="button"
+                        nz-button>
+                    <span nz-typography style="font-weight:
+                      500;color:#00000073;">Skip for now</span>
+                </button>
+                <!-- rename to Finish when goes to last step -->
+                <button [nzLoading]="loading" [nzType]="'primary'" [disabled]="!isValid()" nz-button
+                        class="ms-auto">Continue
+                </button>
+              </div>
+              <!-- button steps for account setup -->
+            </form>
+          </nz-skeleton>
+        </nz-space>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bg-ant-grey" style="position: fixed;"></div>
+
+<worklenz-project-template-import-drawer
+  [showBothTabs]="false"
+  (importProject)="templateSelected($event)">
+</worklenz-project-template-import-drawer>

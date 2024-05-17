@@ -1,0 +1,181 @@
+<div nz-row [nzGutter]="16">
+  <div nz-col [nzSpan]="12" class="mb-2">
+    <nz-card [nzLoading]="loading" class="h-100">
+      <ul *ngIf="model?.stats" class="list-unstyled mt-3 ps-4">
+        <li class="d-flex mb-3 list-clickable" (click)="openProjects()">
+          <span nz-icon class="stat-icon me-2" [nzType]="'file-excel'" [nzTheme]="'outline'"
+                style="color: #ffc63b; font-size: 24px;"></span>
+          {{model.stats?.projects || 0}} Projects
+        </li>
+        <li class="d-flex mb-3 list-clickable" (click)="openTaskStatDrawer()">
+          <span nz-icon class="stat-icon me-2" [nzType]="'exclamation-circle'" [nzTheme]="'outline'"
+                style="color: #7590c9; font-size: 24px;"></span>
+          {{model.stats?.assigned || 0}} Assigned Tasks
+        </li>
+        <li class="d-flex mb-3 list-clickable" (click)="openTaskStatDrawer()">
+          <span nz-icon class="stat-icon me-2" [nzType]="'exclamation-circle'" [nzTheme]="'outline'"
+                style="color: #75c997; font-size: 24px;"></span>
+          {{model.stats?.completed || 0}} Completed Tasks
+        </li>
+        <li class="d-flex mb-3 list-clickable" (click)="openTaskStatDrawer()">
+          <span nz-icon class="stat-icon me-2" [nzType]="'clock-circle'" [nzTheme]="'outline'"
+                style="color: #7cb5ec; font-size: 24px;"></span>
+          {{model.stats?.ongoing || 0}} Ongoing Tasks
+        </li>
+        <li class="d-flex mb-3 list-clickable" (click)="openTaskStatDrawer()">
+          <span nz-icon class="stat-icon me-2" [nzType]="'clock-circle'" [nzTheme]="'outline'"
+                style="color: #eb6363; font-size: 24px;"></span>
+          {{model.stats?.overdue || 0}} Overdue Tasks
+        </li>
+        <li class="d-flex list-clickable" (click)="openTimeLogsTab()">
+          <span nz-icon class="stat-icon me-2" [nzType]="'clock-circle'" [nzTheme]="'outline'"
+                style="color: #75c997; font-size: 24px;"></span>
+          {{model.stats?.total_logged || 0}} Logged Hours
+        </li>
+      </ul>
+    </nz-card>
+  </div>
+
+  <!--  Projects Chart -->
+  <div nz-col [nzSpan]="12" class="mb-2">
+    <nz-card [nzTitle]="projectsCardTitle">
+      <ng-template #projectsCardTitle>
+        <div class="d-flex align-items-center">
+          <div>
+            <h4 class="mb-0">Tasks By Projects</h4>
+          </div>
+        </div>
+      </ng-template>
+      <div class="card-content">
+        <ng-container *ngIf="isProjectsChartEmpty">
+          <div class="pt-4 pb-5 text-center">
+            <div class="no-data-img-holder mx-auto mb-3">
+              <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+            </div>
+            <span nz-typography class="no-data-text">No tasks to show.</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!loading && !isProjectsChartEmpty" class="d-flex">
+          <div *ngIf="model.by_project && model.by_project.chart.length" class="position-relative"
+               style="max-width: 200px">
+            <canvas baseChart
+                    [width]="185"
+                    [height]="185"
+                    [data]="projectsChartData"
+                    [options]="chartOptions"
+                    [legend]="false"
+                    [type]="'doughnut'">
+            </canvas>
+          </div>
+          <div class="chart-details ms-3">
+            <ul class="list-unstyled">
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#333333'" [nzText]="'All (' + (model.by_project?.total || 0) + ')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label" *ngFor="let project of model.by_project?.data">
+                <nz-badge [nzColor]="project.color"></nz-badge>
+                <span
+                  style="font-size: 13px" nz-tooltip [nzTooltipTitle]="project.label + ' (' + project.count +')'">{{(project.label | ellipsis : 15) + ' (' + (project.count || 0) + ')'}}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+
+  <!--  Priority Chart -->
+  <div nz-col [nzSpan]="12" class="mt-2 mb-2">
+    <nz-card [nzTitle]="priorityCardTitle">
+      <ng-template #priorityCardTitle>
+        <div class="d-flex align-items-center">
+          <div>
+            <h4 class="mb-0">Tasks By Priority</h4>
+          </div>
+        </div>
+      </ng-template>
+      <div class="card-content">
+        <ng-container *ngIf="isPriorityChartEmpty">
+          <div class="pt-4 pb-5 text-center">
+            <div class="no-data-img-holder mx-auto mb-3">
+              <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+            </div>
+            <span nz-typography class="no-data-text">No tasks to show.</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!loading && !isPriorityChartEmpty" class="d-flex">
+          <div *ngIf="model.by_priority && model.by_priority.chart.length" class="position-relative"
+               style="max-width: 200px">
+            <canvas baseChart
+                    [width]="185"
+                    [height]="185"
+                    [data]="prioritiesChartData"
+                    [options]="chartOptions"
+                    [legend]="false"
+                    [type]="'doughnut'">
+            </canvas>
+          </div>
+          <div class="chart-details ms-3">
+            <ul class="list-unstyled">
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#333333'" [nzText]="'All (' + (model.by_priority?.total || 0) + ')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label" *ngFor="let priority of model.by_priority?.data">
+                <nz-badge [nzColor]="priority.color"
+                          [nzText]="priority.label + ' (' + (priority.count || 0) + ')'"></nz-badge>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+
+  <!--  Status Chart -->
+  <div nz-col [nzSpan]="12" class="mt-2 mb-2">
+    <nz-card [nzTitle]="statusCardTitle">
+      <ng-template #statusCardTitle>
+        <div class="d-flex align-items-center">
+          <div>
+            <h4 class="mb-0">Tasks By Status</h4>
+          </div>
+        </div>
+      </ng-template>
+      <div class="card-content">
+        <ng-container *ngIf="isStatusChartEmpty">
+          <div class="pt-4 pb-5 text-center">
+            <div class="no-data-img-holder mx-auto mb-3">
+              <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+            </div>
+            <span nz-typography class="no-data-text">No tasks to show.</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!loading && !isStatusChartEmpty" class="d-flex">
+          <div *ngIf="model.by_status && model.by_status.chart.length" class="position-relative"
+               style="max-width: 200px">
+            <canvas baseChart
+                    [width]="185"
+                    [height]="185"
+                    [data]="statusChartData"
+                    [options]="chartOptions"
+                    [legend]="false"
+                    [type]="'doughnut'">
+            </canvas>
+          </div>
+          <div class="chart-details ms-3">
+            <ul class="list-unstyled">
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#333333'" [nzText]="'All (' + (model.by_status?.total || 0) + ')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label" *ngFor="let status of model.by_status?.data">
+                <nz-badge [nzColor]="status.color"
+                          [nzText]="status.label + ' (' + (status.count || 0) + ')'"></nz-badge>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+
+</div>

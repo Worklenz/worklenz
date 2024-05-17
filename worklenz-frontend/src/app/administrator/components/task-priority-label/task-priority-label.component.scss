@@ -1,0 +1,18 @@
+.low-priority {
+  color: #52c41a;
+}
+
+.medium-priority {
+  color: #faad14;
+  transform: rotateZ(90deg);
+}
+
+.high-priority {
+  color: #f5222d;
+  transform: rotateZ(90deg);
+}
+
+.center-hr {
+  display: flex;
+  align-items: center;
+}

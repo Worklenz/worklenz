@@ -1,0 +1,194 @@
+<div class="d-flex align-items-center">
+  <div class="logo-holder">
+    <img alt="Worklenz" [src]="'/assets/images/logo.png'" class="img-fluid cursor-pointer logo-large"
+         (click)="navigateHome()"/>
+    <img alt="Worklenz" [src]="'/assets/icons/icon-192x192.png'" class="img-fluid cursor-pointer logo-small"
+         (click)="navigateHome()"/>
+  </div>
+</div>
+
+<div *ngIf="profile" class="d-flex justify-content-between w-100">
+  <ul nz-menu [nzMode]="'horizontal'" [nzTheme]="'light'" class="top-nav-ul-main">
+    <li *ngFor="let item of navigation" [routerLinkActiveOptions]="{exact:false}"
+        [routerLinkActive]="['ant-menu-item-selected']"
+        [routerLink]="[item.url]" nz-menu-item nz-typography>
+      <strong>{{ item.label }}</strong>
+    </li>
+  </ul>
+
+  <div class="align-items-center mob-nav-main">
+
+    <ul nz-menu [nzMode]="'horizontal'" [nzTheme]="'light'">
+      <li *ngFor="let item of navigation; let i = index" [routerLinkActiveOptions]="{exact:false}"
+          [routerLinkActive]="['ant-menu-item-selected']"
+          [routerLink]="[item.url]"
+          [ngClass]="i>1 ? 'd-none' : ''"
+          nz-menu-item nz-typography>
+        <strong>{{ item.label }}</strong>
+      </li>
+    </ul>
+
+    <button nz-button nz-dropdown [nzDropdownMenu]="menu1" nzPlacement="bottomRight">
+      <span nz-icon nzType="ellipsis"></span>
+    </button>
+
+    <nz-dropdown-menu #menu1="nzDropdownMenu">
+      <ul nz-menu>
+        <li *ngFor="let item of navigation; let i = index" [routerLinkActiveOptions]="{exact:false}"
+            [routerLinkActive]="['item-selected']"
+            [routerLink]="[item.url]" nz-menu-item nz-typography
+            [ngClass]="i === 1 || i === 0 ? 'd-none' : ''"
+            class="mob-main-nav">
+          {{ item.label }}
+        </li>
+      </ul>
+    </nz-dropdown-menu>
+
+  </div>
+
+  <div class="d-flex align-items-center">
+
+    <div class="d-block">
+      <ul nz-menu [nzMode]="'horizontal'" [nzTheme]="'light'" style="position: relative;" class="top-nav-ul-secondary">
+
+        <li *ngIf="isOwnerOrAdmin()" class="menu-border-0 px-0 ms-3" nz-menu-item>
+          <div class="mb-none">
+            <button nz-button nzType="dashed" (click)="openAddMemberForm()" nz-tooltip [nzTooltipPlacement]="'bottom'"
+                    [nzTooltipTitle]="'Add Team Member'" class="invite-btn">
+              <span nz-icon nzType="usergroup-add" nzTheme="outline"></span>Invite
+            </button>
+          </div>
+          <div class="lg-none">
+            <button nz-button nzType="dashed" (click)="openAddMemberForm()" nz-tooltip [nzTooltipPlacement]="'bottom'"
+                    [nzTooltipTitle]="'Add Team Member'" nzShape="round"
+                    class="invite-btn p-0" [style]="'width: 32px;'">
+              <span nz-icon nzType="usergroup-add" nzTheme="outline" [style]="'font-size: 18px;'"></span>
+            </button>
+          </div>
+        </li>
+
+        <li
+          *ngIf="profile && profile.team_name"
+          class="teams-switch menu-border-0 pe-0" nz-menu-item
+          nz-typography
+        >
+          <span
+            [nzDropdownMenu]="teamsMenu"
+            class="rounded-pill team-name border-bottom" nz-dropdown nz-tooltip
+            [nzPlacement]="'bottomRight'" [nzTooltipPlacement]="'bottom'" [nzTooltipTitle]="'Switch Team'"
+            [nzTrigger]="'click'"
+          >
+            <strong>
+              <span nz-icon nzTheme="outline" nzType="bank"></span>
+              {{ profile.team_name }}
+              <span nz-icon nzTheme="outline" nzType="caret-down"></span>
+            </strong>
+          </span>
+        </li>
+
+        <li (click)="openNotificationsDrawer()" class="menu-hover menu-border-0" nz-menu-item nz-tooltip nz-typography
+            [nzTooltipPlacement]="'bottom'"
+            [nzTooltipTitle]="'Notifications'">
+
+          <ng-container [ngSwitch]="showUnreadNotificationsCount()">
+            <nz-badge *ngSwitchCase="true" [nzCount]="count" [nzDot]="false">
+              <span nz-icon nzType="bell" nzTheme="outline"></span>
+            </nz-badge>
+            <nz-badge *ngSwitchCase="false" [nzDot]="hasNotifications()">
+              <span nz-icon nzType="bell" nzTheme="outline"></span>
+            </nz-badge>
+          </ng-container>
+        </li>
+
+        <li class="menu-hover menu-border-0"
+            nz-menu-item nz-tooltip
+            nz-typography [nzTooltipPlacement]="'bottom'" [nzTooltipTitle]="'Help (Coming Soon)'"
+        >
+          <span nz-icon nzTheme="outline" nzType="question-circle" style="font-size: 20px;"></span>
+        </li>
+
+        <li class="menu-hover menu-border-0 prevent-default" nz-menu-item nz-tooltip nz-typography
+            [nzTooltipPlacement]="'bottom'" [nzTooltipTitle]="'Profile'"
+            (click)="showProfileDropdown = !showProfileDropdown">
+            <span *ngIf="!profile.avatar_url" nz-icon nzTheme="outline" nzType="user"
+                  style="font-size: 20px;pointer-events: none;"></span>
+          <nz-avatar *ngIf="profile.avatar_url" nzIcon="user"
+                     style="pointer-events: none" [nzSrc]="profile.avatar_url"></nz-avatar>
+        </li>
+
+        <div class="profile-details-dropdown prevent-default pt-def" *ngIf="showProfileDropdown">
+          <div class="account-heading prevent-default pl-def pr-def">
+            <h2 class="prevent-default">Account</h2>
+          </div>
+          <div class="account-details pl-def prevent-default pr-def">
+            <div class="d-flex align-items-center prevent-default">
+              <div class="account-image prevent-default">
+                <nz-avatar [nzText]="profile.name?.charAt(0)" style="color:#fff;"
+                           [nzSrc]="profile.avatar_url"
+                           [style.background-color]="profile.avatar_url ? '#ececec' : avatarColor"></nz-avatar>
+              </div>
+              <div class="account-name prevent-default">
+                <h4 class="prevent-default">{{ profile.name }}</h4>
+                <p class="prevent-default" nz-typography nzEllipsis>{{ profile.email }}</p>
+                <p class="prevent-default" nzType="secondary" nz-typography nzEllipsis>({{ userRole }})</p>
+              </div>
+            </div>
+          </div>
+          <div class="actions prevent-default">
+            <ul nz-menu>
+              <li nz-menu-item [routerLink]="['/worklenz/admin-center']" *ngIf="isOwnerOrAdmin();">Admin Center</li>
+              <li nz-menu-item
+                  [routerLink]="['/worklenz/settings']">Settings
+              </li>
+              <li nz-menu-item (click)="signOut()" class="pl-def pr-def">Log Out</li>
+            </ul>
+          </div>
+        </div>
+
+      </ul>
+    </div>
+  </div>
+</div>
+
+<nz-dropdown-menu #teamsMenu="nzDropdownMenu">
+  <ul nz-menu nzSelectable style="border-radius: 14px;" class="p-0 members-dropdown">
+    <li (click)="selectTeam(item.id)" *ngFor="let item of teams" nz-menu-item class="d-flex team-list-item py-1">
+      <div class="w-100 align-items-center d-flex justify-content-between">
+        <div class="d-flex align-items-center me-3">
+          <div class="me-2 d-flex teams-dropdown-avatar">
+            <nz-avatar
+              *ngIf="getTeamStatus(item) === TEAM_STATUSES.OwnerAndNameChanged || getTeamStatus(item) === TEAM_STATUSES.NotTheOwner"
+              [nzText]="item.name?.charAt(0)"
+              style="color:#fff;"
+              [style.background-color]="utils.getColor(item.name)"></nz-avatar>
+            <span class="team-name-edit-icon" *ngIf="getTeamStatus(item) === TEAM_STATUSES.OwnerAndNameNotChanged"
+                  nz-icon
+                  nzType="edit" nzTheme="outline"></span>
+          </div>
+          <div class="align-items-baseline flex-column justify-content-start">
+            <small nz-typography nzType="secondary" nzEllipsis
+                   class="d-block">
+              {{ getTeamStatus(item) !== TEAM_STATUSES.OwnerAndNameNotChanged ? 'Owned by ' + item.owns_by : 'Click to setup your own account' }}
+            </small>
+            <span class="d-block" *ngIf="getTeamStatus(item) === TEAM_STATUSES.NotTheOwner">{{ item.name }}</span>
+            <span class="d-block"
+                  *ngIf="getTeamStatus(item) === TEAM_STATUSES.OwnerAndNameNotChanged">Setup my account</span>
+            <span class="d-block"
+                  *ngIf="getTeamStatus(item) === TEAM_STATUSES.OwnerAndNameChanged">{{ item.name }}</span>
+          </div>
+        </div>
+        <div class="d-flex align-items-center mb-0" style="font-size: 17px;" nz-typography
+             [nzType]="isActiveTeam(item.id) ? 'success' : 'secondary'">
+          <span nz-icon nzType="check-circle" nzTheme="fill"></span>
+        </div>
+      </div>
+    </li>
+  </ul>
+</nz-dropdown-menu>
+
+<worklenz-team-members-form
+  (onCancel)="reset()"
+  (onCreateOrUpdate)="handleOnCreateOrUpdate($event)"
+  [(show)]="showTeamMemberModal"
+  [memberId]="selectedMemberId"
+></worklenz-team-members-form>

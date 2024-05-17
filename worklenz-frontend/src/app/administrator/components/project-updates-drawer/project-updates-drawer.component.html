@@ -1,0 +1,14 @@
+<nz-drawer
+  [nzWidth]="600"
+  (nzOnClose)="handleClose()"
+  [nzClosable]="true"
+  [nzTitle]="'Project Updates'"
+  [nzVisible]="show"
+  [nzPlacement]="'right'"
+  (nzVisibleChange)="onVisibleChange($event)"
+  [nzBodyStyle]="{'padding-bottom': '0px'}"
+>
+  <ng-container *nzDrawerContent>
+    <worklenz-project-updates-list [projectId]="projectId" [isLimit]="true"></worklenz-project-updates-list>
+  </ng-container>
+</nz-drawer>

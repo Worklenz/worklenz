@@ -1,0 +1,116 @@
+nz-steps {
+  transform: scale(0.83);
+  @media (max-width: 480px) {
+    transform: scale(0.6);
+  }
+}
+
+.setup-wrapper {
+  width: 100%;
+  // max-width: 380px;
+  position: relative;
+  z-index: 1;
+}
+
+.w-600 {
+  width: 600px;
+  @media(max-width: 860px) {
+    width: 90%;
+  }
+}
+
+.bg-ant-grey {
+  background: #FAFAFA;
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+}
+
+.w-steps {
+  width: 725px;
+  @media(max-width: 860px) {
+    width: 100%;
+  }
+}
+
+.label-description {
+  font-size: 14px;
+  font-weight: 500;
+  color: #00000073;
+  margin-bottom: 16px;
+}
+
+.setup-success {
+  -webkit-animation: scale-in-center 0.15s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+  animation: scale-in-center 0.15s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+}
+
+.success-icon {
+  font-size: 36px;
+  margin-bottom: 16px;
+}
+
+@-webkit-keyframes scale-in-center {
+  0% {
+    -webkit-transform: scale(0);
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: scale(1);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in-center {
+  0% {
+    -webkit-transform: scale(0);
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: scale(1);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+h2.ant-typography, div.ant-typography-h2, div.ant-typography-h2 > textarea, .ant-typography h2 {
+  margin-bottom: 1em;
+}
+
+.dynamic-delete-button {
+  font-size: 20px !important;
+  color: #999 !important;
+  cursor: pointer !important;
+  position: relative !important;
+  transition: all .3s !important;
+  margin-left: 5px !important;
+}
+
+.vert-text {
+  max-width: 40px;
+  background-color: #fff;
+  position: relative;
+  z-index: 99;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.vert-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  content: '';
+  height: 1px;
+  background-color: #00000047;
+  bottom: 0;
+  top: 0;
+  margin-bottom: auto;
+  margin-top: auto;
+}

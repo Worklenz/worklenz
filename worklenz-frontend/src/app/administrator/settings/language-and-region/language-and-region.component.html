@@ -1,0 +1,35 @@
+<nz-card>
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading || updating">
+    <form (ngSubmit)="submit()" [formGroup]="form" nz-form nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label nzFor="name" nzRequired>Language</nz-form-label>
+        <nz-form-control [nzSm]="8" [nzXs]="24">
+          <nz-select [formControlName]="'language'">
+            <nz-option *ngFor="let item of options" [nzLabel]="item" [nzValue]="item" nzCustomContent>
+              {{item}}
+            </nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item>
+        <nz-form-label nzFor="name" nzRequired>Time zone</nz-form-label>
+        <nz-form-control [nzSm]="8" [nzXs]="24">
+          <nz-select nzShowSearch [formControlName]="'timezone'">
+            <nz-option *ngFor="let item of timezones" nzLabel="{{item.name}}" [nzValue]="item.id" nzCustomContent>
+              <div class="d-flex justify-content-between">
+                <span>{{item.name}}</span> <span nz-typography nzType="secondary">{{item.abbrev}}</span>
+              </div>
+            </nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item class="register-area" nz-row>
+        <nz-form-control>
+          <button [disabled]="loading" [nzLoading]="updating" nz-button nzType="primary">
+            Save Changes
+          </button>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </nz-skeleton>
+</nz-card>

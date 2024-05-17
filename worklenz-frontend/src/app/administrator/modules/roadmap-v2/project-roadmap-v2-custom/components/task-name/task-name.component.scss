@@ -1,0 +1,41 @@
+
+.task-open-btn {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: whitesmoke;
+  transition: 0.25s all;
+}
+
+.task-name-block {
+  position: relative;
+
+  &:hover {
+    & .task-open-btn {
+      opacity: 1;
+    }
+  }
+}
+
+.task-name {
+  max-width: 240px;
+}
+
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.double-arrow {
+  line-height: 16px;
+  border: none;
+  max-height: 16px;
+  margin-top: 4px;
+}
+
+.h-default {
+  min-height: 42px;
+  max-height: 42px;
+}

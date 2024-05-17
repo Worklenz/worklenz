@@ -1,0 +1,68 @@
+<nz-card [nzExtra]="actionsTemplate">
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading" [nzParagraph]="{ rows: 5 }">
+    <nz-table [nzData]="filteredCategories" [nzLoading]="loading" class="custom-table"
+              [nzNoResult]="'Categories can be created while updating or creating projects.'"
+              [nzPaginationType]="'small'" [nzSize]="'small'" #table>
+      <thead>
+      <tr>
+        <th scope="col" [nzWidth]="'300px'" [nzAlign]="'left'">Category</th>
+        <th scope="col" [nzAlign]="'left'" colspan="2">Associated Projects</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of table.data; trackBy: trackByFn" class="actions-row">
+        <td>
+          <nz-tag
+            [nzColor]="data.color_code"
+            class="m-0"
+            style="cursor: pointer;"
+            nz-dropdown
+            [nzDropdownMenu]="colorDropdown"
+            nz-tooltip
+            [nzTooltipTitle]="'Click to change color'"
+            [nzTrigger]="'click'"
+          >{{data.name}}</nz-tag>
+
+          <nz-dropdown-menu #colorDropdown="nzDropdownMenu">
+            <ul style="max-height: 200px;overflow: hidden; overflow-y: auto;" nz-menu nzSelectable>
+              <li *ngFor="let item of colorCodes" (click)="updateColorCode(data.id, item)" nz-menu-item>
+                <nz-tag [nzColor]="item" class="m-0 w-100">{{data.name}}</nz-tag>
+              </li>
+            </ul>
+          </nz-dropdown-menu>
+        </td>
+        <td>{{data.usage}}</td>
+        <td class="actions-col" nzAlign="center">
+          <div class="actions">
+            <nz-space>
+              <button (click)="deleteCategory(data)" nz-button nz-tooltip [nzSize]="'small'"
+                      [nzTooltipPlacement]="'top'"
+                      [nzTooltipTitle]="'Delete'"
+                      [disabled]="(data.usage || 0) > 0"
+                      [nzType]="'default'">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</nz-card>
+
+<ng-template #actionsTemplate>
+  <nz-space>
+    <form *nzSpaceItem [nzLayout]="'vertical'" nz-form>
+      <nz-input-group [nzSuffix]="suffixIconSearch">
+        <input nz-input [(ngModel)]="labelsSearch" name="search" (ngModelChange)="searchCategories($event)"
+               placeholder="Search by name"
+               type="text"/>
+      </nz-input-group>
+      <ng-template #suffixIconSearch>
+        <span nz-icon nzType="search"></span>
+      </ng-template>
+    </form>
+<!--    <worklenz-toggle-menu-button *nzSpaceItem [key]="menu.LABELS_MENU"></worklenz-toggle-menu-button>-->
+  </nz-space>
+</ng-template>

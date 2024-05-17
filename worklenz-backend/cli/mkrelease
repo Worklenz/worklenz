@@ -1,0 +1,111 @@
+#!/usr/bin/env node
+
+/* eslint-disable no-console */
+const fs = require("fs");
+const path = require("path");
+const { ncp } = require("ncp");
+const { exec } = require("child_process");
+
+require("dotenv").config();
+
+const options = {
+  angular_dist_dir: process.env.ANGULAR_DIST_DIR,
+  angular_src_dir: process.env.ANGULAR_SRC_DIR,
+  backend_public_dir: process.env.BACKEND_PUBLIC_DIR,
+  backend_views_dir: process.env.BACKEND_VIEWS_DIR,
+  commit_changes: process.env.COMMIT_BUILD_IMMEDIATELY === "true"
+};
+
+function run_git_commit(version) {
+  if (!options.commit_changes) return;
+  const message = `Frontend build (${version})`;
+  console.log(message);
+  exec(`git add . && git commit -m "build: ${message}"`);
+}
+
+function copy_build() {
+  const deleteFolderRecursive = function (p) {
+    if (fs.existsSync(p)) {
+      fs.readdirSync(p).forEach((file) => {
+        const curPath = path.join(p, file);
+        if (fs.lstatSync(curPath).isDirectory()) { // recurse
+          deleteFolderRecursive(curPath);
+        } else { // delete file
+          fs.unlinkSync(curPath);
+        }
+      });
+      fs.rmdirSync(p);
+    }
+  };
+
+  if (fs.existsSync(path.join(options.angular_dist_dir, "index.html"))) {
+    const styles = /styles\.\w+\.css/g;
+    const runtime = /runtime\.\w+\.js/g;
+    const polyfills = /polyfills\.\w+\.js/g;
+    // const scripts = /scripts\.\w+\.js/g;
+    const main = /main\.\w+\.js/g;
+
+    const version = /\?v=\d+/g;
+
+    const layoutPath = path.join(options.backend_views_dir, "layout.pug");
+    const indexHtml = fs.readFileSync(path.join(options.angular_dist_dir, "index.html"), "utf8");
+    const pugLayout = fs.readFileSync(layoutPath, "utf8");
+
+    const v = Date.now();
+
+    const newLayout = pugLayout
+      .replace(styles, indexHtml.match(styles)[0])
+      .replace(runtime, indexHtml.match(runtime)[0])
+      .replace(polyfills, indexHtml.match(polyfills)[0])
+      // .replace(scripts, indexHtml.match(scripts)[0])
+      .replace(main, indexHtml.match(main)[0])
+      .replace(version, `?v=${v}`);
+
+    fs.writeFileSync(layoutPath, newLayout, "utf8");
+
+    if (fs.existsSync(options.backend_public_dir)) deleteFolderRecursive(options.backend_public_dir);
+    fs.mkdirSync(options.backend_public_dir);
+
+    ncp(options.angular_dist_dir, options.backend_public_dir, (err) => {
+      if (err) {
+        return console.error(err);
+      }
+      fs.unlinkSync(path.join(options.backend_public_dir, "index.html"));
+
+      const versionFile = path.join(__dirname, "../", "release");
+      let $v = null;
+      if (fs.existsSync(versionFile)) {
+        const version = fs.readFileSync(versionFile, "utf8");
+        $v = +version + 1;
+        fs.writeFileSync(versionFile, $v.toString(), "utf8");
+      }
+      console.log(`Release Updated - v${$v}`);
+      console.log("Running git commit.");
+      setTimeout(() => run_git_commit(`v${$v}`), 500);
+    });
+  } else {
+    console.log("Build does not exists!");
+  }
+
+}
+
+function build() {
+  console.log("Start building the Angular Project");
+  const cmd = exec(`cd ${options.angular_src_dir} && npm run build`);
+
+  cmd.stdout.on("data", (data) => {
+    console.log(data.toString());
+  });
+
+  cmd.stderr.on("data", (data) => {
+    console.log(`${data.toString()}`);
+  });
+
+  cmd.on("exit", (code) => {
+    console.log("Build success.");
+    console.log("Start Coping");
+    setTimeout(copy_build, 500);
+  });
+}
+
+build();

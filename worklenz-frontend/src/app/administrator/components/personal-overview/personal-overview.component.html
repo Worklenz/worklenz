@@ -1,0 +1,53 @@
+<div class="row">
+  <div class="col-md-8">
+    <nz-card nzTitle="Tasks due today" nzType="inner">
+      <nz-list [nzLoading]="tasks_due_today_loading" nzItemLayout="horizontal" nzSize="small">
+        <nz-list-item *ngFor="let item of tasksDueToday">
+          <nz-list-item-meta [nzDescription]=item.name>
+            <nz-list-item-meta-title>
+              <span>{{item.project_name}}</span>
+            </nz-list-item-meta-title>
+          </nz-list-item-meta>
+          <span><span>{{item.priority}}</span> &nbsp;
+              <span *ngIf="item.priority === 'Low'" class="low-priority" nz-icon nzType="minus"></span>
+              <span *ngIf="item.priority === 'Medium'" class="medium-priority" nz-icon nzType="pause"></span>
+              <span *ngIf="item.priority === 'High'" class="high-priority" nz-icon nzType="double-left"></span>
+            </span>
+        </nz-list-item>
+        <nz-list-empty *ngIf="tasksDueToday.length === 0"></nz-list-empty>
+      </nz-list>
+    </nz-card>
+
+    <nz-space nzSize="middle"></nz-space>
+
+    <nz-card nzTitle="Remaining tasks" nzType="inner">
+      <nz-list [nzLoading]="tasks_due_loading" nzItemLayout="horizontal">
+        <nz-list-item *ngFor="let item of tasksRemaining">
+          <nz-list-item-meta [nzDescription]=item.name>
+            <nz-list-item-meta-title>
+              <span>{{item.project_name}}</span>
+            </nz-list-item-meta-title>
+          </nz-list-item-meta>
+          <span [nz-tooltip]="getSpecificTime(item.created_at)">{{getTimestamp(item.created_at)}}</span>
+        </nz-list-item>
+        <nz-list-empty *ngIf="tasksRemaining.length === 0"></nz-list-empty>
+      </nz-list>
+    </nz-card>
+  </div>
+  <div class="col-md-4">
+    <nz-card nzTitle="Activity Log" nzType="inner">
+      <nz-list [nzLoading]="activity_log_loading" nzItemLayout="horizontal">
+        <nz-list-item *ngFor="let item of activityLog">
+          <nz-list-item-meta [nzDescription]=item.description>
+            <nz-list-item-meta-title>
+              <span>{{item.project_name}}</span>
+            </nz-list-item-meta-title>
+          </nz-list-item-meta>
+          <span [nz-tooltip]="getSpecificTime(item.created_at)">{{getTimestamp(item.created_at)}}</span>
+        </nz-list-item>
+        <nz-list-empty *ngIf="activityLog.length === 0"></nz-list-empty>
+      </nz-list>
+    </nz-card>
+
+  </div>
+</div>

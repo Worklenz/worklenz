@@ -1,0 +1,16 @@
+<div *ngIf="task" class="editable d-flex w-100 h-default align-items-center" #elementStartDate>
+  <!--  <span class="align-items-center d-flex h-100 w-100 picker-padding">-->
+  <!--    {{task.start_date | date: 'MMM dd,yyyy'}}-->
+  <!--  </span>-->
+  <span nz-typography class="date-text w-100">{{task.start_date | dateFormatter}}</span>
+  <nz-date-picker
+    class="border-0 bg-transparent w-100 task-list-date-picker"
+    [(ngModel)]="task.start_date"
+    (ngModelChange)="handleStartDateChange($event, task)"
+    [nzFormat]="'MMM dd,yyyy'"
+    [nzSuffixIcon]="''"
+    [nzPlaceHolder]="'Set start date'"
+    [nzDisabledDate]="task.end_date | validateMaxDate"
+  >
+  </nz-date-picker>
+</div>

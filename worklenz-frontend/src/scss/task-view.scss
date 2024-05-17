@@ -1,0 +1,54 @@
+
+.task-view {
+  nz-form-label {
+    width: 130px;
+    max-width: 130px;
+  }
+
+  .control-hover {
+    cursor: pointer;
+  }
+
+  .task-description-editor {
+    cursor: text;
+    user-select: text;
+  }
+
+  .task-description-editor:not(.editing),
+  .control-hover {
+    border: 1px solid transparent;
+    border-radius: 4px;
+
+    &:hover {
+      border-color: #d9d9d9;
+    }
+  }
+}
+
+.task-form-drawer-opened {
+  .ant-collapse-header {
+    padding: 0 !important;
+  }
+
+  .ant-drawer-body {
+    padding-top: 0 !important;
+  }
+
+  & .ant-drawer-header-title {
+    margin-bottom: 16px;
+    align-items: baseline;
+  }
+
+  .ant-drawer-header {
+    border-bottom: 1px solid whitesmoke;
+    padding-bottom: 0;
+    align-items: baseline;
+  }
+
+  .task-drawer-tabset {
+    .ant-tabs-nav-wrap {
+      margin-left: 27px;
+      padding-top: 8px;
+    }
+  }
+}

@@ -1,0 +1,27 @@
+<ng-template let-data="data" let-notification #template>
+  <div class="ant-notification-notice-content">
+
+    <!-- Team name -->
+    <div *ngIf="data.team" class="ant-notification-notice-message">
+      <span nz-icon nzType="bank" nzTheme="outline"></span> {{data.team}}
+    </div>
+
+    <div class="ant-notification-notice-description">
+      <div class="mb-1" [innerHTML]="data.message"></div>
+      <div *ngIf="data.project">
+        <nz-tag style="background-color: {{data.color | tagBackground}}">{{data.project}}</nz-tag>
+      </div>
+    </div>
+
+    <!-- Close button -->
+    <span class="ant-notification-notice-btn" style="position: absolute;top: -8px;right: 16px;">
+        <button nz-button nzType="text" nzSize="large" nzShape="circle" (click)="close($event, notification)">
+          <span nz-icon nzType="close-circle" nzTheme="outline"></span>
+        </button>
+    </span>
+  </div>
+</ng-template>
+
+<ng-template #closeIcon>
+  <!-- Leave this empty -->
+</ng-template>

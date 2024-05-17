@@ -1,0 +1,11 @@
+.chartWrapper {
+  max-width: calc(100vw - 250px);
+  min-width: calc(100vw - 250px);
+  height: calc(100vh - 300px);
+  overflow: auto;
+}
+
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+}

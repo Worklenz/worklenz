@@ -1,0 +1,11 @@
+<div *ngIf="visible" class="position-relative">
+  <canvas baseChart
+          [data]="barChartData"
+          [options]="barChartOptions"
+          [plugins]="barChartPlugins"
+          [legend]="false"
+          [type]="'bar'">
+  </canvas>
+  <span class="estimated-time-span">Estimated :{{estimatedTimeString}}</span>
+  <span class="actual-time-span">Actual :{{actualTimeString}}</span>
+</div>

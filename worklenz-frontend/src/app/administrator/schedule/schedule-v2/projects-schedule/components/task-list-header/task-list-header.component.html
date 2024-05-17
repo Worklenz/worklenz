@@ -1,0 +1,36 @@
+
+<!-- Checkbox -->
+<div class="flex-row task-check ">
+  <span nz-checkbox [(nzChecked)]="checked" [nzIndeterminate]="indeterminate"
+        (nzCheckedChange)="onAllChecked($event)" class="visibility-hidden"></span>
+</div>
+
+<!-- Task name -->
+<div class="flex-row task-name">Task</div>
+
+<!-- Status -->
+<ng-container >
+  <div class="flex-row task-status">Status</div>
+</ng-container>
+
+<!-- Priority -->
+<ng-container >
+  <div class="flex-row task-priority">Priority</div>
+</ng-container>
+
+<!-- Phase -->
+<ng-container >
+  <div class="flex-row task-phase d-flex justify-content-between align-items-center">
+    <span nz-tooltip [nzTooltipTitle]="phaseLabel">{{phaseLabel | ellipsis : 10}}</span>
+  </div>
+</ng-container>
+
+<!-- Start date -->
+<ng-container>
+  <div class="flex-row task-start-date">Start Date</div>
+</ng-container>
+
+<!-- Due date -->
+<ng-container>
+  <div class="flex-row task-due-date">Due Date</div>
+</ng-container>

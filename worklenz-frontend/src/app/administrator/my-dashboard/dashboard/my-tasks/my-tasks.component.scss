@@ -1,0 +1,239 @@
+.single-task-name {
+  font-size: 14px;
+  margin-bottom: 0px;
+}
+
+.single-task-dates {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #757B81;
+}
+
+.single-task-project {
+  position: relative;
+  width: max-content;
+  margin-left: auto;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  padding-left: 8px;
+  padding-bottom: 0px;
+  padding-right: 8px;
+  padding-top: 0px;
+  font-weight: 500;
+}
+
+#block {
+  filter: alpha(opacity=20);
+  -moz-opacity: 0.20;
+  opacity: 0.20;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  border-radius: 100px;
+}
+
+.ant-table table {
+  border-collapse: collapse !important;
+}
+
+.ant-table-cell {
+  background: #fff !important;
+}
+
+.custom-table td,
+.custom-table th {
+  border: inherit !important;
+}
+
+.status-selector {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  margin-top: 5px;
+  margin-right: 8px;
+  color: transparent;
+}
+
+.ant-card-bordered {
+  transition: 0.3s all;
+  border: 1px solid #e5e5e5;
+}
+
+.ant-card-bordered:hover {
+  border: 1px solid #c5c5c5;
+}
+
+.single-project-status {
+  display: flex;
+  margin-right: 8px;
+}
+
+.ant-segmented-item-label {
+  color: #585858 !important;
+}
+
+.task-add-section {
+  padding-left: 17px;
+  padding-top: 8px;
+  line-height: 32px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: rgb(245 245 245 / 25%)
+}
+
+.click-to-add-task {
+  cursor: pointer;
+  margin-left: 11px;
+}
+
+.form-task-due-date {
+  max-width: 23%;
+  width: 20%;
+}
+
+.form-task-project {
+  max-width: 30%;
+  width: 30%;
+}
+
+.form-task-name {
+  @media(max-width: 1280px) {
+    max-width: 40%;
+  }
+}
+
+.task-name-input-field {
+  width: 320px;
+  max-width: 320px;
+  border: 1px solid transparent !important;
+  font-weight: 500;
+}
+
+::placeholder {
+  color: rgb(0 0 0 / 65%) !important;
+  font-weight: 500 !important;
+}
+
+.task-name-input-field:hover {
+  border: 1px solid #d9d9d9;
+}
+
+.task-name-input-field:focus {
+  border: 1px solid #40a9ff;
+}
+
+.task-due-date-selector {
+  width: 150px;
+}
+
+.task-project-selector {
+  min-width: 180px;
+  max-width: 180px;
+}
+
+.task-tooltip {
+  position: absolute;
+  left: 145px;
+}
+
+.custom-date-picker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16px;
+  opacity: 0;
+}
+
+#top_desc {
+  display: block;
+}
+
+#top_desc_.hide {
+  display: none;
+}
+
+.actions-row:has(.task-due-date-elem) .single-task-project {
+  margin-top: -18px;
+}
+
+.actions-row {
+  td {
+    background-color: transparent !important;
+  }
+}
+
+.no-data-img-holder {
+  width: 64px;
+  margin-top: 42px;
+}
+
+.panel {
+  position: relative;
+  padding: 0 0;
+  background-color: white;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s;
+}
+
+.panel.show {
+  transition: max-height 0.25s;
+  max-height: 100%;
+}
+
+.btn {
+  width: max-content;
+  padding-left: 16px !important;
+  padding-right: 32px !important;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  cursor: pointer;
+}
+
+.btn.active {
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+.btn .accordion-icon {
+  transition: transform 0.25s;
+  transform: rotate(0deg);
+}
+
+.btn.active .accordion-icon {
+  transition: transform 0.25s;
+  transform: rotate(90deg);
+}
+
+
+.card-data {
+  padding: 12px 24px;
+}
+
+.custom-table {
+  max-height: calc(100vh - 360px);
+  overflow: auto;
+}
+
+.card-top {
+  padding: 14px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+@media (max-width: 1100px) {
+  .mob-overflow {
+    max-width: 475px;
+    overflow-x: auto;
+  }
+}
