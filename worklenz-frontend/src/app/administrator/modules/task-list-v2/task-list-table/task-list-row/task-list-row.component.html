@@ -1,0 +1,222 @@
+<div class="flex-table rows" [ngClass]="task.is_sub_task ? 'subtask' : 'main-task'" cdkDrag [cdkDragData]="task"
+     (cdkDragStarted)="onDragStart()"
+     [cdkDragLockAxis]="'y'" [cdkDragBoundary]="'.tasks-wrapper'">
+
+  <div class="task-placeholder" *cdkDragPlaceholder></div>
+
+  <!-- Drag handle -->
+  <div class="flex-row task-drag-handler" cdkDragHandle [cdkDragHandleDisabled]="!!task.parent_task_id">
+    <div class="drag-handle" *ngIf="!task.parent_task_id">
+      <span nz-icon [nzType]="'holder'" [nzTheme]="'outline'"></span>
+    </div>
+  </div>
+
+  <!-- Checkbox -->
+  <div class="flex-row task-check">
+      <span nz-checkbox [(nzChecked)]="selected" (nzCheckedChange)="onCheckChange($event)"
+            class="p-0"></span>
+  </div>
+
+  <!-- Key -->
+  <ng-container *ngIf="keyActive">
+    <div class="flex-row task-key">
+      <nz-tag class="m-0" nz-tooltip [nzTooltipTitle]="task.task_key | safeString">
+        {{task.task_key | ellipsis: 10}}
+      </nz-tag>
+    </div>
+  </ng-container>
+
+  <!-- Subtask -->
+  <div class="flex-row task-arrow" #tr0>
+    <div *ngIf="!service.isSubtasksIncluded" class="p-0 border-end-0">
+      <div *ngIf="!task.is_sub_task" (click)="$event.stopPropagation();openSubTasks()"
+           class="d-flex align-items-center justify-content-center sub-tasks-arrow dropdown-highlight">
+        <ng-container>
+          <span [style.color]="task | subTasksArrowColor"
+                [class.hidden-arrow]="!Number(task.sub_tasks_count) && !task.show_sub_tasks"
+                class="align-items-center align-self-center cursor-pointer d-flex sub-arrow">
+
+            <span *ngIf="!task.sub_tasks_loading" style="font-size: 12px" nz-icon
+                  [nzType]="task.show_sub_tasks | subTasksArrowIcon"
+                  [nzTheme]="'outline'"></span>
+            <span *ngIf="task.sub_tasks_loading" nz-icon [nzType]="'loading'"></span>
+          </span>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task name -->
+  <div class="flex-row task-name" #tr1>
+    <div class="inner-task-name-container">
+      <div *ngIf="editId !== task.id" class="editable-cell pointer-text ps-1 w-100"
+           (click)="openTask(task)">
+        <!-- Name block -->
+        <div class="d-flex w-100">
+          <div>
+            <div *ngIf="editId !== task.id"
+                 (click)="onTaskNameClick($event, tr1, task)"
+                 nz-tooltip
+                 [nzTooltipMouseEnterDelay]="0.5"
+                 [nzTooltipTitle]="task.name | safeString"
+                 class="task-name-text">
+              <small *ngIf="task.is_sub_task" nz-typography
+                     [nzType]="'secondary'">
+                <span nz-icon [nzType]="'double-right'" [nzTheme]="'outline'"></span>
+              </small>
+              {{ task.name }} &nbsp;
+            </div>
+          </div>
+
+          <!-- Task name end icons -->
+          <div class="inner-icon-cont">
+            <span *ngIf="task.comments_count" nz-typography nzType="secondary">
+              <span nz-icon nzType="comment" nzTheme="outline"></span>
+            </span>
+
+            <span *ngIf="task.has_subscribers" nz-typography nzType="secondary">
+              <span nz-icon nzType="eye" nzTheme="outline"></span>
+            </span>
+
+            <span *ngIf="task.attachments_count" nz-typography nzType="secondary">
+              <span nz-icon nzType="paper-clip" nzTheme="outline"></span>
+            </span>
+
+            <nz-tag *ngIf="!task.is_sub_task && !service.isSubtasksIncluded"
+                    [nzColor]="'default'" class="me-1 px-1 double-arrow"
+                    (click)="$event.stopPropagation();openSubTasks()">
+              <span style="color: #6d6e6f;">
+                {{task.sub_tasks_count}} <span nz-icon [nzType]="'double-right'" style="font-size: 10px"
+                                               [nzTheme]="'outline'">
+              </span>
+              </span>
+            </nz-tag>
+          </div>
+        </div>
+      </div>
+
+      <input *ngIf="editId === task.id" nz-input
+             (focus)="selectCol(tr0);selectCol(tr1)" [(ngModel)]="task.name"
+             (blur)="handleNameChange(task);deselectCol(tr0);deselectCol(tr1)"
+             (keydown.enter)="handleNameChange(task);deselectCol(tr0);deselectCol(tr1)"
+             class="ps-1 name-input" style="min-width: 365px; max-width: 365px;"
+             [nzBorderless]="true"/>
+
+      <button nz-tooltip nz-button (click)="openTask(task)"
+              [nzTooltipTitle]="'Click open task form'"
+              [nzTooltipPlacement]="'top'" [nzTooltipMouseEnterDelay]="2"
+              class="plus-icon px-1"
+              [nzType]="'text'">
+        <span nz-icon [nzType]="'expand-alt'" [nzTheme]="'outline'"></span>
+        Open
+      </button>
+    </div>
+  </div>
+
+  <!-- Description -->
+  <ng-container *ngIf="descriptionActive">
+    <worklenz-task-list-description [task]="task"></worklenz-task-list-description>
+  </ng-container>
+
+  <!-- Progress -->
+  <ng-container *ngIf="progressActive">
+    <worklenz-task-progress [task]="task"></worklenz-task-progress>
+  </ng-container>
+
+  <!-- Members -->
+  <ng-container *ngIf="assigneesActive">
+    <worklenz-task-list-members [task]="task"></worklenz-task-list-members>
+  </ng-container>
+
+  <!-- Labels -->
+  <ng-container *ngIf="labelsActive">
+    <worklenz-task-list-labels [task]="task"></worklenz-task-list-labels>
+  </ng-container>
+
+  <!-- Phase -->
+  <ng-container *ngIf="phaseActive">
+    <worklenz-task-list-phase [task]="task"></worklenz-task-list-phase>
+  </ng-container>
+
+  <!-- Statuses -->
+  <ng-container *ngIf="statusActive">
+    <worklenz-task-list-status [task]="task"></worklenz-task-list-status>
+  </ng-container>
+
+  <!-- Priority -->
+  <ng-container *ngIf="priorityActive">
+    <worklenz-task-list-priority [task]="task"></worklenz-task-list-priority>
+  </ng-container>
+
+  <!-- Task list timer -->
+  <ng-container *ngIf="timeTrackingActive">
+    <worklenz-task-list-timer [task]="task"></worklenz-task-list-timer>
+  </ng-container>
+
+  <!-- Estimation -->
+  <ng-container *ngIf="estimationActive">
+    <div class="flex-row task-estimation justify-content-center">
+      <div class="task-due-label py-0">
+        {{task.total_time_string}}
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Start date -->
+  <ng-container *ngIf="startDateActive">
+    <worklenz-task-list-start-date [task]="task"></worklenz-task-list-start-date>
+  </ng-container>
+
+  <!-- Due date -->
+  <ng-container *ngIf="dueDateActive">
+    <worklenz-task-list-end-date [task]="task"></worklenz-task-list-end-date>
+  </ng-container>
+
+  <!-- Completed date -->
+  <ng-container *ngIf="completedDateActive">
+    <div class="flex-row task-completed-date">
+      <div class="py-0">
+        {{(task.completed_at | fromNow) || '-'}}
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Created date -->
+  <ng-container *ngIf="createdDateActive">
+    <div class="flex-row task-created-date">
+      <div class="py-0">
+        {{(task.created_at | fromNow) || '-'}}
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Updated date -->
+  <ng-container *ngIf="lastUpdatedActive">
+    <div class="flex-row task-update-date">
+      <div class="py-0">
+        {{(task.updated_at | fromNow) || '-'}}
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Reporter -->
+  <ng-container *ngIf="reporterActive">
+    <div class="flex-row task-update-date">
+      <div class="py-0">
+        {{task.reporter}}
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Have to fix in correct way -->
+  <div *ngIf="!statusActive" class="d-none visibility-hidden opacity-0">
+    <worklenz-task-list-status [task]="task"></worklenz-task-list-status>
+  </div>
+  <div *ngIf="!priorityActive" class="d-none visibility-hidden opacity-0">
+    <worklenz-task-list-priority [task]="task"></worklenz-task-list-priority>
+  </div>
+  <div *ngIf="!phaseActive" class="d-none visibility-hidden opacity-0">
+    <worklenz-task-list-phase [task]="task"></worklenz-task-list-phase>
+  </div>
+
+</div>

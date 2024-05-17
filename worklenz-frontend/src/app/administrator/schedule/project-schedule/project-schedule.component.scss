@@ -1,0 +1,220 @@
+$column_count: var(--column_count);
+$column_width: var(--column_width);
+$top_margin: var(--top-margin);
+
+body {
+  margin: 0;
+}
+
+.grid-scroller {
+  position: relative;
+  overflow: auto;
+  height: calc(100vh - $top_margin);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 250px 0 repeat($column_count, $column_width);
+  width: calc(250px + var(--column_count) * var(--column_width));
+}
+
+.grid-entry {
+  padding: 12px 7px;
+  background-color: white;
+  border-left: 1px solid #f1f1f1;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.grid-entry.last,
+.grid-header.last {
+  border-right: none;
+}
+
+.grid-header {
+  background-color: #fafafa;
+  padding: 2px 2px;
+  font-weight: 500;
+  font-size: 11px;
+  color: #202125;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border: 1px solid #ededed;
+  text-align: center;
+  line-height: 13px;
+}
+
+.grid-header.fixed-left {
+  z-index: 5;
+}
+
+.fixed-left {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  border-bottom: 1px solid #f1f1f1;
+  border-left: 1px solid #f1f1f1;
+  border-right: 1.4px solid #B5B4B4;
+}
+
+.placeholder {
+  grid-column-start: 1;
+  grid-column-end: 95;
+  border-right: none;
+}
+
+mwlResizable {
+  box-sizing: border-box; // required for the enableGhostResize option to work
+}
+
+.resize-handle-top,
+.resize-handle-bottom {
+  position: absolute;
+  height: 5px;
+  cursor: row-resize;
+  width: 100%;
+}
+
+.resize-handle-top {
+  top: 0;
+}
+
+.resize-handle-bottom {
+  bottom: 0;
+}
+
+.resize-handle-left,
+.resize-handle-right {
+  position: absolute;
+  cursor: col-resize;
+  width: 9px;
+  height: 18px;
+  background: #ffffff;
+  border: none;
+  border-radius: 1px;
+  top: 0;
+  bottom: 0;
+  margin: auto 1px;
+}
+
+.resize-handle-right::after,
+.resize-handle-left::after {
+  content: "||";
+  position: absolute;
+  display: inline-block;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  color: #929292;
+  line-height: 19px;
+  font-weight: 400;
+  margin: auto;
+  width: max-content;
+}
+
+.gantt__row-bars {
+  li {
+    user-select: none;
+
+    & > div {
+      background-color: transparent !important;
+    }
+
+    .resize-handle-left,
+    .resize-handle-right {
+      box-shadow: 0 0 2px rgb(0 0 0 / 45%);
+    }
+  }
+}
+
+.member {
+  color: darkslategrey;
+}
+
+.resize-handle-left {
+  left: 0;
+}
+
+.resize-handle-right {
+  right: 0;
+}
+
+.project-collapse-icon {
+  font-size: 12px;
+  line-height: 15px;
+  height: 15px;
+  width: 15px;
+  color: #47474791 !important
+}
+
+.today {
+  border-left: 2px solid #1890ff;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
+.today-header {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  color: white;
+}
+
+.top-grid-header {
+  border-top: none;
+}
+
+.grid-entry-top {
+  border-bottom: none;
+}
+
+.month-grid {
+  border-top: 1px solid #f1f1f1;
+}
+
+.parent-relative {
+  position: absolute;
+}
+
+.px-3.py-0.ng-star-inserted.resize-active.resize-ghost-element {
+  margin-top: 0 !important;
+}
+
+.dropdown-highlight:hover {
+  background-color: rgba(208, 238, 250, 0.33);
+  border: #5587f5 1px solid;
+  border-radius: 3px;
+}
+
+.expanded {
+  transform: rotate(-90deg);
+}
+
+.sub-tasks-arrow {
+  position: relative;
+  cursor: pointer;
+  left: 3px;
+  width: 16px;
+  padding: 2px;
+  border: 1px solid transparent;
+  z-index: 1;
+}
+
+.resource-cell {
+  height: 22px;
+  margin: 7px 0 1px 0;
+  border-radius: 0;
+}
+
+.child-background-cell {
+  background-color: #f5f5f5;
+}
+
+.child-background-color {
+  background-color: #f5f5f58a;
+}
+
+.no-data-img-holder {
+  width: 100px;
+  margin-top: 42px;
+}

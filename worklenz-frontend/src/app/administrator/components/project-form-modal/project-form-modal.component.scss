@@ -1,0 +1,36 @@
+.remove-icon {
+  color: #00000040;
+  background: #fff;
+  opacity: 0;
+  cursor: pointer;
+  transition: 0.25s all;
+  &:hover {
+    color: #00000073;
+  }
+}
+
+.manager-input {
+  border-width: 1px;
+  border-style: solid;
+  border-color: transparent;
+  border-radius: 6px;
+  transition: 0.25s all;
+  margin-left: 8px;
+  min-height: 32px;
+
+  &:hover {
+    border-color: #40a9ff;
+    & .remove-icon {
+      opacity: 1;
+    }
+  }
+
+  &.highlight {
+    border-color: #40a9ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  }
+}
+
+.z-top {
+  z-index: 1;
+}

@@ -1,0 +1,27 @@
+
+.ellipsis {
+  max-width: 225px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.open-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  opacity: 0;
+  margin-top: auto;
+  margin-bottom: auto;
+  padding: 0px 4px;
+  background: #edebf0 !important;
+  color: rgba(0, 0, 0, 0.85);
+  border: none;
+}
+
+tr:hover {
+  & .open-btn {
+    opacity: 1;
+  }
+}

@@ -1,0 +1,204 @@
+<div nz-row [nzGutter]="16">
+  <div nz-col [nzSpan]="12" class="mb-2">
+    <nz-card [nzLoading]="loading" class="h-100">
+      <ul *ngIf="model?.stats" class="list-unstyled mt-3 ps-4">
+        <li class="d-flex mb-3">
+          <span nz-icon class="stat-icon me-2" [nzType]="'check-circle'" [nzTheme]="'outline'"
+                style="color:#75c997;"></span>
+          {{model.stats?.completed}} Completed Tasks
+        </li>
+        <li class="d-flex mb-3">
+          <span nz-icon class="stat-icon me-2" [nzType]="'file-excel'" [nzTheme]="'outline'"
+                style="color: #ffc63b;"></span>
+          {{model.stats?.incompleted}} Incomplete Tasks
+        </li>
+        <li class="d-flex mb-3">
+          <span nz-icon class="stat-icon me-2" [nzType]="'exclamation-circle'" [nzTheme]="'outline'"
+                style="color: #eb6363;"></span>
+          {{model.stats?.overdue}} Overdue Tasks
+        </li>
+        <li class="d-flex mb-3">
+          <span nz-icon class="stat-icon me-2" [nzType]="'clock-circle'" [nzTheme]="'outline'"
+                style="color: #7cb5ec;"></span>
+          {{model.stats?.total_allocated}} Allocated Hours
+        </li>
+        <li class="d-flex">
+          <span nz-icon class="stat-icon me-2" [nzType]="'clock-circle'" [nzTheme]="'outline'"
+                style="color:#75c997;"></span>
+          {{model.stats?.total_logged}} Logged Hours
+        </li>
+      </ul>
+    </nz-card>
+  </div>
+  <div nz-col [nzSpan]="12" class="mb-2">
+    <nz-card [nzTitle]="statusCardTitle">
+      <ng-template #statusCardTitle>
+        <div class="d-flex align-items-center">
+          <div>
+            <h4 class="mb-0">Tasks By Status</h4>
+          </div>
+<!--          <div class="ms-auto">-->
+<!--            <button nz-button [nzType]="'link'" [nzSize]="'small'" class="ms-auto" (click)="openList('status')">-->
+<!--              <u>Open <span style="transform: rotateY(180deg)" nz-icon [nzType]="'select'" [nzTheme]="'outline'"></span></u>-->
+<!--            </button>-->
+<!--          </div>-->
+        </div>
+      </ng-template>
+      <div class="card-content">
+        <ng-container *ngIf="isStatusChartEmpty">
+          <div class="pt-4 pb-5 text-center">
+            <div class="no-data-img-holder mx-auto mb-3">
+              <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+            </div>
+            <span nz-typography class="no-data-text">No tasks to show.</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!loading && !isStatusChartEmpty" class="d-flex">
+          <div *ngIf="model.by_status && model.by_status.chart.length" class="position-relative"
+               style="max-width: 200px">
+            <canvas baseChart
+                    [width]="185"
+                    [height]="185"
+                    [data]="statusChartData"
+                    [options]="chartOptions"
+                    [legend]="false"
+                    [type]="'doughnut'">
+            </canvas>
+          </div>
+          <div class="chart-details ms-3">
+            <ul class="list-unstyled">
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#333333'" [nzText]="'All (' + (model.by_status?.all || 0) + ')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#a9a9a9'" [nzText]="'To Do (' + (model.by_status?.todo || 0) + ')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#70a6f3'" [nzText]="'Doing (' + (model.by_status?.doing || 0) + ')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#75c997'" [nzText]="'Done (' + (model.by_status?.done || 0) + ')'"></nz-badge>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+  <div nz-col [nzSpan]="12" class="mt-2 mb-2">
+    <nz-card [nzTitle]="priorityCardTitle">
+      <ng-template #priorityCardTitle>
+        <div class="d-flex align-items-center">
+          <div>
+            <h4 class="mb-0">Tasks By Priority</h4>
+          </div>
+<!--          <div class="ms-auto">-->
+<!--            <button nz-button [nzType]="'link'" [nzSize]="'small'" class="ms-auto" (click)="openList('priority')">-->
+<!--              <u>Open <span style="transform: rotateY(180deg)" nz-icon [nzType]="'select'" [nzTheme]="'outline'"></span></u>-->
+<!--            </button>-->
+<!--          </div>-->
+        </div>
+      </ng-template>
+      <div class="card-content">
+        <ng-container *ngIf="isPriorityChartEmpty">
+          <div class="pt-4 pb-5 text-center">
+            <div class="no-data-img-holder mx-auto mb-3">
+              <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+            </div>
+            <span nz-typography class="no-data-text">No tasks to show.</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!loading && !isPriorityChartEmpty" class="d-flex">
+          <div *ngIf="model.by_priority && model.by_priority.chart.length" class="position-relative"
+               style="max-width: 200px">
+            <canvas baseChart
+                    [width]="185"
+                    [height]="185"
+                    [data]="priorityChartData"
+                    [options]="chartOptions"
+                    [legend]="false"
+                    [type]="'doughnut'">
+            </canvas>
+          </div>
+          <div class="chart-details ms-3">
+            <ul class="list-unstyled">
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#333333'" [nzText]="'All (' + (model.by_priority?.all || 0) + ')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#75c997'" [nzText]="'Low (' + (model.by_priority?.low || 0) + ')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#fbc84c'"
+                          [nzText]="'Medium (' + (model.by_priority?.medium || 0) + ')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#f37070'" [nzText]="'High (' + (model.by_priority?.high || 0) + ')'"></nz-badge>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+  <div nz-col [nzSpan]="12" class="mt-2 mb-2">
+    <nz-card [nzTitle]="duedateCardTitle">
+      <ng-template #duedateCardTitle>
+        <div class="d-flex align-items-center">
+          <div>
+            <h4 class="mb-0">Tasks By Due Date</h4>
+          </div>
+          <div class="ms-auto">
+            <!--            <button nz-button [nzType]="'link'" [nzSize]="'small'" class="ms-auto" (click)="openList()">-->
+            <!--              <u>Open <span style="transform: rotateY(180deg)" nz-icon [nzType]="'select'" [nzTheme]="'outline'"></span></u>-->
+            <!--            </button>-->
+          </div>
+        </div>
+      </ng-template>
+      <div class="card-content">
+        <ng-container *ngIf="isDueDateChartEmpty">
+          <div class="pt-4 pb-5 text-center">
+            <div class="no-data-img-holder mx-auto mb-3">
+              <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+            </div>
+            <span nz-typography class="no-data-text">No tasks to show.</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!loading && !isDueDateChartEmpty" class="d-flex">
+          <div *ngIf="model.by_due && model.by_due.chart.length" class="position-relative"
+               style="max-width: 200px">
+            <canvas baseChart
+                    [width]="185"
+                    [height]="185"
+                    [data]="duedateChartData"
+                    [options]="chartOptions"
+                    [legend]="false"
+                    [type]="'doughnut'">
+            </canvas>
+          </div>
+          <div class="chart-details ms-3">
+            <ul class="list-unstyled">
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#333333'" [nzText]="'All (' + (model.by_due?.all || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#75c997'"
+                          [nzText]="'Completed (' + (model.by_due?.completed || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#70a6f3'" [nzText]="'Upcoming (' + (model.by_due?.upcoming || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#f37070'" [nzText]="'Overdue (' + (model.by_due?.overdue || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#a9a9a9'"
+                          [nzText]="'No Due Date (' + (model.by_due?.no_due || 0) +')'"></nz-badge>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+</div>

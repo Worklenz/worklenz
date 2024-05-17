@@ -1,0 +1,10 @@
+<span nz-icon [nzType]="project?.status_icon | safeString" [nzTheme]="'outline'" [style.color]="project?.status_color"></span>
+{{ project?.status_name }}
+
+<nz-select [ngModel]="project?.status_id" (ngModelChange)="handleStatusChange($event)" [nzDropdownMatchSelectWidth]="false" class="project-status-selector-r" nzBorderless>
+  <nz-option *ngFor="let item of projStatuses; trackBy: trackById" [nzLabel]="item.name | safeString" [nzValue]="item.id"
+             nzCustomContent>
+    <span nz-icon [nzType]="item.icon | safeString" [style.color]="item.color_code"></span>
+    {{item.name}}
+  </nz-option>
+</nz-select>

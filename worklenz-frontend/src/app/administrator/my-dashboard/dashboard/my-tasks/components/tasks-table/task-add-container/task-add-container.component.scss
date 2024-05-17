@@ -1,0 +1,24 @@
+.add-task-container {
+  background: #fff;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+input {
+  max-width: 360px;
+  min-width: 360px;
+}
+
+@media (max-width: 1400px) {
+  input {
+    max-width: 300px;
+    min-width: 300px;
+  }
+}
+
+@media (max-width: 1280px) {
+  input {
+    max-width: 250px;
+    min-width: 250px;
+  }
+}

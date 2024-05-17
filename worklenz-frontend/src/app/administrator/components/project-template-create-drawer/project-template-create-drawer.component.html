@@ -1,0 +1,95 @@
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="show"
+  nzPlacement="right"
+  [nzWidth]="420"
+  [nzTitle]="'Save as template'"
+  [nzFooter]="footer"
+  (nzOnClose)="close()"
+>
+  <div *nzDrawerContent>
+    <nz-form-item>
+      <nz-form-label [nzSpan]="24" nzRequired>Template name</nz-form-label>
+      <nz-form-control [nzSpan]="24">
+        <input nz-input [placeholder]="'Enter template name'" class="w-100"
+               [ngClass]="showErrorText ? 'error-input' : ''" [(ngModel)]="templateName"
+               (ngModelChange)="nameChange($event)" #templateNameInput>
+        <span *ngIf="showErrorText" class="empty-error-text">Name cannot be empty!</span>
+      </nz-form-control>
+    </nz-form-item>
+
+    <div class="ant-form-item">
+      <span nz-typography>What should be included in the template from the project ?</span>
+      <div class="ms-2">
+        <div class="my-2">
+          <label nz-checkbox [nzChecked]="pStatusCheck" [(ngModel)]="pStatusCheck" [nzDisabled]="checked"
+                 (ngModelChange)="projectCheckChange('pStatuses', $event)">Statuses</label>
+        </div>
+        <div>
+          <label nz-checkbox [nzChecked]="pPhasesCheck" [(ngModel)]="pPhasesCheck"
+                 (ngModelChange)="projectCheckChange('pPhases', $event)">Phases</label>
+        </div>
+        <div class="mt-2">
+          <label nz-checkbox [nzChecked]="pLabelsCheck" [(ngModel)]="pLabelsCheck"
+                 (ngModelChange)="projectCheckChange('pLabels', $event)">Labels</label>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <span nz-typography>What should be included in tasks ?</span>
+      <div class="ms-2">
+        <div class="my-2">
+          <label nz-checkbox [nzChecked]="true" [(ngModel)]="checked" [nzDisabled]="checked">Name</label>
+        </div>
+        <div class="mb-2">
+          <label nz-checkbox [nzChecked]="true" [(ngModel)]="checked" [nzDisabled]="checked">Priority</label>
+        </div>
+        <div class="mb-2">
+          <ng-container *ngIf="pStatusCheck">
+            <label nz-checkbox [nzChecked]="tStatusCheck" [(ngModel)]="tStatusCheck"
+                   [nzDisabled]="checked">Status</label>
+          </ng-container>
+        </div>
+        <div class="mb-2">
+          <ng-container *ngIf="pPhasesCheck">
+            <label nz-checkbox [nzChecked]="tPhaseCheck" [(ngModel)]="tPhaseCheck">Phase</label>
+          </ng-container>
+        </div>
+        <div class="mb-2">
+          <ng-container *ngIf="pLabelsCheck">
+            <label nz-checkbox [nzChecked]="tLabelsCheck" [(ngModel)]="tLabelsCheck">Labels</label>
+          </ng-container>
+        </div>
+        <div class="mb-2">
+          <ng-container>
+            <label nz-checkbox [nzChecked]="tEstimationCheck" [(ngModel)]="tEstimationCheck">Time Estimation</label>
+          </ng-container>
+        </div>
+        <div class="mb-2">
+          <ng-container>
+            <label nz-checkbox [nzChecked]="tDescriptionCheck" [(ngModel)]="tDescriptionCheck">Description</label>
+          </ng-container>
+        </div>
+        <div>
+          <ng-container>
+            <label nz-checkbox [nzChecked]="tSubTasksCheck" [(ngModel)]="tSubTasksCheck">Sub Tasks</label>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <div style="float: right">
+      <button nz-button style="margin-right: 8px;" (click)="close()">Cancel</button>
+      <button nz-button nzType="primary"
+              (click)="saveTemplate()"
+              [nzLoading]="creating"
+              [disabled]="disableBtnActive">
+        Save
+      </button>
+    </div>
+  </ng-template>
+
+</nz-drawer>

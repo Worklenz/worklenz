@@ -1,0 +1,174 @@
+<div nz-row [nzGutter]="16">
+  <div nz-col [nzSpan]="12" class="mb-2">
+    <nz-card [nzTitle]="statusCardTitle">
+      <ng-template #statusCardTitle>
+        <div class="d-flex align-items-center">
+          <div>
+            <h4 class="mb-0">Projects By Status</h4>
+          </div>
+        </div>
+      </ng-template>
+      <div class="card-content">
+        <ng-container *ngIf="isStatusChartEmpty">
+          <div class="pt-4 pb-5 text-center">
+            <div class="no-data-img-holder mx-auto mb-3">
+              <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+            </div>
+            <span nz-typography class="no-data-text">No projects to show.</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!loading && !isStatusChartEmpty" class="d-flex">
+          <div *ngIf="model.by_status && model.by_status.chart.length" class="position-relative"
+               style="max-width: 200px">
+            <canvas baseChart
+                    [width]="185"
+                    [height]="185"
+                    [data]="statusChartData"
+                    [options]="chartOptions"
+                    [legend]="false"
+                    [type]="'doughnut'">
+            </canvas>
+          </div>
+          <div class="chart-details ms-3">
+            <ul class="list-unstyled">
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#a9a9a9'" [nzText]="'All (' + ( model.by_status?.all || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#80ca79'"
+                          [nzText]="'In Progress (' + ( model.by_status?.in_progress || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#cbc8a1'"
+                          [nzText]="'In Planning (' + ( model.by_status?.in_planning || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#80ca79'"
+                          [nzText]="'Completed (' + ( model.by_status?.completed || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#cbc8a1'"
+                          [nzText]="'Proposed (' + ( model.by_status?.proposed || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#cbc8a1'"
+                          [nzText]="'On Hold (' + ( model.by_status?.on_hold || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#cbc8a1'"
+                          [nzText]="'Blocked (' + ( model.by_status?.blocked || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#f37070'"
+                          [nzText]="'Cancelled (' + ( model.by_status?.cancelled || 0) +')'"></nz-badge>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+  <div nz-col [nzSpan]="12" class="mb-2">
+    <nz-card [nzTitle]="categoryCardTitle">
+      <ng-template #categoryCardTitle>
+        <div class="d-flex align-items-center">
+          <div>
+            <h4 class="mb-0">Projects By Category</h4>
+          </div>
+        </div>
+      </ng-template>
+      <div class="card-content">
+        <ng-container *ngIf="isCategoryChartEmpty">
+          <div class="pt-4 pb-5 text-center">
+            <div class="no-data-img-holder mx-auto mb-3">
+              <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+            </div>
+            <span nz-typography class="no-data-text">No projects to show.</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!loading && !isCategoryChartEmpty" class="d-flex">
+          <div *ngIf="model.by_category && model.by_category.chart.length" class="position-relative"
+               style="max-width: 200px">
+            <canvas baseChart
+                    [width]="185"
+                    [height]="185"
+                    [data]="categoryChartData"
+                    [options]="chartOptions"
+                    [legend]="false"
+                    [type]="'doughnut'">
+            </canvas>
+          </div>
+          <div class="chart-details ms-3">
+            <ul class="list-unstyled">
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#a9a9a9'" [nzText]="'All (' + ( model.by_status?.all || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label" *ngFor="let category of model.by_category?.data">
+                <nz-badge [nzColor]="category.color"></nz-badge>
+                <span
+                  style="font-size: 13px">{{(category.label | ellipsis: 30) + ' (' + (category.count || 0) + ')'}}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+  <div nz-col [nzSpan]="12" class="mt-2 mb-2">
+    <nz-card [nzTitle]="duedateCardTitle">
+      <ng-template #duedateCardTitle>
+        <div class="d-flex align-items-center">
+          <div>
+            <h4 class="mb-0">Projects By Health</h4>
+          </div>
+        </div>
+      </ng-template>
+      <div class="card-content">
+        <ng-container *ngIf="isHealthChartEmpty">
+          <div class="pt-4 pb-5 text-center">
+            <div class="no-data-img-holder mx-auto mb-3">
+              <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+            </div>
+            <span nz-typography class="no-data-text">No projects to show.</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!loading && !isHealthChartEmpty" class="d-flex">
+          <div *ngIf="model.by_health && model.by_health.chart.length" class="position-relative"
+               style="max-width: 200px">
+            <canvas baseChart
+                    [width]="185"
+                    [height]="185"
+                    [data]="healthChartData"
+                    [options]="chartOptions"
+                    [legend]="false"
+                    [type]="'doughnut'">
+            </canvas>
+          </div>
+          <div class="chart-details ms-3">
+            <ul class="list-unstyled">
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#a9a9a9'" [nzText]="'All (' + ( model.by_status?.all || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#a9a9a9'"
+                          [nzText]="'Not Set (' + ( model.by_health?.not_set || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#f37070'"
+                          [nzText]="'Needs Attention (' + ( model.by_health?.needs_attention || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#fbc84c'"
+                          [nzText]="'At Risk (' + ( model.by_health?.at_risk || 0) +')'"></nz-badge>
+              </li>
+              <li class="mb-1 chart-label">
+                <nz-badge [nzColor]="'#75c997'"
+                          [nzText]="'Good (' + ( model.by_health?.good || 0) +')'"></nz-badge>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+</div>

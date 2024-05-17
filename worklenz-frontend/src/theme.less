@@ -1,0 +1,153 @@
+// Custom Theming for NG-ZORRO
+// For more information: https://ng.ant.design/docs/customize-theme/en
+
+@import "../node_modules/ng-zorro-antd/ng-zorro-antd.less";
+
+@border-radius-base: 4px;
+@rate-star-bg: #dedede;
+@tooltip-bg: #4a4a4a;
+
+// Override less variables to here
+// View all variables: https://github.com/NG-ZORRO/ng-zorro-antd/blob/master/components/style/themes/default.less
+
+@font-family: -apple-system, BlinkMacSystemFont, 'Inter', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+.gantt__row-bars {
+  li {
+    border-radius: @border-radius-base;
+  }
+}
+
+.reporting,
+.custom-table {
+  .ant-table-tbody > tr > td {
+    transition: none !important;
+  }
+
+  .ant-table-tbody > tr.ant-table-row:hover > td,
+  .ant-table-tbody > tr > td.ant-table-cell-row-hover {
+    color: @primary-color;
+  }
+}
+
+.teams-switch {
+  .team-name {
+    background: @menu-item-active-bg;
+    padding: 11px 16px;
+    color: @menu-highlight-color;
+
+    &:hover {
+      background: darken(@menu-item-active-bg, 5%);
+    }
+  }
+}
+
+.menu-border-0 {
+  &:after {
+    border: none !important;
+  }
+}
+
+.menu-hover {
+  &:hover {
+    background-color: #f0f2f5 !important;
+  }
+}
+
+.ant-table {
+  &:not(.ant-table-bordered) {
+    table {
+      //th {
+      //  background: transparent !important;
+      //}
+
+      td, th {
+        border: none !important;
+        transition: none !important;
+      }
+
+      nz-divider {
+        border-color: #b0b0b0 !important;
+      }
+
+      tr {
+        &:hover {
+
+          td:not(.nz-disable-td) {
+            &:first-child {
+              border-top-left-radius: @border-radius-base;
+              border-bottom-left-radius: @border-radius-base;
+            }
+
+            &:last-child {
+              border-top-right-radius: @border-radius-base;
+              border-bottom-right-radius: @border-radius-base;
+            }
+
+            background-color: rgb(237, 235, 240) !important;
+          }
+        }
+      }
+
+      thead tr th {
+        &:first-child {
+          border-top-left-radius: @border-radius-base;
+          border-bottom-left-radius: @border-radius-base;
+        }
+
+        &:last-child {
+          border-top-right-radius: @border-radius-base;
+          border-bottom-right-radius: @border-radius-base;
+        }
+      }
+
+      tbody tr:nth-of-type(even) > *:not(.nz-disable-td) {
+        background: rgb(248, 247, 249);
+
+        &:first-child {
+          border-top-left-radius: @border-radius-base;
+          border-bottom-left-radius: @border-radius-base;
+        }
+
+        &:last-child {
+          border-top-right-radius: @border-radius-base;
+          border-bottom-right-radius: @border-radius-base;
+        }
+      }
+    }
+  }
+}
+
+.ant-tabs-card {
+  .ant-tabs-tab {
+    transition: none !important;
+
+    &:hover {
+      background-color: rgb(237, 235, 240) !important;
+    }
+  }
+}
+
+.admin-role {
+  color: @warning-color;
+}
+
+.owner-role {
+  color: @primary-color;
+}
+
+.member-role {
+  color: @text-color-secondary;
+}
+
+.ant-page-header-back-button {
+  padding: 6px 8px;
+  border-radius: @border-radius-base;
+  border: 1px solid transparent;
+  transition: all 200ms ease-out;
+
+  &:hover {
+    background: #fafafa;
+    border-color: #f0f0f0;
+  }
+}

@@ -1,0 +1,21 @@
+<ng-container *ngIf="task && group">
+  <div [id]="task.offset_from"
+       class="task-bar"
+       [style.width]="task.width+'px'"
+       [style.left]="task.offset_from+'px'"
+       [style.transition]="'transform ' + service.transition + 's ease, left ' + service.transition + 's ease, width ' + service.transition + 's ease'"
+       (dragged)="onElementDragged($event, task, group.id)"
+       [attr.task_id]="task.id"
+       worklenzDragAndMove
+       #task_bar>
+    <div class="d-flex">
+      <div class="resize-handle left-handle"
+           (mousedown)="onResizeStart($event, task, 'left', task_bar); $event.stopPropagation()"></div>
+      <div class="resize-handle right-handle"
+           (mousedown)="onResizeStart($event, task, 'right', task_bar); $event.stopPropagation()"></div>
+    </div>
+    <div *ngIf="showIndicators" class="days-indicator-left"></div>
+    <div *ngIf="showIndicators" class="days-indicator-right"></div>
+  </div>
+</ng-container>
+

@@ -1,0 +1,37 @@
+<nz-spin [nzSpinning]="switchingTeam">
+  <worklenz-alerts
+    [updateAvailable]="updateAvailable"
+    [alerts]="profile?.alerts || []"
+  ></worklenz-alerts>
+
+  <worklenz-licensing-alerts *ngIf="profile"
+    [profile]="profile"
+  ></worklenz-licensing-alerts>
+
+  <nz-layout class="layout">
+    <nz-header>
+      <worklenz-header
+        class="d-flex"
+        *ngIf="profile"
+        [teams]="teams"
+        [profile]="profile"
+        [navigation]="navigation"
+        [count]="count"
+        [(showNotifications)]="showNotifications"
+      ></worklenz-header>
+    </nz-header>
+    <nz-layout>
+      <nz-content>
+        <nz-breadcrumb [nzAutoGenerate]="true"></nz-breadcrumb>
+        <div class="inner-content">
+          <router-outlet></router-outlet>
+        </div>
+      </nz-content>
+    </nz-layout>
+  </nz-layout>
+</nz-spin>
+
+<worklenz-notifications-drawer
+  [(count)]="count"
+  [(show)]="showNotifications"
+></worklenz-notifications-drawer>

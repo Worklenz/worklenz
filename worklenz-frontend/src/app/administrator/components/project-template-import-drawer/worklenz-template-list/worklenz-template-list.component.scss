@@ -1,0 +1,33 @@
+.side-menu {
+  min-width: 250px;
+  max-width: 250px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.temp-details {
+  max-height: calc(100vh - 200px);
+  overflow: auto;
+}
+
+.worklenz_key_sec {
+  min-width: 120px;
+  max-width: 120px;
+
+  & span {
+    font-weight: 500;
+  }
+}
+
+.worklenz_value_sec {
+  max-width: 520px;
+}
+
+.preview {
+  max-width: 600px;
+}
+
+nz-tag {
+  color: #000;
+  margin-bottom: 8px;
+}

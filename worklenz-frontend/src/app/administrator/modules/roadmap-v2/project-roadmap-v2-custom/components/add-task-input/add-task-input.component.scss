@@ -1,0 +1,25 @@
+.input-icon {
+  font-size: 11px;
+}
+
+input {
+  background: white;
+  border: 1px solid #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.task-name {
+  border: 1px solid transparent;
+
+  &:hover {
+    cursor: text;
+    background: #fff;
+    border: 1px solid #bfbfbf;
+    border-radius: 4px;
+  }
+}
+
+.name-input-container {
+  max-width: 300px;
+  min-width: 300px;
+}

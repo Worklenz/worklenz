@@ -1,0 +1,29 @@
+<nz-avatar-group>
+  <ng-container [ngSwitch]="showDot">
+    <ng-container *ngSwitchCase="true">
+      <nz-badge
+        *ngFor="let item of names || []" [nzOffset]="[-4,24]"
+        [nzStyle]="{background:'#52c41a',border:'4px solid #52c41a'}" nzDot>
+        <ng-container *ngTemplateOutlet="templateRef; context: { $implicit: item }"></ng-container>
+      </nz-badge>
+    </ng-container>
+    <ng-container *ngSwitchCase="false">
+      <ng-container *ngFor="let item of names || []">
+        <ng-container *ngTemplateOutlet="templateRef; context: { $implicit: item }"></ng-container>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+</nz-avatar-group>
+
+<ng-template let-item #templateRef>
+  <nz-avatar
+    [nzSize]="28"
+    [class]="avatarClass"
+    [nzText]="item.end ? item.name : (item.name | firstCharUpper)"
+    [style.background-color]="item.avatar_url ? '#ececec' : item.color_code"
+    [nzSrc]="item.avatar_url"
+    nz-tooltip
+    [nzTooltipTitle]="item.end && item.names ? item.names : item.name"
+    [nzTooltipPlacement]="'top'"
+  ></nz-avatar>
+</ng-template>

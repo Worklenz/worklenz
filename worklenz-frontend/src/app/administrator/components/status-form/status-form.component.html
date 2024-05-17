@@ -1,0 +1,55 @@
+<nz-drawer
+  (nzOnClose)="closeModal()"
+  [(nzVisible)]="show"
+  [nzClosable]="true"
+  nzPlacement="right"
+  (nzVisibleChange)="onVisibilityChange($event)"
+  nzTitle="{{action}} Status"
+>
+  <ng-container *nzDrawerContent>
+    <nz-skeleton [nzActive]="true" [nzLoading]="loading">
+      <form (submit)="submit()" [formGroup]="form" [nzLayout]="'vertical'" nz-form>
+        <nz-form-item>
+          <nz-form-label [nzSpan]="null" nzRequired>Name</nz-form-label>
+          <nz-form-control [nzSpan]="null" nzErrorTip="Please enter a name!">
+            <input [formControlName]="'name'" nz-input placeholder="Name"/>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label [nzSpan]="null" nzRequired>Category</nz-form-label>
+          <nz-form-control [nzSpan]="null">
+            <nz-select [formControlName]="'category_id'">
+              <nz-option
+                *ngFor="let item of categories"
+                [nzLabel]="item.name || null"
+                [nzValue]="item.id"
+                nzCustomContent>
+                <nz-badge
+                  nz-tooltip [nzTooltipTitle]="item.description"
+                  [nzText]="item?.name || null"
+                  class="w-100"
+                  [nzTooltipPlacement]="'left'"
+                  [nzColor]="item.color_code"></nz-badge>
+              </nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+        <button nz-button nzBlock nzType="primary" type="submit">{{action}}</button>
+      </form>
+      <ng-container *ngIf="showStatusGroups">
+        <nz-divider class="mb-3 mt-3"></nz-divider>
+        <div class="mt-3 mb-3">
+          <span nz-typography class="main-title">Categorized Statuses</span>
+        </div>
+        <div *ngFor="let item of categorisedStatus" class="status-group">
+          <div class="status-name-holder" [style.background-color]="item.color_code+'69'">
+            {{item.name}}
+          </div>
+          <div *ngFor="let status of item.statuses" class="mt-3 mb-3 ms-2">
+            <nz-badge [nzColor]="status.color_code" [nzText]="status.name"></nz-badge>
+          </div>
+        </div>
+      </ng-container>
+    </nz-skeleton>
+  </ng-container>
+</nz-drawer>

@@ -1,0 +1,84 @@
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="show"
+  [nzPlacement]="'right'"
+  [nzTitle]="title"
+  [nzContent]="content"
+  (nzOnClose)="close()"
+  [nzWidth]="800"
+  [nzCloseIcon]="closeIcon"
+></nz-drawer>
+
+<ng-template #content>
+  <nz-skeleton [nzLoading]="loading" [nzActive]="true" class="d-block loading-custom-height">
+    <nz-collapse nzGhost>
+      <nz-collapse-panel *ngFor="let group of groups trackBy: trackByGroup" [nzHeader]="groupNameTemplate" [nzActive]="false">
+        <nz-table [nzSize]="'small'" [nzData]="group.tasks | searchByName: searchText" [nzShowPagination]="true"
+                  [nzHideOnSinglePage]="true"
+                  [nzScroll]="{ x: '300px' }" [nzNoResult]="emptyData" #memberTable>
+          <thead>
+          <tr>
+            <th nzLeft [nzWidth]="'300px'">Task</th>
+            <th [nzWidth]="'120px'">Status</th>
+            <th [nzWidth]="'120px'">Priority</th>
+            <th [nzWidth]="'150px'">Phase</th>
+            <th [nzWidth]="'120px'">Due Date</th>
+            <th [nzWidth]="'120px'">Completed On</th>
+            <th [nzWidth]="'120px'" class="text-center">Days Overdue</th>
+            <th [nzWidth]="'120px'" class="text-center">Estimated Time</th>
+            <th [nzWidth]="'120px'" class="text-center">Logged Time</th>
+            <th [nzWidth]="'180px'" class="text-center">Overlogged Time</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let data of memberTable.data trackBy: trackByTask" class="cursor-pointer">
+            <td (click)="openTask(data)" nzLeft style="z-index: 11">
+              <small *ngIf="data.parent_task_id" nz-typography [nzType]="'secondary'">
+                <span nz-icon [nzType]="'double-right'" [nzTheme]="'outline'"></span>
+              </small>
+              {{ data.name }}
+            </td>
+            <td>
+              <nz-tag [nzColor]="data.status_color+'69'">{{ data.status_name | ellipsis : 12 }}</nz-tag>
+            </td>
+            <td>
+              <nz-tag [nzColor]="data.priority_color+'69'">{{ data.priority_name | ellipsis : 12 }}</nz-tag>
+            </td>
+            <td>
+              <nz-tag *ngIf="data.phase_name" [nzColor]="data.phase_color+'69'">{{ data.phase_name | ellipsis : 12}}</nz-tag>
+              <span *ngIf="!data.phase_name">-</span>
+            </td>
+            <td>{{ (data.end_date | date: 'MMM dd,yyyy') || '-'}}</td>
+            <td>{{ (data.completed_at | date: 'MMM dd,yyyy') || '-'}}</td>
+            <td class="text-center">{{ data.overdue_days || '-'}}</td>
+            <td class="text-center">{{ data.estimated_string }}</td>
+            <td class="text-center">{{ data.time_spent_string }}</td>
+            <td class="text-center">{{ data.overlogged_time_string }}</td>
+          </tr>
+          </tbody>
+        </nz-table>
+        <ng-template #groupNameTemplate>
+          <nz-badge class="mt-1" [nzColor]="group.color_code.slice(0, 7)"
+                    [nzText]="group.name + ' (' + group.tasks.length + ')'"></nz-badge>
+        </ng-template>
+      </nz-collapse-panel>
+    </nz-collapse>
+  </nz-skeleton>
+</ng-template>
+
+<ng-template #title>
+  <span nz-typography class="title-text">{{titleText}}'s Tasks</span>
+</ng-template>
+
+<ng-template #closeIcon>
+  <span nz-icon nzType="close" nzTheme="outline"></span>
+</ng-template>
+
+<ng-template #emptyData>
+<div class="pt-2 pb-3">
+  <div class="no-data-img-holder mx-auto mb-3">
+    <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+  </div>
+  <span nz-typography class="no-data-text">No tasks to show.</span>
+</div>
+</ng-template>

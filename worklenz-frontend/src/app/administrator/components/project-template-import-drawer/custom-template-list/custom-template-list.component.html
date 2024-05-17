@@ -1,0 +1,28 @@
+<div class="w-35">
+  <nz-input-group [nzSuffix]="suffixIconSearch">
+    <input [(ngModel)]="teamSearchText" (ngModelChange)="detectChanges()" type="text"
+           placeholder="Search by template name" nz-input #searchInput>
+  </nz-input-group>
+
+  <ng-template #suffixIconSearch>
+    <span nz-icon nzType="search"></span>
+  </ng-template>
+</div>
+
+<nz-skeleton [nzActive]="true" [nzLoading]="loading" class="mt-3">
+  <nz-list nzBordered nzSize="small" class="temp-details" *ngIf="templateList.length">
+    <nz-list-item *ngFor="let item of templateList | searchByName: searchInput.value; let i = index"
+                  (click)="changeSelectedTemplate(item.id, i)" class="actions-row"
+                  [ngClass]="item.selected ? 'selected' : ''">
+      <nz-space>
+        <nz-badge *nzSpaceItem [nzColor]="item.color_code" [nzText]=""></nz-badge>
+        <span *nzSpaceItem class="template-name">{{item.name}}</span>
+      </nz-space>
+    </nz-list-item>
+  </nz-list>
+  <nz-empty *ngIf="!templateList.length" [nzNotFoundContent]="noCustomTemplates">
+  </nz-empty>
+  <ng-template #noCustomTemplates>
+    No custom templates are found!
+  </ng-template>
+</nz-skeleton>

@@ -1,0 +1,38 @@
+.bg-shadow
+.container-fluid
+  nav.navbar.navbar-expand-lg.fixed-top
+    .container-fluid.main-nav-container
+      a.navbar-brand(href='/')
+        img.img-fluid.nav-logo(src='/assets/images/worklenz-logo.png' alt='Worklenz Logo')
+        //- .text-beta Beta
+      button.navbar-toggler(type='button')
+        span.navbar-toggler-icon
+      .mobile-menu
+        button#nav-close.btn.btn-close.border-0
+        .logo-container
+          img.img-fluid.nav-logo(src='/assets/images/worklenz-logo.png' alt='Worklenz Logo')
+        ul.navbar-nav
+          li.nav-item
+            a.nav-link.mb-nav-link.home.active(aria-current='page' href='#home') Home
+          li.nav-item
+            a.nav-link.mb-nav-link.features(href='#features') Features
+          li.nav-item
+            a.nav-link.mb-nav-link.pricing(href='#pricing') Pricing
+        .ms-auto.mt-4
+          a.w-100.d-block(href='/auth/login')
+            button.btn.worklenz_btn-login.w-100 Login
+          a.w-100.d-block.mt-3(href='/auth/signup')
+            button.btn.worklenz_btn-sign-up.w-100 Try for free
+      #navbarSupportedContent.collapse.navbar-collapse
+        ul.navbar-nav.mb-2.mb-lg-0.me-2
+          li.nav-item
+            a.nav-link.top-nav-link.home.active(aria-current='page' href='#home') Home
+          li.nav-item
+            a.nav-link.top-nav-link.features(href='#features') Features
+          li.nav-item
+            a.nav-link.top-nav-link.pricing.me-0(href='#pricing') Pricing
+        .ms-auto
+          a(href='/auth/login')
+            button.btn.worklenz_btn-login Login
+          a(href='/auth/signup')
+            button.btn.worklenz_btn-sign-up Try for free

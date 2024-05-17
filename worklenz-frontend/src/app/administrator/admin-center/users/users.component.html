@@ -1,0 +1,75 @@
+<nz-page-header [nzGhost]="false" class="px-0">
+  <nz-page-header-title>Users</nz-page-header-title>
+</nz-page-header>
+<nz-page-header class="site-page-header pt-0 ps-0">
+  <nz-page-header-subtitle>{{total}} users</nz-page-header-subtitle>
+  <nz-page-header-extra>
+    <nz-space>
+      <button *nzSpaceItem nz-button nz-tooltip nzShape="circle" (click)="getUsers()"
+              nzTooltipTitle="Refresh users" nzType="default">
+        <span nz-icon nzTheme="outline" nzType="sync"></span>
+      </button>
+      <form *nzSpaceItem [formGroup]="searchForm" [nzLayout]="'vertical'" nz-form>
+        <nz-input-group [nzSuffix]="suffixIconSearch">
+          <input [formControlName]="'search'" nz-input placeholder="Search by name" type="text"/>
+        </nz-input-group>
+        <ng-template #suffixIconSearch>
+          <span nz-icon nzType="search"></span>
+        </ng-template>
+      </form>
+    </nz-space>
+  </nz-page-header-extra>
+</nz-page-header>
+<nz-card>
+  <nz-skeleton [nzActive]="false" [nzLoading]="false">
+    <nz-table #usersTable
+              (nzQueryParams)="onQueryParamsChange($event)"
+              [nzData]="users || []"
+              [nzFrontPagination]="false"
+              [nzLoading]="loading"
+              [nzPageIndex]="pageIndex"
+              [nzPageSizeOptions]="paginationSizes"
+              [nzPageSize]="pageSize"
+              [nzTotal]="total"
+              class="custom-table"
+              nzShowSizeChanger
+              nzSize="small" [nzNoResult]="noDataTemplate">
+      <thead>
+      <tr>
+        <th scope="col">User</th>
+        <th scope="col">Email</th>
+        <th scope="col">Last Activity</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr class="actions-row" *ngFor="let item of usersTable.data">
+        <td class="cursor-pointer">
+          <nz-avatar class="me-2" [nzSize]="28" nzText="{{item.name | firstCharUpper}}"
+                     [nzSrc]="item.avatar_url"
+                     [style.background-color]="item.avatar_url ? '#ececec' : getColor(item.name)"></nz-avatar>
+          <nz-badge>
+            {{item.name}}
+            <span nz-typography
+                  [nzType]="'secondary'">{{item.is_admin ? '(Admin)' : item.is_owner ? '(Owner)' : ''}}</span>
+          </nz-badge>
+        </td>
+        <td class="cursor-pointer">
+          {{item.email}}
+        </td>
+        <td class="cursor-pointer">
+          {{(item.last_logged | date: 'medium') || '-'}}
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</nz-card>
+
+<ng-template #noDataTemplate>
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">No users found in the organization.</span>
+  </div>
+</ng-template>

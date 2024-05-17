@@ -1,0 +1,14 @@
+.input-icon {
+  font-size: 11px;
+}
+
+.task-name {
+  border: 1px solid transparent;
+
+  &:hover {
+    cursor: text;
+    background: #fff;
+    border: 1px solid #bfbfbf;
+    border-radius: 4px;
+  }
+}

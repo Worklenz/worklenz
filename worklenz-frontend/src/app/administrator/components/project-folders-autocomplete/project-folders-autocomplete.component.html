@@ -1,0 +1,21 @@
+<form [formGroup]="form" [nzLayout]="'vertical'" nz-form>
+  <nz-form-item>
+    <nz-form-label [nzSpan]="null">Folder</nz-form-label>
+    <nz-form-control [nzSpan]="null">
+      <input [formControlName]="'folder'" [nzAutocomplete]="autoComplete" nz-input
+             placeholder="Select a folder for the project"/>
+      <nz-autocomplete #autoComplete>
+        <ng-container [ngSwitch]="isNew">
+          <nz-auto-option *ngSwitchCase="true" [nzValue]="searchValue" (click)="addFolder()">
+            + Add "{{ searchValue }}"
+          </nz-auto-option>
+          <ng-container *ngSwitchCase="false">
+            <nz-auto-option *ngFor="let item of folders | searchByName: searchValue" [nzValue]="item.id">
+              {{item.name}}
+            </nz-auto-option>
+          </ng-container>
+        </ng-container>
+      </nz-autocomplete>
+    </nz-form-control>
+  </nz-form-item>
+</form>

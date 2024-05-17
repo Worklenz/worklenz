@@ -1,0 +1,25 @@
+.no-data-img-holder {
+  max-width: 64px;
+}
+
+.ant-tag.rounded-pill {
+  border-radius: 100px;
+  color: rgba(0, 0, 0, 0.85);
+  margin-right: 0px;
+}
+
+.weight-500 {
+  font-weight: 500 !important;
+}
+
+.line-28 {
+  line-height: 28px;
+}
+
+.activity-log-text {
+  cursor: pointer;
+  transition: 0.15s all;
+  &:hover {
+    color: #1890ff;
+  }
+}

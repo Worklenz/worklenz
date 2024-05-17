@@ -1,0 +1,78 @@
+#!/usr/bin/env node
+const path = require("path");
+const slug = require("slugify");
+const { exec } = require("child_process");
+const [, , cmd, name] = process.argv;
+
+function s(value) {
+  return slug(value, {
+    replacement: "-",    // replace spaces with replacement
+    remove: /[\/()._]/g,        // regex to remove characters
+    lower: true,         // result in lower case
+  });
+}
+
+function log(value) {
+  console.log(value);
+}
+
+function generate_controller() {
+  const pro = exec(`node cli/generate-controller ${s(name).replace(/controller/, "")}`);
+  pro.stdout.on("data", (data) => {
+    log(data.toString());
+  });
+
+  pro.stderr.on("data", (data) => {
+    log(`${data.toString()}`);
+  });
+
+  pro.on("exit", (code) => {
+    log(`Process exit with code ${code}.`);
+  });
+}
+
+function create_release() {
+  const release = exec(`node cli/mkrelease`);
+
+  release.stdout.on("data", (data) => {
+    log(data.toString());
+  });
+
+  release.stderr.on("data", (data) => {
+    log(`${data.toString()}`);
+  });
+
+  release.on("exit", (code) => {
+    log(`Build success with code ${code}.`);
+    log("Start Coping");
+  });
+}
+
+function generate_validator() {
+  const pro = exec(`node cli/generate-validator ${s(name).replace(/validator|validators/, "")}`);
+  pro.stdout.on("data", (data) => {
+    log(data.toString());
+  });
+
+  pro.stderr.on("data", (data) => {
+    log(`${data.toString()}`);
+  });
+
+  pro.on("exit", (code) => {
+    log(`Process exit with code ${code}.`);
+  });
+}
+
+switch (cmd) {
+  case "controller":
+    generate_controller();
+    break;
+  case "release":
+    create_release();
+    break;
+  case "validator":
+    generate_validator();
+    break;
+  default:
+    break;
+}

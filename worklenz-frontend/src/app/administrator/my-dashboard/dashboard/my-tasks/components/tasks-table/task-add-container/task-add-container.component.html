@@ -1,0 +1,95 @@
+<div *ngIf="service.tasksViewConfig?.current_view === 0" class="add-task-container">
+  <nz-space>
+    <!--  new task name -->
+    <input *nzSpaceItem nz-input
+           [ngModelOptions]="{standalone: true}"
+           [(ngModel)]="newTaskName"
+           tabindex="1"
+           (focus)="taskInputFocus()"
+           (blur)="taskInputBlur()"
+           (keydown)="onKeyDown($event)"
+           class="task-name-input-field task-input-default" placeholder="+ Add Task" #task_input/>
+    <!--  new task date -->
+    <ng-container *nzSpaceItem>
+      <nz-select *ngIf="taskCreateIndex === 2 || taskCreateIndex === 3" #due_date_selector
+                 [ngModelOptions]="{standalone: true}" [(ngModel)]="selectedDueDate"
+                 tabindex="2"
+                 (ngModelChange)="dueDateFieldValidate($event, due_date_selector)"
+                 [nzOpen]="true"
+                 (nzBlur)="dueDateFieldValidate($event, due_date_selector)"
+                 (keydown.enter)="dueDateFieldValidate($event, due_date_selector)"
+                 [nzDropdownMatchSelectWidth]="false" [nzShowArrow]="false" nzPlaceHolder="Due Date"
+                 class="task-due-date-selector task-input-default" [(nzOpen)]="dueDateOpened"
+                 (keydown.enter)="dueDateFieldValidate($event,due_date_selector)">
+        <nz-option *ngFor="let option of dueDateOptionsList" [nzValue]="option"
+                   [nzLabel]="option.label"></nz-option>
+      </nz-select>
+
+    </ng-container>
+    <!--  new task project -->
+    <ng-container *nzSpaceItem>
+      <nz-select *ngIf="taskCreateIndex === 3" #project_selector nzShowSearch
+                 [nzLoading]="loadingProjects"
+                 [ngModelOptions]="{standalone: true}"
+                 [(ngModel)]="selectedProjectId"
+                 (ngModelChange)="createMainTask('')"
+                 [nzOpen]="true"
+                 [nzDropdownMatchSelectWidth]="false"
+                 [nzShowArrow]="false" nzPlaceHolder="Project"
+                 [(nzOpen)]="projectSelectOpened"
+                 (nzOpenChange)="handleProjectOpen()"
+                 class="task-project-selector task-input-default">
+        <nz-option *ngFor="let project of projects" [nzValue]="project.id" nzLabel="{{project.name}}">
+        </nz-option>
+      </nz-select>
+    </ng-container>
+  </nz-space>
+  <div *ngIf="taskCreateIndex === 1 && newTaskName"
+       style="background: #e6f7ff; border: 1px solid #91d5ff; margin-top: 4px; max-width: max-content;padding-left: 4px; padding-right: 4px">
+    <small *ngIf="!isPersonal" style="color: #000000d9">Press <b>Tab</b> to select a <b>'Due date'</b> and a <b>'Project' </b>.</small>
+    <small *ngIf="isPersonal" style="color: #000000d9">Press <b>Enter</b> to create.</small>
+  </div>
+</div>
+
+<div *ngIf="service.tasksViewConfig?.current_view === 1" class="add-task-container">
+  <nz-space>
+    <!--  new task name -->
+    <input *nzSpaceItem nz-input
+           [ngModelOptions]="{standalone: true}"
+           [(ngModel)]="newTaskName"
+           tabindex="1"
+           (focus)="taskInputFocus()"
+           (blur)="taskInputBlur()"
+           (keydown)="onKeyDown($event)"
+           class="task-name-input-field task-input-default" placeholder="+ Add Task" #task_input/>
+    <!--  new task project -->
+    <ng-container *nzSpaceItem>
+      <nz-space *ngIf="taskCreateIndex === 3">
+        <nz-select *nzSpaceItem [ngModel]="service.tasksViewConfig?.selected_date | date:'MMM d, y'" nzDisabled
+                   [nzShowArrow]="false">
+          <nz-option [nzValue]="service.tasksViewConfig?.selected_date | date:'MMM d, y'"
+                     [nzLabel]="service.tasksViewConfig?.selected_date | date:'MMM d, y'"></nz-option>
+        </nz-select>
+        <nz-select *nzSpaceItem #project_selector nzShowSearch
+                   [nzLoading]="loadingProjects"
+                   [ngModelOptions]="{standalone: true}"
+                   [(ngModel)]="selectedProjectId"
+                   (ngModelChange)="createMainTask('')"
+                   [nzOpen]="true"
+                   [nzDropdownMatchSelectWidth]="false"
+                   [nzShowArrow]="false" nzPlaceHolder="Project"
+                   [(nzOpen)]="projectSelectOpened"
+                   (nzOpenChange)="handleProjectOpen()"
+                   class="task-project-selector task-input-default">
+          <nz-option *ngFor="let project of projects" [nzValue]="project.id" nzLabel="{{project.name}}">
+          </nz-option>
+        </nz-select>
+      </nz-space>
+    </ng-container>
+  </nz-space>
+  <div *ngIf="taskCreateIndex === 1 && newTaskName"
+       style="background: #e6f7ff; border: 1px solid #91d5ff; margin-top: 4px; max-width: max-content;padding-left: 4px; padding-right: 4px">
+    <small *ngIf="!isPersonal" style="color: #000000d9">Press <b>Tab</b> to select a <b>'Project' </b>.</small>
+    <small *ngIf="isPersonal" style="color: #000000d9">Press <b>Enter</b> to create.</small>
+  </div>
+</div>

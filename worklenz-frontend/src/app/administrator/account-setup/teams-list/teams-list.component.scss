@@ -1,0 +1,16 @@
+nz-list-item {
+  cursor: pointer;
+
+  &:hover {
+    background: #f8f7f9;
+  }
+
+  &.selected {
+    background: rgba(24, 144, 255, 0.0784313725) !important;
+  }
+}
+
+nz-radio-group {
+  max-height: calc(100vh - 270px);
+  overflow: auto;
+}

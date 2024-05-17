@@ -1,0 +1,51 @@
+<div class="reporting-tab-module">
+  <nz-layout>
+    <nz-sider [nzCollapsible]="true" [(nzCollapsed)]="collapsed"
+              [nzCollapsedWidth]="0" [nzWidth]="160" [nzTrigger]="null">
+      <p nz-typography nz-tooltip [nzTooltipTitle]="'Current Organization'" [ngSwitch]="loading">
+        <nz-skeleton-element *ngSwitchCase="true" nzType="input" nzSize="default" [nzActive]="true" style="width:100%">
+        </nz-skeleton-element>
+
+        <ng-container *ngSwitchCase="false">
+          <span nz-icon [nzType]="'global'" [nzTheme]="'outline'"></span> {{organization}}
+        </ng-container>
+      </p>
+      <ul nz-menu [nzMode]="'inline'">
+        <li nz-menu-item [routerLink]="'overview'"
+            [routerLinkActive]="['ant-menu-item-selected']" [routerLinkActiveOptions]="{exact:false}" [style.padding-left]="'14px'">Overview
+        </li>
+        <li nz-menu-item [routerLink]="'projects'" [routerLinkActive]="['ant-menu-item-selected']"
+            [routerLinkActiveOptions]="{exact:false}" [style.padding-left]="'14px'">Projects
+        </li>
+        <li nz-menu-item [routerLink]="'members'" [routerLinkActive]="['ant-menu-item-selected']"
+            [routerLinkActiveOptions]="{exact:false}" [style.padding-left]="'14px'">Members
+        </li>
+        <li nz-submenu [nzTitle]="'Time Reports'" [nzOpen]="opened" class="reporting-submenu">
+          <ul>
+            <li nz-menu-item [routerLink]="'time-sheet-overview'"
+                [routerLinkActive]="['ant-menu-item-selected']" [routerLinkActiveOptions]="{exact:false}" class="ps-26">Overview
+            </li>
+            <li nz-menu-item [routerLink]="'time-sheet-projects'"
+                [routerLinkActive]="['ant-menu-item-selected']" [routerLinkActiveOptions]="{exact:false}" class="ps-26">Projects
+            </li>
+            <li nz-menu-item [routerLink]="'time-sheet-members'"
+                [routerLinkActive]="['ant-menu-item-selected']" [routerLinkActiveOptions]="{exact:false}" class="ps-26">Members
+            </li>
+            <li nz-menu-item [routerLink]="'time-sheet-estimated-vs-actual'"
+                [routerLinkActive]="['ant-menu-item-selected']" [routerLinkActiveOptions]="{exact:false}" class="ps-26 d-block ellipsis-trigger">Estimated vs Actual
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </nz-sider>
+    <nz-layout class="reporting-page-content position-relative" [ngClass]="collapsed ? 'full': ''">
+      <nz-content>
+        <button class="trigger" nz-icon [nzType]="collapsed ? 'right-circle' : 'left-circle'"
+                (click)="collapsed = !collapsed"></button>
+        <div class="inner-content">
+          <router-outlet></router-outlet>
+        </div>
+      </nz-content>
+    </nz-layout>
+  </nz-layout>
+</div>

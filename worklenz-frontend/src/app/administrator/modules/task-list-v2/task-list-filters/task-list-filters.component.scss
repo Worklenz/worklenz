@@ -1,0 +1,27 @@
+.members-menu {
+  max-height: 250px;
+  overflow: hidden;
+  overflow-y: auto;
+}
+
+.filter-active {
+  background: #E6F7FF;
+  border: 1px solid #1890FF;
+}
+
+.lg-only {
+  display: inline-block;
+}
+
+@media(max-width: 1200px) {
+  .mob-p-0 {
+    display: none;
+  }
+  .button-mobile {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+  .lg-only {
+    display: none;
+  }
+}

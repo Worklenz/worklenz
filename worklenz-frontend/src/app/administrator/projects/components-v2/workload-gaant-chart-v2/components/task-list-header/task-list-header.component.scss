@@ -1,0 +1,60 @@
+.flex-row {
+  padding: 4px 11px;
+  background-color: #fafafa;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  border-right: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+}
+
+.task-check {
+  text-align: center;
+  padding: 8px 6px 8px 6px !important;
+  border-left: 1px solid #f0f0f0;
+  position: sticky;
+  left: 0px;
+  z-index: 1;
+}
+
+.task-name {
+  width: 450px;
+  min-width: 450px;
+  position: sticky;
+  left: 29px;
+  z-index: 1;
+
+  nz-filter-trigger {
+    margin-left: auto;
+  }
+
+  &.left-0 {
+    left: 47px;
+  }
+
+}
+
+.task-status {
+  width: 120px;
+  min-width: 120px;
+}
+
+.task-phase {
+  width: 150px;
+  min-width: 150px;
+}
+
+.task-priority {
+  width: 120px;
+  min-width: 120px;
+}
+
+.task-start-date, .task-due-date {
+  width: 150px;
+  min-width: 150px;
+}
+
+.visibility-hidden {
+  visibility: hidden;
+}

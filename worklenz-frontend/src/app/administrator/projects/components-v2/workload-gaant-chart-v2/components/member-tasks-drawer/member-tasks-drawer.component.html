@@ -1,0 +1,104 @@
+<nz-drawer
+  (nzOnClose)="handleCancel()"
+  (nzVisibleChange)="onVisibilityChange($event)"
+  [(nzVisible)]="show"
+  [nzWidth]="920"
+  [nzBodyStyle]="BODY_STYLE"
+  [nzCloseIcon]="iconTemplate"
+  [nzTitle]="titleTemplate"
+  [nzWrapClassName]="'task-form-drawer-opened task-view'"
+>
+  <div class="d-block">
+    <ng-container *nzDrawerContent>
+      <nz-tabset [nzAnimated]="false" [nzType]="'card'" class="task-drawer-tabset pb-0"
+                 [nzSelectedIndex]="activeTab"
+                 (nzSelectedIndexChange)="tabChange($event)">
+        <nz-tab [nzTitle]="'Overview'">
+          <worklenz-overview-tab [teamMember]="teamMember" [projectId]="projectId"></worklenz-overview-tab>
+        </nz-tab>
+        <nz-tab [nzTitle]="'All Tasks'"></nz-tab>
+        <nz-tab [nzTitle]="'Tasks without Start date'"></nz-tab>
+        <nz-tab [nzTitle]="'Tasks without End date'"></nz-tab>
+        <nz-tab [nzTitle]="'Tasks without Start & End dates'"></nz-tab>
+      </nz-tabset>
+
+      <nz-space *ngIf="activeTab != 0" class="align-items-center p-skel mb-3">
+        <label *nzSpaceItem class="ms-1">Group by: </label>
+        <button *nzSpaceItem nz-button nz-dropdown [nzTrigger]="'click'" class="ms-1" [nzDropdownMenu]="groupByMenu"
+                [nzClickHide]="true">
+        <span nz-tooltip [nzTooltipTitle]="selectedGroup.label">
+          {{selectedGroup.label | ellipsis: 15}}
+        </span>
+          <span nz-icon [nzType]="'caret-down'"></span>
+        </button>
+        <nz-dropdown-menu #groupByMenu>
+          <ul nz-menu>
+            <li *ngFor="let item of service.GROUP_BY_OPTIONS; trackBy: trackById" class="m-0"
+                [nzSelected]="item.value === selectedGroup.value"
+                (click)="changeGroup(item)" nz-menu-item>
+              <span nz-typography>{{item.label}}</span>
+            </li>
+          </ul>
+        </nz-dropdown-menu>
+      </nz-space>
+
+      <nz-skeleton [nzActive]="true" [nzLoading]="loadingGroups" [class.p-4]="loading" class="p-skel">
+        <ng-container *ngIf="teamMember">
+          <ng-container *ngIf="activeTab != 0">
+            <div *rxFor="let group of groups; trackBy: trackById" class="mb-3">
+              <div class="group-heading cursor-pointer" [style.background-color]="group.color_code"
+                   (click)="toggleCollapse(group)">
+                <span nz-icon [nzType]="group?.isExpand ? 'down' :  'right'" nzTheme="outline" class="me-2"></span>
+                {{group.name}} ({{group.tasks.length}})
+              </div>
+              <div *ngIf="group && group?.isExpand" class="tasks-container">
+                <worklenz-task-list-header [groupId]="group.id"></worklenz-task-list-header>
+                <ng-container *ngFor="let task of group.tasks; trackBy: trackById">
+                  <worklenz-wl-task-list-row
+                    [task]="task"
+                    (onShowSubTasks)="unuseFunc($event, row, group.id)"
+                    (onOpenTask)="openTask($event)"
+                    [class.selected]="selectedTask?.id === task.id"
+                    #row
+                  ></worklenz-wl-task-list-row>
+                </ng-container>
+                <div class="tasks-empty-placeholder d-flex align-items-center mb-0 ps-3"
+                     *ngIf="!group.tasks.length" nz-typography nzType="secondary">
+                  No tasks available
+                </div>
+                <div class="new-task-input" #td1>
+                  <worklenz-member-task-add-container
+                    [projectId]="projectId"
+                    [teamMember]="teamMember"
+                    [groupId]="group.id"
+                    (focusChange)="handleFocusChange($event, td1)">
+                  </worklenz-member-task-add-container>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </ng-container>
+      </nz-skeleton>
+    </ng-container>
+  </div>
+</nz-drawer>
+
+<ng-template #titleTemplate>
+  <nz-avatar *ngIf="teamMember" [nzSize]="28"
+             [nzText]="teamMember.name | firstCharUpper"
+             [style.background-color]="teamMember.avatar_url ? '#ececec' : getColor(teamMember.name)"
+             [nzSrc]="teamMember.avatar_url"
+             class="me-2"></nz-avatar>
+  {{teamMember?.name}}
+</ng-template>
+
+<ng-template #iconTemplate>
+  <span nz-icon [nzType]="'close'" [nzTheme]="'outline'"></span>
+</ng-template>
+
+
+<worklenz-wl-context-menu
+  [teamMemberId]="teamMember ? teamMember.team_member_id : null"
+  [projectId]="projectId"
+  [groups]="groups">
+</worklenz-wl-context-menu>

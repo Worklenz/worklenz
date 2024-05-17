@@ -1,0 +1,136 @@
+.table {
+  //font-size: 12px;
+}
+
+.table, .td {
+  text-align: left;
+}
+
+.table-header {
+  font-weight: 500;
+}
+
+.table-row {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  border-bottom: #e3e3e3 1px solid;
+}
+
+.table-row:last-child {
+  border: none
+}
+
+.td {
+  display: inline-block;
+  padding: 12px 10px;
+}
+
+.td:nth-child(1) {
+  width: calc(1vw);
+}
+
+.td:nth-child(2) {
+  width: calc(1vw);
+}
+
+.td:nth-child(3) {
+  width: calc(11vw);
+}
+
+.td:nth-child(4) {
+  width: calc(9vw);
+  text-align: center;
+}
+
+.td:nth-child(5) {
+  width: 17%;
+  text-align: center;
+}
+
+.td:nth-child(6) {
+  width: 9%;
+  text-align: center;
+}
+
+.td:nth-child(7) {
+  width: 9%;
+  text-align: center;
+}
+
+.td:nth-child(8) {
+  width: 9%;
+  text-align: center;
+}
+
+.td:nth-child(9) {
+  width: 19%;
+  text-align: center;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+//.clickable:hover {
+//  background-color: #e7e7e7;
+//}
+
+.child-row {
+  padding: 5px 50px 20px;
+}
+
+.overdue-tasks-present {
+  color: #ff4400;
+}
+
+nz-card:hover {
+  border-color: #d3d3d3;
+  box-shadow: 0 0 0 1px #f1f1f1, 0 2px 10px 0 rgba(109, 110, 111, 0.08);
+}
+
+.child-td {
+  display: inline-block;
+  padding: 6px 10px;
+}
+
+.child-td:nth-child(1) {
+  width: 3%;
+}
+
+.child-td:nth-child(2) {
+  width: 25%;
+}
+
+.child-td:nth-child(3) {
+  width: 10%;
+}
+
+.child-td:nth-child(4) {
+  width: 12%;
+}
+
+.child-td:nth-child(5) {
+  width: 8%;
+}
+
+.child-td:nth-child(6) {
+  width: 15%;
+}
+
+.child-td:nth-child(7) {
+  width: 10%;
+}
+
+.child-td:nth-child(8) {
+  width: 13%;
+}
+
+.expanded-panel {
+  background-color: #f0f2f5;
+}
+
+.no-data-img-holder {
+  width: 100px;
+  margin-top: 42px;
+}

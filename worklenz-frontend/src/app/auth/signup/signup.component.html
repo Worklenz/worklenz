@@ -1,0 +1,79 @@
+<div class="text-center">
+  <img alt="Worklenz" height="50" [ngSrc]="'/assets/images/logo.png'" width="235">
+</div>
+
+<div class="text-muted mb-4 mt-1 text-center">Create your account.</div>
+
+<nz-spin [nzSpinning]="loading || validating">
+  <form (submit)="validate()" [formGroup]="form" class="login-form" nz-form>
+
+    <nz-form-item>
+      <nz-form-control [nzErrorTip]="'Please input your name!'">
+        <label class="d-block mb-1" for="full-name">Full name</label>
+        <nz-input-group [nzPrefixIcon]="'user'" [nzSize]="'large'">
+          <input #nameInput [formControlName]="'name'" id="full-name" nz-input placeholder="Enter your full name"
+                 type="text"/>
+        </nz-input-group>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-control [nzErrorTip]="'Please input your email!'">
+        <label class="d-block mb-1" for="email">Email</label>
+        <nz-input-group [nzPrefixIcon]="'mail'" [nzSize]="'large'">
+          <input [formControlName]="'email'" id="email" nz-input placeholder="Enter your email" type="email"/>
+        </nz-input-group>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-control [nzErrorTip]="'Please input your Password!'" [nzExtra]="passwordNote">
+        <label class="d-block mb-1" for="password">
+          Password
+          <span *ngIf="hasPassword && passwordStrength">({{passwordStrength.text}})</span>
+        </label>
+        <nz-input-group [nzSuffix]="suffixTemplate" [nzPrefixIcon]="'lock'" [nzSize]="'large'">
+          <input [formControlName]="'password'" [type]="passwordVisible ? 'text' : 'password'" nz-input
+                 id="password"
+                 placeholder="Enter a strong password"/>
+        </nz-input-group>
+        <ng-template #suffixTemplate>
+        <span (click)="passwordVisible = !passwordVisible" [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
+              nz-icon></span>
+        </ng-template>
+      </nz-form-control>
+    </nz-form-item>
+
+    <ng-template #passwordNote>
+      <span nz-typography [nzType]="'secondary'" style="font-size: 12px;">{{passwordPolicy}}</span>
+    </ng-template>
+
+    <nz-form-item>
+      <nz-form-control>
+        <p class="mb-0">
+          By signing up, you will agree to our
+          <a href="/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a> and
+          <a href="/terms-of-use">Terms of Use</a>.
+        </p>
+      </nz-form-control>
+    </nz-form-item>
+
+    <button [nzLoading]="loading" [nzType]="'primary'" class="mt-1" nz-button nzBlock [nzSize]="'large'">Sign up
+    </button>
+    <div class="text-center mt-2">OR</div>
+    <button (click)="signUpWithGoogle()" [nzLoading]="loadingGoogle" [nzType]="'default'" class="mt-1" nz-button
+            nzBlock [nzSize]="'large'"
+            type="button">
+      <img alt="Worklenz" class="me-2" [ngSrc]="'/assets/images/google-icon.png'" width="18" height="18">
+      Sign up with Google
+    </button>
+    <nz-form-item></nz-form-item>
+    <nz-form-item class="mb-0">
+      <nz-form-control>
+        <p class="mb-0">
+          Already have an account? <a [routerLink]="['/auth/login']" rel="noopener">Log In</a>
+        </p>
+      </nz-form-control>
+    </nz-form-item>
+  </form>
+</nz-spin>

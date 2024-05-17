@@ -1,0 +1,45 @@
+.file-icon {
+  width: 30px;
+  position: absolute;
+  z-index: 1;
+  background: #fff;
+  top: -7px;
+  left: -7px;
+  border-radius: 4px;
+  padding: 3px 0px;
+  border: 1px solid #d9d9d9;
+}
+
+ngx-doc-viewer {
+  width: 100%;
+  height: 80vh;
+  height: 80vh;
+}
+
+.preview-container {
+  max-width: 1024px;
+}
+
+video {
+  max-width: 100%;
+}
+
+nz-spin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+
+.ant-upload-span{
+  min-height: 86px;
+  max-width: 86px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}

@@ -1,0 +1,37 @@
+<nz-card>
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading" [nzParagraph]="{ rows: 5 }">
+    <nz-table #table [nzData]="projectTemplates" [nzLoading]="loading" class="custom-table"
+              nzPaginationType="small" nzSize="small">
+      <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of table.data" class="actions-row">
+        <td>{{data.name}}</td>
+        <td class="actions-col" nzAlign="center">
+          <div class="actions">
+            <nz-space>
+              <button *nzSpaceItem (click)="editTemplate(data.id, data.name)" nz-button nz-tooltip nzSize="small"
+                      nzTooltipPlacement="top"
+                      nzTooltipTitle="Edit"
+                      nzType="default">
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button *nzSpaceItem (nzOnConfirm)="deleteTemplate(data.id)"
+                      nz-button nz-popconfirm nz-tooltip nzOkText="Yes"
+                      nzPopconfirmTitle="Are you sure?" nzSize="small" nzTooltipPlacement="top"
+                      nzTooltipTitle="Delete"
+                      nzType="default">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</nz-card>

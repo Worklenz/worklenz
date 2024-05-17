@@ -1,0 +1,43 @@
+<nz-card>
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading" [nzParagraph]="{ rows: 5 }">
+    <nz-table #table [nzData]="taskTemplates" [nzLoading]="loading" class="custom-table"
+              nzPaginationType="small" nzSize="small">
+      <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th colspan="2" nzAlign="left" scope="col">Created</th>
+
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of table.data" class="actions-row">
+        <td>{{data.name}}</td>
+        <td>{{data.created_at | fromNow}}</td>
+        <td class="actions-col" nzAlign="center">
+          <div class="actions">
+            <nz-space>
+              <button *nzSpaceItem (click)="editTemplate(data.id)" nz-button nz-tooltip nzSize="small"
+                      nzTooltipPlacement="top"
+                      nzTooltipTitle="Edit"
+                      nzType="default">
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button *nzSpaceItem (nzOnConfirm)="deleteTemplate(data.id)"
+                      nz-button nz-popconfirm nz-tooltip nzOkText="Yes"
+                      nzPopconfirmTitle="Are you sure?" nzSize="small" nzTooltipPlacement="top"
+                      nzTooltipTitle="Delete"
+                      nzType="default">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</nz-card>
+
+<worklenz-task-template-drawer [drawerVisible]="drawerVisible" (onCancelClick)="taskTemplateCancel($event)"
+                               (onCreateOrUpdate)="onCreateOrUpdate()"
+                               [selectedTemplateId]="selectedTemplateId"></worklenz-task-template-drawer>

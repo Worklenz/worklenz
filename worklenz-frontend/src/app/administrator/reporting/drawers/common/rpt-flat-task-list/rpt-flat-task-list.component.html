@@ -1,0 +1,61 @@
+<nz-skeleton [nzLoading]="loading" [nzActive]="true" class="d-block">
+  <div class="d-flex justify-content-between">
+    <nz-input-group style="width: 250px" class="mb-3" [nzSuffix]="suffixIconSearch">
+      <input type="text" nz-input placeholder="Search by name" [(ngModel)]="searchText"/>
+    </nz-input-group>
+    <ng-template #suffixIconSearch>
+      <span nz-icon nzType="search"></span>
+    </ng-template>
+
+    <nz-form-item class="d-flex align-items-center" *ngIf="!disableProjectsFilter">
+      <nz-form-label>Filter by:&nbsp;</nz-form-label>
+      <nz-form-control>
+        <nz-select [(ngModel)]="projectId" [nzPlaceHolder]="'Select project'"
+                   (ngModelChange)="onProjectChange($event)" [nzAllowClear]="true" style="min-width: 125px;">
+          <nz-option *ngFor="let item of projects" [nzValue]="item.id" [nzLabel]="item.name"></nz-option>
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+  </div>
+  <nz-table [nzSize]="'small'" [nzData]="tasks | searchByName: searchText" [nzShowPagination]="true"
+            [nzHideOnSinglePage]="true" #taskTable [nzScroll]="{ x: '300px' }">
+    <thead>
+    <tr>
+      <th nzLeft [nzWidth]="'260px'">Task</th>
+      <th [nzWidth]="'200px'">Project</th>
+      <th [nzWidth]="'160px'">Status</th>
+      <th [nzWidth]="'120px'">Priority</th>
+      <th [nzWidth]="'150px'">Due Date</th>
+      <th [nzWidth]="'160px'">Completed Date</th>
+      <th [nzWidth]="'150px'" class="text-center">Estimated Time</th>
+      <th [nzWidth]="'150px'" class="text-center">Logged Time</th>
+      <th [nzWidth]="'150px'" class="text-center">Overlogged Time</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let data of taskTable.data trackBy: trackBy" class="cursor-pointer"
+        (click)="openTask(data)">
+      <td nzLeft>
+        <small *ngIf="data.parent_task_id" nz-typography [nzType]="'secondary'">
+          <span nz-icon [nzType]="'double-right'" [nzTheme]="'outline'"></span>
+        </small>
+        {{ data.name }}
+      </td>
+      <td>
+        <nz-badge [nzColor]="data.project_color" [nzText]="data.project_name" [nzSize]="'default'"></nz-badge>
+      </td>
+      <td>
+        <nz-tag [nzColor]="data.status_color+'69'">{{data.status_name}}</nz-tag>
+      </td>
+      <td>
+        <nz-tag [nzColor]="data.priority_color+'69'">{{data.priority_name}}</nz-tag>
+      </td>
+      <td>{{ (data.end_date | date: 'MMM dd,yyyy') || '-'}}</td>
+      <td>{{ (data.completed_date | date: 'MMM dd,yyyy') || '-'}}</td>
+      <td class="text-center">{{ data.estimated_string }}</td>
+      <td class="text-center">{{ data.time_spent_string }}</td>
+      <td class="text-center">{{ data.overlogged_time }}</td>
+    </tr>
+    </tbody>
+  </nz-table>
+</nz-skeleton>

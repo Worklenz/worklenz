@@ -1,0 +1,147 @@
+<div class="container">
+  <div class="nz-header mt-3 mb-4">
+    <nz-space class="align-items-center">
+      <span *nzSpaceItem>
+        <button nz-button nzType="text" (click)="onBack()" class="ant-page-header-back-button d-flex align-items-center" style="font-size: 16px">
+          <span nz-icon nzType="arrow-left" nzTheme="outline"></span>
+        </button>
+      </span>
+      <span *nzSpaceItem class="name-input position-relative">
+        <worklenz-template-name [templateId]="templateId" [templateName]="templateName"></worklenz-template-name>
+      </span>
+    </nz-space>
+  </div>
+  <nz-content>
+    <div class="top-section mb-3 mt-3">
+      <worklenz-group-filter *ngIf="templateId" [templateId]="templateId" (onGroupBy)="onGroupByChange($event)"
+                             (onFilterSearch)="handleFilterSearch($event)"
+                             (onPhaseSettingsClick)="openAddColumnDrawer()"
+                             (onCreateStatusClick)="openStatusDrawer()"></worklenz-group-filter>
+    </div>
+
+    <nz-skeleton [nzActive]="true" [nzLoading]="loadingGroups">
+      <div *ngIf="!groups.length" class="pt-5 pb-5">
+        <div class="no-data-img-holder mx-auto mb-4">
+          <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+        </div>
+        <span nz-typography class="mx-auto d-block text-center no-data-text" style="width: max-content;"
+              [ngSwitch]="isGroupByPhase()">
+        </span>
+      </div>
+
+      <div class="tasks-wrapper" cdkDropListGroup>
+        <div *rxFor="let group of groups; trackBy: trackById" class="mb-3">
+          <div class="container px-0">
+            <worklenz-task-list-group-settings
+              [group]="group"
+              [templateId]="templateId"
+              [categories]="categories"
+              (toggle)="toggleGroup($event, panel)"
+              (onCreateOrUpdate)="refreshWithoutLoading()"
+            >
+            </worklenz-task-list-group-settings>
+
+            <div class="panel position-relative" [style.max-height]="!group.tasks.length ? 0 : undefined" #panel>
+              <span class="panel-left-border" [style.background]="group.color_code"></span>
+
+              <div class="tasks-table position-relative">
+                <div class="container px-0 table-container table-1"
+                     cdkDropList
+                     [id]="group.id"
+                     [cdkDropListConnectedTo]="groupIds"
+                     [cdkDropListData]="group"
+                     (cdkDropListDropped)="onDrop($event)" (scroll)="onScroll(scrollPanel)" #scrollPanel>
+                  <div class="border-right">
+
+                    <!-- Group header -->
+                    <worklenz-task-list-header
+                      [groupId]="group.id"
+                      (selectChange)="selectTasksInGroup($event, group)"
+                      (phaseSettingsClick)="openAddColumnDrawer()">
+                    </worklenz-task-list-header>
+
+                    <div class="tasks-empty-placeholder d-flex align-items-center mb-0 ps-3"
+                         *ngIf="!group.tasks.length" nz-typography nzType="secondary">
+                      No tasks available
+                    </div>
+
+                    <!-- Group tasks -->
+                    <ng-container *ngFor="let task of group.tasks; trackBy: trackById">
+                      <worklenz-pt-task-list-row
+                        [task]="task"
+                        (onShowSubTasks)="displaySubTasks($event, row, group.id)"
+                        [class.selected]="selectedTask?.id === task.id"
+                        #row
+                      ></worklenz-pt-task-list-row>
+
+                      <ng-container *ngIf="task.sub_tasks && task.show_sub_tasks">
+                        <div>
+                          <worklenz-pt-task-list-row
+                            *ngFor="let subTask of task.sub_tasks; trackBy: trackById"
+                            [task]="subTask"
+                          ></worklenz-pt-task-list-row>
+
+                          <ng-container *ngIf="templateId && task.id && task.show_sub_tasks">
+                            <div class="d-flex inner-subtask-create cursor-pointer sub-task-background-color" #td>
+                              <div class="new-subtask-divider">
+                                &nbsp;
+                              </div>
+                              <div class="w-100">
+                                <worklenz-add-task-input
+                                  [templateId]="templateId"
+                                  [label]="'Add sub-task'"
+                                  [parentTask]="task.id"
+                                  [groupId]="group.id"
+                                  [subTaskInput]="true"
+                                  (focusChange)="quickTaskFocusChange($event, td, subTaskInput)"
+                                  #subTaskInput>
+                                </worklenz-add-task-input>
+                              </div>
+                            </div>
+                          </ng-container>
+                        </div>
+                      </ng-container>
+                    </ng-container>
+
+                  </div>
+                </div>
+
+                <div class="new-task-input" #td1>
+                  <worklenz-add-task-input
+                    *ngIf="templateId"
+                    [templateId]="templateId"
+                    [groupId]="group.id"
+                    (focusChange)="handleFocusChange($event, td1)"
+                  ></worklenz-add-task-input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nz-skeleton>
+
+  </nz-content>
+</div>
+
+<worklenz-phase-settings-drawer
+  *ngIf="templateId"
+  [templateId]="templateId"
+  [(show)]="displayPhaseModal"
+  (onCreateOrUpdate)="refreshWithoutLoading()"
+  (refresh)="refreshWithoutLoading()"
+></worklenz-phase-settings-drawer>
+
+<worklenz-status-settings-drawer
+  *ngIf="templateId"
+  [statusId]="null"
+  [templateId]="templateId"
+  (onCreateOrUpdate)="refreshWithoutLoading()"
+  [(show)]="displayStatusModal"
+  action="Create"
+></worklenz-status-settings-drawer>
+
+<worklenz-context-menu
+  [templateId]="templateId"
+  [groups]="groups"
+></worklenz-context-menu>

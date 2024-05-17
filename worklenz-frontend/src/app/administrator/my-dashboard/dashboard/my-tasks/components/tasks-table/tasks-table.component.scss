@@ -1,0 +1,46 @@
+
+.tasks-td {
+  padding: 4px 11px;
+  height: 44px;
+}
+
+.project-td {
+  max-width: 200px;
+  width: 200px;
+}
+
+.status-td {
+  max-width: 100px;
+  width: 100px;
+}
+
+.due-date-td {
+  max-width: 125px;
+  width: 125px;
+}
+
+.name-td {
+  position: relative;
+
+  & button {
+    opacity: 0;
+  }
+
+  &:hover button {
+    background: #0a58ca !important;
+  }
+}
+
+.no-data-img-holder {
+  max-width: 64px;
+  margin-top: 24px;
+}
+
+.homepage-table {
+  overflow-y: auto;
+  max-height: 925px;
+}
+
+th {
+  font-weight: 500;
+}

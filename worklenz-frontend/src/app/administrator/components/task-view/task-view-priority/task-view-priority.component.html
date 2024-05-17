@@ -1,0 +1,23 @@
+<nz-form-item *ngIf="service.model.task" class="w-100 mb-2" nz-row>
+  <nz-form-label>Priority</nz-form-label>
+  <nz-form-control nzErrorTip="Priority is required!">
+    <nz-select
+      [nzCustomTemplate]="taskPriorityTemplate"
+      [nzDropdownMatchSelectWidth]="false"
+      [nzShowArrow]="true"
+      [(ngModel)]="service.model.task.priority_id"
+      (ngModelChange)="handlePriorityChange($event)"
+      class="w-auto"
+      [nzPlaceHolder]="'Select priority'">
+      <nz-option *ngFor="let priority of service.model.priorities" [nzLabel]="priority.name" [nzValue]="priority.id"
+                 nzCustomContent>
+        <worklenz-task-priority-label [name]="priority.name"></worklenz-task-priority-label>
+      </nz-option>
+    </nz-select>
+    <ng-template #taskPriorityTemplate let-selected>
+      <div class="ant-select-selection-item-content d-flex align-items-center">
+        <worklenz-task-priority-label [name]="selected.nzLabel"></worklenz-task-priority-label>
+      </div>
+    </ng-template>
+  </nz-form-control>
+</nz-form-item>

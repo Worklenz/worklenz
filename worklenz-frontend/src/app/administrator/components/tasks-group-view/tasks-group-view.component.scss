@@ -1,0 +1,49 @@
+.dropdown-animation {
+  transition: all .1s ease-in;
+}
+
+.expanded {
+  transform: rotate(-90deg);
+}
+
+.chevron::before {
+  border-style: solid;
+  border-width: 0.25em 0.25em 0 0;
+  content: '';
+  display: inline-block;
+  height: 0.45em;
+  left: 0.15em;
+  position: relative;
+  top: 0.15em;
+  transform: rotate(-45deg);
+  vertical-align: top;
+  width: 0.45em;
+}
+
+.chevron.bottom:before {
+  top: 0;
+  transform: rotate(135deg);
+}
+
+.tasks-table {
+  display: table;
+  width: 100%;
+  margin: 5px 0;
+}
+
+.tasks-table-row {
+  display: table-row;
+}
+
+.tasks-table-row:hover {
+  background-color: #eff7fc;
+}
+
+.tasks-table-cell {
+  display: table-cell;
+  padding: 3px 10px;
+}
+
+.tasks-table-body {
+  display: table-row-group;
+}

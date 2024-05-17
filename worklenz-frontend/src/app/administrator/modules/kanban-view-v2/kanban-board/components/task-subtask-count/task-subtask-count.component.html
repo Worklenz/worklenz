@@ -1,0 +1,17 @@
+<div class="subtask-count-section">
+  <nz-tag *ngIf="task.sub_tasks_count"
+          (mouseover)="getSubTasks(task.id)"
+          (nzTooltipVisibleChange)="!$event ? subTasks = [] : null"
+          nz-tooltip [nzTooltipTitle]="subTasksTitle"
+          nzColor="default"
+          style="cursor: help;">{{task.sub_tasks_count}}
+    <span nz-icon nzType="double-right" nzTheme="outline"></span>
+  </nz-tag>
+</div>
+
+<ng-template #subTasksTitle>
+  <div *ngIf="loadingSubTasks">Loading...</div>
+  <p class="mb-0 border-bottom" *ngIf="!loadingSubTasks">Sub-tasks</p>
+  <p class="mb-0"
+     *ngFor="let s of subTasks;trackBy: trackByFn">{{s.name}}</p>
+</ng-template>

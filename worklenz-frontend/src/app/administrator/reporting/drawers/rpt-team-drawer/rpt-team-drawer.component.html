@@ -1,0 +1,59 @@
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="show"
+  [nzPlacement]="'right'"
+  [nzTitle]="teamDrawerTitle"
+  [nzContent]="teamDrawerContent"
+  (nzOnClose)="close()"
+  [nzWidth]="900"
+></nz-drawer>
+
+<ng-template #teamDrawerTitle>
+  <div class="d-flex align-items-center w-100">
+    <p class="mb-0">
+      <span nz-icon [nzType]="'bank'" [nzTheme]="'outline'" class="ms-2"></span>
+      {{team?.name}}
+    </p>
+    <div class="ms-auto">
+      <nz-space>
+        <button *nzSpaceItem nz-button [nzType]="'primary'"  nz-dropdown [nzDropdownMenu]="exportDropdown" [nzPlacement]="'bottomRight'" [nzLoading]="exporting">
+          Export <span nz-icon [nzType]="'down'"></span>
+        </button>
+        <nz-dropdown-menu #exportDropdown="nzDropdownMenu">
+          <ul nz-menu>
+            <li nz-menu-item (click)="exportProjects()">Projects</li>
+            <li nz-menu-item (click)="exportMembers()">Members</li>
+          </ul>
+        </nz-dropdown-menu>
+      </nz-space>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #teamDrawerContent>
+  <ng-container *ngIf="team; else invalidTeam">
+    <nz-tabset [nzType]="'card'">
+      <nz-tab [nzTitle]="'Overview'">
+        <worklenz-rpt-team-overview [teamId]="team.id"></worklenz-rpt-team-overview>
+      </nz-tab>
+      <nz-tab [nzTitle]="'Projects (' + projectsLength + ')'">
+        <worklenz-rpt-team-drawer-projects
+          [teamId]="team.id"
+          (length)="projectsLength = $event"
+          (selectProject)="openProject($event)"
+        ></worklenz-rpt-team-drawer-projects>
+      </nz-tab>
+      <nz-tab [nzTitle]="'Members (' + membersLength + ')'">
+        <worklenz-rpt-team-drawer-members
+          [teamId]="team.id"
+          (length)="membersLength = $event"
+          (selectMember)="openMember($event, null)"
+        ></worklenz-rpt-team-drawer-members>
+      </nz-tab>
+    </nz-tabset>
+  </ng-container>
+</ng-template>
+
+<ng-template #invalidTeam>
+  <strong class="text-center">Invalid team. Please reload the page and try again.</strong>
+</ng-template>

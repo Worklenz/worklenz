@@ -1,0 +1,16 @@
+.chart-details {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.no-data-img-holder {
+  width: 65px;
+}
+
+.list-clickable {
+  cursor: pointer;
+  transition: 0.25s all;
+  &:hover {
+    color: #1890ff;
+  }
+}

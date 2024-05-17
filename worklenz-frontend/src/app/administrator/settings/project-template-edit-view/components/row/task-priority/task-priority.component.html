@@ -1,0 +1,15 @@
+<div class="py-0">
+  <nz-select [style.background]="task.priority_color"
+             [(ngModel)]="task.priority"
+             (ngModelChange)="handlePriorityChange($event, task)"
+             [nzLoading]="loading"
+             (nzOpenChange)="handleOpen($event)"
+             [nzDropdownMatchSelectWidth]="false" [nzSize]="'small'"
+             class="rounded-pill custom-select">
+    <nz-option *ngFor="let item of priorities; trackBy: trackById"
+               [nzValue]="item.id" [nzLabel]="item.name"
+               [nzCustomContent]="true">
+      <worklenz-task-priority-label [name]="item.name"></worklenz-task-priority-label>
+    </nz-option>
+  </nz-select>
+</div>

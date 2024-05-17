@@ -1,0 +1,9 @@
+<button (click)="menu.toggle(key)"
+        [nzTooltipTitle]="menu.isPinned(key) ? 'Click to unpin this from the main menu' : 'Click to pin this into the main menu'"
+        nz-button nz-tooltip
+        nzShape="circle"
+        nzType="link"
+>
+        <span [nzTheme]="menu.isPinned(key) ? 'fill' : 'outline'" class="pin-button" nz-icon
+              nzType="pushpin"></span>
+</button>

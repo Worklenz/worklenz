@@ -1,0 +1,86 @@
+<nz-card [nzExtra]="searchTemplate">
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading" [nzParagraph]="{ rows: 5 }">
+    <nz-table
+      #table
+      (nzQueryParams)="onQueryParamsChange($event)"
+      [nzData]="model.data || []"
+      [nzFrontPagination]="false"
+      [nzLoading]="loading"
+      [nzPageIndex]="pageIndex"
+      [nzPageSizeOptions]="paginationSizes"
+      [nzPageSize]="pageSize"
+      [nzTotal]="total"
+      class="custom-table"
+      nzShowSizeChanger
+      nzSize="small"
+    >
+      <thead>
+      <tr>
+        <th [nzSortFn]="true" colspan="2" nzAlign="left" nzColumnKey="name" scope="col">Name</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of table.data" class="actions-row">
+        <td (click)="edit(data.id)" class="cursor-pointer">{{ data.name }}</td>
+        <td class="actions-col">
+          <div class="actions">
+            <nz-space>
+              <button (click)="edit(data.id)" *nzSpaceItem nz-button nz-tooltip nzSize="small" nzTooltipPlacement="top"
+                      nzTooltipTitle="Edit"
+                      nzType="default">
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button (nzOnConfirm)="delete(data.id)" *nzSpaceItem
+                      nz-button nz-popconfirm nz-tooltip nzOkText="Yes"
+                      nzPopconfirmTitle="Are you sure?" nzSize="small" nzTooltipPlacement="top"
+                      nzTooltipTitle="Delete"
+                      nzType="default">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+
+  <ng-template #searchTemplate>
+    <nz-space>
+      <form (ngSubmit)="searchJobTitles()" *nzSpaceItem [formGroup]="searchForm" [nzLayout]="'vertical'" nz-form>
+        <nz-input-group [nzSuffix]="suffixIconSearch">
+          <input [formControlName]="'search'" nz-input placeholder="Search by name" type="text"/>
+        </nz-input-group>
+        <ng-template #suffixIconSearch>
+          <span nz-icon nzType="search"></span>
+        </ng-template>
+      </form>
+      <button (click)="showJobTitlesModal = true" *nzSpaceItem nz-button nzType="primary">
+        {{action}} Job Title
+      </button>
+      <worklenz-toggle-menu-button *nzSpaceItem [key]="menu.JOB_TITLES_MENU"></worklenz-toggle-menu-button>
+    </nz-space>
+  </ng-template>
+</nz-card>
+
+<nz-drawer
+  (nzOnClose)="closeModal()"
+  [(nzVisible)]="showJobTitlesModal"
+  [nzClosable]="true"
+  nzPlacement="right"
+  nzTitle="{{action}} Title"
+>
+  <ng-container *nzDrawerContent>
+    <nz-spin [nzSpinning]="loadingSingle">
+      <form (submit)="handleOk()" [formGroup]="form" [nzLayout]="'vertical'" nz-form>
+        <nz-form-item>
+          <nz-form-label [nzSpan]="null" nzRequired>Name</nz-form-label>
+          <nz-form-control [nzSpan]="null" nzErrorTip="Please enter a name!">
+            <input [formControlName]="'name'" nz-input placeholder="Name"/>
+          </nz-form-control>
+        </nz-form-item>
+        <button nz-button nzBlock nzType="primary" type="submit">{{action}}</button>
+      </form>
+    </nz-spin>
+  </ng-container>
+</nz-drawer>

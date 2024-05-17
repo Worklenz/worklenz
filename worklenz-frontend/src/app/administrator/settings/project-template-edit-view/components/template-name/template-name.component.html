@@ -1,0 +1,10 @@
+<h4 *ngIf="!showInput" nz-typography class="mb-0" (click)="focusInput()">{{templateName}}</h4>
+<input *ngIf="showInput" nz-input placeholder="Template Name" type="text" class="temp-name-input"
+       [ngClass]="isEmpty ? 'error' : ''"
+       [(ngModel)]="templateName"
+       (ngModelChange)="validate()"
+       (blur)="onBlur()"
+       #input
+/>
+<small *ngIf="isEmpty" nz-typography nzType="danger" class="error-text">Name cannot be empty!</small>
+

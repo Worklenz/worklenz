@@ -1,0 +1,96 @@
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="show"
+  [nzPlacement]="'right'"
+  [nzTitle]="title"
+  [nzContent]="content"
+  (nzOnClose)="close()"
+  [nzWidth]="750"
+  [nzCloseIcon]="closeIcon"
+></nz-drawer>
+
+<ng-template #content>
+  <nz-skeleton [nzLoading]="loading" [nzActive]="true" class="d-block">
+    <nz-table [nzSize]="'small'" [nzData]="projects" [nzShowPagination]="true"
+              [nzHideOnSinglePage]="true"
+              [nzScroll]="{ x: '300px' }" #projectsTable>
+      <thead>
+      <tr>
+        <th nzLeft [nzWidth]="'300px'">Name</th>
+        <th [nzWidth]="'120px'">Start Date</th>
+        <th [nzWidth]="'120px'">End Date</th>
+        <th [nzWidth]="'150px'">Days Left/Overdue</th>
+        <th [nzWidth]="'120px'">Estimated Time</th>
+        <th [nzWidth]="'120px'">Actual Time</th>
+        <th [nzWidth]="'150px'">Status</th>
+        <th [nzWidth]="'120px'">Health</th>
+        <th [nzWidth]="'120px'">Category</th>
+        <th [nzWidth]="'180px'">Project Manager</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of projectsTable.data; trackBy: trackByProject">
+        <td nzLeft style="z-index: 11">
+            <nz-space>
+              <nz-badge *nzSpaceItem [nzColor]="data.color_code"></nz-badge>
+              <span *nzSpaceItem class="ellipsis" style="max-width: 260px" nz-tooltip
+                    [nzTooltipTitle]="data.name">{{data.name}}</span>
+            </nz-space>
+        </td>
+        <td>{{ (data.start_date | date: 'MMM dd,yyyy') || '-'}}</td>
+        <td>{{ (data.end_date | date: 'MMM dd,yyyy') || '-'}}</td>
+        <td>
+          <ng-container *ngIf="data.days_left !== null; else naTemplate">
+            <ng-container [ngSwitch]="data.is_overdue">
+              <span *ngSwitchCase="true" style="color: #f37070;">{{ data.days_left }} days overdue</span>
+              <span *ngSwitchCase="false">
+                <span *ngIf="data.is_today" style="color: #80ca79;">Today</span>
+                <span *ngIf="!data.is_today" style="color: #80ca79;"> {{ data.days_left }} days left</span>
+              </span>
+            </ng-container>
+          </ng-container>
+        </td>
+        <td>{{data.estimated_time_string}}</td>
+        <td>{{data.actual_time_string}}</td>
+        <td>
+          <span nz-icon [nzType]="data?.status_icon | safeString" [nzTheme]="'outline'" [style.color]="data?.status_color"></span>
+          {{ data?.status_name }}
+        </td>
+        <td [ngSwitch]="!!data.project_health">
+          <ng-container *ngSwitchCase="true">
+            <nz-tag [nzColor]="data.health_color+'69'">{{data.project_health | ellipsis : 12}}</nz-tag>
+          </ng-container>
+          <worklenz-na *ngSwitchCase="false"></worklenz-na>
+        </td>
+        <td [ngSwitch]="!!data.category_name">
+          <ng-container *ngSwitchCase="true">
+            <nz-tag [nzColor]="data.category_color" [style]="'color: white'">{{data.category_name | ellipsis : 12}}</nz-tag>
+          </ng-container>
+          <worklenz-na *ngSwitchCase="false"></worklenz-na>
+        </td>
+        <td [ngSwitch]="!!data.project_manager">
+          <ng-container *ngSwitchCase="true" [nz-tooltip]="data.project_manager.name">
+            <nz-avatar class="me-2" [nzSize]="28" [nzText]="data.project_manager.name | firstCharUpper"
+                       [nzSrc]="data.project_manager.avatar_url"
+                       [style.background-color]="data.project_manager.avatar_url ? '#ececec' : getColor(data.project_manager.name)"></nz-avatar>
+            <span>{{data.project_manager.name | ellipsis: 15}}</span>
+          </ng-container>
+          <worklenz-na *ngSwitchCase="false"></worklenz-na>
+         </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</ng-template>
+
+<ng-template #title>
+  <span nz-typography class="title-text">{{titleText}}'s Projects</span>
+</ng-template>
+
+<ng-template #closeIcon>
+  <span nz-icon nzType="close" nzTheme="outline"></span>
+</ng-template>
+
+<ng-template #naTemplate>
+  <worklenz-na></worklenz-na>
+</ng-template>

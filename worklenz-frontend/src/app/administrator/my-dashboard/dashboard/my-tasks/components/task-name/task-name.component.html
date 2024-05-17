@@ -1,0 +1,27 @@
+<span *ngIf="task && task?.is_task" class="mb-0">
+
+  <span *ngIf="task.is_sub_task" nz-tooltip [nzTooltipTitle]="subTasksTitle">
+    <small nz-typography nzType="secondary">
+      <span nz-icon nzType="double-right" nzTheme="outline"></span>
+    </small>
+  </span>
+  <span nz-tooltip [nzTooltipTitle]="task.name">
+    {{task.name | ellipsis : 50}}
+  </span>
+</span>
+
+<span *ngIf="task && !task?.is_task" class="mb-0" nz-tooltip
+      [nzTooltipTitle]="task.name">{{task.name | ellipsis : 100}}</span>
+
+<button *ngIf="task && task.is_task" nz-tooltip nz-button (click)="openTask(task)"
+        [nzTooltipTitle]="'Click open task form'"
+        [nzTooltipPlacement]="'top'" [nzTooltipMouseEnterDelay]="2"
+        class="plus-icon"
+        [nzType]="'text'">
+  <span nz-icon [nzType]="'expand-alt'" [nzTheme]="'outline'"></span>
+  Open
+</button>
+
+<ng-template #subTasksTitle>
+  <p class="mb-0">Sub-task of {{task?.parent_task_name}}</p>
+</ng-template>
