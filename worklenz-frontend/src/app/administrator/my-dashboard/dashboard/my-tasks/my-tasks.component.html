@@ -1,0 +1,277 @@
+<div class="card-top">
+  <div class="d-flex">
+    <nz-space class="align-items-center">
+      <p *nzSpaceItem nz-typography class="mb-0 card-title">Tasks</p>
+      <nz-select *nzSpaceItem [(ngModel)]="selectedTasksMode" (ngModelChange)="handleModeChange($event)">
+        <nz-option *ngFor="let opt of tasksModes" [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+      </nz-select>
+    </nz-space>
+    <div class="ms-auto">
+      <div class="d-flex">
+        <nz-space>
+          <button *nzSpaceItem nz-button nz-tooltip nzShape="circle" nzTooltipTitle="Refresh tasks"
+                  nzType="default" (click)="emitGetTasks()">
+            <span [nzSpin]="service.loadingTasks" nz-icon nzTheme="outline" nzType="sync"></span>
+          </button>
+          <nz-segmented *nzSpaceItem [nzOptions]="options" [(ngModel)]="activeFilter"
+                        (ngModelChange)="handleViewChange($event)"></nz-segmented>
+        </nz-space>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card-data mb-3">
+  <ng-container *ngIf=" activeFilter === 0 ">
+    <nz-skeleton [nzActive]="true" [nzLoading]="loading">
+      <nz-tabset nzType="card" class="mob-overflow">
+        <nz-tab [nzTitle]="'All ('+ this.service.tasksModel.total + ')'"
+                (nzClick)="handleTasksTabChange('All')"></nz-tab>
+        <nz-tab [nzTitle]="'Today (' +  this.service.tasksModel.today + ')'"
+                (nzClick)="handleTasksTabChange('Today')"></nz-tab>
+        <nz-tab [nzTitle]="'Upcoming (' +  this.service.tasksModel.upcoming + ')'"
+                (nzClick)="handleTasksTabChange('Upcoming')"></nz-tab>
+        <nz-tab [nzTitle]="'Overdue (' +  this.service.tasksModel.overdue + ')'"
+                (nzClick)="handleTasksTabChange('Overdue')"></nz-tab>
+        <nz-tab [nzTitle]="'No due date (' +  this.service.tasksModel.no_due_date + ')'"
+                (nzClick)="handleTasksTabChange('NoDueDate')"></nz-tab>
+      </nz-tabset>
+    </nz-skeleton>
+    <worklenz-tasks-table></worklenz-tasks-table>
+  </ng-container>
+
+  <ng-container *ngIf=" activeFilter === 1 ">
+    <nz-skeleton [nzActive]="true" [nzLoading]="loading">
+      <div class="calendar">
+        <nz-calendar (nzSelectChange)="selectDateChange($event)"
+                     class="home-calendar"></nz-calendar>
+        <nz-alert nzType="success"
+                  nzMessage="Tasks due on : {{service.tasksViewConfig?.selected_date | date:'MMM d, y'}}"
+                  [nzIcon]="customIconTemplate"
+                  nzShowIcon class="mt-2 mb-3"></nz-alert>
+        <ng-template #customIconTemplate>
+          <span nz-icon nzType="clock-circle" nzTheme="outline"></span>
+        </ng-template>
+      </div>
+      <worklenz-tasks-table></worklenz-tasks-table>
+    </nz-skeleton>
+  </ng-container>
+</div>
+
+<!--<nz-card [nzExtra]="searchTemplate" [nzTitle]="titleTemplate" class="h-100">-->
+<!--  <nz-skeleton [nzActive]="true" [nzLoading]="loading">-->
+<!--    <div class="task-add-section">-->
+<!--      <div>-->
+<!--        <form nz-form nzLayout="inline">-->
+<!--          <nz-form-item class="mb-0 me-2 form-task-name">-->
+<!--            <nz-form-control>-->
+<!--              <div class="d-flex align-items-center">-->
+<!--                <input nz-input [ngModelOptions]="{standalone: true}" [(ngModel)]="taskNameInput" tabindex="1"-->
+<!--                       (ngModelChange)="taskNameInputChange($event)" (focus)="taskInputFocus()" (blur)="taskInputBlur()"-->
+<!--                       class="task-name-input-field task-input-default" placeholder="+ Add Task" #task_input-->
+<!--                       (keydown)="taskNameKeyDown($event)"/>-->
+<!--              </div>-->
+<!--              <div class="form-describe ms-2 d-grid">-->
+<!--                <small id="tab_text" class="text-dark d-none" nz-typography nzType="secondary">-->
+<!--                  <span *ngIf="activeFilter !== 3">Hit "Enter" or "Tab" to go to next.</span>-->
+<!--                  <span *ngIf="activeFilter === 3">Hit "Enter" to create.</span>-->
+<!--                </small>-->
+<!--              </div>-->
+<!--            </nz-form-control>-->
+<!--          </nz-form-item>-->
+<!--          <nz-form-item class="mb-0 me-2 form-task-due-date" *ngIf="tabIndex === 2|| tabIndex === 3">-->
+<!--            <nz-form-control>-->
+<!--              <nz-select #due_date_selector [ngModelOptions]="{standalone: true}" [(ngModel)]="dueDate" tabindex="2"-->
+<!--                         [compareWith]="compareFn" (ngModelChange)="dueDateFieldValidate($event,due_date_selector)"-->
+<!--                         (keydown)="dueDateKeyDown($event,task_input)"-->
+<!--                         (nzBlur)="dueDateFieldValidate($event,due_date_selector)"-->
+<!--                         [nzDropdownMatchSelectWidth]="false" [nzShowArrow]="false" nzPlaceHolder="Due Date"-->
+<!--                         class="task-due-date-selector task-input-default" [(nzOpen)]="dueDateOpened">-->
+<!--                <nz-option *ngFor="let option of dueDateOptionsList" [nzValue]="option"-->
+<!--                           [nzLabel]="option.label"></nz-option>-->
+<!--              </nz-select>-->
+<!--            </nz-form-control>-->
+<!--          </nz-form-item>-->
+<!--          <nz-form-item class="mb-0 me-0 form-task-project" *ngIf="tabIndex === 3">-->
+<!--            <nz-form-control>-->
+<!--              <nz-select #project_selector nzShowSearch [ngModelOptions]="{standalone: true}" [(ngModel)]="projectId"-->
+<!--                         (ngModelChange)="createMainTask($event)" [nzOpen]="true" [nzDropdownMatchSelectWidth]="false"-->
+<!--                         [nzShowArrow]="false" nzPlaceHolder="Project" [(nzOpen)]="projectSelectOpened"-->
+<!--                         class="task-project-selector task-input-default">-->
+<!--                <nz-option *ngFor="let item of myProjects" [nzValue]="item.id" nzLabel="{{item.name}}">-->
+<!--                </nz-option>-->
+<!--              </nz-select>-->
+<!--            </nz-form-control>-->
+<!--          </nz-form-item>-->
+<!--        </form>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--    <nz-table #table (nzQueryParams)="onQueryParamsChange($event)" [nzData]="model.data || []"-->
+<!--              [nzFrontPagination]="false" [nzLoading]="loading" [nzPageIndex]="pageIndex"-->
+<!--              [nzPageSizeOptions]="paginationSizes"-->
+<!--              [nzPageSize]="pageSize" [nzScroll]="{ y: '340px', x: 'auto' }" [nzTotal]="total"-->
+<!--              class="custom-table thead-height-0 tasks-table" nzShowSizeChanger nzSize="small"-->
+<!--              [nzNoResult]="noDataTemplate">-->
+<!--      <thead>-->
+<!--      <tr>-->
+<!--        <th colspan="3" nzAlign="left" scope="col"></th>-->
+<!--      </tr>-->
+<!--      </thead>-->
+<!--      <tbody>-->
+<!--      <tr *ngFor="let data of table.data" class="actions-row" #row_elem [class.mark-done]="data.done">-->
+<!--        <td class="d-flex" nz-typography>-->
+<!--          <nz-select *ngIf="data.project_id" [nzShowArrow]="false"-->
+<!--                     (nzOpenChange)="getStatusesByTaskId(data.project_id)" [style.background-color]="data.status_color"-->
+<!--                     [(ngModel)]="data.status" (ngModelChange)="handleStatusChange($event, data)"-->
+<!--                     [nzDropdownMatchSelectWidth]="false" [nzSize]="'small'" class="custom-select status-selector">-->
+<!--            <ng-container>-->
+<!--              <ng-container>-->
+<!--                <nz-option *ngFor="let item of taskStatuses" [nzValue]="item.id" nzLabel="{{item.name}}"-->
+<!--                           nzCustomContent>-->
+<!--                  <nz-badge [nzColor]="item.color_code" [nzText]="item?.name || null"></nz-badge>-->
+<!--                </nz-option>-->
+<!--              </ng-container>-->
+<!--            </ng-container>-->
+<!--          </nz-select>-->
+<!--          <div *ngIf="!data.project_id" class="me-2">-->
+<!--              <span nz-icon class="cursor-pointer" (click)="todoMarkAsDone(data.id,row_elem, data.done)"-->
+<!--                    nzType="check-circle"-->
+<!--                    [nzTheme]="'twotone'" [nzTwotoneColor]="'#3b7ad4'"></span>-->
+<!--          </div>-->
+<!--          <div class="single-project-brief" *ngIf="!data.project_id">-->
+<!--            <nz-space class="d-flex align-items-center w-100">-->
+<!--              <p nz-typography nzEllipsis-->
+<!--                 class="single-task-name cursor-pointer" *nzSpaceItem nz-tooltip [nzTooltipTitle]="data.name">-->
+<!--                {{data.name | ellipsis: 35}}</p>-->
+<!--            </nz-space>-->
+<!--          </div>-->
+<!--          <div class="single-project-brief" *ngIf="data.project_id">-->
+<!--            <nz-space class="d-flex align-items-center w-100">-->
+<!--              <p nz-typography nzEllipsis (click)="openTaskDrawer(data.id, data.project_id)"-->
+<!--                 class="single-task-name cursor-pointer" *nzSpaceItem nz-tooltip [nzTooltipTitle]="data.name">-->
+<!--                {{data.name | ellipsis: 35}}</p>-->
+<!--            </nz-space>-->
+<!--            <nz-space *ngIf="data.project_id" class="position-relative cursor-pointer task-due-date-elem">-->
+<!--              <nz-date-picker class="border-0 bg-transparent w-100 date-text-small" [(ngModel)]="data.end_date"-->
+<!--                              (ngModelChange)="handleEndDateChange($event, data)" nzFormat="MMM dd,yyyy"-->
+<!--                              [nzSuffixIcon]="''"-->
+<!--                              [nzPlaceHolder]="'Set due date'" nzBorderless></nz-date-picker>-->
+<!--            </nz-space>-->
+<!--          </div>-->
+<!--        </td>-->
+<!--        <td class="text-end">-->
+<!--          <div class="single-task-project cursor-pointer">-->
+<!--            <div [style.background-color]="data.project_color" id="block" nz-tooltip-->
+<!--                 (click)="goToProject(data.project_id)"-->
+<!--                 [nzTooltipTitle]="data.project_name"></div>-->
+<!--            <div id="text">{{data.project_name | ellipsis: 20}}</div>-->
+<!--          </div>-->
+<!--          <div *ngIf="!data.project_id">-->
+<!--            <nz-space>-->
+<!--              <button (click)="editItem(data)" *nzSpaceItem nz-button nz-tooltip nzSize="small"-->
+<!--                      nzTooltipPlacement="top"-->
+<!--                      nzTooltipTitle="Edit"-->
+<!--                      nzType="default">-->
+<!--                <span nz-icon nzType="edit"></span>-->
+<!--              </button>-->
+<!--              <button (click)="delete(data.id)"-->
+<!--                      *nzSpaceItem-->
+<!--                      [nzLoading]="!!deleteMap[data.id || '']" nz-button-->
+<!--                      nz-tooltip nzSize="small"-->
+<!--                      nzTooltipPlacement="top"-->
+<!--                      nzTooltipTitle="Delete"-->
+<!--                      nzType="default">-->
+<!--                <span nz-icon nzType="delete"></span>-->
+<!--              </button>-->
+<!--            </nz-space>-->
+<!--          </div>-->
+<!--        </td>-->
+<!--      </tr>-->
+<!--      </tbody>-->
+<!--    </nz-table>-->
+<!--  </nz-skeleton>-->
+<!--</nz-card>-->
+
+<!--<ng-template #noDataTemplate>-->
+
+<!--  <div *ngIf="activeFilter === 0" class="pt-4 pb-5">-->
+<!--    <div class="no-data-img-holder mx-auto mb-3">-->
+<!--      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">-->
+<!--    </div>-->
+<!--    <span nz-typography class="no-data-text">No tasks scheduled for today.</span>-->
+<!--  </div>-->
+
+<!--  <div *ngIf="activeFilter === 1" class="pt-4 pb-5">-->
+<!--    <div class="no-data-img-holder mx-auto mb-3">-->
+<!--      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">-->
+<!--    </div>-->
+<!--    <span nz-typography class="no-data-text">All caught up, no upcoming tasks to you.</span>-->
+<!--  </div>-->
+
+<!--  <div *ngIf="activeFilter === 2" class="pt-4 pb-5">-->
+<!--    <div class="no-data-img-holder mx-auto mb-3">-->
+<!--      <img src="/assets/images/confetti (1).png" class="img-fluid" alt="">-->
+<!--    </div>-->
+<!--    <div><span nz-typography class="no-data-text">Congratulations you have no overdue tasks.</span></div>-->
+<!--    <div><span nz-typography class="no-data-text">All tasks completed on time.</span></div>-->
+<!--  </div>-->
+
+<!--</ng-template>-->
+
+<!--<ng-template #titleTemplate>-->
+<!--  <span nz-tooltip [nzTooltipTitle]="title">{{title}}</span>-->
+<!--</ng-template>-->
+
+<!--<ng-template #searchTemplate>-->
+<!--  <nz-space nzAlign="center">-->
+<!--    <button (click)="get()" *nzSpaceItem nz-button nz-tooltip nzShape="circle" nzTooltipTitle="Refresh tasks"-->
+<!--            nzType="default">-->
+<!--      <span [nzSpin]="loading" nz-icon nzTheme="outline" nzType="sync"></span>-->
+<!--    </button>-->
+<!--    <nz-segmented *nzSpaceItem [(ngModel)]="activeFilter" (ngModelChange)="get()" [nzOptions]="options"></nz-segmented>-->
+<!--  </nz-space>-->
+<!--</ng-template>-->
+
+<!--<nz-drawer-->
+<!--  (nzOnClose)="closeModal()"-->
+<!--  [(nzVisible)]="showEditDrawer"-->
+<!--  [nzClosable]="true"-->
+<!--  nzPlacement="right"-->
+<!--  nzTitle="Update Task"-->
+<!--&gt;-->
+<!--  <ng-container *nzDrawerContent>-->
+<!--    <form (submit)="update()" *ngIf="selectedItem" [nzLayout]="'vertical'" nz-form>-->
+<!--      <nz-form-item>-->
+<!--        <nz-form-label [nzSpan]="null" nzRequired>Task</nz-form-label>-->
+<!--        <nz-form-control [nzSpan]="null">-->
+<!--          <input [(ngModel)]="selectedItem.name" name="name" nz-input placeholder="What needs to be done?"/>-->
+<!--        </nz-form-control>-->
+<!--      </nz-form-item>-->
+<!--      <nz-form-item>-->
+<!--        <nz-form-label [nzSpan]="null">Description</nz-form-label>-->
+<!--        <nz-form-control [nzSpan]="null" nzErrorTip="Please enter a name!">-->
+<!--          <input [(ngModel)]="selectedItem.description" name="description" nz-input-->
+<!--                 placeholder="Add a short description"/>-->
+<!--        </nz-form-control>-->
+<!--      </nz-form-item>-->
+<!--      <nz-form-item>-->
+<!--        <nz-form-control [nzSpan]="null">-->
+<!--          <button [nzDropdownMenu]="colorCodesDropdown" [style.background-color]="selectedItem.color_code" nz-button-->
+<!--                  nz-dropdown-->
+<!--                  nz-tooltip-->
+<!--                  nzTooltipTitle="Select a color"-->
+<!--                  nzTrigger="click" nzType="default"-->
+<!--                  type="button">&nbsp;-->
+<!--          </button>-->
+<!--          <nz-dropdown-menu #colorCodesDropdown="nzDropdownMenu">-->
+<!--            <ul nz-menu style="max-height: 200px;overflow: auto">-->
+<!--              <li (click)="selectedItem.color_code = item" *ngFor="let item of colorCodes"-->
+<!--                  [style.background-color]="item" nz-menu-item>-->
+<!--              </li>-->
+<!--            </ul>-->
+<!--          </nz-dropdown-menu>-->
+<!--        </nz-form-control>-->
+<!--      </nz-form-item>-->
+<!--      <button [nzLoading]="updating" nz-button nzBlock nzType="primary" type="submit">Save Changes</button>-->
+<!--    </form>-->
+<!--  </ng-container>-->
+<!--</nz-drawer>-->

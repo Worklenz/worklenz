@@ -1,0 +1,25 @@
+<button
+  nz-button
+  [nzType]="'default'"
+  [nzTrigger]="'click'"
+  [nzLoading]="loading"
+  nz-dropdown
+  [nzClickHide]="false"
+  [nzDropdownMenu]="columnsDropdown"
+  class="columns-toggle"
+>
+  <span nz-icon [nzType]="'more'" [nzTheme]="'outline'"></span> Show fields
+</button>
+
+<nz-dropdown-menu #columnsDropdown="nzDropdownMenu">
+  <ul nz-menu nzSelectable class="menu">
+    <li
+      *ngFor="let item of service.columns"
+      nz-menu-item
+      nz-checkbox
+      [nzChecked]="item.pinned"
+      (nzCheckedChange)="onColumnsToggle($event, item)"
+      class="m-0"
+    >{{item.name}}</li>
+  </ul>
+</nz-dropdown-menu>

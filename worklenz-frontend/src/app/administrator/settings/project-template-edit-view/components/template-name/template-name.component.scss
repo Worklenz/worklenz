@@ -1,0 +1,27 @@
+
+.temp-name-input {
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.error {
+  border-color: #ff4d4f;
+  box-shadow: none;
+}
+
+.error-text {
+  position: absolute;
+  left: 0;
+  bottom: -16px;
+}
+
+h4 {
+  transition: 0.25s all;
+  border: 1px solid transparent;
+  &:hover {
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+  }
+}

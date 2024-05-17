@@ -1,0 +1,100 @@
+<nz-drawer
+  (nzOnClose)="handleCancel()"
+  [(nzVisible)]="show"
+  (nzVisibleChange)="onVisibilityChange(show)"
+  [nzSize]="'large'"
+  [nzCloseIcon]="'close'"
+  [nzTitle]="titleTemplate"
+  [nzWrapClassName]="'task-form-drawer-opened task-view'"
+>
+  <ng-container *nzDrawerContent>
+    <nz-skeleton [nzActive]="true" [nzLoading]="loading" [class.p-4]="loading" class="pt-3">
+      <div class="d-block w-100 text-end">
+      <button nz-button nzType="default" nzSize="small" [nzLoading]="exporting" class="mb-3" (click)="exportExcel()">
+        <span nz-icon nzType="download" nzTheme="outline"></span> Export to Excel
+      </button>
+      </div>
+      <ng-container *ngIf="!timelogsBreakDown?.length">
+        <div class="pt-4 pb-5 text-center">
+          <div class="no-data-img-holder mx-auto mb-3">
+            <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+          </div>
+          <span nz-typography class="no-data-text">No time logs to show.</span>
+        </div>
+      </ng-container>
+      <ng-container *ngFor="let log of timelogsBreakDown">
+        <div class="single-log">
+          <nz-card [nzTitle]="cardTitle" class="breakdown-card">
+            <div class="single-day-logs">
+              <nz-timeline *ngIf="log.logs.length">
+                <nz-timeline-item *ngFor="let log_item of log.logs">
+                  <nz-avatar *ngIf="log_item.user_name" [nzSize]="26"
+                             [nzText]="log_item.user_name | firstCharUpper"
+                             [style.background-color]="log_item.avatar_url ? '#ececec' : getColor(log_item.user_name)"
+                             [nzSrc]="log_item.avatar_url"
+                             class="me-2"></nz-avatar>
+                  <span
+                    nz-typography><b>{{log_item.user_name}}</b> logged <b>{{log_item.time_spent_string}}</b> for <b>{{log_item.task_name}}</b>
+                  <nz-tag class="ms-2 mt-1">{{log_item.task_key}}</nz-tag></span>
+                </nz-timeline-item>
+              </nz-timeline>
+              <ng-container *ngIf="!log.logs.length">
+                <div class="d-block mb-4">
+                  No time logs to show.
+                </div>
+              </ng-container>
+            </div>
+          </nz-card>
+          <ng-template #cardTitle>
+            <div class="log-day">
+              <span nz-typography>{{log.log_day | date : 'MMM dd, YYYY'}}</span>
+            </div>
+          </ng-template>
+        </div>
+        <nz-divider></nz-divider>
+      </ng-container>
+    </nz-skeleton>
+  </ng-container>
+
+  <ng-template #titleTemplate>
+    <div class="d-flex">
+      <div class="left pe-3">
+        <h5 nz-typography class="mb-0">{{project?.name}}</h5>
+      </div>
+      <div class="right ms-auto">
+        <div class="text-end">
+          <button nz-button nz-dropdown [nzDropdownMenu]="timeSelector"
+                  [nzTrigger]="'click'" [nzPlacement]="'bottomRight'">
+            {{durationLabel}} <span nz-icon [nzType]="'down'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+</nz-drawer>
+
+
+<nz-dropdown-menu #timeSelector="nzDropdownMenu">
+  <ul nz-menu style="max-height: 330px; overflow-y: auto;" nzSelectable>
+    <li *ngFor="let item of durations" (click)="onDurationChange(item)"
+        [nzSelected]="item.key === (selectedDuration?.key ? selectedDuration?.key : durations[0].key) && !dateRange.length"
+        nz-menu-item>
+      {{item.label}} <small class="ms-auto text-secondary"> {{item.dates}}</small>
+    </li>
+    <li nz-menu-divider></li>
+    <li class="px-2 pb-2 pt-2 mt-1 custom-dropdown-range-li">
+      <form nz-form>
+        <label>Custom range</label>
+        <div class="d-block mt-1">
+          <nz-range-picker [(ngModel)]="dateRange" [ngModelOptions]="{standalone: true}"
+                           class="w-100"></nz-range-picker>
+        </div>
+        <button class="mt-2 ms-auto d-block" nz-button [nzType]="'primary'" [nzSize]="'small'"
+                (click)="customDateChange()">
+          Filter
+        </button>
+      </form>
+    </li>
+  </ul>
+</nz-dropdown-menu>

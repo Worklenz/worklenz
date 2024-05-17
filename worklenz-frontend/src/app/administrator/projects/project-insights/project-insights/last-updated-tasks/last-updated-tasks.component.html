@@ -1,0 +1,39 @@
+<nz-table #tasksTable [nzData]="lastUpdatedTasks" [nzLoading]="loadingLastUpdatedTasks" [nzSize]="'small'"
+          nzPaginationType="small" [nzHideOnSinglePage]="true" [nzNoResult]="noDataTemplate">
+  <thead>
+  <tr>
+    <th scope="col">Name</th>
+    <th scope="col">Status</th>
+    <th scope="col">Due Date</th>
+    <th scope="col">Last Updated</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr *ngFor="let data of tasksTable.data">
+    <td>{{data.name}}</td>
+    <td>
+      <nz-tag [nzColor]="data.status_color" class="text-dark rounded-pill task-list-label">{{data.status}}</nz-tag>
+    </td>
+    <td>
+      {{(data.end_date | date: 'mediumDate') || '-'}}
+    </td>
+    <td>{{formatEndDate(data.updated_at)}}</td>
+  </tr>
+  </tbody>
+</nz-table>
+<worklenz-task-view
+  [(show)]="showTaskDrawer"
+  [projectId]="projectId"
+  [(taskId)]="selectedTaskId"
+></worklenz-task-view>
+
+<ng-template #noDataTemplate>
+
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">No tasks have been updated recently in the project.</span>
+  </div>
+
+</ng-template>

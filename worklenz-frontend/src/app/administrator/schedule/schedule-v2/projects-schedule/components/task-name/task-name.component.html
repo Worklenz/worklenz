@@ -1,0 +1,15 @@
+<div *ngIf="task" class="task-name-block">
+  <div *ngIf="!isEditing" class="name-holder" (click)="enableEdit()">
+    <div class="border-input ellipsis" nz-tooltip [nzTooltipTitle]="task.task_name">
+      {{task.task_name}}
+    </div>
+  </div>
+  <div *ngIf="isEditing" class="name-editor">
+    <input nz-input placeholder="Enter task name" [(ngModel)]="task.task_name" (blur)="validateName()"
+           (keydown.enter)="validateName()" type="text" #input/>
+  </div>
+  <button *ngIf="!isEditing" nz-tooltip nz-button (click)="openTask.emit(task)" class="task-open-btn px-1" [nzType]="'text'">
+    <span nz-icon [nzType]="'expand-alt'" [nzTheme]="'outline'"></span>
+    Open
+  </button>
+</div>

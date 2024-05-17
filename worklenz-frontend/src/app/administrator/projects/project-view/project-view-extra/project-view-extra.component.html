@@ -1,0 +1,45 @@
+<div class="d-flex align-items-center">
+  <button *ngIf="updatesAvailable || PDUpdateAvailable" nz-button [nzType]="'dashed'" nz-tooltip
+          [nzTooltipTitle]="UPDATES_MESSAGE"
+          (click)="applyUpdates()"
+          nzDanger>
+    Apply Updates
+  </button>
+  <nz-divider *ngIf="members.length && updatesAvailable" [nzType]="'vertical'"></nz-divider>
+  <ng-container *ngIf="members.length">
+    <div class="position-relative" style="top: 3px;">
+          <span class="online-members-help" nz-tooltip
+                [nzTooltipTitle]="'Members who are active on this project will be displayed here.'" nz-icon
+                nzType="question-circle" nzTheme="outline"></span>
+      <worklenz-avatars [names]="members | wlSafeArray" [showDot]="true"></worklenz-avatars>
+    </div>
+  </ng-container>
+</div>
+
+<ng-template #updatesTemplate let-notification>
+  <div class="ant-notification-notice-content">
+    <div>
+      <div class="ant-notification-notice-message">Project Updated</div>
+      <div class="ant-notification-notice-description">{{UPDATES_MESSAGE}}</div>
+      <span class="ant-notification-notice-btn">
+        <button nz-button nzType="primary" [nzLoading]="refreshing" (click)="applyUpdates();notification.close();">
+          <span>Refresh Project</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #projectManagerUpdateTemplate let-notification>
+  <div class="ant-notification-notice-content">
+    <div>
+      <div class="ant-notification-notice-message">Project Information Updated</div>
+      <div class="ant-notification-notice-description">{{UPDATES_MESSAGE}}</div>
+      <span class="ant-notification-notice-btn">
+        <button nz-button nzType="primary" [nzLoading]="refreshing" (click)="applyPMUpdate();notification.close();">
+          <span>Refresh Now</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</ng-template>

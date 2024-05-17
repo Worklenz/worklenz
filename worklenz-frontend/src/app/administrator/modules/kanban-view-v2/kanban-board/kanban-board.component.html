@@ -1,0 +1,306 @@
+<div class="overflow-auto">
+  <nz-skeleton [nzLoading]="isLoading()" [nzParagraph]="{ rows: 12 }">
+    <div class="root">
+      <div class="worklenz-kanban overflow-auto">
+        <div class="board-wrapper">
+          <div class="board-columns">
+            <div cdkDropList cdkDropListOrientation="horizontal"
+                 class="board-columns justify-content-center"
+                 (cdkDropListDropped)="dropGrid($event)">
+
+              <!-- Columns -->
+              <!--              [style.background]="column.color_code + '2e'"-->
+              <div cdkDragLockAxis="x" class="board-column"
+                   *ngFor="let column of groups; trackBy: trackById"
+                   cdkDrag
+                   [cdkDragData]="column.id">
+                <div class="column-title m-1" cdkDragHandle>
+                  <div
+                    class="align-items-center d-flex mb-0 justify-content-between">
+
+                    <ng-container
+                      *ngIf="isOwnerOrAdmin() || isProjectManager(); else memberKanbanColHead"
+                      [ngSwitch]="editingColumn?.id === column.id">
+                      <span *ngSwitchCase="false"
+                            class="cursor-pointer kanban-status-label w-100"
+                            (click)="editColumn(column)">
+                        {{ column.name }} ({{column.tasks.length}})
+
+                      </span>
+
+                      <button *ngSwitchCase="false" nz-button class="p-0"
+                              nzType="text" nz-dropdown nzTrigger="click"
+                              [nzDropdownMenu]="menu">
+                        <span style="font-size: 21px;" nz-icon nzType="ellipsis"
+                              nzTheme="outline"></span>
+                      </button>
+
+                      <nz-dropdown-menu #menu="nzDropdownMenu">
+                        <ul nz-menu>
+                          <li
+                            (click)="editColumn(column)"
+                            nz-menu-item>
+                            <span nz-icon class="me-2" nzType="edit"
+                                  nzTheme="outline"></span>
+                            Rename
+                          </li>
+                          <li nz-submenu [nzTitle]="titleTemplate">
+                            <ul>
+                              <li class="m-0"
+                                  *ngFor="let item of categories; trackBy: trackByFn"
+                                  nz-tooltip
+                                  [nzTooltipTitle]="item.description | safeString"
+                                  [nzTooltipPlacement]="'right'"
+                                  (click)="changeStatusCategory(column, item.id)"
+                                  nz-menu-item>
+                                <nz-badge
+                                  [nzColor]="item.color_code | safeString"
+                                  [nzText]="textTmpl"></nz-badge>
+                                <ng-template #textTmpl>
+                                  <span
+                                    [style.font-weight]="item.id === column.category_id ? 'bold' : null">
+                                    {{item?.name || null}}
+                                  </span>
+                                </ng-template>
+                              </li>
+                            </ul>
+                          </li>
+                          <li
+                            (click)="deleteStatus(column)"
+                            nz-tooltip
+                            [nzTooltipTitle]="!!column.tasks.length ? 'Move all tasks to a different section.' : null"
+                            nz-menu-item>
+                            <span nz-icon class="me-2" nzType="delete"
+                                  nzTheme="outline"></span> Delete
+                          </li>
+                        </ul>
+                      </nz-dropdown-menu>
+
+                      <ng-template #titleTemplate>
+                        <span nz-icon class="me-1" nzType="retweet"
+                              nzTheme="outline"></span> Change category
+                      </ng-template>
+
+                      <span *ngSwitchCase="true"
+                            class="d-flex align-items-center w-100">
+                        <span *ngIf="isEditColProgress" nz-icon nzType="loading"
+                              nzTheme="outline" class="me-2"></span>
+                        <input [id]="'kanban-col-' + column.id" nz-input
+                               [class.bg-white]="!isEditColProgress"
+                               [disabled]="isEditColProgress"
+                               [(ngModel)]="column.name"
+                               (keydown.enter)="onNameChange(column)"
+                               (blur)="onNameChange(column)" nzBorderless/>
+                      </span>
+                    </ng-container>
+
+                    <ng-template #memberKanbanColHead>{{ column.name }}
+                      ({{column.tasks.length}})
+                    </ng-template>
+
+                  </div>
+                </div>
+
+                <div class="tasks-container mt-3" [id]="column.id"
+                     [cdkDropListConnectedTo]="groupIds" cdkDropList
+                     [cdkDropListData]="column"
+                     (cdkDropListDropped)="drop($event)" #tasksContainer>
+                  <!-- Tasks  -->
+                  <div class="task"
+                       *ngFor="let item of column.tasks;trackBy: trackByFn" cdkDrag
+                       (click)="editModal(item, $event)"
+                       [cdkDragData]="item"
+                       (contextmenu)="contextMenu($event, contextMenuDropdown, item)">
+
+                    <worklenz-kanban-task-card [task]="item" [projectId]="projectId"></worklenz-kanban-task-card>
+
+                  </div>
+
+                  <div class="column-footer">
+                    <div *ngIf="statusesColumns[column.id]" class="task-create-card task" #taskCreateCard>
+
+                      <ng-container *ngIf="creatingTask">
+                        <div class="spinner">
+                          <nz-spin nzSimple [nzIndicator]="indicatorTemplate"></nz-spin>
+                        </div>
+                      </ng-container>
+
+                      <ng-template #indicatorTemplate><span nz-icon nzType="loading"></span></ng-template>
+
+                      <!-- task name -->
+                      <input nz-input #inputValue [placeholder]="'Enter task name'" [(ngModel)]="newTaskName"
+                             (keydown.enter)="onCreateButtonClicked(column.id)" maxlength="100"
+                             [disabled]="creatingTask">
+                      <small *ngIf="this.newTaskName?.length"
+                             style="position: absolute;z-index: 1;right: 15px;top: 40px;color: #00000073;font-size: 10px;">{{newTaskName?.length}}
+                        /100</small>
+
+                      <div [ngClass]="!this.newTaskName?.length ? 'invisible': 'visible' " class="d-flex mt-3 mb-3"
+                           style="max-height: 24px; min-height: 24px;">
+                        <!-- due date -->
+                        <div class="due-date-section">
+                        <span nz-typography class="date-text"
+                              [class.past-date]="checkForPastDate(createTaskEndDate)"
+                              [class.soon-date]="checkForSoonDate(createTaskEndDate)">{{createTaskEndDate | dateFormatter}}</span>
+                          <nz-date-picker [nzPlaceHolder]="'Due date'" [nzSuffixIcon]="''"
+                                          [(ngModel)]="createTaskEndDate"
+                                          class="kanban-task-create-dp bg-transparent kanban-task-card-due-date"></nz-date-picker>
+                        </div>
+
+                        <!-- assignees -->
+                        <div class="assignees-section ms-auto">
+                          <worklenz-kanban-task-creation-assignees
+                            *ngIf="this.newTaskName?.length"></worklenz-kanban-task-creation-assignees>
+                        </div>
+                      </div>
+
+                      <div>
+                        <button nz-button nzType="default" (click)="deleteTask(); resetAll();"
+                                class="add-task-btn-card me-2">Cancel
+                        </button>
+                        <button nz-button nzType="primary" [disabled]="!this.newTaskName?.length"
+                                [nzLoading]="updatingTask" (click)="onCreateButtonClicked(column.id)"
+                                class="add-task-btn-card a-t">Add task
+                        </button>
+                      </div>
+
+                    </div>
+                    <button nz-button nzBlock nzType="default"
+                            (click)="showTaskCreateInput(column.id, tasksContainer)"
+                            class="add-task-btn bottom-task-add" [nzLoading]="createButtons[column.id]">
+                      <span nz-icon nzType="plus" nzTheme="outline"></span>
+                      Create Task
+                    </button>
+                  </div>
+
+                  <nz-dropdown-menu #contextMenuDropdown="nzDropdownMenu">
+                    <ul nz-menu>
+                      <li (click)="assignToMe()" nz-menu-item>
+                        <span class="me-2" nz-icon
+                              [nzType]="assigningTasks ? 'loading' : 'user-add'"
+                              nzTheme="outline"></span> Assign to me
+                      </li>
+                      <li *ngIf="!contextSelectedTask?.is_sub_task" (click)="archiveSelected()" nz-menu-item>
+                        <span class="me-2" nz-icon
+                              [nzType]="archivingTasks ? 'loading' : 'inbox'"
+                              nzTheme="outline"></span> Archive
+                      </li>
+                      <li (click)="deleteSelected()" nz-menu-item>
+                        <span class="me-2" nz-icon
+                              [nzType]="deletingTasks ? 'loading' : 'delete'"
+                              nzTheme="outline"></span> Delete
+                      </li>
+                    </ul>
+                  </nz-dropdown-menu>
+
+                </div>
+              </div>
+
+              <div *ngIf="!groups.length" class="pt-5 pb-5">
+                <div class="no-data-img-holder mx-auto mb-4">
+                  <img src="/assets/images/empty-box.webp" class="img-fluid" alt>
+                </div>
+                <span nz-typography
+                      class="mx-auto d-block text-center no-data-text"
+                      style="width: max-content;">There are no status groups to show
+                  in this project.</span>
+                <div>
+                  <span nz-typography
+                        class="d-flex align-items-center no-data-text">
+                    Click on
+                    <button nz-button nzType="default" nz-tooltip
+                            nzTooltipTitle="Add Status"
+                            (click)="openCreateStatusDrawer()"
+                            class="text-plus-btn mx-2">
+                      <span style="font-size: 18px;" nz-icon nzType="plus"
+                            nzTheme="outline"></span>
+                    </button>
+                    button to create status groups as you desire.
+                  </span>
+                </div>
+              </div>
+
+              <div class="new-column-sec" *ngIf="isOwnerOrAdmin() || isProjectManager()">
+                <button nz-button nzType="default" nz-tooltip
+                        nzTooltipTitle="Add Status"
+                        (click)="openCreateStatusDrawer()">
+                  <span style="font-size: 18px;" nz-icon nzType="plus"
+                        nzTheme="outline"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nz-skeleton>
+</div>
+
+<!-- <worklenz-task-form
+   (onCancel)="selectedTaskId = null;selectedStatusId = null;"
+   (onCreateOrUpdate)="onTaskCreateOrUpdate()"
+   [(show)]="showTaskModal"
+   [disableChangeProject]="true"
+   [projectId]="projectId"
+   [statusId]="selectedStatusId"
+   [taskId]="selectedTaskId"
+  ></worklenz-task-form> -->
+
+<!-- <worklenz-task-view
+  [(show)]="showTaskModal"
+  [projectId]="projectId"
+  [(taskId)]="selectedTaskId"
+  (showChange)="onShowChange($event)"
+  [selfResetTaskId]="false"></worklenz-task-view> -->
+
+<worklenz-task-view
+  [(show)]="showTaskModal"
+  (showChange)="onShowChange($event)"
+  [selfResetTaskId]="false"
+  [projectId]="selectedTask?.project_id || null"
+  [taskId]="selectedTask?.id || null"
+></worklenz-task-view>
+
+<worklenz-status-form
+  *ngIf="projectId"
+  (onCancel)="showStatusModal = false;"
+  (onCreateOrUpdate)="onStatusCreateOrUpdate()"
+  action="Create"
+  [show]="showStatusModal"
+  [statusId]="null"
+  [projectId]="projectId"></worklenz-status-form>
+
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="showStatusesReplaceModal"
+  [nzPlacement]="'right'"
+  [nzTitle]="'You are deleting a status'"
+  (nzOnClose)="closeStatusesReplaceModal()">
+  <ng-container *nzDrawerContent>
+    <nz-alert nzType="warning" [nzMessage]="statusDeleteWarning"></nz-alert>
+
+    <nz-card class="text-center mt-4">
+      <h5 nz-typography>{{selectedForDelete?.name}}</h5>
+      <h4 class="my-3" nz-typography><span nz-icon nzType="arrow-down"
+                                           nzTheme="outline"></span></h4>
+
+      <nz-select [(ngModel)]="replacingStatus" class="w-100"
+                 [nzDropdownMatchSelectWidth]="false">
+        <nz-option *ngFor="let item of this.service.groups;trackBy: trackByFn"
+                   [nzDisabled]="item.id === selectedForDelete?.id"
+                   [nzLabel]="item.name || null" [nzValue]="item.id" nzCustomContent>
+          <nz-badge
+            [style.opacity]="item.id === selectedForDelete?.id ? '0.5' : null"
+            [nzColor]="item.color_code"
+            [nzText]="item?.name || null"></nz-badge>
+        </nz-option>
+      </nz-select>
+
+      <button [nzLoading]="deletingStatus" [disabled]="deletingStatus"
+              (click)="moveAndDelete()" class="mt-3" nz-button
+              nzType="primary" nzBlock>
+        Done
+      </button>
+    </nz-card>
+  </ng-container>
+</nz-drawer>

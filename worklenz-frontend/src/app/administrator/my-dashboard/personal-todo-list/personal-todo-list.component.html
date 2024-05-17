@@ -1,0 +1,132 @@
+<nz-card [nzExtra]="searchTemplate" [nzActions]="[actionsTemplate]" nzTitle="Todo">
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading">
+    <nz-table
+      [nzData]="tasks || []"
+      [nzLoading]="loading"
+      [nzScroll]="{ y: '300px', x: 'auto' }"
+      [nzShowPagination]="false"
+      [style.display]="loading ? 'none' : null"
+      class="custom-table thead-height-0 w-100"
+      nzSize="small"
+      style="overflow-x: hidden !important;"
+    >
+      <thead>
+      <tr>
+        <th colspan="4" nzAlign="left" scope="col"></th>
+      </tr>
+      </thead>
+      <tbody (cdkDropListDropped)="onTaskDrop($event)" cdkDropList>
+      <tr *ngFor="let data of tasks; trackBy:identify"
+          [class.completed]="data.done"
+          [class.removing]="!!deletingMap[data.id | safeString]"
+          class="actions-row"
+      >
+        <td [(nzChecked)]="data.done"
+            (nzCheckedChange)="toggleDone(data.id, $event);data.done=$event"
+            style="width: 5px"></td>
+        <td [style.color]="data.color_code" class="cursor-pointer todo-list-item" nz-typography>
+          <strong style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;">{{data.name}}</strong>
+          <span *ngIf="data.description" nz-typography nzEllipsis nzType="secondary" style="max-width: 320px;">
+            <nz-divider nzType="vertical"></nz-divider>
+            {{data.description}}
+          </span>
+        </td>
+        <td class="actions-col" nzAlign="center">
+          <div class="actions">
+            <nz-space>
+              <button (click)="editItem(data)" *nzSpaceItem nz-button nz-tooltip nzSize="small"
+                      nzTooltipPlacement="top"
+                      nzTooltipTitle="Edit"
+                      nzType="default">
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button (click)="delete(data.id)"
+                      *nzSpaceItem
+                      [nzLoading]="!!deleteMap[data.id | safeString]" nz-button
+                      nz-tooltip nzSize="small"
+                      nzTooltipPlacement="top"
+                      nzTooltipTitle="Delete"
+                      nzType="default">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</nz-card>
+
+<ng-template #searchTemplate>
+  <nz-space nzAlign="center">
+    <form (submit)="create()" [formGroup]="form" [nzLayout]="'inline'" nz-form>
+      <nz-form-item>
+        <nz-form-control nz-tooltip nzTooltipTitle="What needs to be done?">
+          <input [formControlName]="'name'" nz-input placeholder="What needs to be done?"/>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item>
+        <nz-form-control>
+          <button [nzLoading]="creating" nz-button nz-tooltip nzTooltipTitle="Add to list"
+                  nzType="primary" type="submit">
+            Add
+          </button>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </nz-space>
+</ng-template>
+
+<ng-template #actionsTemplate>
+  <nz-select [(ngModel)]="showCompleted" (ngModelChange)="get()" class="task-list-filter-button">
+    <nz-option [nzValue]="false" nzLabel="Todo"></nz-option>
+    <nz-option [nzValue]="true" nzLabel="All"></nz-option>
+  </nz-select>
+</ng-template>
+
+<nz-drawer
+  (nzOnClose)="closeModal()"
+  [(nzVisible)]="showEditDrawer"
+  [nzClosable]="true"
+  nzPlacement="right"
+  nzTitle="Update Task"
+>
+  <ng-container *nzDrawerContent>
+    <form (submit)="update()" *ngIf="selectedItem" [nzLayout]="'vertical'" nz-form>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="null" nzRequired>Task</nz-form-label>
+        <nz-form-control [nzSpan]="null">
+          <input [(ngModel)]="selectedItem.name" name="name" nz-input placeholder="What needs to be done?"/>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="null">Description</nz-form-label>
+        <nz-form-control [nzSpan]="null" nzErrorTip="Please enter a name!">
+          <input [(ngModel)]="selectedItem.description" name="description" nz-input
+                 placeholder="Add a short description"/>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item>
+        <nz-form-control [nzSpan]="null">
+          <button [nzDropdownMenu]="colorCodesDropdown" [style.background-color]="selectedItem.color_code" nz-button
+                  nz-dropdown
+                  nz-tooltip
+                  nzTooltipTitle="Select a color"
+                  nzTrigger="click" nzType="default"
+                  type="button">&nbsp;
+          </button>
+          <nz-dropdown-menu #colorCodesDropdown="nzDropdownMenu">
+            <ul nz-menu style="max-height: 200px;overflow: auto">
+              <li (click)="selectedItem.color_code = item" *ngFor="let item of colorCodes"
+                  [style.background-color]="item" nz-menu-item>
+                &nbsp;
+              </li>
+            </ul>
+          </nz-dropdown-menu>
+        </nz-form-control>
+      </nz-form-item>
+      <button [nzLoading]="updating" nz-button nzBlock nzType="primary" type="submit">Save Changes</button>
+    </form>
+  </ng-container>
+</nz-drawer>

@@ -1,0 +1,22 @@
+<nz-affix *ngIf="updateAvailable || alerts.length" [nzOffsetTop]="0">
+  <ng-container *ngIf="updateAvailable">
+    <nz-alert style="font-weight: 500;" [nzAction]="actionTemplate1" [nzMessage]="messageTemplate" nzShowIcon
+              [nzType]="'error'"></nz-alert>
+  </ng-container>
+  <ng-container *ngIf="alerts.length">
+    <nz-alert style="font-weight: 500;"
+              *ngFor="let item of alerts; trackBy:trackByIndex"
+              [nzType]="item.type"
+              [nzMessage]="item.description"
+              nzShowIcon
+    ></nz-alert>
+  </ng-container>
+</nz-affix>
+
+<ng-template #actionTemplate1>
+  <button (click)="reload()" nz-button [nzSize]="'small'" [nzType]="'primary'">Reload</button>
+</ng-template>
+
+<ng-template #messageTemplate>
+  Action required! New version of Worklenz available! <a (click)="reload()">Reload</a> to apply changes.
+</ng-template>

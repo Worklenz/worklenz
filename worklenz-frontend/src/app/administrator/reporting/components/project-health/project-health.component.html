@@ -1,0 +1,11 @@
+<div class="py-0">
+  <nz-select [style.background]="project?.health_color+'69'"
+             [ngModel]="project?.project_health"
+             (ngModelChange)="handleHealthChange($event)"
+             [nzDropdownMatchSelectWidth]="false"
+             class="rounded-pill custom-select">
+      <nz-option *ngFor="let item of projHealths; trackBy: trackById" [nzValue]="item.id" [nzLabel]="item.name" nzCustomContent>
+        <nz-badge [nzColor]="item.color_code+'69'" [nzText]="item.name"></nz-badge>
+      </nz-option>
+  </nz-select>
+</div>

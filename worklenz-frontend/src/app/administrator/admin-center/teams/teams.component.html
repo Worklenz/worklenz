@@ -1,0 +1,260 @@
+<nz-page-header [nzGhost]="false" class="px-0">
+  <nz-page-header-title>Teams</nz-page-header-title>
+</nz-page-header>
+<nz-page-header class="site-page-header pt-0 ps-0">
+  <nz-page-header-subtitle>{{this.total ? this.total : 0}} teams</nz-page-header-subtitle>
+  <nz-page-header-extra>
+    <nz-space>
+      <button *nzSpaceItem nz-button nz-tooltip nzShape="circle" (click)="getTeams()"
+              nzTooltipTitle="Refresh teams" nzType="default">
+        <span nz-icon nzTheme="outline" nzType="sync"></span>
+      </button>
+      <form *nzSpaceItem [nzLayout]="'vertical'" nz-form [formGroup]="searchForm">
+        <nz-input-group [nzSuffix]="suffixIconSearch">
+          <input nz-input placeholder="Search by name" [formControlName]="'search'"
+                 type="text"/>
+        </nz-input-group>
+        <ng-template #suffixIconSearch>
+          <span nz-icon nzType="search"></span>
+        </ng-template>
+      </form>
+      <span *nzSpaceItem>
+                    <button nz-button nzType="primary" (click)="openNewTeam()">Add
+                        Team</button>
+                </span>
+    </nz-space>
+  </nz-page-header-extra>
+</nz-page-header>
+<nz-card>
+  <nz-skeleton [nzActive]="false" [nzLoading]="false">
+    <nz-table #teamsTable
+              (nzQueryParams)="onQueryParamsChange($event)"
+              [nzData]="teams || []"
+              [nzLoading]="loading"
+              [nzPageIndex]="pageIndex"
+              [nzPageSizeOptions]="paginationSizes"
+              [nzFrontPagination]="false"
+              [nzPageSize]="pageSize"
+              [nzTotal]="total"
+              class="custom-table"
+              nzShowSizeChanger
+              nzSize="small" [nzNoResult]="currentTeam ? noDataTemplate1  : noDataTemplate">
+      <thead>
+      <tr>
+        <th scope="col">Team</th>
+        <th scope="col" class="text-center">Members Count</th>
+        <th scope="col">Members</th>
+        <th scope="col" class="text-center"></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr class="actions-row" *ngIf="currentTeam">
+        <td class="cursor-pointer">
+          <nz-badge nzColor="#52c41a" [nzText]="currentTeam.name"></nz-badge>
+        </td>
+        <td class="cursor-pointer text-center">
+          {{currentTeam.members_count}}
+        </td>
+        <td class="cursor-pointer">
+          <worklenz-avatars [names]="currentTeam.names"></worklenz-avatars>
+        </td>
+        <td class="cursor-pointer">
+          <div class="actions text-center">
+            <nz-space>
+              <button *nzSpaceItem nz-button nz-tooltip
+                      nzSize="small"
+                      [nzTooltipPlacement]="'top'"
+                      [nzTooltipTitle]="'Settings'"
+                      [nzType]="'default'"
+                      (click)="openTeamDrawer(currentTeam)">
+                <span nz-icon nzType="setting"></span>
+              </button>
+              <button *nzSpaceItem (nzOnConfirm)="deleteTeam(currentTeam.id)"
+                      nz-button nz-popconfirm nz-tooltip [nzOkText]="'Yes'"
+                      [nzPopconfirmTitle]="'Are you sure?'" [nzSize]="'small'" [nzTooltipPlacement]="'top'"
+                      [nzTooltipTitle]="'Delete'"
+                      [nzType]="'default'">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      <tr class="actions-row" *ngFor="let team of teamsTable.data">
+        <td class="cursor-pointer">
+          {{team.name}}
+        </td>
+        <td class="cursor-pointer text-center">
+          {{team.members_count}}
+        </td>
+        <td class="cursor-pointer">
+          <worklenz-avatars [names]="team.names"></worklenz-avatars>
+        </td>
+        <td class="cursor-pointer">
+          <div class="actions text-center">
+            <nz-space>
+              <button *nzSpaceItem nz-button nz-tooltip
+                      nzSize="small"
+                      [nzTooltipPlacement]="'top'"
+                      [nzTooltipTitle]="'Settings'"
+                      [nzType]="'default'"
+                      (click)="openTeamDrawer(team)">
+                <span nz-icon nzType="setting"></span>
+              </button>
+              <button *nzSpaceItem (nzOnConfirm)="deleteTeam(team.id)"
+                      nz-button nz-popconfirm nz-tooltip [nzOkText]="'Yes'"
+                      [nzPopconfirmTitle]="'Are you sure?'" [nzSize]="'small'" [nzTooltipPlacement]="'top'"
+                      [nzTooltipTitle]="'Delete'"
+                      [nzType]="'default'">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</nz-card>
+
+<ng-template #noDataTemplate>
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">No teams found in the organization.</span>
+  </div>
+</ng-template>
+
+<ng-template #noDataTemplate1>
+
+</ng-template>
+
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="visible"
+  nzPlacement="right"
+  [nzTitle]="'Team Settings'"
+  [nzSize]="'large'"
+  [nzWidth]="'550px'"
+  (nzOnClose)="close()">
+  <ng-container *nzDrawerContent>
+    <form nz-form [formGroup]="editTeamForm" (ngSubmit)="submit()" [nzLayout]="'vertical'">
+      <nz-form-item>
+        <nz-form-label
+          [nzSpan]="null"
+          nzRequired>
+          Team Name
+        </nz-form-label>
+        <input nz-input [formControlName]="'name'" placeholder="Name of the team"/>
+      </nz-form-item>
+
+      <nz-form-item class="d-block">
+        <nz-form-label [nzSpan]="null" nzRequired>
+          Users ({{teamMembers.controls.length}})
+        </nz-form-label>
+
+        <!--        <nz-form-item>-->
+        <!--          <nz-form-label [nzSpan]="null">-->
+        <!--            Add Team Members-->
+        <!--          </nz-form-label>-->
+        <!--          <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Type to search" (nzOnSearch)="getUsers($event)"-->
+        <!--                     nzServerSearch [formControlName]="'search'" [nzNotFoundContent]="notFoundContentTemplate">-->
+        <!--            <nz-option *ngFor="let item of users" nzCustomContent [nzLabel]="item.name || ''" [nzValue]="item.email">-->
+        <!--              <div class="d-flex align-items-center user-select-none">-->
+        <!--                <nz-avatar-->
+        <!--                  nz-tooltip-->
+        <!--                  [nzSize]="28"-->
+        <!--                  [nzText]="item.name | firstCharUpper"-->
+        <!--                  [nzTooltipTitle]="item.name"-->
+        <!--                  [style.background-color]="item.avatar_url ? '#ececec' : item.color_code"-->
+        <!--                  [nzSrc]="item.avatar_url"-->
+        <!--                  [nzTooltipPlacement]="'top'"-->
+        <!--                  class="mt-auto mb-auto me-2"-->
+        <!--                ></nz-avatar>-->
+        <!--                <div style="line-height: 15px;">-->
+        <!--                  <span class="d-block" nz-typography>{{item.name}}</span>-->
+        <!--                  <small nz-typography nzType="secondary">{{item.email}}</small>-->
+        <!--                </div>-->
+        <!--              </div>-->
+        <!--            </nz-option>-->
+        <!--          </nz-select>-->
+        <!--          <ng-template #notFoundContentTemplate>-->
+        <!--            <button nz-button nzType="primary" nzBlock [disabled]="!isValueIsAnEmail() || inviting" [nzLoading]="inviting"-->
+        <!--                    (click)="sendInvitation()">-->
+        <!--              <span nz-icon nzType="mail" nzTheme="outline"></span> {{buttonText}}-->
+        <!--            </button>-->
+        <!--            <div nz-typography nzType="secondary" class="mt-2 mb-0" style="font-size: 12px;">-->
+        <!--              Invitees will be added to the team and project either they accept the invitation or not.-->
+        <!--            </div>-->
+        <!--          </ng-template>-->
+        <!--        </nz-form-item>-->
+
+        <nz-table [nzData]="teamMembers.controls" [nzFrontPagination]="false" [formArrayName]="'teamMembers'"
+                  [nzNoResult]="emptyData">
+          <thead>
+          <tr>
+            <th>User</th>
+            <th style="width: 150px;">Role</th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let item of teamMembers.controls; let i = index;" [formGroupName]="i">
+            <td>
+              <nz-avatar class="me-2" [nzSize]="28" [nzText]="item.value.name | firstCharUpper"
+                         [nzSrc]="item.value.avatar_url"
+                         [style.background-color]="item.value.avatar_url ? '#ececec' : getColor('name')"></nz-avatar>
+              <nz-badge>{{item.value.name}}</nz-badge>
+            </td>
+            <td>
+              <nz-select style="width: 150px;" [formControlName]="'role_name'" [attr.id]="'member_' + i"
+                         [nzDisabled]="item.value.role_name === 'Owner'">
+                <nz-option nzValue="Admin" nzLabel="Admin"></nz-option>
+                <nz-option nzValue="Member" nzLabel="Member"></nz-option>
+                <nz-option nzValue="Owner" [nzDisabled]="item.value.role_name !== 'Owner'" nzLabel="Owner"></nz-option>
+              </nz-select>
+            </td>
+            <td>
+              <button *ngIf="item.value.role_name !== 'Owner'" (nzOnConfirm)="deleteTeamMember(item.value.id)"
+                      nz-button nz-popconfirm nz-tooltip [nzOkText]="'Yes'"
+                      [nzPopconfirmTitle]="'Are you sure?'" [nzSize]="'small'" [nzTooltipPlacement]="'top'"
+                      [nzTooltipTitle]="'Delete'"
+                      [nzType]="'default'">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </td>
+          </tr>
+          </tbody>
+        </nz-table>
+      </nz-form-item>
+      <button nz-button nzType="primary" nzBlock>Save</button>
+    </form>
+  </ng-container>
+</nz-drawer>
+
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="visibleNewTeam"
+  nzPlacement="right"
+  nzTitle="Create New Team"
+  [nzSize]="'large'"
+  [nzWidth]="'350px'"
+  (nzOnClose)="closeNewTeam()">
+  <ng-container *nzDrawerContent>
+    <form nz-form [formGroup]="form" (submit)="createTeam()">
+      <nz-form-item class="d-block">
+        <nz-form-label nzRequired>
+          Team name
+        </nz-form-label>
+        <nz-form-control>
+          <input nz-input type="text" [formControlName]="'name'">
+        </nz-form-control>
+      </nz-form-item>
+      <button nz-button nzType="primary" type="submit" nzBlock>Create</button>
+    </form>
+  </ng-container>
+</nz-drawer>
+
+
+<ng-template #emptyData></ng-template>

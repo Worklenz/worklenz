@@ -1,0 +1,101 @@
+<div class="p-4">
+  <nz-skeleton [nzLoading]="loading">
+    <nz-timeline>
+      <nz-timeline-item *ngFor="let item of logs.logs">
+        <div nz-row>
+          <div nz-col nzFlex="40px">
+            <nz-avatar
+              [style.background-color]="item.done_by?.avatar_url ? '#ececec' : item.done_by?.color_code"
+              [nzText]="item.done_by?.name?.charAt(0)?.toUpperCase()"
+              [nzSrc]="item.done_by?.avatar_url">
+            </nz-avatar>
+          </div>
+          <div nz-col nzFlex="auto">
+            <strong>{{item.done_by?.name}}</strong> {{item.log_text}} <strong>{{item.attribute_type}}</strong>. &nbsp;
+            <span nz-typography
+                  [nzType]="'secondary'"
+                  nz-tooltip
+                  [nzTooltipTitle]="item.created_at | date: 'medium'">
+                {{(item.created_at | fromNow) ?? ''}}
+            </span>
+            <div [ngSwitch]="item.attribute_type" class="mt-3">
+
+              <!-- if attribute type is assignee-->
+              <div *ngSwitchCase="activityLogTypes.ASSIGNEES">
+                <nz-avatar
+                  [nzSize]="'small'" class="me-2"
+                  [style.background-color]="item.assigned_user?.avatar_url ? '#ececec' : item.assigned_user?.color_code"
+                  [nzText]="item.assigned_user?.name?.charAt(0)?.toUpperCase()"
+                  [nzSrc]="item.assigned_user?.avatar_url">
+                </nz-avatar>
+                <span nz-typography [nzType]="'secondary'">{{item.assigned_user?.name}}</span>&nbsp;
+                <span nz-icon nzType="arrow-right" nzTheme="outline"></span>&nbsp;&nbsp;
+                <nz-tag [nzColor]="'default'">{{item.log_type?.toUpperCase()}}</nz-tag>
+              </div>
+
+              <!-- if attribute type is labels-->
+              <div *ngSwitchCase="activityLogTypes.LABEL">
+                <nz-tag [nzColor]="item.label_data?.color_code">{{item.label_data?.name}}</nz-tag>
+                <span nz-icon nzType="arrow-right" nzTheme="outline"></span>&nbsp;&nbsp;
+                <nz-tag [nzColor]="'default'">{{item.log_type === 'create' ? 'ADD' : 'REMOVE'}}</nz-tag>
+              </div>
+
+              <!-- if attribute type is status-->
+              <div *ngSwitchCase="activityLogTypes.STATUS">
+                <nz-tag *ngIf="item.previous_status" [nzColor]="item.previous_status.color_code ? item.previous_status.color_code : ''">{{item.previous_status.name ? item.previous_status.name : 'None'}}</nz-tag>
+                <span nz-icon nzType="arrow-right" nzTheme="outline"></span>&nbsp;&nbsp;
+                <nz-tag [nzColor]="item.next_status?.color_code">{{item.next_status?.name}}</nz-tag>
+              </div>
+
+              <!-- if attribute type is status-->
+              <div *ngSwitchCase="activityLogTypes.PRIORITY">
+                <nz-tag [nzColor]="item.previous_priority?.color_code">{{item.previous_priority?.name}}</nz-tag>
+                <span nz-icon nzType="arrow-right" nzTheme="outline"></span>&nbsp;&nbsp;
+                <nz-tag [nzColor]="item.next_priority?.color_code">{{item.next_priority?.name}}</nz-tag>
+              </div>
+
+              <!-- if attribute type is phase-->
+              <div *ngSwitchCase="activityLogTypes.PHASE">
+                <nz-tag [nzColor]="(item.previous_phase) ? item.previous_phase.color_code : ''">{{(item.previous_phase && item.previous_phase.name) ? item.previous_phase.name : 'Unmapped'}}</nz-tag>
+                <span nz-icon nzType="arrow-right" nzTheme="outline"></span>&nbsp;&nbsp;
+                <nz-tag [nzColor]="(item.next_phase) ? item.next_phase.color_code : ''">{{(item.next_phase && item.next_phase.name) ? item.next_phase.name : 'Unmapped'}}</nz-tag>
+              </div>
+
+              <!--if attribute type is description-->
+              <div *ngSwitchCase="activityLogTypes.DESCRIPTION">
+              </div>
+
+              <!--if attribute type is anything else-->
+              <div *ngSwitchDefault>
+                <nz-tag [nzColor]="'default'">{{item.previous || 'None'}}</nz-tag>&nbsp;
+                <span nz-icon nzType="arrow-right" nzTheme="outline"></span>&nbsp;&nbsp;
+                <nz-tag [nzColor]="'default'">{{item.current || 'None'}}</nz-tag>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </nz-timeline-item>
+      <nz-timeline-item>
+        <div nz-row class="align-items-center">
+          <div nz-col nzFlex="40px">
+            <nz-avatar
+              [style.background-color]="logs.avatar_url ? '#ececec' : logs.color_code"
+              [nzText]="logs.name?.charAt(0)?.toUpperCase()"
+              [nzSrc]="logs.avatar_url">
+            </nz-avatar>
+          </div>
+          <div nz-col nzFlex="auto">
+            <strong>{{logs.name}}</strong> created the task. &nbsp;
+            <span nz-typography
+                  [nzType]="'secondary'"
+                  nz-tooltip
+                  [nzTooltipTitle]="logs.created_at | date: 'medium'">
+                {{(logs.created_at | fromNow) ?? ''}}
+            </span>
+          </div>
+        </div>
+      </nz-timeline-item>
+    </nz-timeline>
+  </nz-skeleton>
+</div>

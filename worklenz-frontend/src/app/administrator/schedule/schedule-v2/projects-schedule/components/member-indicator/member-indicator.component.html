@@ -1,0 +1,13 @@
+<ng-container *ngIf="teamMemberId && projectId && allocation">
+  <div class="duration-indicator cursor-pointer"
+       [style.width]="allocation.indicator_width+'px'"
+       [style.left]="allocation.indicator_offset+'px'"
+       #indicator>
+    <div class="d-flex">
+      <div class="resize-handle left-handle"
+           (mousedown)="onResizeStart($event, allocation, 'left', indicator); $event.stopPropagation()"></div>
+      <div class="resize-handle right-handle"
+           (mousedown)="onResizeStart($event, allocation, 'right', indicator); $event.stopPropagation()"></div>
+    </div>
+  </div>
+</ng-container>

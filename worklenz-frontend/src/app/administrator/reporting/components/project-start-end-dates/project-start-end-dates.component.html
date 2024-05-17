@@ -1,0 +1,20 @@
+<nz-space class="align-items-center">
+  <nz-date-picker *nzSpaceItem
+                  [ngModel]="project?.start_date"
+                  (ngModelChange)="handleStartDateChange($event)"
+                  [nzFormat]="'MMM dd,yyyy'"
+                  [nzSuffixIcon]="''"
+                  [nzPlaceHolder]="'Set start date'"
+                  [nzDisabledDate]="project?.end_date | validateMaxDate"
+                  class="bg-transparent me-0" nzBorderless></nz-date-picker>
+  <p *nzSpaceItem class="mb-0 me-0">-</p>
+  <nz-date-picker *nzSpaceItem
+                  [ngModel]="project?.end_date"
+                  (ngModelChange)="handleEndDateChange($event)"
+                  [nzFormat]="'MMM dd,yyyy'"
+                  [nzSuffixIcon]="''"
+                  [nzPlaceHolder]="'Set end date'"
+                  [nzDisabledDate]="project?.start_date | validateMinDate"
+                  class="bg-transparent me-0" nzBorderless></nz-date-picker>
+  <ng-template #noIcon></ng-template>
+</nz-space>

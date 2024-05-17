@@ -1,0 +1,47 @@
+input {
+  padding-left: 4px;
+  padding-right: 0px;
+}
+
+.border-input {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: 0.25s all;
+  padding-left: 4px;
+  max-width: 260px;
+
+  &:hover {
+    border: 1px solid #d9d9d9;
+  }
+}
+
+.task-name-block, .name-holder, .border-input {
+  max-height: 32px;
+  min-height: 32px;
+  line-height: 32px;
+}
+
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.task-open-btn {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: whitesmoke;
+  transition: 0.25s all;
+}
+
+.task-name-block {
+  position: relative;
+  &:hover {
+    & .task-open-btn {
+      opacity: 1;
+    }
+  }
+}

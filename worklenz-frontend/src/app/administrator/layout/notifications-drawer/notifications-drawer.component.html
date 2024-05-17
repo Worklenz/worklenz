@@ -1,0 +1,96 @@
+<nz-drawer
+  (nzOnClose)="closeDrawer()"
+  [(nzVisible)]="show"
+  [nzClosable]="true"
+  [nzPlacement]="'right'"
+  [nzTitle]="title"
+  [nzWrapClassName]="'notifications-drawer'"
+  (nzVisibleChange)="handleVisibilityChange($event)"
+>
+  <ng-container *nzDrawerContent>
+    <div class="d-flex justify-content-between align-items-center" style="top: -14px;position: relative;">
+      <nz-segmented [nzOptions]="options" (nzValueChange)="onOptionChange($event)"></nz-segmented>
+      <ng-container *ngIf="notificationsCount && isUnreadNotifications()">
+        <button nz-button [nzType]="'link'" class="p-0" nz-tooltip [nzLoading]="readAllInProgress"
+                (click)="readAll()"
+                [nzTooltipTitle]="'Marks all notifications as read. You still have to accept invitations.'">
+          Mark all as read
+        </button>
+      </ng-container>
+    </div>
+
+    <nz-skeleton [nzActive]="true" [nzLoading]="loading || loadingInvitations">
+      <nz-empty *ngIf="isEmpty()" [nzNotFoundContent]="'You\'ve read all your notifications'"></nz-empty>
+      <ng-container *ngFor="let item of dataset; trackBy: trackByFn; let i = index">
+        <ng-container
+          *ngTemplateOutlet="(item.type === 'invitation' ? invitationTemplate : notificationTemplate); context: {
+            $implicit: item.data
+         }">
+        </ng-container>
+      </ng-container>
+    </nz-skeleton>
+  </ng-container>
+</nz-drawer>
+
+<ng-template let-item #invitationTemplate>
+  <div
+    [style.width]="'auto'"
+    class="ant-notification-notice worklenz-notification rounded-4">
+    <div class="ant-notification-notice-content">
+      <div class="ant-notification-notice-description">
+        You have been invited to work with <b>{{item.team_name}}</b>.
+      </div>
+      <nz-space *ngIf="isUnreadNotifications()">
+        <button *nzSpaceItem
+                (click)="accept($event,item)"
+                [disabled]="inProgress()"
+                [nzLoading]="item.accepting"
+                class="mt-2 p-0"
+                nz-button
+                [nzSize]="'small'" [nzType]="'link'">
+          <u>Mark as read</u>
+        </button>
+        <button *nzSpaceItem
+                (click)="acceptAndJoin(item)"
+                [disabled]="inProgress()"
+                [nzLoading]="item.joining" class="mt-2"
+                nz-button
+                [nzSize]="'small'" [nzType]="'link'">
+          <u>Read & Join</u>
+        </button>
+      </nz-space>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template let-item #notificationTemplate>
+  <div [style.width]="'auto'"
+       (click)="goToUrl($event, item)"
+       [style.border]="'2px solid ' + item.color + '4d'"
+       [class.cursor-pointer]="item.url"
+       class="ant-notification-notice worklenz-notification rounded-4">
+    <div class="ant-notification-notice-content">
+      <div class="ant-notification-notice-description">
+        <div nz-typography [nzType]="'secondary'" class="mb-1">
+          <span nz-icon [nzType]="'bank'" [nzTheme]="'outline'"></span> {{item.team}}
+        </div>
+        <div class="mb-1" [innerHTML]="item.message"></div>
+        <div *ngIf="item.project">
+          <nz-tag style="background-color: {{item.color | tagBackground}}">{{item.project}}</nz-tag>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-baseline justify-content-between mt-1">
+        <button *ngIf="isUnreadNotifications()" (click)="markNotificationAsRead($event, item.id)" class="p-0"
+                [nzLoading]="loadersMap[item.id]"
+                nz-button [nzShape]="'round'"
+                [nzSize]="'small'" [nzType]="'link'">
+          <u>Mark as read</u>
+        </button>
+        <small nz-typography [nzType]="'secondary'">{{item.created_at | fromNow}}</small>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<worklenz-notification-template #template></worklenz-notification-template>

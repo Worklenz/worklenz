@@ -1,0 +1,248 @@
+<nz-skeleton class="d-block" [nzActive]="true" [nzLoading]="loading">
+  <div *ngIf="!workloadMembers.length" class="d-block mt-3 px-3">
+    <ng-container>
+      <div class="pt-4 pb-5 text-center">
+        <div class="no-data-img-holder mx-auto mb-3">
+          <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+        </div>
+        <span nz-typography class="no-data-text">No tasks have been assigned to project members.</span>
+        <a [href]="'/worklenz/projects/'+projectId+'?group=status'" nz-typography>Assign tasks to members.</a>
+      </div>
+    </ng-container>
+  </div>
+  <div *ngIf="workloadMembers.length" class="gannt">
+    <div class="">
+      <div *ngIf="workloadMembers.length" class="d-flex">
+        <div class="fixed-left-column" #fixed_left_column>
+          <div class="top-left-placeholder" style="background-color: #fafafa">
+            <div class="d-flex align-items-center ps-3 h-default">
+              <div class="member-details">
+                <span nz-typography class="th-text">Member</span>
+              </div>
+            </div>
+          </div>
+          <div class="tasks">
+            <div *rxFor="let member of workloadMembers; let i = index" class="task-name-row">
+              <div *ngIf="!member.not_allocated"
+                   class="single-member d-flex align-items-center ps-3 cursor-pointer hover-light-blue"
+                   (mouseover)="hoverInMember(i, highlighter, getColor(member.name))"
+                   (mouseleave)="hoverOutMember(i, highlighter)"
+              >
+                <div class="d-flex align-items-center member-details" (click)="openMember(member, 0)">
+                  <nz-avatar *ngIf="member.name" [nzSize]="28"
+                             [nzText]="member.name | firstCharUpper"
+                             [style.background-color]="member.avatar_url ? '#ececec' : getColor(member.name)"
+                             [nzSrc]="member.avatar_url"
+                             class="me-2"></nz-avatar>
+                  <div class="d-block name-ellipsis">
+                    <div class="d-block ellipsis" nz-tooltip [nzTooltipTitle]="member.name">
+                      {{member.name}}
+                    </div>
+                    <div class="d-block mt-2 mb-0">
+                      <span *ngIf="!member.tasks_start_date && !member.tasks_end_date" nz-typography
+                            class="m-duration-text">
+                        No start date or end date assigned
+                      </span>
+
+                      <span *ngIf="member.tasks_start_date && member.tasks_end_date" nz-typography
+                            class="m-duration-text">
+                        <span class="navigator"
+                              (click)="afterViewScrollHandler(member.indicator_offset);$event.stopPropagation()">
+                          {{member.tasks_start_date | date : "MMM dd, YY"}}
+                        </span>
+                        -
+                        <span class="navigator"
+                              (click)="afterViewScrollHandler(member.indicator_offset + member.indicator_width);$event.stopPropagation()">
+                          {{member.tasks_end_date | date : "MMM dd, YY"}}
+                        </span>
+                      </span>
+
+                      <span *ngIf="member.tasks_start_date || member.tasks_end_date" nz-icon nzType="question-circle"
+                            nzTheme="outline" nz-tooltip
+                            [nzTooltipTitle]="'Duration of allocated tasks'"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="member-stats">
+                  <div class="stat-indicator" nz-tooltip [nzTooltipTitle]="tooltipMember"
+                       [nzTooltipPlacement]="'right'">
+                    <div class="indicator-bars d-flex overflow-hidden">
+                      <div class="bar-no-start-date"
+                           [style.width]="member.tasks_stats.null_start_dates_percentage+'%'"
+                           (click)="openMember(member, 2)"></div>
+                      <div class="bar-no-end-date"
+                           [style.width]="member.tasks_stats.null_end_dates_percentage+'%'"
+                           (click)="openMember(member, 3)"></div>
+                      <div class="bar-no-start-end-date"
+                           [style.width]="member.tasks_stats.null_start_end_dates_percentage+'%'"
+                           (click)="openMember(member, 4)"></div>
+                      <div class="bar-have-start-end-date"
+                           [style.width]="member.tasks_stats.available_start_end_dates_percentage+'%'"
+                           (click)="openMember(member, 1)"></div>
+                    </div>
+                  </div>
+                  <ng-template #tooltipMember>
+                    <div class="d-block">
+                      <nz-badge [nzColor]="'#fff'" [nzText]=""></nz-badge>
+                      <span>Total tasks </span>
+                      <span>({{member.tasks_stats.total}})</span>
+                    </div>
+                    <div class="d-block">
+                      <nz-badge [nzColor]="'#F8A9A98C'" [nzText]=""></nz-badge>
+                      <span>Tasks without Start date </span>
+                      <span>({{member.tasks_stats.null_start_dates}})</span>
+                    </div>
+                    <div class="d-block">
+                      <nz-badge [nzColor]="'#F9A0A0BF'" [nzText]=""></nz-badge>
+                      <span>Tasks without End date </span>
+                      <span>({{member.tasks_stats.null_end_dates}})</span>
+                    </div>
+                    <div class="d-block">
+                      <nz-badge [nzColor]="'#F7A7A7E5'" [nzText]=""></nz-badge>
+                      <span>Tasks without Start and End dates </span>
+                      <span>({{member.tasks_stats.null_start_end_dates}})</span>
+                    </div>
+                  </ng-template>
+                </div>
+              </div>
+              <div *ngIf="member.not_allocated"
+                   class="single-member d-flex align-items-center ps-3 na-member na-member-name">
+                <div class="d-flex align-items-center member-details">
+                  <nz-avatar *ngIf="member.name" [nzSize]="28"
+                             [nzText]="member.name | firstCharUpper"
+                             [style.background-color]="member.avatar_url ? '#ececec' : getColor(member.name)"
+                             [nzSrc]="member.avatar_url"
+                             class="me-2"></nz-avatar>
+                  <div class="d-block name-ellipsis ellipsis">
+                    <div class="d-block" nz-tooltip [nzTooltipTitle]="member.name">
+                      {{member.name}}
+                    </div>
+                    <div class="d-block">
+                      <span nz-typography class="m-duration-text">
+                        No tasks assigned yet
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="d-block d-flex align-items-center">
+                  <a [href]="'/worklenz/projects/'+projectId+'?group=status'" nz-typography>Assign Tasks</a>
+                </div>
+              </div>
+              <!--              <div *ngIf="member.isExpand" class="single-member-tasks">-->
+              <!--                <div *ngIf="innerLoading" class="single-member-task pt-2">-->
+              <!--                  <span nz-typography nzType="secondary" class="ms-1">loading...</span>-->
+              <!--                </div>-->
+              <!--                <div *ngIf="!member.tasks && !innerLoading" class="single-member-task pt-2">-->
+              <!--                  <span nz-typography nzType="secondary" class="ms-1">No tasks to show</span>-->
+              <!--                </div>-->
+              <!--                <div *ngFor="let task of member.tasks; trackBy: trackById" class="single-member-task">-->
+              <!--                  <div class="d-flex align-items-center h-default" (click)="afterViewScrollHandler(task.left)">-->
+              <!--                    <div class="m-t-name">-->
+              <!--                      <worklenz-task-name [task]="task" (openTask)="openTask($event)"></worklenz-task-name>-->
+              <!--                    </div>-->
+              <!--                    <div class="m-t-start-date">-->
+              <!--                      <worklenz-start-date [task]="task"></worklenz-start-date>-->
+              <!--                    </div>-->
+              <!--                    <div class="m-t-end-date">-->
+              <!--                      <worklenz-end-date [task]="task"></worklenz-end-date>-->
+              <!--                    </div>-->
+              <!--                  </div>-->
+              <!--                </div>-->
+              <!--              </div>-->
+            </div>
+          </div>
+        </div>
+        <div class="fixed-right-column" #fixed_right_column>
+          <div class="top" [style.width]="this.numberOfDays * GANNT_COLUMN_WIDTH + 'px'">
+            <div class="highlighter" #highlighter></div>
+            <div class="d-flex month-name">
+              <div class="d-flex" *rxFor="let m of months">
+                <div class="month-boundary" [style.min-width]="m.days.length * GANNT_COLUMN_WIDTH + 'px'">
+                  {{m.month}}
+                </div>
+              </div>
+            </div>
+            <div class="d-flex" style="min-height: 45px; max-height: 45px">
+              <div class="d-flex" *rxFor="let m of months">
+                <div *rxFor="let d of m.days" class="day-boundary" [style.min-width]="GANNT_COLUMN_WIDTH + 'px'"
+                     [style.max-width]="GANNT_COLUMN_WIDTH + 'px'">
+                  <div class="d-block text-center"
+                       [ngClass]="[d.isWeekend ? 'weekend' : '', d.isToday ? 'today today-bg' : '']">
+                    <div class="d-name">
+                      {{d.name}}
+                    </div>
+                    <div class="d-day">
+                      {{d.day}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="middle" [style.width]="this.numberOfDays * GANNT_COLUMN_WIDTH + 'px'">
+            <div class="day-cells d-flex">
+              <div *rxFor="let m of months" class="d-flex">
+                <div *rxFor="let d of m.days" [ngClass]="[d.isWeekend ? 'weekend' : '', d.isToday ? 'today' : '']"
+                     class="inner-day-cell"
+                     [style.min-width]="GANNT_COLUMN_WIDTH + 'px'">
+                </div>
+              </div>
+            </div>
+            <div *rxFor="let member of workloadMembers" class="task-name-row">
+              <div class="single-member position-relative">
+                <div class="duration-indicator cursor-pointer d-flex align-items-center"
+                     [style.background-color]="'#d9e3ee'"
+                     [style.border-color]="'#adb5bd'"
+                     [style.width]="member.indicator_width+'px'"
+                     [style.left]="member.indicator_offset+'px'"
+                     (mouseover)="hoverInIndicator(elementIn, highlighter, getColor(member.name), $event, member)"
+                     (mouseleave)="hoverOutIndicator(elementIn, highlighter)"
+                     (click)="openMember(member, 0)" #elementIn
+                     #duration_indicator>
+                </div>
+              </div>
+              <!--              <div *ngIf="member.isExpand" class="single-member-tasks">-->
+              <!--                <div *ngFor="let task of member.tasks; trackBy: trackById" class="single-member-task bar-top"-->
+              <!--                     [ngClass]="innerLoading ? 'user-select-none' : ''">-->
+              <!--                  <div class="task-bar" [style.width]="task.width+'px'" [style.left]="task.left+'px'"-->
+              <!--                       (dragged)="onElementDragged($event, task)" worklenzDragAndDrop>-->
+              <!--                    <div class="d-flex">-->
+              <!--                      <div class="resize-handle left-handle"-->
+              <!--                           (mousedown)="onResizeStart($event, task, 'left'); $event.stopPropagation()"></div>-->
+              <!--                      <div class="resize-handle right-handle"-->
+              <!--                           (mousedown)="onResizeStart($event, task, 'right'); $event.stopPropagation()"></div>-->
+              <!--                    </div>-->
+              <!--                  </div>-->
+              <!--                </div>-->
+              <!--              </div>-->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="custom-tooltip-element" [style.left]="customToolTipLeft+'px'" [style.top]="customToolTipTop+'px'"
+       #custom_tooltip_element>
+    <span *ngIf="customToolTipStartDate && customToolTipEndDate"  class="text-white">From {{customToolTipStartDate | date : 'MMM dd, YYYY'}}
+      to {{customToolTipEndDate | date : 'MMM dd, YYYY'}}</span>
+    <span *ngIf="!customToolTipStartDate && !customToolTipEndDate"  class="text-white">No start & end date</span>
+  </div>
+</nz-skeleton>
+
+<worklenz-member-tasks-drawer
+  (onOpenTask)="openTask($event)"
+  [activeTab]="activeTab"
+  [(show)]="showMemberModal"
+  [projectId]="projectId"
+  [teamMember]="selectedTeamMember"
+>
+</worklenz-member-tasks-drawer>
+
+<worklenz-task-view
+  [(show)]="showTaskModal"
+  (showChange)="onShowChange($event)"
+  [selfResetTaskId]="false"
+  [projectId]="selectedTask?.project_id || null"
+  [taskId]="selectedTask?.id || null"
+></worklenz-task-view>
+

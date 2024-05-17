@@ -1,0 +1,100 @@
+<!-- Drag handler -->
+<div class="flex-row task-drag-handler"></div>
+
+<!-- Checkbox -->
+<div class="flex-row task-check">
+  <span nz-checkbox [(nzChecked)]="checked" [nzIndeterminate]="indeterminate"
+        (nzCheckedChange)="onAllChecked($event)"></span>
+</div>
+
+<!-- Key -->
+<ng-container *ngIf="keyActive">
+  <div class="flex-row task-key text-center">Key</div>
+</ng-container>
+
+<!-- Subtask arrow -->
+<div class="flex-row task-arrow"></div>
+
+<!-- Task name -->
+<div class="flex-row task-name">Task</div>
+
+<!-- Description -->
+<ng-container *ngIf="descriptionActive">
+  <div class="flex-row task-description">Description</div>
+</ng-container>
+
+<!-- Progress -->
+<ng-container *ngIf="progressActive">
+  <div class="flex-row task-progress text-center">Progress</div>
+</ng-container>
+
+<!-- Member -->
+<ng-container *ngIf="assigneesActive">
+  <div class="flex-row task-members">Members</div>
+</ng-container>
+
+<!-- Labels -->
+<ng-container *ngIf="labelsActive">
+  <div class="flex-row task-labels">Labels</div>
+</ng-container>
+
+<!-- Phase -->
+<ng-container *ngIf="phaseActive">
+  <div class="flex-row task-phase d-flex justify-content-between align-items-center">
+    <span nz-tooltip [nzTooltipTitle]="phaseLabel">{{phaseLabel | ellipsis : 10}}</span>
+    <button *ngIf="auth.isOwnerOrAdmin() || isProjectManager()" [nzShape]="'circle'" [nzSize]="'small'" [nzType]="'text'"
+            (click)="onPhaseSettingsClick()" nz-button>
+      <span nz-icon [nzType]="'setting'" [nzTheme]="'outline'"></span>
+    </button>
+  </div>
+</ng-container>
+
+<!-- Status -->
+<ng-container *ngIf="statusActive">
+  <div class="flex-row task-status">Status</div>
+</ng-container>
+
+<!-- Priority -->
+<ng-container *ngIf="priorityActive">
+  <div class="flex-row task-priority">Priority</div>
+</ng-container>
+
+<!-- Time tracking -->
+<ng-container *ngIf="timeTrackingActive">
+  <div class="flex-row task-time-tracking justify-content-center">Time Tracking</div>
+</ng-container>
+
+<!-- Estimation -->
+<ng-container *ngIf="estimationActive">
+  <div class="flex-row task-estimation justify-content-center">Estimation</div>
+</ng-container>
+
+<!-- Start date -->
+<ng-container *ngIf="startDateActive">
+  <div class="flex-row task-start-date">Start Date</div>
+</ng-container>
+
+<!-- Due date -->
+<ng-container *ngIf="dueDateActive">
+  <div class="flex-row task-due-date">Due Date</div>
+</ng-container>
+
+<!-- Completed date -->
+<ng-container *ngIf="completedDateActive">
+  <div class="flex-row task-completed-date">Completed Date</div>
+</ng-container>
+
+<!-- Created date -->
+<ng-container *ngIf="createdDateActive">
+  <div class="flex-row task-created-date">Created Date</div>
+</ng-container>
+
+<!-- Last update -->
+<ng-container *ngIf="lastUpdatedActive">
+  <div class="flex-row task-update-date">Last Updated</div>
+</ng-container>
+
+<!-- Reporter -->
+<ng-container *ngIf="reporterActive">
+  <div class="flex-row task-update-date">Reporter</div>
+</ng-container>

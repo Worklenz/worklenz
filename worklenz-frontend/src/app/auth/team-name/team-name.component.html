@@ -1,0 +1,19 @@
+<form (submit)="proceedRegistration()" [formGroup]="form" class="login-form" nz-form>
+
+  <h5 nz-typography>Pick a name for your team</h5>
+
+  <nz-form-item>
+    <nz-form-control nzErrorTip="Please input your Team name!">
+      <nz-input-group nzSize="large">
+        <input autofocus formControlName="team_name" nz-input placeholder="E.g., Game Devs" type="text"/>
+      </nz-input-group>
+    </nz-form-control>
+  </nz-form-item>
+
+  <button [nzLoading]="loading" [nzType]="'primary'" nz-button nzBlock nzSize="large">Continue</button>
+  <button (click)="back.emit()" *ngIf="showBackButton" [nzLoading]="loading" [nzType]="'default'" class="mt-2" nz-button
+          nzBlock nzSize="large">
+    <i [nzType]="'left'" nz-icon></i>
+    Go Back
+  </button>
+</form>

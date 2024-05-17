@@ -1,0 +1,302 @@
+extends layout
+
+block content
+  section#home
+    .container-fluid
+      .top-title
+        h1
+          | From&nbsp;
+          span.font-chaos.highlight-chaos Chaos&nbsp;
+          | to&nbsp;
+          span.font-clarity Clarity
+        h2.top-tagline Seamlessly manage tasks and resources for optimal performance
+        .top-desc
+          h5 Our one-stop tool simplifies project management, empowering your team to work smarter, not harder.
+      .top-actions-btns
+        .d-flex.justify-content-center
+          //- a(href='/auth/login').btn.top-action-login-btn Login
+          a(href='/auth/signup').btn.top-action-signup-btn Try for free
+    .worklenz_top_img_container
+      .worklenz_top_img_1
+        img.img-fluid(src='/assets/images/worklenz-banner.png' alt='')
+  section#features
+    .container-custom
+      .section-pt
+        .pill-title
+          h6 Features
+        .section-head
+          h2 Revolutionize your workflow
+          p Experience the efficiency and effectiveness of our advanced project management platform and never look back.
+        .owl-carousel
+          .text-center
+            button.btn.single-feature-button.before-line.active
+              i.fas.fa-list-check.me-2
+              | Task list
+          .text-center
+            button.btn.single-feature-button
+              i.fas.fa-table-columns.me-2
+              | Kanban
+          .text-center
+            button.btn.single-feature-button
+              i.fas.fa-calendar-days.me-2
+              | Schedule
+          .text-center
+            button.btn.single-feature-button
+              i.fas.fa-chart-pie.me-2
+              | Insights
+          .text-center
+            button.btn.single-feature-button
+              i.far.fa-file-lines.me-2
+              | Reporting
+        .feature-details
+          .position-relative
+            .d-flex.mb-block
+              .col-left
+                .single-feature-details.active
+                  h6(style="color:#1890ff;") Intuitive
+                  h4 Task list
+                  p
+                    | Effortlessly manage your tasks from one place. Quick create, assign, label and prioritize tasks and sub tasks.
+                  a.btn.try-now-btn(href='/auth/signup')
+                    | Try now
+                    i.fa-solid.fa-arrow-right-long
+                .single-feature-details.d-none
+                  h6(style="color:#1890ff;") Manage
+                  h4 Kanban
+                  p Visualize your workflow and manage tasks more effectively with our Kanban Board. Get a clear overview of your progress and stay organized.
+                  a.btn.try-now-btn(href='/auth/signup')
+                    | Try now
+                    i.fa-solid.fa-arrow-right-long
+                .single-feature-details.d-none
+                  h6(style="color:#1890ff;") Plan Your
+                  h4 Schedule
+                  p Easily track team member availability and allocation. Make adjustments and optimize productivity.
+                  a.btn.try-now-btn(href='/auth/signup')
+                    | Try now
+                    i.fa-solid.fa-arrow-right-long
+                .single-feature-details.d-none
+                  h6(style="color:#1890ff;") See
+                  h4 Insights
+                  p
+                    | Drive success with insights. Gain visibility into workload, progress, and profitability to make data-driven decisions.
+                  a.btn.try-now-btn(href='/auth/signup')
+                    | Try now
+                    i.fa-solid.fa-arrow-right-long
+                .single-feature-details.d-none
+                  h6(style="color:#1890ff;") Get
+                  h4 Reporting
+                  p
+                    | Get a comprehensive view of progress and results to optimize performance. Monitor progress and results to make data-driven decisions.
+                  a.btn.try-now-btn(href='/auth/signup')
+                    | Try now
+                    i.fa-solid.fa-arrow-right-long
+              .col-right
+                .feature-img-container
+                  img.img-fluid.feature-img.active(src='/assets/images/tasklist.gif' alt='')
+                  img.img-fluid.feature-img.d-none(src='/assets/images/kanban.gif' alt='')
+                  img.img-fluid.feature-img.d-none(src='/assets/images/schedule.gif' alt='')
+                  img.img-fluid.feature-img.d-none(src='/assets/images/insights.gif' alt='')
+                  img.img-fluid.feature-img.d-none(src='/assets/images/reporting.gif' alt='')
+        .co-features
+          h4 Get more done with our integrated Co-features
+          .d-flex.align-items-center.co-features-list
+            .single-co-feature
+              .co-feature-icon.d-block
+                img.img-fluid(src='/assets/images/icons/backlog.png')
+              h5 Workload
+            .single-co-feature
+              .co-feature-icon.d-block
+                img.img-fluid(src='/assets/images/icons/direction.png')
+              h5 Roadmap
+            .single-co-feature
+              .co-feature-icon.d-block
+                img.img-fluid(src='/assets/images/icons/software-engineer.png')
+              h5 Admin center
+            .single-co-feature
+              .co-feature-icon.d-block
+                img.img-fluid(src='/assets/images/icons/form.png')
+              h5 Task templates
+            .single-co-feature
+              .co-feature-icon.d-block
+                img.img-fluid(src='/assets/images/icons/team.png')
+              h5 Teams management
+            .single-co-feature
+              .co-feature-icon.d-block
+                img.img-fluid(src='/assets/images/icons/profile.png')
+              h5 User management
+            .single-co-feature
+              .co-feature-icon.d-block
+                img.img-fluid(src='/assets/images/icons/bell.png')
+              h5 Notifications
+            .single-co-feature
+              .co-feature-icon.d-block
+                img.img-fluid(src='/assets/images/icons/filter.png')
+              h5 Powerful filters
+  section#pricing
+    .container-custom.pricing-container
+      .section-pt
+        .pill-title
+          h6 Pricing
+        .section-head
+          h2 One plan, flexible payments
+          p Elevate your experience: Opt for our comprehensive plan, with monthly or annual payment
+      .trail-banner
+        a(href="/auth/signup")
+          i.fas.fa-circle-exclamation.me-2(style="color:#464646")
+          | Start our&nbsp;
+          b free trial for #{settings.trial_duration} days
+          | &nbsp;with 20 members, 1GB free storage
+      .pricing-tabs
+        ul.nav.nav-pills(role='tablist')
+          li.nav-item(role='presentation')
+            button#free-price-tab.nav-link(data-bs-toggle='pill' data-bs-target="#free-price" type='button' role='tab' aria-controls='free-price' aria-selected='true') Free
+          li.nav-item(role='presentation')
+            button#monthly-price-tab.nav-link.active(data-bs-toggle='pill' data-bs-target="#monthly-price" type='button' role='tab' aria-controls='monthly-price' aria-selected='true') Monthly
+          li.nav-item(role='presentation')
+            button#annual-price-tab.nav-link(data-bs-toggle='pill'  data-bs-target="#monthly-price" type='button' role='tab' aria-controls='annual-price' aria-selected='false')
+              | Annually
+              .off-annual
+                | -33%
+        .tab-content
+          #free-price.tab-pane.fade(role='tabpanel' aria-labelledby='free-price-tab')
+            .d-flex.content-center
+              .pricing-card-container
+                h4 Free
+                .tag-box
+                  .trs-3
+                    h3 $0.00
+                    h6 per user/per month
+                ul.p-card-ul
+                  li.d-flex.align-items-center
+                    .icon-bg
+                      i.fas.fa-circle-check
+                    | #{settings.team_member_limit} team members
+                  li.d-flex.align-items-center
+                    .icon-bg
+                      i.fas.fa-circle-check
+                    | #{settings.free_tier_storage}GB free storage
+                  li.d-flex.align-items-center
+                    .icon-bg
+                      i.fas.fa-circle-check
+                    | #{settings.projects_limit} active projects
+                .list-divider
+                .row
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Dashboard
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Schedule
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Kanban board
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Tasks list
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Project insights
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Reporting
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Time log
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Road map
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Workload
+                a.card-action-btn(href="/auth/signup") Get started
+          #monthly-price.tab-pane.fade.show.active(role='tabpanel' aria-labelledby='monthly-price-tab')
+            .d-flex.content-center
+              .pricing-card-container
+                h4 Pro
+                .tag-box
+                  .visible.price-tag-month.trs-3
+                    h3 $5.99
+                    h6 per user/per month
+                  .invisible.price-tag-annual.trs-3
+                    h3.d-flex.align-items-center $3.99
+                      span.ms-2(style="text-decoration:line-through;font-size:26px;color:rgba(0, 0, 0, 0.45);") $5.99
+                    h6 per user/per month
+                ul.p-card-ul
+                  li.d-flex.align-items-center
+                    .icon-bg
+                      i.fas.fa-circle-check
+                    | Unlimited team members
+                  li.d-flex.align-items-center
+                    .icon-bg
+                      i.fas.fa-circle-check
+                    | 25GB free storage
+                  li.d-flex.align-items-center
+                    .icon-bg
+                      i.fas.fa-circle-check
+                    | Unlimited active projects
+                .list-divider
+                .row
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Dashboard
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Schedule
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Kanban board
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Tasks list
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Project insights
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Reporting
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Time log
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Road map
+                  .col-md-4
+                    .d-flex.align-items-center.price-list.font-14
+                      .icon-bg
+                        i.fas.fa-circle-check
+                      | Workload
+                a.card-action-btn(href="/auth/signup") Get started

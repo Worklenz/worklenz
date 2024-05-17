@@ -1,0 +1,25 @@
+.stat-icon {
+  font-size: 24px !important;
+}
+
+.chart {
+  width: 215px;
+  max-width: 215px;
+}
+
+.chart-details {
+  display: flex;
+  align-items: center;
+  height: 220px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.chart-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.no-data-img-holder {
+  width: 65px;
+}

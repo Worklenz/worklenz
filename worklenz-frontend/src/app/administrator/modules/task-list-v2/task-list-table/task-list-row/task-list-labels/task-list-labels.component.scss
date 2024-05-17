@@ -1,0 +1,36 @@
+.dropdown-ul {
+  max-height: 250px;
+  overflow: hidden;
+  overflow-y: auto;
+}
+
+.label-tag-container {
+  max-width: 220px;
+  overflow: hidden;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-right: 0px;
+}
+
+nz-tag {
+  display: block;
+  overflow: hidden;
+  white-space: break-spaces;
+  margin-left: 3px;
+  margin-right: 3px;
+  line-height: 16px;
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+.empty-label {
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 2px;
+  padding-bottom: 3px;
+
+  & .ant-typography {
+    display: flex;
+  }
+}

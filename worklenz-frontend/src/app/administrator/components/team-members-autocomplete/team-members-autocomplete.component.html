@@ -1,0 +1,58 @@
+<form [formGroup]="form" [nzLayout]="'vertical'" nz-form>
+  <nz-form-item>
+    <nz-form-label *ngIf="label" [nzSpan]="null">{{label}}</nz-form-label>
+    <nz-form-control [nzSpan]="null">
+      <nz-select
+        (nzOnSearch)="search($event)"
+        [formControlName]="'members'"
+        [nzDisabled]="disabled"
+        [nzLoading]="loading"
+        [nzMode]="multiple ? 'multiple' : 'default'"
+        [nzPlaceHolder]="placeholder"
+        [nzNotFoundContent]="disableTeamInvites ? '' : notFoundContentTemplate"
+        [nzShowArrow]="false"
+        [nzDropdownStyle]="{'min-height': '50px'}"
+        nzAllowClear
+        nzServerSearch
+        nzShowSearch
+        class="member-add-selector"
+        #searchInput
+      >
+        <ng-container *ngFor="let item of model.data || []; trackBy: trackById" style="min-height: 50px">
+          <nz-option *ngIf="!searching" [nzValue]="item.id" nzCustomContent nzLabel="{{item.name}}">
+            <div class="d-flex align-items-center user-select-none">
+              <nz-avatar
+                nz-tooltip
+                [nzSize]="28"
+                [nzText]="item.name | firstCharUpper"
+                [nzTooltipTitle]="item.name"
+                [style.background-color]="item.avatar_url ? '#ececec' : item.color_code"
+                [nzSrc]="item.avatar_url"
+                [nzTooltipPlacement]="'top'"
+                class="mt-auto mb-auto me-2"
+              ></nz-avatar>
+              <div style="line-height: 15px;">
+                <span class="d-block" nz-typography>{{item.name}}</span>
+                <small nz-typography nzType="secondary">{{item.email}}</small>
+              </div>
+            </div>
+          </nz-option>
+        </ng-container>
+        <nz-option *ngIf="searching" nzCustomContent nzDisabled>
+          <span class="loading-icon" nz-icon nzType="loading"></span>
+          Loading Data...
+        </nz-option>
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+</form>
+
+<ng-template #notFoundContentTemplate>
+  <button nz-button nzType="primary" nzBlock [disabled]="!isValueIsAnEmail() || inviting" [nzLoading]="inviting"
+          (click)="sendInvitation()">
+    <span nz-icon nzType="mail" nzTheme="outline"></span> {{buttonText}}
+  </button>
+  <div nz-typography nzType="secondary" class="mt-2 mb-0" style="font-size: 12px;">
+    Invitees will be added to the team and project either they accept the invitation or not.
+  </div>
+</ng-template>

@@ -1,0 +1,16 @@
+const fs = require("fs");
+const path = require("path");
+
+const wwwFile = fs.readFileSync(path.join(__dirname, "../build/bin/www.js"), "utf8");
+
+const bluebird = /(global\.Promise = require\("bluebird"\);)/g;
+const dotenvImport = /(var import_dotenv = __toESM\(require\("dotenv"\)\);)/g;
+const dotenvUse = /(import_dotenv\.default\.config\(\);)/g;
+
+const out = wwwFile
+  .replace(bluebird, "")
+  .replace(dotenvUse, "")
+  .replace(dotenvImport, `var import_dotenv = __toESM(require("dotenv"));import_dotenv.default.config();`)
+  .replace(dotenvUse, `import_dotenv.default.config();global.Promise = require("bluebird");`);
+
+fs.writeFileSync(path.join(__dirname, "../build/bin/www.js"), out, "utf8");

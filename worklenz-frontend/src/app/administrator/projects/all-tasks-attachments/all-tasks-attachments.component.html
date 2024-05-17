@@ -1,0 +1,99 @@
+<nz-card [nzExtra]="attachmentsHeadTemplate" [nzTitle]="titleTemplate">
+  <nz-skeleton [nzActive]="true" [nzLoading]="loading" [nzParagraph]="{ rows: 5 }">
+    <nz-table
+      #table
+      (nzQueryParams)="onQueryParamsChange($event)"
+      [nzData]="attachments.data || []"
+      [nzFrontPagination]="false"
+      [nzPageIndex]="pageIndex"
+      [nzPageSizeOptions]="paginationSizes"
+      [nzPageSize]="pageSize"
+      [nzTotal]="total"
+      nzShowSizeChanger
+      [nzSize]="'small'"
+      class="custom-table"
+      nzSize="small" [nzNoResult]="noDataTemplate"
+    >
+      <thead>
+      <tr>
+        <th nzAlign="left" scope="col">Name</th>
+        <th nzAlign="left" scope="col">Attached Task</th>
+        <th nzAlign="left" scope="col">Size</th>
+        <th nzAlign="left" scope="col">Uploaded by</th>
+        <th colSpan="2" nzAlign="left" scope="col">Uploaded at</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of table.data" class="actions-row">
+        <td (click)="open(data.url)" class="cursor-pointer d-flex">
+          <img class="file-icon me-2" [src]="'/assets/images/files/' + getFileIcon(data.type)" alt="">
+          <span>{{data.name}}</span>
+        </td>
+        <td (click)="open(data.url)" class="cursor-pointer">
+          <span *ngIf="data.task_name">[{{data.task_key}}] {{data.task_name}}</span>
+          <span nz-typography nzType="secondary" *ngIf="!data.task_name">Unassigned</span>
+        </td>
+        <td (click)="open(data.url)" class="cursor-pointer">{{data.size}}</td>
+        <td (click)="open(data.url)" class="cursor-pointer">{{data.uploader_name}}</td>
+        <td (click)="open(data.url)" class="cursor-pointer" nz-tooltip
+            [nzTooltipTitle]="data.created_at | date: 'medium'">
+          {{data.created_at | fromNow}}
+        </td>
+        <td class="actions-col">
+          <div class="actions">
+            <nz-space>
+              <button (nzOnConfirm)="delete(data.id)" *nzSpaceItem
+                      nz-button nz-popconfirm nz-tooltip nzOkText="Yes"
+                      nzPopconfirmTitle="Are you sure?" nzSize="small" nzTooltipPlacement="top"
+                      nzTooltipTitle="Delete"
+                      nzType="default">
+                <span nz-icon nzType="delete"></span>
+              </button>
+              <button (click)="download(data.id, data.name)" *nzSpaceItem nz-button nz-tooltip nzSize="small"
+                      nzTooltipPlacement="top"
+                      nzTooltipTitle="Download"
+                      nzType="default">
+                <span nz-icon nzType="cloud-download" nzTheme="outline"></span>
+              </button>
+            </nz-space>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+  </nz-skeleton>
+</nz-card>
+
+<ng-template #attachmentsHeadTemplate>
+  <nz-segmented [nzDisabled]="true" [nzOptions]="options" nz-tooltip
+                [nzTooltipTitle]="segmentTitleTemplate"></nz-segmented>
+
+  <ng-template #segmentTitleTemplate>
+    <p class="mb-0">Coming soon!</p>
+    <p class="mb-0">Switch between list view and thumbnail view.</p>
+  </ng-template>
+</ng-template>
+
+<ng-template #titleTemplate>
+  <small nz-typography nzType="secondary">
+    <span nz-icon nzType="info-circle" nzTheme="outline"></span>
+    All attachments to tasks in this project will appear here.
+  </small>
+</ng-template>
+
+<ng-template #noDataTemplate>
+  <div class="pt-4 pb-5">
+    <div class="no-data-img-holder mx-auto mb-3">
+      <img src="/assets/images/empty-box.webp" class="img-fluid" alt="">
+    </div>
+    <span nz-typography class="no-data-text">There are no attachments in the project.</span>
+  </div>
+</ng-template>
+
+<worklenz-task-view
+  [(show)]="showTaskDrawer"
+  (showChange)="onShowChange($event)"
+  [selfResetTaskId]="false"
+  [projectId]="projectId || null"
+  [taskId]="selectedTaskId"
+></worklenz-task-view>

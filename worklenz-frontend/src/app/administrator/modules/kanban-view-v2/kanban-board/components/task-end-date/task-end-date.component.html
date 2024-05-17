@@ -1,0 +1,16 @@
+<div class="h-100 d-flex w-100" [ngClass]="task.end_date ? 'show-def':'show-hover'" #elementDueDate>
+    <span nz-typography class="date-text"
+          [class.past-date]="checkForPastDate(task.end_date)"
+          [class.soon-date]="checkForSoonDate(task.end_date)">{{task.end_date | dateFormatter}}</span>
+
+  <nz-date-picker
+    class="bg-transparent w-100 kanban-task-card-due-date"
+    [(ngModel)]="task.end_date"
+    (ngModelChange)="handleEndDateChange($event, task)"
+    [nzFormat]="'MMM dd,yyyy'"
+    [nzSuffixIcon]="''"
+    [nzPlaceHolder]="'Due date'"
+    [nzDisabledDate]="task.start_date | validateMinDate">
+  </nz-date-picker>
+
+</div>

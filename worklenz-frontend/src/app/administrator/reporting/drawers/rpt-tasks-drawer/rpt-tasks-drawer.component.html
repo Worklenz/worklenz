@@ -1,0 +1,49 @@
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="show"
+  [nzPlacement]="'right'"
+  [nzTitle]="memberDrawerTitle"
+  [nzContent]="memberTasksDrawerContent"
+  (nzOnClose)="close()"
+  [nzWidth]="900"
+  [nzCloseIcon]="closeIcon"
+></nz-drawer>
+
+<ng-template #memberDrawerTitle>
+  <div class="d-flex align-items-center w-100">
+    <nz-breadcrumb style="margin-left: -15px;">
+      <nz-breadcrumb-item>
+      </nz-breadcrumb-item>
+      <nz-breadcrumb-item>
+        {{member?.name}}
+      </nz-breadcrumb-item>
+    </nz-breadcrumb>
+    <div class="ms-auto">
+      <nz-space>
+
+        <button *nzSpaceItem nz-button [nzType]="'primary'"  nz-dropdown [nzPlacement]="'bottomRight'" [nzLoading]="exporting" (click)="export()">
+          Export
+        </button>
+
+      </nz-space>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #memberTasksDrawerContent>
+  <ng-container *ngIf="member && project">
+    <worklenz-rpt-flat-task-list
+      [disableProjectsFilter]="true"
+      [teamMemberId]="member.id"
+      [projectId]="project.id"
+    ></worklenz-rpt-flat-task-list>
+  </ng-container>
+</ng-template>
+
+<ng-template #closeIcon>
+  <worklenz-rpt-drawer-title
+    *ngIf="project"
+    [title]="project.name"
+    [icon]="'file'"
+  ></worklenz-rpt-drawer-title>
+</ng-template>

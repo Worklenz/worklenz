@@ -1,0 +1,37 @@
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="show"
+  nzPlacement="right"
+  [nzWidth]="1000"
+  [nzTitle]="'Select from templates'"
+  [nzFooter]="footer"
+  (nzOnClose)="close()"
+  (nzVisibleChange)="onDrawerVisibilityChange($event)"
+  class="template-drawer-o-none"
+>
+  <ng-container *nzDrawerContent>
+    <div class="template-drawer-o-none d-none"></div>
+    <nz-tabset nzType="card" (nzSelectedIndexChange)="selectedTabIndex = $event">
+      <nz-tab [nzTitle]="'Worklenz Library'">
+        <worklenz-template-list *ngIf="drawerVisible"
+          (selectTemplate)="changeSelectedWorklenzTemp($event)">
+        </worklenz-template-list>
+      </nz-tab>
+      <nz-tab *ngIf="showBothTabs" [nzTitle]="'Your Library'">
+        <worklenz-custom-template-list *ngIf="drawerVisible"
+          (selectTemplate)="changeSelectedCustomTemp($event)">
+        </worklenz-custom-template-list>
+      </nz-tab>
+    </nz-tabset>
+  </ng-container>
+  <ng-template #footer>
+    <div style="float: right">
+      <button nz-button style="margin-right: 8px;" (click)="close()">Cancel</button>
+      <button nz-button nzType="primary"
+              [disabled]="!selectedWorklenzTemplateId && !selectedCustomTemplateId"
+              (click)="create()" [nzLoading]="creating">
+        Create
+      </button>
+    </div>
+  </ng-template>
+</nz-drawer>

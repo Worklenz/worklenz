@@ -1,0 +1,58 @@
+<div class="container-fluid">
+  <div class="my-dashboard mx-auto">
+    <div class="row position-relative home-top-row">
+      <div class="home-name-date text-center">
+        <nz-space>
+          <h3 *nzSpaceItem nz-typography>Hi {{name}}, {{greetingTime}}!</h3>
+        </nz-space>
+        <h4 nz-typography class="mb-0" style="margin-top: 5px;">Today
+          is {{currentDate | date:'EEEE, MMMM d, y'}}</h4>
+      </div>
+      <div class="home-top-action w-auto">
+        <nz-button-group *ngIf="isOwnerOrAdmin()">
+          <button (click)="openProjectForm()" nz-button
+                  [nzType]="'primary'"><span nz-icon nzType="edit" nzTheme="outline"></span>Create Project
+          </button>
+          <button
+            nz-button
+            [nzType]="'primary'" nz-dropdown [nzDropdownMenu]="menu" [nzTrigger]="'click'"
+            [nzPlacement]="'bottomRight'">
+            <span nz-icon nzType="down" nzTheme="outline"></span>
+          </button>
+        </nz-button-group>
+
+        <nz-dropdown-menu #menu="nzDropdownMenu">
+          <ul nz-menu>
+            <li nz-menu-item (click)="openTemplateSelector()">
+              <span nz-icon nzType="import" nzTheme="outline" class="me-2"></span>
+              Import from template
+            </li>
+          </ul>
+        </nz-dropdown-menu>
+      </div>
+    </div>
+    <div class="dahsboard-content">
+      <ng-container>
+        <div nz-row [nzGutter]="22">
+          <div nz-col class="gutter-row" nzSpan="16">
+            <div class="dashboard-main-card tasks-card">
+              <worklenz-my-tasks></worklenz-my-tasks>
+            </div>
+          </div>
+          <div nz-col class="gutter-row" nzSpan="8">
+            <div class="dashboard-main-card">
+              <worklenz-personal-tasks></worklenz-personal-tasks>
+            </div>
+            <div class="dashboard-main-card" style="margin-top: 22px">
+              <worklenz-my-projects></worklenz-my-projects>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+<worklenz-project-form-modal (onCreate)="newProjectCreated()"></worklenz-project-form-modal>
+<worklenz-project-template-import-drawer [showBothTabs]="true"
+                                         (importProject)="goToProjects($event)"></worklenz-project-template-import-drawer>

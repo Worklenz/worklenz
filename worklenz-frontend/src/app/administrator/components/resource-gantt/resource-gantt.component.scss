@@ -1,0 +1,110 @@
+$column_count: var(--column_count);
+$column_width: var(--column_width);
+$top_margin: var(--top_margin);
+
+.container {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.chart {
+  display: grid;
+  border: 1px solid #e3e3e3;
+  height: calc(100vh - $top_margin);
+  position: relative;
+  overflow: auto;
+  grid-auto-rows: 40px;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  background-color: #fff;
+}
+
+.chart-period {
+  color: black;
+  background-color: #e3e3e3 !important;
+  border-bottom: 1px solid silver;
+  grid-template-columns: repeat($column_count, $column_width);
+}
+
+.chart-month {
+  color: black;
+  background-color: #f1f1f1 !important;
+  border-bottom: 1px solid silver;
+  text-align: center;
+  z-index: 5;
+  top: 0;
+  position: sticky;
+  grid-template-columns: repeat($column_count, $column_width);
+}
+
+.chart-lines {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background-color: transparent;
+  grid-template-columns: repeat($column_count, $column_width);
+}
+
+.chart-period > span {
+  text-align: center;
+  font-size: 11px;
+  align-self: center;
+  font-weight: 500;
+  padding: 3px 0;
+  max-height: 30px;
+}
+
+.chart-lines > span {
+  display: block;
+  border-right: 1px solid #f1f1f1;
+}
+
+.chart-row-item {
+  background-color: #808080;
+  border: 1px solid #000;
+  border-top: 0;
+  border-left: 0;
+  padding: 20px 0;
+  font-size: 15px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.chart-row-bars {
+  list-style: none;
+  display: grid;
+  padding: 15px 0;
+  margin: 0;
+  grid-template-columns: repeat($column_count, $column_width);
+  grid-gap: 10px 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+li {
+  font-weight: 450;
+  text-align: left;
+  font-size: 13px;
+  min-height: 15px;
+  background-color: #708090;
+  padding: 0 15px;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.today-header {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  color: white;
+}
+
+.today {
+  border-left: 2px solid #1890ff;
+  background-repeat: no-repeat;
+  background-position: center center;
+}

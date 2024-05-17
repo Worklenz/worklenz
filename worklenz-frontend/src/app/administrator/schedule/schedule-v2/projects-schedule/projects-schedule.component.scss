@@ -1,0 +1,261 @@
+.gannt {
+  min-width: 97vw;
+  max-width: 97vw;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+  border-right: 1px solid #f0f0f0;
+}
+
+.top, .top-left-placeholder {
+  max-height: 70px;
+  min-height: 70px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: white;
+}
+
+.top-left-placeholder {
+  width: 100%;
+  right: 0;
+  box-shadow: 0px 1px #f0f0f0;
+  background: #fafafa;
+}
+
+.fixed-left-column, .fixed-right-column {
+  overflow-y: auto;
+  min-height: calc(100vh - 200px);
+  max-height: calc(100vh - 200px);
+  will-change: transform;
+  transition: scroll-behavior 0.125s ease;
+}
+
+.fixed-left-column {
+  min-width: 400px;
+  max-width: 400px;
+  overflow-x: scroll;
+  box-shadow: 10px 0px 8px -8px #00000026;
+  border-left: 1px solid #f0f0f0;
+  z-index: 9;
+}
+
+.scroll-animation {
+  scroll-behavior: smooth;
+}
+
+.fixed-right-column {
+  position: relative;
+  overflow-x: scroll;
+  box-shadow: 1px 0px #f0f0f0;
+}
+
+.h-default {
+  min-height: 42px;
+  max-height: 42px;
+}
+
+.day-boundary {
+  position: relative;
+  box-shadow: -1px 1px #f0f0f0;
+}
+
+.month-boundary {
+  box-shadow: -1px 0px #f0f0f0;
+  padding-left: 14px;
+  background: #e6f7ff;
+}
+
+.active-hover-bg {
+  cursor: pointer;
+}
+
+.weekend {
+  background: linear-gradient(-45deg, rgb(230 230 230 / 50%) 12.5%, transparent 12.5%, transparent 50%, rgb(230 230 230 / 50%) 50%, rgb(230 230 230 / 50%) 62.5%, transparent 62.5%, transparent) 0% 0%/5px 5px;
+}
+
+.middle {
+  position: relative;
+}
+
+.day-cells {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  height: 100%;
+  z-index: -1;
+}
+
+.inner-day-cell {
+  box-shadow: -1px 1px #f0f0f0;
+  height: 100%;
+}
+
+.bar-top {
+  padding-top: 11px;
+}
+
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.today {
+  position: relative;
+
+  &::after {
+    position: absolute;
+    content: "";
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    z-index: -1;
+    background: #188ff9a6;
+  }
+}
+
+.today-bg {
+  background: #188ff9a6;
+
+  &::after {
+    display: none;
+  }
+
+  & div {
+    color: white;
+  }
+}
+
+.d-name {
+  font-size: 13px
+}
+
+.d-day {
+  line-height: 25px
+}
+
+.month-name {
+  min-height: 25px;
+  max-height: 25px
+}
+
+.no-data-img-holder {
+  max-width: 100px;
+}
+
+.single-group {
+  min-height: 36px;
+  max-height: 36px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-left: 7px;
+  color: hwb(0 0% 100%/0.85);
+  font-weight: 500;
+}
+
+.placeholder-drag {
+  background: rgb(217, 227, 238);
+  border: 1px solid rgb(173, 181, 189);
+  position: absolute;
+  min-height: 28px;
+  max-height: 28px;
+  border-radius: 4px;
+  z-index: 9;
+  cursor: move;
+}
+
+.highlighter {
+  position: absolute;
+  top: 25px;
+  bottom: 0;
+  z-index: -1;
+  background: rgb(217, 227, 238);
+  transition: 0.15s all;
+  will-change: transform;
+}
+
+.no-tasks {
+  width: 100%;
+  height: 42px;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+}
+
+.single-project, .single-project-member, .day-boundary-inner, .single-member-task, .h-default {
+  min-height: 50px;
+}
+
+.single-member-task {
+  box-shadow: 1px 1px #f0f0f0;
+}
+
+.single-project, .single-project-member {
+  border-bottom: 1px solid #f0f0f0;
+  transition: 0.25s all;
+}
+
+
+.single-project-members {
+  border-bottom: 1px solid rgb(213 213 213);
+}
+
+.single-project-member {
+  min-height: 45px;
+  background: #f5f5f552;
+
+  & .active {
+    background: rgb(241 241 241 / 43%);
+  }
+}
+
+.project-member-container {
+  min-height: 45px;
+  transition: 0.2s all;
+}
+
+.project-unassigned-tasks-container {
+
+}
+
+.project-unassigned-task-container {
+  min-height: 45px;
+  max-height: 45px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.project-member-task-container {
+  min-height: 45px;
+  max-height: 45px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.add-parent-task-section {
+  min-height: 45px;
+  max-height: 45px;
+  border-top: 1px solid #f0f0f0;
+  background: #f6f6f64f;
+}
+
+.title-unassigned {
+  min-height: 45px;
+  max-height: 45px;
+  background: rgb(255 206 206 / 16%);
+}
+
+.project-active {
+  color: #1890ff;
+  background: #e6f7ffa8;
+}
+
+.add-member-allocation {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+}

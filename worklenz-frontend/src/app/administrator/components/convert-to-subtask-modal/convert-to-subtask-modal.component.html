@@ -1,0 +1,50 @@
+<nz-modal [(nzVisible)]="showConvertTasksModal" nzTitle="Choose a parent task" [nzStyle]="{ top: '20px' }"
+          (nzOnCancel)="closeModal()">
+  <ng-container *nzModalContent>
+    <ng-container *ngIf="converting">
+      <div class="spinner">
+        <nz-spin nzSimple [nzIndicator]="indicatorTemplate"></nz-spin>
+      </div>
+    </ng-container>
+    <div class="modal-content">
+      <div class="search-task">
+        <input [(ngModel)]="searchText" nz-input placeholder="Search by task name"/>
+      </div>
+      <div class="scrollable mt-3">
+        <div *ngFor="let group of groups; let i=index" class="task-group">
+
+          <div *ngIf="group.tasks.length" [class.active]="isExpanded[i]" nz-typography
+               [style.background]="group.color_code"
+               class="py-1 px-2 mb-0 ant-typography d-block btn" (click)="toggleGroup($event, i)">
+            <span class="accordion-icon" nz-icon nzType="right" nzTheme="outline"></span> {{group.name}}
+          </div>
+
+          <div *ngIf="group.tasks.length" [class.show]="isExpanded[i]" class="mt-0 mb-3 panel" #panel>
+            <div class="panel-left-border" [style.background]="group.color_code"></div>
+            <ul nz-menu class="border-bottom">
+              <ng-container *ngFor="let item of group.tasks | searchByName: searchText;">
+                <li *ngIf="!item.parent_task_id && selectedTask?.id !== item?.id"
+                    class="m-0 d-flex px-0 single-task-cont" nz-menu-item (click)="convertToSubTask(group.id, item.id)">
+                  <div class="d-flex align-items-center justify-content-center hover-bg-change px-2 ">
+                    <div class="d-flex" style="width:90px;">
+                      <nz-tag nz-tooltip [nzTooltipTitle]="item.task_key"
+                              style="width:auto; max-width: 90px; overflow:hidden; text-overflow: ellipsis;font-size: 12px;">{{item.task_key}}</nz-tag>
+                    </div>
+                    <div nz-tooltip [nzTooltipTitle]="item.name"
+                         style="width: 340px; overflow:hidden; text-overflow: ellipsis;">
+                      <span nz-typography>{{item.name}}</span>
+                    </div>
+                  </div>
+                </li>
+              </ng-container>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+  <div *nzModalFooter>
+  </div>
+</nz-modal>
+
+<ng-template #indicatorTemplate><span nz-icon nzType="loading"></span></ng-template>

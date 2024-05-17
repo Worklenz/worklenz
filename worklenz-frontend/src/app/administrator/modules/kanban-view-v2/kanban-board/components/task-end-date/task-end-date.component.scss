@@ -1,0 +1,36 @@
+nz-date-picker {
+  padding: 1px 4px;
+  max-width: 105px;
+  height: 24px;
+  margin-left: -4px;
+  border-color: transparent !important;
+
+  &:hover {
+    border-color: #d9d9d9 !important;
+  }
+}
+
+.date-text {
+  font-size: 12px;
+  line-height: 24px;
+}
+
+.past-date {
+  color: #ff4d4f;
+}
+
+.soon-date {
+  color: #52c41a;
+}
+
+.show-hover {
+  opacity: 0;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.show-def {
+  opacity: 1;
+}

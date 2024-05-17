@@ -1,0 +1,8 @@
+<div *ngIf="task" class="d-flex align-items-center" nz-tooltip [nzTooltipTitle]="task.project_name">
+  <div>
+    <nz-badge [nzColor]="task.project_color" style="margin-top: -2px"></nz-badge>
+  </div>
+  <div class="p-name">
+    <p class="mb-0">{{task.project_name | ellipsis: 20}}</p>
+  </div>
+</div>
