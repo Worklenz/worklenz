@@ -36,6 +36,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 3. **Run the frontend:**
    ```bash
    npm start
+   ```
    
 4. Navigate to [http://localhost:4200](http://localhost:4200)
 
