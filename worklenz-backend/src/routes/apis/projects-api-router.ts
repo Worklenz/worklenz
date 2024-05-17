@@ -11,11 +11,6 @@ import projectMemberValidator from "../../middlewares/validators/project-member-
 
 const projectsApiRouter = express.Router();
 
-// db changes. One time only
-projectsApiRouter.get("/update-exist-phase-colors", safeControllerFunction(ProjectsController.updateExistPhaseColors));
-projectsApiRouter.get("/update-exist-sort-order", safeControllerFunction(ProjectsController.updateExistSortOrder));
-
-
 projectsApiRouter.post("/", teamOwnerOrAdminValidator, projectsBodyValidator, safeControllerFunction(ProjectsController.create));
 projectsApiRouter.get("/", safeControllerFunction(ProjectsController.get));
 projectsApiRouter.get("/my-task-projects", safeControllerFunction(ProjectsController.getMyProjectsToTasks));

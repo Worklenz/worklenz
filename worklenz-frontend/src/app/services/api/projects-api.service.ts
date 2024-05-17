@@ -123,12 +123,4 @@ export class ProjectsApiService extends APIServiceBase {
     return this._get(this.http, `${this.root}/archive-all/${id}`);
   }
 
-  public async updateExistPhaseColors(): Promise<IServerResponse<any>>  {
-    return this._get(this.http, `${this.root}/update-exist-phase-colors`);
-  }
-
-  public async updateExistSortOrder(): Promise<IServerResponse<any>>  {
-    return this._get(this.http, `${this.root}/update-exist-sort-order`);
-  }
-
 }

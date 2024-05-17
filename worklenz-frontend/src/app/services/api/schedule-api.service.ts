@@ -51,9 +51,4 @@ export class ScheduleApiService extends APIServiceBase {
     return this._get(this.http, `${this.root}/tasks-by-member/${config.id}${q}`);
   }
 
-  // This function only calls a single time.
-  migrateAllocations(): Promise<IServerResponse<any>> {
-    return this._get(this.http, `${this.root}/migrate/member-allocations`)
-  }
-
 }
