@@ -79,7 +79,7 @@ export async function sendEmail(email: IEmail): Promise<string | null> {
           }
         }
       },
-      Source: "SOURCE_EMAIL_HERE" // Ex: Worklenz <noreply@worklenz.com>
+      Source: process.env.SOURCE_EMAIL // Ex: Worklenz <noreply@worklenz.com>
     });
 
     const res = await sesClient.send(command);
