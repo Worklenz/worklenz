@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./worklenz-frontend
+      dockerfile: Dockerfile
+    container_name: worklenz_frontend
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./worklenz-frontend:/app
+    networks:
+      - worklenz_network
+
+  backend:
+    build:
+      context: ./worklenz-backend
+      dockerfile: Dockerfile
+    container_name: worklenz_backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://worklenz_user:worklenz_password@db:5432/worklenz_db
+    volumes:
+      - ./worklenz-backend:/app
+    networks:
+      - worklenz_network
+
+  db:
+    image: postgres:15.6
+    container_name: worklenz_db
+    environment:
+      POSTGRES_USER: worklenz_user
+      POSTGRES_PASSWORD: worklenz_password
+      POSTGRES_DB: worklenz_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - worklenz_network
+
+volumes:
+  postgres_data:
+
+networks:
+  worklenz_network:
