@@ -131,3 +131,11 @@ export const DATE_RANGES = {
   LAST_QUARTER: "LAST_QUARTER",
   ALL_TIME: "ALL_TIME"
 };
+
+export const GROUP_BY_ASSIGNED_TO_ME: string = "0";
+export const GROUP_BY_ASSIGN_BY_ME: string = "1";
+export const ALL_TAB: string = "All";
+export const TODAY_TAB: string = "Today";
+export const UPCOMING_TAB: string = "Upcoming";
+export const OVERDUE_TAB: string = "Overdue";
+export const NO_DUE_DATE_TAB: string = "NoDueDate";
