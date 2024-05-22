@@ -17,7 +17,7 @@
 <p align="center">
     <a href="https://worklenz.com" target="_blank">
       <img
-        src="https://worklenz.s3.amazonaws.com/assets/screenshots/hero.png"
+        src="https://worklenz.s3.amazonaws.com/assets/screenshots/hero-view.png"
         alt="Worklenz"
         width="1200"
       />
@@ -59,7 +59,7 @@ This repository contains the frontend and backend code for Worklenz.
 <p align="center">
   <a href="https://worklenz.com/features/task-management/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/task-views.png"
+      src="https://worklenz.s3.amazonaws.com/assets/screenshots/task-views-view.png"
       alt="Worklenz task views"
       width="1024"
     />
@@ -68,7 +68,7 @@ This repository contains the frontend and backend code for Worklenz.
 <p align="center">
   <a href="https://worklenz.com/features/time-tracking/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/time-tracking.png"
+      src="https://worklenz.s3.amazonaws.com/assets/screenshots/time-tracking-view.png"
       alt="Worklenz time tracking"
       width="1024"
     />
@@ -77,7 +77,7 @@ This repository contains the frontend and backend code for Worklenz.
 <p align="center">
   <a href="https://worklenz.com/features/analytics/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/analytics.png"
+      src="https://worklenz.s3.amazonaws.com/assets/screenshots/analytics-view.png"
       alt="Worklenz analytics"
       width="1024"
     />
@@ -86,7 +86,7 @@ This repository contains the frontend and backend code for Worklenz.
 <p align="center">
   <a href="https://worklenz.com/features/resource-management/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/scheduler.png"
+      src="https://worklenz.s3.amazonaws.com/assets/screenshots/schedule-view.png"
       alt="Worklenz scheduler"
       width="1024"
     />
@@ -95,7 +95,7 @@ This repository contains the frontend and backend code for Worklenz.
 <p align="center">
   <a href="https://worklenz.com/features/templates/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/templates.png"
+      src="https://worklenz.s3.amazonaws.com/assets/screenshots/templates-view.png"
       alt="Worklenz templates"
       width="1024"
     />
