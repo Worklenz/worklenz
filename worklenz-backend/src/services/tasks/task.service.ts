@@ -1,6 +1,6 @@
 import moment from "moment-timezone";
 import momentTime from "moment-timezone";
-import database from "../../config/db-config";
+import database from "../../config/db";
 import { 
     TODAY_TAB, 
     UPCOMING_TAB, 
@@ -107,7 +107,7 @@ export class TaskService {
         return await database.query(query, [data.name, data.color_code, data.user_id]);
     }
 
-    public static async getPersonalTasks(user_id: string | undefined) {
+    public static async getPersonalTasks(user_id: string) {
         const query = `SELECT ptl.id,
                           ptl.name,
                           ptl.created_at,
