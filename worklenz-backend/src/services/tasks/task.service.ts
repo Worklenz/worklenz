@@ -10,6 +10,7 @@ import {
     GROUP_BY_ASSIGN_BY_ME, 
     GROUP_BY_ASSIGNED_TO_ME 
 } from "../../shared/constants";
+import {CreatePersonalTaskDto} from "../../dtos";
 
 export class TaskService {
 
@@ -100,14 +101,14 @@ export class TaskService {
         return tasksReturn;
     }
 
-    public static async createPersonalTask(data: object) {
+    public static async createPersonalTask(data: CreatePersonalTaskDto) {
         const query = `INSERT INTO personal_todo_list (name, color_code, user_id, index)
                    VALUES ($1, $2, $3, ((SELECT index FROM personal_todo_list ORDER BY index DESC LIMIT 1) + 1))
                    RETURNING id, name`;
         return await database.query(query, [data.name, data.color_code, data.user_id]);
     }
 
-    public static async getPersonalTasks(user_id: string) {
+    public static async getPersonalTasks(user_id: string|undefined) {
         const query = `SELECT ptl.id,
                           ptl.name,
                           ptl.created_at,

@@ -6,6 +6,7 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import { TaskService } from "../services/tasks";
 import { ProjectService } from "../services/projects";
 import { GROUP_BY_ASSIGNED_TO_ME, ALL_TAB } from "../shared/constants";
+import { CreatePersonalTaskDto } from "../dtos";
 
 interface ITask {
   id: string,
@@ -37,7 +38,7 @@ export default class HomePageController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async createPersonalTask(request: IWorkLenzRequest, response: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const payload = {
+    const payload : CreatePersonalTaskDto = {
       name: request.body.name,
       color_code: request.body.color,
       user_id: request.user?.id

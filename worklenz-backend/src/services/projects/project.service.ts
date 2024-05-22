@@ -2,7 +2,7 @@ import database from "../../config/db";
 
 export class ProjectService {
 
-    public static async getProjectsByTeam(team_id: string, user_id: string) {
+    public static async getProjectsByTeam(team_id: string|undefined, user_id: string|undefined) {
         const query = `
           SELECT id, name, color_code
           FROM projects
@@ -12,7 +12,7 @@ export class ProjectService {
         return await database.query(query, [team_id, user_id]);
     }
 
-    public static async getProjects(team_id: string, user_id: string, current_view: string, filter: string) {
+    public static async getProjects(team_id: string|undefined, user_id: string|undefined, current_view: string, filter: string) {
 
         const isFavorites = current_view === "1" ? ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = $2 AND project_id = projects.id)` : "";
 
