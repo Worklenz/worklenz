@@ -6,8 +6,6 @@ services:
     container_name: worklenz_frontend
     ports:
       - "4200:4200"
-    volumes:
-      - ./worklenz-frontend:/app
 
   backend:
     build:
@@ -45,8 +43,6 @@ services:
       - SOCKET_IO_CORS
       - SOURCE_EMAIL
       - USE_PG_NATIVE
-    volumes:
-      - ./worklenz-backend:/app
 
   db:
     image: postgres:15.6
