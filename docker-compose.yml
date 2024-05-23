@@ -6,10 +6,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - "4200:4200"
-    volumes:
-      - ./worklenz-frontend:/app
     networks:
       - worklenz_network
+    volumes:
+      - ./worklenz-frontend:/app
 
   backend:
     build:
