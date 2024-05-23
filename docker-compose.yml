@@ -19,7 +19,32 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgres://worklenz_user:worklenz_password@db:5432/worklenz_db
+      - ANGULAR_DIST_DIR
+      - ANGULAR_SRC_DIR
+      - AWS_REGION
+      - BACKEND_PUBLIC_DIR
+      - BACKEND_VIEWS_DIR
+      - COMMIT_BUILD_IMMEDIATELY
+      - COOKIE_SECRET
+      - DB_HOST
+      - DB_MAX_CLIENTS
+      - DB_NAME
+      - DB_PASSWORD
+      - DB_PORT
+      - DB_USER
+      - GOOGLE_CALLBACK_URL
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      - HOSTNAME
+      - LOGIN_FAILURE_REDIRECT
+      - NODE_ENV
+      - PORT
+      - SESSION_NAME
+      - SESSION_SECRET
+      - SLACK_WEBHOOK
+      - SOCKET_IO_CORS
+      - SOURCE_EMAIL
+      - USE_PG_NATIVE
     volumes:
       - ./worklenz-backend:/app
 
