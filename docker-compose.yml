@@ -15,7 +15,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - ANGULAR_DIST_DIR
       - ANGULAR_SRC_DIR
@@ -45,14 +46,19 @@ services:
       - USE_PG_NATIVE
 
   db:
-    image: postgres:15.6
+    image: postgres:15
     container_name: worklenz_db
     environment:
-      POSTGRES_USER: worklenz_user
-      POSTGRES_PASSWORD: worklenz_password
-      POSTGRES_DB: worklenz_db
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${DB_NAME} -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - worklenz_postgres_data:/var/lib/postgresql/data
+      - ./worklenz-backend/database/:/docker-entrypoint-initdb.d
 
 volumes:
-  postgres_data:
+  worklenz_postgres_data:
