@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   frontend:
+    container_name: worklenz_frontend
     build:
       context: ./worklenz-frontend
       dockerfile: Dockerfile
-    container_name: worklenz_frontend
     ports:
       - "4200:4200"
     volumes:
