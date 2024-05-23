@@ -8,7 +8,7 @@
     "yarn": "WARNING: Please use npm package manager instead of yarn"
   },
   "main": "build/bin/www",
-  "repository": "GITHUB_REPO_HERE",
+  "repository": "https://github.com/Worklenz/worklenz",
   "author": "worklenz.com",
   "scripts": {
     "start": "node ./build/bin/www",

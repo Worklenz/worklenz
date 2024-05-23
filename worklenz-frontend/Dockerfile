@@ -67,7 +67,7 @@ COPY . .
 RUN sudo chown -R ${USER}:${USER} /home/${USER}/${APP}
 
 # Install project dependencies.
-RUN npm install
+RUN npm ci
 
 # Expose the port the app runs.
 EXPOSE 4200

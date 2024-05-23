@@ -17,6 +17,9 @@ services:
     build:
       context: ./worklenz-backend
       dockerfile: Dockerfile
+      args:
+        USER: worklenz
+        APP: worklenz
     container_name: worklenz_backend
     ports:
       - "3000:3000"
@@ -31,7 +34,7 @@ services:
       - ./worklenz-backend:/app
 
   db:
-    image: postgres:15.6
+    image: postgres:16.3
     container_name: worklenz_db
     environment:
       POSTGRES_USER: worklenz_user
