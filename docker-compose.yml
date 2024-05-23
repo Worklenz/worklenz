@@ -8,8 +8,6 @@ services:
       - "4200:4200"
     networks:
       - worklenz_network
-    volumes:
-      - ./worklenz-frontend:/app
 
   backend:
     build:
