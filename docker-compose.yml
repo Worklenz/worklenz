@@ -4,10 +4,14 @@ services:
     build:
       context: ./worklenz-frontend
       dockerfile: Dockerfile
+      args:
+        USER: worklenz
+        APP: worklenz
     ports:
       - "4200:4200"
     networks:
       - worklenz_network
+    restart: always
 
   backend:
     build:
