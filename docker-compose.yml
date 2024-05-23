@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -10,8 +8,6 @@ services:
       - "4200:4200"
     volumes:
       - ./worklenz-frontend:/app
-    networks:
-      - worklenz_network
 
   backend:
     build:
@@ -26,8 +22,6 @@ services:
       - DATABASE_URL=postgres://worklenz_user:worklenz_password@db:5432/worklenz_db
     volumes:
       - ./worklenz-backend:/app
-    networks:
-      - worklenz_network
 
   db:
     image: postgres:15.6
@@ -38,11 +32,6 @@ services:
       POSTGRES_DB: worklenz_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - worklenz_network
 
 volumes:
   postgres_data:
-
-networks:
-  worklenz_network:
