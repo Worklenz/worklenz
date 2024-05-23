@@ -1,12 +1,12 @@
 services:
   frontend:
-    container_name: worklenz_frontend
     build:
       context: ./worklenz-frontend
       dockerfile: Dockerfile
       args:
         USER: worklenz
         APP: worklenz
+    container_name: worklenz_frontend
     ports:
       - "4200:4200"
     networks:
@@ -24,10 +24,11 @@ services:
       - db
     environment:
       - DATABASE_URL=postgres://worklenz_user:worklenz_password@db:5432/worklenz_db
-    volumes:
-      - ./worklenz-backend:/app
     networks:
       - worklenz_network
+    restart: always
+    volumes:
+      - ./worklenz-backend:/app
 
   db:
     image: postgres:15.6

@@ -2,7 +2,8 @@
 FROM ubuntu:23.04
 
 # Docblock
-LABEL maintainers="@sandman"
+LABEL author="@worklenz"
+LABEL maintainers=""
 LABEL description="Frontend for Worklenz application"
 LABEL website="https://worklenz.com"
 LABEL origin="https://github.com/Worklenz/worklenz"
