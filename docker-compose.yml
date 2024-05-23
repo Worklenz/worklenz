@@ -36,10 +36,13 @@ services:
       POSTGRES_USER: worklenz_user
       POSTGRES_PASSWORD: worklenz_password
       POSTGRES_DB: worklenz_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     networks:
       - worklenz_network
+    ports:
+      - "5432:5432"
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
