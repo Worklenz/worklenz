@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --proxy-config proxy.config.json --disable-host-check",
+    "start": "ng serve --proxy-config proxy.config.json --disable-host-check --host 0.0.0.0",
     "build": "ng build --extract-licenses --common-chunk --delete-output-path --output-hashing=all",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
