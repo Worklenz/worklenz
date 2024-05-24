@@ -1,6 +1,6 @@
 {
   "/api": {
-    "target": "http://worklenz_backend:3000/",
+    "target": "http://backend:3000/",
     "headers": {
       "language": "en",
       "Accept": "application/json",
@@ -11,7 +11,7 @@
     "logLevel": "debug"
   },
   "/secure": {
-    "target": "http://worklenz_backend:3000/",
+    "target": "http://backend:3000/",
     "headers": {
       "language": "en",
       "Accept": "application/json",
