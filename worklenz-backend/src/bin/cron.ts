@@ -2,17 +2,9 @@
 
 // config should be imported at the top of this file.
 import "./config";
-
-import {Server, Socket} from "socket.io";
 import http, {IncomingHttpHeaders} from "http";
-
 import app from "../app";
-import {register} from "../socket.io";
-import {IO} from "../shared/io";
-import sessionMiddleware from "../middlewares/session-middleware";
-import {getLoggedInUserIdFromSocket} from "../socket.io/util";
 import FileConstants from "../shared/file-constants";
-import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
 
 function normalizePort(val?: string) {
@@ -26,39 +18,6 @@ const port = normalizePort(process.env.PORT);
 app.set("port", port);
 
 const server = http.createServer(app);
-
-const io = new Server(server, {
-  transports: ["websocket"],
-  path: "/socket",
-  cors: {
-    origin: (process.env.SOCKET_IO_CORS || "*").split(",")
-  },
-  cookie: true
-});
-
-const wrap = (middleware: any) => (socket: any, next: any) => middleware(socket.request, {}, next);
-
-io.use(wrap(sessionMiddleware));
-
-io.use((socket, next) => {
-  const userId = getLoggedInUserIdFromSocket(socket);
-  if (userId)
-    return next();
-  return next(new Error("401 unauthorized"));
-});
-
-io.engine.on("initial_headers", (headers: IncomingHttpHeaders) => {
-  headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains";
-  headers["X-Content-Type-Options"] = "nosniff";
-  headers["X-Frame-Options"] = "Deny";
-  headers["X-XSS-Protection"] = "1; mode=block";
-});
-
-io.on("connection", (socket: Socket) => {
-  register(io, socket);
-});
-
-IO.setInstance(io);
 
 function onError(error: any) {
   DbTaskStatusChangeListener.disconnect();
@@ -113,4 +72,6 @@ process.on("SIGINT", () => {
   server.close();
 });
 
-server.listen(port);
+server.listen(port, () => {
+    console.log(`Cron server successfully started on port ${port} !`);
+});
