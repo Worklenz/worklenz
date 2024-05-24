@@ -4,6 +4,7 @@
 import "./config";
 import http, {IncomingHttpHeaders} from "http";
 import app from "../app";
+import {startCronJobs} from "../cron_jobs";
 import FileConstants from "../shared/file-constants";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
 
@@ -52,8 +53,7 @@ function onListening() {
   const bind = typeof addr === "string"
     ? `pipe ${addr}`
     : `port ${addr.port}`;
-  // TODO - uncomment initRedis()
-  // void initRedis();
+  startCronJobs();
   FileConstants.init();
   void DbTaskStatusChangeListener.connect();
 
