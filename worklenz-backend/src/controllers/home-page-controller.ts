@@ -62,19 +62,20 @@ export default class HomePageController extends WorklenzControllerBase {
     const groupByClosure = TaskService.getTasksByGroupClosure(currentGroup);
     let currentTabClosure = TaskService.getTasksByTabClosure(currentTab as string);
     let result = await TaskService.getTasksResult(groupByClosure, currentTabClosure, teamId as string, userId as string);
-    const counts = await TaskService.getTaskCountsByGroup(result, timeZone, today);
-
+    let tasks: ITask[] = result.rows; 
+    const counts = await TaskService.getTaskCountsByGroup(tasks, timeZone, today);
+    
     if (isCalendarView == "true") {
       currentTabClosure = `AND t.end_date::DATE = '${selectedDate}'`;
-      result = await TaskService.getTaskGroupBySingleDate(result, timeZone, selectedDate as string);
+      tasks = await TaskService.getTaskGroupBySingleDate(tasks, timeZone, selectedDate as string);
     } else {
-      result = await TaskService.getTasksGroupByDate(currentTab as string, result, timeZone, today);
+      tasks = await TaskService.getTasksGroupByDate(currentTab as string, tasks, timeZone, today);
     }
 
     // const counts = await TaskService.getCountsResult(groupByClosure, teamId as string, userId as string);
 
     const data = {
-      tasks: result,
+      tasks: tasks,
       total: counts.total,
       today: counts.today,
       upcoming: counts.upcoming,
