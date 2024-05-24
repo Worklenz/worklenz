@@ -25,13 +25,9 @@ services:
       - "3000:3000"
     depends_on:
       - db
-    environment:
-      - DATABASE_URL=postgres://worklenz_user:worklenz_password@db:5432/worklenz_db
     networks:
       - worklenz_network
     restart: always
-    volumes:
-      - ./worklenz-backend:/app
 
   db:
     image: postgres:16.3
@@ -48,8 +44,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: worklenz_pgadmin
+    depends_on:
+      - db
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@worklenz.com
+      PGADMIN_DEFAULT_PASSWORD: worklenz_password
+    networks:
+      - worklenz_network
+    ports:
+      - "5050:80"
+    restart: always
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
 volumes:
   postgres_data:
+  pgadmin_data:
 
 networks:
   worklenz_network:
