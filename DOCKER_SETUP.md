@@ -8,7 +8,7 @@ Getting started with docker is a breeze! Follow these steps and you'll be contri
 
 ## Installation
 
-**Clone the repository:**
+**Clone the repository**
 
    ```bash
    git clone https://github.com/Worklenz/worklenz.git
@@ -16,19 +16,19 @@ Getting started with docker is a breeze! Follow these steps and you'll be contri
 
 ### Use Docker Compose
 
-1. **Navigate to the project directory:**
+1. **Navigate to the project directory**
   
     ```bash
       cd worklenz
     ```
 
-2. **Run Compose in detach mode:**
+2. **Run Compose in detach mode**
 
     ```bash
       docker compose up -d
     ```
 
-3. **Database Migration (Manual):**
+3. **Database Migration (Manual)**
 
     ```bash
       docker compose exec backend bash
@@ -66,20 +66,17 @@ Getting started with docker is a breeze! Follow these steps and you'll be contri
 
     for frontend access
 
-4. **Database Migration (Using PGAdmin):**
+4. **Database Migration (Using PGAdmin)**
 
-  ```bash
-    http://localhost:5050
-  ```
+    ```bash
+      http://localhost:5050
+    ```
 
-  for pgadmin access
+    for pgadmin access
 
-  ```bash
-    username - admin@worklenz.com
-    password - worklenz_password
-  ```
+    ```bash
+      username - admin@worklenz.com
+      password - worklenz_password
+    ```
 
-  Add a connection using db access details and run the *.sql files.
-
-  You are all set and good to go.
-  
+    Add a connection using db access details and run the *.sql files.
