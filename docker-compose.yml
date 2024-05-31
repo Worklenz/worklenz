@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -8,10 +6,9 @@ services:
     container_name: worklenz_frontend
     ports:
       - "4200:4200"
-    volumes:
-      - ./worklenz-frontend:/app
-    networks:
-      - worklenz_network
+    depends_on:
+      backend:
+        condition: service_started
 
   backend:
     build:
@@ -21,28 +18,55 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      - DATABASE_URL=postgres://worklenz_user:worklenz_password@db:5432/worklenz_db
-    volumes:
-      - ./worklenz-backend:/app
-    networks:
-      - worklenz_network
+      - ANGULAR_DIST_DIR
+      - ANGULAR_SRC_DIR
+      - AWS_REGION
+      - BACKEND_PUBLIC_DIR
+      - BACKEND_VIEWS_DIR
+      - COMMIT_BUILD_IMMEDIATELY
+      - COOKIE_SECRET
+      - DB_HOST
+      - DB_MAX_CLIENTS
+      - DB_NAME
+      - DB_PASSWORD
+      - DB_PORT
+      - DB_USER
+      - GOOGLE_CALLBACK_URL
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      - HOSTNAME
+      - LOGIN_FAILURE_REDIRECT
+      - NODE_ENV
+      - PORT
+      - SESSION_NAME
+      - SESSION_SECRET
+      - SLACK_WEBHOOK
+      - SOCKET_IO_CORS
+      - SOURCE_EMAIL
+      - USE_PG_NATIVE
+      - BUCKET
+      - REGION
+      - S3_URL
+      - S3_ACCESS_KEY_ID
+      - S3_SECRET_ACCESS_KEY
 
   db:
-    image: postgres:15.6
+    image: postgres:15
     container_name: worklenz_db
     environment:
-      POSTGRES_USER: worklenz_user
-      POSTGRES_PASSWORD: worklenz_password
-      POSTGRES_DB: worklenz_db
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${DB_NAME} -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - worklenz_network
+      - worklenz_postgres_data:/var/lib/postgresql/data
+      - ./worklenz-backend/database/:/docker-entrypoint-initdb.d
 
 volumes:
-  postgres_data:
-
-networks:
-  worklenz_network:
+  worklenz_postgres_data:
