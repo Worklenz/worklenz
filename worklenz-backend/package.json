@@ -20,7 +20,8 @@
     "sonar": "sonar-scanner -Dproject.settings=sonar-project-dev.properties",
     "tsc": "tsc",
     "test": "jest --setupFiles dotenv/config",
-    "test:watch": "jest --watch --setupFiles dotenv/config"
+    "test:watch": "jest --watch --setupFiles dotenv/config",
+    "cron": "node ./build/bin/cron"
   },
   "jestSonar": {
     "reportPath": "coverage",

@@ -66,6 +66,31 @@
 
    This starts the production server for your application.
 
+7. **Run the Cron Server:**
+
+   **a. Compile TypeScript to JavaScript:**
+
+   Open a new terminal window and run the following command:
+
+      ```bash
+      grunt build
+      ```
+
+   This starts the `grunt` task runner, which compiles TypeScript code into JavaScript for production use.
+
+   **b. Start the cron server:**
+
+   Once the compilation is complete, run the following command in the same terminal window:
+
+      ```bash
+      npm run cron
+      ```
+
+   This starts the cron server for your application.
+
+   > It is not possible to run both an HTTP server and a Cron server on the same port simultaneously. 
+   > Therefore, you should run only one server at a time.
+
 ### CLI
 
 - Create controller: `$ node new controller Test`
