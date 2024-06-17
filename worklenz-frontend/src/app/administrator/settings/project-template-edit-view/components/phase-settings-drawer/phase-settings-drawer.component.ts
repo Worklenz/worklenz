@@ -4,7 +4,6 @@ import {ProjectTemplateService} from "@services/project-template.service";
 import {PtTaskPhasesApiService} from "@api/pt-task-phases-api.service";
 import {ITaskPhase} from "@interfaces/api-models/task-phase";
 import {PhaseColorCodes} from "@shared/constants";
-import {load} from "@angular-devkit/build-angular/src/utils/server-rendering/esm-in-memory-file-loader";
 
 @Component({
   selector: 'worklenz-phase-settings-drawer',

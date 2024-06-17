@@ -25,8 +25,9 @@ export class TaskViewDescriptionComponent implements OnInit, OnDestroy {
   @ViewChild("descriptionInput", {static: false}) descriptionInput!: ElementRef;
   @ViewChild("descriptionEditor", {static: false}) descriptionEditor!: EditorComponent;
 
-  readonly apiKey = "4nquevykvy1i0q0v62ksxuu3nz1muy8i5fsqpj3wp9qm2mgp";
   readonly CONFIG = {
+    base_url: '/tinymce',
+    suffix: '.min',
     plugins: "lists link code wordcount",
     toolbar: 'blocks bold italic underline strikethrough | checklist numlist bullist link | alignleft aligncenter alignright alignjustify',
     menubar: false,
