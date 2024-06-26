@@ -1,5 +1,7 @@
-# Use the official Node.js 18 image as a base
-FROM node:18
+# FIRST STAGE: Install Dependencies
+
+# Use the official Node.js 18-alpine3.20 image as a base
+FROM node:18-alpine3.20 as base
 
 # Create and set the working directory
 WORKDIR /usr/src/app
@@ -18,6 +20,15 @@ COPY . .
 
 # Run the build script to compile TypeScript to JavaScript
 RUN npm run build
+
+# SECOND STAGE: RUN THE APPLICATION
+
+
+FROM node:18-alpine3.20 as prod
+
+WORKDIR /usr/src/app
+
+COPY --from=base /usr/src/app .
 
 # Expose the port the app runs on
 EXPOSE 3000
