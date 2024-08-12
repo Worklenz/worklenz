@@ -7,6 +7,9 @@ WORKDIR /usr/src/app
 # Install global dependencies
 RUN npm install -g ts-node typescript grunt grunt-cli
 
+# Install node-gyp
+RUN npm install -g node-gyp@latest
+
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
