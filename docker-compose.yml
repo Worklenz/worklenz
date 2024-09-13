@@ -12,7 +12,7 @@ services:
         condition: service_started
 
   backend:
-    image: ghcr.io/worklenz/worklenz-frontend
+    image: ghcr.io/worklenz/worklenz-backend
     build:
       context: ./worklenz-backend
       dockerfile: Dockerfile
