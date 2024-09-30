@@ -21,7 +21,6 @@
           class="description-editor-list"
           [class.editing]="isEditing"
           [init]="CONFIG"
-          [apiKey]="apiKey"
           [(ngModel)]="task.description"
           (onBlur)="submit()"
           #descriptionEditor
