@@ -45,7 +45,7 @@
     "ngx-doc-viewer": "^15.0.1",
     "ngx-socket-io": "^4.5.1",
     "rxjs": "~7.4.0",
-    "tinymce": "^6.7.3",
+    "tinymce": "^6.8.3",
     "tslib": "^2.6.1",
     "zone.js": "^0.13.1"
   },
