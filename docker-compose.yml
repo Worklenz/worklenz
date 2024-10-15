@@ -10,9 +10,11 @@ services:
     depends_on:
       backend:
         condition: service_started
+    networks:
+      - worklenz    
 
   backend:
-    image: ghcr.io/worklenz/worklenz-frontend
+    image: ghcr.io/worklenz/worklenz-backend
     build:
       context: ./worklenz-backend
       dockerfile: Dockerfile
@@ -54,6 +56,8 @@ services:
       - S3_URL
       - S3_ACCESS_KEY_ID
       - S3_SECRET_ACCESS_KEY
+    networks:
+      - worklenz  
 
   db:
     image: postgres:15
@@ -66,6 +70,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - worklenz  
     volumes:
       - worklenz_postgres_data:/var/lib/postgresql/data
       - ./worklenz-backend/database/:/docker-entrypoint-initdb.d
