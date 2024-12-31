@@ -78,3 +78,6 @@ services:
 
 volumes:
   worklenz_postgres_data:
+
+networks:
+  worklenz:
