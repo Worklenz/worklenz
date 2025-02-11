@@ -7,11 +7,11 @@
 </h1>
 
 <p align="center">
-    <a href="https://worklenz.com/features/task-management/">Task Management</a> |
-    <a href="https://worklenz.com/features/time-tracking/">Time Tracking</a> |
-    <a href="https://worklenz.com/features/analytics/">Analytics</a> |
-    <a href="https://worklenz.com/features/resource-management/">Resource Management</a> |
-    <a href="https://worklenz.com/features/templates/">Project Templates</a>
+    <a href="https://worklenz.com/task-management/">Task Management</a> |
+    <a href="https://worklenz.com/time-tracking/">Time Tracking</a> |
+    <a href="https://worklenz.com/analytics/">Analytics</a> |
+    <a href="https://worklenz.com/resource-management/">Resource Management</a> |
+    <a href="https://worklenz.com/templates/">Project Templates</a>
 </p>
 
 <p align="center">
