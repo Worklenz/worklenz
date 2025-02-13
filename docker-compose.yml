@@ -6,7 +6,8 @@ services:
       dockerfile: Dockerfile
     container_name: worklenz_frontend
     ports:
-      - "4200:4200"
+      - "80:80"
+      - "44:443"
     depends_on:
       backend:
         condition: service_started
