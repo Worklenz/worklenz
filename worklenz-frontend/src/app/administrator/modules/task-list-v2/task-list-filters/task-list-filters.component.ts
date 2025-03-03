@@ -73,7 +73,7 @@ export class TaskListFiltersComponent implements OnInit, OnDestroy {
   selectedMembersCount = 0;
 
   statuses: ISelectableTaskStatus[] = [];
-
+  //The label 'Created Data' was changed to 'Created Date'.
   readonly sortableColumns: ITaskListSortableColumn[] = [
     {label: "Task", key: "name", sort_order: this.ASCEND},
     {label: "Status", key: "status", sort_order: this.ASCEND},
@@ -81,7 +81,7 @@ export class TaskListFiltersComponent implements OnInit, OnDestroy {
     {label: "Start Date", key: "start_date", sort_order: this.ASCEND},
     {label: "End Date", key: "end_date", sort_order: this.ASCEND},
     {label: "Completed Date", key: "completed_at", sort_order: this.ASCEND},
-    {label: "Created Data", key: "created_at", sort_order: this.ASCEND},
+    {label: "Created Date", key: "created_at", sort_order: this.ASCEND},
     {label: "Last Updated", key: "updated_at", sort_order: this.ASCEND},
   ];
 
