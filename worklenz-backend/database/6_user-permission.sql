@@ -5,7 +5,7 @@
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 CREATE ROLE worklenz_client;
 
-GRANT CONNECT ON DATABASE 'DATABASE_NAME' TO worklenz_client;
+GRANT CONNECT ON DATABASE worklenz_db TO worklenz_client;
 GRANT INSERT, SELECT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO worklenz_client;
 
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO worklenz_client;
@@ -31,5 +31,5 @@ GRANT SELECT ON sys_project_statuses TO worklenz_client;
 REVOKE ALL PRIVILEGES ON sys_project_healths FROM worklenz_client;
 GRANT SELECT ON sys_project_healths TO worklenz_client;
 
-CREATE USER worklenz_backend WITH PASSWORD 'PASSWORD';
+CREATE USER worklenz_backend WITH PASSWORD 'securepassword123';
 GRANT worklenz_client TO worklenz_backend;
