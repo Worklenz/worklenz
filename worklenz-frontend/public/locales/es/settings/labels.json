@@ -1,0 +1,11 @@
+{
+  "labelColumn": "Etiqueta",
+  "deleteConfirmationTitle": "¿Estás seguro?",
+  "deleteConfirmationOk": "Sí",
+  "deleteConfirmationCancel": "Cancelar",
+  "associatedTaskColumn": "Cantidad de Tareas Asociadas",
+  "searchPlaceholder": "Buscar por nombre",
+  "emptyText": "Las etiquetas se pueden crear al actualizar o crear tareas.",
+  "pinTooltip": "Haz clic para fijar esto en el menú principal",
+  "colorChangeTooltip": "Haz clic para cambiar el color"
+}

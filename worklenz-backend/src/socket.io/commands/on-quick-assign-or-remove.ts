@@ -8,13 +8,15 @@ import {SocketEvents} from "../events";
 import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
 import {logMemberAssignment} from "../../services/activity-logs/activity-logs.service";
 
-export async function getAssignees(taskId: string): Promise<Array<{
+export interface ITaskAssignee {
   team_member_id?: string;
   project_member_id?: string;
   name?: string;
   avatar_url?: string;
   user_id?: string;
-}>> {
+}
+
+export async function getAssignees(taskId: string): Promise<ITaskAssignee[]> {
   const result1 = await db.query("SELECT get_task_assignees($1) AS assignees;", [taskId]);
   const [d] = result1.rows;
   const assignees = d.assignees || [];
@@ -30,7 +32,7 @@ export async function getTeamMembers(teamId: string) {
   return data?.members || [];
 }
 
-async function runAssignOrRemove(data: any, isAssignment = false) {
+export async function runAssignOrRemove(data: any, isAssignment = false) {
   const q = isAssignment
     ? "SELECT create_task_assignee($1, $2, $3, $4) AS data;"
     : `SELECT remove_task_assignee($1, $2, $3) AS data;`;

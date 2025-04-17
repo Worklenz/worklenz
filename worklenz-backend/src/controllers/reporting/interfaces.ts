@@ -1,4 +1,4 @@
-import { IChartObject } from "./overview/reporting-overview-base";
+import * as Highcharts from "highcharts";
 
 export interface IDuration {
   label: string;
@@ -34,7 +34,7 @@ export interface IOverviewStatistics {
 }
 
 export interface IChartData {
-  chart: IChartObject[];
+  chart: Highcharts.PointOptionsObject[];
 }
 
 export interface ITasksByStatus extends IChartData {

@@ -12,7 +12,7 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `INSERT INTO clients (name, team_id) VALUES ($1, $2);`;
+    const q = `INSERT INTO clients (name, team_id) VALUES ($1, $2) RETURNING id, name;`;
     const result = await db.query(q, [req.body.name, req.user?.team_id || null]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));

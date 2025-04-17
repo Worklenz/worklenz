@@ -73,8 +73,8 @@ export default class TasksControllerBase extends WorklenzControllerBase {
     if (task.timer_start_time)
       task.timer_start_time = moment(task.timer_start_time).valueOf();
 
-    const totalCompleted = +task.completed_sub_tasks + +task.parent_task_completed;
-    const totalTasks = +task.sub_tasks_count + 1; // +1 for parent
+    const totalCompleted = (+task.completed_sub_tasks + +task.parent_task_completed) || 0;
+    const totalTasks = +task.sub_tasks_count || 0; // if needed add +1 for parent
     task.complete_ratio = TasksControllerBase.calculateTaskCompleteRatio(totalCompleted, totalTasks);
     task.completed_count = totalCompleted;
     task.total_tasks_count = totalTasks;

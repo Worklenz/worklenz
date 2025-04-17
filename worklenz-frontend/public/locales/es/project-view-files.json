@@ -1,0 +1,14 @@
+{
+  "nameColumn": "Nombre",
+  "attachedTaskColumn": "Tarea Adjunta",
+  "sizeColumn": "Tamaño",
+  "uploadedByColumn": "Subido Por",
+  "uploadedAtColumn": "Subido El",
+  "fileIconAlt": "Icono de archivo",
+  "titleDescriptionText": "Todos los archivos adjuntos a las tareas en este proyecto aparecerán aquí.",
+  "deleteConfirmationTitle": "¿Estás seguro?",
+  "deleteConfirmationOk": "Sí",
+  "deleteConfirmationCancel": "Cancelar",
+  "segmentedTooltip": "¡Próximamente! Cambiar entre vista de lista y vista de miniaturas.",
+  "emptyText": "No hay archivos adjuntos en el proyecto."
+}

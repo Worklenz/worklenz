@@ -56,11 +56,7 @@ async function handleSignUp(req: Request, email: string, password: string, done:
   try {
     const user = await registerUser(password, team_id, name, team_name, email, timezone, team_member_id);
     sendWelcomeEmail(email, name);
-
-    setTimeout(() => {
-      return done(null, user, req.flash(SUCCESS_KEY, "Registration successful. Please check your email for verification."));
-    }, 500);
-
+    return done(null, user, req.flash(SUCCESS_KEY, "Registration successful. Please check your email for verification."));
   } catch (error: any) {
     const message = (error?.message) || "";
 

@@ -1,0 +1,63 @@
+{
+  "keyColumn": "Clave",
+  "taskColumn": "Tarea",
+  "descriptionColumn": "Descripción",
+  "progressColumn": "Progreso",
+  "membersColumn": "Miembros",
+  "assigneesColumn": "Asignados",
+  "labelsColumn": "Etiquetas",
+  "phasesColumn": "Fases",
+  "phaseColumn": "Fase",
+  "statusColumn": "Estado",
+  "priorityColumn": "Prioridad",
+  "timeTrackingColumn": "Seguimiento de tiempo",
+  "timetrackingColumn": "Seguimiento de tiempo",
+  "estimationColumn": "Estimación",
+  "startDateColumn": "Fecha de inicio",
+  "startdateColumn": "Fecha de inicio",
+  "dueDateColumn": "Fecha de vencimiento",
+  "duedateColumn": "Fecha de vencimiento",
+  "completedDateColumn": "Fecha de completado",
+  "completeddateColumn": "Fecha de completado",
+  "createdDateColumn": "Fecha de creación",
+  "createddateColumn": "Fecha de creación",
+  "lastUpdatedColumn": "Última actualización",
+  "lastupdatedColumn": "Última actualización",
+  "reporterColumn": "Reportador",
+  "dueTimeColumn": "Hora de vencimiento",
+  "todoSelectorText": "Por hacer",
+  "doingSelectorText": "En progreso",
+  "doneSelectorText": "Completado",
+
+  "lowSelectorText": "Baja",
+  "mediumSelectorText": "Media",
+  "highSelectorText": "Alta",
+
+  "selectText": "Seleccionar",
+  "labelsSelectorInputTip": "¡Presiona enter para crear!",
+
+  "addTaskText": "+ Agregar tarea",
+  "addSubTaskText": "+ Agregar subtarea",
+  "addTaskInputPlaceholder": "Escribe tu tarea y presiona enter",
+
+  "openButton": "Abrir",
+  "okButton": "Aceptar",
+
+  "noLabelsFound": "No se encontraron etiquetas",
+  "searchInputPlaceholder": "Buscar o crear",
+  "assigneeSelectorInviteButton": "Invitar a un nuevo miembro por correo",
+  "labelInputPlaceholder": "Buscar o crear",
+  
+  "pendingInvitation": "Invitación pendiente",
+
+  "contextMenu": {
+    "assignToMe": "Asignar a mí",
+    "moveTo": "Mover a",
+    "unarchive": "Desarchivar",
+    "archive": "Archivar",
+    "convertToSubTask": "Convertir en subtarea",
+    "convertToTask": "Convertir en tarea",
+    "delete": "Eliminar",
+    "searchByNameInputPlaceholder": "Buscar por nombre"
+  }
+}

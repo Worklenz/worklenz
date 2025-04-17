@@ -1,0 +1,27 @@
+.table-tag:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.custom-row .hover-button {
+  visibility: hidden;
+  transition:
+    visibility 0s,
+    opacity ease-in-out;
+  opacity: 0;
+}
+
+.custom-row:hover .hover-button {
+  visibility: visible;
+  opacity: 1;
+}
+
+@media (max-width: 1000px) {
+  .table-tag {
+    font-size: 10px;
+  }
+
+  .project-progress {
+    font-size: 10px;
+  }
+}

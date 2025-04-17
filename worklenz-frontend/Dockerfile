@@ -1,11 +1,20 @@
-FROM node:alpine
+FROM node:18-alpine AS build
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY . /usr/src/app
+COPY package.json package-lock.json ./
 
-RUN npm install -g @angular/cli
+RUN npm ci
 
-RUN npm install
+COPY . .
+RUN npm run build
 
-CMD ["npm", "run", "start-docker"]
+FROM node:18-alpine AS production
+
+WORKDIR /app
+
+RUN npm install -g serve
+
+COPY --from=build /app/build /app/build
+EXPOSE 5000
+CMD ["serve", "-s", "build", "-l", "5000"]

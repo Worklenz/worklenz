@@ -4,14 +4,14 @@ import {sendEmail} from "./email";
 import {sanitize} from "./utils";
 import FileConstants from "./file-constants";
 
-const HOSTNAME = process.env.HOSTNAME || "worklenz.com";
+const FRONTEND_URL = process.env.FRONTEND_URL || "worklenz.com";
 
 export function sendWelcomeEmail(email: string, name: string) {
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.Welcome) as string;
   if (!content) return;
 
   content = content.replace("[VAR_USER_NAME]", sanitize(name));
-  content = content.replace("[VAR_HOSTNAME]", sanitize(HOSTNAME));
+  content = content.replace("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
 
   sendEmail({
     to: [email],
@@ -38,7 +38,7 @@ export function sendJoinTeamInvitation(myName: string, teamName: string, teamId:
 
   content = content.replace("[VAR_USER_NAME]", sanitize(userName));
   content = content.replace("[VAR_TEAM_NAME]", sanitize(teamName));
-  content = content.replace("[VAR_HOSTNAME]", sanitize(HOSTNAME));
+  content = content.replace("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
   content = content.replace("[VAR_TEAM_ID]", sanitize(teamId));
   content = content.replace("[VAR_USER_ID]", sanitize(userId));
   content = content.replace("[PROJECT_ID]", projectId ? sanitize(projectId as string) : "");
@@ -58,7 +58,7 @@ export function sendRegisterAndJoinTeamInvitation(myName: string, userName: stri
   content = content.replace("[VAR_USER_ID]", sanitize(userId));
   content = content.replace("[VAR_USER_NAME]", sanitize(userName));
   content = content.replace("[VAR_TEAM_NAME]", sanitize(teamName));
-  content = content.replace("[VAR_HOSTNAME]", sanitize(HOSTNAME));
+  content = content.replace("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
   content = content.replace("[VAR_TEAM_ID]", sanitize(teamId));
   content = content.replace("[PROJECT_ID]", projectId ? sanitize(projectId as string) : "");
 
@@ -73,7 +73,7 @@ export function sendResetEmail(toEmail: string, user_id: string, hash: string) {
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.ResetPassword) as string;
   if (!content) return;
 
-  content = content.replace("[VAR_HOSTNAME]", sanitize(HOSTNAME));
+  content = content.replace("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
   content = content.replace("[VAR_USER_ID]", sanitize(user_id));
   content = content.replace("[VAR_HASH]", hash);
 

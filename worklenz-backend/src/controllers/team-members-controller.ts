@@ -13,7 +13,9 @@ import { SocketEvents } from "../socket.io/events";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { formatDuration, getColor } from "../shared/utils";
-import { TEAM_MEMBER_TREE_MAP_COLOR_ALPHA } from "../shared/constants";
+import { statusExclude, TEAM_MEMBER_TREE_MAP_COLOR_ALPHA } from "../shared/constants";
+import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
+import { updateUsers } from "../shared/paddle-requests";
 import { NotificationsService } from "../services/notifications/notifications.service";
 
 export default class TeamMembersController extends WorklenzControllerBase {
@@ -81,6 +83,98 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }
 
     /**
+   * Checks the subscription status of the team.
+   * @type {Object} subscriptionData - Object containing subscription information
+   */
+    const subscriptionData = await checkTeamSubscriptionStatus(req.user?.team_id);
+
+    let incrementBy = 0;
+
+    // Handle self-hosted subscriptions differently
+    if (subscriptionData.subscription_type === 'SELF_HOSTED') {
+      // Check if users exist and add them if they don't
+      await Promise.all(req.body.emails.map(async (email: string) => {
+        const trimmedEmail = email.trim();
+        const userExists = await this.checkIfUserAlreadyExists(req.user?.owner_id as string, trimmedEmail);
+        if (!userExists) {
+          incrementBy = incrementBy + 1;
+        }
+      }));
+
+      // Create or invite new members
+      const newMembers = await this.createOrInviteMembers(req.body, req.user);
+      return res.status(200).send(new ServerResponse(true, newMembers, `Your teammates will get an email that gives them access to your team.`).withTitle("Invitations sent"));
+    }
+
+    /**
+   * Iterates through each email in the request body and checks if the user already exists.
+   * If the user doesn't exist, increments the counter.
+   * @param {string} email - Email address to check
+   */
+    await Promise.all(req.body.emails.map(async (email: string) => {
+      const trimmedEmail = email.trim();
+
+      const userExists = await this.checkIfUserAlreadyExists(req.user?.owner_id as string, trimmedEmail);
+      const isUserActive = await this.checkIfUserActiveInOtherTeams(req.user?.owner_id as string, trimmedEmail);
+
+      if (!userExists || !isUserActive) {
+        incrementBy = incrementBy + 1;
+      }
+    }));
+
+    /**
+   * Checks various conditions to determine if the maximum number of lifetime users is exceeded.
+   * Sends a response if the limit is reached.
+   */
+    if (
+      incrementBy > 0
+      && subscriptionData.is_ltd
+      && subscriptionData.current_count
+      && ((parseInt(subscriptionData.current_count) + req.body.emails.length) > parseInt(subscriptionData.ltd_users))) {
+      return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
+    }
+
+    if (
+      subscriptionData.is_ltd
+      && subscriptionData.current_count
+      && ((parseInt(subscriptionData.current_count) + incrementBy) > parseInt(subscriptionData.ltd_users))) {
+      return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
+    }
+
+    /**
+   * Checks subscription details and updates the user count if applicable.
+   * Sends a response if there is an issue with the subscription.
+   */
+    // if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+    //   const response = await updateUsers(subscriptionData.subscription_id, (subscriptionData.quantity + incrementBy));
+
+    //   if (!response.body.subscription_id) {
+    //     return res.status(200).send(new ServerResponse(false, null, response.message || "Please check your subscription."));
+    //   }
+    // }
+
+    if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+      const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
+      const requiredSeats = updatedCount - subscriptionData.quantity;
+      if (updatedCount > subscriptionData.quantity) {
+        const obj = {
+          seats_enough: false,
+          required_count: requiredSeats,
+          current_seat_amount: subscriptionData.quantity
+        };
+        return res.status(200).send(new ServerResponse(false, obj, null));
+      }
+    }
+
+    /**
+   * Checks if the subscription status is in the exclusion list.
+   * Sends a response if the status is excluded.
+   */
+    if (statusExclude.includes(subscriptionData.subscription_status)) {
+      return res.status(200).send(new ServerResponse(false, null, "Unable to add user! Please check your subscription status."));
+    }
+
+    /**
    * Creates or invites new members based on the request body and user information.
    * Sends a response with the result.
    */
@@ -93,12 +187,24 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req.query.field = ["is_owner", "active", "u.name", "u.email"];
     req.query.order = "descend";
 
+    // Helper function to check for encoded components
+    function containsEncodedComponents(x: string) {
+        return decodeURI(x) !== decodeURIComponent(x);
+    }
+
+    // Decode search parameter if it contains encoded components
+    if (req.query.search && typeof req.query.search === 'string') {
+        if (containsEncodedComponents(req.query.search)) {
+            req.query.search = decodeURIComponent(req.query.search);
+        }
+    }
+
     const {
-      searchQuery,
-      sortField,
-      sortOrder,
-      size,
-      offset
+        searchQuery,
+        sortField,
+        sortOrder,
+        size,
+        offset
     } = this.toPaginationOptions(req.query, ["u.name", "u.email"], true);
 
     const paginate = req.query.all === "false" ? `LIMIT ${size} OFFSET ${offset}` : "";
@@ -126,7 +232,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
                               ELSE FALSE END) AS is_owner,
                            (SELECT email
                             FROM team_member_info_view
-                            WHERE team_member_info_view.team_member_id = team_members.id),
+                            WHERE team_member_info_view.team_member_id = team_members.id) AS email,
                            EXISTS(SELECT email
                                   FROM email_invitations
                                   WHERE team_member_id = team_members.id
@@ -277,11 +383,32 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     if (!id || !req.user?.team_id) return res.status(200).send(new ServerResponse(false, "Required fields are missing."));
 
+    // check subscription status
+    const subscriptionData = await checkTeamSubscriptionStatus(req.user?.team_id);
+    if (statusExclude.includes(subscriptionData.subscription_status)) {
+      return res.status(200).send(new ServerResponse(false, "Please check your subscription status."));
+    }
+
     const q = `SELECT remove_team_member($1, $2, $3) AS member;`;
     const result = await db.query(q, [id, req.user?.id, req.user?.team_id]);
     const [data] = result.rows;
 
     const message = `You have been removed from <b>${req.user?.team_name}</b> by <b>${req.user?.name}</b>`;
+
+    // if (subscriptionData.status === "trialing") break;
+    // if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
+    //   if (subscriptionData.subscription_status === "active" && subscriptionData.quantity > 0) {
+    //     const obj = await getActiveTeamMemberCount(req.user?.owner_id ?? "");
+    //     // const activeObj = await getActiveTeamMemberCount(req.user?.owner_id ?? "");
+
+    //     const userActiveInOtherTeams = await this.checkIfUserActiveInOtherTeams(req.user?.owner_id as string, req.query?.email as string);
+
+    //     if (!userActiveInOtherTeams) {
+    //       const response = await updateUsers(subscriptionData.subscription_id, obj.user_count);
+    //       if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, response.message || "Please check your subscription."));
+    //     }
+    //   }
+    // }
 
     NotificationsService.sendNotification({
       receiver_socket_id: data.socket_id,
@@ -871,20 +998,68 @@ export default class TeamMembersController extends WorklenzControllerBase {
   public static async toggleMemberActiveStatus(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     if (!req.user?.team_id) return res.status(200).send(new ServerResponse(false, "Required fields are missing."));
 
-    const q1 = `SELECT active FROM team_members WHERE  id = $1;`;
-    const result1 = await db.query(q1, [req.params?.id]);
-    const [status] = result1.rows;
-
-    if (status.active) {
-      const updateQ1 = `UPDATE users
-              SET active_team = (SELECT id FROM teams WHERE user_id = users.id ORDER BY created_at DESC LIMIT 1)
-              WHERE id = (SELECT user_id FROM team_members WHERE id = $1 AND active IS TRUE LIMIT 1);`;
-      await db.query(updateQ1, [req.params?.id]);
+    // check subscription status
+    const subscriptionData = await checkTeamSubscriptionStatus(req.user?.team_id);
+    if (statusExclude.includes(subscriptionData.subscription_status)) {
+      return res.status(200).send(new ServerResponse(false, "Please check your subscription status."));
     }
 
-    const q = `UPDATE team_members SET active = NOT active WHERE id = $1 RETURNING active;`;
-    const result = await db.query(q, [req.params?.id]);
-    const [data] = result.rows;
+    let data: any;
+
+    if (req.query.active === "true") {
+      const q1 = `SELECT active FROM team_members WHERE  id = $1;`;
+      const result1 = await db.query(q1, [req.params?.id]);
+      const [status] = result1.rows;
+
+      if (status.active) {
+        const updateQ1 = `UPDATE users
+              SET active_team = (SELECT id FROM teams WHERE user_id = users.id ORDER BY created_at DESC LIMIT 1)
+              WHERE id = (SELECT user_id FROM team_members WHERE id = $1 AND active IS TRUE LIMIT 1);`;
+        await db.query(updateQ1, [req.params?.id]);
+      }
+
+      const q = `UPDATE team_members SET active = NOT active WHERE id = $1 RETURNING active;`;
+      const result = await db.query(q, [req.params?.id]);
+      data = result.rows[0];
+
+      // const userExists = await this.checkIfUserActiveInOtherTeams(req.user?.owner_id as string, req.query?.email as string);
+
+      // if (subscriptionData.status === "trialing") break;
+      // if (!userExists && !subscriptionData.is_credit && !subscriptionData.is_custom) {
+      //   if (subscriptionData.subscription_status === "active" && subscriptionData.quantity > 0) {
+      //     const operator = req.query.active === "true" ? - 1 : + 1;
+      //     const response = await updateUsers(subscriptionData.subscription_id, subscriptionData.quantity + operator);
+      //     if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, response.message || "Please check your subscription."));
+      //   }
+      // }
+    } else {
+
+      const userExists = await this.checkIfUserActiveInOtherTeams(req.user?.owner_id as string, req.query?.email as string);
+
+      // if (subscriptionData.status === "trialing") break;
+      // if (!userExists && !subscriptionData.is_credit && !subscriptionData.is_custom) {
+      //   if (subscriptionData.subscription_status === "active" && subscriptionData.quantity > 0) {
+      //     const operator = req.query.active === "true" ? - 1 : + 1;
+      //     const response = await updateUsers(subscriptionData.subscription_id, subscriptionData.quantity + operator);
+      //     if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, response.message || "Please check your subscription."));
+      //   }
+      // }
+
+      const q1 = `SELECT active FROM team_members WHERE  id = $1;`;
+      const result1 = await db.query(q1, [req.params?.id]);
+      const [status] = result1.rows;
+
+      if (status.active) {
+        const updateQ1 = `UPDATE users
+              SET active_team = (SELECT id FROM teams WHERE user_id = users.id ORDER BY created_at DESC LIMIT 1)
+              WHERE id = (SELECT user_id FROM team_members WHERE id = $1 AND active IS TRUE LIMIT 1);`;
+        await db.query(updateQ1, [req.params?.id]);
+      }
+
+      const q = `UPDATE team_members SET active = NOT active WHERE id = $1 RETURNING active;`;
+      const result = await db.query(q, [req.params?.id]);
+      data = result.rows[0];
+    }
 
     return res.status(200).send(new ServerResponse(true, [], `Team member ${data.active ? " activated" : " deactivated"} successfully.`));
   }
@@ -898,6 +1073,21 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req.body.team_id = req.params?.id || null;
 
     if (!req.body.team_id || !req.user?.id) return res.status(200).send(new ServerResponse(false, "Required fields are missing."));
+
+    // check the subscription status
+    const subscriptionData = await checkTeamSubscriptionStatus(req.body.team_id);
+
+    if (statusExclude.includes(subscriptionData.subscription_status)) {
+      return res.status(200).send(new ServerResponse(false, "Please check your subscription status."));
+    }
+
+    // if (subscriptionData.status === "trialing") break;
+    if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
+      if (subscriptionData.subscription_status === "active") {
+        const response = await updateUsers(subscriptionData.subscription_id, subscriptionData.quantity + (req.body.emails.length || 1));
+        if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, response.message || "Please check your subscription."));
+      }
+    }
 
     const newMembers = await this.createOrInviteMembers(req.body, req.user);
     return res.status(200).send(new ServerResponse(true, newMembers, `Your teammates will get an email that gives them access to your team.`).withTitle("Invitations sent"));

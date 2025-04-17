@@ -54,7 +54,7 @@ export default class TaskStatusesController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getCategories(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT id, name, color_code, description
+    const q = `SELECT id, name, color_code, color_code_dark, description
                FROM sys_task_status_categories
                ORDER BY index;`;
     const result = await db.query(q, []);
@@ -73,7 +73,7 @@ export default class TaskStatusesController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `
-      SELECT task_statuses.id, task_statuses.name, stsc.color_code
+      SELECT task_statuses.id, task_statuses.name, stsc.color_code, stsc.color_code_dark
       FROM task_statuses
              INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
       WHERE task_statuses.id = $1
@@ -113,7 +113,7 @@ export default class TaskStatusesController extends WorklenzControllerBase {
           category_id = COALESCE($4, (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE))
       WHERE id = $1
         AND project_id = $3
-      RETURNING (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id);
+      RETURNING (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id), (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id);
     `;
     const result = await db.query(q, [req.params.id, req.body.name, req.body.project_id, req.body.category_id]);
     const [data] = result.rows;

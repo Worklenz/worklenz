@@ -17,8 +17,7 @@ import homeTaskBodyValidator from "../../middlewares/validators/home-task-body-v
 import TaskListColumnsController from "../../controllers/task-list-columns-controller";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import safeControllerFunction from "../../shared/safe-controller-function";
-
-
+import taskCreateBodyValidator from "../../middlewares/validators/task-create-body--validator";
 
 const tasksApiRouter = express.Router();
 
@@ -29,7 +28,7 @@ function getList(req: Request, res: Response) {
   return TasksControllerV2.getList(req, res);
 }
 
-tasksApiRouter.post("/", tasksBodyValidator, safeControllerFunction(TasksController.create));
+tasksApiRouter.post("/", taskCreateBodyValidator, safeControllerFunction(TasksController.create));
 tasksApiRouter.get("/project/:id", idParamValidator, safeControllerFunction(TasksController.getTasksByProject));
 tasksApiRouter.get("/roadmap", ganttTasksQueryParamsValidator, safeControllerFunction(TasksController.getGanttTasksByProject));
 tasksApiRouter.get("/range", ganttTasksRangeParamsValidator, safeControllerFunction(TasksController.getTasksBetweenRange));
@@ -62,5 +61,12 @@ tasksApiRouter.post("/quick-task", quickTaskBodyValidator, safeControllerFunctio
 tasksApiRouter.post("/home-task", homeTaskBodyValidator, safeControllerFunction(TasksController.createHomeTask));
 tasksApiRouter.post("/convert-to-subtask", safeControllerFunction(TasksControllerV2.convertToSubtask));
 tasksApiRouter.get("/subscribers/:id", safeControllerFunction(TasksControllerV2.getSubscribers));
+tasksApiRouter.get("/search", safeControllerFunction(TasksControllerV2.searchTasks));
+tasksApiRouter.get("/dependency-status", safeControllerFunction(TasksControllerV2.getTaskDependencyStatus));
+
+tasksApiRouter.put("/labels/:id", idParamValidator, safeControllerFunction(TasksControllerV2.assignLabelsToTask));
+
+// Add custom column value update route
+tasksApiRouter.put("/:taskId/custom-column", TasksControllerV2.updateCustomColumnValue);
 
 export default tasksApiRouter;

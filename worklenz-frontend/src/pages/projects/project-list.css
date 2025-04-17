@@ -1,0 +1,27 @@
+.ant-segmented-item-selected {
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow:
+    0 2px 8px -2px #0000000d,
+    0 1px 4px -1px #00000012,
+    0 0 1px #00000014;
+  color: #262626;
+}
+
+:where(.css-dev-only-do-not-override-c1iapc).ant-space-compact-block {
+  width: unset !important;
+}
+
+@media (max-width: 1000px) {
+  .project-card.ant-card .ant-card-body {
+    padding: 0 !important;
+  }
+}
+
+/* remove the border after the tabs in project view  */
+:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-top > .ant-tabs-nav::before,
+:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-bottom > .ant-tabs-nav::before,
+:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-top > div > .ant-tabs-nav::before,
+:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-bottom > div > .ant-tabs-nav::before {
+  border: none;
+}

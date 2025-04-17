@@ -1,18 +1,19 @@
-import {ParsedQs} from "qs";
+import { ParsedQs } from "qs";
 
 import db from "../config/db";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
-import {ServerResponse} from "../models/server-response";
-import {TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED} from "../shared/constants";
-import {getColor} from "../shared/utils";
-import TasksControllerBase, {GroupBy, ITaskGroup} from "./tasks-controller-base";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
+import { ServerResponse } from "../models/server-response";
+import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../shared/constants";
+import { getColor, log_error } from "../shared/utils";
+import TasksControllerBase, { GroupBy, ITaskGroup } from "./tasks-controller-base";
 
 export class TaskListGroup implements ITaskGroup {
   name: string;
   category_id: string | null;
   color_code: string;
+  color_code_dark: string;
   start_date?: string;
   end_date?: string;
   todo_progress: number;
@@ -26,6 +27,7 @@ export class TaskListGroup implements ITaskGroup {
     this.start_date = group.start_date || null;
     this.end_date = group.end_date || null;
     this.color_code = group.color_code + TASK_STATUS_COLOR_ALPHA;
+    this.color_code_dark = group.color_code_dark;
     this.todo_progress = 0;
     this.doing_progress = 0;
     this.done_progress = 0;
@@ -104,7 +106,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   private static getQuery(userId: string, options: ParsedQs) {
     const searchField = options.search ? "t.name" : "sort_order";
-    const {searchQuery, sortField} = TasksControllerV2.toPaginationOptions(options, searchField);
+    const { searchQuery, sortField } = TasksControllerV2.toPaginationOptions(options, searchField);
 
     const isSubTasks = !!options.parent_task;
 
@@ -124,6 +126,33 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const filterByAssignee = TasksControllerV2.getFilterByAssignee(options.filterBy as string);
     // Returns statuses of each task as a json array if filterBy === "member"
     const statusesQuery = TasksControllerV2.getStatusesQuery(options.filterBy as string);
+    
+    // Custom columns data query
+    const customColumnsQuery = options.customColumns 
+      ? `, (SELECT COALESCE(
+            jsonb_object_agg(
+              custom_cols.key, 
+              custom_cols.value
+            ), 
+            '{}'::JSONB
+          )
+          FROM (
+            SELECT 
+              cc.key,
+              CASE 
+                WHEN ccv.text_value IS NOT NULL THEN to_jsonb(ccv.text_value)
+                WHEN ccv.number_value IS NOT NULL THEN to_jsonb(ccv.number_value)
+                WHEN ccv.boolean_value IS NOT NULL THEN to_jsonb(ccv.boolean_value)
+                WHEN ccv.date_value IS NOT NULL THEN to_jsonb(ccv.date_value)
+                WHEN ccv.json_value IS NOT NULL THEN ccv.json_value
+                ELSE NULL::JSONB
+              END AS value
+            FROM cc_column_values ccv
+            JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+            WHERE ccv.task_id = t.id
+          ) AS custom_cols
+          WHERE custom_cols.value IS NOT NULL) AS custom_column_values`
+      : "";
 
     const archivedFilter = options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
 
@@ -173,7 +202,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
                 WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_color_code,
 
              (EXISTS(SELECT 1 FROM task_subscribers WHERE task_id = t.id)) AS has_subscribers,
-
+             (EXISTS(SELECT 1 FROM task_dependencies td WHERE td.task_id = t.id)) AS has_dependencies,
              (SELECT start_time
               FROM task_timers
               WHERE task_id = t.id
@@ -182,6 +211,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
              (SELECT color_code
               FROM sys_task_status_categories
               WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+
+             (SELECT color_code_dark
+              FROM sys_task_status_categories
+              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color_dark,
 
              (SELECT COALESCE(ROW_TO_JSON(r), '{}'::JSON)
               FROM (SELECT is_done, is_doing, is_todo
@@ -209,7 +242,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
                            (SELECT color_code FROM team_labels WHERE id = task_labels.label_id)
                     FROM task_labels
                     WHERE task_id = t.id) r) AS labels,
-
+             (SELECT is_completed(status_id, project_id)) AS is_complete,
              (SELECT name FROM users WHERE id = t.reporter_id) AS reporter,
              (SELECT id FROM task_priorities WHERE id = t.priority_id) AS priority,
              (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
@@ -219,7 +252,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
              updated_at,
              completed_at,
              start_date,
-             END_DATE ${statusesQuery}
+             billable,
+             schedule_id,
+             END_DATE ${customColumnsQuery} ${statusesQuery}
       FROM tasks t
       WHERE ${filters} ${searchQuery}
       ORDER BY ${sortFields}
@@ -235,6 +270,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           SELECT id,
                  name,
                  (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id),
+                 (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
                  category_id
           FROM task_statuses
           WHERE project_id = $1
@@ -243,7 +279,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         params = [projectId];
         break;
       case GroupBy.PRIORITY:
-        q = `SELECT id, name, color_code
+        q = `SELECT id, name, color_code, color_code_dark
              FROM task_priorities
              ORDER BY value DESC;`;
         break;
@@ -261,7 +297,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         break;
       case GroupBy.PHASE:
         q = `
-          SELECT id, name, color_code, start_date, end_date, sort_index
+          SELECT id, name, color_code, color_code AS color_code_dark, start_date, end_date, sort_index
           FROM project_phases
           WHERE project_id = $1
           ORDER BY sort_index DESC;
@@ -281,6 +317,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
   public static async getList(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
+    
+    // Add customColumns flag to query params
+    req.query.customColumns = "true";
 
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
     const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
@@ -356,6 +395,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
   @HandleExceptions()
   public static async getTasksOnly(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const isSubTasks = !!req.query.parent_task;
+    
+    // Add customColumns flag to query params
+    req.query.customColumns = "true";
+    
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
     const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
     const result = await db.query(q, params);
@@ -393,7 +436,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   @HandleExceptions()
   public static async getNewKanbanTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {id} = req.params;
+    const { id } = req.params;
     const result = await db.query("SELECT get_single_task($1) AS task;", [id]);
     const [data] = result.rows;
     const task = TasksControllerV2.updateTaskViewModel(data.task);
@@ -474,9 +517,211 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   }
 
+  public static async getTasksByName(searchString: string, projectId: string, taskId: string) {
+    const q = `SELECT id AS value ,
+       name AS label,
+       CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key
+      FROM tasks t
+      WHERE t.name ILIKE '%${searchString}%'
+        AND t.project_id = $1 AND t.id != $2
+      LIMIT 15;`;
+    const result = await db.query(q, [projectId, taskId]);
+
+    return result.rows;
+  }
+
   @HandleExceptions()
   public static async getSubscribers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const subscribers = await this.getTaskSubscribers(req.params.id);
     return res.status(200).send(new ServerResponse(true, subscribers));
+  }
+
+  @HandleExceptions()
+  public static async searchTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { projectId, taskId, searchQuery } = req.query;
+    const tasks = await this.getTasksByName(searchQuery as string, projectId as string, taskId as string);
+    return res.status(200).send(new ServerResponse(true, tasks));
+  }
+
+  @HandleExceptions()
+  public static async getTaskDependencyStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { statusId, taskId } = req.query;
+    const canContinue = await TasksControllerV2.checkForCompletedDependencies(taskId as string, statusId as string);
+    return res.status(200).send(new ServerResponse(true, { can_continue: canContinue }));
+  }
+
+  @HandleExceptions()
+  public static async checkForCompletedDependencies(taskId: string, nextStatusId: string): Promise<IWorkLenzResponse> {
+    const q = `SELECT
+    CASE
+        WHEN EXISTS (
+            -- Check if the status id is not in the "done" category
+            SELECT 1
+            FROM task_statuses ts
+            WHERE ts.id = $2
+              AND ts.project_id = (SELECT project_id FROM tasks WHERE id = $1)
+              AND ts.category_id IN (
+                  SELECT id FROM sys_task_status_categories WHERE is_done IS FALSE
+              )
+        ) THEN TRUE -- If status is not in the "done" category, continue immediately (TRUE)
+
+        WHEN EXISTS (
+            -- Check if any dependent tasks are not completed
+            SELECT 1
+            FROM task_dependencies td
+            LEFT JOIN public.tasks t ON t.id = td.related_task_id
+            WHERE td.task_id = $1
+              AND t.status_id NOT IN (
+                  SELECT id
+                  FROM task_statuses ts
+                  WHERE t.project_id = ts.project_id
+                    AND ts.category_id IN (
+                        SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE
+                    )
+              )
+        ) THEN FALSE -- If there are incomplete dependent tasks, do not continue (FALSE)
+
+        ELSE TRUE -- Continue if no other conditions block the process
+    END AS can_continue;`;
+    const result = await db.query(q, [taskId, nextStatusId]);
+    const [data] = result.rows;
+
+    return data.can_continue;
+  }
+
+  public static async getTaskStatusColor(status_id: string) {
+    try {
+      const q = `SELECT color_code, color_code_dark
+      FROM sys_task_status_categories
+      WHERE id = (SELECT category_id FROM task_statuses WHERE id = $1)`;
+      const result = await db.query(q, [status_id]);
+      const [data] = result.rows;
+      return data;
+    } catch (e) {
+      log_error(e);
+    }
+  }
+
+  @HandleExceptions()
+  public static async assignLabelsToTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
+    const { labels }: { labels: string[] } = req.body;
+
+    labels.forEach(async (label: string) => {
+      const q = `SELECT add_or_remove_task_label($1, $2) AS labels;`;
+      await db.query(q, [id, label]);
+    });
+    return res.status(200).send(new ServerResponse(true, null, "Labels assigned successfully"));
+  }
+
+  /**
+   * Updates a custom column value for a task
+   * @param req The request object
+   * @param res The response object
+   */
+  @HandleExceptions()
+  public static async updateCustomColumnValue(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { taskId } = req.params;
+    const { column_key, value, project_id } = req.body;
+
+    if (!taskId || !column_key || value === undefined || !project_id) {
+      return res.status(400).send(new ServerResponse(false, "Missing required parameters"));
+    }
+
+    // Get column information
+    const columnQuery = `
+      SELECT id, field_type 
+      FROM cc_custom_columns 
+      WHERE project_id = $1 AND key = $2
+    `;
+    const columnResult = await db.query(columnQuery, [project_id, column_key]);
+    
+    if (columnResult.rowCount === 0) {
+      return res.status(404).send(new ServerResponse(false, "Custom column not found"));
+    }
+    
+    const column = columnResult.rows[0];
+    const columnId = column.id;
+    const fieldType = column.field_type;
+    
+    // Determine which value field to use based on the field_type
+    let textValue = null;
+    let numberValue = null;
+    let dateValue = null;
+    let booleanValue = null;
+    let jsonValue = null;
+    
+    switch (fieldType) {
+      case "number":
+        numberValue = parseFloat(String(value));
+        break;
+      case "date":
+        dateValue = new Date(String(value));
+        break;
+      case "checkbox":
+        booleanValue = Boolean(value);
+        break;
+      case "people":
+        jsonValue = JSON.stringify(Array.isArray(value) ? value : [value]);
+        break;
+      default:
+        textValue = String(value);
+    }
+    
+    // Check if a value already exists
+    const existingValueQuery = `
+      SELECT id 
+      FROM cc_column_values 
+      WHERE task_id = $1 AND column_id = $2
+    `;
+    const existingValueResult = await db.query(existingValueQuery, [taskId, columnId]);
+    
+    if (existingValueResult.rowCount && existingValueResult.rowCount > 0) {
+      // Update existing value
+      const updateQuery = `
+        UPDATE cc_column_values 
+        SET text_value = $1, 
+            number_value = $2, 
+            date_value = $3, 
+            boolean_value = $4, 
+            json_value = $5, 
+            updated_at = NOW() 
+        WHERE task_id = $6 AND column_id = $7
+      `;
+      await db.query(updateQuery, [
+        textValue, 
+        numberValue, 
+        dateValue, 
+        booleanValue, 
+        jsonValue, 
+        taskId, 
+        columnId
+      ]);
+    } else {
+      // Insert new value
+      const insertQuery = `
+        INSERT INTO cc_column_values 
+        (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value, created_at, updated_at) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      `;
+      await db.query(insertQuery, [
+        taskId, 
+        columnId, 
+        textValue, 
+        numberValue, 
+        dateValue, 
+        booleanValue, 
+        jsonValue
+      ]);
+    }
+
+    return res.status(200).send(new ServerResponse(true, { 
+      task_id: taskId,
+      column_key,
+      value
+    }));
   }
 }

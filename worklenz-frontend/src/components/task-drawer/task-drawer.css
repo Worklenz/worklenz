@@ -1,0 +1,32 @@
+.delete-task-dropdown .ant-dropdown-menu {
+  padding: 0 !important;
+  margin-top: 8px !important;
+  overflow: hidden;
+}
+
+.delete-task-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+}
+
+.delete-task-dropdown-card .ant-card-body {
+  padding: 0 !important;
+}
+
+.delete-task-menu .ant-menu-item {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
+
+.delete-task-button {
+  color: red;
+}
+
+.delete-task-button:hover {
+  background-color: red !important;
+  color: white !important;
+}
+
+.custom-task-drawer-info-collapse .ant-collapse-header {
+  padding-block-end: 0 !important;
+}

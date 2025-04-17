@@ -26,6 +26,8 @@ authRouter.get("/check-password", safeControllerFunction(AuthController.checkPas
 authRouter.post("/reset-password", resetEmailValidator, safeControllerFunction(AuthController.reset_password));
 authRouter.post("/update-password", updatePasswordValidator, passwordValidator, safeControllerFunction(AuthController.verify_reset_email));
 
+authRouter.post("/verify-captcha", safeControllerFunction(AuthController.verifyCaptcha));
+
 // Google authentication
 authRouter.get("/google", (req, res) => {
   return passport.authenticate("google", {

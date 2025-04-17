@@ -1,0 +1,90 @@
+{
+  "exportButton": "Exportar",
+  "timeLogsButton": "Registros de Tempo",
+  "activityLogsButton": "Registros de Atividade",
+  "tasksButton": "Tarefas",
+  "searchByNameInputPlaceholder": "Pesquisar por nome",
+
+  "overviewTab": "Visão Geral",
+  "timeLogsTab": "Registros de Tempo",
+  "activityLogsTab": "Registros de Atividade",
+  "tasksTab": "Tarefas",
+
+  "projectsText": "Projetos",
+  "totalTasksText": "Total de Tarefas",
+  "assignedTasksText": "Tarefas Atribuídas",
+  "completedTasksText": "Tarefas Concluídas",
+  "ongoingTasksText": "Tarefas em Andamento",
+  "overdueTasksText": "Tarefas Atrasadas",
+  "loggedHoursText": "Horas Registradas",
+
+  "tasksText": "Tarefas",
+  "allText": "Todas",
+
+  "tasksByProjectsText": "Tarefas Por Projetos",
+  "tasksByStatusText": "Tarefas Por Status",
+  "tasksByPriorityText": "Tarefas Por Prioridade",
+
+  "todoText": "A Fazer",
+  "doingText": "Fazendo",
+  "doneText": "Feita",
+  "lowText": "Baixa",
+  "mediumText": "Média",
+  "highText": "Alta",
+
+  "billableButton": "Cobrável",
+  "billableText": "Cobrável",
+  "nonBillableText": "Não Cobrável",
+
+  "timeLogsEmptyPlaceholder": "Nenhum registro de tempo para mostrar",
+  "loggedText": "Registrado",
+  "forText": "para",
+  "inText": "em",
+  "updatedText": "Atualizado",
+  "fromText": "De",
+  "toText": "até",
+  "withinText": "dentro de",
+
+  "activityLogsEmptyPlaceholder": "Nenhum registro de atividade para mostrar",
+
+  "filterByText": "Filtrar por:",
+  "selectProjectPlaceholder": "Selecione o Projeto",
+
+  "taskColumn": "Tarefa",
+  "nameColumn": "Nome",
+  "projectColumn": "Projeto",
+  "statusColumn": "Status",
+  "priorityColumn": "Prioridade",
+  "dueDateColumn": "Data de Vencimento",
+  "completedDateColumn": "Data de Conclusão",
+  "estimatedTimeColumn": "Tempo Estimado",
+  "loggedTimeColumn": "Tempo Registrado",
+  "overloggedTimeColumn": "Tempo Excedido",
+  "daysLeftColumn": "Dias Restantes/Atrasados",
+  "startDateColumn": "Data de Início",
+  "endDateColumn": "Data de Fim",
+  "actualTimeColumn": "Tempo Real",
+  "projectHealthColumn": "Saúde do Projeto",
+  "categoryColumn": "Categoria",
+  "projectManagerColumn": "Gerente do Projeto",
+
+  "tasksStatsOverviewDrawerTitle": "Tarefas de",
+  "projectsStatsOverviewDrawerTitle": "Projetos de",
+
+  "cancelledText": "Cancelada",
+  "blockedText": "Bloqueada",
+  "onHoldText": "Em Espera",
+  "proposedText": "Proposta",
+  "inPlanningText": "Em Planejamento",
+  "inProgressText": "Em Progresso",
+  "completedText": "Concluída",
+  "continuousText": "Contínua",
+
+  "daysLeftText": "dias restantes",
+  "daysOverdueText": "dias atrasados",
+
+  "notSetText": "Não Definido",
+  "needsAttentionText": "Precisa de Atenção",
+  "atRiskText": "Em Risco",
+  "goodText": "Bom"
+}

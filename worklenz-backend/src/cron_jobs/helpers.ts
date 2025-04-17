@@ -12,8 +12,8 @@ export function mapMembersWithAnd(members: string) {
 }
 
 export function getBaseUrl() {
-  if (isLocalServer()) return `http://${process.env.HOSTNAME}`;
-  return `https://${process.env.HOSTNAME}`;
+  if (isLocalServer()) return `http://${process.env.FRONTEND_URL}`;
+  return `https://${process.env.FRONTEND_URL}`;
 }
 
 function mapMembers(project: ITaskAssignmentModelProject) {

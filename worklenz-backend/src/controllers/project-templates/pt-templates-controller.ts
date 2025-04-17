@@ -8,6 +8,7 @@ import { templateData } from "./project-templates";
 import ProjectTemplatesControllerBase from "./project-templates-base";
 import { LOG_DESCRIPTIONS, TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA } from "../../shared/constants";
 import { IO } from "../../shared/io";
+import { getCurrentProjectsCount, getFreePlanSettings } from "../../shared/paddle-utils";
 
 export default class ProjectTemplatesController extends ProjectTemplatesControllerBase {
 
@@ -46,10 +47,10 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
 
     @HandleExceptions()
     public static async getDefaultProjectHealth() {
-      const q = `SELECT id FROM sys_project_healths WHERE is_default IS TRUE`;
-      const result = await db.query(q, []);
-      const [data] = result.rows;
-      return data.id;
+        const q = `SELECT id FROM sys_project_healths WHERE is_default IS TRUE`;
+        const result = await db.query(q, []);
+        const [data] = result.rows;
+        return data.id;
     }
 
     @HandleExceptions()
@@ -92,6 +93,16 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
 
     @HandleExceptions()
     public static async importTemplates(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+        if (req.user?.subscription_status === "free" && req.user?.owner_id) {
+            const limits = await getFreePlanSettings();
+            const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
+            const projectsLimit = parseInt(limits.projects_limit);
+
+            if (parseInt(projectsCount) >= projectsLimit) {
+                return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot have more than ${projectsLimit} projects.`));
+            }
+        }
+
         const { template_id } = req.body;
         let project_id: string | null = null;
 
@@ -202,6 +213,16 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
 
     @HandleExceptions()
     public static async importCustomTemplate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+        if (req.user?.subscription_status === "free" && req.user?.owner_id) {
+            const limits = await getFreePlanSettings();
+            const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
+            const projectsLimit = parseInt(limits.projects_limit);
+
+            if (parseInt(projectsCount) >= projectsLimit) {
+                return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot have more than ${projectsLimit} projects.`));
+            }
+        }
+        
         const { template_id } = req.body;
         let project_id: string | null = null;
 
@@ -223,8 +244,8 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
             await this.deleteDefaultStatusForProject(project_id as string);
             await this.insertTeamLabels(data.labels, req.user?.team_id);
             await this.insertProjectPhases(data.phases, project_id as string);
-            await this.insertProjectStatuses(data.status, project_id as string, data.team_id );
-            await this.insertProjectTasksFromCustom(data.tasks, data.team_id, project_id as string, data.user_id,  IO.getSocketById(req.user?.socket_id as string));
+            await this.insertProjectStatuses(data.status, project_id as string, data.team_id);
+            await this.insertProjectTasksFromCustom(data.tasks, data.team_id, project_id as string, data.user_id, IO.getSocketById(req.user?.socket_id as string));
 
             return res.status(200).send(new ServerResponse(true, { project_id }));
         }

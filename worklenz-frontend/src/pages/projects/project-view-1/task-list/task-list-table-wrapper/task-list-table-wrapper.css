@@ -1,0 +1,15 @@
+/* custom collapse styles for content box and the left border  */
+.ant-collapse-header {
+  margin-bottom: 6px !important;
+}
+
+.custom-collapse-content-box .ant-collapse-content-box {
+  padding: 0 !important;
+}
+
+:where(.css-dev-only-do-not-override-1w6wsvq).ant-collapse-ghost
+  > .ant-collapse-item
+  > .ant-collapse-content
+  > .ant-collapse-content-box {
+  padding: 0;
+}

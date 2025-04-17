@@ -1,0 +1,19 @@
+.priority-dropdown .ant-dropdown-menu {
+  padding: 0 !important;
+  margin-top: 8px !important;
+  overflow: hidden;
+}
+
+.priority-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+}
+
+.priority-dropdown-card .ant-card-body {
+  padding: 0 !important;
+}
+
+.priority-menu .ant-menu-item {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}

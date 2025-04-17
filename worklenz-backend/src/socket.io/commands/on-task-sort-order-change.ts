@@ -46,7 +46,7 @@ function notifyStatusChange(socket: Socket, config: Config) {
 
 async function emitSortOrderChange(data: ChangeRequest, socket: Socket) {
   const q = `
-    SELECT id, sort_order
+    SELECT id, sort_order, completed_at
     FROM tasks
     WHERE project_id = $1
     ORDER BY sort_order;
@@ -77,7 +77,14 @@ export async function on_task_sort_order_change(_io: Server, socket: Socket, dat
       to_last_index: Boolean(data.to_last_index)
     };
 
-    if (config.group_by === GroupBy.STATUS) {
+    if ((config.group_by === GroupBy.STATUS) && config.to_group) {
+      const canContinue = await TasksControllerV2.checkForCompletedDependencies(config.task_id, config?.to_group);
+      if (!canContinue) {
+        return socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
+          completed_deps: canContinue
+        });
+      }
+
       notifyStatusChange(socket, config);
     }
 

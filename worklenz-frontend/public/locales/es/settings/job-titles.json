@@ -1,0 +1,20 @@
+{
+  "nameColumn": "Nombre",
+  "deleteConfirmationTitle": "¿Estás seguro?",
+  "deleteConfirmationOk": "Sí",
+  "deleteConfirmationCancel": "Cancelar",
+  "searchPlaceholder": "Buscar por nombre",
+  "createJobTitleButton": "Crear Cargo",
+  "pinTooltip": "Haz clic para fijar esto en el menú principal",
+  "createJobTitleDrawerTitle": "Crear Cargo",
+  "updateJobTitleDrawerTitle": "Actualizar Cargo",
+  "nameLabel": "Nombre",
+  "namePlaceholder": "Nombre",
+  "nameRequiredError": "Por favor ingresa un nombre",
+  "createButton": "Crear",
+  "updateButton": "Actualizar",
+  "createJobTitleSuccessMessage": "¡Cargo creado exitosamente!",
+  "createJobTitleErrorMessage": "¡Error al crear el cargo!",
+  "updateJobTitleSuccessMessage": "¡Cargo actualizado exitosamente!",
+  "updateJobTitleErrorMessage": "¡Error al actualizar el cargo!"
+}

@@ -1,0 +1,13 @@
+{
+    "importTasks": "Importar tareas",
+    "createTask": "Crear tarea",
+    "settings": "Ajustes",
+    "subscribe": "Suscribirse",
+    "unsubscribe": "Cancelar suscripción",
+    "deleteProject": "Eliminar proyecto",
+    "startDate": "Fecha de inicio",
+    "endDate": "Fecha de finalización",
+    "projectSettings": "Ajustes del proyecto",
+    "projectSummary": "Resumen del proyecto",
+    "receiveProjectSummary": "Recibir un resumen del proyecto todas las noches."
+}

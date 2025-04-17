@@ -52,6 +52,83 @@ export default class ScheduleControllerV2 extends ScheduleTasksControllerBase {
   private static GLOBAL_START_DATE = moment().format("YYYY-MM-DD");
   private static GLOBAL_END_DATE = moment().format("YYYY-MM-DD");
 
+  // Migrate data
+  @HandleExceptions()
+  public static async migrate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const getDataq = `SELECT p.id,
+    (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+     FROM (SELECT tmiv.team_member_id,
+                  tmiv.user_id,
+
+                  LEAST(
+                          (SELECT MIN(LEAST(start_date, end_date)) AS start_date
+                           FROM tasks
+                                    INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
+                           WHERE archived IS FALSE
+                             AND project_id = p.id
+                             AND ta.team_member_id = tmiv.team_member_id),
+                          (SELECT MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS ll_start_date
+                           FROM task_work_log twl
+                                    INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
+                           WHERE t.project_id = p.id
+                             AND twl.user_id = tmiv.user_id)
+                      ) AS lowest_date,
+
+                  GREATEST(
+                          (SELECT MAX(GREATEST(start_date, end_date)) AS end_date
+                           FROM tasks
+                                    INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
+                           WHERE archived IS FALSE
+                             AND project_id = p.id
+                             AND ta.team_member_id = tmiv.team_member_id),
+                          (SELECT MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS ll_end_date
+                           FROM task_work_log twl
+                                    INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
+                           WHERE t.project_id = p.id
+                             AND twl.user_id = tmiv.user_id)
+                      ) AS greatest_date
+
+           FROM project_members pm
+                    INNER JOIN team_member_info_view tmiv
+                               ON pm.team_member_id = tmiv.team_member_id
+           WHERE project_id = p.id) rec) AS members
+
+FROM projects p
+WHERE team_id IS NOT NULL
+AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
+
+    const projectMembersResults = await db.query(getDataq);
+
+    const projectMemberData = projectMembersResults.rows;
+
+    const arrayToInsert = [];
+
+    for (const data of projectMemberData) {
+      if (data.members.length) {
+        for (const member of data.members) {
+
+          const body = {
+            project_id: data.id,
+            team_member_id: member.team_member_id,
+            allocated_from: member.lowest_date ? member.lowest_date : null,
+            allocated_to: member.greatest_date ? member.greatest_date : null
+          };
+
+          if (body.allocated_from && body.allocated_to) arrayToInsert.push(body);
+
+        }
+      }
+    }
+
+    const insertArray = JSON.stringify(arrayToInsert);
+
+    const insertFunctionCall = `SELECT migrate_member_allocations($1)`;
+    await db.query(insertFunctionCall, [insertArray]);
+
+    return res.status(200).send(new ServerResponse(true, ""));
+  }
+
+
   private static async getFirstLastDates(teamId: string, userId: string) {
     const q = `SELECT MIN(LEAST(allocated_from, allocated_to)) AS start_date,
                       MAX(GREATEST(allocated_from, allocated_to)) AS end_date,

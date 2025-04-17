@@ -49,7 +49,14 @@ import ptStatusesApiRouter from "./pt-statuses-api-router";
 import workloadApiRouter from "./gannt-apis/workload-api-router";
 import roadmapApiRouter from "./gannt-apis/roadmap-api-router";
 import scheduleApiRouter from "./gannt-apis/schedule-api-router";
+import scheduleApiV2Router from "./gannt-apis/schedule-api-v2-router";
 import projectManagerApiRouter from "./project-managers-api-router";
+
+import billingApiRouter from "./billing-api-router";
+import taskDependenciesApiRouter from "./task-dependencies-api-router";
+
+import taskRecurringApiRouter from "./task-recurring-api-router";
+import customColumnsApiRouter from "./custom-columns-api-router";
 
 const api = express.Router();
 
@@ -94,6 +101,7 @@ api.use("/pt-statuses", ptStatusesApiRouter);
 api.use("/workload-gannt", workloadApiRouter);
 api.use("/roadmap-gannt", roadmapApiRouter);
 api.use("/schedule-gannt", scheduleApiRouter);
+api.use("/schedule-gannt-v2", scheduleApiV2Router);
 api.use("/project-managers", projectManagerApiRouter);
 
 api.get("/overview/:id", safeControllerFunction(OverviewController.getById));
@@ -101,5 +109,12 @@ api.get("/task-priorities", safeControllerFunction(TaskPrioritiesController.get)
 api.post("/change-password", passwordValidator, safeControllerFunction(AuthController.changePassword));
 api.get("/access-controls/roles", safeControllerFunction(AccessControlsController.getRoles));
 api.get("/logs/my-dashboard", safeControllerFunction(LogsController.getActivityLog));
+
+api.use("/billing", billingApiRouter);
+api.use("/task-dependencies", taskDependenciesApiRouter);
+
+api.use("/task-recurring", taskRecurringApiRouter);
+
+api.use("/custom-columns", customColumnsApiRouter);
 
 export default api;

@@ -1,0 +1,31 @@
+.project-manager-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  transition: border 0.3s;
+  width: fit-content;
+}
+
+.project-manager-container::before {
+  border-width: 1px;
+  border-style: none;
+  border-color: transparent;
+  border-radius: 6px;
+}
+
+.project-manager-icon {
+  display: none;
+  color: #999;
+}
+
+.project-manager-container:hover .project-manager-icon {
+  display: block;
+}
+
+.project-manager-container:hover {
+  border: 1px solid #40a9ff;
+  border-radius: 6px;
+  transition: 0.25s all;
+  min-height: 32px;
+}
