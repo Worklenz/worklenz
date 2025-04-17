@@ -1,0 +1,116 @@
+:root {
+  --odd-row-color: #fff;
+  --even-row-color: #4e4e4e10;
+  --text-color: #181818;
+  --border: 1px solid #e0e0e0;
+  --stroke: #e0e0e0;
+
+  --calender-header-bg: #fafafa;
+}
+
+.dark-theme {
+  --odd-row-color: #141414;
+  --even-row-color: #4e4e4e10;
+  --text-color: #fff;
+  --border: 1px solid #505050;
+  --stroke: #505050;
+
+  --calender-header-bg: #1d1d1d;
+}
+
+/* scroll bar size override  */
+._2k9Ys {
+  scrollbar-width: unset;
+}
+
+/* ----------------------------------------------------------------------- */
+/* task details side even rows  */
+._34SS0:nth-of-type(even) {
+  background-color: var(--even-row-color);
+}
+
+/* task details side header and body */
+._3_ygE {
+  border-top: var(--border);
+  border-left: var(--border);
+  position: relative;
+}
+._2B2zv {
+  border-bottom: var(--border);
+  border-left: var(--border);
+  position: relative;
+}
+
+._3ZbQT {
+  border: none;
+}
+
+._3_ygE::after,
+._2B2zv::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -25px;
+  width: 30px;
+  height: 100%;
+  box-shadow: inset 10px 0 8px -8px #00000026;
+}
+
+/* ._3lLk3:nth-child(1),
+._WuQ0f:nth-child(1) {
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+._2eZzQ,
+._WuQ0f:nth-child(3),
+._WuQ0f:last-child,
+._3lLk3:nth-child(2),
+._3lLk3:nth-child(3) {
+  display: none;
+} */
+
+/* ----------------------------------------------------------------------- */
+/* calender side header  */
+._35nLX {
+  fill: var(--calender-header-bg);
+  stroke: var(--stroke);
+  stroke-width: 1px;
+}
+
+/* calender side header texts  */
+._9w8d5,
+._2q1Kt {
+  fill: var(--text-color);
+}
+
+/* calender side odd rows  */
+._2dZTy:nth-child(odd) {
+  fill: var(--odd-row-color);
+}
+/* calender side even rows  */
+._2dZTy:nth-child(even) {
+  fill: var(--even-row-color);
+}
+
+/* calender side body row lines  */
+._3rUKi {
+  stroke: var(--stroke);
+  stroke-width: 0.3px;
+}
+
+/* calender side body ticks  */
+._RuwuK {
+  stroke: var(--stroke);
+  stroke-width: 0.3px;
+}
+
+/* calender side header ticks  */
+._1rLuZ {
+  stroke: var(--stroke);
+  stroke-width: 1px;
+}
+
+.roadmap-table .ant-table-thead .ant-table-cell {
+  height: 50px;
+}

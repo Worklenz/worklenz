@@ -1,0 +1,9 @@
+.task-name-input {
+  outline: none;
+  transition: outline 0.2s ease;
+}
+
+.task-name-input:not(:focus):hover {
+  outline: 1px solid #d9d9d9;
+  border-radius: 4px;
+}

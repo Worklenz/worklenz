@@ -1,0 +1,19 @@
+.custom-column-label-dropdown .ant-dropdown-menu {
+  padding: 0 !important;
+  margin-top: 8px !important;
+  overflow: hidden;
+}
+
+.custom-column-label-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+}
+
+.custom-column-label-dropdown-card .ant-card-body {
+  padding: 0 !important;
+}
+
+.custom-column-label-menu .ant-menu-item {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}

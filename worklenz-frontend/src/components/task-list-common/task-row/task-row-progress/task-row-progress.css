@@ -1,0 +1,27 @@
+/* Set the stroke width to 9px for the progress circle */
+.task-progress.ant-progress-circle .ant-progress-circle-path {
+  stroke-width: 9px !important;
+  /* Adjust the stroke width */
+}
+
+/* Adjust the inner check mark for better alignment and visibility */
+.task-progress.ant-progress-circle.ant-progress-status-success .ant-progress-inner .anticon-check {
+  font-size: 8px;
+  /* Adjust font size for the check mark */
+  color: green;
+  /* Optional: Set a color */
+  transform: translate(-50%, -50%);
+  /* Center align */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  padding: 0;
+  width: 8px;
+}
+
+/* Adjust the text inside the progress circle */
+.task-progress.ant-progress-circle .ant-progress-text {
+  font-size: 10px;
+  /* Ensure the text size fits well */
+  line-height: 1;
+}

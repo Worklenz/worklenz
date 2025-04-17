@@ -1,0 +1,11 @@
+.ant-upload-select-picture-card {
+  width: 104px;
+  height: 104px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  text-align: center;
+  vertical-align: top;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}

@@ -1,0 +1,19 @@
+.mentions-light .mentions {
+  background-color: #e9e2e2;
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.mentions-dark .mentions {
+  background-color: #2c2c2c;
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.tooltip-comment .mentions {
+  background-color: transparent;
+  font-weight: 500;
+  padding: 0;
+}

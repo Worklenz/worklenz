@@ -40,21 +40,21 @@ function customKey(initialKey: string | null, existingKeys: string[], len = 3): 
 }
 
 export function generateProjectKey(projectName: string, existingKeys: string[] = []) {
-  if (isUnicode(projectName)) return customKey(null, existingKeys);
+  if (isUnicode(projectName)) return customKey(null, existingKeys).slice(0, 5);
 
-  const key = getInitialKey(projectName);
+  const key = getInitialKey(projectName)?.slice(0, 5);
   if (existingKeys.includes(key as string)) {
 
     // try with project name
     const name = projectName.toUpperCase().trim();
     const chars = [...name.slice(1).replace(/\s/g, "")];
     for (const char of chars) {
-      const k = key + char;
+      const k = (key + char).slice(0, 5);
       if (!existingKeys.includes(k))
         return k;
     }
 
-    return customKey(key as string, existingKeys);
+    return customKey(key as string, existingKeys).slice(0, 5);
   }
 
   return key;

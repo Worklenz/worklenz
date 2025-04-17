@@ -109,6 +109,23 @@ export default abstract class ReportingControllerBase extends WorklenzController
     return "";
   }
 
+  protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }): string {
+    const { billable, nonBillable } = selectedStatuses;
+  
+    if (billable && nonBillable) {
+      // Both are enabled, no need to filter
+      return "";
+    } else if (billable) {
+      // Only billable is enabled
+      return " AND tasks.billable IS TRUE";
+    } else if (nonBillable) {
+      // Only non-billable is enabled
+      return " AND tasks.billable IS FALSE";
+    } 
+
+    return "";
+  }
+
   protected static formatEndDate(endDate: string) {
     const end = moment(endDate).format("YYYY-MM-DD");
     const fEndDate = moment(end);
@@ -173,6 +190,9 @@ export default abstract class ReportingControllerBase extends WorklenzController
                            (SELECT color_code
                             FROM sys_project_healths
                             WHERE sys_project_healths.id = p.health_id) AS health_color,
+                            (SELECT name
+                            FROM sys_project_healths
+                            WHERE sys_project_healths.id = p.health_id) AS health_name,
 
                            pc.id AS category_id,
                            pc.name AS category_name,

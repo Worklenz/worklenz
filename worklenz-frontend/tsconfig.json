@@ -1,58 +1,31 @@
-/* To learn more about this file see: https://angular.io/config/tsconfig. */
 {
-  "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "src",
-    "outDir": "./dist/out-tsc",
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "sourceMap": true,
-    "declaration": false,
-    "downlevelIteration": true,
-    "experimentalDecorators": true,
-    "moduleResolution": "node",
-    "importHelpers": true,
-    "allowSyntheticDefaultImports": true,
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": false,
     "esModuleInterop": true,
-    "target": "ES2022",
-    "module": "es2022",
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
     "paths": {
-      "@interfaces/*": [
-        "app/interfaces/*"
-      ],
-      "@shared/*": [
-        "app/shared/*"
-      ],
-      "@api/*": [
-        "app/services/api/*"
-      ],
-      "@services/*": [
-        "app/services/*"
-      ],
-      "@dtos/*": [
-        "app/DTOs/*"
-      ],
-      "@pipes/*": [
-        "app/pipes/*"
-      ],
-      "@admin/components/*": [
-        "app/administrator/components/*"
-      ]
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@features/*": ["src/features/*"],
+      "@assets/*": ["src/assets/*"],
+      "@utils/*": ["src/utils/*"],
+      "@api/*": ["src/api/*"],
+      "@services/*": ["src/services/*"]
     },
-    "lib": [
-      "es2020",
-      "dom"
-    ],
-    "useDefineForClassFields": false
+    "types": ["vitest"]
   },
-  "angularCompilerOptions": {
-    "enableI18nLegacyMessageIdFormat": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "strictTemplates": true
-  }
+  "include": ["src"]
 }

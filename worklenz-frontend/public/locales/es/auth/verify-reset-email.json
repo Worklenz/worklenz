@@ -1,0 +1,14 @@
+{
+  "title": "Verificar correo de restablecimiento",
+  "description": "Ingresa tu nueva contraseña",
+  "placeholder": "Ingresa tu nueva contraseña",
+  "confirmPasswordPlaceholder": "Confirma tu nueva contraseña",
+  "passwordHint": "Mínimo 8 caracteres, con mayúsculas y minúsculas, un número y un símbolo.",
+  "resetPasswordButton": "Restablecer contraseña",
+  "orText": "O",
+  "resendResetEmail": "Reenviar correo de restablecimiento",
+  "passwordRequired": "Por favor ingresa tu nueva contraseña",
+  "returnToLoginButton": "Volver al inicio de sesión",
+  "confirmPasswordRequired": "Por favor confirma tu nueva contraseña",
+  "passwordMismatch": "Las contraseñas no coinciden"
+}

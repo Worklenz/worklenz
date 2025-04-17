@@ -32,8 +32,9 @@ export default class TaskListColumnsController extends WorklenzControllerBase {
     const q = `UPDATE project_task_list_cols
                SET pinned = $3
                WHERE project_id = $1
-                 AND key = $2;`;
+                 AND key = $2 RETURNING *;`;
     const result = await db.query(q, [req.params.id, req.body.key, !!req.body.pinned]);
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    const [data] = result.rows;
+    return res.status(200).send(new ServerResponse(true, data));
   }
 }

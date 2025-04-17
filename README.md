@@ -120,3 +120,141 @@ Worklenz is open source and released under the [GNU Affero General Public Licens
 
 By contributing to Worklenz, you agree that your contributions will be licensed under its AGPL.
 
+# Worklenz React
+
+This repository contains the React version of Worklenz with a Docker setup for easy development and deployment.
+
+## Getting Started with Docker
+
+The project includes a fully configured Docker setup with:
+- Frontend React application
+- Backend server
+- PostgreSQL database
+- MinIO for S3-compatible storage
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your system
+- Git
+
+### Quick Start
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/worklenz-react-v1.git
+cd worklenz-react-v1
+```
+
+2. Start the Docker containers (choose one option):
+
+**Option 1: Using the provided scripts (easiest)**
+- On Windows:
+  ```
+  start.bat
+  ```
+- On Linux/macOS:
+  ```bash
+  ./start.sh
+  ```
+
+**Option 2: Using Docker Compose directly**
+```bash
+docker-compose up -d
+```
+
+3. The application will be available at:
+   - Frontend: http://localhost:5000
+   - Backend API: http://localhost:3000
+   - MinIO Console: http://localhost:9001 (login with minioadmin/minioadmin)
+
+4. To stop the services (choose one option):
+
+**Option 1: Using the provided scripts**
+- On Windows:
+  ```
+  stop.bat
+  ```
+- On Linux/macOS:
+  ```bash
+  ./stop.sh
+  ```
+
+**Option 2: Using Docker Compose directly**
+```bash
+docker-compose down
+```
+
+## MinIO Integration
+
+The project uses MinIO as an S3-compatible object storage service, which provides an open-source alternative to AWS S3 for development and production.
+
+### Working with MinIO
+
+MinIO provides an S3-compatible API, so any code that works with S3 will work with MinIO by simply changing the endpoint URL. The backend has been configured to use MinIO by default, with no additional configuration required.
+
+- **MinIO Console**: http://localhost:9001
+  - Username: minioadmin
+  - Password: minioadmin
+
+- **Default Bucket**: worklenz-bucket (created automatically when the containers start)
+
+### Backend Storage Configuration
+
+The backend is pre-configured to use MinIO with the following settings:
+
+```javascript
+// S3 credentials with MinIO defaults
+export const REGION = process.env.AWS_REGION || "us-east-1";
+export const BUCKET = process.env.AWS_BUCKET || "worklenz-bucket";
+export const S3_URL = process.env.S3_URL || "http://minio:9000/worklenz-bucket";
+export const S3_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "minioadmin";
+export const S3_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "minioadmin";
+```
+
+The S3 client is initialized with special MinIO configuration:
+
+```javascript
+const s3Client = new S3Client({
+  region: REGION,
+  credentials: {
+    accessKeyId: S3_ACCESS_KEY_ID || "",
+    secretAccessKey: S3_SECRET_ACCESS_KEY || "",
+  },
+  endpoint: getEndpointFromUrl(), // Extracts endpoint from S3_URL
+  forcePathStyle: true, // Required for MinIO
+});
+```
+
+### Environment Configuration
+
+The `.env` file includes the necessary configuration for using MinIO:
+
+```
+STORAGE_PROVIDER=s3
+AWS_REGION=us-east-1
+AWS_BUCKET=worklenz-bucket
+S3_ACCESS_KEY_ID=minioadmin
+S3_SECRET_ACCESS_KEY=minioadmin
+S3_URL=http://minio:9000
+```
+
+When the backend service starts, it will use these environment variables to connect to MinIO for file storage.
+
+## Development
+
+For development, you can use the provided Docker setup which includes all necessary dependencies. The code will be running inside containers, but you can still edit files locally and see changes reflected in real-time.
+
+## Production Deployment
+
+For production deployment:
+
+1. Update the `.env` file with production settings
+2. Build custom Docker images or use the provided ones
+3. Deploy using Docker Compose or a container orchestration platform like Kubernetes
+
+For MinIO in production, consider:
+- Setting up proper credentials (change default minioadmin/minioadmin)
+- Configuring persistent storage
+- Setting up proper networking and access controls
+- Using multiple MinIO instances for high availability
+

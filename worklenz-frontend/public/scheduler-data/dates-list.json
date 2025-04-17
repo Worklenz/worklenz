@@ -1,0 +1,198 @@
+{
+  "date_data": [
+    {
+      "month": "Jan 2025",
+      "weeks": [],
+      "days": [
+        {
+          "day": 1,
+          "name": "Wed",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 2,
+          "name": "Thu",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 3,
+          "name": "Fri",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 4,
+          "name": "Sat",
+          "isWeekend": true,
+          "isToday": false
+        },
+        {
+          "day": 5,
+          "name": "Sun",
+          "isWeekend": true,
+          "isToday": false
+        },
+        {
+          "day": 6,
+          "name": "Mon",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 7,
+          "name": "Tue",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 8,
+          "name": "Wed",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 9,
+          "name": "Thu",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 10,
+          "name": "Fri",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 11,
+          "name": "Sat",
+          "isWeekend": true,
+          "isToday": false
+        },
+        {
+          "day": 12,
+          "name": "Sun",
+          "isWeekend": true,
+          "isToday": false
+        },
+        {
+          "day": 13,
+          "name": "Mon",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 14,
+          "name": "Tue",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 15,
+          "name": "Wed",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 16,
+          "name": "Thu",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 17,
+          "name": "Fri",
+          "isWeekend": false,
+          "isToday": true
+        },
+        {
+          "day": 18,
+          "name": "Sat",
+          "isWeekend": true,
+          "isToday": false
+        },
+        {
+          "day": 19,
+          "name": "Sun",
+          "isWeekend": true,
+          "isToday": false
+        },
+        {
+          "day": 20,
+          "name": "Mon",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 21,
+          "name": "Tue",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 22,
+          "name": "Wed",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 23,
+          "name": "Thu",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 24,
+          "name": "Fri",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 25,
+          "name": "Sat",
+          "isWeekend": true,
+          "isToday": false
+        },
+        {
+          "day": 26,
+          "name": "Sun",
+          "isWeekend": true,
+          "isToday": false
+        },
+        {
+          "day": 27,
+          "name": "Mon",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 28,
+          "name": "Tue",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 29,
+          "name": "Wed",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 30,
+          "name": "Thu",
+          "isWeekend": false,
+          "isToday": false
+        },
+        {
+          "day": 31,
+          "name": "Fri",
+          "isWeekend": false,
+          "isToday": false
+        }
+      ]
+    }
+  ],
+  "chart_start": "2024-01-01",
+  "chart_end": "2025-01-31"
+}

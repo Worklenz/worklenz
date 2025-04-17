@@ -13,8 +13,22 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
   try {
     const body = JSON.parse(data as string);
     const userId = getLoggedInUserIdFromSocket(socket);
-    const task_data = await getTaskDetails(body.task_id, "status_id");
+    const taskData = await getTaskDetails(body.task_id, "status_id");
 
+    const canContinue = await TasksControllerV2.checkForCompletedDependencies(body.task_id, body.status_id);
+
+    if (!canContinue) {
+      const {color_code, color_code_dark} = await TasksControllerV2.getTaskStatusColor(taskData.status_id);
+
+      return socket.emit(SocketEvents.TASK_STATUS_CHANGE.toString(), {
+        id: body.task_id,
+        parent_task: body.parent_task,
+        status_id: taskData.status_id,
+        color_code: color_code + TASK_STATUS_COLOR_ALPHA,
+        color_code_dark,
+        completed_deps: canContinue
+      });
+    }
     const q2 = "SELECT handle_on_task_status_change($1, $2, $3) AS res;";
     const results1 = await db.query(q2, [userId, body.task_id, body.status_id]);
     const [d] = results1.rows;
@@ -41,12 +55,14 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
       id: body.task_id,
       parent_task: body.parent_task,
       color_code: changeResponse.color_code,
+      color_code_dark: changeResponse.color_code_dark,
       complete_ratio: info?.ratio,
       completed_count: info?.total_completed,
       total_tasks_count: info?.total_tasks,
       status_id: body.status_id,
       completed_at: changeResponse.completed_at,
-      statusCategory: changeResponse.status_category
+      statusCategory: changeResponse.status_category,
+      completed_deps: canContinue
     });
 
     socket.emit(SocketEvents.GET_TASK_PROGRESS.toString(), {
@@ -67,7 +83,7 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
       task_id: body.task_id,
       socket,
       new_value: body.status_id,
-      old_value: task_data.status_id
+      old_value: taskData.status_id
     });
 
     notifyProjectUpdates(socket, body.task_id);

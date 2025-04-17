@@ -7,6 +7,7 @@ import { customAlphabet } from "nanoid";
 import { AvatarNamesMap, NumbersColorMap, WorklenzColorCodes } from "./constants";
 import { send_to_slack } from "./slack";
 import { IActivityLogChangeType } from "../services/activity-logs/interfaces";
+import { IRecurringSchedule } from "../interfaces/recurring-tasks";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const error_codes = require("./postgresql-error-codes");
@@ -43,8 +44,8 @@ export function isTestServer() {
 
 /** Returns true if localhost:3000 or localhost:4200 */
 export function isLocalServer() {
-  const hostname = process.env.HOSTNAME;
-  return hostname === "localhost:4200" || hostname === "localhost:3000" || hostname === "127.0.0.1:3000";
+  const frontendUrl = process.env.FRONTEND_URL;
+  return frontendUrl === "localhost:5173" || frontendUrl === "localhost:4200" || frontendUrl === "localhost:3000" || frontendUrl === "127.0.0.1:3000";
 }
 
 /** Returns true of isLocal or isTest server */
@@ -215,3 +216,62 @@ export function formatLogText(log: { log_type: IActivityLogChangeType; }) {
   if (log.log_type === IActivityLogChangeType.DELETE) return "removed a ";
   return log.log_type;
 }
+
+// Calculate the next start date based on the recurring schedule
+export function calculateNextEndDate(schedule: IRecurringSchedule, lastDate: moment.Moment): moment.Moment {
+  const nextDate = moment(lastDate);
+
+  switch (schedule.schedule_type) {
+    case "daily":
+      return nextDate.add(1, "day");
+    case "weekly":
+      if (schedule.days_of_week && schedule.days_of_week.length > 0) {
+        let daysAdded = 0;
+        do {
+          nextDate.add(1, "day");
+          daysAdded++;
+        } while (!schedule.days_of_week.includes(nextDate.day()) && daysAdded < 7);
+      } else {
+        nextDate.add(1, "week");
+      }
+      return nextDate;
+    case "monthly":
+      if (schedule.date_of_month) {
+        nextDate.add(1, "month").date(schedule.date_of_month);
+      } else if (schedule.day_of_month && schedule.week_of_month) {
+        nextDate.add(1, "month").startOf("month").day(schedule.day_of_month);
+        nextDate.add(schedule.week_of_month - 1, "weeks");
+      } else {
+        nextDate.add(1, "month");
+      }
+      return nextDate;
+    case "yearly":
+      return nextDate.add(1, "year");
+    case "every_x_days":
+      return nextDate.add(schedule.interval_days || 1, "days");
+    case "every_x_weeks":
+      return nextDate.add(schedule.interval_weeks || 1, "weeks");
+    case "every_x_months":
+      return nextDate.add(schedule.interval_months || 1, "months");
+    default:
+      throw new Error(`Invalid schedule type: ${schedule.schedule_type}`);
+  }
+}
+
+
+export function calculateNextEndDates(schedule: IRecurringSchedule, lastEndDate: moment.Moment, count: number): moment.Moment[] {
+  const endDates: moment.Moment[] = [];
+  let currentDate = moment(lastEndDate);
+
+  for (let i = 0; i < count; i++) {
+    currentDate = calculateNextEndDate(schedule, currentDate);
+    endDates.push(moment(currentDate));
+  }
+
+  return endDates;
+}
+
+export function megabytesToBytes(megabytes: number): number {
+  return megabytes * 1024 * 1024; // 1 MB = 1024 KB = 1024 * 1024 bytes
+}
+

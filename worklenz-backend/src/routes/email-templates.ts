@@ -12,8 +12,8 @@ const TEMPLATES_BASE = "../../worklenz-email-templates";
 
 router.get("/task-assignee-change", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
   const sampleData = {
-    "name": "John Doe",
-    "email": "johndoe.office@worklenz.com",
+    "name": "Dinindu Wanniarachchi",
+    "email": "dinindu.office@gmail.com",
     "team_member_id": "e3f95f03-5ea7-4cf7-9f61-123c55d8f6d9",
     "teams": [
       {
@@ -27,13 +27,13 @@ router.get("/task-assignee-change", (req: IWorkLenzRequest, res: IWorkLenzRespon
             "tasks": [
               {
                 "name": "Soloman's Island Project - SIM Registration + Central DB + KYC",
-                "updater_name": "John Doe",
-                "members": "John Doe, Jane Smith"
+                "updater_name": "Dinindu",
+                "members": "Dinindu, Dinindu Wanniarachchi, Pasindu Ishan"
               },
               {
                 "name": "Theory everyone send half sure.",
-                "updater_name": "John Doe",
-                "members": "John Doe, Jane Smith"
+                "updater_name": "Dinindu",
+                "members": "Dinindu Wanniarachchi"
               }
             ]
           }
@@ -64,11 +64,11 @@ router.get("/daily-digest", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
           tasks: [
             {
               name: "Soloman's Island Project - SIM Registration + Central DB + KYC",
-              members: "John Doe, Soloman"
+              members: "Dinindu, Dinindu Wanniarachchi, Pasindu Ishan"
             },
             {
               name: "Theory everyone send half sure.",
-              members: "John Doe"
+              members: "Dinindu Wanniarachchi"
             }
           ]
         }
@@ -83,9 +83,9 @@ router.get("/daily-digest", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
   ];
 
   const sampleData = {
-    greeting: "Hi John Doe",
+    greeting: "Hi Dinindu",
     note: "Here's your Monday update!",
-    email: "johndoe.office@gmail.com",
+    email: "dinindu.office@gmail.com",
     recently_assigned: teams,
     overdue: teams,
     recently_completed: teams
@@ -97,14 +97,14 @@ router.get("/task-moved-to-done", (req: IWorkLenzRequest, res: IWorkLenzResponse
 
   const task = {
     name: "Soloman's Island Project - SIM Registration + Central DB + KYC",
-    members: "John Doe, Soloman",
+    members: "Dinindu, Dinindu Wanniarachchi, Pasindu Ishan",
     url: "http://localhost:4200/worklenz/projects/6de9c9df-2193-4212-8d64-9dfc36a83ed2?tab=tasks-list&task=f8b3fc45-a28b-4d8f-985e-9e43f8577aa8",
     team_name: "Automation",
     project_name: "Allen LLC"
   };
 
   const sampleData: ITaskMovedToDoneRecord = {
-    greeting: "Hi John Doe",
+    greeting: "Hi Dinindu",
     summary: "Great news! a task just got completed!",
     settings_url: "/settings",
     task
@@ -117,7 +117,7 @@ router.get("/project-daily-digest", (req: IWorkLenzRequest, res: IWorkLenzRespon
     id: "",
     name: "Worklenz",
     team_name: "Ceydigital",
-    greeting: `Hi John Doe`,
+    greeting: `Hi Dinindu`,
     due_tomorrow: [],
     settings_url: "/",
     project_url: "/",
@@ -138,8 +138,8 @@ router.get("/project-daily-digest", (req: IWorkLenzRequest, res: IWorkLenzRespon
 
 router.get("/task-comment", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
   const data: ICommentEmailNotification = {
-    greeting: "Hi John Doe",
-    summary: `"John Doe Office" added a new comment on "Email Notifications"`,
+    greeting: "Hi Dinindu",
+    summary: `"Dinindu Office" added a new comment on "Email Notifications"`,
     team: "Ceydigital",
     project_name: "Worklenz",
     comment: "Any updates on this?",

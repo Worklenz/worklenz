@@ -1,0 +1,6 @@
+.profile-badge.ant-badge.ant-badge-status .ant-badge-status-success {
+  box-shadow: rgb(255, 255, 255) 0px 0px 0px 1px;
+  background-color: #52c41a;
+  height: 8px;
+  width: 8px;
+}

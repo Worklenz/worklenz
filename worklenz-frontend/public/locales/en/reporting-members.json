@@ -1,0 +1,35 @@
+{
+  "yesterdayText": "Yesterday",
+  "lastSevenDaysText": "Last 7 Days",
+  "lastWeekText": "Last Week",
+  "lastThirtyDaysText": "Last 30 Days",
+  "lastMonthText": "Last Month",
+  "lastThreeMonthsText": "Last 3 Months",
+  "allTimeText": "All Time",
+  "customRangeText": "Custom range",
+  "startDateInputPlaceholder": "Start date",
+  "EndDateInputPlaceholder": "End date",
+  "filterButton": "Filter",
+
+  "membersTitle": "Members",
+  "includeArchivedButton": "Include Archived Projects",
+  "exportButton": "Export",
+  "excelButton": "Excel",
+  "searchByNameInputPlaceholder": "Search by name",
+
+  "memberColumn": "Member",
+  "tasksProgressColumn": "Tasks Progress",
+  "tasksAssignedColumn": "Tasks Assigned",
+  "completedTasksColumn": "Completed Tasks",
+  "overdueTasksColumn": "Overdue Tasks",
+  "ongoingTasksColumn": "Ongoing Tasks",
+
+  "tasksAssignedColumnTooltip": "Tasks assigned on selected date range",
+  "overdueTasksColumnTooltip": "Tasks overdue for end of the selected date range",
+  "completedTasksColumnTooltip": "Tasks completed on selected date range",
+  "ongoingTasksColumnTooltip": "Started tasks not completed yet",
+
+  "todoText": "To Do",
+  "doingText": "Doing",
+  "doneText": "Done"
+}

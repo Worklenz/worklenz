@@ -1,0 +1,78 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "Type your Task",
+    "deleteTask": "Delete Task"
+  },
+  "taskInfoTab": {
+    "title": "Info",
+    "details": {
+      "title": "Details",
+      "task-key": "Task Key",
+      "phase": "Phase",
+      "assignees": "Assignees",
+      "due-date": "Due Date",
+      "time-estimation": "Time Estimation",
+      "priority": "Priority",
+      "labels": "Labels",
+      "billable": "Billable",
+      "notify": "Notify",
+      "when-done-notify": "When done, notify",
+      "start-date": "Start Date",
+      "end-date": "End Date",
+      "hide-start-date": "Hide Start Date",
+      "show-start-date": "Show Start Date",
+      "hours": "Hours",
+      "minutes": "Minutes"
+    },
+    "labels": {
+      "labelInputPlaceholder": "Search or create",
+      "labelsSelectorInputTip": "Hit Enter to create"
+    },
+    "description": {
+      "title": "Description",
+      "placeholder": "Add a more detailed description..."
+    },
+    "subTasks": {
+      "title": "Sub Tasks",
+      "addSubTask": "+ Add Sub Task",
+      "addSubTaskInputPlaceholder": "Type your task and hit enter",
+      "refreshSubTasks": "Refresh Sub Tasks",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDeleteSubTask": "Are you sure you want to delete this subtask?",
+      "deleteSubTask": "Delete Sub Task"
+    },
+    "dependencies": {
+      "title": "Dependencies",
+      "addDependency": "+ Add new dependency",
+      "blockedBy": "Blocked By",
+      "searchTask": "Type to search task",
+      "noTasksFound": "No tasks found",
+      "confirmDeleteDependency": "Are you sure you want to delete?"
+    },
+    "attachments": {
+      "title": "Attachments",
+      "chooseOrDropFileToUpload": "Choose or drop file to upload",
+      "uploading": "Uploading..."
+    },
+    "comments": {
+      "title": "Comments",
+      "addComment": "+ Add new comment",
+      "noComments": "No comments yet. Be the first to comment!",
+      "delete": "Delete",
+      "confirmDeleteComment": "Are you sure you want to delete this comment?"
+    },
+    "searchInputPlaceholder": "Search by name",
+    "pendingInvitation": "Pending Invitation"
+  },
+  "taskTimeLogTab": {
+    "title": "Time Log",
+    "addTimeLog": "Add new time log",
+    "totalLogged": "Total Logged",
+    "exportToExcel": "Export to Excel",
+    "noTimeLogsFound": "No time logs found"
+  },
+  "taskActivityLogTab": {
+    "title": "Activity Log"
+  }
+}

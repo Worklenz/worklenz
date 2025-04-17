@@ -1,5 +1,3 @@
--- CREATE DATABASE worklenz_db;
-
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "unaccent";
@@ -10,55 +8,18 @@ CREATE DOMAIN WL_EMAIL AS TEXT CHECK (value ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]
 
 -- Enumerated Types
 -- Add new values using "ALTER TYPE WL_TASK_LIST_COL_KEY ADD VALUE 'NEW_VALUE_NAME' AFTER 'REPORTER';"
-CREATE TYPE WL_TASK_LIST_COL_KEY AS ENUM ('ASSIGNEES', 'COMPLETED_DATE', 'CREATED_DATE', 'DESCRIPTION', 'DUE_DATE', 'ESTIMATION', 'KEY', 'LABELS', 'LAST_UPDATED', 'NAME', 'PRIORITY', 'PROGRESS', 'START_DATE', 'STATUS', 'TIME_TRACKING', 'REPORTER', 'PHASE');
+CREATE TYPE WL_TASK_LIST_COL_KEY AS ENUM ('ASSIGNEES', 'COMPLETED_DATE', 'CREATED_DATE', 'DESCRIPTION', 'DUE_DATE', 'ESTIMATION', 'KEY', 'LABELS', 'LAST_UPDATED', 'NAME', 'PRIORITY', 'PROGRESS', 'START_DATE', 'STATUS', 'TIME_TRACKING', 'REPORTER');
 
+CREATE TYPE REACTION_TYPES AS ENUM ('like');
 
-CREATE TABLE archived_projects (
-    user_id    UUID NOT NULL,
-    project_id UUID NOT NULL
-);
+CREATE TYPE DEPENDENCY_TYPE AS ENUM ('blocked_by');
 
-ALTER TABLE archived_projects
-    ADD CONSTRAINT archived_projects_pk
-        PRIMARY KEY (user_id, project_id);
+CREATE TYPE SCHEDULE_TYPE AS ENUM ('daily', 'weekly', 'yearly', 'monthly', 'every_x_days', 'every_x_weeks', 'every_x_months');
 
-CREATE TABLE bounced_emails (
-    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    email      TEXT                                                NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
-);
+CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt');
 
-CREATE UNIQUE INDEX bounced_emails_email_uindex
-    ON bounced_emails (email);
-
-ALTER TABLE bounced_emails
-    ADD CONSTRAINT bounced_emails_pk
-        PRIMARY KEY (id);
-
-CREATE TABLE clients (
-    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    name       TEXT                                                NOT NULL,
-    team_id    UUID                                                NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
-);
-
-CREATE INDEX clients_id_team_id_index
-    ON clients (id, team_id);
-
-CREATE UNIQUE INDEX clients_name_team_id_uindex
-    ON clients (name, team_id);
-
-ALTER TABLE clients
-    ADD CONSTRAINT clients_pk
-        PRIMARY KEY (id);
-
-ALTER TABLE clients
-    ADD CONSTRAINT clients_name_check
-        CHECK (CHAR_LENGTH(name) <= 60);
-
-CREATE TABLE countries (
+-- Utility and referenced tables
+CREATE TABLE IF NOT EXISTS countries (
     id       UUID       DEFAULT uuid_generate_v4() NOT NULL,
     code     CHAR(2)                               NOT NULL,
     name     VARCHAR(150)                          NOT NULL,
@@ -69,7 +30,55 @@ CREATE TABLE countries (
 ALTER TABLE countries
     ADD PRIMARY KEY (id);
 
-CREATE TABLE cpt_phases (
+CREATE TABLE IF NOT EXISTS permissions (
+    id          TEXT NOT NULL,
+    name        TEXT NOT NULL,
+    description TEXT NOT NULL
+);
+
+ALTER TABLE permissions
+    ADD CONSTRAINT permissions_pk
+        PRIMARY KEY (id);
+
+-- Tables that reference utility tables
+CREATE TABLE IF NOT EXISTS archived_projects (
+    user_id    UUID NOT NULL,
+    project_id UUID NOT NULL
+);
+
+ALTER TABLE archived_projects
+    ADD CONSTRAINT archived_projects_pk
+        PRIMARY KEY (user_id, project_id);
+
+CREATE TABLE IF NOT EXISTS bounced_emails (
+    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    email      TEXT                                                NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+);
+
+ALTER TABLE bounced_emails
+    ADD CONSTRAINT bounced_emails_pk
+        PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS clients (
+    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    name       TEXT                                                NOT NULL,
+    team_id    UUID                                                NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+);
+
+ALTER TABLE clients
+    ADD CONSTRAINT clients_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE clients
+    ADD CONSTRAINT clients_name_check
+        CHECK (CHAR_LENGTH(name) <= 60);
+
+-- Remaining tables
+CREATE TABLE IF NOT EXISTS cpt_phases (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                                                NOT NULL,
     color_code  WL_HEX_COLOR                                        NOT NULL,
@@ -77,14 +86,11 @@ CREATE TABLE cpt_phases (
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-CREATE UNIQUE INDEX cpt_phases_name_project_uindex
-    ON cpt_phases (name, template_id);
-
 ALTER TABLE cpt_phases
     ADD CONSTRAINT cpt_phases_pk
         PRIMARY KEY (id);
 
-CREATE TABLE cpt_task_labels (
+CREATE TABLE IF NOT EXISTS cpt_task_labels (
     task_id  UUID NOT NULL,
     label_id UUID NOT NULL
 );
@@ -93,23 +99,17 @@ ALTER TABLE cpt_task_labels
     ADD CONSTRAINT cpt_task_labels_pk
         PRIMARY KEY (task_id, label_id);
 
-CREATE TABLE cpt_task_phases (
+CREATE TABLE IF NOT EXISTS cpt_task_phases (
     task_id  UUID NOT NULL,
     phase_id UUID NOT NULL
 );
-
-CREATE UNIQUE INDEX cpt_task_phase_cpt_task_phase_uindex
-    ON cpt_task_phases (task_id, phase_id);
-
-CREATE UNIQUE INDEX cpt_task_phase_task_id_uindex
-    ON cpt_task_phases (task_id);
 
 ALTER TABLE cpt_task_phases
     ADD CONSTRAINT cpt_task_phase_phase_id_fk
         FOREIGN KEY (phase_id) REFERENCES cpt_phases
             ON DELETE CASCADE;
 
-CREATE TABLE cpt_task_statuses (
+CREATE TABLE IF NOT EXISTS cpt_task_statuses (
     id          UUID    DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                               NOT NULL,
     template_id UUID                               NOT NULL,
@@ -118,14 +118,11 @@ CREATE TABLE cpt_task_statuses (
     sort_order  INTEGER DEFAULT 0                  NOT NULL
 );
 
-CREATE UNIQUE INDEX cpt_task_statuses_template_id_name_uindex
-    ON cpt_task_statuses (template_id, name);
-
 ALTER TABLE cpt_task_statuses
     ADD CONSTRAINT cpt_task_statuses_pk
         PRIMARY KEY (id);
 
-CREATE TABLE cpt_tasks (
+CREATE TABLE IF NOT EXISTS cpt_tasks (
     id               UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name             TEXT                                                NOT NULL,
     description      TEXT,
@@ -175,7 +172,7 @@ ALTER TABLE cpt_tasks
     ADD CONSTRAINT cpt_tasks_total_minutes_check
         CHECK ((total_minutes >= (0)::NUMERIC) AND (total_minutes <= (999999)::NUMERIC));
 
-CREATE TABLE custom_project_templates (
+CREATE TABLE IF NOT EXISTS custom_project_templates (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                                                NOT NULL,
     phase_label TEXT                     DEFAULT 'Phase'::TEXT      NOT NULL,
@@ -185,9 +182,6 @@ CREATE TABLE custom_project_templates (
     color_code  TEXT                                                NOT NULL,
     notes       TEXT
 );
-
-CREATE UNIQUE INDEX custom_project_templates_name_team_id_uindex
-    ON custom_project_templates (name, team_id);
 
 ALTER TABLE custom_project_templates
     ADD CONSTRAINT custom_project_templates_pk
@@ -208,7 +202,23 @@ ALTER TABLE cpt_tasks
         FOREIGN KEY (template_id) REFERENCES custom_project_templates
             ON DELETE CASCADE;
 
-CREATE TABLE email_invitations (
+CREATE OR REPLACE FUNCTION lower_email() RETURNS trigger
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+BEGIN
+
+    IF (is_null_or_empty(NEW.email) IS FALSE)
+    THEN
+        NEW.email = LOWER(TRIM(NEW.email));
+    END IF;
+
+    RETURN NEW;
+END
+$$;
+
+CREATE TABLE IF NOT EXISTS email_invitations (
     id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name           TEXT                                                NOT NULL,
     email          WL_EMAIL                                            NOT NULL,
@@ -222,7 +232,12 @@ ALTER TABLE email_invitations
     ADD CONSTRAINT email_invitations_pk
         PRIMARY KEY (id);
 
-CREATE TABLE favorite_projects (
+CREATE TRIGGER email_invitations_email_lower
+    BEFORE INSERT OR UPDATE
+    ON email_invitations
+EXECUTE PROCEDURE lower_email();
+
+CREATE TABLE IF NOT EXISTS favorite_projects (
     user_id    UUID NOT NULL,
     project_id UUID NOT NULL
 );
@@ -231,17 +246,11 @@ ALTER TABLE favorite_projects
     ADD CONSTRAINT favorite_projects_pk
         PRIMARY KEY (user_id, project_id);
 
-CREATE TABLE job_titles (
+CREATE TABLE IF NOT EXISTS job_titles (
     id      UUID DEFAULT uuid_generate_v4() NOT NULL,
     name    TEXT                            NOT NULL,
     team_id UUID                            NOT NULL
 );
-
-CREATE UNIQUE INDEX job_titles_name_team_id_uindex
-    ON job_titles (name, team_id);
-
-CREATE INDEX job_titles_team_id_index
-    ON job_titles (team_id);
 
 ALTER TABLE job_titles
     ADD CONSTRAINT job_titles_pk
@@ -251,7 +260,247 @@ ALTER TABLE job_titles
     ADD CONSTRAINT job_titles_name_check
         CHECK (CHAR_LENGTH(name) <= 55);
 
-CREATE TABLE notification_settings (
+CREATE TABLE IF NOT EXISTS licensing_coupon_codes (
+    id                 UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    coupon_code        TEXT                                                NOT NULL,
+    is_redeemed        BOOLEAN                  DEFAULT FALSE,
+    is_app_sumo        BOOLEAN                  DEFAULT FALSE,
+    projects_limit     INTEGER,
+    team_members_limit INTEGER                  DEFAULT 3,
+    storage_limit      INTEGER                  DEFAULT 5,
+    redeemed_by        UUID,
+    batch_id           UUID,
+    created_by         UUID                                                NOT NULL,
+    created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    redeemed_at        TIMESTAMP WITH TIME ZONE,
+    is_refunded        BOOLEAN                  DEFAULT FALSE,
+    reason             TEXT,
+    feedback           TEXT,
+    refunded_at        TIMESTAMP WITH TIME ZONE
+);
+
+ALTER TABLE licensing_coupon_codes
+    ADD CONSTRAINT licensing_coupon_codes_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_coupon_codes
+    ADD CONSTRAINT licensing_coupon_codes_app_sumo_batches__fk
+        FOREIGN KEY (batch_id) REFERENCES licensing_app_sumo_batches
+            ON DELETE CASCADE;
+
+ALTER TABLE licensing_coupon_codes
+    ADD CONSTRAINT licensing_coupon_codes_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES licensing_admin_users;
+
+CREATE TABLE IF NOT EXISTS licensing_credit_subs (
+    id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    next_plan_id   UUID                                                NOT NULL,
+    user_id        UUID                                                NOT NULL,
+    credit_given   NUMERIC                                             NOT NULL,
+    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    created_by     UUID                                                NOT NULL,
+    checkout_url   TEXT,
+    credit_balance NUMERIC                  DEFAULT 0
+);
+
+ALTER TABLE licensing_credit_subs
+    ADD CONSTRAINT licensing_credit_subs_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_credit_subs
+    ADD CONSTRAINT licensing_credit_subs_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES licensing_admin_users;
+
+CREATE TABLE IF NOT EXISTS licensing_custom_subs (
+    id           UUID                     DEFAULT uuid_generate_v4()        NOT NULL,
+    user_id      UUID                                                       NOT NULL,
+    billing_type TEXT                     DEFAULT 'year'::CHARACTER VARYING NOT NULL,
+    currency     TEXT                     DEFAULT 'LKR'::CHARACTER VARYING  NOT NULL,
+    rate         NUMERIC                  DEFAULT 0                         NOT NULL,
+    created_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP         NOT NULL,
+    end_date     DATE                                                       NOT NULL,
+    user_limit   INTEGER
+);
+
+ALTER TABLE licensing_custom_subs
+    ADD PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS licensing_custom_subs_logs (
+    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    subscription_id UUID                                                NOT NULL,
+    log_text        TEXT                                                NOT NULL,
+    description     TEXT,
+    admin_user_id   UUID                                                NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+);
+
+ALTER TABLE licensing_custom_subs_logs
+    ADD PRIMARY KEY (id);
+
+ALTER TABLE licensing_custom_subs_logs
+    ADD CONSTRAINT licensing_custom_subs_logs_licensing_admin_users_id_fk
+        FOREIGN KEY (admin_user_id) REFERENCES licensing_admin_users;
+
+CREATE TABLE IF NOT EXISTS licensing_payment_details (
+    id                      UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    user_id                 UUID,
+    alert_id                TEXT                                                NOT NULL,
+    alert_name              TEXT                                                NOT NULL,
+    balance_currency        TEXT                     DEFAULT 'USD'::TEXT,
+    balance_earnings        NUMERIC                  DEFAULT 0                  NOT NULL,
+    balance_fee             NUMERIC                  DEFAULT 0                  NOT NULL,
+    balance_gross           NUMERIC                  DEFAULT 0                  NOT NULL,
+    balance_tax             NUMERIC                  DEFAULT 0                  NOT NULL,
+    checkout_id             TEXT                                                NOT NULL,
+    country                 TEXT                                                NOT NULL,
+    coupon                  TEXT                                                NOT NULL,
+    currency                TEXT                     DEFAULT 'USD'::TEXT        NOT NULL,
+    custom_data             TEXT,
+    customer_name           TEXT                                                NOT NULL,
+    earnings                NUMERIC                  DEFAULT 0                  NOT NULL,
+    email                   TEXT                                                NOT NULL,
+    event_time              TEXT                                                NOT NULL,
+    fee                     NUMERIC                  DEFAULT 0                  NOT NULL,
+    initial_payment         NUMERIC                  DEFAULT 1                  NOT NULL,
+    instalments             NUMERIC                  DEFAULT 1                  NOT NULL,
+    marketing_consent       INTEGER                  DEFAULT 0,
+    next_bill_date          DATE                                                NOT NULL,
+    next_payment_amount     NUMERIC                  DEFAULT 0                  NOT NULL,
+    order_id                TEXT                                                NOT NULL,
+    p_signature             TEXT                                                NOT NULL,
+    passthrough             TEXT,
+    payment_method          TEXT                     DEFAULT 'card'::TEXT       NOT NULL,
+    payment_tax             NUMERIC                  DEFAULT 0,
+    plan_name               TEXT                                                NOT NULL,
+    quantity                NUMERIC                  DEFAULT 0                  NOT NULL,
+    receipt_url             TEXT                                                NOT NULL,
+    sale_gross              TEXT                     DEFAULT 0                  NOT NULL,
+    status                  TEXT                                                NOT NULL,
+    subscription_id         TEXT                                                NOT NULL,
+    subscription_payment_id TEXT                                                NOT NULL,
+    subscription_plan_id    INTEGER,
+    unit_price              NUMERIC                  DEFAULT 0                  NOT NULL,
+    paddle_user_id          TEXT                                                NOT NULL,
+    created_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    payment_status          TEXT                     DEFAULT 'success'::TEXT    NOT NULL
+);
+
+ALTER TABLE licensing_payment_details
+    ADD PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS licensing_pricing_plans (
+    id               UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    name             TEXT    DEFAULT ''::TEXT           NOT NULL,
+    billing_type     TEXT    DEFAULT 'month'::TEXT      NOT NULL,
+    billing_period   INTEGER DEFAULT 1                  NOT NULL,
+    default_currency TEXT    DEFAULT 'USD'::TEXT        NOT NULL,
+    initial_price    TEXT    DEFAULT '0'::TEXT          NOT NULL,
+    recurring_price  TEXT    DEFAULT '0'::TEXT          NOT NULL,
+    trial_days       INTEGER DEFAULT 0                  NOT NULL,
+    paddle_id        INTEGER DEFAULT 0,
+    active           BOOLEAN DEFAULT FALSE              NOT NULL,
+    is_startup_plan  BOOLEAN DEFAULT FALSE              NOT NULL
+);
+
+ALTER TABLE licensing_pricing_plans
+    ADD CONSTRAINT licensing_pricing_plans_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_credit_subs
+    ADD CONSTRAINT licensing_credit_subs_next_plan_id_fk
+        FOREIGN KEY (next_plan_id) REFERENCES licensing_pricing_plans;
+
+ALTER TABLE licensing_pricing_plans
+    ADD UNIQUE (paddle_id);
+
+ALTER TABLE licensing_payment_details
+    ADD CONSTRAINT licensing_payment_details_licensing_pricing_plans_paddle_id_fk
+        FOREIGN KEY (subscription_plan_id) REFERENCES licensing_pricing_plans (paddle_id);
+
+ALTER TABLE licensing_pricing_plans
+    ADD CONSTRAINT billing_type_allowed
+        CHECK (billing_type = ANY (ARRAY ['month'::TEXT, 'year'::TEXT]));
+
+CREATE TABLE IF NOT EXISTS licensing_settings (
+    default_trial_storage NUMERIC DEFAULT 1  NOT NULL,
+    default_storage       NUMERIC DEFAULT 25 NOT NULL,
+    storage_addon_price   NUMERIC DEFAULT 0  NOT NULL,
+    storage_addon_size    NUMERIC DEFAULT 0,
+    default_monthly_plan  UUID,
+    default_annual_plan   UUID,
+    default_startup_plan  UUID,
+    projects_limit        INTEGER DEFAULT 5  NOT NULL,
+    team_member_limit     INTEGER DEFAULT 0  NOT NULL,
+    free_tier_storage     INTEGER DEFAULT 5  NOT NULL,
+    trial_duration        INTEGER DEFAULT 14 NOT NULL
+);
+
+COMMENT ON COLUMN licensing_settings.default_trial_storage IS 'default storage amount for a trial in Gigabytes(GB)';
+
+COMMENT ON COLUMN licensing_settings.default_storage IS 'default storage amount for a paid account in Gigabytes(GB)';
+
+ALTER TABLE licensing_settings
+    ADD CONSTRAINT licensing_settings_licensing_pricing_plans_id_fk
+        FOREIGN KEY (default_startup_plan) REFERENCES licensing_pricing_plans;
+
+ALTER TABLE licensing_settings
+    ADD CONSTRAINT licensing_settings_licensing_user_plans_id_fk
+        FOREIGN KEY (default_monthly_plan) REFERENCES licensing_pricing_plans;
+
+ALTER TABLE licensing_settings
+    ADD CONSTRAINT licensing_settings_licensing_user_plans_id_fk_2
+        FOREIGN KEY (default_annual_plan) REFERENCES licensing_pricing_plans;
+
+CREATE TABLE IF NOT EXISTS licensing_user_subscription_modifiers (
+    subscription_id INTEGER                                            NOT NULL,
+    modifier_id     INTEGER                                            NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS licensing_user_subscriptions (
+    id                          UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    user_id                     UUID                               NOT NULL,
+    paddle_user_id              INTEGER,
+    cancel_url                  TEXT,
+    update_url                  TEXT,
+    checkout_id                 TEXT,
+    next_bill_date              TEXT,
+    quantity                    INTEGER DEFAULT 1                  NOT NULL,
+    subscription_id             INTEGER,
+    subscription_plan_id        INTEGER,
+    unit_price                  NUMERIC,
+    plan_id                     UUID                               NOT NULL,
+    status                      TEXT,
+    custom_value_month          NUMERIC DEFAULT 0                  NOT NULL,
+    custom_value_year           NUMERIC DEFAULT 0                  NOT NULL,
+    custom_storage_amount       NUMERIC DEFAULT 0                  NOT NULL,
+    custom_storage_unit         TEXT    DEFAULT 'MB'::TEXT         NOT NULL,
+    cancellation_effective_date DATE,
+    currency                    TEXT    DEFAULT 'USD'::TEXT        NOT NULL,
+    event_time                  TEXT,
+    paused_at                   TEXT,
+    paused_from                 TEXT,
+    paused_reason               TEXT,
+    active                      BOOLEAN DEFAULT TRUE
+);
+
+ALTER TABLE licensing_user_subscriptions
+    ADD CONSTRAINT licensing_user_plans_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_user_subscriptions
+    ADD UNIQUE (subscription_id);
+
+ALTER TABLE licensing_user_subscriptions
+    ADD CONSTRAINT licensing_user_subscriptions_licensing_pricing_plans_id_fk
+        FOREIGN KEY (plan_id) REFERENCES licensing_pricing_plans;
+
+ALTER TABLE licensing_user_subscriptions
+    ADD CONSTRAINT licensing_user_subscriptions_statuses_allowed
+        CHECK (status = ANY
+               (ARRAY ['active'::TEXT, 'past_due'::TEXT, 'trialing'::TEXT, 'paused'::TEXT, 'deleted'::TEXT]));
+
+CREATE TABLE IF NOT EXISTS notification_settings (
     email_notifications_enabled BOOLEAN DEFAULT TRUE  NOT NULL,
     popup_notifications_enabled BOOLEAN DEFAULT TRUE  NOT NULL,
     show_unread_items_count     BOOLEAN DEFAULT TRUE  NOT NULL,
@@ -260,14 +509,11 @@ CREATE TABLE notification_settings (
     team_id                     UUID                  NOT NULL
 );
 
-CREATE INDEX notification_settings_team_user_id_index
-    ON notification_settings (team_id, user_id);
-
 ALTER TABLE notification_settings
     ADD CONSTRAINT notification_settings_pk
         PRIMARY KEY (user_id, team_id);
 
-CREATE TABLE organizations (
+CREATE TABLE IF NOT EXISTS organizations (
     id                       UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     organization_name        TEXT                                                NOT NULL,
     contact_number           TEXT,
@@ -286,39 +532,25 @@ CREATE TABLE organizations (
     user_id                  UUID                                                NOT NULL,
     created_at               TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at               TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    license_type_id          UUID
+    license_type_id          UUID,
+    is_lkr_billing           BOOLEAN                  DEFAULT FALSE,
+    working_hours            DOUBLE PRECISION         DEFAULT 8                  NOT NULL
 );
-
-CREATE UNIQUE INDEX organizations_user_id_uindex
-    ON organizations (user_id);
 
 ALTER TABLE organizations
     ADD CONSTRAINT organizations_pk
         PRIMARY KEY (id);
 
 ALTER TABLE organizations
-    ADD CONSTRAINT users_data_countries_id_fk
-        FOREIGN KEY (country) REFERENCES countries;
+    ADD CONSTRAINT organizations_pk_2
+        UNIQUE (user_id);
 
 ALTER TABLE organizations
     ADD CONSTRAINT subscription_statuses_allowed
         CHECK (subscription_status = ANY
                (ARRAY ['active'::TEXT, 'past_due'::TEXT, 'trialing'::TEXT, 'paused'::TEXT, 'deleted'::TEXT, 'life_time_deal'::TEXT, 'free'::TEXT, 'custom'::TEXT, 'credit'::TEXT]));
 
-CREATE TABLE permissions (
-    id          TEXT NOT NULL,
-    name        TEXT NOT NULL,
-    description TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX permissions_name_uindex
-    ON permissions (name);
-
-ALTER TABLE permissions
-    ADD CONSTRAINT permissions_pk
-        PRIMARY KEY (id);
-
-CREATE TABLE personal_todo_list (
+CREATE TABLE IF NOT EXISTS personal_todo_list (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                                                NOT NULL,
     description TEXT,
@@ -329,9 +561,6 @@ CREATE TABLE personal_todo_list (
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
-
-CREATE UNIQUE INDEX personal_todo_list_index_uindex
-    ON personal_todo_list (user_id, index);
 
 ALTER TABLE personal_todo_list
     ADD CONSTRAINT personal_todo_list_pk
@@ -345,32 +574,7 @@ ALTER TABLE personal_todo_list
     ADD CONSTRAINT personal_todo_list_name_check
         CHECK (CHAR_LENGTH(name) <= 100);
 
-CREATE TABLE pg_sessions (
-    sid    VARCHAR      NOT NULL,
-    sess   JSON         NOT NULL,
-    expire TIMESTAMP(6) NOT NULL
-);
-
-ALTER TABLE pg_sessions
-    ADD PRIMARY KEY (sid);
-
-CREATE TABLE project_access_levels (
-    id   UUID DEFAULT uuid_generate_v4() NOT NULL,
-    name TEXT                            NOT NULL,
-    key  TEXT                            NOT NULL
-);
-
-CREATE UNIQUE INDEX project_access_levels_key_uindex
-    ON project_access_levels (key);
-
-CREATE UNIQUE INDEX project_access_levels_name_uindex
-    ON project_access_levels (name);
-
-ALTER TABLE project_access_levels
-    ADD CONSTRAINT project_access_levels_pk
-        PRIMARY KEY (id);
-
-CREATE TABLE project_categories (
+CREATE TABLE IF NOT EXISTS project_categories (
     id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name       TEXT                                                NOT NULL,
     color_code WL_HEX_COLOR             DEFAULT '#70a6f3'::TEXT    NOT NULL,
@@ -380,14 +584,11 @@ CREATE TABLE project_categories (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-CREATE UNIQUE INDEX project_categories_name_team_id_uindex
-    ON project_categories (name, team_id);
-
 ALTER TABLE project_categories
     ADD CONSTRAINT project_categories_pk
         PRIMARY KEY (id);
 
-CREATE TABLE project_comment_mentions (
+CREATE TABLE IF NOT EXISTS project_comment_mentions (
     comment_id      UUID                                               NOT NULL,
     mentioned_index INTEGER                                            NOT NULL,
     mentioned_by    UUID                                               NOT NULL,
@@ -395,7 +596,7 @@ CREATE TABLE project_comment_mentions (
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE TABLE project_comments (
+CREATE TABLE IF NOT EXISTS project_comments (
     id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     content    TEXT                                                NOT NULL,
     created_by UUID                                                NOT NULL,
@@ -403,9 +604,6 @@ CREATE TABLE project_comments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
-
-CREATE INDEX project_comments_project_id_index
-    ON project_comments (project_id);
 
 ALTER TABLE project_comments
     ADD CONSTRAINT project_comments_pk
@@ -420,7 +618,7 @@ ALTER TABLE project_comments
     ADD CONSTRAINT project_comments_content_length_check
         CHECK (CHAR_LENGTH(content) <= 2000);
 
-CREATE TABLE project_folders (
+CREATE TABLE IF NOT EXISTS project_folders (
     id               UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name             TEXT                                                NOT NULL,
     key              TEXT                                                NOT NULL,
@@ -432,12 +630,6 @@ CREATE TABLE project_folders (
     updated_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-CREATE UNIQUE INDEX project_folders_team_id_key_uindex
-    ON project_folders (team_id, key);
-
-CREATE UNIQUE INDEX project_folders_team_id_name_uindex
-    ON project_folders (team_id, name);
-
 ALTER TABLE project_folders
     ADD CONSTRAINT project_folders_pk
         PRIMARY KEY (id);
@@ -446,7 +638,7 @@ ALTER TABLE project_folders
     ADD CONSTRAINT project_folders_parent_folder_fk
         FOREIGN KEY (parent_folder_id) REFERENCES project_folders;
 
-CREATE TABLE project_logs (
+CREATE TABLE IF NOT EXISTS project_logs (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     team_id     UUID                                                NOT NULL,
     project_id  UUID                                                NOT NULL,
@@ -458,19 +650,20 @@ ALTER TABLE project_logs
     ADD CONSTRAINT project_logs_pk
         PRIMARY KEY (id);
 
-CREATE TABLE project_member_allocations (
-    id             UUID DEFAULT uuid_generate_v4() NOT NULL,
-    project_id     UUID                            NOT NULL,
-    team_member_id UUID                            NOT NULL,
-    allocated_from TIMESTAMP WITH TIME ZONE        NOT NULL,
-    allocated_to   TIMESTAMP WITH TIME ZONE        NOT NULL
+CREATE TABLE IF NOT EXISTS project_member_allocations (
+    id              UUID DEFAULT uuid_generate_v4() NOT NULL,
+    project_id      UUID                            NOT NULL,
+    team_member_id  UUID                            NOT NULL,
+    allocated_from  TIMESTAMP WITH TIME ZONE        NOT NULL,
+    allocated_to    TIMESTAMP WITH TIME ZONE        NOT NULL,
+    seconds_per_day INTEGER
 );
 
 ALTER TABLE project_member_allocations
     ADD CONSTRAINT project_member_allocations_pk
         PRIMARY KEY (id);
 
-CREATE TABLE project_members (
+CREATE TABLE IF NOT EXISTS project_members (
     id                      UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     team_member_id          UUID                                                NOT NULL,
     project_access_level_id UUID                                                NOT NULL,
@@ -480,18 +673,6 @@ CREATE TABLE project_members (
     default_view            TEXT                     DEFAULT 'TASK_LIST'::TEXT  NOT NULL
 );
 
-CREATE INDEX project_members_project_id_index
-    ON project_members (project_id);
-
-CREATE INDEX project_members_project_id_member_id_index
-    ON project_members (project_id, team_member_id);
-
-CREATE INDEX project_members_team_member_id_index
-    ON project_members (team_member_id);
-
-CREATE UNIQUE INDEX project_members_team_member_project_uindex
-    ON project_members (team_member_id, project_id);
-
 ALTER TABLE project_members
     ADD CONSTRAINT project_members_pk
         PRIMARY KEY (id);
@@ -500,7 +681,7 @@ ALTER TABLE project_members
     ADD CONSTRAINT project_members_access_level_fk
         FOREIGN KEY (project_access_level_id) REFERENCES project_access_levels;
 
-CREATE TABLE project_phases (
+CREATE TABLE IF NOT EXISTS project_phases (
     id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name       TEXT                                                NOT NULL,
     color_code WL_HEX_COLOR                                        NOT NULL,
@@ -511,14 +692,11 @@ CREATE TABLE project_phases (
     sort_index INTEGER                  DEFAULT 0
 );
 
-CREATE UNIQUE INDEX project_phases_name_project_uindex
-    ON project_phases (name, project_id);
-
 ALTER TABLE project_phases
     ADD CONSTRAINT project_phases_pk
         PRIMARY KEY (id);
 
-CREATE TABLE project_subscribers (
+CREATE TABLE IF NOT EXISTS project_subscribers (
     id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     user_id        UUID                                                NOT NULL,
     project_id     UUID                                                NOT NULL,
@@ -526,33 +704,26 @@ CREATE TABLE project_subscribers (
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-CREATE UNIQUE INDEX project_subscribers_user_task_team_member_uindex
-    ON project_subscribers (user_id, project_id, team_member_id);
-
 ALTER TABLE project_subscribers
     ADD CONSTRAINT project_subscribers_pk
         PRIMARY KEY (id);
 
-CREATE TABLE project_task_list_cols (
-    id         UUID    DEFAULT uuid_generate_v4() NOT NULL,
-    name       TEXT                               NOT NULL,
-    key        WL_TASK_LIST_COL_KEY               NOT NULL,
-    index      INTEGER DEFAULT 0                  NOT NULL,
-    pinned     BOOLEAN DEFAULT TRUE               NOT NULL,
-    project_id UUID                               NOT NULL
+CREATE TABLE IF NOT EXISTS project_task_list_cols (
+    id                UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    name              TEXT                               NOT NULL,
+    key               WL_TASK_LIST_COL_KEY               NOT NULL,
+    index             INTEGER DEFAULT 0                  NOT NULL,
+    pinned            BOOLEAN DEFAULT TRUE               NOT NULL,
+    project_id        UUID                               NOT NULL,
+    custom_column     BOOLEAN DEFAULT FALSE,
+    custom_column_obj JSONB
 );
-
-CREATE INDEX project_task_list_cols_index
-    ON project_task_list_cols (project_id, index);
-
-CREATE UNIQUE INDEX project_task_list_cols_key_project_uindex
-    ON project_task_list_cols (key, project_id);
 
 ALTER TABLE project_task_list_cols
     ADD CONSTRAINT project_task_list_cols_pk
         PRIMARY KEY (id);
 
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
     id                     UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name                   TEXT                                                NOT NULL,
     key                    TEXT                                                NOT NULL,
@@ -575,30 +746,6 @@ CREATE TABLE projects (
     health_id              UUID,
     estimated_working_days INTEGER                  DEFAULT 0
 );
-
-CREATE INDEX projects_folder_id_index
-    ON projects (folder_id);
-
-CREATE INDEX projects_id_team_id_index
-    ON projects (id, team_id);
-
-CREATE UNIQUE INDEX projects_key_team_id_uindex
-    ON projects (key, team_id);
-
-CREATE INDEX projects_name_index
-    ON projects (name);
-
-CREATE UNIQUE INDEX projects_name_team_id_uindex
-    ON projects (name, team_id);
-
-CREATE INDEX projects_team_id_folder_id_index
-    ON projects (team_id, folder_id);
-
-CREATE INDEX projects_team_id_index
-    ON projects (team_id);
-
-CREATE INDEX projects_team_id_name_index
-    ON projects (team_id, name);
 
 ALTER TABLE projects
     ADD CONSTRAINT projects_pk
@@ -672,7 +819,7 @@ ALTER TABLE projects
     ADD CONSTRAINT projects_notes_check
         CHECK (CHAR_LENGTH(notes) <= 500);
 
-CREATE TABLE pt_labels (
+CREATE TABLE IF NOT EXISTS pt_labels (
     id          UUID DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                            NOT NULL,
     color_code  TEXT                            NOT NULL,
@@ -683,7 +830,7 @@ ALTER TABLE pt_labels
     ADD CONSTRAINT pt_project_templates_labels_pk
         PRIMARY KEY (id);
 
-CREATE TABLE pt_phases (
+CREATE TABLE IF NOT EXISTS pt_phases (
     id          UUID DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                            NOT NULL,
     color_code  TEXT,
@@ -694,7 +841,7 @@ ALTER TABLE pt_phases
     ADD CONSTRAINT pt_project_template_phases_pk
         PRIMARY KEY (id);
 
-CREATE TABLE pt_project_templates (
+CREATE TABLE IF NOT EXISTS pt_project_templates (
     id          UUID DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                            NOT NULL,
     key         TEXT                            NOT NULL,
@@ -721,7 +868,7 @@ ALTER TABLE pt_project_templates
     ADD CONSTRAINT pt_project_templates_key_unique
         UNIQUE (key);
 
-CREATE TABLE pt_statuses (
+CREATE TABLE IF NOT EXISTS pt_statuses (
     id          UUID DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                            NOT NULL,
     template_id UUID                            NOT NULL,
@@ -737,7 +884,7 @@ ALTER TABLE pt_statuses
         FOREIGN KEY (template_id) REFERENCES pt_project_templates
             ON DELETE CASCADE;
 
-CREATE TABLE pt_task_labels (
+CREATE TABLE IF NOT EXISTS pt_task_labels (
     task_id  UUID NOT NULL,
     label_id UUID NOT NULL
 );
@@ -750,23 +897,17 @@ ALTER TABLE pt_task_labels
     ADD CONSTRAINT pt_task_labels_label_id_fk
         FOREIGN KEY (label_id) REFERENCES pt_labels;
 
-CREATE TABLE pt_task_phases (
+CREATE TABLE IF NOT EXISTS pt_task_phases (
     task_id  UUID NOT NULL,
     phase_id UUID NOT NULL
 );
-
-CREATE UNIQUE INDEX pt_task_phase_pt_task_phase_uindex
-    ON pt_task_phases (task_id, phase_id);
-
-CREATE UNIQUE INDEX pt_task_phase_task_id_uindex
-    ON pt_task_phases (task_id);
 
 ALTER TABLE pt_task_phases
     ADD CONSTRAINT pt_task_phase_phase_id_fk
         FOREIGN KEY (phase_id) REFERENCES pt_phases
             ON DELETE CASCADE;
 
-CREATE TABLE pt_task_statuses (
+CREATE TABLE IF NOT EXISTS pt_task_statuses (
     id          UUID    DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                               NOT NULL,
     template_id UUID                               NOT NULL,
@@ -774,9 +915,6 @@ CREATE TABLE pt_task_statuses (
     category_id UUID                               NOT NULL,
     sort_order  INTEGER DEFAULT 0                  NOT NULL
 );
-
-CREATE UNIQUE INDEX pt_task_statuses_template_id_name_uindex
-    ON pt_task_statuses (template_id, name);
 
 ALTER TABLE pt_task_statuses
     ADD CONSTRAINT pt_task_statuses_pk
@@ -787,7 +925,7 @@ ALTER TABLE pt_task_statuses
         FOREIGN KEY (template_id) REFERENCES pt_project_templates
             ON DELETE CASCADE;
 
-CREATE TABLE pt_tasks (
+CREATE TABLE IF NOT EXISTS pt_tasks (
     id             UUID    DEFAULT uuid_generate_v4() NOT NULL,
     name           TEXT                               NOT NULL,
     description    TEXT,
@@ -841,7 +979,7 @@ ALTER TABLE pt_tasks
     ADD CONSTRAINT pt_tasks_total_minutes_check
         CHECK ((total_minutes >= (0)::NUMERIC) AND (total_minutes <= (999999)::NUMERIC));
 
-CREATE TABLE role_permissions (
+CREATE TABLE IF NOT EXISTS role_permissions (
     role_id       UUID NOT NULL,
     permission_id TEXT NOT NULL
 );
@@ -854,7 +992,7 @@ ALTER TABLE role_permissions
     ADD CONSTRAINT role_permissions_permission_id_fk
         FOREIGN KEY (permission_id) REFERENCES permissions;
 
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id           UUID    DEFAULT uuid_generate_v4() NOT NULL,
     name         TEXT                               NOT NULL,
     team_id      UUID                               NOT NULL,
@@ -862,17 +1000,6 @@ CREATE TABLE roles (
     admin_role   BOOLEAN DEFAULT FALSE              NOT NULL,
     owner        BOOLEAN DEFAULT FALSE              NOT NULL
 );
-
-CREATE UNIQUE INDEX roles_default_uindex
-    ON roles (team_id)
-    WHERE (default_role IS TRUE);
-
-CREATE UNIQUE INDEX roles_name_team_id_uindex
-    ON roles (name, team_id);
-
-CREATE UNIQUE INDEX roles_owner_uindex
-    ON roles (team_id)
-    WHERE (owner IS TRUE);
 
 ALTER TABLE roles
     ADD CONSTRAINT roles_pk
@@ -886,21 +1013,18 @@ ALTER TABLE role_permissions
     ADD CONSTRAINT role_permissions_role_id_fk
         FOREIGN KEY (role_id) REFERENCES roles;
 
-CREATE TABLE spam_emails (
+CREATE TABLE IF NOT EXISTS spam_emails (
     id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     email      TEXT                                                NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-CREATE UNIQUE INDEX spam_emails_email_uindex
-    ON spam_emails (email);
-
 ALTER TABLE spam_emails
     ADD CONSTRAINT spam_emails_pk
         PRIMARY KEY (id);
 
-CREATE TABLE sys_project_healths (
+CREATE TABLE IF NOT EXISTS sys_project_healths (
     id         UUID    DEFAULT uuid_generate_v4() NOT NULL,
     name       TEXT                               NOT NULL,
     color_code WL_HEX_COLOR                       NOT NULL,
@@ -912,11 +1036,7 @@ ALTER TABLE sys_project_healths
     ADD CONSTRAINT sys_project_healths_pk
         PRIMARY KEY (id);
 
-ALTER TABLE projects
-    ADD CONSTRAINT projects_sys_project_healths_id_fk
-        FOREIGN KEY (health_id) REFERENCES sys_project_healths;
-
-CREATE TABLE sys_project_statuses (
+CREATE TABLE IF NOT EXISTS sys_project_statuses (
     id         UUID    DEFAULT uuid_generate_v4() NOT NULL,
     name       TEXT                               NOT NULL,
     color_code WL_HEX_COLOR                       NOT NULL,
@@ -929,19 +1049,16 @@ ALTER TABLE sys_project_statuses
     ADD CONSTRAINT sys_project_statuses_pk
         PRIMARY KEY (id);
 
-ALTER TABLE projects
-    ADD CONSTRAINT projects_status_id_fk
-        FOREIGN KEY (status_id) REFERENCES sys_project_statuses;
-
-CREATE TABLE sys_task_status_categories (
-    id          UUID    DEFAULT uuid_generate_v4() NOT NULL,
-    name        TEXT                               NOT NULL,
-    color_code  WL_HEX_COLOR                       NOT NULL,
-    index       INTEGER DEFAULT 0                  NOT NULL,
-    is_todo     BOOLEAN DEFAULT FALSE              NOT NULL,
-    is_doing    BOOLEAN DEFAULT FALSE              NOT NULL,
-    is_done     BOOLEAN DEFAULT FALSE              NOT NULL,
-    description TEXT
+CREATE TABLE IF NOT EXISTS sys_task_status_categories (
+    id              UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    name            TEXT                               NOT NULL,
+    color_code      WL_HEX_COLOR                       NOT NULL,
+    index           INTEGER DEFAULT 0                  NOT NULL,
+    is_todo         BOOLEAN DEFAULT FALSE              NOT NULL,
+    is_doing        BOOLEAN DEFAULT FALSE              NOT NULL,
+    is_done         BOOLEAN DEFAULT FALSE              NOT NULL,
+    description     TEXT,
+    color_code_dark WL_HEX_COLOR
 );
 
 ALTER TABLE sys_task_status_categories
@@ -960,7 +1077,7 @@ ALTER TABLE pt_task_statuses
     ADD CONSTRAINT pt_task_statuses_category_id_fk
         FOREIGN KEY (category_id) REFERENCES sys_task_status_categories;
 
-CREATE TABLE task_activity_logs (
+CREATE TABLE IF NOT EXISTS task_activity_logs (
     id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     task_id        UUID                                                NOT NULL,
     team_id        UUID                                                NOT NULL,
@@ -992,7 +1109,7 @@ ALTER TABLE task_activity_logs
     ADD CONSTRAINT task_activity_logs_log_type_check
         CHECK (log_type = ANY (ARRAY ['create'::TEXT, 'update'::TEXT, 'delete'::TEXT, 'assign'::TEXT, 'unassign'::TEXT]));
 
-CREATE TABLE task_attachments (
+CREATE TABLE IF NOT EXISTS task_attachments (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                                                NOT NULL,
     size        BIGINT                   DEFAULT 0                  NOT NULL,
@@ -1003,9 +1120,6 @@ CREATE TABLE task_attachments (
     uploaded_by UUID                                                NOT NULL,
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
-
-CREATE INDEX task_attachments_task_id_index
-    ON task_attachments (task_id);
 
 ALTER TABLE task_attachments
     ADD CONSTRAINT task_attachments_pk
@@ -1020,7 +1134,7 @@ ALTER TABLE task_attachments
     ADD CONSTRAINT task_attachments_name_check
         CHECK (CHAR_LENGTH(name) <= 110);
 
-CREATE TABLE task_comment_contents (
+CREATE TABLE IF NOT EXISTS task_comment_contents (
     index          INTEGER NOT NULL,
     comment_id     UUID    NOT NULL,
     team_member_id UUID,
@@ -1033,9 +1147,9 @@ ALTER TABLE task_comment_contents
 
 ALTER TABLE task_comment_contents
     ADD CONSTRAINT task_comment_contents_name_check
-        CHECK (CHAR_LENGTH(text_content) <= 2000);
+        CHECK (CHAR_LENGTH(text_content) <= 5000);
 
-CREATE TABLE task_comments (
+CREATE TABLE IF NOT EXISTS task_comments (
     id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     user_id        UUID                                                NOT NULL,
     team_member_id UUID                                                NOT NULL,
@@ -1044,9 +1158,6 @@ CREATE TABLE task_comments (
     updated_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     ses_message_id TEXT
 );
-
-CREATE INDEX task_comments_task_id_index
-    ON task_comments (task_id);
 
 ALTER TABLE task_comments
     ADD CONSTRAINT task_comments_pk
@@ -1057,30 +1168,21 @@ ALTER TABLE task_comment_contents
         FOREIGN KEY (comment_id) REFERENCES task_comments
             ON DELETE CASCADE;
 
-CREATE TABLE task_labels (
+CREATE TABLE IF NOT EXISTS task_labels (
     task_id  UUID NOT NULL,
     label_id UUID NOT NULL
 );
-
-CREATE INDEX task_labels_task_id_index
-    ON task_labels (task_id);
 
 ALTER TABLE task_labels
     ADD CONSTRAINT task_labels_pk
         PRIMARY KEY (task_id, label_id);
 
-CREATE TABLE team_labels (
+CREATE TABLE IF NOT EXISTS team_labels (
     id         UUID DEFAULT uuid_generate_v4() NOT NULL,
     name       TEXT                            NOT NULL,
     color_code WL_HEX_COLOR                    NOT NULL,
     team_id    UUID                            NOT NULL
 );
-
-CREATE INDEX team_labels_name_index
-    ON team_labels (name);
-
-CREATE UNIQUE INDEX team_labels_name_team_uindex
-    ON team_labels (name, team_id);
 
 ALTER TABLE team_labels
     ADD CONSTRAINT team_labels_pk
@@ -1100,31 +1202,23 @@ ALTER TABLE team_labels
     ADD CONSTRAINT team_labels_name_check
         CHECK (CHAR_LENGTH(name) <= 40);
 
-CREATE TABLE task_phase (
+CREATE TABLE IF NOT EXISTS task_phase (
     task_id  UUID NOT NULL,
     phase_id UUID NOT NULL
 );
-
-CREATE UNIQUE INDEX task_phase_task_id_uindex
-    ON task_phase (task_id);
-
-CREATE UNIQUE INDEX task_phase_task_phase_uindex
-    ON task_phase (task_id, phase_id);
 
 ALTER TABLE task_phase
     ADD CONSTRAINT task_phase_phase_id_fk
         FOREIGN KEY (phase_id) REFERENCES project_phases
             ON DELETE CASCADE;
 
-CREATE TABLE task_priorities (
-    id         UUID    DEFAULT uuid_generate_v4() NOT NULL,
-    name       TEXT                               NOT NULL,
-    value      INTEGER DEFAULT 0                  NOT NULL,
-    color_code WL_HEX_COLOR                       NOT NULL
+CREATE TABLE IF NOT EXISTS task_priorities (
+    id              UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    name            TEXT                               NOT NULL,
+    value           INTEGER DEFAULT 0                  NOT NULL,
+    color_code      WL_HEX_COLOR                       NOT NULL,
+    color_code_dark WL_HEX_COLOR
 );
-
-CREATE UNIQUE INDEX task_priorities_name_uindex
-    ON task_priorities (name);
 
 ALTER TABLE task_priorities
     ADD CONSTRAINT task_priorities_pk
@@ -1138,7 +1232,7 @@ ALTER TABLE pt_tasks
     ADD CONSTRAINT pt_tasks_priority_fk
         FOREIGN KEY (priority_id) REFERENCES task_priorities;
 
-CREATE TABLE task_statuses (
+CREATE TABLE IF NOT EXISTS task_statuses (
     id          UUID    DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                               NOT NULL,
     project_id  UUID                               NOT NULL,
@@ -1146,15 +1240,6 @@ CREATE TABLE task_statuses (
     category_id UUID                               NOT NULL,
     sort_order  INTEGER DEFAULT 0                  NOT NULL
 );
-
-CREATE INDEX task_statuses_name_index
-    ON task_statuses (name);
-
-CREATE INDEX task_statuses_project_category_index
-    ON task_statuses (project_id, category_id);
-
-CREATE UNIQUE INDEX task_statuses_project_id_name_uindex
-    ON task_statuses (project_id, name);
 
 ALTER TABLE task_statuses
     ADD CONSTRAINT task_statuses_pk
@@ -1173,7 +1258,7 @@ ALTER TABLE task_statuses
     ADD CONSTRAINT task_statuses_name_check
         CHECK (CHAR_LENGTH(name) <= 50);
 
-CREATE TABLE task_subscribers (
+CREATE TABLE IF NOT EXISTS task_subscribers (
     id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     user_id        UUID                                                NOT NULL,
     task_id        UUID                                                NOT NULL,
@@ -1181,15 +1266,6 @@ CREATE TABLE task_subscribers (
     action         TEXT                                                NOT NULL,
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
-
-CREATE INDEX task_subscribers_task_id_index
-    ON task_subscribers (task_id);
-
-CREATE INDEX task_subscribers_user_id_index
-    ON task_subscribers (user_id);
-
-CREATE UNIQUE INDEX task_subscribers_user_task_team_member_uindex
-    ON task_subscribers (user_id, task_id, team_member_id);
 
 ALTER TABLE task_subscribers
     ADD CONSTRAINT task_subscribers_pk
@@ -1199,7 +1275,7 @@ ALTER TABLE task_subscribers
     ADD CONSTRAINT task_subscribers_action_check
         CHECK (action = 'WHEN_DONE'::TEXT);
 
-CREATE TABLE task_templates (
+CREATE TABLE IF NOT EXISTS task_templates (
     id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name       TEXT                                                NOT NULL,
     team_id    UUID                                                NOT NULL,
@@ -1207,14 +1283,11 @@ CREATE TABLE task_templates (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-CREATE UNIQUE INDEX task_templates_name_team_uindex
-    ON task_templates (name, team_id);
-
 ALTER TABLE task_templates
     ADD CONSTRAINT task_templates_pk
         PRIMARY KEY (id);
 
-CREATE TABLE task_templates_tasks (
+CREATE TABLE IF NOT EXISTS task_templates_tasks (
     name          TEXT              NOT NULL,
     template_id   UUID              NOT NULL,
     total_minutes NUMERIC DEFAULT 0 NOT NULL
@@ -1225,20 +1298,17 @@ ALTER TABLE task_templates_tasks
         FOREIGN KEY (template_id) REFERENCES task_templates
             ON DELETE CASCADE;
 
-CREATE TABLE task_timers (
+CREATE TABLE IF NOT EXISTS task_timers (
     task_id    UUID NOT NULL,
     user_id    UUID NOT NULL,
     start_time TIMESTAMP WITH TIME ZONE
 );
 
-CREATE INDEX task_timers_task_id_user_id_index
-    ON task_timers (task_id, user_id);
-
 ALTER TABLE task_timers
     ADD CONSTRAINT task_timers_pk
         PRIMARY KEY (task_id, user_id);
 
-CREATE TABLE task_updates (
+CREATE TABLE IF NOT EXISTS task_updates (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     type        TEXT                                                NOT NULL,
     reporter_id UUID                                                NOT NULL,
@@ -1247,7 +1317,8 @@ CREATE TABLE task_updates (
     team_id     UUID                                                NOT NULL,
     project_id  UUID                                                NOT NULL,
     is_sent     BOOLEAN                  DEFAULT FALSE              NOT NULL,
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    retry_count INTEGER                  DEFAULT 0
 );
 
 ALTER TABLE task_updates
@@ -1263,7 +1334,7 @@ ALTER TABLE task_updates
     ADD CONSTRAINT task_updates_type_check
         CHECK (type = ANY (ARRAY ['ASSIGN'::TEXT, 'UNASSIGN'::TEXT]));
 
-CREATE TABLE task_work_log (
+CREATE TABLE IF NOT EXISTS task_work_log (
     id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     time_spent      NUMERIC                  DEFAULT 0                  NOT NULL,
     description     TEXT,
@@ -1286,7 +1357,7 @@ ALTER TABLE task_work_log
     ADD CONSTRAINT task_work_log_time_spent_check
         CHECK (time_spent >= (0)::NUMERIC);
 
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
     id                 UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name               TEXT                                                NOT NULL,
     description        TEXT,
@@ -1305,26 +1376,10 @@ CREATE TABLE tasks (
     created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     updated_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     sort_order         INTEGER                  DEFAULT 0                  NOT NULL,
-    roadmap_sort_order INTEGER                  DEFAULT 0                  NOT NULL
+    roadmap_sort_order INTEGER                  DEFAULT 0                  NOT NULL,
+    billable           BOOLEAN                  DEFAULT TRUE,
+    schedule_id        UUID
 );
-
-CREATE INDEX tasks_created_at_index
-    ON tasks (created_at);
-
-CREATE INDEX tasks_id_project_id_index
-    ON tasks (id, project_id);
-
-CREATE INDEX tasks_name_index
-    ON tasks (name);
-
-CREATE INDEX tasks_parent_task_id_index
-    ON tasks (parent_task_id);
-
-CREATE INDEX tasks_project_id_index
-    ON tasks (project_id);
-
-CREATE INDEX tasks_sort_order_index
-    ON tasks (sort_order);
 
 ALTER TABLE tasks
     ADD CONSTRAINT tasks_pk
@@ -1390,13 +1445,14 @@ ALTER TABLE tasks
         FOREIGN KEY (priority_id) REFERENCES task_priorities;
 
 ALTER TABLE tasks
-    ADD CONSTRAINT tasks_project_fk
-        FOREIGN KEY (project_id) REFERENCES projects;
-
-ALTER TABLE tasks
     ADD CONSTRAINT tasks_status_id_fk
         FOREIGN KEY (status_id) REFERENCES task_statuses
             ON DELETE RESTRICT;
+
+ALTER TABLE tasks
+    ADD CONSTRAINT tasks_project_fk
+        FOREIGN KEY (project_id) REFERENCES projects
+            ON DELETE CASCADE;
 
 ALTER TABLE tasks
     ADD CONSTRAINT tasks_description_check
@@ -1410,7 +1466,34 @@ ALTER TABLE tasks
     ADD CONSTRAINT tasks_total_minutes_check
         CHECK ((total_minutes >= (0)::NUMERIC) AND (total_minutes <= (999999)::NUMERIC));
 
-CREATE TABLE tasks_assignees (
+CREATE TRIGGER projects_tasks_counter_trigger
+    BEFORE INSERT
+    ON tasks
+    FOR EACH ROW
+EXECUTE PROCEDURE update_project_tasks_counter_trigger_fn();
+
+CREATE TRIGGER set_task_updated_at
+    BEFORE UPDATE
+    ON tasks
+    FOR EACH ROW
+EXECUTE PROCEDURE set_task_updated_at_trigger_fn();
+
+CREATE TRIGGER tasks_status_id_change
+    AFTER UPDATE
+        OF status_id
+    ON tasks
+    FOR EACH ROW
+EXECUTE PROCEDURE task_status_change_trigger_fn();
+
+CREATE TRIGGER tasks_task_subscriber_notify_done
+    BEFORE UPDATE
+        OF status_id
+    ON tasks
+    FOR EACH ROW
+    WHEN (old.status_id IS DISTINCT FROM new.status_id)
+EXECUTE PROCEDURE tasks_task_subscriber_notify_done_trigger();
+
+CREATE TABLE IF NOT EXISTS tasks_assignees (
     task_id           UUID                                               NOT NULL,
     project_member_id UUID                                               NOT NULL,
     team_member_id    UUID                                               NOT NULL,
@@ -1418,9 +1501,6 @@ CREATE TABLE tasks_assignees (
     updated_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     assigned_by       UUID                                               NOT NULL
 );
-
-CREATE INDEX tasks_assignees_team_member_id_index
-    ON tasks_assignees (team_member_id);
 
 ALTER TABLE tasks_assignees
     ADD CONSTRAINT tasks_assignees_pk
@@ -1436,7 +1516,7 @@ ALTER TABLE tasks_assignees
         FOREIGN KEY (task_id) REFERENCES tasks
             ON DELETE CASCADE;
 
-CREATE TABLE team_members (
+CREATE TABLE IF NOT EXISTS team_members (
     id           UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     user_id      UUID,
     team_id      UUID                                                NOT NULL,
@@ -1446,18 +1526,6 @@ CREATE TABLE team_members (
     updated_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     active       BOOLEAN                  DEFAULT TRUE
 );
-
-CREATE INDEX team_members_ids_index
-    ON team_members (team_id, user_id, role_id);
-
-CREATE INDEX team_members_team_id_index
-    ON team_members (team_id);
-
-CREATE INDEX team_members_user_id_team_id_index
-    ON team_members (user_id, team_id);
-
-CREATE UNIQUE INDEX team_members_user_id_team_id_uindex
-    ON team_members (user_id, team_id);
 
 ALTER TABLE team_members
     ADD CONSTRAINT team_members_pk
@@ -1511,10 +1579,19 @@ ALTER TABLE team_members
     ADD CONSTRAINT team_members_role_id_fk
         FOREIGN KEY (role_id) REFERENCES roles;
 
--- START: Users
-CREATE SEQUENCE IF NOT EXISTS users_user_no_seq START 1;
+CREATE TRIGGER insert_notification_settings
+    AFTER INSERT
+    ON team_members
+    FOR EACH ROW
+EXECUTE PROCEDURE notification_settings_insert_trigger_fn();
 
-CREATE TABLE users (
+CREATE TRIGGER remove_notification_settings
+    BEFORE DELETE
+    ON team_members
+    FOR EACH ROW
+EXECUTE PROCEDURE notification_settings_delete_trigger_fn();
+
+CREATE TABLE IF NOT EXISTS users (
     id              UUID                     DEFAULT uuid_generate_v4()                     NOT NULL,
     name            TEXT                                                                    NOT NULL,
     email           WL_EMAIL                                                                NOT NULL,
@@ -1529,20 +1606,11 @@ CREATE TABLE users (
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL,
     last_active     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL,
-    temp_email      BOOLEAN                  DEFAULT FALSE
+    temp_email      BOOLEAN                  DEFAULT FALSE,
+    is_deleted      BOOLEAN                  DEFAULT FALSE,
+    deleted_at      TIMESTAMP WITH TIME ZONE,
+    language        LANGUAGE_TYPE            DEFAULT 'en'::LANGUAGE_TYPE
 );
-
-CREATE INDEX users_email_index
-    ON users (email);
-
-CREATE UNIQUE INDEX users_email_uindex
-    ON users (email);
-
-CREATE UNIQUE INDEX users_google_id_uindex
-    ON users (google_id);
-
-CREATE UNIQUE INDEX users_socket_id_uindex
-    ON users (socket_id);
 
 ALTER TABLE users
     ADD CONSTRAINT users_pk
@@ -1556,6 +1624,34 @@ ALTER TABLE favorite_projects
     ADD CONSTRAINT favorite_projects_user_id_fk
         FOREIGN KEY (user_id) REFERENCES users;
 
+ALTER TABLE licensing_coupon_codes
+    ADD CONSTRAINT licensing_coupon_codes_users_id_fk
+        FOREIGN KEY (redeemed_by) REFERENCES users;
+
+ALTER TABLE licensing_credit_subs
+    ADD CONSTRAINT licensing_credit_subs_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE licensing_custom_subs
+    ADD CONSTRAINT licensing_custom_subs_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE licensing_payment_details
+    ADD CONSTRAINT licensing_payment_details_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE licensing_user_payment_methods
+    ADD CONSTRAINT licensing_user_payment_methods_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE licensing_user_subscriptions
+    ADD CONSTRAINT licensing_user_subscriptions_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE licensing_user_subscriptions_log
+    ADD CONSTRAINT licensing_user_subscriptions_log_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
 ALTER TABLE notification_settings
     ADD CONSTRAINT notification_settings_user_id_fk
         FOREIGN KEY (user_id) REFERENCES users
@@ -1563,11 +1659,12 @@ ALTER TABLE notification_settings
 
 ALTER TABLE organizations
     ADD CONSTRAINT organization_user_id_pk
-        FOREIGN KEY (user_id) REFERENCES users ON DELETE CASCADE;
+        FOREIGN KEY (user_id) REFERENCES users
+            ON DELETE CASCADE;
 
 ALTER TABLE personal_todo_list
     ADD CONSTRAINT personal_todo_list_user_id_fk
-        FOREIGN KEY (user_id) REFERENCES users ON DELETE CASCADE;
+        FOREIGN KEY (user_id) REFERENCES users;
 
 ALTER TABLE project_categories
     ADD CONSTRAINT project_categories_created_by_fk
@@ -1654,7 +1751,12 @@ ALTER TABLE users
     ADD CONSTRAINT users_name_check
         CHECK (CHAR_LENGTH(name) <= 55);
 
-CREATE TABLE teams (
+CREATE TRIGGER users_email_lower
+    BEFORE INSERT OR UPDATE
+    ON users
+EXECUTE PROCEDURE lower_email();
+
+CREATE TABLE IF NOT EXISTS teams (
     id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name            TEXT                                                NOT NULL,
     user_id         UUID                                                NOT NULL,
@@ -1662,9 +1764,6 @@ CREATE TABLE teams (
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
     organization_id UUID
 );
-
-CREATE INDEX teams_id_user_id_index
-    ON teams (id, user_id);
 
 ALTER TABLE teams
     ADD CONSTRAINT teams_pk
@@ -1692,7 +1791,8 @@ ALTER TABLE email_invitations
 
 ALTER TABLE job_titles
     ADD CONSTRAINT job_titles_team_id_fk
-        FOREIGN KEY (team_id) REFERENCES teams;
+        FOREIGN KEY (team_id) REFERENCES teams
+            ON DELETE CASCADE;
 
 ALTER TABLE notification_settings
     ADD CONSTRAINT notification_settings_team_id_fk
@@ -1774,15 +1874,12 @@ ALTER TABLE teams
     ADD CONSTRAINT teams_name_check
         CHECK (CHAR_LENGTH(name) <= 55);
 
-CREATE TABLE timezones (
+CREATE TABLE IF NOT EXISTS timezones (
     id         UUID DEFAULT uuid_generate_v4() NOT NULL,
     name       TEXT                            NOT NULL,
     abbrev     TEXT                            NOT NULL,
     utc_offset INTERVAL                        NOT NULL
 );
-
-CREATE INDEX timezones_name_index
-    ON timezones (name);
 
 ALTER TABLE timezones
     ADD CONSTRAINT timezones_pk
@@ -1792,7 +1889,7 @@ ALTER TABLE users
     ADD CONSTRAINT users_timezone_id_fk
         FOREIGN KEY (timezone_id) REFERENCES timezones;
 
-CREATE TABLE user_notifications (
+CREATE TABLE IF NOT EXISTS user_notifications (
     id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     message    TEXT                                                NOT NULL,
     user_id    UUID                                                NOT NULL,
@@ -1827,7 +1924,7 @@ ALTER TABLE user_notifications
     ADD CONSTRAINT user_notifications_user_id_fk
         FOREIGN KEY (user_id) REFERENCES users;
 
-CREATE TABLE users_data (
+CREATE TABLE IF NOT EXISTS users_data (
     user_id                  UUID                           NOT NULL,
     organization_name        TEXT                           NOT NULL,
     contact_number           TEXT,
@@ -1845,9 +1942,6 @@ CREATE TABLE users_data (
     updating_plan            BOOLEAN DEFAULT FALSE
 );
 
-CREATE UNIQUE INDEX users_data_user_id_uindex
-    ON users_data (user_id);
-
 ALTER TABLE users_data
     ADD UNIQUE (user_id);
 
@@ -1860,7 +1954,7 @@ ALTER TABLE users_data
     ADD CONSTRAINT users_data_users_id_fk
         FOREIGN KEY (user_id) REFERENCES users;
 
-CREATE TABLE worklenz_alerts (
+CREATE TABLE IF NOT EXISTS worklenz_alerts (
     description TEXT NOT NULL,
     type        TEXT NOT NULL,
     active      BOOLEAN DEFAULT FALSE
@@ -1870,8 +1964,36 @@ ALTER TABLE worklenz_alerts
     ADD CONSTRAINT worklenz_alerts_type_check
         CHECK (type = ANY (ARRAY ['success'::TEXT, 'info'::TEXT, 'warning'::TEXT, 'error'::TEXT]));
 
+CREATE TABLE IF NOT EXISTS licensing_coupon_logs (
+    id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    coupon_code TEXT                                                NOT NULL,
+    redeemed_by UUID                                                NOT NULL,
+    redeemed_at TIMESTAMP WITH TIME ZONE                            NOT NULL,
+    is_refunded BOOLEAN                  DEFAULT TRUE               NOT NULL,
+    reason      TEXT,
+    reverted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    feedback    TEXT
+);
 
-CREATE TABLE task_comment_mentions (
+ALTER TABLE licensing_coupon_logs
+    ADD CONSTRAINT licensing_coupon_logs_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_coupon_logs
+    ADD CONSTRAINT licensing_coupon_logs_users_id_fk
+        FOREIGN KEY (redeemed_by) REFERENCES users;
+
+CREATE TABLE IF NOT EXISTS sys_license_types (
+    id          UUID DEFAULT uuid_generate_v4() NOT NULL,
+    name        TEXT                            NOT NULL,
+    key         TEXT                            NOT NULL,
+    description TEXT
+);
+
+ALTER TABLE sys_license_types
+    ADD PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS task_comment_mentions (
     comment_id      UUID                                               NOT NULL,
     mentioned_index INTEGER                  DEFAULT 0                 NOT NULL,
     mentioned_by    UUID                                               NOT NULL,
@@ -1890,12 +2012,289 @@ ALTER TABLE task_comment_mentions
 
 ALTER TABLE task_comment_mentions
     ADD CONSTRAINT task_comment_mentions_informed_by_fk
-        FOREIGN KEY (informed_by) REFERENCES team_members;
+        FOREIGN KEY (informed_by) REFERENCES team_members
+            ON DELETE CASCADE;
 
-CREATE TABLE email_logs (
+CREATE TABLE IF NOT EXISTS email_logs (
     id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     email      TEXT                                                NOT NULL,
     subject    TEXT                                                NOT NULL,
     html       TEXT                                                NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS task_comment_reactions (
+    id             UUID                     DEFAULT uuid_generate_v4()     NOT NULL,
+    comment_id     UUID                                                    NOT NULL,
+    user_id        UUID                                                    NOT NULL,
+    team_member_id UUID                                                    NOT NULL,
+    reaction_type  REACTION_TYPES           DEFAULT 'like'::REACTION_TYPES NOT NULL,
+    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE task_comment_reactions
+    ADD CONSTRAINT task_comment_reactions_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE task_comment_reactions
+    ADD CONSTRAINT task_comment_reactions_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE task_comment_reactions
+    ADD CONSTRAINT task_comment_reactions_comment_id_fk
+        FOREIGN KEY (comment_id) REFERENCES task_comments
+            ON DELETE CASCADE;
+
+ALTER TABLE task_comment_reactions
+    ADD CONSTRAINT task_comment_reactions_team_member_id_fk
+        FOREIGN KEY (team_member_id) REFERENCES team_members
+            ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS task_dependencies (
+    id              UUID                     DEFAULT uuid_generate_v4()            NOT NULL,
+    task_id         UUID                                                           NOT NULL,
+    related_task_id UUID                                                           NOT NULL,
+    dependency_type DEPENDENCY_TYPE          DEFAULT 'blocked_by'::DEPENDENCY_TYPE NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE task_dependencies
+    ADD CONSTRAINT task_dependencies_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE task_dependencies
+    ADD CONSTRAINT task_dependencies_unique_key
+        UNIQUE (task_id, related_task_id, dependency_type);
+
+ALTER TABLE task_dependencies
+    ADD CONSTRAINT task_dependencies_tasks_id_fk
+        FOREIGN KEY (task_id) REFERENCES tasks
+            ON DELETE CASCADE;
+
+ALTER TABLE task_dependencies
+    ADD CONSTRAINT task_dependencies_tasks_id_fk_2
+        FOREIGN KEY (related_task_id) REFERENCES tasks
+            ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS task_recurring_schedules (
+    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    schedule_type   SCHEDULE_TYPE            DEFAULT 'daily'::SCHEDULE_TYPE,
+    days_of_week    INTEGER[],
+    day_of_month    INTEGER,
+    week_of_month   INTEGER,
+    interval_days   INTEGER,
+    interval_weeks  INTEGER,
+    interval_months INTEGER,
+    start_date      DATE,
+    end_date        DATE,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE task_recurring_schedules
+    ADD CONSTRAINT task_recurring_schedules_pk
+        PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS task_recurring_templates (
+    id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    task_id     UUID                                                NOT NULL,
+    schedule_id UUID                                                NOT NULL,
+    name        TEXT                                                NOT NULL,
+    description TEXT,
+    end_date    TIMESTAMP WITH TIME ZONE,
+    priority_id UUID                                                NOT NULL,
+    project_id  UUID                                                NOT NULL,
+    assignees   JSONB,
+    labels      JSONB,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE task_recurring_templates
+    ADD CONSTRAINT task_recurring_templates_projects_id_fk
+        FOREIGN KEY (project_id) REFERENCES projects
+            ON DELETE CASCADE;
+
+ALTER TABLE task_recurring_templates
+    ADD CONSTRAINT task_recurring_templates_task_priorities_id_fk
+        FOREIGN KEY (priority_id) REFERENCES task_priorities;
+
+ALTER TABLE task_recurring_templates
+    ADD CONSTRAINT task_recurring_templates_task_recurring_schedules_id_fk
+        FOREIGN KEY (schedule_id) REFERENCES task_recurring_schedules
+            ON DELETE CASCADE;
+
+ALTER TABLE task_recurring_templates
+    ADD CONSTRAINT task_recurring_templates_tasks_id_fk
+        FOREIGN KEY (task_id) REFERENCES tasks
+            ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS task_comment_attachments (
+    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    name       TEXT                                                NOT NULL,
+    size       BIGINT                   DEFAULT 0                  NOT NULL,
+    type       TEXT                                                NOT NULL,
+    task_id    UUID                                                NOT NULL,
+    comment_id UUID                                                NOT NULL,
+    team_id    UUID                                                NOT NULL,
+    project_id UUID                                                NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+);
+
+ALTER TABLE task_comment_attachments
+    ADD CONSTRAINT task_comment_attachments_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE task_comment_attachments
+    ADD CONSTRAINT task_comment_attachments_comment_id_fk
+        FOREIGN KEY (comment_id) REFERENCES task_comments
+            ON DELETE CASCADE;
+
+ALTER TABLE task_comment_attachments
+    ADD CONSTRAINT task_comment_attachments_project_id_fk
+        FOREIGN KEY (project_id) REFERENCES projects
+            ON DELETE CASCADE;
+
+ALTER TABLE task_comment_attachments
+    ADD CONSTRAINT task_comment_attachments_task_id_fk
+        FOREIGN KEY (task_id) REFERENCES tasks
+            ON DELETE CASCADE;
+
+ALTER TABLE task_comment_attachments
+    ADD CONSTRAINT task_comment_attachments_team_id_fk
+        FOREIGN KEY (team_id) REFERENCES teams
+            ON DELETE CASCADE;
+
+ALTER TABLE task_comment_attachments
+    ADD CONSTRAINT task_comment_attachments_name_check
+        CHECK (CHAR_LENGTH(name) <= 100);
+
+CREATE TABLE IF NOT EXISTS cc_custom_columns (
+    id               UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    project_id       UUID                                                NOT NULL,
+    name             TEXT                                                NOT NULL,
+    key              TEXT                                                NOT NULL,
+    field_type       TEXT                                                NOT NULL,
+    width            INTEGER                  DEFAULT 150,
+    is_visible       BOOLEAN                  DEFAULT TRUE,
+    is_custom_column BOOLEAN                  DEFAULT TRUE,
+    created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE cc_custom_columns
+    ADD PRIMARY KEY (id);
+
+ALTER TABLE cc_custom_columns
+    ADD UNIQUE (project_id, key);
+
+ALTER TABLE cc_custom_columns
+    ADD FOREIGN KEY (project_id) REFERENCES projects
+        ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS cc_column_configurations (
+    id                        UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    column_id                 UUID                                                NOT NULL,
+    field_title               TEXT,
+    field_type                TEXT,
+    number_type               TEXT,
+    decimals                  INTEGER,
+    label                     TEXT,
+    label_position            TEXT,
+    preview_value             TEXT,
+    expression                TEXT,
+    first_numeric_column_key  TEXT,
+    second_numeric_column_key TEXT,
+    created_at                TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at                TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE cc_column_configurations
+    ADD PRIMARY KEY (id);
+
+ALTER TABLE cc_column_configurations
+    ADD FOREIGN KEY (column_id) REFERENCES cc_custom_columns
+        ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS cc_selection_options (
+    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    column_id       UUID                                                NOT NULL,
+    selection_id    TEXT                                                NOT NULL,
+    selection_name  TEXT                                                NOT NULL,
+    selection_color TEXT,
+    selection_order INTEGER                                             NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE cc_selection_options
+    ADD PRIMARY KEY (id);
+
+ALTER TABLE cc_selection_options
+    ADD FOREIGN KEY (column_id) REFERENCES cc_custom_columns
+        ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS cc_label_options (
+    id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    column_id   UUID                                                NOT NULL,
+    label_id    TEXT                                                NOT NULL,
+    label_name  TEXT                                                NOT NULL,
+    label_color TEXT,
+    label_order INTEGER                                             NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE cc_label_options
+    ADD PRIMARY KEY (id);
+
+ALTER TABLE cc_label_options
+    ADD FOREIGN KEY (column_id) REFERENCES cc_custom_columns
+        ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS cc_column_values (
+    id            UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    task_id       UUID                                                NOT NULL,
+    column_id     UUID                                                NOT NULL,
+    text_value    TEXT,
+    number_value  NUMERIC(18, 6),
+    date_value    TIMESTAMP WITH TIME ZONE,
+    boolean_value BOOLEAN,
+    json_value    JSONB,
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE cc_column_values
+    ADD PRIMARY KEY (id);
+
+ALTER TABLE cc_column_values
+    ADD UNIQUE (task_id, column_id);
+
+ALTER TABLE cc_column_values
+    ADD FOREIGN KEY (task_id) REFERENCES tasks
+        ON DELETE CASCADE;
+
+ALTER TABLE cc_column_values
+    ADD FOREIGN KEY (column_id) REFERENCES cc_custom_columns
+        ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS organization_working_days (
+    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    monday          BOOLEAN                  DEFAULT TRUE               NOT NULL,
+    tuesday         BOOLEAN                  DEFAULT TRUE               NOT NULL,
+    wednesday       BOOLEAN                  DEFAULT TRUE               NOT NULL,
+    thursday        BOOLEAN                  DEFAULT TRUE               NOT NULL,
+    friday          BOOLEAN                  DEFAULT TRUE               NOT NULL,
+    saturday        BOOLEAN                  DEFAULT FALSE              NOT NULL,
+    sunday          BOOLEAN                  DEFAULT FALSE              NOT NULL,
+    organization_id UUID                                                NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+);
+
+ALTER TABLE organization_working_days
+    ADD CONSTRAINT organization_working_days_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE organization_working_days
+    ADD CONSTRAINT org_organization_id_fk
+        FOREIGN KEY (organization_id) REFERENCES organizations;

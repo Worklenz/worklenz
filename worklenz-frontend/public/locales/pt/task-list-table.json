@@ -1,0 +1,63 @@
+{
+  "keyColumn": "Chave",
+  "taskColumn": "Tarefa",
+  "descriptionColumn": "Descrição",
+  "progressColumn": "Progresso",
+  "membersColumn": "Membros",
+  "assigneesColumn": "Atribuídos",
+  "labelsColumn": "Etiquetas",
+  "phasesColumn": "Fases",
+  "phaseColumn": "Fase",
+  "statusColumn": "Status",
+  "priorityColumn": "Prioridade",
+  "timeTrackingColumn": "Acompanhamento de Tempo",
+  "timetrackingColumn": "Acompanhamento de Tempo",
+  "estimationColumn": "Estimativa",
+  "startDateColumn": "Data de Início",
+  "startdateColumn": "Data de Início",
+  "dueDateColumn": "Data de Vencimento",
+  "duedateColumn": "Data de Vencimento",
+  "completedDateColumn": "Data de Conclusão",
+  "completeddateColumn": "Data de Conclusão",
+  "createdDateColumn": "Data de Criação",
+  "createddateColumn": "Data de Criação",
+  "lastUpdatedColumn": "Última Atualização",
+  "lastupdatedColumn": "Última Atualização",
+  "reporterColumn": "Reportador",
+  "dueTimeColumn": "Hora de Vencimento",
+  "todoSelectorText": "A Fazer",
+  "doingSelectorText": "Fazendo",
+  "doneSelectorText": "Feito",
+
+  "lowSelectorText": "Baixo",
+  "mediumSelectorText": "Médio",
+  "highSelectorText": "Alto",
+
+  "selectText": "Selecionar",
+  "labelsSelectorInputTip": "Pressione enter para criar!",
+
+  "addTaskText": "+ Adicionar Tarefa",
+  "addSubTaskText": "+ Adicionar Subtarefa",
+  "addTaskInputPlaceholder": "Digite sua tarefa e pressione enter",
+
+  "openButton": "Abrir",
+  "okButton": "Ok",
+
+  "noLabelsFound": "Nenhuma etiqueta encontrada",
+  "searchInputPlaceholder": "Buscar ou criar",
+  "assigneeSelectorInviteButton": "Convide um novo membro por e-mail",
+  "labelInputPlaceholder": "Buscar ou criar",
+  
+  "pendingInvitation": "Convite Pendente",
+
+  "contextMenu": {
+    "assignToMe": "Atribuir a mim",
+    "moveTo": "Mover para",
+    "unarchive": "Desarquivar",
+    "archive": "Arquivar",
+    "convertToSubTask": "Converter em Subtarefa",
+    "convertToTask": "Converter em Tarefa",
+    "delete": "Excluir",
+    "searchByNameInputPlaceholder": "Buscar por nome"
+  }
+}

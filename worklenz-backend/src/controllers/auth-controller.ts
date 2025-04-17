@@ -12,6 +12,9 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import {PasswordStrengthChecker} from "../shared/password-strength-check";
 import FileConstants from "../shared/file-constants";
+import axios from "axios";
+import {log_error} from "../shared/utils";
+import {DEFAULT_ERROR_MESSAGE} from "../shared/constants";
 
 export default class AuthController extends WorklenzControllerBase {
   /** This just send ok response to the client when the request came here through the sign-up-validator */
@@ -42,11 +45,20 @@ export default class AuthController extends WorklenzControllerBase {
   }
 
   public static logout(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    req.logout(() => true);
-    req.session.destroy(() => {
-      res.redirect("/");
+    req.logout((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).send(new AuthResponse(null, true, {}, "Logout failed", null));
+      }
+      
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) {
+          console.error("Session destroy error:", destroyErr);
+        }
+        res.status(200).send(new AuthResponse(null, req.isAuthenticated(), {}, null, null));
+      });
     });
-  }
+  }  
 
   private static async destroyOtherSessions(userId: string, sessionId: string) {
     try {
@@ -137,5 +149,26 @@ export default class AuthController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(true, null, "Password updated successfully"));
     }
     return res.status(200).send(new ServerResponse(false, null, "Invalid Request. Please try again."));
+  }
+
+  @HandleExceptions({logWithError: "body"})
+  public static async verifyCaptcha(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    const {token} = req.body;
+    const secretKey = process.env.GOOGLE_CAPTCHA_SECRET_KEY;
+    try {
+      const response = await axios.post(
+        `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`
+      );
+
+      const {success, score} = response.data;
+
+      if (success && score > 0.5) {
+        return res.status(200).send(new ServerResponse(true, null, null));
+      }
+      return res.status(400).send(new ServerResponse(false, null, "Please try again later.").withTitle("Error"));
+    } catch (error) {
+      log_error(error);
+      res.status(500).send(new ServerResponse(false, null, DEFAULT_ERROR_MESSAGE));
+    }
   }
 }

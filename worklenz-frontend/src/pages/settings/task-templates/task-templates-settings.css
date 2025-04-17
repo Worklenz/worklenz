@@ -1,0 +1,24 @@
+.no-border-row td {
+  border: none !important;
+}
+
+.alternate-row-color td {
+  background-color: #f8f7f9;
+}
+
+.no-border-row .button-visibilty {
+  visibility: hidden;
+  transition:
+    visibility 0s,
+    opacity ease-in-out;
+  opacity: 0;
+}
+
+.no-border-row:hover .button-visibilty {
+  visibility: visible;
+  opacity: 1;
+}
+
+.dark-alternate-row-color {
+  background-color: #4e4e4e10;
+}
