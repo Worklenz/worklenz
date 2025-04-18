@@ -134,6 +134,7 @@
     "grunt-contrib-watch": "^1.1.0",
     "grunt-shell": "^4.0.0",
     "grunt-sync": "^0.8.2",
+    "highcharts": "^11.1.0",
     "jest": "^28.1.3",
     "jest-sonar-reporter": "^2.0.0",
     "ncp": "^2.0.0",

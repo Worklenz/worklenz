@@ -1,6 +1,6 @@
-# Worklenz - React Application
+# Worklenz - React Frontend
 
-Worklenz is a task management application built with React and bundled using [Vite](https://vitejs.dev/).
+Worklenz is a project management application built with React, TypeScript, and Ant Design. The project is bundled using [Vite](https://vitejs.dev/).
 
 ## Table of Contents
 - [Getting Started](#getting-started)
@@ -15,11 +15,11 @@ To get started with the project, follow these steps:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/Worklenz/worklenz-v2.git
+   git clone https://github.com/Worklenz/worklenz.git
    ```
 2. **Navigate to the project directory**:
    ```bash
-   cd worklenz-v2
+   cd worklenz/worklenz-frontend
    ```
 3. **Install dependencies**:
    ```bash
@@ -29,7 +29,7 @@ To get started with the project, follow these steps:
    ```bash
    npm run dev
    ```
-5. Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+5. Open [http://localhost:5000](http://localhost:5000) in your browser to view the application.
 
 ## Available Scripts
 
@@ -38,7 +38,7 @@ In the project directory, you can run:
 ### `npm run dev`
 
 Runs the app in the development mode.\
-Open [http://localhost:5173](http://localhost:5173) to view it in the browser.
+Open [http://localhost:5000](http://localhost:5000) to view it in the browser.
 
 The page will reload if you make edits.\
 You will also see any lint errors in the console.
@@ -58,7 +58,22 @@ Open [http://localhost:4173](http://localhost:4173) to preview the build.
 
 ## Project Structure
 
-The project structure is organized as follows:
+The project is organized around a feature-based structure:
+
+```
+src/
+├── components/        # Reusable UI components
+├── hooks/             # Custom React hooks
+├── lib/               # Feature-specific logic
+├── pages/             # Route components
+├── services/          # API services
+├── shared/            # Shared utilities, constants, and types
+├── store/             # Global state management
+├── types/             # TypeScript type definitions
+├── utils/             # Utility functions
+├── App.tsx            # Main application component
+└── main.tsx           # Application entry point
+```
 
 ## Contributing
 
@@ -72,6 +87,9 @@ Contributions are welcome! If you'd like to contribute, please follow these step
 
 ## Learn More
 
-To learn more about Vite, check out the [Vite documentation](https://vitejs.dev/guide/).
+To learn more about the technologies used in this project:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- [React Documentation](https://react.dev/)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+- [Ant Design Documentation](https://ant.design/docs/react/introduce)
+- [Vite Documentation](https://vitejs.dev/guide/)

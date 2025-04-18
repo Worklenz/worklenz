@@ -1,7 +1,3 @@
--- Extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "unaccent";
-
 -- Domains
 CREATE DOMAIN WL_HEX_COLOR AS TEXT CHECK (value ~* '^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$');
 CREATE DOMAIN WL_EMAIL AS TEXT CHECK (value ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
@@ -18,7 +14,27 @@ CREATE TYPE SCHEDULE_TYPE AS ENUM ('daily', 'weekly', 'yearly', 'monthly', 'ever
 
 CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt');
 
+-- START: Users
+CREATE SEQUENCE IF NOT EXISTS users_user_no_seq START 1;
+
 -- Utility and referenced tables
+-- Create sessions table for connect-pg-simple session store
+CREATE TABLE IF NOT EXISTS pg_sessions (
+    sid    VARCHAR      NOT NULL        PRIMARY KEY,
+    sess   JSON         NOT NULL,
+    expire TIMESTAMP(6) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS project_access_levels (
+    id   UUID DEFAULT uuid_generate_v4() NOT NULL,
+    name TEXT                            NOT NULL,
+    key  TEXT                            NOT NULL
+);
+
+ALTER TABLE project_access_levels
+    ADD CONSTRAINT project_access_levels_pk
+        PRIMARY KEY (id);
+        
 CREATE TABLE IF NOT EXISTS countries (
     id       UUID       DEFAULT uuid_generate_v4() NOT NULL,
     code     CHAR(2)                               NOT NULL,
@@ -40,7 +56,6 @@ ALTER TABLE permissions
     ADD CONSTRAINT permissions_pk
         PRIMARY KEY (id);
 
--- Tables that reference utility tables
 CREATE TABLE IF NOT EXISTS archived_projects (
     user_id    UUID NOT NULL,
     project_id UUID NOT NULL
@@ -77,7 +92,6 @@ ALTER TABLE clients
     ADD CONSTRAINT clients_name_check
         CHECK (CHAR_LENGTH(name) <= 60);
 
--- Remaining tables
 CREATE TABLE IF NOT EXISTS cpt_phases (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     name        TEXT                                                NOT NULL,
@@ -232,11 +246,6 @@ ALTER TABLE email_invitations
     ADD CONSTRAINT email_invitations_pk
         PRIMARY KEY (id);
 
-CREATE TRIGGER email_invitations_email_lower
-    BEFORE INSERT OR UPDATE
-    ON email_invitations
-EXECUTE PROCEDURE lower_email();
-
 CREATE TABLE IF NOT EXISTS favorite_projects (
     user_id    UUID NOT NULL,
     project_id UUID NOT NULL
@@ -260,6 +269,35 @@ ALTER TABLE job_titles
     ADD CONSTRAINT job_titles_name_check
         CHECK (CHAR_LENGTH(name) <= 55);
 
+CREATE TABLE IF NOT EXISTS licensing_admin_users (
+    id         UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    name       TEXT                               NOT NULL,
+    username   TEXT                               NOT NULL,
+    phone_no   TEXT                               NOT NULL,
+    otp        TEXT,
+    otp_expiry TIMESTAMP WITH TIME ZONE,
+    active     BOOLEAN DEFAULT TRUE               NOT NULL
+);
+
+ALTER TABLE licensing_admin_users
+    ADD CONSTRAINT licensing_admin_users_id_pk
+        PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS licensing_app_sumo_batches (
+    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    name       TEXT                                                NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID                                                NOT NULL
+);
+
+ALTER TABLE licensing_app_sumo_batches
+    ADD CONSTRAINT licensing_app_sumo_batches_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_app_sumo_batches
+    ADD CONSTRAINT licensing_app_sumo_batches_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES licensing_admin_users;
+
 CREATE TABLE IF NOT EXISTS licensing_coupon_codes (
     id                 UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     coupon_code        TEXT                                                NOT NULL,
@@ -282,11 +320,6 @@ CREATE TABLE IF NOT EXISTS licensing_coupon_codes (
 ALTER TABLE licensing_coupon_codes
     ADD CONSTRAINT licensing_coupon_codes_pk
         PRIMARY KEY (id);
-
-ALTER TABLE licensing_coupon_codes
-    ADD CONSTRAINT licensing_coupon_codes_app_sumo_batches__fk
-        FOREIGN KEY (batch_id) REFERENCES licensing_app_sumo_batches
-            ON DELETE CASCADE;
 
 ALTER TABLE licensing_coupon_codes
     ADD CONSTRAINT licensing_coupon_codes_created_by_fk
@@ -1466,33 +1499,6 @@ ALTER TABLE tasks
     ADD CONSTRAINT tasks_total_minutes_check
         CHECK ((total_minutes >= (0)::NUMERIC) AND (total_minutes <= (999999)::NUMERIC));
 
-CREATE TRIGGER projects_tasks_counter_trigger
-    BEFORE INSERT
-    ON tasks
-    FOR EACH ROW
-EXECUTE PROCEDURE update_project_tasks_counter_trigger_fn();
-
-CREATE TRIGGER set_task_updated_at
-    BEFORE UPDATE
-    ON tasks
-    FOR EACH ROW
-EXECUTE PROCEDURE set_task_updated_at_trigger_fn();
-
-CREATE TRIGGER tasks_status_id_change
-    AFTER UPDATE
-        OF status_id
-    ON tasks
-    FOR EACH ROW
-EXECUTE PROCEDURE task_status_change_trigger_fn();
-
-CREATE TRIGGER tasks_task_subscriber_notify_done
-    BEFORE UPDATE
-        OF status_id
-    ON tasks
-    FOR EACH ROW
-    WHEN (old.status_id IS DISTINCT FROM new.status_id)
-EXECUTE PROCEDURE tasks_task_subscriber_notify_done_trigger();
-
 CREATE TABLE IF NOT EXISTS tasks_assignees (
     task_id           UUID                                               NOT NULL,
     project_member_id UUID                                               NOT NULL,
@@ -1579,18 +1585,6 @@ ALTER TABLE team_members
     ADD CONSTRAINT team_members_role_id_fk
         FOREIGN KEY (role_id) REFERENCES roles;
 
-CREATE TRIGGER insert_notification_settings
-    AFTER INSERT
-    ON team_members
-    FOR EACH ROW
-EXECUTE PROCEDURE notification_settings_insert_trigger_fn();
-
-CREATE TRIGGER remove_notification_settings
-    BEFORE DELETE
-    ON team_members
-    FOR EACH ROW
-EXECUTE PROCEDURE notification_settings_delete_trigger_fn();
-
 CREATE TABLE IF NOT EXISTS users (
     id              UUID                     DEFAULT uuid_generate_v4()                     NOT NULL,
     name            TEXT                                                                    NOT NULL,
@@ -1640,16 +1634,8 @@ ALTER TABLE licensing_payment_details
     ADD CONSTRAINT licensing_payment_details_users_id_fk
         FOREIGN KEY (user_id) REFERENCES users;
 
-ALTER TABLE licensing_user_payment_methods
-    ADD CONSTRAINT licensing_user_payment_methods_users_id_fk
-        FOREIGN KEY (user_id) REFERENCES users;
-
 ALTER TABLE licensing_user_subscriptions
     ADD CONSTRAINT licensing_user_subscriptions_users_id_fk
-        FOREIGN KEY (user_id) REFERENCES users;
-
-ALTER TABLE licensing_user_subscriptions_log
-    ADD CONSTRAINT licensing_user_subscriptions_log_users_id_fk
         FOREIGN KEY (user_id) REFERENCES users;
 
 ALTER TABLE notification_settings
@@ -1750,11 +1736,6 @@ ALTER TABLE users
 ALTER TABLE users
     ADD CONSTRAINT users_name_check
         CHECK (CHAR_LENGTH(name) <= 55);
-
-CREATE TRIGGER users_email_lower
-    BEFORE INSERT OR UPDATE
-    ON users
-EXECUTE PROCEDURE lower_email();
 
 CREATE TABLE IF NOT EXISTS teams (
     id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,

@@ -3,6 +3,7 @@
 # Colors for terminal output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Print banner
@@ -30,10 +31,19 @@ fi
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
-    echo "Error: Docker is not installed or not in PATH"
+    echo -e "${RED}Error: Docker is not installed or not in PATH${NC}"
     echo "Please install Docker first: https://docs.docker.com/get-docker/"
     exit 1
 fi
+
+# Check if Docker daemon is running
+echo "Running preflight checks..."
+if ! docker info &> /dev/null; then
+    echo -e "${RED}Error: Docker daemon is not running${NC}"
+    echo "Please start Docker and try again"
+    exit 1
+fi
+echo -e "${GREEN}✓${NC} Docker is running"
 
 # Check if Docker Compose is installed
 if ! command -v docker compose &> /dev/null; then

@@ -54,15 +54,16 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 const allowedOrigins = [
   isProduction() 
     ? [
-        `https://react.worklenz.com`,
-        `https://v2.worklenz.com`,
-        `https://dev.worklenz.com`
+        `http://localhost:5000`,
+        `http://127.0.0.1:5000`
       ]
     : [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000"
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5000",
+        `http://localhost:5000`
       ]
 ].flat();
 
@@ -71,7 +72,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log("Blocked origin:", origin);
+      console.log("Blocked origin:", origin, process.env.NODE_ENV);
       callback(new Error("Not allowed by CORS"));
     }
   },
