@@ -5,7 +5,7 @@
   "scripts": {
     "start": "vite",
     "prebuild": "node scripts/copy-tinymce.js",
-    "build": "node --max-old-space-size=4096 node_modules/.bin/vite build",
+    "build": "vite build",
     "dev-build": "vite build",
     "serve": "vite preview",
     "format": "prettier --write ."

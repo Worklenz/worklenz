@@ -26,11 +26,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS cpt_task_statuses_template_id_name_uindex
 CREATE UNIQUE INDEX IF NOT EXISTS custom_project_templates_name_team_id_uindex
     ON custom_project_templates (name, team_id);
 
+-- Create index on expire field
+CREATE INDEX IF NOT EXISTS idx_pg_sessions_expire 
+    ON pg_sessions (expire);
+
 CREATE UNIQUE INDEX IF NOT EXISTS job_titles_name_team_id_uindex
     ON job_titles (name, team_id);
 
 CREATE INDEX IF NOT EXISTS job_titles_team_id_index
     ON job_titles (team_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS licensing_admin_users_name_uindex
+    ON licensing_admin_users (name);
+
+CREATE UNIQUE INDEX IF NOT EXISTS licensing_admin_users_phone_no_uindex
+    ON licensing_admin_users (phone_no);
+
+CREATE UNIQUE INDEX IF NOT EXISTS licensing_admin_users_username_uindex
+    ON licensing_admin_users (username);
 
 CREATE UNIQUE INDEX IF NOT EXISTS licensing_coupon_codes_coupon_code_uindex
     ON licensing_coupon_codes (coupon_code);
@@ -52,6 +65,12 @@ CREATE INDEX IF NOT EXISTS notification_settings_team_user_id_index
 
 CREATE UNIQUE INDEX IF NOT EXISTS personal_todo_list_index_uindex
     ON personal_todo_list (user_id, index);
+
+CREATE UNIQUE INDEX IF NOT EXISTS project_access_levels_key_uindex
+    ON project_access_levels (key);
+
+CREATE UNIQUE INDEX IF NOT EXISTS project_access_levels_name_uindex
+    ON project_access_levels (name);
 
 CREATE UNIQUE INDEX IF NOT EXISTS project_categories_name_team_id_uindex
     ON project_categories (name, team_id);

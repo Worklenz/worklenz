@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: docker.io/kithceydigital/worklenz_frontend:latest
+    image: docker.io/chamikajaycey/worklenz-frontend:latest
     container_name: worklenz_frontend
     ports:
       - "5000:5000"
@@ -11,7 +11,7 @@ services:
       - worklenz
 
   backend:
-    image: docker.io/kithceydigital/worklenz_backend:react
+    image: docker.io/chamikajaycey/worklenz-backend:latest
     container_name: worklenz_backend
     ports:
       - "3000:3000"
@@ -19,7 +19,7 @@ services:
       db:
         condition: service_healthy
       minio:
-        condition: service_healthy
+        condition: service_started
     environment:
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - BACKEND_PUBLIC_DIR
@@ -65,12 +65,6 @@ services:
     volumes:
       - worklenz_minio_data:/data
     command: server /data --console-address ":9001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
     networks:
       - worklenz
 
@@ -79,14 +73,26 @@ services:
     image: minio/mc
     container_name: worklenz_createbuckets
     depends_on:
-      minio:
-        condition: service_healthy
+      - minio
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb --ignore-existing myminio/worklenz-bucket;
-      /usr/bin/mc policy set public myminio/worklenz-bucket;
-      exit 0;
+      # Wait for MinIO to be available
+      echo 'Waiting for MinIO to start...'
+      sleep 15;
+      # Retry up to 5 times
+      for i in 1 2 3 4 5; do
+        echo \"Attempt $$i to connect to MinIO...\"
+        if /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin; then
+          echo \"Successfully connected to MinIO!\"
+          /usr/bin/mc mb --ignore-existing myminio/worklenz-bucket;
+          /usr/bin/mc policy set public myminio/worklenz-bucket;
+          exit 0;
+        fi
+        echo \"Connection failed, retrying in 5 seconds...\"
+        sleep 5;
+      done
+      echo \"Failed to connect to MinIO after 5 attempts\"
+      exit 1;
       "
     networks:
       - worklenz

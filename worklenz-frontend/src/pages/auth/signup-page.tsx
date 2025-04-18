@@ -24,6 +24,16 @@ import logger from '@/utils/errorLogger';
 import alertService from '@/services/alerts/alertService';
 import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
 
+// Define the global grecaptcha type
+declare global {
+  interface Window {
+    grecaptcha?: {
+      ready: (callback: () => void) => void;
+      execute: (siteKey: string, options: { action: string }) => Promise<string>;
+    };
+  }
+}
+
 const SignupPage = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
@@ -58,6 +68,7 @@ const SignupPage = () => {
   };
 
   const enableGoogleLogin = import.meta.env.VITE_ENABLE_GOOGLE_LOGIN === 'true' || false;
+  const enableRecaptcha = import.meta.env.VITE_ENABLE_RECAPTCHA === 'true' && import.meta.env.VITE_RECAPTCHA_SITE_KEY && import.meta.env.VITE_RECAPTCHA_SITE_KEY !== 'recaptcha-site-key';
 
   useEffect(() => {
     trackMixpanelEvent(evt_signup_page_visit);
@@ -79,26 +90,35 @@ const SignupPage = () => {
   }, [trackMixpanelEvent]);
 
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-
-    return () => {
-      if (script && script.parentNode) {
-        script.parentNode.removeChild(script);
+    // Only load recaptcha script if recaptcha is enabled and site key is valid
+    if (enableRecaptcha && import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
+      // Check if site key is not the placeholder value
+      if (import.meta.env.VITE_RECAPTCHA_SITE_KEY === 'recaptcha-site-key') {
+        console.warn('Using placeholder reCAPTCHA site key. Please set a valid key in your environment variables.');
+        return;
       }
       
-      const recaptchaElements = document.getElementsByClassName('grecaptcha-badge');
-      while (recaptchaElements.length > 0) {
-        const element = recaptchaElements[0];
-        if (element.parentNode) {
-          element.parentNode.removeChild(element);
+      const script = document.createElement('script');
+      script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+
+      return () => {
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
         }
-      }
-    };
-  }, []);
+        
+        const recaptchaElements = document.getElementsByClassName('grecaptcha-badge');
+        while (recaptchaElements.length > 0) {
+          const element = recaptchaElements[0];
+          if (element.parentNode) {
+            element.parentNode.removeChild(element);
+          }
+        }
+      };
+    }
+  }, [enableRecaptcha]);
 
   const getInvitationQueryParams = () => {
     const params = [`team=${urlParams.teamId}`, `teamMember=${urlParams.teamMemberId}`];
@@ -109,33 +129,72 @@ const SignupPage = () => {
   };
 
   const getRecaptchaToken = async () => {
-    return new Promise<string>(resolve => {
-      window.grecaptcha?.ready(() => {
-        window.grecaptcha
-          ?.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'signup' })
-          .then((token: string) => {
-            resolve(token);
-          });
+    if (!enableRecaptcha) return '';
+    
+    // Check if site key is valid
+    if (!import.meta.env.VITE_RECAPTCHA_SITE_KEY || import.meta.env.VITE_RECAPTCHA_SITE_KEY === 'recaptcha-site-key') {
+      console.warn('Invalid reCAPTCHA site key. Skipping reCAPTCHA verification.');
+      return 'skip-verification';
+    }
+    
+    try {
+      return new Promise<string>((resolve, reject) => {
+        if (!window.grecaptcha) {
+          reject('reCAPTCHA not loaded');
+          return;
+        }
+        
+        window.grecaptcha.ready(() => {
+          window.grecaptcha!
+            .execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'signup' })
+            .then((token: string) => {
+              resolve(token);
+            })
+            .catch((error: any) => {
+              console.error('reCAPTCHA execution error:', error);
+              reject(error);
+            });
+        });
       });
-    });
+    } catch (error) {
+      console.error('Error getting reCAPTCHA token:', error);
+      return '';
+    }
   };
 
   const onFinish = async (values: IUserSignUpRequest) => {
     try {
       setValidating(true);
-      const token = await getRecaptchaToken();
+      
+      if (enableRecaptcha) {
+        try {
+          const token = await getRecaptchaToken();
 
-      if (!token) {
-        logger.error('Failed to get reCAPTCHA token');
-        alertService.error(t('reCAPTCHAVerificationError'), t('reCAPTCHAVerificationErrorMessage'));
-        return;
-      }
+          if (!token) {
+            logger.error('Failed to get reCAPTCHA token');
+            alertService.error(t('reCAPTCHAVerificationError'), t('reCAPTCHAVerificationErrorMessage'));
+            return;
+          }
+          
+          // Skip verification if we're using the special token due to invalid site key
+          if (token !== 'skip-verification') {
+            const verifyToken = await authApiService.verifyRecaptchaToken(token);
 
-      const veriftToken = await authApiService.verifyRecaptchaToken(token);
-
-      if (!veriftToken.done) {
-        logger.error('Failed to verify reCAPTCHA token');
-        return;
+            if (!verifyToken.done) {
+              logger.error('Failed to verify reCAPTCHA token');
+              return;
+            }
+          }
+        } catch (error) {
+          logger.error('reCAPTCHA error:', error);
+          // Continue with sign up even if reCAPTCHA fails in development
+          if (import.meta.env.DEV) {
+            console.warn('Continuing signup despite reCAPTCHA error in development mode');
+          } else {
+            alertService.error(t('reCAPTCHAVerificationError'), t('reCAPTCHAVerificationErrorMessage'));
+            return;
+          }
+        }
       }
 
       const body = {

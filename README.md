@@ -1,3 +1,172 @@
+# Worklenz
+
+Worklenz is an open-source project management platform designed to help teams collaborate efficiently on tasks and projects.
+
+## Features
+
+- **Project Planning**: Create and organize projects, assign tasks to team members.
+- **Task Management**: Break down projects into smaller tasks, set due dates, priorities, and track progress.
+- **Collaboration**: Share files, leave comments, and communicate seamlessly with your team members.
+- **Time Tracking**: Monitor time spent on tasks and projects for better resource allocation and billing.
+- **Reporting**: Generate detailed reports on project status, team workload, and performance metrics.
+
+## Tech Stack
+
+This repository contains the frontend and backend code for Worklenz.
+
+- **Frontend**: Built using React with Ant Design as the UI library.
+- **Backend**: Built using TypeScript, Express.js, with PostgreSQL as the database.
+
+## Requirements
+
+- Node.js version v16 or newer
+- PostgreSQL version v15 or newer
+- Docker and Docker Compose (for containerized setup)
+
+## Getting Started
+
+These instructions will help you set up and run the Worklenz project on your local machine for development and testing purposes.
+
+### Prerequisites
+
+- Node.js (version 16 or higher)
+- PostgreSQL database
+- An S3-compatible storage service (like MinIO) or Azure Blob Storage
+
+### Option 1: Manual Installation
+
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/worklenz.git
+cd worklenz
+```
+
+2. Set up environment variables
+   - Copy the example environment files
+   ```bash
+   cp .env.example .env
+   cp worklenz-backend/.env.example worklenz-backend/.env
+   ```
+   - Update the environment variables with your configuration
+
+3. Install dependencies
+```bash
+# Install backend dependencies
+cd worklenz-backend
+npm install
+
+# Install frontend dependencies
+cd ../worklenz-frontend
+npm install
+```
+
+4. Set up the database
+```bash
+# Create a PostgreSQL database named worklenz_db
+cd worklenz-backend
+
+# Execute the SQL setup files in the correct order
+psql -U your_username -d worklenz_db -f database/sql/0_extensions.sql
+psql -U your_username -d worklenz_db -f database/sql/1_tables.sql
+psql -U your_username -d worklenz_db -f database/sql/indexes.sql
+psql -U your_username -d worklenz_db -f database/sql/4_functions.sql
+psql -U your_username -d worklenz_db -f database/sql/triggers.sql
+psql -U your_username -d worklenz_db -f database/sql/3_views.sql
+psql -U your_username -d worklenz_db -f database/sql/2_dml.sql
+psql -U your_username -d worklenz_db -f database/sql/5_database_user.sql
+```
+
+5. Start the development servers
+```bash
+# In one terminal, start the backend
+cd worklenz-backend
+npm run dev
+
+# In another terminal, start the frontend
+cd worklenz-frontend
+npm run dev
+```
+
+6. Access the application at http://localhost:5000
+
+### Option 2: Docker Setup
+
+The project includes a fully configured Docker setup with:
+- Frontend React application
+- Backend server
+- PostgreSQL database
+- MinIO for S3-compatible storage
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/worklenz.git
+cd worklenz
+```
+
+2. Start the Docker containers (choose one option):
+
+**Using Docker Compose directly**
+```bash
+docker-compose up -d
+```
+
+3. The application will be available at:
+   - Frontend: http://localhost:5000
+   - Backend API: http://localhost:3000
+   - MinIO Console: http://localhost:9001 (login with minioadmin/minioadmin)
+
+4. To stop the services:
+```bash
+docker-compose down
+```
+
+## Configuration
+
+### Environment Variables
+
+Worklenz requires several environment variables to be configured for proper operation. These include:
+
+- Database credentials
+- Session secrets
+- Storage configuration (S3 or Azure)
+- Authentication settings
+
+Please refer to the `.env.example` files for a full list of required variables.
+
+### MinIO Integration
+
+The project uses MinIO as an S3-compatible object storage service, which provides an open-source alternative to AWS S3 for development and production.
+
+- **MinIO Console**: http://localhost:9001
+  - Username: minioadmin
+  - Password: minioadmin
+
+- **Default Bucket**: worklenz-bucket (created automatically when the containers start)
+
+### Security Considerations
+
+For production deployments:
+
+1. Use strong, unique passwords and keys for all services
+2. Do not commit `.env` files to version control
+3. Use a production-grade PostgreSQL setup with proper backup procedures
+4. Enable HTTPS for all public endpoints
+5. Review and update dependencies regularly
+
+## Contributing
+
+We welcome contributions from the community! If you'd like to contribute, please follow our [contributing guidelines](CONTRIBUTING.md).
+
+## Security
+
+If you believe you have found a security vulnerability in Worklenz, we encourage you to responsibly disclose this and not open a public issue. We will investigate all legitimate reports.
+
+Email [your-security-email@example.com](mailto:your-security-email@example.com) to disclose any security vulnerabilities.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
 <h1 align="center">
     <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
         <img src="https://app.worklenz.com/assets/icons/icon-144x144.png" alt="Worklenz Logo" width="75">
@@ -26,33 +195,6 @@
 
 Worklenz is a project management tool designed to help organizations improve their efficiency. It provides a
 comprehensive solution for managing projects, tasks, and collaboration within teams.
-
-## Features
-
-- **Project Planning**: Create and organize projects, assign tasks to team members.
-- **Task Management**: Break down projects into smaller tasks, set due dates, priorities, and track progress.
-- **Collaboration**: Share files, leave comments, and communicate seamlessly with your team members.
-- **Time Tracking**: Monitor time spent on tasks and projects for better resource allocation and billing.
-- **Reporting**: Generate detailed reports on project status, team workload, and performance metrics.
-
-## Tech Stack
-
-This repository contains the frontend and backend code for Worklenz.
-
-- **Frontend**: Built using Angular, with [Ant Design of Angular](https://ng.ant.design/docs/introduce/en) as the UI
-  library..
-- **Backend**: Built using a custom TypeScript implementation of ExpressJS, with PostgreSQL as the database, providing a
-  robust, scalable, and type-safe backend.
-
-## Requirements
-
-- Node.js version v18 or newer
-- Postgres version v15.6
-- Redis version v4.6.7 (not used yet. setup only.)
-
-## Getting started with Worklenz.
-- Containerized Installation - Use docker to deploy Worklenz in production or development environments.
-- Manual installation - To get started with Worklenz, please follow this guide [worklenz setup guidelines](SETUP_THE_PROJECT.md).
 
 ## Screenshots
 
@@ -106,13 +248,6 @@ This repository contains the frontend and backend code for Worklenz.
 
 We welcome contributions from the community! If you'd like to contribute, please follow
 our [contributing guidelines](CONTRIBUTING.md).
-
-### Security
-
-If you believe you have found a security vulnerability in Worklenz, we encourage you to responsibly disclose this and
-not open a public issue. We will investigate all legitimate reports.
-
-Email [info@worklenz.com](mailto:info@worklenz.com) to disclose any security vulnerabilities.
 
 ### License
 

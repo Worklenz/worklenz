@@ -8,7 +8,7 @@ type EmptyListPlaceholderProps = {
 };
 
 const EmptyListPlaceholder = ({
-  imageSrc = 'https://app.worklenz.com/assets/images/empty-box.webp',
+  imageSrc = '/assets/images/empty-box.webp',
   imageHeight = 60,
   text,
 }: EmptyListPlaceholderProps) => {
