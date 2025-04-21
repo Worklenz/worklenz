@@ -186,7 +186,7 @@ We welcome contributions from the community! If you'd like to contribute, please
 
 If you believe you have found a security vulnerability in Worklenz, we encourage you to responsibly disclose this and not open a public issue. We will investigate all legitimate reports.
 
-Email [your-security-email@example.com](mailto:your-security-email@example.com) to disclose any security vulnerabilities.
+Email [info@worklenz.com](mailto:info@worklenz.com) to disclose any security vulnerabilities.
 
 ## License
 
