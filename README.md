@@ -44,7 +44,7 @@ This repository contains the frontend and backend code for Worklenz.
 
 ## Requirements
 
-- Node.js version v16 or newer
+- Node.js version v18 or newer
 - PostgreSQL version v15 or newer
 - Docker and Docker Compose (for containerized setup)
 
@@ -54,7 +54,7 @@ These instructions will help you set up and run the Worklenz project on your loc
 
 ### Prerequisites
 
-- Node.js (version 16 or higher)
+- Node.js (version 18 or higher)
 - PostgreSQL database
 - An S3-compatible storage service (like MinIO) or Azure Blob Storage
 
