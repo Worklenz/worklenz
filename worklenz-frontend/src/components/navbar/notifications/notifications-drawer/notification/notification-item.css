@@ -1,0 +1,398 @@
+.ant-notification {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 14px;
+  font-variant: tabular-nums;
+  line-height: 1.5715;
+  list-style: none;
+  font-feature-settings: "tnum";
+  position: fixed;
+  z-index: 1010;
+  margin-right: 24px;
+}
+
+.ant-notification-topLeft,
+.ant-notification-bottomLeft {
+  margin-right: 0;
+  margin-left: 24px;
+}
+
+.ant-notification-topLeft .ant-notification-fade-enter.ant-notification-fade-enter-active,
+.ant-notification-bottomLeft .ant-notification-fade-enter.ant-notification-fade-enter-active,
+.ant-notification-topLeft .ant-notification-fade-appear.ant-notification-fade-appear-active,
+.ant-notification-bottomLeft .ant-notification-fade-appear.ant-notification-fade-appear-active {
+  -webkit-animation-name: NotificationLeftFadeIn;
+  animation-name: NotificationLeftFadeIn;
+}
+
+.ant-notification-close-icon {
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ant-notification-hook-holder {
+  position: relative;
+}
+
+.ant-notification-notice {
+  position: relative;
+  width: 384px;
+  max-width: calc(100vw - 24px * 2);
+  /* margin-bottom: 16px; */
+  margin-left: auto;
+  padding: 16px 24px;
+  overflow: hidden;
+  line-height: 1.5715;
+  word-wrap: break-word;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow:
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ant-notification-topLeft .ant-notification-notice,
+.ant-notification-bottomLeft .ant-notification-notice {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.ant-notification-notice-message {
+  margin-bottom: 8px;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.ant-notification-notice-message-single-line-auto-margin {
+  display: block;
+  width: calc(384px - 24px * 2 - 24px - 48px - 100%);
+  max-width: 4px;
+  background-color: transparent;
+  pointer-events: none;
+}
+
+.ant-notification-notice-message-single-line-auto-margin::before {
+  display: block;
+  content: "";
+}
+
+.ant-notification-notice-description {
+  font-size: 14px;
+}
+
+.ant-notification-notice-closable .ant-notification-notice-message {
+  padding-right: 24px;
+}
+
+.ant-notification-notice-with-icon .ant-notification-notice-message {
+  margin-bottom: 4px;
+  margin-left: 48px;
+  font-size: 16px;
+}
+
+.ant-notification-notice-with-icon .ant-notification-notice-description {
+  margin-left: 48px;
+  font-size: 14px;
+}
+
+.ant-notification-notice-icon {
+  position: absolute;
+  margin-left: 4px;
+  font-size: 24px;
+  line-height: 24px;
+}
+
+.anticon.ant-notification-notice-icon-success {
+  color: #52c41a;
+}
+
+.anticon.ant-notification-notice-icon-info {
+  color: #1890ff;
+}
+
+.anticon.ant-notification-notice-icon-warning {
+  color: #faad14;
+}
+
+.anticon.ant-notification-notice-icon-error {
+  color: #ff4d4f;
+}
+
+.ant-notification-notice-close {
+  position: absolute;
+  top: 16px;
+  right: 22px;
+  color: rgba(0, 0, 0, 0.45);
+  outline: none;
+}
+
+.ant-notification-notice-close:hover {
+  color: rgba(0, 0, 0, 0.67);
+}
+
+.ant-notification-notice-btn {
+  float: right;
+  margin-top: 16px;
+}
+
+.ant-notification .notification-fade-effect {
+  -webkit-animation-duration: 0.24s;
+  animation-duration: 0.24s;
+  -webkit-animation-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+  animation-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+}
+
+.ant-notification-fade-enter,
+.ant-notification-fade-appear {
+  -webkit-animation-duration: 0.24s;
+  animation-duration: 0.24s;
+  -webkit-animation-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+  animation-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+  opacity: 0;
+  -webkit-animation-play-state: paused;
+  animation-play-state: paused;
+}
+
+.ant-notification-fade-leave {
+  -webkit-animation-duration: 0.24s;
+  animation-duration: 0.24s;
+  -webkit-animation-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+  animation-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+  -webkit-animation-duration: 0.2s;
+  animation-duration: 0.2s;
+  -webkit-animation-play-state: paused;
+  animation-play-state: paused;
+}
+
+.ant-notification-fade-enter.ant-notification-fade-enter-active,
+.ant-notification-fade-appear.ant-notification-fade-appear-active {
+  -webkit-animation-name: NotificationFadeIn;
+  animation-name: NotificationFadeIn;
+  -webkit-animation-play-state: running;
+  animation-play-state: running;
+}
+
+.ant-notification-fade-leave.ant-notification-fade-leave-active {
+  -webkit-animation-name: NotificationFadeOut;
+  animation-name: NotificationFadeOut;
+  -webkit-animation-play-state: running;
+  animation-play-state: running;
+}
+
+@-webkit-keyframes NotificationFadeIn {
+  0% {
+    left: 384px;
+    opacity: 0;
+  }
+  100% {
+    left: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes NotificationFadeIn {
+  0% {
+    left: 384px;
+    opacity: 0;
+  }
+  100% {
+    left: 0;
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes NotificationLeftFadeIn {
+  0% {
+    right: 384px;
+    opacity: 0;
+  }
+  100% {
+    right: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes NotificationLeftFadeIn {
+  0% {
+    right: 384px;
+    opacity: 0;
+  }
+  100% {
+    right: 0;
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes NotificationFadeOut {
+  0% {
+    max-height: 150px;
+    margin-bottom: 16px;
+    opacity: 1;
+  }
+  100% {
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes NotificationFadeOut {
+  0% {
+    max-height: 150px;
+    margin-bottom: 16px;
+    opacity: 1;
+  }
+  100% {
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+  }
+}
+
+.notification-item {
+  border: 1px solid var(--border-color, #f0f0f0);
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  background-color: var(--bg-color, #fff);
+}
+
+.notification-item:hover {
+  background-color: var(--hover-bg-color, #fafafa);
+}
+
+.notification-item .ant-notification-notice-message {
+  margin-bottom: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-color, rgba(0, 0, 0, 0.85));
+}
+
+.notification-item .ant-notification-notice-description {
+  color: var(--description-color, rgba(0, 0, 0, 0.65));
+}
+
+/* Light mode (default) */
+:root {
+  --border-color: #f0f0f0;
+  --bg-color: #fff;
+  --hover-bg-color: #fafafa;
+  --text-color: rgba(0, 0, 0, 0.85);
+  --description-color: rgba(0, 0, 0, 0.65);
+}
+
+/* Dark mode */
+[data-theme="dark"] .notification-item,
+.dark-theme .notification-item,
+.ant-layout-dark .notification-item {
+  --border-color: #303030;
+  --bg-color: #141414;
+  --hover-bg-color: #1f1f1f;
+  --text-color: rgba(255, 255, 255, 0.85);
+  --description-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure the close button is visible in both themes */
+[data-theme="dark"] .notification-item .ant-btn,
+.dark-theme .notification-item .ant-btn,
+.ant-layout-dark .notification-item .ant-btn {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+[data-theme="dark"] .notification-item .ant-btn:hover,
+.dark-theme .notification-item .ant-btn:hover,
+.ant-layout-dark .notification-item .ant-btn:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Add these new styles at the end of the file */
+
+.worklenz-notification {
+  padding: 12px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  background-color: var(--background-color);
+}
+
+/* Light mode styles */
+[data-theme="light"] .worklenz-notification {
+  --background-color: #fff;
+  --text-color: rgba(0, 0, 0, 0.85);
+  --secondary-text-color: rgba(0, 0, 0, 0.45);
+  --hover-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark mode styles */
+[data-theme="dark"] .worklenz-notification {
+  --background-color: #1f1f1f;
+  --text-color: rgba(255, 255, 255, 0.85);
+  --secondary-text-color: rgba(255, 255, 255, 0.45);
+  --hover-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.worklenz-notification:hover {
+  box-shadow: var(--hover-shadow);
+}
+
+.worklenz-notification .ant-notification-notice-description {
+  color: var(--text-color);
+}
+
+.worklenz-notification .ant-typography-secondary {
+  color: var(--secondary-text-color) !important;
+}
+
+.rounded-4 {
+  border-radius: 4px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.mb-1 {
+  margin-bottom: 8px;
+}
+
+.mt-1 {
+  margin-top: 8px;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.align-items-baseline {
+  align-items: baseline;
+}
+
+.justify-content-between {
+  justify-content: space-between;
+}
+
+.p-0 {
+  padding: 0;
+}
+
+.small {
+  font-size: 12px;
+}

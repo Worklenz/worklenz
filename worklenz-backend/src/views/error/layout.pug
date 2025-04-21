@@ -21,5 +21,27 @@ html(lang='en')
 
     link(rel="shortcut icon", href="/favicon.ico", type="image/x-icon")
 
+    if(env === "production")
+      script(type='text/javascript').
+        (function (c, l, a, r, i, t, y) {
+          c[a] = c[a] || function () {
+            (c[a].q = c[a].q || []).push(arguments)
+          };
+          t = l.createElement(r);
+          t.async = 1;
+          t.src = "https://www.clarity.ms/tag/" + i;
+          y = l.getElementsByTagName(r)[0];
+          y.parentNode.insertBefore(t, y);
+        })(window, document, "clarity", "script", "d8iohlkycf");
+
+      script(async='' src='https://www.googletagmanager.com/gtag/js?id=G-7KSRKQ1397')
+      script.
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+          dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+        gtag('config', 'G-7KSRKQ1397');
+
   body.is-boxed.has-animations
     block content

@@ -1,0 +1,16 @@
+.todo-wraper:hover {
+  border: 1px solid #f0f0f0;
+}
+
+.todo-wraper.dark-mode:hover {
+  border: 1px solid #3a3a3a;
+}
+
+.todo-threedot-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+}
+
+.todo-threedot-dropdown-button .ant-btn {
+  display: flex;
+  justify-content: left;
+}

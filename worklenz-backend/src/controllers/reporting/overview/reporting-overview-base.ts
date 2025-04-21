@@ -1,4 +1,5 @@
 import db from "../../../config/db";
+import * as Highcharts from "highcharts";
 import { ITasksByDue, ITasksByPriority, ITasksByStatus } from "../interfaces";
 import ReportingControllerBase from "../reporting-controller-base";
 import {
@@ -15,36 +16,33 @@ import {
   TASK_STATUS_TODO_COLOR
 } from "../../../shared/constants";
 import { formatDuration, int } from "../../../shared/utils";
+import PointOptionsObject from "../point-options-object";
 import moment from "moment";
 
-export interface IChartObject {
-  name: string,
-  color: string,
-  y: number
-}
-
 export default class ReportingOverviewBase extends ReportingControllerBase {
-
-  private static createChartObject(name: string, color: string, y: number) {
-    return {
-      name,
-      color,
-      y
-    };
-  }
-
   protected static async getTeamsCounts(teamId: string | null, archivedQuery = "") {
 
     const q = `
-      SELECT JSON_BUILD_OBJECT(
-               'teams', (SELECT COUNT(*) FROM teams WHERE in_organization(id, $1)),
-               'projects',
-               (SELECT COUNT(*) FROM projects WHERE in_organization(team_id, $1) ${archivedQuery}),
-               'team_members', (SELECT COUNT(DISTINCT email)
-                                FROM team_member_info_view
-                                WHERE in_organization(team_id, $1))
-               ) AS counts;
-    `;
+    WITH team_count AS (
+    SELECT COUNT(*) AS count
+    FROM teams
+    WHERE in_organization(id, $1)
+    ),
+    project_count AS (
+        SELECT COUNT(*) AS count
+        FROM projects
+        WHERE in_organization(team_id, $1) ${archivedQuery}
+    ),
+    team_member_count AS (
+        SELECT COUNT(DISTINCT email) AS count
+        FROM team_member_info_view
+        WHERE in_organization(team_id, $1)
+    )
+    SELECT JSON_BUILD_OBJECT(
+        'teams', (SELECT count FROM team_count),
+        'projects', (SELECT count FROM project_count),
+        'team_members', (SELECT count FROM team_member_count)
+    ) AS counts;`;
 
     const res = await db.query(q, [teamId]);
     const [data] = res.rows;
@@ -173,7 +171,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const doing = int(data?.counts.doing);
     const done = int(data?.counts.done);
 
-    const chart: IChartObject[] = [];
+    const chart: Highcharts.PointOptionsObject[] = [];
 
     return {
       all,
@@ -209,7 +207,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const medium = int(data?.counts.medium);
     const high = int(data?.counts.high);
 
-    const chart: IChartObject[] = [];
+    const chart: Highcharts.PointOptionsObject[] = [];
 
     return {
       all: 0,
@@ -237,7 +235,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const res = await db.query(q, [projectId]);
     const [data] = res.rows;
 
-    const chart: IChartObject[] = [];
+    const chart: Highcharts.PointOptionsObject[] = [];
 
     return {
       all: 0,
@@ -251,26 +249,26 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
   protected static createByStatusChartData(body: ITasksByStatus) {
     body.chart = [
-      this.createChartObject("Todo", TASK_STATUS_TODO_COLOR, body.todo),
-      this.createChartObject("Doing", TASK_STATUS_DOING_COLOR, body.doing),
-      this.createChartObject("Done", TASK_STATUS_DONE_COLOR, body.done),
+      new PointOptionsObject("Todo", TASK_STATUS_TODO_COLOR, body.todo),
+      new PointOptionsObject("Doing", TASK_STATUS_DOING_COLOR, body.doing),
+      new PointOptionsObject("Done", TASK_STATUS_DONE_COLOR, body.done),
     ];
   }
 
   protected static createByPriorityChartData(body: ITasksByPriority) {
     body.chart = [
-      this.createChartObject("Low", TASK_PRIORITY_LOW_COLOR, body.low),
-      this.createChartObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, body.medium),
-      this.createChartObject("High", TASK_PRIORITY_HIGH_COLOR, body.high),
+      new PointOptionsObject("Low", TASK_PRIORITY_LOW_COLOR, body.low),
+      new PointOptionsObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, body.medium),
+      new PointOptionsObject("High", TASK_PRIORITY_HIGH_COLOR, body.high),
     ];
   }
 
   protected static createByDueDateChartData(body: ITasksByDue) {
     body.chart = [
-      this.createChartObject("Completed", TASK_DUE_COMPLETED_COLOR, body.completed),
-      this.createChartObject("Upcoming", TASK_DUE_UPCOMING_COLOR, body.upcoming),
-      this.createChartObject("Overdue", TASK_DUE_OVERDUE_COLOR, body.overdue),
-      this.createChartObject("No due date", TASK_DUE_NO_DUE_COLOR, body.no_due),
+      new PointOptionsObject("Completed", TASK_DUE_COMPLETED_COLOR, body.completed),
+      new PointOptionsObject("Upcoming", TASK_DUE_UPCOMING_COLOR, body.upcoming),
+      new PointOptionsObject("Overdue", TASK_DUE_OVERDUE_COLOR, body.overdue),
+      new PointOptionsObject("No due date", TASK_DUE_NO_DUE_COLOR, body.no_due),
     ];
   }
 
@@ -581,7 +579,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     `;
     const result = await db.query(q, [teamMemberId]);
 
-    const chart: IChartObject[] = [];
+    const chart: Highcharts.PointOptionsObject[] = [];
 
     const total = result.rows.reduce((accumulator: number, current: {
       count: number
@@ -589,7 +587,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     for (const project of result.rows) {
       project.count = int(project.count);
-      chart.push(this.createChartObject(project.label, project.color, project.count));
+      chart.push(new PointOptionsObject(project.label, project.color, project.count));
     }
 
     return { chart, total, data: result.rows };
@@ -635,7 +633,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     `;
     const result = await db.query(q, [teamMemberId]);
 
-    const chart: IChartObject[] = [];
+    const chart: Highcharts.PointOptionsObject[] = [];
 
     const total = result.rows.reduce((accumulator: number, current: {
       count: number
@@ -643,7 +641,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     for (const project of result.rows) {
       project.count = int(project.count);
-      chart.push(this.createChartObject(project.label, project.color, project.count));
+      chart.push(new PointOptionsObject(project.label, project.color, project.count));
     }
 
     return { chart, total, data: result.rows };
@@ -673,10 +671,10 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     const total = int(d.low) + int(d.medium) + int(d.high);
 
-    const chart = [
-      this.createChartObject("Low", TASK_PRIORITY_LOW_COLOR, d.low),
-      this.createChartObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, d.medium),
-      this.createChartObject("High", TASK_PRIORITY_HIGH_COLOR, d.high),
+    const chart: Highcharts.PointOptionsObject[] = [
+      new PointOptionsObject("Low", TASK_PRIORITY_LOW_COLOR, d.low),
+      new PointOptionsObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, d.medium),
+      new PointOptionsObject("High", TASK_PRIORITY_HIGH_COLOR, d.high),
     ];
 
     const data = [
@@ -730,10 +728,10 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     const total = int(d.low) + int(d.medium) + int(d.high);
 
-    const chart = [
-      this.createChartObject("Low", TASK_PRIORITY_LOW_COLOR, d.low),
-      this.createChartObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, d.medium),
-      this.createChartObject("High", TASK_PRIORITY_HIGH_COLOR, d.high),
+    const chart: Highcharts.PointOptionsObject[] = [
+      new PointOptionsObject("Low", TASK_PRIORITY_LOW_COLOR, d.low),
+      new PointOptionsObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, d.medium),
+      new PointOptionsObject("High", TASK_PRIORITY_HIGH_COLOR, d.high),
     ];
 
     const data = [
@@ -784,10 +782,10 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     const total = int(d.total);
 
-    const chart = [
-      this.createChartObject("Todo", TASK_STATUS_TODO_COLOR, d.todo),
-      this.createChartObject("Doing", TASK_STATUS_DOING_COLOR, d.doing),
-      this.createChartObject("Done", TASK_STATUS_DONE_COLOR, d.done),
+    const chart: Highcharts.PointOptionsObject[] = [
+      new PointOptionsObject("Todo", TASK_STATUS_TODO_COLOR, d.todo),
+      new PointOptionsObject("Doing", TASK_STATUS_DOING_COLOR, d.doing),
+      new PointOptionsObject("Done", TASK_STATUS_DONE_COLOR, d.done),
     ];
 
     const data = [
@@ -826,10 +824,10 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     const total = int(d.todo) + int(d.doing) + int(d.done);
 
-    const chart = [
-      this.createChartObject("Todo", TASK_STATUS_TODO_COLOR, d.todo),
-      this.createChartObject("Doing", TASK_STATUS_DOING_COLOR, d.doing),
-      this.createChartObject("Done", TASK_STATUS_DONE_COLOR, d.done),
+    const chart: Highcharts.PointOptionsObject[] = [
+      new PointOptionsObject("Todo", TASK_STATUS_TODO_COLOR, d.todo),
+      new PointOptionsObject("Doing", TASK_STATUS_DOING_COLOR, d.doing),
+      new PointOptionsObject("Done", TASK_STATUS_DONE_COLOR, d.done),
     ];
 
     const data = [
@@ -878,7 +876,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const in_progress = int(data?.counts.in_progress);
     const completed = int(data?.counts.completed);
 
-    const chart : IChartObject[]  = [];
+    const chart: Highcharts.PointOptionsObject[] = [];
 
     return {
       all,
@@ -908,7 +906,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     `;
     const result = await db.query(q, [teamId]);
 
-    const chart: IChartObject[]  = [];
+    const chart: Highcharts.PointOptionsObject[] = [];
 
     const total = result.rows.reduce((accumulator: number, current: {
       count: number
@@ -916,11 +914,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
 
     for (const category of result.rows) {
       category.count = int(category.count);
-      chart.push({
-        name: category.label,
-        color: category.color,
-        y: category.count
-      });
+      chart.push(new PointOptionsObject(category.label, category.color, category.count));
     }
 
     return { chart, total, data: result.rows };
@@ -956,7 +950,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const at_risk = int(data?.counts.at_risk);
     const good = int(data?.counts.good);
 
-    const chart: IChartObject[]  = [];
+    const chart: Highcharts.PointOptionsObject[] = [];
 
     return {
       not_set,
@@ -971,22 +965,22 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   // Team Overview
   protected static createByProjectStatusChartData(body: any) {
     body.chart = [
-      this.createChartObject("Cancelled", "#f37070", body.cancelled),
-      this.createChartObject("Blocked", "#cbc8a1", body.blocked),
-      this.createChartObject("On Hold", "#cbc8a1", body.on_hold),
-      this.createChartObject("Proposed", "#cbc8a1", body.proposed),
-      this.createChartObject("In Planning", "#cbc8a1", body.in_planning),
-      this.createChartObject("In Progress", "#80ca79", body.in_progress),
-      this.createChartObject("Completed", "#80ca79", body.completed)
+      new PointOptionsObject("Cancelled", "#f37070", body.cancelled),
+      new PointOptionsObject("Blocked", "#cbc8a1", body.blocked),
+      new PointOptionsObject("On Hold", "#cbc8a1", body.on_hold),
+      new PointOptionsObject("Proposed", "#cbc8a1", body.proposed),
+      new PointOptionsObject("In Planning", "#cbc8a1", body.in_planning),
+      new PointOptionsObject("In Progress", "#80ca79", body.in_progress),
+      new PointOptionsObject("Completed", "#80ca79", body.completed),
     ];
   }
 
   protected static createByProjectHealthChartData(body: any) {
     body.chart = [
-      this.createChartObject("Not Set", "#a9a9a9", body.not_set),
-      this.createChartObject("Needs Attention", "#f37070", body.needs_attention),
-      this.createChartObject("At Risk", "#fbc84c", body.at_risk),
-      this.createChartObject("Good", "#75c997", body.good)
+      new PointOptionsObject("Not Set", "#a9a9a9", body.not_set),
+      new PointOptionsObject("Needs Attention", "#f37070", body.needs_attention),
+      new PointOptionsObject("At Risk", "#fbc84c", body.at_risk),
+      new PointOptionsObject("Good", "#75c997", body.good)
     ];
   }
 

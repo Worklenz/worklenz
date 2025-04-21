@@ -114,7 +114,7 @@ export default class HomePageController extends WorklenzControllerBase {
              p.team_id,
              p.name AS project_name,
              p.color_code AS project_color,
-             (SELECT id FROM task_statuses WHERE id = t.status_id) AS status,
+             (SELECT name FROM task_statuses WHERE id = t.status_id) AS status,
              (SELECT color_code
               FROM sys_task_status_categories
               WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,

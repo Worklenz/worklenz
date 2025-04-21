@@ -1,0 +1,147 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import url("./styles/customOverrides.css");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.app-loading-container {
+  transition: none !important;
+}
+
+.app-loading-container * {
+  transition: none !important;
+}
+
+/* Ensure loading spinner has proper contrast */
+.app-loading-container .ant-spin {
+  transition: none !important;
+}
+
+/* Prevent background flash during load */
+html,
+body {
+  transition: background-color 0.3s ease;
+  margin: 0;
+  padding: 0;
+}
+
+html.dark,
+html.dark body {
+  background-color: #181818;
+  color: #ffffff;
+}
+
+html.light,
+html.light body {
+  background-color: #fafafa;
+  color: #181818;
+}
+
+/* Prevent content flash */
+#root {
+  opacity: 0;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* antdesign override imports  */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji" !important;
+}
+
+/* helper classes  */
+.borderless-icon-btn {
+  border: none;
+}
+
+.blue-link {
+  color: #1890ff;
+  /* This is Ant Design's default link color */
+}
+
+.ps__rail-y {
+  opacity: 1 !important;
+  /* Always show the scrollbar */
+  right: 0px;
+  /* Position scrollbar to the right */
+  width: 8px !important;
+  /* Set a consistent scrollbar width */
+}
+
+.ps__thumb-y {
+  width: 8px !important;
+  /* Ensure the scrollbar thumb stays the same size */
+  background-color: #dbd6d6 !important;
+  /* Customize scrollbar color */
+  border-radius: 4px;
+  /* Rounded edges for the scrollbar */
+}
+
+.ps__rail-y:hover,
+.ps__rail-y:focus {
+  background-color: transparent !important;
+  /* Prevent any changes on hover */
+}
+
+.ps__rail-y:hover .ps__thumb-y,
+.ps__rail-y:focus .ps__thumb-y {
+  background-color: #c4c4c4 !important;
+  /* Keep the thumb color constant on hover */
+  width: 10px;
+}
+
+/* Customize website's scrollbar like Mac OS
+Not supports in Firefox and IE */
+
+/* total width */
+*::-webkit-scrollbar {
+  background-color: transparent;
+  width: 8px;
+  height: 8px;
+}
+
+/* background of the scrollbar except button or resizer */
+*::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* scrollbar itself */
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(204, 204, 204, 0.5);
+  border-radius: 16px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #ababab;
+}
+
+/* set button(top and bottom of the scrollbar) */
+*::-webkit-scrollbar-button {
+  display: none;
+}
+
+.ant-table-row:hover .action-button {
+  opacity: 1;
+}
+
+.action-buttons {
+  opacity: 0;
+  transition: opacity 0.1s ease-in-out;
+}
+tr:hover .action-buttons {
+  opacity: 1;
+}

@@ -1,0 +1,229 @@
+.file-icon {
+  width: 30px;
+  position: absolute;
+  z-index: 1;
+  background: #fff;
+  top: -7px;
+  left: -7px;
+  border-radius: 4px;
+  padding: 3px 0px;
+  border: 1px solid #d9d9d9;
+}
+
+ngx-doc-viewer {
+  width: 100%;
+  height: 80vh;
+}
+
+.preview-container {
+  max-width: 1024px;
+}
+
+video {
+  max-width: 100%;
+}
+
+nz-spin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+
+.ant-upload-span {
+  min-height: 86px;
+  max-width: 86px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Container for all attachments */
+.attachments-container {
+  width: 100%;
+}
+
+/* Row layout for attachment previews instead of grid */
+.attachments-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Empty state container */
+.empty-attachments {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 20px 0;
+}
+
+/* Container styling */
+.ant-upload-list-picture-card-container {
+  width: 104px;
+  height: 104px;
+  margin: 0;
+}
+
+/* Item styling */
+.ant-upload-list-item {
+  padding: 8px;
+  border: 1px solid #5f5f5f;
+  border-radius: 2px;
+  position: relative;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ant-upload-list-item-info {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.file-icon {
+  width: 24px;
+  height: 24px;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 1;
+}
+
+.ant-upload-span {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.ant-upload-list-item-thumbnail {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Action buttons styling with hover effect */
+.ant-upload-list-item-actions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.ant-upload-list-item:hover .ant-upload-list-item-actions {
+  opacity: 1;
+}
+
+.ant-upload-list-item-card-actions-btn {
+  color: white !important;
+}
+
+/* Preview modal styling */
+.attachment-preview-modal .preview-container {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.attachment-preview-modal .loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.attachment-preview-modal img.img-fluid,
+.attachment-preview-modal video,
+.attachment-preview-modal audio {
+  max-width: 100%;
+  max-height: 70vh;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Upload button styling */
+.upload-button-container {
+  width: 104px;
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #d9d9d9;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.upload-button-container-centered {
+  width: 104px;
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #d9d9d9;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  margin: 20px auto;
+}
+
+.upload-button-container:hover,
+.upload-button-container-centered:hover {
+  border-color: #1890ff;
+}
+
+.upload-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+}
+
+.upload-button .anticon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.upload-button-text {
+  font-size: 12px;
+}

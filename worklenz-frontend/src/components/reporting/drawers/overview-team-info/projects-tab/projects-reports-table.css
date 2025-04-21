@@ -1,0 +1,57 @@
+[data-theme="dark"] {
+  --table-cell-bg: #181818;
+  --hover-bg: #000;
+  --base-bg: #181818;
+}
+
+[data-theme="default"] {
+  --table-cell-bg: #4e4e4e10;
+  --hover-bg: #edebf0;
+  --base-bg: #ffffff;
+}
+
+/* change the scroll bar in the table  */
+:where(.css-dev-only-do-not-override-ifo476).ant-table-wrapper .ant-table {
+  scrollbar-color: unset;
+}
+
+/* Fix sticky column background */
+.ant-table-wrapper .ant-table-cell-fix-left {
+  background-color: var(--base-bg) !important;
+  z-index: 2 !important;
+}
+
+.ant-table-wrapper .ant-table-row:nth-child(even) .ant-table-cell-fix-left {
+  background-color: var(--table-cell-bg) !important;
+}
+
+.ant-table-wrapper .ant-table-row:hover .ant-table-cell-fix-left {
+  background-color: var(--hover-bg) !important;
+}
+
+/* Shadow for sticky columns */
+:where(.css-dev-only-do-not-override-aw0rds).ant-table-wrapper
+  .ant-table-ping-left
+  .ant-table-cell-fix-left-first::after {
+  box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.15);
+  right: -1px;
+}
+
+:where(.css-dev-only-do-not-override-aw0rds).ant-table-wrapper
+  .ant-table-ping-right:not(.ant-table-has-fix-right)
+  .ant-table-container::after {
+  box-shadow: inset -10px 0 8px -8px rgba(0, 0, 0, 0.15);
+}
+
+/* remove select border  */
+:where(.css-dev-only-do-not-override-tmno9t).ant-select-outlined:not(.ant-select-customize-input)
+  .ant-select-selector {
+  border: none;
+}
+
+.ant-select-focused:where(.css-dev-only-do-not-override-tmno9t).ant-select-outlined:not(
+    .ant-select-disabled
+  ):not(.ant-select-customize-input):not(.ant-pagination-size-changer)
+  .ant-select-selector {
+  box-shadow: none;
+}

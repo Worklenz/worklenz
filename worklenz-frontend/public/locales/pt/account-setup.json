@@ -1,0 +1,32 @@
+{
+  "continue": "Continuar",
+
+  "setupYourAccount": "Configure sua conta.",
+  "organizationStepTitle": "Nomeie sua organização",
+  "organizationStepLabel": "Escolha um nome para sua conta Worklenz.",
+
+  "projectStepTitle": "Crie seu primeiro projeto",
+  "projectStepLabel": "Em qual projeto você está trabalhando agora?",
+  "projectStepPlaceholder": "ex. Plano de Marketing",
+
+  "step2Title": "Crie suas primeiras tarefas",
+  "step2InputLabel": "Digite algumas tarefas que você vai fazer em",
+  "step2AddAnother": "Adicionar outro",
+
+  "emailPlaceholder": "Endereço de e-mail",
+  "invalidEmail": "Por favor, insira um endereço de e-mail válido",
+  "or": "ou",
+  "templateButton": "Importar do modelo",
+  "goBack": "Voltar",
+  "cancel": "Cancelar",
+  "create": "Criar",
+  "templateDrawerTitle": "Selecionar dos modelos",
+  "step3InputLabel": "Convidar por email",
+  "addAnother": "Adicionar outro",
+  "skipForNow": "Pular por enquanto",
+  "formTitle": "Crie sua primeira tarefa.",
+  "step3Title": "Convide sua equipe para trabalhar",
+
+  "maxMembers": " (Você pode convidar até 5 membros)",
+  "maxTasks": " (Você pode criar até 5 tarefas)"
+}

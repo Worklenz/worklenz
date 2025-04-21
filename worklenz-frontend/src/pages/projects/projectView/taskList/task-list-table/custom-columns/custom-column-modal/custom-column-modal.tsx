@@ -1,0 +1,497 @@
+import { Button, Divider, Flex, Form, Input, message, Modal, Select, Typography, Popconfirm } from 'antd';
+import SelectionTypeColumn from './selection-type-column/selection-type-column';
+import NumberTypeColumn from './number-type-column/number-type-column';
+import LabelTypeColumn from './label-type-column/label-type-column';
+import FormulaTypeColumn from './formula-type-column/formula-type-column';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import {
+  CustomFieldNumberTypes,
+  CustomFieldsTypes,
+  setCustomColumnModalAttributes,
+  setCustomFieldType,
+  toggleCustomColumnModalOpen,
+  setCustomFieldNumberType,
+  setDecimals,
+  setLabel,
+  setLabelPosition,
+  setExpression,
+  setFirstNumericColumn,
+  setSecondNumericColumn,
+  setSelectionsList,
+  setLabelsList,
+} from '@features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+import CustomColumnHeader from '../custom-column-header/custom-column-header';
+import { nanoid } from '@reduxjs/toolkit';
+import {
+  CustomTableColumnsType,
+  deleteCustomColumn as deleteCustomColumnFromColumns,
+} from '@features/projects/singleProject/taskListColumns/taskColumnsSlice';
+import { themeWiseColor } from '@/utils/themeWiseColor';
+import KeyTypeColumn from './key-type-column/key-type-column';
+import logger from '@/utils/errorLogger';
+import { addCustomColumn, deleteCustomColumn as deleteCustomColumnFromTasks } from '@/features/tasks/tasks.slice';
+import { useParams } from 'react-router-dom';
+import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+
+const CustomColumnModal = () => {
+  const [mainForm] = Form.useForm();
+  const { projectId } = useParams();
+
+  //   get theme details from theme reducer
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+
+  const dispatch = useAppDispatch();
+
+  const {
+    customColumnId,
+    customColumnModalType,
+    isCustomColumnModalOpen,
+    decimals,
+    label,
+    labelPosition,
+    previewValue,
+    expression,
+    firstNumericColumn,
+    secondNumericColumn,
+    labelsList,
+    selectionsList,
+    customFieldType,
+  } = useAppSelector(state => state.taskListCustomColumnsReducer);
+  // get initial data from task list custom column slice
+  const fieldType: CustomFieldsTypes = useAppSelector(
+    state => state.taskListCustomColumnsReducer.customFieldType
+  );
+  // number column initial data
+  const numberType: CustomFieldNumberTypes = useAppSelector(
+    state => state.taskListCustomColumnsReducer.customFieldNumberType
+  );
+
+  // if it is already created column get the column data
+  const openedColumn = useAppSelector(state => state.taskReducer.customColumns).find(
+    col => col.id === customColumnId
+  );
+
+  // Function to handle deleting a custom column
+  const handleDeleteColumn = async () => {
+    if (!customColumnId) return;
+    
+    try {
+      // Make API request to delete the custom column using the service
+      await tasksCustomColumnsService.deleteCustomColumn(openedColumn?.id || customColumnId);
+      
+      // Dispatch actions to update the Redux store
+      dispatch(deleteCustomColumnFromTasks(customColumnId));
+      dispatch(deleteCustomColumnFromColumns(customColumnId));
+      
+      // Close the modal
+      dispatch(toggleCustomColumnModalOpen(false));
+      dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
+      
+      // Show success message
+      message.success('Custom column deleted successfully');
+      
+      // Reload the page to reflect the changes
+      window.location.reload();
+    } catch (error) {
+      logger.error('Error deleting custom column:', error);
+      message.error('Failed to delete custom column');
+    }
+  };
+
+  const fieldTypesOptions = [
+    {
+      key: 'people',
+      value: 'people',
+      label: 'People',
+      disabled: false,
+    },
+    {
+      key: 'number',
+      value: 'number',
+      label: 'Number',
+      disabled: false,
+    },
+    {
+      key: 'date',
+      value: 'date',
+      label: 'Date',
+      disabled: false,
+    },
+    {
+      key: 'selection',
+      value: 'selection',
+      label: 'Selection',
+      disabled: false,
+    },
+    {
+      key: 'checkbox',
+      value: 'checkbox',
+      label: 'Checkbox',
+      disabled: true,
+    },
+    {
+      key: 'labels',
+      value: 'labels',
+      label: 'Labels',
+      disabled: true,
+    },
+    {
+      key: 'key',
+      value: 'key',
+      label: 'Key',
+      disabled: true,
+    },
+    {
+      key: 'formula',
+      value: 'formula',
+      label: 'Formula',
+      disabled: true,
+    },
+  ];
+
+  // function to handle form submit
+  const handleFormSubmit = async (value: any) => {
+    try {
+      if (customColumnModalType === 'create') {
+        const columnKey = nanoid(); // this id is random and unique, generated by redux
+
+        const newColumn: CustomTableColumnsType = {
+          key: columnKey,
+          name: value.fieldTitle,
+          columnHeader: <CustomColumnHeader columnKey={columnKey} columnName={value.fieldTitle} />,
+          width: 120,
+          isVisible: true,
+          custom_column: true,
+          custom_column_obj: {
+            ...value,
+            labelsList: value.fieldType === 'labels' ? labelsList : [],
+            selectionsList: value.fieldType === 'selection' ? selectionsList : [],
+          },
+        };
+
+        // Prepare the configuration object
+        const configuration = {
+          field_title: value.fieldTitle,
+          field_type: value.fieldType,
+          number_type: value.numberType,
+          decimals: value.decimals,
+          label: value.label,
+          label_position: value.labelPosition,
+          preview_value: value.previewValue,
+          expression: value.expression,
+          first_numeric_column_key: value.firstNumericColumn?.key,
+          second_numeric_column_key: value.secondNumericColumn?.key,
+          selections_list:
+            value.fieldType === 'selection'
+              ? selectionsList.map((selection, index) => ({
+                  selection_id: selection.selection_id,
+                  selection_name: selection.selection_name,
+                  selection_color: selection.selection_color,
+                  selection_order: index,
+                }))
+              : [],
+          labels_list:
+            value.fieldType === 'labels'
+              ? labelsList.map((label, index) => ({
+                  label_id: label.label_id,
+                  label_name: label.label_name,
+                  label_color: label.label_color,
+                  label_order: index,
+                }))
+              : [],
+        };
+
+        // Make API request to create custom column using the service
+        try {
+          const res = await tasksCustomColumnsService.createCustomColumn(projectId || '', {
+            name: value.fieldTitle,
+            key: columnKey,
+            field_type: value.fieldType,
+            width: 120,
+            is_visible: true,
+            configuration
+          });
+
+          if (res.done) {
+            if (res.body.id) newColumn.id = res.body.id;
+          dispatch(addCustomColumn(newColumn));
+          dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
+          dispatch(toggleCustomColumnModalOpen(false));
+          }
+        } catch (error) {
+          logger.error('Error creating custom column:', error);
+          message.error('Failed to create custom column');
+        }
+      } else if (customColumnModalType === 'edit' && customColumnId) {
+        const updatedColumn = openedColumn
+          ? {
+              ...openedColumn,
+              name: value.fieldTitle,
+              columnHeader: (
+                <CustomColumnHeader columnKey={customColumnId} columnName={value.fieldTitle} />
+              ),
+              custom_column_obj: {
+                ...openedColumn.custom_column_obj,
+                fieldTitle: value.fieldTitle,
+                fieldType: value.fieldType,
+                numberType: value.numberType,
+                decimals: value.decimals,
+                label: value.label,
+                labelPosition: value.labelPosition,
+                previewValue: value.previewValue,
+                expression: value.expression,
+                firstNumericColumn: value.firstNumericColumn,
+                secondNumericColumn: value.secondNumericColumn,
+                labelsList: value.fieldType === 'labels' ? labelsList : [],
+                selectionsList: value.fieldType === 'selection' ? selectionsList : [],
+              },
+            }
+          : null;
+
+        if (updatedColumn) {
+          try {
+            // Prepare the configuration object
+            const configuration = {
+              field_title: value.fieldTitle,
+              field_type: value.fieldType,
+              number_type: value.numberType,
+              decimals: value.decimals,
+              label: value.label,
+              label_position: value.labelPosition,
+              preview_value: value.previewValue,
+              expression: value.expression,
+              first_numeric_column_key: value.firstNumericColumn?.key,
+              second_numeric_column_key: value.secondNumericColumn?.key,
+              selections_list:
+                value.fieldType === 'selection'
+                  ? selectionsList.map((selection, index) => ({
+                      selection_id: selection.selection_id,
+                      selection_name: selection.selection_name,
+                      selection_color: selection.selection_color,
+                      selection_order: index,
+                    }))
+                  : [],
+              labels_list:
+                value.fieldType === 'labels'
+                  ? labelsList.map((label, index) => ({
+                      label_id: label.label_id,
+                      label_name: label.label_name,
+                      label_color: label.label_color,
+                      label_order: index,
+                    }))
+                  : [],
+            };
+
+            // Make API request to update custom column using the service
+            await tasksCustomColumnsService.updateCustomColumn(openedColumn?.id || customColumnId, {
+              name: value.fieldTitle,
+              field_type: value.fieldType,
+              width: 150,
+              is_visible: true,
+              configuration
+            });
+
+            // Close modal
+            dispatch(toggleCustomColumnModalOpen(false));
+            dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
+
+            // Reload the page instead of updating the slice
+            window.location.reload();
+          } catch (error) {
+            logger.error('Error updating custom column:', error);
+            message.error('Failed to update custom column');
+          }
+        }
+      }
+
+      mainForm.resetFields();
+    } catch (error) {
+      logger.error('error in custom column modal', error);
+    }
+  };
+
+  return (
+    <Modal
+      title={customColumnModalType === 'create' ? 'Add field' : 'Edit field'}
+      centered
+      open={isCustomColumnModalOpen}
+      onCancel={() => {
+        dispatch(toggleCustomColumnModalOpen(false));
+        dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
+      }}
+      styles={{
+        header: { position: 'relative' },
+        footer: { display: 'none' },
+      }}
+      onClose={() => {
+        mainForm.resetFields();
+      }}
+      afterOpenChange={open => {
+        if (open && customColumnModalType === 'edit' && openedColumn) {        
+          // Set the field type first so the correct form fields are displayed
+          dispatch(setCustomFieldType(openedColumn.custom_column_obj?.fieldType || 'people'));
+          
+          // Set other field values based on the custom column type
+          if (openedColumn.custom_column_obj?.fieldType === 'number') {
+            dispatch(setCustomFieldNumberType(openedColumn.custom_column_obj?.numberType || 'formatted'));
+            dispatch(setDecimals(openedColumn.custom_column_obj?.decimals || 0));
+            dispatch(setLabel(openedColumn.custom_column_obj?.label || ''));
+            dispatch(setLabelPosition(openedColumn.custom_column_obj?.labelPosition || 'left'));
+          } else if (openedColumn.custom_column_obj?.fieldType === 'formula') {
+            dispatch(setExpression(openedColumn.custom_column_obj?.expression || 'add'));
+            dispatch(setFirstNumericColumn(openedColumn.custom_column_obj?.firstNumericColumn || null));
+            dispatch(setSecondNumericColumn(openedColumn.custom_column_obj?.secondNumericColumn || null));
+          } else if (openedColumn.custom_column_obj?.fieldType === 'selection') {
+            // Directly set the selections list in the Redux store
+            if (Array.isArray(openedColumn.custom_column_obj?.selectionsList)) {
+              console.log('Setting selections list:', openedColumn.custom_column_obj.selectionsList);
+              dispatch(setSelectionsList(openedColumn.custom_column_obj.selectionsList));
+            }
+          } else if (openedColumn.custom_column_obj?.fieldType === 'labels') {
+            // Directly set the labels list in the Redux store
+            if (Array.isArray(openedColumn.custom_column_obj?.labelsList)) {
+              console.log('Setting labels list:', openedColumn.custom_column_obj.labelsList);
+              dispatch(setLabelsList(openedColumn.custom_column_obj.labelsList));
+            }
+          }
+          
+          // Set form values
+          mainForm.setFieldsValue({
+            fieldTitle: openedColumn.name || openedColumn.custom_column_obj?.fieldTitle,
+            fieldType: openedColumn.custom_column_obj?.fieldType,
+            numberType: openedColumn.custom_column_obj?.numberType,
+            decimals: openedColumn.custom_column_obj?.decimals,
+            label: openedColumn.custom_column_obj?.label,
+            labelPosition: openedColumn.custom_column_obj?.labelPosition,
+            previewValue: openedColumn.custom_column_obj?.previewValue,
+            expression: openedColumn.custom_column_obj?.expression,
+            firstNumericColumn: openedColumn.custom_column_obj?.firstNumericColumn,
+            secondNumericColumn: openedColumn.custom_column_obj?.secondNumericColumn,
+          });
+        } else if (open && customColumnModalType === 'create') {
+          // Reset form for create mode
+          mainForm.resetFields();
+          dispatch(setCustomFieldType('people'));
+        }
+      }}
+    >
+      <Divider style={{ position: 'absolute', left: 0, top: 32 }} />
+
+      <Form
+        form={mainForm}
+        layout="vertical"
+        onFinish={handleFormSubmit}
+        style={{ marginBlockStart: 24 }}
+        initialValues={
+          customColumnModalType === 'create'
+            ? {
+                fieldType,
+                numberType,
+                decimals,
+                label,
+                labelPosition,
+                previewValue,
+                expression,
+                firstNumericColumn,
+                secondNumericColumn,
+              }
+            : {
+                fieldTitle: openedColumn?.custom_column_obj.fieldTitle,
+                fieldType: openedColumn?.custom_column_obj.fieldType,
+                numberType: openedColumn?.custom_column_obj.numberType,
+                decimals: openedColumn?.custom_column_obj.decimals,
+                label: openedColumn?.custom_column_obj.label,
+                labelPosition: openedColumn?.custom_column_obj.labelPosition,
+                previewValue: openedColumn?.custom_column_obj.previewValue,
+                expression: openedColumn?.custom_column_obj.expression,
+                firstNumericColumn: openedColumn?.custom_column_obj.firstNumericColumn,
+                secondNumericColumn: openedColumn?.custom_column_obj.secondNumericColumn,
+              }
+        }
+      >
+        <Flex gap={16} align="center" justify="space-between">
+          <Form.Item
+            name={'fieldTitle'}
+            label={<Typography.Text>Field title</Typography.Text>}
+            layout="vertical"
+            rules={[
+              {
+                required: true,
+                message: 'Field title is required',
+              },
+            ]}
+            required={false}
+          >
+            <Input placeholder="title" style={{ minWidth: '100%', width: 300 }} />
+          </Form.Item>
+
+          <Form.Item
+            name={'fieldType'}
+            label={<Typography.Text>Type</Typography.Text>}
+            layout="vertical"
+          >
+            <Select
+              options={fieldTypesOptions}
+              defaultValue={fieldType}
+              value={fieldType}
+              onChange={value => dispatch(setCustomFieldType(value))}
+              style={{
+                minWidth: '100%',
+                width: 150,
+                border: `1px solid ${themeWiseColor('#d9d9d9', '#424242', themeMode)}`,
+                borderRadius: 4,
+              }}
+            />
+          </Form.Item>
+        </Flex>
+
+        {/* render form items based on types  */}
+        {customFieldType === 'key' && <KeyTypeColumn />}
+        {customFieldType === 'number' && <NumberTypeColumn />}
+        {customFieldType === 'formula' && <FormulaTypeColumn />}
+        {customFieldType === 'labels' && <LabelTypeColumn />}
+        {customFieldType === 'selection' && <SelectionTypeColumn />}
+
+        <Flex
+          gap={8}
+          align="center"
+          justify={`${customColumnModalType === 'create' ? 'flex-end' : 'space-between'}`}
+          style={{ marginBlockStart: 24 }}
+        >
+          {customColumnModalType === 'edit' && customColumnId && (
+            <Popconfirm
+              title="Are you sure you want to delete this custom column?"
+              description="This action cannot be undone. All data associated with this column will be permanently deleted."
+              icon={<ExclamationCircleFilled style={{ color: 'red' }} />}
+              onConfirm={handleDeleteColumn}
+              okText="Delete"
+              cancelText="Cancel"
+              okButtonProps={{ danger: true }}
+            >
+              <Button danger>Delete</Button>
+            </Popconfirm>
+          )}
+
+          <Flex gap={8}>
+            <Button onClick={() => dispatch(toggleCustomColumnModalOpen(false))}>Cancel</Button>
+            {customColumnModalType === 'create' ? (
+              <Button type="primary" htmlType="submit">
+                Create
+              </Button>
+            ) : (
+              <Button type="primary" htmlType="submit">
+                Update
+              </Button>
+            )}
+          </Flex>
+        </Flex>
+      </Form>
+
+      <Divider style={{ position: 'absolute', left: 0, bottom: 42 }} />
+    </Modal>
+  );
+};
+
+export default CustomColumnModal;

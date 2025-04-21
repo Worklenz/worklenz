@@ -234,4 +234,25 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         res.end();
       });
   }
+
+  @HandleExceptions()
+  public static async getAllRunningTimers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = `SELECT
+                tt.task_id,
+                tt.start_time,
+                t1.name AS task_name,
+                pr.id AS project_id,
+                pr.name AS project_name,
+                t1.parent_task_id,
+                t2.name AS parent_task_name
+            FROM task_timers tt
+            LEFT JOIN public.tasks t1 ON tt.task_id = t1.id
+            LEFT JOIN public.tasks t2 ON t1.parent_task_id = t2.id -- Optimized join for parent task name
+            INNER JOIN projects pr ON t1.project_id = pr.id -- INNER JOIN ensures project-team match
+            WHERE tt.user_id = $1
+              AND pr.team_id = $2;`;
+    const params = [req.user?.id, req.user?.team_id];
+    const result = await db.query(q, params);
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
 }

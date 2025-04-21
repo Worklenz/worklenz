@@ -17,6 +17,7 @@ scheduleApiRouter.get("/projects/:id", idParamValidator, safeControllerFunction(
 scheduleApiRouter.get("/project-member/:id", idParamValidator, safeControllerFunction(ScheduleControllerV2.getSingleProjectMember));
 scheduleApiRouter.get("/refresh/project-indicator/:id", idParamValidator, safeControllerFunction(ScheduleControllerV2.getSingleProjectIndicator));
 scheduleApiRouter.get("/tasks-by-member/:id", idParamValidator, safeControllerFunction(getList));
+scheduleApiRouter.get("/migrate/member-allocations", safeControllerFunction(ScheduleControllerV2.migrate));
 scheduleApiRouter.put("/bulk/delete-member-allocations", safeControllerFunction(ScheduleControllerV2.deleteMemberAllocations));
 
 export default scheduleApiRouter;

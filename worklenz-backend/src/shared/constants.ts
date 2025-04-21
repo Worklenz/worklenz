@@ -94,6 +94,12 @@ export const PriorityColorCodes: { [x: number]: string; } = {
   2: "#f37070"
 };
 
+export const PriorityColorCodesDark: { [x: number]: string; } = {
+  0: "#46D980",
+  1: "#FFC227",
+  2: "#FF4141"
+};
+
 export const TASK_STATUS_TODO_COLOR = "#a9a9a9";
 export const TASK_STATUS_DOING_COLOR = "#70a6f3";
 export const TASK_STATUS_DONE_COLOR = "#75c997";
@@ -110,9 +116,43 @@ export const TASK_DUE_NO_DUE_COLOR = "#a9a9a9";
 
 export const DEFAULT_PAGE_SIZE = 20;
 
+// S3 Credentials
+export const REGION = process.env.AWS_REGION || "us-east-1";
+export const BUCKET = process.env.AWS_BUCKET || "your-bucket-name";
+export const S3_URL = process.env.S3_URL || "https://your-s3-url";
+export const S3_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "";
+export const S3_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "";
+
+// Azure Blob Storage Credentials
+export const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || "s3";
+export const AZURE_STORAGE_ACCOUNT_NAME = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+export const AZURE_STORAGE_CONTAINER = process.env.AZURE_STORAGE_CONTAINER;
+export const AZURE_STORAGE_ACCOUNT_KEY = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+export const AZURE_STORAGE_URL = process.env.AZURE_STORAGE_URL;
+
+export function getStorageUrl() {
+  if (STORAGE_PROVIDER === "azure") {
+    if (!AZURE_STORAGE_URL) {
+      console.warn("AZURE_STORAGE_URL is not defined, falling back to S3_URL");
+      return S3_URL;
+    }
+    
+    // Return just the base Azure Blob Storage URL
+    // AZURE_STORAGE_URL should be in the format: https://storageaccountname.blob.core.windows.net
+    return `${AZURE_STORAGE_URL}/${AZURE_STORAGE_CONTAINER}`;
+  }
+  return S3_URL;
+}
+
 export const TASK_STATUS_COLOR_ALPHA = "69";
 export const TASK_PRIORITY_COLOR_ALPHA = "69";
 export const TEAM_MEMBER_TREE_MAP_COLOR_ALPHA = "40";
+
+// LICENSING SERVER URLS
+export const LOCAL_URL = "http://localhost:3001";
+export const UAT_SERVER_URL = process.env.UAT_SERVER_URL || "https://your-uat-server-url";
+export const DEV_SERVER_URL = process.env.DEV_SERVER_URL || "https://your-dev-server-url";
+export const PRODUCTION_SERVER_URL = process.env.PRODUCTION_SERVER_URL || "https://your-production-server-url";
 
 // *Sync with the client
 export const PASSWORD_POLICY = "Minimum of 8 characters, with upper and lowercase and a number and a symbol.";

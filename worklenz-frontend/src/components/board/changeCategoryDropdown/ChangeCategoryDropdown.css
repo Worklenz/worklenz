@@ -1,0 +1,13 @@
+.status-drawer-dropdown .ant-dropdown-menu {
+  padding: 0 !important;
+  margin-top: 8px !important;
+  overflow: hidden;
+}
+
+.status-drawer-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+}
+
+.status-drawer-dropdown .ant-card-body {
+  padding: 0 !important;
+}

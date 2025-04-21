@@ -1,0 +1,23 @@
+{
+  "name": "Name",
+  "client": "Client",
+  "category": "Category",
+  "status": "Status",
+  "tasksProgress": "Tasks Progress",
+  "updated_at": "Last Updated",
+  "members": "Members",
+  "setting": "Settings",
+  "projects": "Projects",
+  "refreshProjects": "Refresh projects",
+  "all": "All",
+  "favorites": "Favorites",
+  "archived": "Archived",
+  "placeholder": "Search by name",
+  "archive": "Archive",
+  "unarchive": "Unarchive",
+  "archiveConfirm": "Are you sure you want to archive this project?",
+  "unarchiveConfirm": "Are you sure you want to unarchive this project?",
+  "clickToFilter": "Click to filter by",
+  "noProjects": "No projects found",
+  "addToFavourites": "Add to favourites"
+}

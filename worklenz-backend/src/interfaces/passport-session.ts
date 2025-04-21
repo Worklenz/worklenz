@@ -17,4 +17,5 @@ export interface IPassportSession extends IUser {
   socket_id?: string;
   is_expired?: boolean;
   owner_id?: string;
+  subscription_status?: string;
 }

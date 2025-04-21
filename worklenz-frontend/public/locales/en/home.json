@@ -1,0 +1,46 @@
+{
+  "todoList": {
+    "title": "To do list",
+    "refreshTasks": "Refresh tasks",
+    "addTask": "+ Add Task",
+    "noTasks": "No tasks",
+    "pressEnter": "Press",
+    "toCreate": "to create.",
+    "markAsDone": "Mark as done"
+  },
+  "projects": {
+    "title": "Projects",
+    "refreshProjects": "Refresh projects",
+    "noRecentProjects": "You are currently not assigned to any project.",
+    "noFavouriteProjects": "No projects have been marked as favorites.",
+    "recent": "Recent",
+    "favourites": "Favourites"
+  },
+  "tasks": {
+    "assignedToMe": "Assigned to me",
+    "assignedByMe": "Assigned by me",
+    "all": "All",
+    "today": "Today",
+    "upcoming": "Upcoming",
+    "overdue": "Overdue",
+    "noDueDate": "No due date",
+    "noTasks": "No tasks to show.",
+    "addTask": "+ Add task",
+    "name": "Name",
+    "project": "Project",
+    "status": "Status",
+    "dueDate": "Due Date",
+    "dueDatePlaceholder": "Set Due Date",
+    "tomorrow": "Tomorrow",
+    "nextWeek": "Next Week",
+    "nextMonth": "Next Month",
+    "projectRequired": "Please select a project",
+    "pressTabToSelectDueDateAndProject": "Press Tab to select a due date and a project",
+    "dueOn": "Tasks due on",
+    "taskRequired": "Please add a task",
+    "list": "List",
+    "calendar": "Calendar",
+    "tasks": "Tasks",
+    "refresh": "Refresh"
+  }
+}

@@ -12,11 +12,11 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
     if (Array.isArray(profile.photos) && profile.photos.length) body.picture = profile.photos[0].value;
 
     // Check for existing accounts signed up using OAuth
-    const localAccountResult = await db.query("SELECT 1 FROM users WHERE email = $1 AND password IS NOT NULL;", [body.email]);
+    const localAccountResult = await db.query("SELECT 1 FROM users WHERE email = $1 AND password IS NOT NULL AND is_deleted IS FALSE;", [body.email]);
     if (localAccountResult.rowCount) {
       const message = `No Google account exists for email ${body.email}.`;
       (req.session as any).error = message;
-      return done(null, undefined, req.flash(ERROR_KEY, message));
+      return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
     }
 
     // If the user came from an invitation, this exists

@@ -42,8 +42,8 @@ export async function on_task_name_change(_io: Server, socket: Socket, data?: st
     logNameChange({
       task_id: body.task_id,
       socket,
-      new_value: response.name,
-      old_value: task_data.name
+      new_value: response?.name,
+      old_value: task_data?.name
     });
 
   } catch (error) {

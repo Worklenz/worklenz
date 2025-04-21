@@ -1,5 +1,5 @@
 import createError from "http-errors";
-import express, {NextFunction, Request, Response} from "express";
+import express, { NextFunction, Request, Response } from "express";
 import path from "path";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
@@ -9,101 +9,177 @@ import passport from "passport";
 import csurf from "csurf";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
-import uglify from "uglify-js";
 import flash from "connect-flash";
 import hpp from "hpp";
 
 import passportConfig from "./passport";
-import indexRouter from "./routes/index";
 import apiRouter from "./routes/apis";
 import authRouter from "./routes/auth";
 import emailTemplatesRouter from "./routes/email-templates";
-
 import public_router from "./routes/public";
-import {isInternalServer, isProduction} from "./shared/utils";
+import { isInternalServer, isProduction } from "./shared/utils";
 import sessionMiddleware from "./middlewares/session-middleware";
-import {send_to_slack} from "./shared/slack";
-import {CSP_POLICIES} from "./shared/csp";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
+import { CSP_POLICIES } from "./shared/csp";
 
 const app = express();
 
-app.use(compression());
-app.use(helmet({crossOriginResourcePolicy: false, crossOriginEmbedderPolicy: false}));
+// Trust first proxy if behind reverse proxy
+app.set("trust proxy", 1);
 
+// Basic middleware setup
+app.use(compression());
+app.use(logger("dev"));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(hpp());
+
+// Helmet security headers
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
+}));
+
+// Custom security headers
 app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.removeHeader("server");
+  res.setHeader("Content-Security-Policy", CSP_POLICIES);
   next();
 });
 
+// CORS configuration
+const allowedOrigins = [
+  isProduction() 
+    ? [
+        `http://localhost:5000`,
+        `http://127.0.0.1:5000`
+      ]
+    : [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5000",
+        `http://localhost:5000`
+      ]
+].flat();
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("Blocked origin:", origin, process.env.NODE_ENV);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+    "X-CSRF-Token"
+  ],
+  exposedHeaders: ["Set-Cookie", "X-CSRF-Token"]
+}));
+
+// Handle preflight requests
+app.options("*", cors());
+
+// Session setup - must be before passport and CSRF
+app.use(sessionMiddleware);
+
+// Passport initialization
+passportConfig(passport);
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Flash messages
+app.use(flash());
+
+// Auth check middleware
 function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
   return req.user ? next() : next(createError(401));
 }
 
-passportConfig(passport);
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-require("pug").filters = {
-  /**
-   * ```pug
-   * script
-   *   :minify_js
-   *     // JavaScript Syntax
-   * ```
-   * @param {String} text
-   * @param {Object} options
-   */
-  minify_js(text: string) {
-    if (!text) return;
-    // return text;
-    return uglify.minify({"script.js": text}).code;
-  }
-};
-
-// view engine setup
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "pug");
-
-app.use(logger("dev"));
-app.use(express.json({limit: "50mb"}));
-app.use(express.urlencoded({extended: false, limit: "50mb"}));
-// Prevent HTTP Parameter Pollution
-app.use(hpp());
-app.use(cookieParser(process.env.COOKIE_SECRET));
-
-app.use(cors({
-  origin: [`https://${process.env.HOSTNAME}`],
-  methods: "GET,PUT,POST,DELETE",
-  preflightContinue: false,
-  credentials: true
-}));
-
-app.post("/-/csp", (req: express.Request, res: express.Response) => {
-  send_to_slack({
-    type: "⚠️ CSP Report",
-    body: req.body
-  });
-  res.sendStatus(200);
+// CSRF configuration
+const csrfProtection = csurf({
+  cookie: {
+    key: "XSRF-TOKEN",
+    path: "/",
+    httpOnly: false,
+    secure: isProduction(), // Only secure in production
+    sameSite: isProduction() ? "none" : "lax", // Different settings for dev vs prod
+    domain: isProduction() ? ".worklenz.com" : undefined // Only set domain in production
+  },
+  ignoreMethods: ["HEAD", "OPTIONS"]
 });
 
+// Apply CSRF selectively (exclude webhooks and public routes)
+app.use((req, res, next) => {
+  if (
+    req.path.startsWith("/webhook/") ||
+    req.path.startsWith("/secure/") ||
+    req.path.startsWith("/api/") ||
+    req.path.startsWith("/public/")
+  ) {
+    next();
+  } else {
+    csrfProtection(req, res, next);
+  }
+});
+
+// Set CSRF token cookie
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.csrfToken) {
+    const token = req.csrfToken();
+    res.cookie("XSRF-TOKEN", token, {
+      httpOnly: false,
+      secure: isProduction(),
+      sameSite: isProduction() ? "none" : "lax",
+      domain: isProduction() ? ".worklenz.com" : undefined,
+      path: "/"
+    });
+  }
+  next();
+});
+
+// CSRF token refresh endpoint
+app.get("/csrf-token", (req: Request, res: Response) => {
+  if (req.csrfToken) {
+    const token = req.csrfToken();
+    res.cookie("XSRF-TOKEN", token, {
+      httpOnly: false,
+      secure: isProduction(),
+      sameSite: isProduction() ? "none" : "lax",
+      domain: isProduction() ? ".worklenz.com" : undefined,
+      path: "/"
+    });
+    res.status(200).json({ done: true, message: "CSRF token refreshed" });
+  } else {
+    res.status(500).json({ done: false, message: "Failed to generate CSRF token" });
+  }
+});
+
+// Webhook endpoints (no CSRF required)
 app.post("/webhook/emails/bounce", safeControllerFunction(AwsSesController.handleBounceResponse));
 app.post("/webhook/emails/complaints", safeControllerFunction(AwsSesController.handleComplaintResponse));
 app.post("/webhook/emails/reply", safeControllerFunction(AwsSesController.handleReplies));
 
-app.use(flash());
-app.use(csurf({cookie: true}));
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader("Content-Security-Policy", CSP_POLICIES);
-  const token = req.csrfToken();
-  res.cookie("XSRF-TOKEN", token);
-  res.locals.csrf = token;
-  next();
-});
-
+// Static file serving
 if (isProduction()) {
+  app.use(express.static(path.join(__dirname, "build"), {
+    maxAge: "1y",
+    etag: false,
+  }));
+
+  // Handle compressed files
   app.get("*.js", (req, res, next) => {
     if (req.header("Accept-Encoding")?.includes("br")) {
       req.url = `${req.url}.br`;
@@ -116,61 +192,62 @@ if (isProduction()) {
     }
     next();
   });
+} else {
+  app.use(express.static(path.join(__dirname, "public")));
 }
 
-app.use(express.static(path.join(__dirname, "public")));
-app.set("trust proxy", 1);
-app.use(sessionMiddleware);
-
-app.use(passport.initialize());
-app.use(passport.session());
-
+// API rate limiting
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1500, // Limit each IP to 2000 requests per `window` (here, per 15 minutes)
-  standardHeaders: false, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  windowMs: 15 * 60 * 1000,
+  max: 1500,
+  standardHeaders: false,
+  legacyHeaders: false,
 });
 
-app.use((req, res, next) => {
-  const {send} = res;
-  res.send = function (obj) {
-    if (req.headers.accept?.includes("application/json"))
-      return send.call(this, `)]}',\n${JSON.stringify(obj)}`);
-    return send.call(this, obj);
-  };
-  next();
-});
-
+// Routes
+app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
 app.use("/secure", authRouter);
 app.use("/public", public_router);
-app.use("/api/v1", isLoggedIn, apiRouter);
-app.use("/", indexRouter);
 
-if (isInternalServer())
+if (isInternalServer()) {
   app.use("/email-templates", emailTemplatesRouter);
+}
 
-
-// catch 404 and forward to error handler
-app.use((req: Request, res: Response) => {
-  res.locals.error_title = "404 Not Found.";
-  res.locals.error_message = `The requested URL ${req.url} was not found on this server.`;
-  res.locals.error_image = "/assets/images/404.webp";
-  res.status(400);
-  res.render("error");
+// CSRF error handler
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  if (err.code === "EBADCSRFTOKEN") {
+    return res.status(403).json({
+      done: false,
+      message: "Invalid CSRF token",
+      body: null
+    });
+  }
+  next(err);
 });
 
-// error handler
-app.use((err: { message: string; status: number; }, _req: Request, res: Response) => {
-  // set locals, only providing error in development
-  res.locals.error_title = "500 Internal Server Error.";
-  res.locals.error_message = "Oops, something went wrong.";
-  res.locals.error_message2 = "Try to refresh this page or feel free to contact us if the problem persists.";
-  res.locals.error_image = "/assets/images/500.png";
+// React app handling - serve index.html for all non-API routes
+app.get("*", (req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith("/api/")) return next();
+  res.sendFile(path.join(__dirname, isProduction() ? "build" : "public", "index.html"));
+});
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render("error");
+// Global error handler
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status || 500;
+
+  if (res.headersSent) {
+    return;
+  }
+
+  res.status(status);
+
+  // Send structured error response
+  res.json({
+    done: false,
+    message: isProduction() ? "Internal Server Error" : err.message,
+    body: null,
+    ...(process.env.NODE_ENV === "development" ? { stack: err.stack } : {})
+  });
 });
 
 export default app;

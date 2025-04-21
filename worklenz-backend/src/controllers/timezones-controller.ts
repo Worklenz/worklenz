@@ -16,8 +16,8 @@ export default class TimezonesController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `UPDATE users SET timezone_id = $2 WHERE id = $1;`;
-    const result = await db.query(q, [req.user?.id, req.body.timezone]);
-    return res.status(200).send(new ServerResponse(true, result.rows, "Timezone updated"));
+    const q = `UPDATE users SET timezone_id = $2, language = $3 WHERE id = $1;`;
+    const result = await db.query(q, [req.user?.id, req.body.timezone, req.body.language]);
+    return res.status(200).send(new ServerResponse(true, result.rows, "Updated successfully"));
   }
 }

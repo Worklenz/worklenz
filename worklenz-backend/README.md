@@ -1,81 +1,96 @@
 # Worklenz Backend
 
-1. **Open your IDE:**
+This is the Express.js backend for the Worklenz project management application.
 
-   Open the project directory in your preferred code editor or IDE like Visual Studio Code.
+## Getting Started
 
-2. **Configure Environment Variables:**
+Follow these steps to set up the backend for development:
 
-  - Create a copy of the `.env.template` file and name it `.env`.
-  - Update the required fields in `.env` with the specific information.
+1. **Configure Environment Variables:**
 
-3. **Restore Database**
-  - Create a new database named `worklenz_db` on your local PostgreSQL server.
-   - Update the `DATABASE_NAME` and `PASSWORD` in the  `database/6_user_permission.sql` with your DB credentials.
-  - Open a query console and execute the queries from the .sql files in the `database` directories, following the provided order.
+   - Create a copy of the `.env.example` file and name it `.env`.
+   - Update the required fields in `.env` with your specific configuration.
 
-4. **Install Dependencies:**
+2. **Set up Database:**
+   - Create a new database named `worklenz_db` on your local PostgreSQL server.
+   - Update the database connection details in your `.env` file.
+   - Execute the SQL setup files in the correct order:
+   
+   ```bash
+   # From your PostgreSQL client or command line
+   psql -U your_username -d worklenz_db -f database/sql/0_extensions.sql
+   psql -U your_username -d worklenz_db -f database/sql/1_tables.sql
+   psql -U your_username -d worklenz_db -f database/sql/indexes.sql
+   psql -U your_username -d worklenz_db -f database/sql/4_functions.sql
+   psql -U your_username -d worklenz_db -f database/sql/triggers.sql
+   psql -U your_username -d worklenz_db -f database/sql/3_views.sql
+   psql -U your_username -d worklenz_db -f database/sql/2_dml.sql
+   psql -U your_username -d worklenz_db -f database/sql/5_database_user.sql
+   ```
+   
+   Alternatively, you can use the provided shell script:
+   
+   ```bash
+   # Make sure the script is executable
+   chmod +x database/00-init-db.sh
+   # Run the script (may need modifications for local execution)
+   ./database/00-init-db.sh
+   ```
+
+3. **Install Dependencies:**
 
    ```bash
    npm install
    ```
 
-   This command installs all the necessary libraries required to run the project.
+4. **Run the Development Server:**
 
-5. **Run the Development Server:**
+   ```bash
+   npm run dev
+   ```
 
-   **a. Start the TypeScript compiler:**
+   This starts the development server with hot reloading enabled.
 
-   Open a new terminal window and run the following command:
+5. **Build for Production:**
 
-      ```bash
-      grunt dev
-      ```
+   ```bash
+   npm run build
+   ```
 
-   This starts the `grunt` task runner, which compiles TypeScript code into JavaScript.
+   This will compile the TypeScript code into JavaScript for production use.
 
-   **b. Start the development server:**
+6. **Start Production Server:**
 
-   Open another separate terminal window and run the following command:
+   ```bash
+   npm start
+   ```
 
-      ```bash
-      npm start
-      ```
+## API Documentation
 
-   This starts the development server allowing you to work on the project.
+The API endpoints are organized into logical controllers and follow RESTful design principles. The main API routes are prefixed with `/api/v1`.
 
-6. **Run the Production Server:**
+### Authentication
 
-   **a. Compile TypeScript to JavaScript:**
+Authentication is handled via JWT tokens. Protected routes require a valid token in the Authorization header.
 
-   Open a new terminal window and run the following command:
+### File Storage
 
-      ```bash
-      grunt build
-      ```
+The application supports both S3-compatible storage and Azure Blob Storage for file uploads. Configure your preferred storage option in the `.env` file.
 
-   This starts the `grunt` task runner, which compiles TypeScript code into JavaScript for production use.
+## Development Guidelines
 
-   **b. Start the production server:**
+- Code should be written in TypeScript
+- Follow the established patterns for controllers, services, and middlewares
+- Add proper error handling for all API endpoints
+- Write unit tests for critical functionality
+- Document API endpoints with clear descriptions and examples
 
-   Once the compilation is complete, run the following command in the same terminal window:
+## Running Tests
 
-      ```bash
-      npm start
-      ```
+```bash
+npm test
+```
 
-   This starts the production server for your application.
+## Docker Support
 
-### CLI
-
-- Create controller: `$ node new controller Test`
-- Create angular release: `$ node new release`
-
-### Developement Rules
-
-- Controllers should only generate/create using the CLI (`node new controller Projects`)
-- Validations should only be done using a middleware placed under src/validators/ and used inside the routers (E.g., api-router.ts)
-- Validators should only generate/create using the CLI (`node new vaidator projects-params`)
-
-## Pull submodules
-- git submodule update --init --recursive
+The backend can be run in a Docker container. See the main project README for Docker setup instructions.

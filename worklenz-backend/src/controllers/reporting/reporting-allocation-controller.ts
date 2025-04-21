@@ -8,13 +8,14 @@ import { getColor, int, log_error } from "../../shared/utils";
 import ReportingControllerBase from "./reporting-controller-base";
 import { DATE_RANGES } from "../../shared/constants";
 import Excel from "exceljs";
+import ChartJsImage from "chartjs-to-image";
 
 enum IToggleOptions {
   'WORKING_DAYS' = 'WORKING_DAYS', 'MAN_DAYS' = 'MAN_DAYS'
 }
 
 export default class ReportingAllocationController extends ReportingControllerBase {
-  private static async getTimeLoggedByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false, user_id = ""): Promise<any> {
+  private static async getTimeLoggedByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false, user_id = "", billable: { billable: boolean; nonBillable: boolean }): Promise<any> {
     try {
       const projectIds = projects.map(p => `'${p}'`).join(",");
       const userIds = users.map(u => `'${u}'`).join(",");
@@ -24,8 +25,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
         ? ""
         : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND user_id = '${user_id}') `;
 
-      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, duration, projectIds, userIds, archivedClause);
-      const userTimeLogs = await this.getTotalTimeLogsByUser(archived, duration, projectIds, userIds);
+      const billableQuery = this.buildBillableQuery(billable);
+
+      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, duration, projectIds, userIds, archivedClause, billableQuery);
+      const userTimeLogs = await this.getTotalTimeLogsByUser(archived, duration, projectIds, userIds, billableQuery);
 
       const format = (seconds: number) => {
         if (seconds === 0) return "-";
@@ -65,7 +68,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     return [];
   }
 
-  private static async getTotalTimeLogsByProject(archived: boolean, duration: string, projectIds: string, userIds: string, archivedClause = "") {
+  private static async getTotalTimeLogsByProject(archived: boolean, duration: string, projectIds: string, userIds: string, archivedClause = "", billableQuery = '') {
     try {
       const q = `SELECT projects.name,
                projects.color_code,
@@ -74,12 +77,12 @@ export default class ReportingAllocationController extends ReportingControllerBa
                sps.icon AS status_icon,
                (SELECT COUNT(*)
                 FROM tasks
-                WHERE CASE WHEN ($1 IS TRUE) THEN project_id IS NOT NULL ELSE archived = FALSE END
+                WHERE CASE WHEN ($1 IS TRUE) THEN project_id IS NOT NULL ELSE archived = FALSE END ${billableQuery}
                   AND project_id = projects.id) AS all_tasks_count,
                (SELECT COUNT(*)
                 FROM tasks
                 WHERE CASE WHEN ($1 IS TRUE) THEN project_id IS NOT NULL ELSE archived = FALSE END
-                  AND project_id = projects.id
+                  AND project_id = projects.id ${billableQuery}
                   AND status_id IN (SELECT id
                                     FROM task_statuses
                                     WHERE project_id = projects.id
@@ -91,10 +94,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
                         SELECT name,
                                (SELECT COALESCE(SUM(time_spent), 0)
                                 FROM task_work_log
-                                       LEFT JOIN tasks t ON task_work_log.task_id = t.id
-                                WHERE user_id = users.id
-                                  AND CASE WHEN ($1 IS TRUE) THEN t.project_id IS NOT NULL ELSE t.archived = FALSE END
-                                  AND t.project_id = projects.id
+                                       LEFT JOIN tasks ON task_work_log.task_id = tasks.id 
+                                WHERE user_id = users.id ${billableQuery}
+                                  AND CASE WHEN ($1 IS TRUE) THEN tasks.project_id IS NOT NULL ELSE tasks.archived = FALSE END
+                                  AND tasks.project_id = projects.id
                                   ${duration}) AS time_logged
                         FROM users
                         WHERE id IN (${userIds})
@@ -113,15 +116,15 @@ export default class ReportingAllocationController extends ReportingControllerBa
     }
   }
 
-  private static async getTotalTimeLogsByUser(archived: boolean, duration: string, projectIds: string, userIds: string) {
+  private static async getTotalTimeLogsByUser(archived: boolean, duration: string, projectIds: string, userIds: string, billableQuery = "") {
     try {
       const q = `(SELECT id,
                     (SELECT COALESCE(SUM(time_spent), 0)
                     FROM task_work_log
-                            LEFT JOIN tasks t ON task_work_log.task_id = t.id
+                            LEFT JOIN tasks ON task_work_log.task_id = tasks.id ${billableQuery}
                     WHERE user_id = users.id
-                    AND CASE WHEN ($1 IS TRUE) THEN t.project_id IS NOT NULL ELSE t.archived = FALSE END
-                    AND t.project_id IN (${projectIds})
+                    AND CASE WHEN ($1 IS TRUE) THEN tasks.project_id IS NOT NULL ELSE tasks.archived = FALSE END
+                    AND tasks.project_id IN (${projectIds})
                     ${duration}) AS time_logged
                     FROM users
                     WHERE id IN (${userIds})
@@ -154,6 +157,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
   @HandleExceptions()
   public static async getAllocation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teams = (req.body.teams || []) as string[]; // ids
+    const billable = req.body.billable;
 
     const teamIds = teams.map(id => `'${id}'`).join(",");
     const projectIds = (req.body.projects || []) as string[];
@@ -164,7 +168,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const users = await this.getUserIds(teamIds);
     const userIds = users.map((u: any) => u.id);
 
-    const { projectTimeLogs, userTimeLogs } = await this.getTimeLoggedByProjects(projectIds, userIds, req.body.duration, req.body.date_range, (req.query.archived === "true"), req.user?.id);
+    const { projectTimeLogs, userTimeLogs } = await this.getTimeLoggedByProjects(projectIds, userIds, req.body.duration, req.body.date_range, (req.query.archived === "true"), req.user?.id, billable);
 
     for (const [i, user] of users.entries()) {
       user.total_time = userTimeLogs[i].time_logged;
@@ -184,6 +188,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
   public static async export(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     const teams = (req.query.teams as string)?.split(",");
     const teamIds = teams.map(t => `'${t}'`).join(",");
+    const billable = req.body.billable ? req.body.billable : { billable: req.query.billable === "true", nonBillable: req.query.nonBillable === "true" };
 
     const projectIds = (req.query.projects as string)?.split(",");
 
@@ -218,7 +223,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const users = await this.getUserIds(teamIds);
     const userIds = users.map((u: any) => u.id);
 
-    const { projectTimeLogs, userTimeLogs } = await this.getTimeLoggedByProjects(projectIds, userIds, duration as string, dateRange, (req.query.include_archived === "true"), req.user?.id);
+    const { projectTimeLogs, userTimeLogs } = await this.getTimeLoggedByProjects(projectIds, userIds, duration as string, dateRange, (req.query.include_archived === "true"), req.user?.id, billable);
 
     for (const [i, user] of users.entries()) {
       user.total_time = userTimeLogs[i].time_logged;
@@ -341,6 +346,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const projects = (req.body.projects || []) as string[];
     const projectIds = projects.map(p => `'${p}'`).join(",");
 
+    const billable = req.body.billable;
+
     if (!teamIds || !projectIds.length)
       return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
 
@@ -352,6 +359,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
+    const billableQuery = this.buildBillableQuery(billable);
+
     const q = `
         SELECT p.id,
             p.name,
@@ -359,8 +368,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
             SUM(total_minutes) AS estimated,
             color_code
         FROM projects p
-                LEFT JOIN tasks t ON t.project_id = p.id
-                LEFT JOIN task_work_log ON task_work_log.task_id = t.id
+                LEFT JOIN tasks ON tasks.project_id = p.id ${billableQuery}
+                LEFT JOIN task_work_log ON task_work_log.task_id = tasks.id
         WHERE p.id IN (${projectIds}) ${durationClause} ${archivedClause}
         GROUP BY p.id, p.name
         ORDER BY logged_time DESC;`;
@@ -372,7 +381,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       project.value = project.logged_time ? parseFloat(moment.duration(project.logged_time, "seconds").asHours().toFixed(2)) : 0;
       project.estimated_value = project.estimated ? parseFloat(moment.duration(project.estimated, "minutes").asHours().toFixed(2)) : 0;
 
-      if (project.value > 0 ) {
+      if (project.value > 0) {
         data.push(project);
       }
 
@@ -392,6 +401,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const projects = (req.body.projects || []) as string[];
     const projectIds = projects.map(p => `'${p}'`).join(",");
 
+    const billable = req.body.billable;
+
     if (!teamIds || !projectIds.length)
       return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
 
@@ -402,12 +413,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
+    const billableQuery = this.buildBillableQuery(billable);
+
     const q = `
         SELECT tmiv.email, tmiv.name, SUM(time_spent) AS logged_time
             FROM team_member_info_view tmiv
                     LEFT JOIN task_work_log ON task_work_log.user_id = tmiv.user_id
-                    LEFT JOIN tasks t ON t.id = task_work_log.task_id
-                    LEFT JOIN projects p ON p.id = t.project_id AND p.team_id = tmiv.team_id
+                    LEFT JOIN tasks ON tasks.id = task_work_log.task_id ${billableQuery}
+                    LEFT JOIN projects p ON p.id = tasks.project_id AND p.team_id = tmiv.team_id
             WHERE p.id IN (${projectIds})
             ${durationClause} ${archivedClause}
             GROUP BY tmiv.email, tmiv.name
@@ -422,7 +435,64 @@ export default class ReportingAllocationController extends ReportingControllerBa
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
+  @HandleExceptions()
+  public static async exportTest(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+
+    const archived = req.query.archived === "true";
+    const teamId = this.getCurrentTeamId(req);
+    const { duration, date_range } = req.query;
+
+    const durationClause = this.getDateRangeClause(duration as string || DATE_RANGES.LAST_WEEK, date_range as string[]);
+
+    const archivedClause = archived
+      ? ""
+      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
+
+    const q = `
+        SELECT p.id,
+            p.name,
+            (SELECT SUM(time_spent)) AS logged_time,
+            SUM(total_minutes) AS estimated,
+            color_code
+        FROM projects p
+                LEFT JOIN tasks t ON t.project_id = p.id
+                LEFT JOIN task_work_log ON task_work_log.task_id = t.id
+        WHERE in_organization(p.team_id, $1)
+        ${durationClause} ${archivedClause}
+        GROUP BY p.id, p.name
+        ORDER BY p.name ASC;`;
+    const result = await db.query(q, [teamId]);
+
+    const labelsX = [];
+    const dataX = [];
+
+    for (const project of result.rows) {
+      project.value = project.logged_time ? parseFloat(moment.duration(project.logged_time, "seconds").asHours().toFixed(2)) : 0;
+      project.estimated_value = project.estimated ? parseFloat(moment.duration(project.estimated, "minutes").asHours().toFixed(2)) : 0;
+      labelsX.push(project.name);
+      dataX.push(project.value || 0);
+    }
+
+    const chart = new ChartJsImage();
+    chart.setConfig({
+      type: "bar",
+      data: {
+        labels: labelsX,
+        datasets: [
+          { label: "", data: dataX }
+        ]
+      },
+    });
+    chart.setWidth(1920).setHeight(1080).setBackgroundColor("transparent");
+    const url = chart.getUrl();
+    chart.toFile("test.png");
+    return res.status(200).send(new ServerResponse(true, url));
+  }
+
   private static getEstimated(project: any, type: string) {
+    // if (project.estimated_man_days === 0 || project.estimated_working_days === 0) {
+    //     return (parseFloat(moment.duration(project.estimated, "minutes").asHours().toFixed(2)) / int(project.hours_per_day)).toFixed(2)
+    // }
 
     switch (type) {
       case IToggleOptions.MAN_DAYS:
@@ -445,7 +515,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const projects = (req.body.projects || []) as string[];
     const projectIds = projects.map(p => `'${p}'`).join(",");
-    const { type } = req.body;
+    const { type, billable } = req.body;
 
     if (!teamIds || !projectIds.length)
       return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
@@ -457,6 +527,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const archivedClause = archived
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
+
+    const billableQuery = this.buildBillableQuery(billable);
 
     const q = `
         SELECT p.id,
@@ -471,8 +543,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
             WHERE project_id = p.id) AS estimated,
             color_code
         FROM projects p
-                LEFT JOIN tasks t ON t.project_id = p.id
-                LEFT JOIN task_work_log ON task_work_log.task_id = t.id
+                LEFT JOIN tasks ON tasks.project_id = p.id ${billableQuery}
+                LEFT JOIN task_work_log ON task_work_log.task_id = tasks.id
         WHERE p.id IN (${projectIds}) ${durationClause} ${archivedClause}
         GROUP BY p.id, p.name
         ORDER BY logged_time DESC;`;
@@ -491,7 +563,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       project.estimated_working_days = project.estimated_working_days ?? 0;
       project.hours_per_day = project.hours_per_day ?? 0;
 
-      if (project.value > 0 || project.estimated_value > 0 ) {
+      if (project.value > 0 || project.estimated_value > 0) {
         data.push(project);
       }
 

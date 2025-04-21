@@ -95,8 +95,7 @@ function onListening() {
     ? `pipe ${addr}`
     : `port ${addr.port}`;
 
-  startCronJobs();
-  // TODO - uncomment initRedis()
+  process.env.ENABLE_EMAIL_CRONJOBS === "true" && startCronJobs();
   // void initRedis();
   FileConstants.init();
   void DbTaskStatusChangeListener.connect();

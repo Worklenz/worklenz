@@ -1,0 +1,44 @@
+{
+  "includeArchivedProjects": "Incluir Projetos Arquivados",
+  "export": "Exportar",
+  "timeSheet": "Folha de Tempo",
+
+  "searchByName": "Pesquisar por nome",
+  "selectAll": "Selecionar Todos",
+  "teams": "Equipes",
+
+  "searchByProject": "Pesquisar por nome do projeto",
+  "projects": "Projetos",
+
+  "searchByCategory": "Pesquisar por nome da categoria",
+  "categories": "Categorias",
+
+  "billable": "Cobrável",
+  "nonBillable": "Não Cobrável",
+
+  "total": "Total",
+
+  "projectsTimeSheet": "Folha de Tempo dos Projetos",
+
+  "loggedTime": "Tempo Registrado (horas)",
+
+  "exportToExcel": "Exportar para Excel",
+  "logged": "registrado",
+  "for": "para",
+
+  "membersTimeSheet": "Folha de Tempo dos Membros",
+  "member": "Membro",
+
+  "estimatedVsActual": "Estimado vs Real",
+  "workingDays": "Dias de Trabalho",
+  "manDays": "Dias-Homem",
+  "days": "Dias",
+  "estimatedDays": "Dias Estimados",
+  "actualDays": "Dias Reais",
+
+  "noCategories": "Nenhuma categoria encontrada",
+  "noCategory": "Nenhuma Categoria",
+  "noProjects": "Nenhum projeto encontrado",
+  "noTeams": "Nenhum time encontrado",
+  "noData": "Nenhum dado encontrado"
+}

@@ -1,0 +1,78 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "Escribe tu tarea",
+    "deleteTask": "Eliminar tarea"
+  },
+  "taskInfoTab": {
+    "title": "Información",
+    "details": {
+      "title": "Detalles",
+      "task-key": "Clave de tarea",
+      "phase": "Fase",
+      "assignees": "Asignados",
+      "due-date": "Fecha de vencimiento",
+      "time-estimation": "Estimación de tiempo",
+      "priority": "Prioridad",
+      "labels": "Etiquetas",
+      "billable": "Facturable",
+      "notify": "Notificar",
+      "when-done-notify": "Al terminar, notificar",
+      "start-date": "Fecha de inicio",
+      "end-date": "Fecha de finalización",
+      "hide-start-date": "Ocultar fecha de inicio",
+      "show-start-date": "Mostrar fecha de inicio",
+      "hours": "Horas",
+      "minutes": "Minutos"
+    },
+    "labels": {
+      "labelInputPlaceholder": "Buscar o crear",
+      "labelsSelectorInputTip": "Pulse Enter para crear"
+    },
+    "description": {
+      "title": "Descripción",
+      "placeholder": "Añadir una descripción más detallada..."
+    },
+    "subTasks": {
+      "title": "Subtareas",
+      "addSubTask": "+ Añadir subtarea",
+      "addSubTaskInputPlaceholder": "Escribe tu tarea y pulsa enter",
+      "refreshSubTasks": "Actualizar subtareas",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "confirmDeleteSubTask": "¿Estás seguro de que quieres eliminar esta subtarea?",
+      "deleteSubTask": "Eliminar subtarea"
+    },
+    "dependencies": {
+      "title": "Dependencias",
+      "addDependency": "+ Añadir nueva dependencia",
+      "blockedBy": "Bloqueado por",
+      "searchTask": "Escribe para buscar tarea",
+      "noTasksFound": "No se encontraron tareas",
+      "confirmDeleteDependency": "¿Estás seguro de que quieres eliminar?"
+    },
+    "attachments": {
+      "title": "Adjuntos",
+      "chooseOrDropFileToUpload": "Elige o arrastra un archivo para subir",
+      "uploading": "Subiendo..."
+    },
+    "comments": {
+      "title": "Comentarios",
+      "addComment": "+ Añadir nuevo comentario",
+      "noComments": "No hay comentarios todavía. ¡Sé el primero en comentar!",
+      "delete": "Eliminar",
+      "confirmDeleteComment": "¿Estás seguro de que quieres eliminar este comentario?"
+    },
+    "searchInputPlaceholder": "Buscar por nombre",
+    "pendingInvitation": "Invitación pendiente"
+  },
+  "taskTimeLogTab": {
+    "title": "Registro de tiempo",
+    "addTimeLog": "Añadir nuevo registro de tiempo",
+    "totalLogged": "Total registrado",
+    "exportToExcel": "Exportar a Excel",
+    "noTimeLogsFound": "No se encontraron registros de tiempo"
+  },
+  "taskActivityLogTab": {
+    "title": "Registro de actividad"
+  }
+} 

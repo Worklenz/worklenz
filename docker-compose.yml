@@ -1,83 +1,123 @@
 services:
   frontend:
-    image: ghcr.io/worklenz/worklenz-frontend
-    build:
-      context: ./worklenz-frontend
-      dockerfile: Dockerfile
+    image: docker.io/chamikajaycey/worklenz-frontend:latest
     container_name: worklenz_frontend
     ports:
-      - "4200:4200"
+      - "5000:5000"
     depends_on:
       backend:
         condition: service_started
     networks:
-      - worklenz    
+      - worklenz
 
   backend:
-    image: ghcr.io/worklenz/worklenz-backend
-    build:
-      context: ./worklenz-backend
-      dockerfile: Dockerfile
+    image: docker.io/chamikajaycey/worklenz-backend:latest
     container_name: worklenz_backend
     ports:
       - "3000:3000"
     depends_on:
       db:
         condition: service_healthy
+      minio:
+        condition: service_started
     environment:
-      - ANGULAR_DIST_DIR
-      - ANGULAR_SRC_DIR
-      - AWS_REGION
+      - AWS_REGION=${AWS_REGION:-us-east-1}
       - BACKEND_PUBLIC_DIR
       - BACKEND_VIEWS_DIR
       - COMMIT_BUILD_IMMEDIATELY
       - COOKIE_SECRET
-      - DB_HOST
+      - DB_HOST=${DB_HOST:-db}
       - DB_MAX_CLIENTS
-      - DB_NAME
-      - DB_PASSWORD
-      - DB_PORT
-      - DB_USER
+      - DB_NAME=${DB_NAME:-worklenz_db}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
       - GOOGLE_CALLBACK_URL
       - GOOGLE_CLIENT_ID
       - GOOGLE_CLIENT_SECRET
       - HOSTNAME
       - LOGIN_FAILURE_REDIRECT
-      - NODE_ENV
-      - PORT
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${PORT:-3000}
       - SESSION_NAME
       - SESSION_SECRET
       - SLACK_WEBHOOK
       - SOCKET_IO_CORS
       - SOURCE_EMAIL
       - USE_PG_NATIVE
-      - BUCKET
-      - REGION
-      - S3_URL
-      - S3_ACCESS_KEY_ID
-      - S3_SECRET_ACCESS_KEY
+      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-s3}
+      - AWS_BUCKET=${BUCKET:-worklenz-bucket}
+      - AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-minioadmin}
+      - AWS_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-minioadmin}
+      - S3_URL=${S3_URL:-http://minio:9000}
     networks:
-      - worklenz  
+      - worklenz
+
+  minio:
+    image: minio/minio:latest
+    container_name: worklenz_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+    volumes:
+      - worklenz_minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - worklenz
+
+  # MinIO setup helper - creates default bucket on startup
+  createbuckets:
+    image: minio/mc
+    container_name: worklenz_createbuckets
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      # Wait for MinIO to be available
+      echo 'Waiting for MinIO to start...'
+      sleep 15;
+      # Retry up to 5 times
+      for i in 1 2 3 4 5; do
+        echo \"Attempt $$i to connect to MinIO...\"
+        if /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin; then
+          echo \"Successfully connected to MinIO!\"
+          /usr/bin/mc mb --ignore-existing myminio/worklenz-bucket;
+          /usr/bin/mc policy set public myminio/worklenz-bucket;
+          exit 0;
+        fi
+        echo \"Connection failed, retrying in 5 seconds...\"
+        sleep 5;
+      done
+      echo \"Failed to connect to MinIO after 5 attempts\"
+      exit 1;
+      "
+    networks:
+      - worklenz
 
   db:
     image: postgres:15
     container_name: worklenz_db
     environment:
-      POSTGRES_DB: "${DB_NAME}"
-      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_DB: ${DB_NAME:-worklenz_db}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d ${DB_NAME} -U ${DB_USER}"]
+      test: [ "CMD-SHELL", "pg_isready -d ${DB_NAME:-worklenz_db} -U ${DB_USER:-postgres}" ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - worklenz  
+      - worklenz
     volumes:
       - worklenz_postgres_data:/var/lib/postgresql/data
       - ./worklenz-backend/database/:/docker-entrypoint-initdb.d
 
 volumes:
   worklenz_postgres_data:
+  worklenz_minio_data:
 
 networks:
   worklenz:

@@ -1,0 +1,44 @@
+.table-header {
+  border-bottom: 1px solid #d9d9d9;
+  /* Border below header */
+}
+
+.table-body {
+  background-color: #ffffff;
+  /* White background for body */
+}
+
+.table-row {
+  display: flex;
+  /* Use flexbox for row layout */
+  align-items: center;
+  /* Center items vertically */
+  transition: background-color 0.2s;
+  /* Smooth background transition */
+}
+
+.table-row:hover {
+  background-color: #f5f5f5;
+  /* Light gray background on hover */
+}
+
+/* Optional: Add styles for sticky headers */
+.table-header > div {
+  position: sticky;
+  /* Make header cells sticky */
+  top: 0;
+  /* Stick to the top */
+  z-index: 1;
+  /* Ensure it stays above other content */
+}
+
+/* Optional: Add styles for cell borders */
+.table-row > div {
+  border-right: 1px solid #d9d9d9;
+  /* Right border for cells */
+}
+
+.table-row > div:last-child {
+  border-right: none;
+  /* Remove right border for last cell */
+}

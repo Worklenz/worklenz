@@ -195,7 +195,7 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
         pc.created_at,
         pc.updated_at
       FROM project_comments pc
-      WHERE pc.project_id = $1 ORDER BY pc.updated_at DESC
+      WHERE pc.project_id = $1 ORDER BY pc.updated_at
     `;
     const result = await db.query(q, [req.params.id]);
 
