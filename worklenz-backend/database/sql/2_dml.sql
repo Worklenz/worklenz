@@ -129,7 +129,7 @@ SELECT sys_insert_task_status_categories();
 SELECT sys_insert_project_statuses();
 SELECT sys_insert_project_healths();
 SELECT sys_insert_license_types();
-SELECT sys_insert_project_templates();
+-- SELECT sys_insert_project_templates();
 
 DROP FUNCTION sys_insert_task_priorities();
 DROP FUNCTION sys_insert_project_access_levels();
@@ -137,7 +137,7 @@ DROP FUNCTION sys_insert_task_status_categories();
 DROP FUNCTION sys_insert_project_statuses();
 DROP FUNCTION sys_insert_project_healths();
 DROP FUNCTION sys_insert_license_types();
-DROP FUNCTION sys_insert_project_templates();
+-- DROP FUNCTION sys_insert_project_templates();
 
 INSERT INTO timezones (name, abbrev, utc_offset)
 SELECT name, abbrev, utc_offset
