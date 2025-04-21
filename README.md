@@ -1,6 +1,31 @@
-# Worklenz
+<h1 align="center">
+    <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
+        <img src="https://app.worklenz.com/assets/icons/icon-144x144.png" alt="Worklenz Logo" width="75">
+    </a>
+    <br>
+    Worklenz    
+</h1>
 
-Worklenz is an open-source project management platform designed to help teams collaborate efficiently on tasks and projects.
+<p align="center">
+    <a href="https://worklenz.com/task-management/">Task Management</a> |
+    <a href="https://worklenz.com/time-tracking/">Time Tracking</a> |
+    <a href="https://worklenz.com/analytics/">Analytics</a> |
+    <a href="https://worklenz.com/resource-management/">Resource Management</a> |
+    <a href="https://worklenz.com/templates/">Project Templates</a>
+</p>
+
+<p align="center">
+    <a href="https://worklenz.com" target="_blank">
+      <img
+        src="https://worklenz.s3.amazonaws.com/assets/screenshots/hero-view.png"
+        alt="Worklenz"
+        width="1200"
+      />
+    </a>
+</p>
+
+Worklenz is a project management tool designed to help organizations improve their efficiency. It provides a
+comprehensive solution for managing projects, tasks, and collaboration within teams.
 
 ## Features
 
@@ -166,35 +191,6 @@ Email [your-security-email@example.com](mailto:your-security-email@example.com) 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
-<h1 align="center">
-    <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
-        <img src="https://app.worklenz.com/assets/icons/icon-144x144.png" alt="Worklenz Logo" width="75">
-    </a>
-    <br>
-    Worklenz    
-</h1>
-
-<p align="center">
-    <a href="https://worklenz.com/task-management/">Task Management</a> |
-    <a href="https://worklenz.com/time-tracking/">Time Tracking</a> |
-    <a href="https://worklenz.com/analytics/">Analytics</a> |
-    <a href="https://worklenz.com/resource-management/">Resource Management</a> |
-    <a href="https://worklenz.com/templates/">Project Templates</a>
-</p>
-
-<p align="center">
-    <a href="https://worklenz.com" target="_blank">
-      <img
-        src="https://worklenz.s3.amazonaws.com/assets/screenshots/hero-view.png"
-        alt="Worklenz"
-        width="1200"
-      />
-    </a>
-</p>
-
-Worklenz is a project management tool designed to help organizations improve their efficiency. It provides a
-comprehensive solution for managing projects, tasks, and collaboration within teams.
 
 ## Screenshots
 
