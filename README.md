@@ -62,7 +62,7 @@ These instructions will help you set up and run the Worklenz project on your loc
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/worklenz.git
+git clone https://github.com/Worklenz/worklenz.git
 cd worklenz
 ```
 
@@ -124,7 +124,7 @@ The project includes a fully configured Docker setup with:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/worklenz.git
+git clone https://github.com/Worklenz/worklenz.git
 cd worklenz
 ```
 
@@ -272,8 +272,8 @@ The project includes a fully configured Docker setup with:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/worklenz-react-v1.git
-cd worklenz-react-v1
+git clone https://github.com/Worklenz/worklenz.git
+cd worklenz
 ```
 
 2. Start the Docker containers (choose one option):
