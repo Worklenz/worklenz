@@ -47,6 +47,11 @@ import { on_gannt_drag_change } from "./commands/on_gannt_drag_change";
 import { on_schedule_member_start_date_change } from "./commands/on_schedule_member_start_date_change";
 import { on_schedule_member_end_date_change } from "./commands/on_schedule_member_end_date_change";
 import { on_schedule_member_allocation_create } from "./commands/on_schedule_member_allocation_create";
+import { on_task_billable_change } from "./commands/on-task-billable-change";
+import { on_task_recurring_change } from "./commands/on-task-recurring-change";
+import { on_task_assignees_change } from "./commands/on-task-assignees-change";
+import { on_task_custom_column_update } from "./commands/on_custom_column_update";
+import { on_custom_column_pinned_change } from "./commands/on_custom_column_pinned_change";
 
 export function register(io: any, socket: Socket) {
   log(socket.id, "client registered");
@@ -96,7 +101,12 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.SCHEDULE_MEMBER_ALLOCATION_CREATE.toString(), data => on_schedule_member_allocation_create(io, socket, data));
   socket.on(SocketEvents.SCHEDULE_MEMBER_START_DATE_CHANGE.toString(), data => on_schedule_member_start_date_change(io, socket, data));
   socket.on(SocketEvents.SCHEDULE_MEMBER_END_DATE_CHANGE.toString(), data => on_schedule_member_end_date_change(io, socket, data));
-
+  socket.on(SocketEvents.TASK_BILLABLE_CHANGE.toString(), data => on_task_billable_change(io, socket, data));
+  socket.on(SocketEvents.TASK_RECURRING_CHANGE.toString(), data => on_task_recurring_change(io, socket, data));
+  socket.on(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), data => on_task_assignees_change(io, socket, data));
+  socket.on(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), data => on_task_custom_column_update(io, socket, data));
+  socket.on(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), data => on_custom_column_pinned_change(io, socket, data));
+  
   // socket.io built-in event
   socket.on("disconnect", (reason) => on_disconnect(io, socket, reason));
 }

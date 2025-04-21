@@ -1,0 +1,36 @@
+[
+  {
+    "id": "13f7723b-5927-4874-a258-2b7db7ad352f",
+    "name": "123321",
+    "tasks": [
+      { "name": "Budget Planning", "total_minutes": 0 },
+      { "name": "Financial Reporting", "total_minutes": 0 },
+      { "name": "Vendor and Supplier Management", "total_minutes": 0 },
+      { "name": "Invoice Management", "total_minutes": 0 },
+      { "name": "Expense Approval Workflow", "total_minutes": 0 },
+      { "name": "Tax Planning and Compliance", "total_minutes": 0 },
+      { "name": "Budget Monitoring", "total_minutes": 0 },
+      { "name": "Expense Tracking", "total_minutes": 0 },
+      { "name": "Inventory Management", "total_minutes": 0 },
+      { "name": "Pricing Optimization", "total_minutes": 0 },
+      { "name": "Customer Support", "total_minutes": 0 },
+      { "name": "Fraud Detection", "total_minutes": 0 },
+      { "name": "Search and Discovery", "total_minutes": 0 },
+      { "name": "Inventory Management", "total_minutes": 0 },
+      { "name": "Pricing Optimization", "total_minutes": 0 },
+      { "name": "Customer Support", "total_minutes": 0 },
+      { "name": "Fraud Detection", "total_minutes": 0 },
+      { "name": "Search and Discovery", "total_minutes": 0 },
+      { "name": "Inventory Management", "total_minutes": 0 },
+      { "name": "Pricing Optimization", "total_minutes": 0 },
+      { "name": "Customer Support", "total_minutes": 0 },
+      { "name": "Fraud Detection", "total_minutes": 0 },
+      { "name": "Search and Discovery", "total_minutes": 0 },
+      { "name": "Inventory Management", "total_minutes": 0 },
+      { "name": "Pricing Optimization", "total_minutes": 0 },
+      { "name": "Customer Support", "total_minutes": 0 },
+      { "name": "Fraud Detection", "total_minutes": 0 },
+      { "name": "Search and Discovery", "total_minutes": 0 }
+    ]
+  }
+]

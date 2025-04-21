@@ -13,5 +13,6 @@ taskWorkLogApiRouter.get("/task/:id", idParamValidator, safeControllerFunction(T
 taskWorkLogApiRouter.get("/export/:id", idParamValidator, safeControllerFunction(TaskWorklogController.exportLog));
 taskWorkLogApiRouter.put("/:id", taskTimeLogValidator, idParamValidator, safeControllerFunction(TaskWorklogController.update));
 taskWorkLogApiRouter.delete("/:id", idParamValidator, safeControllerFunction(TaskWorklogController.deleteById));
+taskWorkLogApiRouter.get("/running-timers", safeControllerFunction(TaskWorklogController.getAllRunningTimers));
 
 export default taskWorkLogApiRouter;

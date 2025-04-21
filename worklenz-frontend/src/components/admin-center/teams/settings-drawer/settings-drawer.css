@@ -1,0 +1,4 @@
+.setting-team-table .ant-table-thead > tr > th,
+.setting-team-table .ant-table-tbody > tr > td {
+  padding: 12px 10px !important;
+}

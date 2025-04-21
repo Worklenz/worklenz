@@ -12,7 +12,7 @@ export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: Ne
     return res.status(200).send(new ServerResponse(false, null, "Email addresses cannot be empty"));
 
   for (const email of emails) {
-    if (!isValidateEmail(email))
+    if (!isValidateEmail(email.trim()))
       return res.status(200).send(new ServerResponse(false, null, "Invalid email address"));
   }
 

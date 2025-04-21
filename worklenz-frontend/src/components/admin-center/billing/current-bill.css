@@ -1,0 +1,12 @@
+.current-billing .ant-card-head-wrapper {
+  padding: 16px 0;
+}
+
+.current-billing .ant-progress-inner {
+  width: 75px !important;
+  height: 75px !important;
+}
+
+:where(.css-dev-only-do-not-override-ezht69).ant-modal .ant-modal-footer {
+  margin-top: 0 !important;
+}

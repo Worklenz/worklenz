@@ -12,6 +12,7 @@ import { NotificationsService } from "../services/notifications/notifications.se
 import { IPassportSession } from "../interfaces/passport-session";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
+import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
 
 export default class ProjectsController extends WorklenzControllerBase {
 
@@ -61,6 +62,16 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    if (req.user?.subscription_status === "free" && req.user?.owner_id) {
+      const limits = await getFreePlanSettings();
+      const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
+      const projectsLimit = parseInt(limits.projects_limit);
+
+      if (parseInt(projectsCount) >= projectsLimit) {
+        return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot have more than ${projectsLimit} projects.`));
+      }
+    }
+    
     const q = `SELECT create_project($1) AS project`;
 
     req.body.team_id = req.user?.team_id || null;
@@ -689,13 +700,57 @@ export default class ProjectsController extends WorklenzControllerBase {
   public static async toggleArchiveAll(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `SELECT toggle_archive_all_projects($1);`;
     const result = await db.query(q, [req.params.id]);
-    return res.status(200).send(new ServerResponse(true, result.rows || []));
+    const [data] = result.rows;
+    return res.status(200).send(new ServerResponse(true, data.toggle_archive_all_projects || []));
   }
 
   public static async getProjectManager(projectId: string) {
     const q =  `SELECT team_member_id FROM project_members WHERE project_id = $1 AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')`;
     const result = await db.query(q, [projectId]);
     return result.rows || [];
+  }
+
+  public static async updateExistPhaseColors() {
+    const q = `SELECT id, name FROM project_phases`;
+    const phases = await db.query(q);
+
+    phases.rows.forEach((phase) => {
+      phase.color_code = getColor(phase.name);
+    });
+
+    const body = {
+      phases: phases.rows
+    };
+
+    const q2 = `SELECT update_existing_phase_colors($1)`;
+    await db.query(q2, [JSON.stringify(body)]);
+
+  }
+
+  public static async updateExistSortOrder() {
+    const q = `SELECT id, project_id FROM project_phases ORDER BY name`;
+    const phases = await db.query(q);
+
+    const sortNumbers: any = {};
+
+    phases.rows.forEach(phase => {
+        const projectId = phase.project_id;
+
+        if (!sortNumbers[projectId]) {
+            sortNumbers[projectId] = 0;
+        }
+
+        phase.sort_number = sortNumbers[projectId]++;
+    });
+
+    const body = {
+      phases: phases.rows
+    };
+
+    const q2 = `SELECT update_existing_phase_sort_order($1)`;
+    await db.query(q2, [JSON.stringify(body)]);
+    // return phases;
+
   }
 
 }

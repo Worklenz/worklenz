@@ -5,7 +5,7 @@ import {IWorkLenzResponse} from "../interfaces/worklenz-response";
 
 import db from "../config/db";
 import {ServerResponse} from "../models/server-response";
-import {PriorityColorCodes, TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA} from "../shared/constants";
+import {PriorityColorCodes, PriorityColorCodesDark, TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA} from "../shared/constants";
 import {getColor} from "../shared/utils";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
@@ -33,6 +33,7 @@ export default class SubTasksController extends WorklenzControllerBase {
               (ts.name) AS status_name,
               TRUE AS is_sub_task,
               (tsc.color_code) AS status_color,
+              (tsc.color_code_dark) AS status_color_dark,
               (SELECT name FROM projects WHERE id = t.project_id) AS project_name,
               (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
               total_minutes,
@@ -46,11 +47,12 @@ export default class SubTasksController extends WorklenzControllerBase {
                     WHERE task_id = t.id
                     ORDER BY name) r) AS labels,
               (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
-                FROM (SELECT task_statuses.id, task_statuses.name, stsc.color_code
+                FROM (SELECT task_statuses.id, task_statuses.name, stsc.color_code, stsc.color_code_dark
                       FROM task_statuses
                               INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
                       WHERE project_id = t.project_id
-                      ORDER BY task_statuses.name) rec) AS statuses
+                      ORDER BY task_statuses.name) rec) AS statuses,
+              t.completed_at
         FROM tasks t
                 INNER JOIN task_statuses ts ON ts.id = t.status_id
                 INNER JOIN task_priorities tp ON tp.id = t.priority_id
@@ -62,6 +64,7 @@ export default class SubTasksController extends WorklenzControllerBase {
 
     for (const task of result.rows) {
       task.priority_color = PriorityColorCodes[task.priority_value] || null;
+      task.priority_color_dark = PriorityColorCodesDark[task.priority_value] || null;
 
       task.time_spent = {hours: Math.floor(task.total_minutes_spent / 60), minutes: task.total_minutes_spent % 60};
       task.time_spent_string = `${task.time_spent.hours}h ${task.time_spent.minutes}m`;
@@ -72,6 +75,7 @@ export default class SubTasksController extends WorklenzControllerBase {
       task.labels = this.createTagList(task.labels, 2);
 
       task.status_color = task.status_color + TASK_STATUS_COLOR_ALPHA;
+      task.status_color_dark = task.status_color_dark + TASK_STATUS_COLOR_ALPHA;
       task.priority_color = task.priority_color + TASK_PRIORITY_COLOR_ALPHA;
     }
 

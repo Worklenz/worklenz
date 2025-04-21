@@ -1,0 +1,16 @@
+.project-table-row .row-buttons {
+  visibility: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.project-table-row:hover .project-names,
+.project-table-row:hover .project-team,
+.project-table-row:hover .project-member-count,
+.project-table-row:hover .project-created-at {
+  color: #0d6efd;
+}
+
+.project-table-row:hover .row-buttons {
+  visibility: visible;
+}

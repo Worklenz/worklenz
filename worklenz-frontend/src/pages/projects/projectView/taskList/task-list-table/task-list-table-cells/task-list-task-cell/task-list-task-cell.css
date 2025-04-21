@@ -1,0 +1,13 @@
+.open-task-button {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.task-row:hover .open-task-button {
+  opacity: 1;
+}
+
+.edit-mode-cell {
+  position: relative;
+  z-index: 1;
+}

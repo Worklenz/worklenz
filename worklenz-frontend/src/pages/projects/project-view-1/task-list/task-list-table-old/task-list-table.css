@@ -1,0 +1,19 @@
+.tasks-table {
+  width: max-content;
+  margin-left: 3px;
+  border-right: 1px solid #f0f0f0;
+}
+
+.flex-table {
+  display: flex;
+  width: max-content;
+}
+
+.table-container {
+  overflow: auto;
+  display: flex;
+}
+
+.position-relative {
+  position: relative;
+}

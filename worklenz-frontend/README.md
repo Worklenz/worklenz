@@ -1,37 +1,95 @@
-# Worklenz
+# Worklenz - React Frontend
 
-[![Build](https://github.com/ceydigital/worklenz-frontend/actions/workflows/workflow.yml/badge.svg)](https://github.com/ceydigital/worklenz-frontend/actions/workflows/workflow.yml)
+Worklenz is a project management application built with React, TypeScript, and Ant Design. The project is bundled using [Vite](https://vitejs.dev/).
 
-[![Quality Gate Status](https://sonar.ceydigitalworld.com/api/project_badges/measure?project=Worklenz-Frontend&metric=alert_status&token=d1849c9f29e1d72dac962b76cfa9cb11b9fe28e6)](https://sonar.ceydigitalworld.com/dashboard?id=Worklenz-Frontend) [![Bugs](https://sonar.ceydigitalworld.com/api/project_badges/measure?project=Worklenz-Frontend&metric=bugs&token=d1849c9f29e1d72dac962b76cfa9cb11b9fe28e6)](https://sonar.ceydigitalworld.com/dashboard?id=Worklenz-Frontend) [![Code Smells](https://sonar.ceydigitalworld.com/api/project_badges/measure?project=Worklenz-Frontend&metric=code_smells&token=d1849c9f29e1d72dac962b76cfa9cb11b9fe28e6)](https://sonar.ceydigitalworld.com/dashboard?id=Worklenz-Frontend) [![Duplicated Lines (%)](https://sonar.ceydigitalworld.com/api/project_badges/measure?project=Worklenz-Frontend&metric=duplicated_lines_density&token=d1849c9f29e1d72dac962b76cfa9cb11b9fe28e6)](https://sonar.ceydigitalworld.com/dashboard?id=Worklenz-Frontend) [![Lines of Code](https://sonar.ceydigitalworld.com/api/project_badges/measure?project=Worklenz-Frontend&metric=ncloc&token=d1849c9f29e1d72dac962b76cfa9cb11b9fe28e6)](https://sonar.ceydigitalworld.com/dashboard?id=Worklenz-Frontend) [![Maintainability Rating](https://sonar.ceydigitalworld.com/api/project_badges/measure?project=Worklenz-Frontend&metric=sqale_rating&token=d1849c9f29e1d72dac962b76cfa9cb11b9fe28e6)](https://sonar.ceydigitalworld.com/dashboard?id=Worklenz-Frontend)
+## Table of Contents
+- [Getting Started](#getting-started)
+- [Available Scripts](#available-scripts)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [Learn More](#learn-more)
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 13.1.1.
+## Getting Started
 
-## Development server
+To get started with the project, follow these steps:
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/Worklenz/worklenz.git
+   ```
+2. **Navigate to the project directory**:
+   ```bash
+   cd worklenz/worklenz-frontend
+   ```
+3. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+4. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
+5. Open [http://localhost:5000](http://localhost:5000) in your browser to view the application.
 
-## Code scaffolding
+## Available Scripts
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+In the project directory, you can run:
 
-## Build
+### `npm run dev`
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+Runs the app in the development mode.\
+Open [http://localhost:5000](http://localhost:5000) to view it in the browser.
 
-## Running unit tests
+The page will reload if you make edits.\
+You will also see any lint errors in the console.
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+### `npm run build`
 
-## Running end-to-end tests
+Builds the app for production to the `dist` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
-## Further help
+### `npm run preview`
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Serves the production build locally for testing.\
+Open [http://localhost:4173](http://localhost:4173) to preview the build.
 
-## References
-- https://pro.ant.design/
-- https://ant.design/components/overview/
-- https://fontawesome.com/v5.15/icons?d=gallery&p=2&m=free
-- https://feathericons.com/
+## Project Structure
+
+The project is organized around a feature-based structure:
+
+```
+src/
+├── components/        # Reusable UI components
+├── hooks/             # Custom React hooks
+├── lib/               # Feature-specific logic
+├── pages/             # Route components
+├── services/          # API services
+├── shared/            # Shared utilities, constants, and types
+├── store/             # Global state management
+├── types/             # TypeScript type definitions
+├── utils/             # Utility functions
+├── App.tsx            # Main application component
+└── main.tsx           # Application entry point
+```
+
+## Contributing
+
+Contributions are welcome! If you'd like to contribute, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/YourFeatureName`).
+3. Commit your changes (`git commit -m 'Add some feature'`).
+4. Push to the branch (`git push origin feature/YourFeatureName`).
+5. Open a pull request.
+
+## Learn More
+
+To learn more about the technologies used in this project:
+
+- [React Documentation](https://react.dev/)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+- [Ant Design Documentation](https://ant.design/docs/react/introduce)
+- [Vite Documentation](https://vitejs.dev/guide/)

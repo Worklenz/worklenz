@@ -1,0 +1,13 @@
+[data-theme="dark"] {
+  --border-color: 1px solid black;
+}
+
+[data-theme="default"] {
+  --border-color: 1px solid #dee2e6;
+}
+
+.custom-dropdown-menu .ant-dropdown-menu {
+  box-shadow: none !important;
+  border-top: var(--border-color) !important;
+  border-bottom: var(--border-color) !important;
+}

@@ -6,9 +6,9 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import db from "../config/db";
 
 import { ServerResponse } from "../models/server-response";
-import { TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
+import { S3_URL, TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
 import { getDates, getMinMaxOfTaskDates, getMonthRange, getWeekRange } from "../shared/tasks-controller-utils";
-import { getColor, getRandomColorCode, log_error, toMinutes } from "../shared/utils";
+import { getColor, getRandomColorCode, humanFileSize, log_error, toMinutes } from "../shared/utils";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
@@ -18,9 +18,9 @@ import TasksControllerV2 from "./tasks-controller-v2";
 import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import TasksControllerBase from "./tasks-controller-base";
-import { insertToActivityLogs, logStatusChange } from "../services/activity-logs/activity-logs.service";
-import { forEach } from "lodash";
+import { insertToActivityLogs } from "../services/activity-logs/activity-logs.service";
 import { IActivityLog } from "../services/activity-logs/interfaces";
+import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 
 export default class TasksController extends TasksControllerBase {
   private static notifyProjectUpdates(socketId: string, projectId: string) {
@@ -29,13 +29,53 @@ export default class TasksController extends TasksControllerBase {
       .emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
   }
 
+  public static async uploadAttachment(attachments: any, teamId: string, userId: string) {
+    try {
+      const promises = attachments.map(async (attachment: any) => {
+        const { file, file_name, project_id, size } = attachment;
+        const type = file_name.split(".").pop();
+
+        const q = `
+        INSERT INTO task_attachments (name, task_id, team_id, project_id, uploaded_by, size, type)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id, name, size, type, created_at, CONCAT($8::TEXT, '/', team_id, '/', project_id, '/', id, '.', type) AS url;
+      `;
+
+        const result = await db.query(q, [
+          file_name,
+          null,
+          teamId,
+          project_id,
+          userId,
+          size,
+          type,
+          `${S3_URL}/${getRootDir()}`
+        ]);
+
+        const [data] = result.rows;
+        await uploadBase64(file, getKey(teamId, project_id, data.id, data.type));
+        return data.id;
+      });
+
+      const attachmentIds = await Promise.all(promises);
+      return attachmentIds;
+    } catch (error) {
+      log_error(error);
+    }
+  }
+
   @HandleExceptions()
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const userId = req.user?.id as string;
+    const teamId = req.user?.team_id as string;
+
+    if (req.body.attachments_raw) {
+      req.body.attachments = await this.uploadAttachment(req.body.attachments_raw, teamId, userId);
+    }
+
     const q = `SELECT create_task($1) AS task;`;
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;
-
-    const userId = req.user?.id as string;
 
     for (const member of data?.task.assignees || []) {
       NotificationsService.createTaskUpdate(
@@ -468,7 +508,7 @@ export default class TasksController extends TasksControllerBase {
 
     TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
 
-    return res.status(200).send(new ServerResponse(true, data));
+    return res.status(200).send(new ServerResponse(true, { failed_tasks: data.task }));
   }
 
   @HandleExceptions()

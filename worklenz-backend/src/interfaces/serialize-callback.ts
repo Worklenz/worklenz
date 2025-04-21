@@ -1,3 +1,3 @@
 export interface ISerializeCallback {
-  (error: string | null, id: string | null): void;
+  (error: string | null, user: { id: string | null } | null): void;
 }

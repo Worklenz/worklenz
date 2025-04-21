@@ -1,0 +1,35 @@
+{
+  "searchByNamePlaceholder": "Search by name",
+  "searchByCategoryPlaceholder": "Search by category",
+
+  "statusText": "Status",
+  "healthText": "Health",
+  "categoryText": "Category",
+  "projectManagerText": "Project Manager",
+  "showFieldsText": "Show fields",
+
+  "cancelledText": "Cancelled",
+  "blockedText": "Blocked",
+  "onHoldText": "On Hold",
+  "proposedText": "Proposed",
+  "inPlanningText": "In Planning",
+  "inProgressText": "In Progress",
+  "completedText": "Completed",
+  "continuousText": "Continuous",
+
+  "notSetText": "NotSet",
+  "needsAttentionText": "Needs Attention",
+  "atRiskText": "At Risk",
+  "goodText": "Good",
+
+  "nameText": "Project",
+  "estimatedVsActualText": "Estimated Vs Actual",
+  "tasksProgressText": "Tasks Progress",
+  "lastActivityText": "Last Activity",
+  "datesText": "Start/End Dates",
+  "daysLeftText": "Days Left/Overdue",
+  "projectHealthText": "Project Health",
+  "projectUpdateText": "Project Update",
+  "clientText": "Client",
+  "teamText": "Team"
+}

@@ -1,0 +1,74 @@
+.bulk-actions {
+  position: fixed;
+  z-index: 2;
+  background: #252628;
+  bottom: 30px;
+  left: 0;
+  right: 0;
+  width: fit-content;
+  margin: auto;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 25px;
+  padding: 0 25px;
+  box-shadow:
+    0 0 0 1px #edeae9,
+    0 5px 20px 0 rgba(109, 110, 111, 0.08);
+  transition: transform 0.2s ease-in;
+  opacity: 0;
+  transform: translateY(200%);
+
+  .bulk-actions-inner {
+    &,
+    button,
+    nz-select {
+      color: #fff;
+    }
+  }
+
+  [nz-icon] {
+    font-size: 16px;
+  }
+
+  &.open {
+    transition: transform 0.2s ease-in;
+
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .bulk-actions-input-container {
+    position: absolute;
+    top: -40px;
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
+}
+
+.disable {
+  position: relative;
+  &:after {
+    position: absolute;
+    content: "";
+    background: #e7e7e769;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+  }
+}
+
+.li-custom * {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 5px 12px;
+}
+
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

@@ -1,0 +1,58 @@
+.task-card {
+  transition: box-shadow 0.3s ease;
+  box-shadow:
+    #edeae9 0 0 0 1px,
+    #6d6e6f14 0 1px 4px;
+}
+
+.task-card:hover {
+  box-shadow:
+    #a8a8a8 0 0 0 1px,
+    #6d6e6f14 0 1px 4px;
+}
+
+.task-card.dark-mode {
+  box-shadow:
+    #2e2e2e 0 0 0 1px,
+    #0000001a 0 1px 4px;
+}
+
+.custom-placeholder .ant-picker-input input::placeholder {
+  font-size: 12px !important;
+}
+
+.task-card:hover .empty-date {
+  opacity: 1 !important;
+}
+
+.task-card:hover .hide-add-member-avatar {
+  opacity: 0.8;
+}
+
+.custom-placeholder .ant-picker-input input {
+  font-size: 12px !important;
+}
+
+.selected-date .ant-picker-input {
+  color: #87d068;
+}
+
+.red-colored .ant-picker-input {
+  color: red;
+}
+
+.sub-selected-date .ant-picker-input {
+  color: #87d068;
+}
+
+.sub-red-colored .ant-picker-input {
+  color: red;
+}
+
+.add-member-avatar {
+  opacity: 0.8;
+}
+
+.hide-add-member-avatar {
+  opacity: 0;
+}

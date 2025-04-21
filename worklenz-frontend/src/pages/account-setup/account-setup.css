@@ -1,0 +1,150 @@
+.ant-steps-item-finish .ant-steps-item-icon {
+  border-color: #1890ff !important;
+}
+
+.ant-steps-item-icon {
+  width: 32px !important;
+  height: 32px !important;
+  margin: 0 8px 0 0 !important;
+  font-size: 16px !important;
+  line-height: 32px !important;
+  text-align: center !important;
+  border: 1px solid rgba(0, 0, 0, 0.25) !important;
+  border-radius: 32px !important;
+  transition:
+    background-color 0.3s,
+    border-color 0.3s !important;
+}
+
+.ant-steps-item-wait .ant-steps-item-icon {
+  cursor: not-allowed;
+}
+
+.dark-mode .ant-steps-item-wait .ant-steps-item-icon {
+  cursor: not-allowed;
+}
+
+.progress-steps .ant-steps-item.ant-steps-item-process .ant-steps-item-title::after {
+  background-color: #1677ff !important;
+  width: 60px !important;
+}
+
+@media (max-width: 1000px) {
+  .progress-steps {
+    width: 400px !important;
+  }
+
+  .step {
+    width: 400px !important;
+  }
+
+  .step-content {
+    width: 400px !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .progress-steps {
+    display: none !important;
+  }
+
+  .step {
+    display: none !important;
+  }
+
+  .step-content {
+    width: 200px !important;
+  }
+}
+
+@media (max-width: 1000px) {
+  .organization-name-form {
+    width: 400px !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .organization-name-form {
+    width: 200px !important;
+  }
+}
+
+.vert-text {
+  max-width: 40px;
+  background-color: #fff;
+  position: relative;
+  z-index: 99;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.vert-text-dark {
+  max-width: 40px;
+  background-color: #141414;
+  position: relative;
+  z-index: 99;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.vert-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  content: "";
+  height: 2px;
+  background-color: #00000047;
+  bottom: 0;
+  top: 0;
+  margin-bottom: auto;
+  margin-top: auto;
+}
+
+.vert-line-dark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  content: "";
+  height: 2px;
+  background-color: white;
+  bottom: 0;
+  top: 0;
+  margin-bottom: auto;
+  margin-top: auto;
+}
+
+@media (max-width: 1000px) {
+  .first-project-form {
+    width: 400px !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .first-project-form {
+    width: 200px !important;
+  }
+}
+
+.custom-close-button:hover {
+  background-color: transparent !important;
+}
+
+@media (max-width: 1000px) {
+  .create-first-task-form {
+    width: 400px !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .create-first-task-form {
+    width: 200px !important;
+  }
+}

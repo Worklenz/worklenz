@@ -1,0 +1,23 @@
+{
+  "rename": "Rename",
+  "delete": "Delete",
+  "addTask": "Add Task",
+  "addSectionButton": "Add Section",
+  "changeCategory": "Change category",
+
+  "deleteTooltip": "Delete",
+  "deleteConfirmationTitle": "Are you sure?",
+  "deleteConfirmationOk": "Yes",
+  "deleteConfirmationCancel": "Cancel",
+
+  "dueDate": "Due date",
+  "cancel": "Cancel",
+
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "assignToMe": "Assign to me",
+  "archive": "Archive",
+
+  "newTaskNamePlaceholder": "Write a task Name",
+  "newSubtaskNamePlaceholder": "Write a subtask Name"
+}

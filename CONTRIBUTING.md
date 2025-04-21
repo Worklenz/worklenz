@@ -19,7 +19,7 @@ We have adopted a Code of Conduct to ensure a welcoming and inclusive environmen
 
 ## Coding Standards
 
-- Follow the [Angular Style Guide](https://angular.io/guide/styleguide) for the frontend code.
+- Follow the [React Documentation](https://react.dev/learn) for best practices in React development.
 - Use [TypeScript](https://www.typescriptlang.org/) for both frontend and backend code.
 - Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages.
 

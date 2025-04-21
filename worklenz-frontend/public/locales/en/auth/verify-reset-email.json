@@ -1,0 +1,14 @@
+{
+  "title": "Verify Reset Email",
+  "description": "Enter your new password",
+  "placeholder": "Enter your new password",
+  "confirmPasswordPlaceholder": "Confirm your new password",
+  "passwordHint": "Minimum of 8 characters, with upper and lowercase and a number and a symbol.",
+  "resetPasswordButton": "Reset password",
+  "orText": "Or",
+  "resendResetEmail": "Resend reset email",
+  "passwordRequired": "Please enter your new password",
+  "returnToLoginButton": "Return to Login",
+  "confirmPasswordRequired": "Please confirm your new password",
+  "passwordMismatch": "The two passwords do not match"
+}

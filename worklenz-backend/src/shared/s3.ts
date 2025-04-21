@@ -9,20 +9,16 @@ import {
   S3Client
 } from "@aws-sdk/client-s3";
 import {isProduction, isTestServer, log_error} from "./utils";
+import {BUCKET, REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_URL} from "./constants";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import mime from "mime";
 
-const {BUCKET, REGION, S3_URL, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY} = process.env;
-
-if (!S3_ACCESS_KEY_ID || !S3_SECRET_ACCESS_KEY) {
-  log_error("Invalid S3_ACCESS_KEY_ID or S3_SECRET_ACCESS_KEY. Please check .env file.");
-}
 
 const s3Client = new S3Client({
   region: REGION,
   credentials: {
-    accessKeyId: S3_ACCESS_KEY_ID as string,
-    secretAccessKey: S3_SECRET_ACCESS_KEY as string,
+    accessKeyId: S3_ACCESS_KEY_ID || "",
+    secretAccessKey: S3_SECRET_ACCESS_KEY || "",
   }
 });
 
@@ -34,6 +30,10 @@ export function getRootDir() {
 
 export function getKey(teamId: string, projectId: string, attachmentId: string, type: string) {
   return path.join(getRootDir(), teamId, projectId, `${attachmentId}.${type}`).replace(/\\/g, "/");
+}
+
+export function getTaskAttachmentKey(teamId: string, projectId: string, taskId: string, commentId: string, attachmentId: string, type: string) {
+  return path.join(getRootDir(), teamId, projectId, taskId, commentId, `${attachmentId}.${type}`).replace(/\\/g, "/");
 }
 
 export function getAvatarKey(userId: string, type: string) {

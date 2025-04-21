@@ -59,7 +59,7 @@ export default class IndexController extends WorklenzControllerBase {
     if (req.user && !req.user.is_member)
       return res.redirect("/teams");
 
-    return res.redirect("/auth");
+    return res.redirect(301, "/auth");
   }
 
   public static redirectToLogin(req: IWorkLenzRequest, res: IWorkLenzResponse) {

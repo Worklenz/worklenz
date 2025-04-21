@@ -2,7 +2,8 @@ import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 
 import db from "../config/db";
-import { humanFileSize, log_error, smallId } from "../shared/utils";
+import { humanFileSize, smallId } from "../shared/utils";
+import { getStorageUrl } from "../shared/constants";
 import { ServerResponse } from "../models/server-response";
 import {
   createPresignedUrlWithClient,
@@ -12,15 +13,9 @@ import {
   getRootDir,
   uploadBase64,
   uploadBuffer
-} from "../shared/s3";
+} from "../shared/storage";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-
-const {S3_URL} = process.env;
-
-if (!S3_URL) {
-  log_error("Invalid S3_URL. Please check .env file.");
-}
 
 export default class AttachmentController extends WorklenzControllerBase {
 
@@ -42,7 +37,7 @@ export default class AttachmentController extends WorklenzControllerBase {
       req.user?.id,
       size,
       type,
-      `${S3_URL}/${getRootDir()}`
+      `${getStorageUrl()}/${getRootDir()}`
     ]);
     const [data] = result.rows;
 
@@ -86,7 +81,7 @@ export default class AttachmentController extends WorklenzControllerBase {
       FROM task_attachments
       WHERE task_id = $1;
     `;
-    const result = await db.query(q, [req.params.id, `${S3_URL}/${getRootDir()}`]);
+    const result = await db.query(q, [req.params.id, `${getStorageUrl()}/${getRootDir()}`]);
 
     for (const item of result.rows)
       item.size = humanFileSize(item.size);
@@ -121,7 +116,7 @@ export default class AttachmentController extends WorklenzControllerBase {
                             LEFT JOIN tasks t ON task_attachments.task_id = t.id
                     WHERE task_attachments.project_id = $1) rec;
     `;
-    const result = await db.query(q, [req.params.id, `${S3_URL}/${getRootDir()}`, size, offset]);
+    const result = await db.query(q, [req.params.id, `${getStorageUrl()}/${getRootDir()}`, size, offset]);
     const [data] = result.rows;
 
     for (const item of data?.attachments.data || [])
@@ -135,26 +130,29 @@ export default class AttachmentController extends WorklenzControllerBase {
     const q = `DELETE
                FROM task_attachments
                WHERE id = $1
-               RETURNING CONCAT($2::TEXT, '/', team_id, '/', project_id, '/', id, '.', type) AS key;`;
-    const result = await db.query(q, [req.params.id, getRootDir()]);
+               RETURNING team_id, project_id, id, type;`;
+    const result = await db.query(q, [req.params.id]);
     const [data] = result.rows;
 
-    if (data?.key)
-      void deleteObject(data.key);
+    if (data) {
+      const key = getKey(data.team_id, data.project_id, data.id, data.type);
+      void deleteObject(key);
+    }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()
   public static async download(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT CONCAT($2::TEXT, '/', team_id, '/', project_id, '/', id, '.', type) AS key
+    const q = `SELECT team_id, project_id, id, type
                FROM task_attachments
                WHERE id = $1;`;
-    const result = await db.query(q, [req.query.id, getRootDir()]);
+    const result = await db.query(q, [req.query.id]);
     const [data] = result.rows;
 
-    if (data?.key) {
-      const url = await createPresignedUrlWithClient(data.key, req.query.file as string);
+    if (data) {
+      const key = getKey(data.team_id, data.project_id, data.id, data.type);
+      const url = await createPresignedUrlWithClient(key, req.query.file as string);
       return res.status(200).send(new ServerResponse(true, url));
     }
 
