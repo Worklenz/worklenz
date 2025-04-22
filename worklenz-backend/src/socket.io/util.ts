@@ -15,7 +15,10 @@ export function log_error(error: any) {
 
 export function getLoggedInUserIdFromSocket(socket: Socket): string | null {
   const {session} = socket.request as ISocketSession;
-  return session?.passport?.user || null;
+  if (session?.passport?.user?.id) {
+    return session.passport.user.id;
+  }
+  return null;
 }
 
 export async function notifyProjectUpdates(socket: Socket, taskId: string) {
