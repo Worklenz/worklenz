@@ -1,5 +1,5 @@
 export interface ISocketSession {
   session?: {
-    passport?: { user?: string; }
+    passport?: { user?: { id: string } }
   }
 }
