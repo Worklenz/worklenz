@@ -69,7 +69,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!isProduction() || !origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("Blocked origin:", origin, process.env.NODE_ENV);
