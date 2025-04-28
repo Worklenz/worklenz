@@ -9,6 +9,7 @@ services:
         condition: service_started
     environment:
       - VITE_API_URL=${VITE_API_URL:-http://backend:3000}
+      - VITE_SOCKET_URL=${VITE_SOCKET_URL:-ws://backend:3000}
     networks:
       - worklenz
 
