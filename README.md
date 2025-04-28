@@ -389,3 +389,58 @@ For MinIO in production, consider:
 - Setting up proper networking and access controls
 - Using multiple MinIO instances for high availability
 
+## Docker Deployment
+
+### Local Development with Docker
+
+1. Set up the environment variables:
+   ```bash
+   ./update-docker-env.sh
+   ```
+   
+   This will create a `.env` file with default settings for local development.
+
+2. Run the application using Docker Compose:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. Access the application:
+   - Frontend: http://localhost:5000
+   - Backend API: http://localhost:3000
+
+### Remote Server Deployment
+
+When deploying to a remote server:
+
+1. Set up the environment variables with your server's hostname:
+   ```bash
+   ./update-docker-env.sh your-server-hostname
+   ```
+   
+   This ensures that the frontend correctly connects to the backend API.
+
+2. Pull and run the latest Docker images:
+   ```bash
+   docker-compose pull
+   docker-compose up -d
+   ```
+
+3. Access the application through your server's hostname:
+   - Frontend: http://your-server-hostname:5000
+   - Backend API: http://your-server-hostname:3000
+
+### Environment Configuration
+
+The Docker setup uses environment variables to configure the services:
+
+- Frontend:
+  - `VITE_API_URL`: URL of the backend API (default: http://backend:3000 for container networking)
+
+- Backend:
+  - Database connection parameters
+  - Storage configuration
+  - Other backend settings
+
+For custom configuration, edit the `.env` file or the `update-docker-env.sh` script.
+
