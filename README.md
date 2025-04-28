@@ -358,42 +358,34 @@ const s3Client = new S3Client({
 
 ### Environment Configuration
 
-The `.env` file includes the necessary configuration for using MinIO:
+The project uses the following environment file structure:
 
+- **Frontend**:
+  - `worklenz-frontend/.env.development` - Development environment variables
+  - `worklenz-frontend/.env.production` - Production build variables
+  
+- **Backend**:
+  - `worklenz-backend/.env` - Backend environment variables
+
+### Setting Up Environment Files
+
+The Docker environment script will create or overwrite all environment files:
+
+```bash
+# For HTTP/WS
+./update-docker-env.sh your-hostname
+
+# For HTTPS/WSS
+./update-docker-env.sh your-hostname true
 ```
-STORAGE_PROVIDER=s3
-AWS_REGION=us-east-1
-AWS_BUCKET=worklenz-bucket
-S3_ACCESS_KEY_ID=minioadmin
-S3_SECRET_ACCESS_KEY=minioadmin
-S3_URL=http://minio:9000
-```
 
-When the backend service starts, it will use these environment variables to connect to MinIO for file storage.
-
-## Development
-
-For development, you can use the provided Docker setup which includes all necessary dependencies. The code will be running inside containers, but you can still edit files locally and see changes reflected in real-time.
-
-## Production Deployment
-
-For production deployment:
-
-1. Update the `.env` file with production settings
-2. Build custom Docker images or use the provided ones
-3. Deploy using Docker Compose or a container orchestration platform like Kubernetes
-
-For MinIO in production, consider:
-- Setting up proper credentials (change default minioadmin/minioadmin)
-- Configuring persistent storage
-- Setting up proper networking and access controls
-- Using multiple MinIO instances for high availability
+This script generates properly configured environment files for both development and production environments.
 
 ## Docker Deployment
 
 ### Local Development with Docker
 
-1. Set up the environment variables:
+1. Set up the environment files:
    ```bash
    # For HTTP/WS
    ./update-docker-env.sh
@@ -401,8 +393,6 @@ For MinIO in production, consider:
    # For HTTPS/WSS
    ./update-docker-env.sh localhost true
    ```
-   
-   This will create a `.env` file with default settings for local development.
 
 2. Run the application using Docker Compose:
    ```bash
@@ -417,7 +407,7 @@ For MinIO in production, consider:
 
 When deploying to a remote server:
 
-1. Set up the environment variables with your server's hostname:
+1. Set up the environment files with your server's hostname:
    ```bash
    # For HTTP/WS
    ./update-docker-env.sh your-server-hostname

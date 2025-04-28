@@ -19,32 +19,108 @@ else
   WS_PREFIX="ws://"
 fi
 
-# Create or update root .env file
-cat > .env << EOL
-# Frontend Configuration
+# Create or overwrite frontend .env.development file
+mkdir -p worklenz-frontend
+cat > worklenz-frontend/.env.development << EOL
+# API Connection
+VITE_API_URL=http://localhost:3000
+VITE_SOCKET_URL=ws://localhost:3000
+
+# Application Environment
+VITE_APP_TITLE=Worklenz
+VITE_APP_ENV=development
+
+# Mixpanel
+VITE_MIXPANEL_TOKEN=
+
+# Recaptcha
+VITE_ENABLE_RECAPTCHA=false
+VITE_RECAPTCHA_SITE_KEY=
+
+# Session ID
+VITE_WORKLENZ_SESSION_ID=worklenz-session-id
+EOL
+
+# Create frontend .env.production file
+cat > worklenz-frontend/.env.production << EOL
+# API Connection
 VITE_API_URL=${HTTP_PREFIX}${HOSTNAME}:3000
 VITE_SOCKET_URL=${WS_PREFIX}${HOSTNAME}:3000
 
-# Backend Configuration
+# Application Environment
+VITE_APP_TITLE=Worklenz
+VITE_APP_ENV=production
+
+# Mixpanel
+VITE_MIXPANEL_TOKEN=
+
+# Recaptcha
+VITE_ENABLE_RECAPTCHA=false
+VITE_RECAPTCHA_SITE_KEY=
+
+# Session ID
+VITE_WORKLENZ_SESSION_ID=worklenz-session-id
+EOL
+
+# Create backend environment file
+mkdir -p worklenz-backend
+cat > worklenz-backend/.env << EOL
+# Server
+NODE_ENV=production
+PORT=3000
+SESSION_NAME=worklenz.sid
+SESSION_SECRET=change_me_in_production
+COOKIE_SECRET=change_me_in_production
+
+# CORS
+SOCKET_IO_CORS=${HTTP_PREFIX}${HOSTNAME}:5000
+SERVER_CORS=${HTTP_PREFIX}${HOSTNAME}:5000
+
+# Database
 DB_HOST=db
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=password
 DB_NAME=worklenz_db
-NODE_ENV=development
-PORT=3000
+DB_MAX_CLIENTS=50
+USE_PG_NATIVE=true
 
 # Storage Configuration
-AWS_REGION=us-east-1
 STORAGE_PROVIDER=s3
-BUCKET=worklenz-bucket
-S3_ACCESS_KEY_ID=minioadmin
-S3_SECRET_ACCESS_KEY=minioadmin
+AWS_REGION=us-east-1
+AWS_BUCKET=worklenz-bucket
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
 S3_URL=http://minio:9000
+
+# Backend Directories
+BACKEND_PUBLIC_DIR=./public
+BACKEND_VIEWS_DIR=./views
+
+# Host
+HOSTNAME=${HOSTNAME}
+FRONTEND_URL=${HTTP_PREFIX}${HOSTNAME}:5000
+
+# Email
+SOURCE_EMAIL=no-reply@example.com
+
+# Notifications
+SLACK_WEBHOOK=
+
+# Other Settings
+COMMIT_BUILD_IMMEDIATELY=true
+
+# JWT Secret
+JWT_SECRET=change_me_in_production
 EOL
 
 echo "Environment configuration updated for ${HOSTNAME} with" $([ "$USE_SSL" = "true" ] && echo "HTTPS/WSS" || echo "HTTP/WS")
+echo "Created/updated environment files:"
+echo "- worklenz-frontend/.env.development (development)"
+echo "- worklenz-frontend/.env.production (production build)"
+echo "- worklenz-backend/.env"
+echo
 echo "To run with Docker Compose, use: docker-compose up -d"
 echo
-echo "API URL: ${VITE_API_URL:-${HTTP_PREFIX}${HOSTNAME}:3000}"
-echo "Socket URL: ${VITE_SOCKET_URL:-${WS_PREFIX}${HOSTNAME}:3000}" 
+echo "Production API URL: ${HTTP_PREFIX}${HOSTNAME}:3000"
+echo "Production Socket URL: ${WS_PREFIX}${HOSTNAME}:3000" 

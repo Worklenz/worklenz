@@ -7,9 +7,8 @@ services:
     depends_on:
       backend:
         condition: service_started
-    environment:
-      - VITE_API_URL=${VITE_API_URL:-http://backend:3000}
-      - VITE_SOCKET_URL=${VITE_SOCKET_URL:-ws://backend:3000}
+    env_file:
+      - ./worklenz-frontend/.env.production
     networks:
       - worklenz
 
@@ -23,36 +22,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    environment:
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - BACKEND_PUBLIC_DIR
-      - BACKEND_VIEWS_DIR
-      - COMMIT_BUILD_IMMEDIATELY
-      - COOKIE_SECRET
-      - DB_HOST=${DB_HOST:-db}
-      - DB_MAX_CLIENTS
-      - DB_NAME=${DB_NAME:-worklenz_db}
-      - DB_PASSWORD=${DB_PASSWORD:-password}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_USER=${DB_USER:-postgres}
-      - GOOGLE_CALLBACK_URL
-      - GOOGLE_CLIENT_ID
-      - GOOGLE_CLIENT_SECRET
-      - HOSTNAME
-      - LOGIN_FAILURE_REDIRECT
-      - NODE_ENV=${NODE_ENV:-development}
-      - PORT=${PORT:-3000}
-      - SESSION_NAME
-      - SESSION_SECRET
-      - SLACK_WEBHOOK
-      - SOCKET_IO_CORS
-      - SOURCE_EMAIL
-      - USE_PG_NATIVE
-      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-s3}
-      - AWS_BUCKET=${BUCKET:-worklenz-bucket}
-      - AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-minioadmin}
-      - AWS_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-minioadmin}
-      - S3_URL=${S3_URL:-http://minio:9000}
+    env_file:
+      - ./worklenz-backend/.env
     networks:
       - worklenz
 
