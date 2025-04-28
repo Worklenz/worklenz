@@ -7,6 +7,8 @@ services:
     depends_on:
       backend:
         condition: service_started
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://backend:3000}
     networks:
       - worklenz
 
