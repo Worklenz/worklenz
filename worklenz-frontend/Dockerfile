@@ -9,7 +9,8 @@ RUN npm ci
 COPY . .
 
 # Create env-config.js dynamically during build
-RUN echo "window.VITE_API_URL='${VITE_API_URL:-http://backend:3000}';" > ./public/env-config.js
+RUN echo "window.VITE_API_URL='${VITE_API_URL:-http://backend:3000}';" > ./public/env-config.js && \
+    echo "window.VITE_SOCKET_URL='${VITE_SOCKET_URL:-ws://backend:3000}';" >> ./public/env-config.js
 
 RUN npm run build
 
@@ -27,6 +28,7 @@ RUN echo '#!/bin/sh\n\
 # Update env-config.js with runtime environment variables\n\
 cat > /app/build/env-config.js << EOL\n\
 window.VITE_API_URL="${VITE_API_URL:-http://backend:3000}";\n\
+window.VITE_SOCKET_URL="${VITE_SOCKET_URL:-ws://backend:3000}";\n\
 EOL\n\
 exec serve -s build -l 5000' > /app/start.sh && \
 chmod +x /app/start.sh
