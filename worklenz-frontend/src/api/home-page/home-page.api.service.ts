@@ -6,13 +6,14 @@ import { IHomeTasksModel, IHomeTasksConfig } from '@/types/home/home-page.types'
 import { IMyTask } from '@/types/home/my-tasks.types';
 import { IProject } from '@/types/project/project.types';
 import { getCsrfToken } from '../api-client';
+import config from '@/config/env';
 
 const rootUrl = '/home';
 
 const api = createApi({
   reducerPath: 'homePageApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_API_URL}${API_BASE_URL}`,
+    baseUrl: `${config.apiUrl}${API_BASE_URL}`,
     prepareHeaders: headers => {
       headers.set('X-CSRF-Token', getCsrfToken() || '');
       headers.set('Content-Type', 'application/json');
