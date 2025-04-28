@@ -2,6 +2,7 @@ import axios, { AxiosError } from 'axios';
 
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
+import config from '@/config/env';
 
 export const getCsrfToken = (): string | null => {
   const match = document.cookie.split('; ').find(cookie => cookie.startsWith('XSRF-TOKEN='));
@@ -16,7 +17,7 @@ export const getCsrfToken = (): string | null => {
 export const refreshCsrfToken = async (): Promise<string | null> => {
   try {
     // Make a GET request to the server to get a fresh CSRF token
-    await axios.get(`${import.meta.env.VITE_API_URL}/csrf-token`, { withCredentials: true });
+    await axios.get(`${config.apiUrl}/csrf-token`, { withCredentials: true });
     return getCsrfToken();
   } catch (error) {
     console.error('Failed to refresh CSRF token:', error);
@@ -25,7 +26,7 @@ export const refreshCsrfToken = async (): Promise<string | null> => {
 };
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: config.apiUrl,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
