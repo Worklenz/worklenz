@@ -21,6 +21,7 @@ fi
 
 # Frontend URLs
 FRONTEND_URL="${HTTP_PREFIX}${HOSTNAME}:5000"
+MINIO_DASHBOARD_URL="${HTTP_PREFIX}${HOSTNAME}:9001"
 
 # Create or overwrite frontend .env.development file
 mkdir -p worklenz-frontend
@@ -128,4 +129,5 @@ echo
 echo "Frontend URL: ${FRONTEND_URL}"
 echo "API URL: ${HTTP_PREFIX}${HOSTNAME}:3000"
 echo "Socket URL: ${WS_PREFIX}${HOSTNAME}:3000"
+echo "MinIO Dashboard URL: ${MINIO_DASHBOARD_URL}"
 echo "CORS is configured to allow requests from: ${FRONTEND_URL}" 
