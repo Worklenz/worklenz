@@ -23,15 +23,15 @@ RUN npm install -g serve
 COPY --from=build /app/build /app/build
 COPY --from=build /app/public/env-config.js /app/build/env-config.js
 
-# Create a script to start server and dynamically update env-config.js
-RUN echo '#!/bin/sh\n\
-# Update env-config.js with runtime environment variables\n\
-cat > /app/build/env-config.js << EOL\n\
-window.VITE_API_URL="${VITE_API_URL:-http://backend:3000}";\n\
-window.VITE_SOCKET_URL="${VITE_SOCKET_URL:-ws://backend:3000}";\n\
-EOL\n\
-exec serve -s build -l 5000' > /app/start.sh && \
-chmod +x /app/start.sh
+# Create start.sh script
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo '# Update env-config.js with runtime environment variables' >> /app/start.sh && \
+    echo 'cat > /app/build/env-config.js << EOL' >> /app/start.sh && \
+    echo 'window.VITE_API_URL="${VITE_API_URL:-http://backend:3000}";' >> /app/start.sh && \
+    echo 'window.VITE_SOCKET_URL="${VITE_SOCKET_URL:-ws://backend:3000}";' >> /app/start.sh && \
+    echo 'EOL' >> /app/start.sh && \
+    echo 'exec serve -s build -l 5000' >> /app/start.sh && \
+    chmod +x /app/start.sh
 
 EXPOSE 5000
 CMD ["/app/start.sh"]
