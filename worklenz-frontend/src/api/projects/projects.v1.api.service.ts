@@ -6,13 +6,14 @@ import { IProjectsViewModel } from '@/types/project/projectsViewModel.types';
 import { IServerResponse } from '@/types/common.types';
 import { IProjectMembersViewModel } from '@/types/projectMember.types';
 import { getCsrfToken } from '../api-client';
+import config from '@/config/env';
 
 const rootUrl = '/projects';
 
 export const projectsApi = createApi({
   reducerPath: 'projectsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_API_URL}${API_BASE_URL}`,
+    baseUrl: `${config.apiUrl}${API_BASE_URL}`,
     prepareHeaders: headers => {
       headers.set('X-CSRF-Token', getCsrfToken() || '');
       headers.set('Content-Type', 'application/json');

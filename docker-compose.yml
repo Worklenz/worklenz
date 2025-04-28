@@ -1,12 +1,16 @@
 services:
   frontend:
-    image: docker.io/chamikajaycey/worklenz-frontend:latest
+    build:
+      context: ./worklenz-frontend
+      dockerfile: Dockerfile
     container_name: worklenz_frontend
     ports:
       - "5000:5000"
     depends_on:
       backend:
         condition: service_started
+    env_file:
+      - ./worklenz-frontend/.env.production
     networks:
       - worklenz
 
@@ -20,36 +24,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    environment:
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - BACKEND_PUBLIC_DIR
-      - BACKEND_VIEWS_DIR
-      - COMMIT_BUILD_IMMEDIATELY
-      - COOKIE_SECRET
-      - DB_HOST=${DB_HOST:-db}
-      - DB_MAX_CLIENTS
-      - DB_NAME=${DB_NAME:-worklenz_db}
-      - DB_PASSWORD=${DB_PASSWORD:-password}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_USER=${DB_USER:-postgres}
-      - GOOGLE_CALLBACK_URL
-      - GOOGLE_CLIENT_ID
-      - GOOGLE_CLIENT_SECRET
-      - HOSTNAME
-      - LOGIN_FAILURE_REDIRECT
-      - NODE_ENV=${NODE_ENV:-development}
-      - PORT=${PORT:-3000}
-      - SESSION_NAME
-      - SESSION_SECRET
-      - SLACK_WEBHOOK
-      - SOCKET_IO_CORS
-      - SOURCE_EMAIL
-      - USE_PG_NATIVE
-      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-s3}
-      - AWS_BUCKET=${BUCKET:-worklenz-bucket}
-      - AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-minioadmin}
-      - AWS_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-minioadmin}
-      - S3_URL=${S3_URL:-http://minio:9000}
+    env_file:
+      - ./worklenz-backend/.env
     networks:
       - worklenz
 
@@ -113,7 +89,23 @@ services:
       - worklenz
     volumes:
       - worklenz_postgres_data:/var/lib/postgresql/data
-      - ./worklenz-backend/database/:/docker-entrypoint-initdb.d
+      - type: bind
+        source: ./worklenz-backend/database
+        target: /docker-entrypoint-initdb.d
+        consistency: cached
+    command: >
+      bash -c '
+      if command -v apt-get >/dev/null 2>&1; then
+        apt-get update && apt-get install -y dos2unix
+      elif command -v apk >/dev/null 2>&1; then
+        apk add --no-cache dos2unix
+      fi &&
+      find /docker-entrypoint-initdb.d -type f -name "*.sh" -exec sh -c '\''
+        dos2unix "{}" 2>/dev/null || true
+        chmod +x "{}"
+      '\'' \; &&
+      exec docker-entrypoint.sh postgres
+      '
 
 volumes:
   worklenz_postgres_data:
