@@ -395,7 +395,11 @@ For MinIO in production, consider:
 
 1. Set up the environment variables:
    ```bash
+   # For HTTP/WS
    ./update-docker-env.sh
+   
+   # For HTTPS/WSS
+   ./update-docker-env.sh localhost true
    ```
    
    This will create a `.env` file with default settings for local development.
@@ -407,7 +411,7 @@ For MinIO in production, consider:
 
 3. Access the application:
    - Frontend: http://localhost:5000
-   - Backend API: http://localhost:3000
+   - Backend API: http://localhost:3000 (or https://localhost:3000 with SSL)
 
 ### Remote Server Deployment
 
@@ -415,7 +419,11 @@ When deploying to a remote server:
 
 1. Set up the environment variables with your server's hostname:
    ```bash
+   # For HTTP/WS
    ./update-docker-env.sh your-server-hostname
+   
+   # For HTTPS/WSS
+   ./update-docker-env.sh your-server-hostname true
    ```
    
    This ensures that the frontend correctly connects to the backend API.
@@ -436,6 +444,7 @@ The Docker setup uses environment variables to configure the services:
 
 - Frontend:
   - `VITE_API_URL`: URL of the backend API (default: http://backend:3000 for container networking)
+  - `VITE_SOCKET_URL`: WebSocket URL for real-time communication (default: ws://backend:3000)
 
 - Backend:
   - Database connection parameters
