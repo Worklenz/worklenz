@@ -20,14 +20,9 @@ echo "         W O R K L E N Z                     "
 echo -e "${NC}"
 echo "Starting Worklenz Docker Environment..."
 
-# Check if .env file exists
-if [ ! -f .env ]; then
-    echo -e "${YELLOW}Warning: .env file not found. Using default configuration.${NC}"
-    # Copy the example .env file if it exists
-    if [ -f .env.example ]; then
-        cp .env.example .env
-        echo "Created .env file from .env.example"
-    fi
+# Check if update-docker-env.sh exists and is executable
+if [ -f update-docker-env.sh ] && [ -x update-docker-env.sh ]; then
+    echo -e "${BLUE}Found update-docker-env.sh script. You can use it to update environment variables.${NC}"
 fi
 
 # Function to check if a service is running
@@ -129,7 +124,7 @@ DB_STATUS=$?
 check_service "MinIO" "worklenz_minio" "http://localhost:9000/minio/health/live"
 MINIO_STATUS=$?
 
-check_service "Backend" "worklenz_backend" "http://localhost:3000/api/health"
+check_service "Backend" "worklenz_backend" "http://localhost:3000/public/health"
 BACKEND_STATUS=$?
 
 check_service "Frontend" "worklenz_frontend" "http://localhost:5000"
@@ -137,8 +132,8 @@ FRONTEND_STATUS=$?
 
 # Display service URLs
 echo -e "\n${BLUE}Service URLs:${NC}"
-[ $FRONTEND_STATUS -eq 0 ] && echo "  • Frontend: http://localhost:5000"
-[ $BACKEND_STATUS -eq 0 ] && echo "  • Backend API: http://localhost:3000"
+[ $FRONTEND_STATUS -eq 0 ] && echo "  • Frontend: http://localhost:5000 (or https://localhost:5000 if SSL is enabled)"
+[ $BACKEND_STATUS -eq 0 ] && echo "  • Backend API: http://localhost:3000 (or https://localhost:3000 if SSL is enabled)"
 [ $MINIO_STATUS -eq 0 ] && echo "  • MinIO Console: http://localhost:9001 (login: minioadmin/minioadmin)"
 
 # Check if all services are up
@@ -151,4 +146,6 @@ fi
 
 echo -e "\n${BLUE}Useful commands:${NC}"
 echo "  • View logs: $DOCKER_COMPOSE_CMD logs -f"
-echo "  • Stop services: ./stop.sh" 
+echo "  • Stop services: ./stop.sh"
+echo "  • Update environment variables: ./update-docker-env.sh"
+echo -e "\n${YELLOW}Note:${NC} To enable SSL, set ENABLE_SSL=true in your .env file and run ./update-docker-env.sh" 
