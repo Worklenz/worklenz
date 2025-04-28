@@ -19,6 +19,9 @@ else
   WS_PREFIX="ws://"
 fi
 
+# Frontend URLs
+FRONTEND_URL="${HTTP_PREFIX}${HOSTNAME}:5000"
+
 # Create or overwrite frontend .env.development file
 mkdir -p worklenz-frontend
 cat > worklenz-frontend/.env.development << EOL
@@ -73,8 +76,8 @@ SESSION_SECRET=change_me_in_production
 COOKIE_SECRET=change_me_in_production
 
 # CORS
-SOCKET_IO_CORS=${HTTP_PREFIX}${HOSTNAME}:5000
-SERVER_CORS=${HTTP_PREFIX}${HOSTNAME}:5000
+SOCKET_IO_CORS=${FRONTEND_URL}
+SERVER_CORS=${FRONTEND_URL}
 
 # Database
 DB_HOST=db
@@ -99,7 +102,7 @@ BACKEND_VIEWS_DIR=./views
 
 # Host
 HOSTNAME=${HOSTNAME}
-FRONTEND_URL=${HTTP_PREFIX}${HOSTNAME}:5000
+FRONTEND_URL=${FRONTEND_URL}
 
 # Email
 SOURCE_EMAIL=no-reply@example.com
@@ -122,5 +125,7 @@ echo "- worklenz-backend/.env"
 echo
 echo "To run with Docker Compose, use: docker-compose up -d"
 echo
-echo "Production API URL: ${HTTP_PREFIX}${HOSTNAME}:3000"
-echo "Production Socket URL: ${WS_PREFIX}${HOSTNAME}:3000" 
+echo "Frontend URL: ${FRONTEND_URL}"
+echo "API URL: ${HTTP_PREFIX}${HOSTNAME}:3000"
+echo "Socket URL: ${WS_PREFIX}${HOSTNAME}:3000"
+echo "CORS is configured to allow requests from: ${FRONTEND_URL}" 
