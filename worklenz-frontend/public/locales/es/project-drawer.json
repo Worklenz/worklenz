@@ -38,5 +38,12 @@
   "createClient": "Crear cliente",
   "searchInputPlaceholder": "Busca por nombre o email",
   "hoursPerDayValidationMessage": "Las horas por día deben ser un número entre 1 y 24",
-  "noPermission": "Sin permiso"
+  "noPermission": "Sin permiso",
+  "progressSettings": "Configuración de Progreso",
+  "manualProgress": "Progreso Manual",
+  "manualProgressTooltip": "Permitir actualizaciones manuales de progreso para tareas sin subtareas",
+  "weightedProgress": "Progreso Ponderado",
+  "weightedProgressTooltip": "Calcular el progreso basado en los pesos de las subtareas",
+  "timeProgress": "Progreso Basado en Tiempo",
+  "timeProgressTooltip": "Calcular el progreso basado en el tiempo estimado"
 }

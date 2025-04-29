@@ -55,10 +55,9 @@ const initialState: TaskListState = {
 
 export const getProject = createAsyncThunk(
   'project/getProject',
-  async (projectId: string, { rejectWithValue, dispatch }) => {
+  async (projectId: string, { rejectWithValue }) => {
     try {
       const response = await projectsApiService.getProject(projectId);
-      dispatch(setProject(response.body));
       return response.body;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch project');

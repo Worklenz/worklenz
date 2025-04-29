@@ -22,7 +22,15 @@
       "hide-start-date": "Ocultar data de início",
       "show-start-date": "Mostrar data de início",
       "hours": "Horas",
-      "minutes": "Minutos"
+      "minutes": "Minutos",
+      "progressValue": "Valor de Progresso",
+      "progressValueTooltip": "Definir a porcentagem de progresso (0-100%)",
+      "progressValueRequired": "Por favor, insira um valor de progresso",
+      "progressValueRange": "O progresso deve estar entre 0 e 100",
+      "taskWeight": "Peso da Tarefa",
+      "taskWeightTooltip": "Definir o peso desta subtarefa (porcentagem)",
+      "taskWeightRequired": "Por favor, insira um peso para a tarefa",
+      "taskWeightRange": "O peso deve estar entre 0 e 100"
     },
     "labels": {
       "labelInputPlaceholder": "Pesquisar ou criar",
