@@ -88,7 +88,7 @@ services:
     networks:
       - worklenz
     volumes:
-      - worklenz_postgres_data:/var/lib/postgresql/data
+      - worklenz_postgres_data:/var/lib/postgresql/data:z
       - type: bind
         source: ./worklenz-backend/database
         target: /docker-entrypoint-initdb.d
