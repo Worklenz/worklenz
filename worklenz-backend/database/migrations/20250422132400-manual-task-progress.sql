@@ -7,7 +7,8 @@ BEGIN;
 -- Add manual progress fields to tasks table
 ALTER TABLE tasks 
 ADD COLUMN IF NOT EXISTS manual_progress BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS progress_value INTEGER DEFAULT NULL;
+ADD COLUMN IF NOT EXISTS progress_value INTEGER DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS weight INTEGER DEFAULT NULL;
 
 -- Update function to consider manual progress
 CREATE OR REPLACE FUNCTION get_task_complete_ratio(_task_id uuid) RETURNS json
