@@ -10,6 +10,11 @@ import { IProjectManager } from '@/types/project/projectManager.types';
 
 const rootUrl = `${API_BASE_URL}/projects`;
 
+interface UpdateProjectPayload {
+  id: string;
+  [key: string]: any;
+}
+
 export const projectsApiService = {
   getProjects: async (
     index: number,
@@ -78,13 +83,11 @@ export const projectsApiService = {
     return response.data;
   },
 
-  updateProject: async (
-    id: string,
-    project: IProjectViewModel
-  ): Promise<IServerResponse<IProjectViewModel>> => {
+  updateProject: async (payload: UpdateProjectPayload): Promise<IServerResponse<IProjectViewModel>> => {
+    const { id, ...data } = payload;
     const q = toQueryString({ current_project_id: id });
-    const url = `${rootUrl}/${id}${q}`;
-    const response = await apiClient.put<IServerResponse<IProjectViewModel>>(`${url}`, project);
+    const url = `${API_BASE_URL}/projects/${id}${q}`;
+    const response = await apiClient.patch<IServerResponse<IProjectViewModel>>(url, data);
     return response.data;
   },
 

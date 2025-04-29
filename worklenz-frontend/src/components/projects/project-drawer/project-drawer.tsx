@@ -14,6 +14,7 @@ import {
   Popconfirm,
   Skeleton,
   Space,
+  Switch,
   Tooltip,
   Typography,
 } from 'antd';
@@ -96,6 +97,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       working_days: project?.working_days || 0,
       man_days: project?.man_days || 0,
       hours_per_day: project?.hours_per_day || 8,
+      use_manual_progress: project?.use_manual_progress || false,
+      use_weighted_progress: project?.use_weighted_progress || false,
+      use_time_progress: project?.use_time_progress || false,
     }),
     [project, projectStatuses, projectHealths]
   );
@@ -155,6 +159,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         man_days: parseInt(values.man_days),
         hours_per_day: parseInt(values.hours_per_day),
         project_manager: selectedProjectManager,
+        use_manual_progress: values.use_manual_progress || false,
+        use_weighted_progress: values.use_weighted_progress || false,
+        use_time_progress: values.use_time_progress || false,
       };
 
       const action =
@@ -214,6 +221,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             start_date: project.start_date ? dayjs(project.start_date) : null,
             end_date: project.end_date ? dayjs(project.end_date) : null,
             working_days: form.getFieldValue('start_date') && form.getFieldValue('end_date') ? calculateWorkingDays(form.getFieldValue('start_date'), form.getFieldValue('end_date')) : project.working_days || 0,
+            use_manual_progress: project.use_manual_progress || false,
+            use_weighted_progress: project.use_weighted_progress || false,
+            use_time_progress: project.use_time_progress || false,
           });
           setSelectedProjectManager(project.project_manager || null);
           setLoading(false);
@@ -282,6 +292,49 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const handleFieldsChange = (_: any, allFields: any[]) => {
     const isValid = allFields.every(field => field.errors.length === 0);
     setIsFormValid(isValid);
+  };
+
+  // Progress calculation method handlers
+  const handleManualProgressChange = (checked: boolean) => {
+    if (checked) {
+      form.setFieldsValue({
+        use_manual_progress: true,
+        use_weighted_progress: false,
+        use_time_progress: false,
+      });
+    } else {
+      form.setFieldsValue({
+        use_manual_progress: false,
+      });
+    }
+  };
+
+  const handleWeightedProgressChange = (checked: boolean) => {
+    if (checked) {
+      form.setFieldsValue({
+        use_manual_progress: false,
+        use_weighted_progress: true,
+        use_time_progress: false,
+      });
+    } else {
+      form.setFieldsValue({
+        use_weighted_progress: false,
+      });
+    }
+  };
+
+  const handleTimeProgressChange = (checked: boolean) => {
+    if (checked) {
+      form.setFieldsValue({
+        use_manual_progress: false,
+        use_weighted_progress: false,
+        use_time_progress: true,
+      });
+    } else {
+      form.setFieldsValue({
+        use_time_progress: false,
+      });
+    }
   };
 
   return (
@@ -429,22 +482,15 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               </Form.Item>
             </Flex>
           </Form.Item>
-          {/* <Form.Item
-            name="working_days"
-            label={t('estimateWorkingDays')}
-          >
-            <Input
-              type="number"
-              disabled // Make it read-only since it's calculated
-            />
-          </Form.Item> */}
 
           <Form.Item name="working_days" label={t('estimateWorkingDays')}>
             <Input type="number" disabled={!isProjectManager && !isOwnerorAdmin} />
           </Form.Item>
+
           <Form.Item name="man_days" label={t('estimateManDays')}>
             <Input type="number" disabled={!isProjectManager && !isOwnerorAdmin} />
           </Form.Item>
+
           <Form.Item
             name="hours_per_day"
             label={t('hoursPerDay')}
@@ -460,6 +506,62 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             ]}
           >
             <Input type="number" disabled={!isProjectManager && !isOwnerorAdmin} />
+          </Form.Item>
+
+          <Divider orientation="left">{t('progressSettings')}</Divider>
+          
+          <Form.Item
+            name="use_manual_progress"
+            label={
+              <Space>
+                <Typography.Text>{t('manualProgress')}</Typography.Text>
+                <Tooltip title={t('manualProgressTooltip')}>
+                  <Button type="text" size="small" icon={<Typography.Text>ⓘ</Typography.Text>} />
+                </Tooltip>
+              </Space>
+            }
+            valuePropName="checked"
+          >
+            <Switch 
+              onChange={handleManualProgressChange}
+              disabled={!isProjectManager && !isOwnerorAdmin}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="use_weighted_progress"
+            label={
+              <Space>
+                <Typography.Text>{t('weightedProgress')}</Typography.Text>
+                <Tooltip title={t('weightedProgressTooltip')}>
+                  <Button type="text" size="small" icon={<Typography.Text>ⓘ</Typography.Text>} />
+                </Tooltip>
+              </Space>
+            }
+            valuePropName="checked"
+          >
+            <Switch 
+              onChange={handleWeightedProgressChange}
+              disabled={!isProjectManager && !isOwnerorAdmin}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="use_time_progress"
+            label={
+              <Space>
+                <Typography.Text>{t('timeProgress')}</Typography.Text>
+                <Tooltip title={t('timeProgressTooltip')}>
+                  <Button type="text" size="small" icon={<Typography.Text>ⓘ</Typography.Text>} />
+                </Tooltip>
+              </Space>
+            }
+            valuePropName="checked"
+          >
+            <Switch 
+              onChange={handleTimeProgressChange}
+              disabled={!isProjectManager && !isOwnerorAdmin}
+            />
           </Form.Item>
         </Form>
 

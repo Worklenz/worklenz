@@ -1,0 +1,524 @@
+-- Migration: Enhance manual task progress with subtask support
+-- Date: 2025-04-23
+-- Version: 1.0.0
+
+BEGIN;
+
+-- Update function to consider subtask manual progress when calculating parent task progress
+CREATE OR REPLACE FUNCTION get_task_complete_ratio(_task_id uuid) RETURNS json
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _parent_task_done FLOAT = 0;
+    _sub_tasks_done   FLOAT = 0;
+    _sub_tasks_count  FLOAT = 0;
+    _total_completed  FLOAT = 0;
+    _total_tasks      FLOAT = 0;
+    _ratio            FLOAT = 0;
+    _is_manual        BOOLEAN = FALSE;
+    _manual_value     INTEGER = NULL;
+    _project_id       UUID;
+    _use_manual_progress BOOLEAN = FALSE;
+    _use_weighted_progress BOOLEAN = FALSE;
+    _use_time_progress BOOLEAN = FALSE;
+BEGIN
+    -- Check if manual progress is set for this task
+    SELECT manual_progress, progress_value, project_id
+    FROM tasks 
+    WHERE id = _task_id
+    INTO _is_manual, _manual_value, _project_id;
+    
+    -- Check if the project uses manual progress
+    IF _project_id IS NOT NULL THEN
+        SELECT COALESCE(use_manual_progress, FALSE),
+               COALESCE(use_weighted_progress, FALSE),
+               COALESCE(use_time_progress, FALSE)
+        FROM projects
+        WHERE id = _project_id
+        INTO _use_manual_progress, _use_weighted_progress, _use_time_progress;
+    END IF;
+    
+    -- If manual progress is enabled and has a value, use it directly
+    IF _is_manual IS TRUE AND _manual_value IS NOT NULL THEN
+        RETURN JSON_BUILD_OBJECT(
+            'ratio', _manual_value,
+            'total_completed', 0,
+            'total_tasks', 0,
+            'is_manual', TRUE
+        );
+    END IF;
+    
+    -- Get all subtasks
+    SELECT COUNT(*) 
+    FROM tasks 
+    WHERE parent_task_id = _task_id AND archived IS FALSE 
+    INTO _sub_tasks_count;
+    
+    -- If there are no subtasks, just use the parent task's status
+    IF _sub_tasks_count = 0 THEN
+        SELECT (CASE
+                    WHEN EXISTS(SELECT 1
+                                FROM tasks_with_status_view
+                                WHERE tasks_with_status_view.task_id = _task_id
+                                  AND is_done IS TRUE) THEN 1
+                    ELSE 0 END)
+        INTO _parent_task_done;
+        
+        _ratio = _parent_task_done * 100;
+    ELSE
+        -- If project uses manual progress, calculate based on subtask manual progress values
+        IF _use_manual_progress IS TRUE THEN
+            WITH subtask_progress AS (
+                SELECT 
+                    CASE 
+                        -- If subtask has manual progress, use that value
+                        WHEN manual_progress IS TRUE AND progress_value IS NOT NULL THEN 
+                            progress_value
+                        -- Otherwise use completion status (0 or 100)
+                        ELSE
+                            CASE 
+                                WHEN EXISTS(
+                                    SELECT 1
+                                    FROM tasks_with_status_view
+                                    WHERE tasks_with_status_view.task_id = t.id
+                                    AND is_done IS TRUE
+                                ) THEN 100
+                                ELSE 0
+                            END
+                    END AS progress_value
+                FROM tasks t
+                WHERE t.parent_task_id = _task_id
+                AND t.archived IS FALSE
+            )
+            SELECT COALESCE(AVG(progress_value), 0)
+            FROM subtask_progress
+            INTO _ratio;
+        -- If project uses weighted progress, calculate based on subtask weights
+        ELSIF _use_weighted_progress IS TRUE THEN
+            WITH subtask_progress AS (
+                SELECT 
+                    CASE 
+                        -- If subtask has manual progress, use that value
+                        WHEN manual_progress IS TRUE AND progress_value IS NOT NULL THEN 
+                            progress_value
+                        -- Otherwise use completion status (0 or 100)
+                        ELSE
+                            CASE 
+                                WHEN EXISTS(
+                                    SELECT 1
+                                    FROM tasks_with_status_view
+                                    WHERE tasks_with_status_view.task_id = t.id
+                                    AND is_done IS TRUE
+                                ) THEN 100
+                                ELSE 0
+                            END
+                    END AS progress_value,
+                    COALESCE(weight, 100) AS weight
+                FROM tasks t
+                WHERE t.parent_task_id = _task_id
+                AND t.archived IS FALSE
+            )
+            SELECT COALESCE(
+                SUM(progress_value * weight) / NULLIF(SUM(weight), 0),
+                0
+            )
+            FROM subtask_progress
+            INTO _ratio;
+        -- If project uses time-based progress, calculate based on estimated time
+        ELSIF _use_time_progress IS TRUE THEN
+            WITH subtask_progress AS (
+                SELECT 
+                    CASE 
+                        -- If subtask has manual progress, use that value
+                        WHEN manual_progress IS TRUE AND progress_value IS NOT NULL THEN 
+                            progress_value
+                        -- Otherwise use completion status (0 or 100)
+                        ELSE
+                            CASE 
+                                WHEN EXISTS(
+                                    SELECT 1
+                                    FROM tasks_with_status_view
+                                    WHERE tasks_with_status_view.task_id = t.id
+                                    AND is_done IS TRUE
+                                ) THEN 100
+                                ELSE 0
+                            END
+                    END AS progress_value,
+                    COALESCE(total_hours * 60 + total_minutes, 0) AS estimated_minutes
+                FROM tasks t
+                WHERE t.parent_task_id = _task_id
+                AND t.archived IS FALSE
+            )
+            SELECT COALESCE(
+                SUM(progress_value * estimated_minutes) / NULLIF(SUM(estimated_minutes), 0),
+                0
+            )
+            FROM subtask_progress
+            INTO _ratio;
+        ELSE
+            -- Traditional calculation based on completion status
+            SELECT (CASE
+                        WHEN EXISTS(SELECT 1
+                                    FROM tasks_with_status_view
+                                    WHERE tasks_with_status_view.task_id = _task_id
+                                      AND is_done IS TRUE) THEN 1
+                        ELSE 0 END)
+            INTO _parent_task_done;
+            
+            SELECT COUNT(*)
+            FROM tasks_with_status_view
+            WHERE parent_task_id = _task_id
+              AND is_done IS TRUE
+            INTO _sub_tasks_done;
+            
+            _total_completed = _parent_task_done + _sub_tasks_done;
+            _total_tasks = _sub_tasks_count + 1; -- +1 for the parent task
+            
+            IF _total_tasks = 0 THEN
+                _ratio = 0;
+            ELSE
+                _ratio = (_total_completed / _total_tasks) * 100;
+            END IF;
+        END IF;
+    END IF;
+    
+    -- Ensure ratio is between 0 and 100
+    IF _ratio < 0 THEN
+        _ratio = 0;
+    ELSIF _ratio > 100 THEN
+        _ratio = 100;
+    END IF;
+
+    RETURN JSON_BUILD_OBJECT(
+        'ratio', _ratio,
+        'total_completed', _total_completed,
+        'total_tasks', _total_tasks,
+        'is_manual', _is_manual
+    );
+END
+$$;
+
+CREATE OR REPLACE FUNCTION update_project(_body json) RETURNS json
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _user_id                        UUID;
+    _team_id                        UUID;
+    _client_id                      UUID;
+    _project_id                     UUID;
+    _project_manager_team_member_id UUID;
+    _client_name                    TEXT;
+    _project_name                   TEXT;
+BEGIN
+    -- need a test, can be throw errors
+    _client_name = TRIM((_body ->> 'client_name')::TEXT);
+    _project_name = TRIM((_body ->> 'name')::TEXT);
+
+    -- add inside the controller
+    _user_id = (_body ->> 'user_id')::UUID;
+    _team_id = (_body ->> 'team_id')::UUID;
+    _project_manager_team_member_id = (_body ->> 'team_member_id')::UUID;
+
+    -- cache exists client if exists
+    SELECT id FROM clients WHERE LOWER(name) = LOWER(_client_name) AND team_id = _team_id INTO _client_id;
+
+    -- insert client if not exists
+    IF is_null_or_empty(_client_id) IS TRUE AND is_null_or_empty(_client_name) IS FALSE
+    THEN
+        INSERT INTO clients (name, team_id) VALUES (_client_name, _team_id) RETURNING id INTO _client_id;
+    END IF;
+
+    -- check whether the project name is already in
+    IF EXISTS(
+        SELECT name FROM projects WHERE LOWER(name) = LOWER(_project_name)
+                                    AND team_id = _team_id AND id != (_body ->> 'id')::UUID
+    )
+    THEN
+        RAISE 'PROJECT_EXISTS_ERROR:%', _project_name;
+    END IF;
+
+    -- update the project
+    UPDATE projects
+    SET name                   = _project_name,
+        notes                  = (_body ->> 'notes')::TEXT,
+        color_code             = (_body ->> 'color_code')::TEXT,
+        status_id              = (_body ->> 'status_id')::UUID,
+        health_id              = (_body ->> 'health_id')::UUID,
+        key                    = (_body ->> 'key')::TEXT,
+        start_date             = (_body ->> 'start_date')::TIMESTAMPTZ,
+        end_date               = (_body ->> 'end_date')::TIMESTAMPTZ,
+        client_id              = _client_id,
+        folder_id              = (_body ->> 'folder_id')::UUID,
+        category_id            = (_body ->> 'category_id')::UUID,
+        updated_at             = CURRENT_TIMESTAMP,
+        estimated_working_days = (_body ->> 'working_days')::INTEGER,
+        estimated_man_days     = (_body ->> 'man_days')::INTEGER,
+        hours_per_day          = (_body ->> 'hours_per_day')::INTEGER,
+        use_manual_progress    = COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
+        use_weighted_progress  = COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
+        use_time_progress      = COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE)
+    WHERE id = (_body ->> 'id')::UUID
+      AND team_id = _team_id
+    RETURNING id INTO _project_id;
+
+    UPDATE project_members SET project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'MEMBER') WHERE project_id = _project_id;
+
+    IF NOT (_project_manager_team_member_id IS NULL)
+    THEN
+        PERFORM update_project_manager(_project_manager_team_member_id, _project_id::UUID);
+    END IF;
+
+    RETURN JSON_BUILD_OBJECT(
+            'id', _project_id,
+            'name', (_body ->> 'name')::TEXT,
+            'project_manager_id', _project_manager_team_member_id::UUID
+        );
+END;
+$$;
+
+-- 3. Also modify the create_project function to handle the new fields during project creation
+CREATE OR REPLACE FUNCTION create_project(_body json) RETURNS json
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _project_id                     UUID;
+    _user_id                        UUID;
+    _team_id                        UUID;
+    _team_member_id                 UUID;
+    _client_id                      UUID;
+    _client_name                    TEXT;
+    _project_name                   TEXT;
+    _project_created_log            TEXT;
+    _project_member_added_log       TEXT;
+    _project_created_log_id         UUID;
+    _project_manager_team_member_id UUID;
+    _project_key                    TEXT;
+BEGIN
+    _client_name = TRIM((_body ->> 'client_name')::TEXT);
+    _project_name = TRIM((_body ->> 'name')::TEXT);
+    _project_key = TRIM((_body ->> 'key')::TEXT);
+    _project_created_log = (_body ->> 'project_created_log')::TEXT;
+    _project_member_added_log = (_body ->> 'project_member_added_log')::TEXT;
+    _user_id = (_body ->> 'user_id')::UUID;
+    _team_id = (_body ->> 'team_id')::UUID;
+    _project_manager_team_member_id = (_body ->> 'project_manager_id')::UUID;
+
+    SELECT id FROM team_members WHERE user_id = _user_id AND team_id = _team_id INTO _team_member_id;
+
+    -- cache exists client if exists
+    SELECT id FROM clients WHERE LOWER(name) = LOWER(_client_name) AND team_id = _team_id INTO _client_id;
+
+    -- insert client if not exists
+    IF is_null_or_empty(_client_id) IS TRUE AND is_null_or_empty(_client_name) IS FALSE
+    THEN
+        INSERT INTO clients (name, team_id) VALUES (_client_name, _team_id) RETURNING id INTO _client_id;
+    END IF;
+
+    -- check whether the project name is already in
+    IF EXISTS(SELECT name FROM projects WHERE LOWER(name) = LOWER(_project_name) AND team_id = _team_id)
+    THEN
+        RAISE 'PROJECT_EXISTS_ERROR:%', _project_name;
+    END IF;
+
+    -- create the project
+    INSERT
+    INTO projects (name, key, color_code, start_date, end_date, team_id, notes, owner_id, status_id, health_id, folder_id,
+                   category_id, estimated_working_days, estimated_man_days, hours_per_day, 
+                   use_manual_progress, use_weighted_progress, use_time_progress, client_id)
+    VALUES (_project_name,
+            UPPER(_project_key),
+            (_body ->> 'color_code')::TEXT,
+            (_body ->> 'start_date')::TIMESTAMPTZ,
+            (_body ->> 'end_date')::TIMESTAMPTZ,
+            _team_id,
+            (_body ->> 'notes')::TEXT,
+            _user_id,
+            (_body ->> 'status_id')::UUID,
+            (_body ->> 'health_id')::UUID,
+            (_body ->> 'folder_id')::UUID,
+            (_body ->> 'category_id')::UUID,
+            (_body ->> 'working_days')::INTEGER,
+            (_body ->> 'man_days')::INTEGER,
+            (_body ->> 'hours_per_day')::INTEGER,
+            COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
+            _client_id)
+    RETURNING id INTO _project_id;
+
+    -- register the project log
+    INSERT INTO project_logs (project_id, team_id, team_member_id, description)
+    VALUES (_project_id, _team_id, _team_member_id, _project_created_log)
+    RETURNING id INTO _project_created_log_id;
+
+    -- add the team member in the project as a user
+    INSERT INTO project_members (project_id, team_member_id, project_access_level_id)
+    VALUES (_project_id, _team_member_id,
+            (SELECT id FROM project_access_levels WHERE key = 'MEMBER'));
+
+    -- register the project log
+    INSERT INTO project_logs (project_id, team_id, team_member_id, description)
+    VALUES (_project_id, _team_id, _team_member_id, _project_member_added_log);
+
+    -- insert default project columns
+    PERFORM insert_task_list_columns(_project_id);
+
+    -- add project manager role if exists
+    IF NOT is_null_or_empty(_project_manager_team_member_id) THEN
+        PERFORM update_project_manager(_project_manager_team_member_id, _project_id);
+    END IF;
+
+    RETURN JSON_BUILD_OBJECT(
+            'id', _project_id,
+            'name', _project_name,
+            'project_created_log_id', _project_created_log_id
+        );
+END;
+$$;
+
+-- 4. Update the getById function to include the new fields in the response
+CREATE OR REPLACE FUNCTION getProjectById(_project_id UUID, _team_id UUID) RETURNS JSON
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _result JSON;
+BEGIN
+    SELECT ROW_TO_JSON(rec) INTO _result
+    FROM (SELECT p.id,
+                 p.name,
+                 p.key,
+                 p.color_code,
+                 p.start_date,
+                 p.end_date,
+                 c.name                                                              AS client_name,
+                 c.id                                                                AS client_id,
+                 p.notes,
+                 p.created_at,
+                 p.updated_at,
+                 ts.name                                                             AS status,
+                 ts.color_code                                                       AS status_color,
+                 ts.icon                                                             AS status_icon,
+                 ts.id                                                               AS status_id,
+                 h.name                                                              AS health,
+                 h.color_code                                                        AS health_color,
+                 h.icon                                                              AS health_icon,
+                 h.id                                                                AS health_id,
+                 pc.name                                                             AS category_name,
+                 pc.color_code                                                       AS category_color,
+                 pc.id                                                               AS category_id,
+                 p.phase_label,
+                 p.estimated_man_days                                                AS man_days,
+                 p.estimated_working_days                                            AS working_days,
+                 p.hours_per_day,
+                 p.use_manual_progress,
+                 p.use_weighted_progress,
+                 -- Additional fields
+                 COALESCE((SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t)))
+                          FROM (SELECT pm.id,
+                                       pm.project_id,
+                                       tm.id                                         AS team_member_id,
+                                       tm.user_id,
+                                       u.name,
+                                       u.email,
+                                       u.avatar_url,
+                                       u.phone_number,
+                                       pal.name                                      AS access_level,
+                                       pal.key                                       AS access_level_key,
+                                       pal.id                                        AS access_level_id,
+                                       EXISTS(SELECT 1
+                                              FROM project_members
+                                                       INNER JOIN project_access_levels ON
+                                                  project_members.project_access_level_id = project_access_levels.id
+                                              WHERE project_id = p.id
+                                                AND project_access_levels.key = 'PROJECT_MANAGER'
+                                                AND team_member_id = tm.id)          AS is_project_manager
+                                FROM project_members pm
+                                         INNER JOIN team_members tm ON pm.team_member_id = tm.id
+                                         INNER JOIN users u ON tm.user_id = u.id
+                                         INNER JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
+                                WHERE pm.project_id = p.id) t), '[]'::JSON)          AS members,
+                 (SELECT COUNT(DISTINCT (id))
+                  FROM tasks
+                  WHERE archived IS FALSE
+                    AND project_id = p.id)                                           AS task_count,
+                 (SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t)))
+                  FROM (SELECT project_members.id,
+                               project_members.project_id,
+                               team_members.id                                       AS team_member_id,
+                               team_members.user_id,
+                               users.name,
+                               users.email,
+                               users.avatar_url,
+                               project_access_levels.name                            AS access_level,
+                               project_access_levels.key                             AS access_level_key,
+                               project_access_levels.id                              AS access_level_id
+                        FROM project_members
+                                 INNER JOIN team_members ON project_members.team_member_id = team_members.id
+                                 INNER JOIN users ON team_members.user_id = users.id
+                                 INNER JOIN project_access_levels
+                                            ON project_members.project_access_level_id = project_access_levels.id
+                        WHERE project_id = p.id
+                          AND project_access_levels.key = 'PROJECT_MANAGER'
+                        LIMIT 1) t)                                                  AS project_manager,
+
+                 (SELECT EXISTS(SELECT 1
+                                FROM project_subscribers
+                                WHERE project_id = p.id
+                                  AND user_id = (SELECT user_id
+                                                 FROM project_members
+                                                 WHERE team_member_id = (SELECT id
+                                                                         FROM team_members
+                                                                         WHERE user_id IN
+                                                                               (SELECT user_id FROM is_member_of_project_cte))
+                                                   AND project_id = p.id)))          AS subscribed,
+                 (SELECT name
+                  FROM users
+                  WHERE id =
+                        (SELECT owner_id FROM projects WHERE id = p.id))             AS project_owner,
+                 (SELECT default_view
+                  FROM project_members
+                  WHERE project_id = p.id
+                    AND team_member_id IN (SELECT id FROM is_member_of_project_cte)) AS team_member_default_view,
+                 (SELECT EXISTS(SELECT user_id
+                                FROM archived_projects
+                                WHERE user_id IN (SELECT user_id FROM is_member_of_project_cte)
+                                  AND project_id = p.id))                            AS archived,
+
+                 (SELECT EXISTS(SELECT user_id
+                                FROM favorite_projects
+                                WHERE user_id IN (SELECT user_id FROM is_member_of_project_cte)
+                                  AND project_id = p.id))                            AS favorite
+
+          FROM projects p
+                   LEFT JOIN sys_project_statuses ts ON p.status_id = ts.id
+                   LEFT JOIN sys_project_healths h ON p.health_id = h.id
+                   LEFT JOIN project_categories pc ON p.category_id = pc.id
+                   LEFT JOIN clients c ON p.client_id = c.id,
+               LATERAL (SELECT id, user_id
+                        FROM team_members
+                        WHERE id = (SELECT team_member_id
+                                    FROM project_members
+                                    WHERE project_id = p.id
+                                      AND team_member_id IN (SELECT id
+                                                             FROM team_members
+                                                             WHERE team_id = _team_id)
+                                    LIMIT 1)) is_member_of_project_cte
+
+          WHERE p.id = _project_id
+            AND p.team_id = _team_id) rec;
+
+    RETURN _result;
+END
+$$;
+
+-- Add use_manual_progress, use_weighted_progress, and use_time_progress to projects table if they don't exist
+ALTER TABLE projects
+ADD COLUMN IF NOT EXISTS use_manual_progress BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS use_weighted_progress BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS use_time_progress BOOLEAN DEFAULT FALSE;
+
+COMMIT; 

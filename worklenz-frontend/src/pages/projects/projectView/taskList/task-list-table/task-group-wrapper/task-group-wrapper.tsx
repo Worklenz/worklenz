@@ -377,6 +377,41 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
     };
   }, [socket, dispatch]);
 
+  // Socket handler for task progress updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTaskProgressUpdated = (data: {
+      task_id: string;
+      progress_value?: number;
+      weight?: number;
+    }) => {
+      if (data.progress_value !== undefined) {
+        // Find the task in the task groups and update its progress
+        for (const group of taskGroups) {
+          const task = group.tasks.find(task => task.id === data.task_id);
+          if (task) {
+            dispatch(
+              updateTaskProgress({
+                taskId: data.task_id,
+                progress: data.progress_value,
+                totalTasksCount: task.total_tasks_count || 0,
+                completedCount: task.completed_count || 0,
+              })
+            );
+            break;
+          }
+        }
+      }
+    };
+
+    socket.on(SocketEvents.TASK_PROGRESS_UPDATED.toString(), handleTaskProgressUpdated);
+
+    return () => {
+      socket.off(SocketEvents.TASK_PROGRESS_UPDATED.toString(), handleTaskProgressUpdated);
+    };
+  }, [socket, dispatch, taskGroups]);
+
   const handleDragStart = useCallback(({ active }: DragStartEvent) => {
     setActiveId(active.id as string);
 
