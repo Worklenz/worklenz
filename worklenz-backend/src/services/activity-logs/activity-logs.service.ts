@@ -204,3 +204,29 @@ export async function logPhaseChange(activityLog: IActivityLog) {
     insertToActivityLogs(activityLog);
   }
 }
+
+export async function logProgressChange(activityLog: IActivityLog) {
+  const { task_id, new_value, old_value } = activityLog;
+  if (!task_id || !activityLog.socket) return;
+
+  if (old_value !== new_value) {
+    activityLog.user_id = getLoggedInUserIdFromSocket(activityLog.socket);
+    activityLog.attribute_type = IActivityLogAttributeTypes.PROGRESS;
+    activityLog.log_type = IActivityLogChangeType.UPDATE;
+
+    insertToActivityLogs(activityLog);
+  }
+}
+
+export async function logWeightChange(activityLog: IActivityLog) {
+  const { task_id, new_value, old_value } = activityLog;
+  if (!task_id || !activityLog.socket) return;
+
+  if (old_value !== new_value) {
+    activityLog.user_id = getLoggedInUserIdFromSocket(activityLog.socket);
+    activityLog.attribute_type = IActivityLogAttributeTypes.WEIGHT;
+    activityLog.log_type = IActivityLogChangeType.UPDATE;
+
+    insertToActivityLogs(activityLog);
+  }
+}

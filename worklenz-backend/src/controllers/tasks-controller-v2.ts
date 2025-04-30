@@ -192,6 +192,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.archived,
              t.description,
              t.sort_order,
+             t.progress_value,
+             t.manual_progress,
+             t.weight,
+             (SELECT use_manual_progress FROM projects WHERE id = t.project_id) AS project_use_manual_progress,
+             (SELECT use_weighted_progress FROM projects WHERE id = t.project_id) AS project_use_weighted_progress,
+             (SELECT use_time_progress FROM projects WHERE id = t.project_id) AS project_use_time_progress,
 
              (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
              (SELECT name
@@ -334,7 +340,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       return g;
     }, {});
 
-    this.updateMapByGroup(tasks, groupBy, map);
+    await this.updateMapByGroup(tasks, groupBy, map);
 
     const updatedGroups = Object.keys(map).map(key => {
       const group = map[key];
@@ -353,11 +359,27 @@ export default class TasksControllerV2 extends TasksControllerBase {
     return res.status(200).send(new ServerResponse(true, updatedGroups));
   }
 
-  public static updateMapByGroup(tasks: any[], groupBy: string, map: { [p: string]: ITaskGroup }) {
+  public static async updateMapByGroup(tasks: any[], groupBy: string, map: { [p: string]: ITaskGroup }) {
     let index = 0;
     const unmapped = [];
     for (const task of tasks) {
       task.index = index++;
+      
+      // For tasks with subtasks, get the complete ratio from the database function
+      if (task.sub_tasks_count > 0) {
+        try {
+          const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [task.id]);
+          const [data] = result.rows;
+          if (data && data.info) {
+            task.complete_ratio = +data.info.ratio.toFixed();
+            task.completed_count = data.info.total_completed;
+            task.total_tasks_count = data.info.total_tasks;
+          }
+        } catch (error) {
+          // Proceed with default calculation if database call fails
+        }
+      }
+      
       TasksControllerV2.updateTaskViewModel(task);
       if (groupBy === GroupBy.STATUS) {
         map[task.status]?.tasks.push(task);
@@ -395,7 +417,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
   @HandleExceptions()
   public static async getTasksOnly(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const isSubTasks = !!req.query.parent_task;
-    
+      
     // Add customColumns flag to query params
     req.query.customColumns = "true";
     
@@ -410,7 +432,24 @@ export default class TasksControllerV2 extends TasksControllerBase {
       [data] = result.rows;
     } else { // else we return a flat list of tasks
       data = [...result.rows];
+      
       for (const task of data) {
+        // For tasks with subtasks, get the complete ratio from the database function
+        if (task.sub_tasks_count > 0) {
+          try {
+            const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [task.id]);
+            const [ratioData] = result.rows;
+            if (ratioData && ratioData.info) {
+              task.complete_ratio = +ratioData.info.ratio.toFixed();
+              task.completed_count = ratioData.info.total_completed;
+              task.total_tasks_count = ratioData.info.total_tasks;
+              console.log(`Updated task ${task.id} (${task.name}) from DB: complete_ratio=${task.complete_ratio}`);
+            }
+          } catch (error) {
+            // Proceed with default calculation if database call fails
+          }
+        }
+        
         TasksControllerV2.updateTaskViewModel(task);
       }
     }

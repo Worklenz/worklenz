@@ -63,6 +63,7 @@ export interface ITaskViewModel extends ITask {
   task_labels?: ITaskLabel[];
   timer_start_time?: number;
   recurring?: boolean;
+  task_level?: number;
 }
 
 export interface ITaskTeamMember extends ITeamMember {

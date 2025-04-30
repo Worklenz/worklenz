@@ -32,7 +32,51 @@ export default class TasksControllerBase extends WorklenzControllerBase {
   }
 
   public static updateTaskViewModel(task: any) {
-    task.progress = ~~(task.total_minutes_spent / task.total_minutes * 100);
+    console.log(`Processing task ${task.id} (${task.name})`);
+    console.log(`  manual_progress: ${task.manual_progress}, progress_value: ${task.progress_value}`);
+    console.log(`  project_use_manual_progress: ${task.project_use_manual_progress}, project_use_weighted_progress: ${task.project_use_weighted_progress}`);
+    console.log(`  has subtasks: ${task.sub_tasks_count > 0}`);
+    
+    // For parent tasks (with subtasks), always use calculated progress from subtasks
+    if (task.sub_tasks_count > 0) {
+      // For parent tasks without manual progress, calculate from subtasks (already done via db function)
+      console.log(`  Parent task with subtasks: complete_ratio=${task.complete_ratio}`);
+      
+      // Ensure progress matches complete_ratio for consistency
+      task.progress = task.complete_ratio || 0;
+      
+      // Important: Parent tasks should not have manual progress
+      // If they somehow do, reset it
+      if (task.manual_progress) {
+        console.log(`  WARNING: Parent task ${task.id} had manual_progress set to true, resetting`);
+        task.manual_progress = false;
+        task.progress_value = null;
+      }
+    }
+    // For tasks without subtasks, respect manual progress if set
+    else if (task.manual_progress === true && task.progress_value !== null && task.progress_value !== undefined) {
+      // For manually set progress, use that value directly
+      task.progress = parseInt(task.progress_value);
+      task.complete_ratio = parseInt(task.progress_value);
+      
+      console.log(`  Using manual progress: progress=${task.progress}, complete_ratio=${task.complete_ratio}`);
+    } 
+    // For tasks with no subtasks and no manual progress, calculate based on time
+    else {
+      task.progress = task.total_minutes_spent && task.total_minutes 
+        ? ~~(task.total_minutes_spent / task.total_minutes * 100) 
+        : 0;
+        
+      // Set complete_ratio to match progress
+      task.complete_ratio = task.progress;
+      
+      console.log(`  Calculated time-based progress: progress=${task.progress}, complete_ratio=${task.complete_ratio}`);
+    }
+    
+    // Ensure numeric values
+    task.progress = parseInt(task.progress) || 0;
+    task.complete_ratio = parseInt(task.complete_ratio) || 0;
+    
     task.overdue = task.total_minutes < task.total_minutes_spent;
 
     task.time_spent = {hours: ~~(task.total_minutes_spent / 60), minutes: task.total_minutes_spent % 60};
@@ -73,9 +117,9 @@ export default class TasksControllerBase extends WorklenzControllerBase {
     if (task.timer_start_time)
       task.timer_start_time = moment(task.timer_start_time).valueOf();
 
+    // Set completed_count and total_tasks_count regardless of progress calculation method
     const totalCompleted = (+task.completed_sub_tasks + +task.parent_task_completed) || 0;
-    const totalTasks = +task.sub_tasks_count || 0; // if needed add +1 for parent
-    task.complete_ratio = TasksControllerBase.calculateTaskCompleteRatio(totalCompleted, totalTasks);
+    const totalTasks = +task.sub_tasks_count || 0;
     task.completed_count = totalCompleted;
     task.total_tasks_count = totalTasks;
 

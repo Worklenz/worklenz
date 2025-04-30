@@ -22,7 +22,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
-import { setProject, setImportTaskTemplateDrawerOpen, setRefreshTimestamp } from '@features/project/project.slice';
+import { setProject, setImportTaskTemplateDrawerOpen, setRefreshTimestamp, getProject } from '@features/project/project.slice';
 import { addTask, fetchTaskGroups, fetchTaskListColumns, IGroupBy } from '@features/tasks/tasks.slice';
 import ProjectStatusIcon from '@/components/common/project-status-icon/project-status-icon';
 import { formatDate } from '@/utils/timeUtils';
@@ -70,6 +70,7 @@ const ProjectViewHeader = () => {
 
   const handleRefresh = () => {
     if (!projectId) return;
+    dispatch(getProject(projectId));
     switch (tab) {
       case 'tasks-list':
         dispatch(fetchTaskListColumns(projectId));
