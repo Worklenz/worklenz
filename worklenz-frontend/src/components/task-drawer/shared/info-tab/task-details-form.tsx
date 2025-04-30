@@ -26,6 +26,8 @@ import TaskDrawerDueDate from './details/task-drawer-due-date/task-drawer-due-da
 import TaskDrawerEstimation from './details/task-drawer-estimation/task-drawer-estimation';
 import TaskDrawerPrioritySelector from './details/task-drawer-priority-selector/task-drawer-priority-selector';
 import TaskDrawerBillable from './details/task-drawer-billable/task-drawer-billable';
+import TaskDrawerProgress from './details/task-drawer-progress/task-drawer-progress';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 interface TaskDetailsFormProps {
   taskFormViewModel?: ITaskFormViewModel | null;
@@ -34,6 +36,7 @@ interface TaskDetailsFormProps {
 const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const [form] = Form.useForm();
+  const { project } = useAppSelector(state => state.projectReducer);
 
   useEffect(() => {
     if (!taskFormViewModel) {
@@ -53,6 +56,8 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
       labels: task?.labels || [],
       billable: task?.billable || false,
       notify: [],
+      progress_value: task?.progress_value || null,
+      weight: task?.weight || null,
     });
   }, [taskFormViewModel, form]);
 
@@ -89,6 +94,8 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
           hours: 0,
           minutes: 0,
           billable: false,
+          progress_value: null,
+          weight: null,
         }}
         onFinish={handleSubmit}
       >
@@ -103,7 +110,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
 
         <Form.Item name="assignees" label={t('taskInfoTab.details.assignees')}>
           <Flex gap={4} align="center">
-            <Avatars members={taskFormViewModel?.task?.names || []} />
+            <Avatars members={taskFormViewModel?.task?.assignee_names || []} />
             <TaskDrawerAssigneeSelector
               task={(taskFormViewModel?.task as ITaskViewModel) || null}
             />
@@ -113,6 +120,10 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
         <TaskDrawerDueDate task={taskFormViewModel?.task as ITaskViewModel} t={t} form={form} />
 
         <TaskDrawerEstimation t={t} task={taskFormViewModel?.task as ITaskViewModel} form={form} />
+
+        {(project?.use_manual_progress || project?.use_weighted_progress) && (taskFormViewModel?.task) && (
+          <TaskDrawerProgress task={taskFormViewModel?.task as ITaskViewModel} form={form} />
+        )}
 
         <Form.Item name="priority" label={t('taskInfoTab.details.priority')}>
           <TaskDrawerPrioritySelector task={taskFormViewModel?.task as ITaskViewModel} />

@@ -31,6 +31,8 @@ export enum IActivityLogAttributeTypes {
   ATTACHMENT = 'attachment',
   COMMENT = 'comment',
   ARCHIVE = 'archive',
+  PROGRESS = 'progress',
+  WEIGHT = 'weight',
 }
 
 export interface IActivityLog {

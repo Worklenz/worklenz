@@ -41,4 +41,28 @@ export interface IProjectViewModel extends IProject {
 
   team_member_default_view?: string;
   working_days?: number;
+
+  id?: string;
+  name?: string;
+  description?: string;
+  notes?: string;
+  color_code?: string;
+  status_id?: string;
+  status_name?: string;
+  status_color_dark?: string;
+  health_name?: string;
+  health_color?: string;
+  health_color_dark?: string;
+  category_color_dark?: string;
+  client_id?: string;
+  total_tasks?: number;
+  completed_tasks?: number;
+  tasks_progress?: number;
+  man_days?: number;
+  hours_per_day?: number;
+  default_view?: string;
+  task_key_prefix?: string;
+  use_manual_progress?: boolean;
+  use_weighted_progress?: boolean;
+  use_time_progress?: boolean;
 }

@@ -22,7 +22,15 @@
       "hide-start-date": "Hide Start Date",
       "show-start-date": "Show Start Date",
       "hours": "Hours",
-      "minutes": "Minutes"
+      "minutes": "Minutes",
+      "progressValue": "Progress Value",
+      "progressValueTooltip": "Set the progress percentage (0-100%)",
+      "progressValueRequired": "Please enter a progress value",
+      "progressValueRange": "Progress must be between 0 and 100",
+      "taskWeight": "Task Weight",
+      "taskWeightTooltip": "Set the weight of this subtask (percentage)",
+      "taskWeightRequired": "Please enter a task weight",
+      "taskWeightRange": "Weight must be between 0 and 100"
     },
     "labels": {
       "labelInputPlaceholder": "Search or create",

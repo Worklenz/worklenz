@@ -408,6 +408,9 @@ export default class ProjectsController extends WorklenzControllerBase {
              sps.color_code AS status_color,
              sps.icon AS status_icon,
              (SELECT name FROM clients WHERE id = projects.client_id) AS client_name,
+             projects.use_manual_progress,
+             projects.use_weighted_progress,
+             projects.use_time_progress,
 
              (SELECT COALESCE(ROW_TO_JSON(pm), '{}'::JSON)
                     FROM (SELECT team_member_id AS id,

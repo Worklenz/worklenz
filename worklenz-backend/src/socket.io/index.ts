@@ -52,6 +52,8 @@ import { on_task_recurring_change } from "./commands/on-task-recurring-change";
 import { on_task_assignees_change } from "./commands/on-task-assignees-change";
 import { on_task_custom_column_update } from "./commands/on_custom_column_update";
 import { on_custom_column_pinned_change } from "./commands/on_custom_column_pinned_change";
+import { on_update_task_progress } from "./commands/on-update-task-progress";
+import { on_update_task_weight } from "./commands/on-update-task-weight";
 
 export function register(io: any, socket: Socket) {
   log(socket.id, "client registered");
@@ -106,6 +108,8 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), data => on_task_assignees_change(io, socket, data));
   socket.on(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), data => on_task_custom_column_update(io, socket, data));
   socket.on(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), data => on_custom_column_pinned_change(io, socket, data));
+  socket.on(SocketEvents.UPDATE_TASK_PROGRESS.toString(), data => on_update_task_progress(io, socket, data));
+  socket.on(SocketEvents.UPDATE_TASK_WEIGHT.toString(), data => on_update_task_weight(io, socket, data));
   
   // socket.io built-in event
   socket.on("disconnect", (reason) => on_disconnect(io, socket, reason));

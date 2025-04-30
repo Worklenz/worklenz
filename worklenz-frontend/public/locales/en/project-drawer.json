@@ -38,5 +38,14 @@
   "createClient": "Create client",
   "searchInputPlaceholder": "Search by name or email",
   "hoursPerDayValidationMessage": "Hours per day must be a number between 1 and 24",
-  "noPermission": "No permission"
+  "workingDaysValidationMessage": "Working days must be a positive number",
+  "manDaysValidationMessage": "Man days must be a positive number",
+  "noPermission": "No permission",
+  "progressSettings": "Progress Settings",
+  "manualProgress": "Manual Progress",
+  "manualProgressTooltip": "Allow manual progress updates for tasks without subtasks",
+  "weightedProgress": "Weighted Progress",
+  "weightedProgressTooltip": "Calculate progress based on subtask weights",
+  "timeProgress": "Time-based Progress",
+  "timeProgressTooltip": "Calculate progress based on estimated time"
 }
