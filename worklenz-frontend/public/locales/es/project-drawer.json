@@ -38,6 +38,8 @@
   "createClient": "Crear cliente",
   "searchInputPlaceholder": "Busca por nombre o email",
   "hoursPerDayValidationMessage": "Las horas por día deben ser un número entre 1 y 24",
+  "workingDaysValidationMessage": "Los días de trabajo deben ser un número positivo",
+  "manDaysValidationMessage": "Los días hombre deben ser un número positivo",
   "noPermission": "Sin permiso",
   "progressSettings": "Configuración de Progreso",
   "manualProgress": "Progreso Manual",

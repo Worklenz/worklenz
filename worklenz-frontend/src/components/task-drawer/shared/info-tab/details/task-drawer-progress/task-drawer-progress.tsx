@@ -21,13 +21,16 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
   const isSubTask = !!task?.parent_task_id;
   const hasSubTasks = task?.sub_tasks_count > 0;
 
-  // Determine which progress input to show based on project settings
-  const showManualProgressInput = project?.use_manual_progress && !hasSubTasks && !isSubTask;
+  // Show manual progress input only for tasks without subtasks (not parent tasks)
+  // Parent tasks get their progress calculated from subtasks
+  const showManualProgressInput = !hasSubTasks;
+
+  // Only show weight input for subtasks in weighted progress mode
   const showTaskWeightInput = project?.use_weighted_progress && isSubTask;
 
   useEffect(() => {
     // Listen for progress updates from the server
-    socket?.on(SocketEvents.TASK_PROGRESS_UPDATED.toString(), (data) => {
+    const handleProgressUpdate = (data: any) => {
       if (data.task_id === task.id) {
         if (data.progress_value !== undefined) {
           form.setFieldsValue({ progress_value: data.progress_value });
@@ -36,34 +39,74 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
           form.setFieldsValue({ weight: data.weight });
         }
       }
-    });
+    };
+
+    socket?.on(SocketEvents.TASK_PROGRESS_UPDATED.toString(), handleProgressUpdate);
+
+    // When the component mounts, explicitly request the latest progress for this task
+    if (connected && task.id) {
+      socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
+    }
 
     return () => {
-      socket?.off(SocketEvents.TASK_PROGRESS_UPDATED.toString());
+      socket?.off(SocketEvents.TASK_PROGRESS_UPDATED.toString(), handleProgressUpdate);
     };
-  }, [socket, task.id, form]);
+  }, [socket, connected, task.id, form]);
 
   const handleProgressChange = (value: number | null) => {
     if (connected && task.id && value !== null) {
-      socket?.emit(SocketEvents.UPDATE_TASK_PROGRESS.toString(), JSON.stringify({
-        task_id: task.id,
-        progress_value: value,
-        parent_task_id: task.parent_task_id
-      }));
+      // Ensure parent_task_id is not undefined
+      const parent_task_id = task.parent_task_id || null;
+
+      socket?.emit(
+        SocketEvents.UPDATE_TASK_PROGRESS.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          progress_value: value,
+          parent_task_id: parent_task_id,
+        })
+      );
+
+      // If this task has subtasks, request recalculation of its progress
+      if (hasSubTasks) {
+        setTimeout(() => {
+          socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
+        }, 100);
+      }
+
+      // If this is a subtask, request the parent's progress to be updated in UI
+      if (parent_task_id) {
+        setTimeout(() => {
+          socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), parent_task_id);
+        }, 100);
+      }
     }
   };
 
   const handleWeightChange = (value: number | null) => {
     if (connected && task.id && value !== null) {
-      socket?.emit(SocketEvents.UPDATE_TASK_WEIGHT.toString(), JSON.stringify({
-        task_id: task.id,
-        weight: value,
-        parent_task_id: task.parent_task_id
-      }));
+      // Ensure parent_task_id is not undefined
+      const parent_task_id = task.parent_task_id || null;
+
+      socket?.emit(
+        SocketEvents.UPDATE_TASK_WEIGHT.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          weight: value,
+          parent_task_id: parent_task_id,
+        })
+      );
+      
+      // If this is a subtask, request the parent's progress to be updated in UI
+      if (parent_task_id) {
+        setTimeout(() => {
+          socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), parent_task_id);
+        }, 100);
+      }
     }
   };
 
-  const percentFormatter = (value: number | undefined) => value ? `${value}%` : '0%';
+  const percentFormatter = (value: number | undefined) => (value ? `${value}%` : '0%');
   const percentParser = (value: string | undefined) => {
     const parsed = parseInt(value?.replace('%', '') || '0', 10);
     return isNaN(parsed) ? 0 : parsed;
@@ -75,43 +118,6 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
 
   return (
     <>
-      {showManualProgressInput && (
-        <Form.Item
-          name="progress_value"
-          label={
-            <Flex align="center" gap={4}>
-              {t('taskInfoTab.details.progressValue')}
-              <Tooltip title={t('taskInfoTab.details.progressValueTooltip')}>
-                <QuestionCircleOutlined />
-              </Tooltip>
-            </Flex>
-          }
-          rules={[
-            {
-              required: true,
-              message: t('taskInfoTab.details.progressValueRequired'),
-            },
-            {
-              type: 'number',
-              min: 0,
-              max: 100,
-              message: t('taskInfoTab.details.progressValueRange'),
-            },
-          ]}
-        >
-          <InputNumber 
-            min={0}
-            max={100}
-            formatter={percentFormatter}
-            parser={percentParser}
-            onBlur={(e) => {
-              const value = percentParser(e.target.value);
-              handleProgressChange(value);
-            }}
-          />
-        </Form.Item>
-      )}
-
       {showTaskWeightInput && (
         <Form.Item
           name="weight"
@@ -125,10 +131,6 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
           }
           rules={[
             {
-              required: true,
-              message: t('taskInfoTab.details.taskWeightRequired'),
-            },
-            {
               type: 'number',
               min: 0,
               max: 100,
@@ -141,9 +143,41 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
             max={100}
             formatter={percentFormatter}
             parser={percentParser}
-            onBlur={(e) => {
+            onBlur={e => {
               const value = percentParser(e.target.value);
               handleWeightChange(value);
+            }}
+          />
+        </Form.Item>
+      )}
+      {showManualProgressInput && (
+        <Form.Item
+          name="progress_value"
+          label={
+            <Flex align="center" gap={4}>
+              {t('taskInfoTab.details.progressValue')}
+              <Tooltip title={t('taskInfoTab.details.progressValueTooltip')}>
+                <QuestionCircleOutlined />
+              </Tooltip>
+            </Flex>
+          }
+          rules={[
+            {
+              type: 'number',
+              min: 0,
+              max: 100,
+              message: t('taskInfoTab.details.progressValueRange'),
+            },
+          ]}
+        >
+          <InputNumber
+            min={0}
+            max={100}
+            formatter={percentFormatter}
+            parser={percentParser}
+            onBlur={e => {
+              const value = percentParser(e.target.value);
+              handleProgressChange(value);
             }}
           />
         </Form.Item>
@@ -152,4 +186,4 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
   );
 };
 
-export default TaskDrawerProgress; 
+export default TaskDrawerProgress;

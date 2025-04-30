@@ -210,10 +210,11 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
             icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
             okText="Yes"
             cancelText="No"
-            onConfirm={() => handleDeleteSubTask(record.id)}
+            onPopupClick={(e) => e.stopPropagation()}
+            onConfirm={(e) => {handleDeleteSubTask(record.id)}}
           >
             <Tooltip title="Delete">
-              <Button shape="default" icon={<DeleteOutlined />} size="small" />
+              <Button shape="default" icon={<DeleteOutlined />} size="small" onClick={(e)=> e.stopPropagation()} />
             </Tooltip>
           </Popconfirm>
         </Flex>

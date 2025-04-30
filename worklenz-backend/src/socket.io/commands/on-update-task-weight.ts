@@ -2,6 +2,7 @@ import { Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 import { log, log_error, notifyProjectUpdates } from "../util";
+import { logWeightChange } from "../../services/activity-logs/activity-logs.service";
 
 interface UpdateTaskWeightData {
   task_id: string;
@@ -11,7 +12,6 @@ interface UpdateTaskWeightData {
 
 export async function on_update_task_weight(io: any, socket: Socket, data: string) {
   try {
-    log(socket.id, `${SocketEvents.UPDATE_TASK_WEIGHT}: ${data}`);
     
     const parsedData = JSON.parse(data) as UpdateTaskWeightData;
     const { task_id, weight, parent_task_id } = parsedData;
@@ -19,6 +19,15 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
     if (!task_id || weight === undefined) {
       return;
     }
+    
+    // Get the current weight value to log the change
+    const currentWeightResult = await db.query(
+      "SELECT weight, project_id FROM tasks WHERE id = $1",
+      [task_id]
+    );
+    
+    const currentWeight = currentWeightResult.rows[0]?.weight;
+    const projectId = currentWeightResult.rows[0]?.project_id;
     
     // Update the task weight in the database
     await db.query(
@@ -28,9 +37,13 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
       [weight, task_id]
     );
     
-    // Get the project ID for the task
-    const projectResult = await db.query("SELECT project_id FROM tasks WHERE id = $1", [task_id]);
-    const projectId = projectResult.rows[0]?.project_id;
+    // Log the weight change using the activity logs service
+    await logWeightChange({
+      task_id,
+      old_value: currentWeight !== null ? currentWeight.toString() : '100',
+      new_value: weight.toString(),
+      socket
+    });
     
     if (projectId) {
       // Emit the update to all clients in the project room
