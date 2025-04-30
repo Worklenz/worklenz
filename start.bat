@@ -39,6 +39,12 @@ IF %ERRORLEVEL% NEQ 0 (
     echo docker-compose is installed >> worklenz_startup.log
 )
 
+REM Check for update-docker-env.sh
+IF EXIST update-docker-env.sh (
+    echo [94mFound update-docker-env.sh script. You can use it to update environment variables.[0m
+    echo Found update-docker-env.sh script >> worklenz_startup.log
+)
+
 REM Run preflight checks
 echo Running Docker daemon check...
 docker info >nul 2>>worklenz_startup.log
@@ -50,17 +56,6 @@ IF %ERRORLEVEL% NEQ 0 (
 ) ELSE (
     echo [92m^✓[0m Docker daemon is running
     echo Docker daemon is running >> worklenz_startup.log
-)
-
-REM Check if .env file exists
-IF NOT EXIST .env (
-    echo Warning: .env file not found. Using default configuration.
-    echo Warning: .env file not found. Using default configuration. >> worklenz_startup.log
-    IF EXIST .env.example (
-        copy .env.example .env
-        echo Created .env file from .env.example
-        echo Created .env file from .env.example >> worklenz_startup.log
-    )
 )
 
 REM Stop any running containers
@@ -111,7 +106,7 @@ REM Check frontend
 findstr /C:"frontend" running_services.txt > nul
 IF %ERRORLEVEL% EQU 0 (
     echo [92m^✓[0m Frontend is running
-    echo    Frontend URL: http://localhost:5000
+    echo    Frontend URL: http://localhost:5000 (or https://localhost:5000 if SSL is enabled)
     echo Frontend is running >> worklenz_startup.log
 ) ELSE (
     echo [91m^✗[0m Frontend service failed to start
@@ -122,7 +117,7 @@ REM Check backend
 findstr /C:"backend" running_services.txt > nul
 IF %ERRORLEVEL% EQU 0 (
     echo [92m^✓[0m Backend is running
-    echo    Backend URL: http://localhost:3000
+    echo    Backend URL: http://localhost:3000 (or https://localhost:3000 if SSL is enabled)
     echo Backend is running >> worklenz_startup.log
 ) ELSE (
     echo [91m^✗[0m Backend service failed to start
@@ -180,6 +175,9 @@ IF %allRunning% EQU 1 (
 
 echo You can access the application at: http://localhost:5000
 echo To stop the services, run: stop.bat
+echo To update environment variables, run: update-docker-env.sh
+echo.
+echo Note: To enable SSL, set ENABLE_SSL=true in your .env file and run update-docker-env.sh
 echo.
 echo For any errors, check worklenz_startup.log file
 echo.
