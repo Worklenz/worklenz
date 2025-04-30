@@ -86,7 +86,7 @@ const TaskListTaskCell = ({
     isSubTask: boolean,
     subTasksCount: number
   ) => {
-    if (subTasksCount > 0) {
+    if (subTasksCount > 0 && !isSubTask) {
       return (
         <button
           onClick={() => handleToggleExpansion(taskId)}
@@ -112,23 +112,21 @@ const TaskListTaskCell = ({
   const renderSubtasksCountLabel = (taskId: string, isSubTask: boolean, subTasksCount: number) => {
     if (!taskId) return null;
     return (
-      !isSubTask && (
-        <Button
-          onClick={() => handleToggleExpansion(taskId)}
-          size="small"
-          style={{
-            display: 'flex',
-            gap: 2,
-            paddingInline: 4,
-            alignItems: 'center',
-            justifyItems: 'center',
-            border: 'none',
-          }}
-        >
-          <Typography.Text style={{ fontSize: 12, lineHeight: 1 }}>{subTasksCount}</Typography.Text>
-          <DoubleRightOutlined style={{ fontSize: 10 }} />
-        </Button>
-      )
+      <Button
+        onClick={() => handleToggleExpansion(taskId)}
+        size="small"
+        style={{
+          display: 'flex',
+          gap: 2,
+          paddingInline: 4,
+          alignItems: 'center',
+          justifyItems: 'center',
+          border: 'none',
+        }}
+      >
+        <Typography.Text style={{ fontSize: 12, lineHeight: 1 }}>{subTasksCount}</Typography.Text>
+        <DoubleRightOutlined style={{ fontSize: 10 }} />
+      </Button>
     );
   };
 
