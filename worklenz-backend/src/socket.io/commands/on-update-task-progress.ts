@@ -11,13 +11,9 @@ interface UpdateTaskProgressData {
 }
 
 export async function on_update_task_progress(io: any, socket: Socket, data: string) {
-  try {
-    log(socket.id, `${SocketEvents.UPDATE_TASK_PROGRESS}: ${data}`);
-    
+  try {   
     const parsedData = JSON.parse(data) as UpdateTaskProgressData;
-    const { task_id, progress_value, parent_task_id } = parsedData;
-    
-    console.log(`Updating progress for task ${task_id}: new value = ${progress_value}`);
+    const { task_id, progress_value, parent_task_id } = parsedData;    
     
     if (!task_id || progress_value === undefined) {
       return;
@@ -33,22 +29,19 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
     
     // If this is a parent task, we shouldn't set manual progress
     if (subtaskCount > 0) {
-      console.log(`Cannot set manual progress on parent task ${task_id} with ${subtaskCount} subtasks`);
+      log_error(`Cannot set manual progress on parent task ${task_id} with ${subtaskCount} subtasks`);
       return;
     }
     
     // Get the current progress value to log the change
     const currentProgressResult = await db.query(
-      "SELECT progress_value, project_id, team_id FROM tasks WHERE id = $1",
+      "SELECT progress_value, project_id, FROM tasks WHERE id = $1",
       [task_id]
     );
     
     const currentProgress = currentProgressResult.rows[0]?.progress_value;
     const projectId = currentProgressResult.rows[0]?.project_id;
-    const teamId = currentProgressResult.rows[0]?.team_id;
-    
-    console.log(`Previous progress for task ${task_id}: ${currentProgress}; New: ${progress_value}`);
-    
+       
     // Update the task progress in the database
     await db.query(
       `UPDATE tasks 
