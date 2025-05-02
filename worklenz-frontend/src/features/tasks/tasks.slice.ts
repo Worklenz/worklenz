@@ -572,14 +572,29 @@ const taskSlice = createSlice({
     ) => {
       const { taskId, progress, totalTasksCount, completedCount } = action.payload;
 
-      for (const group of state.taskGroups) {
-        const task = group.tasks.find(task => task.id === taskId);
-        if (task) {
-          task.complete_ratio = progress;
-          task.total_tasks_count = totalTasksCount;
-          task.completed_count = completedCount;
-          break;
+      // Helper function to find and update a task at any nesting level
+      const findAndUpdateTask = (tasks: IProjectTask[]) => {
+        for (const task of tasks) {
+          if (task.id === taskId) {
+            task.complete_ratio = progress;
+            task.total_tasks_count = totalTasksCount;
+            task.completed_count = completedCount;
+            return true;
+          }
+          
+          // Check subtasks if they exist
+          if (task.sub_tasks && task.sub_tasks.length > 0) {
+            const found = findAndUpdateTask(task.sub_tasks);
+            if (found) return true;
+          }
         }
+        return false;
+      };
+
+      // Try to find and update the task in any task group
+      for (const group of state.taskGroups) {
+        const found = findAndUpdateTask(group.tasks);
+        if (found) break;
       }
     },
 

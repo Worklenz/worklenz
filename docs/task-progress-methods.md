@@ -44,6 +44,7 @@ This mode allows assigning different weights to subtasks to reflect their relati
 - The UI shows a weight input for subtasks in the task drawer
 - Manual progress input is still required for tasks without subtasks
 - Default weight is 100 if not specified
+- Weight values range from 0 to 100%
 
 **Calculation Logic:**
 - For tasks without subtasks: Uses the manually entered progress value
@@ -224,10 +225,9 @@ In Weighted Progress mode, both the manual progress input and weight assignment 
    - If a leaf task's progress is not manually set, it defaults to 0% (or 100% if completed)
 
 2. **Weight Assignment**:
-   - Each task can be assigned a weight value (default 100 if not specified)
+   - Each task can be assigned a weight value between 0-100% (default 100% if not specified)
    - Higher weight values give tasks more influence in parent task progress calculations
-   - Weight values are typically whole numbers between 0 and 1000
-   - A weight of 0 means the task doesn't contribute to the parent's progress calculation
+   - A weight of 0% means the task doesn't contribute to the parent's progress calculation
 
 3. **Parent Task Calculation**:
    The weighted progress formula is:
@@ -237,24 +237,24 @@ In Weighted Progress mode, both the manual progress input and weight assignment 
 
    **Example Calculation**:
    Consider a parent task with three subtasks:
-   - Subtask A: Progress 50%, Weight 200
-   - Subtask B: Progress 75%, Weight 100
-   - Subtask C: Progress 25%, Weight 300
+   - Subtask A: Progress 50%, Weight 60%
+   - Subtask B: Progress 75%, Weight 20%
+   - Subtask C: Progress 25%, Weight 100%
 
    Calculation:
    ```
-   ParentProgress = ((50 * 200) + (75 * 100) + (25 * 300)) / (200 + 100 + 300)
-   ParentProgress = (10000 + 7500 + 7500) / 600
-   ParentProgress = 25000 / 600
-   ParentProgress = 41.67%
+   ParentProgress = ((50 * 60) + (75 * 20) + (25 * 100)) / (60 + 20 + 100)
+   ParentProgress = (3000 + 1500 + 2500) / 180
+   ParentProgress = 7000 / 180
+   ParentProgress = 38.89%
    ```
 
    Notice that Subtask C, despite having the lowest progress, has a significant impact on the parent task progress due to its higher weight.
 
 4. **Zero Weight Handling**:
    Tasks with zero weight are excluded from the calculation:
-   - Subtask A: Progress 40%, Weight 50
-   - Subtask B: Progress 80%, Weight 0
+   - Subtask A: Progress 40%, Weight 50%
+   - Subtask B: Progress 80%, Weight 0%
 
    Calculation:
    ```
@@ -263,13 +263,13 @@ In Weighted Progress mode, both the manual progress input and weight assignment 
    ParentProgress = 40%
    ```
 
-   In this case, only Subtask A influences the parent task progress because Subtask B has a weight of 0.
+   In this case, only Subtask A influences the parent task progress because Subtask B has a weight of 0%.
    
 5. **Default Weight Behavior**:
    When weights aren't explicitly assigned to some tasks:
-   - Subtask A: Progress 30%, Weight 60 (explicitly set)
-   - Subtask B: Progress 70%, Weight not set (defaults to 100)
-   - Subtask C: Progress 90%, Weight not set (defaults to 100)
+   - Subtask A: Progress 30%, Weight 60% (explicitly set)
+   - Subtask B: Progress 70%, Weight not set (defaults to 100%)
+   - Subtask C: Progress 90%, Weight not set (defaults to 100%)
 
    Calculation:
    ```
