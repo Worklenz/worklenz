@@ -97,8 +97,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
     try {
       const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [taskId]);
       const [data] = result.rows;
-      data.info.ratio = +data.info.ratio.toFixed();
-      return data.info;
+      if (data && data.info && data.info.ratio !== undefined) {
+        data.info.ratio = +((data.info.ratio || 0).toFixed());
+        return data.info;
+      }
+      return null;
     } catch (error) {
       return null;
     }
@@ -198,6 +201,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              (SELECT use_manual_progress FROM projects WHERE id = t.project_id) AS project_use_manual_progress,
              (SELECT use_weighted_progress FROM projects WHERE id = t.project_id) AS project_use_weighted_progress,
              (SELECT use_time_progress FROM projects WHERE id = t.project_id) AS project_use_time_progress,
+             (SELECT get_task_complete_ratio(t.id)->>'ratio') AS complete_ratio,
 
              (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
              (SELECT name
@@ -371,7 +375,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [task.id]);
           const [data] = result.rows;
           if (data && data.info) {
-            task.complete_ratio = +data.info.ratio.toFixed();
+            task.complete_ratio = +(data.info.ratio || 0).toFixed();
             task.completed_count = data.info.total_completed;
             task.total_tasks_count = data.info.total_tasks;
           }
@@ -440,7 +444,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
             const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [task.id]);
             const [ratioData] = result.rows;
             if (ratioData && ratioData.info) {
-              task.complete_ratio = +ratioData.info.ratio.toFixed();
+              task.complete_ratio = +(ratioData.info.ratio || 0).toFixed();
               task.completed_count = ratioData.info.total_completed;
               task.total_tasks_count = ratioData.info.total_tasks;
               console.log(`Updated task ${task.id} (${task.name}) from DB: complete_ratio=${task.complete_ratio}`);
@@ -483,6 +487,53 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   @HandleExceptions()
+  public static async resetParentTaskManualProgress(parentTaskId: string): Promise<void> {
+    try {
+      // Check if this task has subtasks
+      const subTasksResult = await db.query(
+        "SELECT COUNT(*) as subtask_count FROM tasks WHERE parent_task_id = $1 AND archived IS FALSE",
+        [parentTaskId]
+      );
+      
+      const subtaskCount = parseInt(subTasksResult.rows[0]?.subtask_count || "0");
+      
+      // If it has subtasks, reset the manual_progress flag to false
+      if (subtaskCount > 0) {
+        await db.query(
+          "UPDATE tasks SET manual_progress = false WHERE id = $1",
+          [parentTaskId]
+        );
+        console.log(`Reset manual progress for parent task ${parentTaskId} with ${subtaskCount} subtasks`);
+        
+        // Get the project settings to determine which calculation method to use
+        const projectResult = await db.query(
+          "SELECT project_id FROM tasks WHERE id = $1",
+          [parentTaskId]
+        );
+        
+        const projectId = projectResult.rows[0]?.project_id;
+        
+        if (projectId) {
+          // Recalculate the parent task's progress based on its subtasks
+          const progressResult = await db.query(
+            "SELECT get_task_complete_ratio($1) AS ratio",
+            [parentTaskId]
+          );
+          
+          const progressRatio = progressResult.rows[0]?.ratio?.ratio || 0;
+          
+          // Emit the updated progress value to all clients
+          // Note: We don't have socket context here, so we can't directly emit
+          // This will be picked up on the next client refresh
+          console.log(`Recalculated progress for parent task ${parentTaskId}: ${progressRatio}%`);
+        }
+      }
+    } catch (error) {
+      log_error(`Error resetting parent task manual progress: ${error}`);
+    }
+  }
+
+  @HandleExceptions()
   public static async convertToSubtask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
     const groupType = req.body.group_by;
@@ -521,6 +572,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
       ? [req.body.id, req.body.to_group_id]
       : [req.body.id, req.body.project_id, req.body.parent_task_id, req.body.to_group_id];
     await db.query(q, params);
+    
+    // Reset the parent task's manual progress when converting a task to a subtask
+    if (req.body.parent_task_id) {
+      await this.resetParentTaskManualProgress(req.body.parent_task_id);
+    }
 
     const result = await db.query("SELECT get_single_task($1) AS task;", [req.body.id]);
     const [data] = result.rows;
