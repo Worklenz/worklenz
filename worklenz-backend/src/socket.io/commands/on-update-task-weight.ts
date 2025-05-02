@@ -40,14 +40,14 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
     // Log the weight change using the activity logs service
     await logWeightChange({
       task_id,
-      old_value: currentWeight !== null ? currentWeight.toString() : '100',
+      old_value: currentWeight !== null ? currentWeight.toString() : "100",
       new_value: weight.toString(),
       socket
     });
     
     if (projectId) {
       // Emit the update to all clients in the project room
-      io.to(projectId).emit(
+      socket.emit(
         SocketEvents.TASK_PROGRESS_UPDATED.toString(),
         {
           task_id,
@@ -63,11 +63,11 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
         );
         
         // Emit the parent task's updated progress
-        io.to(projectId).emit(
+        socket.emit(
           SocketEvents.TASK_PROGRESS_UPDATED.toString(),
           {
             task_id: parent_task_id,
-            progress_value: progressRatio?.rows[0]?.ratio
+            progress_value: progressRatio?.rows[0]?.ratio?.ratio || 0
           }
         );
       }

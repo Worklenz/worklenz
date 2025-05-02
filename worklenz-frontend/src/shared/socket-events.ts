@@ -63,4 +63,8 @@ export enum SocketEvents {
   UPDATE_TASK_PROGRESS,
   UPDATE_TASK_WEIGHT,
   TASK_PROGRESS_UPDATED,
+  
+  // Task subtasks count events
+  GET_TASK_SUBTASKS_COUNT,
+  TASK_SUBTASKS_COUNT,
 }

@@ -54,7 +54,7 @@ const ProjectViewTaskList = () => {
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
       <TaskListFilters position="list" />
 
-      {(taskGroups.length === 0 && !loadingGroups) ? (
+      {(taskGroups && taskGroups.length === 0 && !loadingGroups) ? (
         <Empty description="No tasks group found" />
       ) : (
         <Skeleton active loading={loadingGroups} className='mt-4 p-4'>

@@ -39,8 +39,14 @@ BEGIN
         INTO _use_manual_progress, _use_weighted_progress, _use_time_progress;
     END IF;
     
-    -- If manual progress is enabled and has a value, use it directly
-    IF _is_manual IS TRUE AND _manual_value IS NOT NULL THEN
+    -- Get all subtasks
+    SELECT COUNT(*) 
+    FROM tasks 
+    WHERE parent_task_id = _task_id AND archived IS FALSE 
+    INTO _sub_tasks_count;
+    
+    -- If manual progress is enabled and has a value AND there are no subtasks, use it directly
+    IF _is_manual IS TRUE AND _manual_value IS NOT NULL AND _sub_tasks_count = 0 THEN
         RETURN JSON_BUILD_OBJECT(
             'ratio', _manual_value,
             'total_completed', 0,
@@ -48,12 +54,6 @@ BEGIN
             'is_manual', TRUE
         );
     END IF;
-    
-    -- Get all subtasks
-    SELECT COUNT(*) 
-    FROM tasks 
-    WHERE parent_task_id = _task_id AND archived IS FALSE 
-    INTO _sub_tasks_count;
     
     -- If there are no subtasks, just use the parent task's status
     IF _sub_tasks_count = 0 THEN
@@ -145,7 +145,7 @@ BEGIN
                                 ELSE 0
                             END
                     END AS progress_value,
-                    COALESCE(total_hours * 60 + total_minutes, 0) AS estimated_minutes
+                    COALESCE(total_minutes, 0) AS estimated_minutes
                 FROM tasks t
                 WHERE t.parent_task_id = _task_id
                 AND t.archived IS FALSE
@@ -656,5 +656,27 @@ ALTER TABLE projects
 ADD COLUMN IF NOT EXISTS use_manual_progress BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS use_weighted_progress BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS use_time_progress BOOLEAN DEFAULT FALSE;
+
+-- Add a trigger to reset manual progress when a task gets a new subtask
+CREATE OR REPLACE FUNCTION reset_parent_task_manual_progress() RETURNS TRIGGER AS
+$$
+BEGIN
+    -- When a task gets a new subtask (parent_task_id is set), reset the parent's manual_progress flag
+    IF NEW.parent_task_id IS NOT NULL THEN
+        UPDATE tasks 
+        SET manual_progress = false
+        WHERE id = NEW.parent_task_id 
+        AND manual_progress = true;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger on the tasks table
+DROP TRIGGER IF EXISTS reset_parent_manual_progress_trigger ON tasks;
+CREATE TRIGGER reset_parent_manual_progress_trigger
+AFTER INSERT OR UPDATE OF parent_task_id ON tasks
+FOR EACH ROW
+EXECUTE FUNCTION reset_parent_task_manual_progress();
 
 COMMIT; 
