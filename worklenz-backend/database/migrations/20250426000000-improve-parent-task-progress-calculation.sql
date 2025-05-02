@@ -221,6 +221,8 @@ CREATE OR REPLACE FUNCTION update_parent_task_progress() RETURNS TRIGGER AS
 $$
 DECLARE
     _parent_task_id UUID;
+    _project_id UUID;
+    _ratio FLOAT;
 BEGIN
     -- Check if this is a subtask
     IF NEW.parent_task_id IS NOT NULL THEN
@@ -230,6 +232,21 @@ BEGIN
         UPDATE tasks
         SET manual_progress = FALSE
         WHERE id = _parent_task_id;
+    END IF;
+    
+    -- If this task has progress value of 100 and doesn't have subtasks, we might want to prompt the user
+    -- to mark it as done. We'll annotate this in a way that the socket handler can detect.
+    IF NEW.progress_value = 100 OR NEW.weight = 100 OR NEW.total_minutes > 0 THEN
+        -- Check if task has status in "done" category
+        SELECT project_id FROM tasks WHERE id = NEW.id INTO _project_id;
+        
+        -- Get the progress ratio for this task
+        SELECT get_task_complete_ratio(NEW.id)->>'ratio' INTO _ratio;
+        
+        IF _ratio::FLOAT >= 100 THEN
+            -- Log that this task is at 100% progress
+            RAISE NOTICE 'Task % progress is at 100%%, may need status update', NEW.id;
+        END IF;
     END IF;
     
     RETURN NEW;
