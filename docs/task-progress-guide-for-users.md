@@ -62,17 +62,17 @@ The parent task will show as 60% complete (average of 30%, 60%, and 90%).
 ### Example
 
 If you have a parent task with three subtasks:
-- Subtask A: 50% complete, Weight 200 (critical task)
-- Subtask B: 75% complete, Weight 100 (standard task)
-- Subtask C: 25% complete, Weight 300 (major task)
+- Subtask A: 50% complete, Weight 60% (important task)
+- Subtask B: 75% complete, Weight 20% (less important task)
+- Subtask C: 25% complete, Weight 100% (critical task)
 
-The parent task will be approximately 42% complete, with Subtask C having the greatest impact due to its higher weight.
+The parent task will be approximately 39% complete, with Subtask C having the greatest impact due to its higher weight.
 
 ### Important Notes About Weights
 
-- Default weight is 100 if not specified
-- You can set weights from 0 to any reasonable number (typically 1-1000)
-- Setting a weight to 0 removes that task from progress calculations
+- Default weight is 100% if not specified
+- Weights range from 0% to 100%
+- Setting a weight to 0% removes that task from progress calculations
 - Only explicitly set weights for tasks that should have different importance
 - Weights are only relevant for subtasks, not for independent tasks
 
