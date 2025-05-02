@@ -35,7 +35,7 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
     
     // Get the current progress value to log the change
     const currentProgressResult = await db.query(
-      "SELECT progress_value, project_id, FROM tasks WHERE id = $1",
+      "SELECT progress_value, project_id FROM tasks WHERE id = $1",
       [task_id]
     );
     
@@ -70,29 +70,58 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
       
       console.log(`Emitted progress update for task ${task_id} to project room ${projectId}`);
       
-      // If this is a subtask, update the parent task's progress
-      if (parent_task_id) {
-        const progressRatio = await db.query(
-          "SELECT get_task_complete_ratio($1) as ratio",
-          [parent_task_id]
-        );
-        
-        console.log(`Updated parent task ${parent_task_id} progress: ${progressRatio?.rows[0]?.ratio}`);
-        
-        // Emit the parent task's updated progress
-        io.to(projectId).emit(
-          SocketEvents.TASK_PROGRESS_UPDATED.toString(),
-          {
-            task_id: parent_task_id,
-            progress_value: progressRatio?.rows[0]?.ratio
-          }
-        );
-      }
+      // Recursively update all ancestors in the task hierarchy
+      await updateTaskAncestors(io, projectId, parent_task_id);
       
       // Notify that project updates are available
       notifyProjectUpdates(socket, task_id);
     }
   } catch (error) {
     log_error(error);
+  }
+}
+
+/**
+ * Recursively updates all ancestor tasks' progress when a subtask changes
+ * @param io Socket.io instance
+ * @param projectId Project ID for room broadcasting
+ * @param taskId The task ID to update (starts with the parent task)
+ */
+async function updateTaskAncestors(io: any, projectId: string, taskId: string | null) {
+  if (!taskId) return;
+  
+  try {
+    // Get the current task's progress ratio
+    const progressRatio = await db.query(
+      "SELECT get_task_complete_ratio($1) as ratio",
+      [taskId]
+    );
+    
+    const ratio = progressRatio?.rows[0]?.ratio;
+    console.log(`Updated task ${taskId} progress: ${ratio}`);
+    
+    // Emit the updated progress
+    io.to(projectId).emit(
+      SocketEvents.TASK_PROGRESS_UPDATED.toString(),
+      {
+        task_id: taskId,
+        progress_value: ratio
+      }
+    );
+    
+    // Find this task's parent to continue the recursive update
+    const parentResult = await db.query(
+      "SELECT parent_task_id FROM tasks WHERE id = $1",
+      [taskId]
+    );
+    
+    const parentTaskId = parentResult.rows[0]?.parent_task_id;
+    
+    // If there's a parent, recursively update it
+    if (parentTaskId) {
+      await updateTaskAncestors(io, projectId, parentTaskId);
+    }
+  } catch (error) {
+    log_error(`Error updating ancestor task ${taskId}: ${error}`);
   }
 } 

@@ -198,6 +198,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              (SELECT use_manual_progress FROM projects WHERE id = t.project_id) AS project_use_manual_progress,
              (SELECT use_weighted_progress FROM projects WHERE id = t.project_id) AS project_use_weighted_progress,
              (SELECT use_time_progress FROM projects WHERE id = t.project_id) AS project_use_time_progress,
+             (SELECT (get_task_complete_ratio(t.id)).ratio) AS complete_ratio,
 
              (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
              (SELECT name
