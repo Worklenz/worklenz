@@ -350,8 +350,8 @@ BEGIN
     RETURNING id INTO _project_id;
 
     -- register the project log
-    INSERT INTO project_logs (project_id, team_id, team_member_id, description)
-    VALUES (_project_id, _team_id, _team_member_id, _project_created_log)
+    INSERT INTO project_logs (project_id, team_id, description)
+    VALUES (_project_id, _team_id, _project_created_log)
     RETURNING id INTO _project_created_log_id;
 
     -- add the team member in the project as a user
@@ -360,8 +360,8 @@ BEGIN
             (SELECT id FROM project_access_levels WHERE key = 'MEMBER'));
 
     -- register the project log
-    INSERT INTO project_logs (project_id, team_id, team_member_id, description)
-    VALUES (_project_id, _team_id, _team_member_id, _project_member_added_log);
+    INSERT INTO project_logs (project_id, team_id, description)
+    VALUES (_project_id, _team_id, _project_member_added_log);
 
     -- insert default project columns
     PERFORM insert_task_list_columns(_project_id);
