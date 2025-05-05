@@ -28,6 +28,7 @@ import TaskDrawerPrioritySelector from './details/task-drawer-priority-selector/
 import TaskDrawerBillable from './details/task-drawer-billable/task-drawer-billable';
 import TaskDrawerProgress from './details/task-drawer-progress/task-drawer-progress';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import logger from '@/utils/errorLogger';
 
 interface TaskDetailsFormProps {
   taskFormViewModel?: ITaskFormViewModel | null;
@@ -45,12 +46,12 @@ const ConditionalProgressInput = ({ task, form }: ConditionalProgressInputProps)
   const isSubTask = !!task?.parent_task_id;
   
   // Add more aggressive logging and checks
-  console.log(`Task ${task.id} status: hasSubTasks=${hasSubTasks}, isSubTask=${isSubTask}, modes: time=${project?.use_time_progress}, manual=${project?.use_manual_progress}, weighted=${project?.use_weighted_progress}`);
+  logger.debug(`Task ${task.id} status: hasSubTasks=${hasSubTasks}, isSubTask=${isSubTask}, modes: time=${project?.use_time_progress}, manual=${project?.use_manual_progress}, weighted=${project?.use_weighted_progress}`);
   
   // STRICT RULE: Never show progress input for parent tasks with subtasks
   // This is the most important check and must be done first
   if (hasSubTasks) {
-    console.log(`Task ${task.id} has ${task.sub_tasks_count} subtasks. Hiding progress input.`);
+    logger.debug(`Task ${task.id} has ${task.sub_tasks_count} subtasks. Hiding progress input.`);
     return null;
   }
   

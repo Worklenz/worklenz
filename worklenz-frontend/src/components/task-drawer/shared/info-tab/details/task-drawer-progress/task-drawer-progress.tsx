@@ -13,7 +13,7 @@ import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.ty
 import { setTaskStatus } from '@/features/task-drawer/task-drawer.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateBoardTaskStatus } from '@/features/board/board-slice';
-import { updateTaskStatus } from '@/features/tasks/tasks.slice';
+import { updateTaskProgress, updateTaskStatus } from '@/features/tasks/tasks.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 
 interface TaskDrawerProgressProps {
@@ -101,11 +101,28 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
         })
       );
 
+      socket?.once(SocketEvents.GET_TASK_PROGRESS.toString(), (data: any) => {
+        dispatch(
+          updateTaskProgress({
+            taskId: task.id,
+            progress: data.complete_ratio,
+            totalTasksCount: data.total_tasks_count,
+            completedCount: data.completed_count,
+          })
+        );
+      });
+
+      if (task.id) {
+        setTimeout(() => {
+          socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
+        }, 500);
+      }
+
       // If this is a subtask, request the parent's progress to be updated in UI
       if (parent_task_id) {
         setTimeout(() => {
           socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), parent_task_id);
-        }, 100);
+        }, 500);
       }
     }
   };
