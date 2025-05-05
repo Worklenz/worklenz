@@ -1548,7 +1548,6 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   };
 
   const handleCustomColumnSettings = (columnKey: string) => {   
-    console.log('columnKey', columnKey);
     if (!columnKey) return;
     setEditColumnKey(columnKey);
     dispatch(setCustomColumnModalAttributes({modalType: 'edit', columnId: columnKey}));
