@@ -27,7 +27,7 @@ export async function on_get_done_statuses(
 
     // Query to get all statuses in the "done" category for the project
     const result = await db.query(`
-      SELECT ts.id, ts.name, ts.sort_order, ts.color_code
+      SELECT ts.id, ts.name, ts.sort_order, stsc.color_code
       FROM task_statuses ts
       INNER JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
       WHERE ts.project_id = $1
