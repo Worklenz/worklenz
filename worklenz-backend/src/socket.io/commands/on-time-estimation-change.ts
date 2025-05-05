@@ -26,12 +26,32 @@ async function updateTaskAncestors(io: any, socket: Socket, projectId: string, t
     const ratio = progressRatio?.rows[0]?.ratio?.ratio || 0;
     console.log(`Updated task ${taskId} progress after time estimation change: ${ratio}`);
     
+    // Check if this task needs a "done" status prompt
+    let shouldPromptForDone = false;
+    
+    if (ratio >= 100) {
+      // Get the task's current status
+      const taskStatusResult = await db.query(`
+        SELECT ts.id, stsc.is_done 
+        FROM tasks t
+        JOIN task_statuses ts ON t.status_id = ts.id
+        JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+        WHERE t.id = $1
+      `, [taskId]);
+      
+      // If the task isn't already in a "done" category, we should prompt the user
+      if (taskStatusResult.rows.length > 0 && !taskStatusResult.rows[0].is_done) {
+        shouldPromptForDone = true;
+      }
+    }
+    
     // Emit the updated progress
     socket.emit(
       SocketEvents.TASK_PROGRESS_UPDATED.toString(),
       {
         task_id: taskId,
-        progress_value: ratio
+        progress_value: ratio,
+        should_prompt_for_done: shouldPromptForDone
       }
     );
     

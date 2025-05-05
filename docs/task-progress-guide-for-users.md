@@ -76,6 +76,25 @@ The parent task will be approximately 39% complete, with Subtask C having the gr
 - Only explicitly set weights for tasks that should have different importance
 - Weights are only relevant for subtasks, not for independent tasks
 
+### Detailed Weighted Progress Calculation Example
+
+To understand how weighted progress works with different weight values, consider this example:
+
+For a parent task with two subtasks:
+- Subtask A: 80% complete, Weight 50%
+- Subtask B: 40% complete, Weight 100%
+
+The calculation works as follows:
+
+1. Each subtask's contribution is: (weight × progress) ÷ (sum of all weights)
+2. For Subtask A: (50 × 80%) ÷ (50 + 100) = 26.7% 
+3. For Subtask B: (100 × 40%) ÷ (50 + 100) = 26.7%
+4. Total parent progress: 26.7% + 26.7% = 53.3%
+
+The parent task would be approximately 53% complete.
+
+This shows how the subtask with twice the weight (Subtask B) has twice the influence on the overall progress calculation, even though it has a lower completion percentage.
+
 ## Time-based Progress Method
 
 ### How It Works
@@ -107,6 +126,29 @@ The parent task will be approximately 29% complete, with the lengthy Subtask C p
 - Time is converted to minutes internally (a 2-hour task = 120 minutes)
 - Setting a time estimate to 0 removes that task from progress calculations
 - Time estimates serve dual purposes: scheduling/resource planning and progress weighting
+
+### Detailed Time-based Progress Calculation Example
+
+To understand how time-based progress works with different time estimates, consider this example:
+
+For a parent task with three subtasks:
+- Subtask A: 40% complete, Estimated Time 2.5 hours
+- Subtask B: 80% complete, Estimated Time 1 hour
+- Subtask C: 10% complete, Estimated Time 4 hours
+
+The calculation works as follows:
+
+1. Convert hours to minutes: A = 150 min, B = 60 min, C = 240 min
+2. Total estimated time: 150 + 60 + 240 = 450 minutes
+3. Each subtask's contribution is: (time estimate × progress) ÷ (total time)
+4. For Subtask A: (150 × 40%) ÷ 450 = 13.3%
+5. For Subtask B: (60 × 80%) ÷ 450 = 10.7%
+6. For Subtask C: (240 × 10%) ÷ 450 = 5.3%
+7. Total parent progress: 13.3% + 10.7% + 5.3% = 29.3%
+
+The parent task would be approximately 29% complete.
+
+This demonstrates how tasks with longer time estimates (like Subtask C) have more influence on the overall progress calculation. Even though Subtask B is 80% complete, its shorter time estimate means it contributes less to the overall progress than the partially-completed but longer Subtask A.
 
 ## Default Progress Method
 
