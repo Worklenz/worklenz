@@ -67,4 +67,7 @@ export enum SocketEvents {
   // Task subtasks count events
   GET_TASK_SUBTASKS_COUNT,
   TASK_SUBTASKS_COUNT,
+  
+  // Task completion events
+  GET_DONE_STATUSES,
 }

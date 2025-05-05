@@ -1,12 +1,20 @@
-import { Form, InputNumber, Tooltip } from 'antd';
+import { Form, InputNumber, Tooltip, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import Flex from 'antd/lib/flex';
 import { SocketEvents } from '@/shared/socket-events';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSocket } from '@/socket/socketContext';
+import { useAuthService } from '@/hooks/useAuth';
+import logger from '@/utils/errorLogger';
+import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
+import { setTaskStatus } from '@/features/task-drawer/task-drawer.slice';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateBoardTaskStatus } from '@/features/board/board-slice';
+import { updateTaskStatus } from '@/features/tasks/tasks.slice';
+import useTabSearchParam from '@/hooks/useTabSearchParam';
 
 interface TaskDrawerProgressProps {
   task: ITaskViewModel;
@@ -15,43 +23,22 @@ interface TaskDrawerProgressProps {
 
 const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
+  const dispatch = useAppDispatch();
+  const { tab } = useTabSearchParam();
+
   const { project } = useAppSelector(state => state.projectReducer);
   const { socket, connected } = useSocket();
-  const [confirmedHasSubtasks, setConfirmedHasSubtasks] = useState<boolean | null>(null);
+  const [isCompletionModalVisible, setIsCompletionModalVisible] = useState(false);
+  const currentSession = useAuthService().getCurrentSession();
 
   const isSubTask = !!task?.parent_task_id;
-  const hasSubTasks = task?.sub_tasks_count > 0 || confirmedHasSubtasks === true;
-
-  // Additional debug logging
-  console.log(`TaskDrawerProgress for task ${task.id} (${task.name}): hasSubTasks=${hasSubTasks}, count=${task.sub_tasks_count}, confirmedHasSubtasks=${confirmedHasSubtasks}`);
+  // Safe handling of sub_tasks_count which might be undefined in some cases
+  const hasSubTasks = (task?.sub_tasks_count || 0) > 0;
 
   // HIGHEST PRIORITY CHECK: Never show progress inputs for parent tasks with subtasks
-  // This check happens before any other logic to ensure consistency
   if (hasSubTasks) {
-    console.error(`REJECTED: Progress input for parent task ${task.id} with ${task.sub_tasks_count} subtasks. confirmedHasSubtasks=${confirmedHasSubtasks}`);
     return null;
   }
-
-  // Double-check by directly querying for subtasks from the server
-  useEffect(() => {
-    if (connected && task.id) {
-      socket?.emit(SocketEvents.GET_TASK_SUBTASKS_COUNT.toString(), task.id);
-    }
-    
-    // Listen for the subtask count response
-    const handleSubtasksCount = (data: any) => {
-      if (data.task_id === task.id) {
-        console.log(`Received subtask count for task ${task.id}: ${data.subtask_count}, has_subtasks=${data.has_subtasks}`);
-        setConfirmedHasSubtasks(data.has_subtasks);
-      }
-    };
-    
-    socket?.on(SocketEvents.TASK_SUBTASKS_COUNT.toString(), handleSubtasksCount);
-    
-    return () => {
-      socket?.off(SocketEvents.TASK_SUBTASKS_COUNT.toString(), handleSubtasksCount);
-    };
-  }, [socket, connected, task.id]);
 
   // Never show manual progress input for parent tasks (tasks with subtasks)
   // Only show progress input for tasks without subtasks
@@ -69,6 +56,11 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
         }
         if (data.weight !== undefined) {
           form.setFieldsValue({ weight: data.weight });
+        }
+
+        // Check if we should prompt the user to mark the task as done
+        if (data.should_prompt_for_done) {
+          setIsCompletionModalVisible(true);
         }
       }
     };
@@ -92,6 +84,11 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
 
   const handleProgressChange = (value: number | null) => {
     if (connected && task.id && value !== null && !hasSubTasks) {
+      // Check if progress is set to 100% to show completion confirmation
+      if (value === 100) {
+        setIsCompletionModalVisible(true);
+      }
+
       // Ensure parent_task_id is not undefined
       const parent_task_id = task.parent_task_id || null;
 
@@ -126,13 +123,62 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
           parent_task_id: parent_task_id,
         })
       );
-      
+
       // If this is a subtask, request the parent's progress to be updated in UI
       if (parent_task_id) {
         setTimeout(() => {
           socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), parent_task_id);
         }, 100);
       }
+    }
+  };
+
+  const handleMarkTaskAsComplete = () => {
+    // Close the modal
+    setIsCompletionModalVisible(false);
+
+    // Find a "Done" status for this project
+    if (connected && task.id) {
+      // Emit socket event to get "done" category statuses
+      socket?.emit(
+        SocketEvents.GET_DONE_STATUSES.toString(),
+        task.project_id,
+        (doneStatuses: any[]) => {
+          if (doneStatuses && doneStatuses.length > 0) {
+            // Use the first "done" status
+            const doneStatusId = doneStatuses[0].id;
+
+            // Emit socket event to update the task status
+            socket?.emit(
+              SocketEvents.TASK_STATUS_CHANGE.toString(),
+              JSON.stringify({
+                task_id: task.id,
+                status_id: doneStatusId,
+                project_id: task.project_id,
+                team_id: currentSession?.team_id,
+                parent_task: task.parent_task_id || null,
+              })
+            );
+            socket?.once(
+              SocketEvents.TASK_STATUS_CHANGE.toString(),
+              (data: ITaskListStatusChangeResponse) => {
+                dispatch(setTaskStatus(data));
+
+                if (tab === 'tasks-list') {
+                  dispatch(updateTaskStatus(data));
+                }
+                if (tab === 'board') {
+                  dispatch(updateBoardTaskStatus(data));
+                }
+                if (data.parent_task)
+                  socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), data.parent_task);
+              }
+            );
+          } else {
+            logger.error(`No "done" statuses found for project ${task.project_id}`);
+          }
+        }
+      );
     }
   };
 
@@ -217,6 +263,17 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
           />
         </Form.Item>
       )}
+
+      <Modal
+        title="Mark Task as Done?"
+        open={isCompletionModalVisible}
+        onOk={handleMarkTaskAsComplete}
+        onCancel={() => setIsCompletionModalVisible(false)}
+        okText="Yes, mark as done"
+        cancelText="No, keep current status"
+      >
+        <p>You've set the progress to 100%. Would you like to update the task status to "Done"?</p>
+      </Modal>
     </>
   );
 };
