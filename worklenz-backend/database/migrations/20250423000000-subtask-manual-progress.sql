@@ -354,14 +354,19 @@ BEGIN
     VALUES (_project_id, _team_id, _project_created_log)
     RETURNING id INTO _project_created_log_id;
 
-    -- add the team member in the project as a user
-    INSERT INTO project_members (project_id, team_member_id, project_access_level_id)
-    VALUES (_project_id, _team_member_id,
-            (SELECT id FROM project_access_levels WHERE key = 'MEMBER'));
+    -- insert the project creator as a project member
+    INSERT INTO project_members (team_member_id, project_access_level_id, project_id, role_id)
+    VALUES (_team_member_id, (SELECT id FROM project_access_levels WHERE key = 'ADMIN'),
+            _project_id,
+            (SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE));
 
-    -- register the project log
-    INSERT INTO project_logs (project_id, team_id, description)
-    VALUES (_project_id, _team_id, _project_member_added_log);
+    -- insert statuses
+    INSERT INTO task_statuses (name, project_id, team_id, category_id, sort_order)
+    VALUES ('To Do', _project_id, _team_id, (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE), 0);
+    INSERT INTO task_statuses (name, project_id, team_id, category_id, sort_order)
+    VALUES ('Doing', _project_id, _team_id, (SELECT id FROM sys_task_status_categories WHERE is_doing IS TRUE), 1);
+    INSERT INTO task_statuses (name, project_id, team_id, category_id, sort_order)
+    VALUES ('Done', _project_id, _team_id, (SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE), 2);
 
     -- insert default project columns
     PERFORM insert_task_list_columns(_project_id);

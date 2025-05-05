@@ -21,6 +21,7 @@ import { ITaskLabel, ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
 import { ITaskPhaseChangeResponse } from '@/types/tasks/task-phase-change-response';
 import { produce } from 'immer';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
+import { SocketEvents } from '@/shared/socket-events';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -190,6 +191,20 @@ export const fetchSubTasks = createAsyncThunk(
     if (task?.show_sub_tasks) {
       // If already expanded, just return without fetching
       return [];
+    }
+
+    // Request subtask progress data when expanding the task
+    // This will trigger the socket to emit TASK_PROGRESS_UPDATED events for all subtasks
+    try {
+      // Get access to the socket from the state
+      const socket = (getState() as any).socketReducer?.socket;
+      if (socket?.connected) {
+        // Request subtask count and progress information
+        socket.emit(SocketEvents.GET_TASK_SUBTASKS_COUNT.toString(), taskId);
+      }
+    } catch (error) {
+      console.error('Error requesting subtask progress:', error);
+      // Non-critical error, continue with fetching subtasks
     }
 
     const selectedMembers = taskReducer.taskAssignees
@@ -577,6 +592,7 @@ const taskSlice = createSlice({
         for (const task of tasks) {
           if (task.id === taskId) {
             task.complete_ratio = progress;
+            task.progress_value = progress;
             task.total_tasks_count = totalTasksCount;
             task.completed_count = completedCount;
             return true;

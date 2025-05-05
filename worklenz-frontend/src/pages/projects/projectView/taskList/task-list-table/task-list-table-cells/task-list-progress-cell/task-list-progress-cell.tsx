@@ -10,7 +10,7 @@ type TaskListProgressCellProps = {
 
 const TaskListProgressCell = ({ task }: TaskListProgressCellProps) => {
   const { project } = useAppSelector(state => state.projectReducer);
-  const isManualProgressEnabled = project?.use_manual_progress;
+  const isManualProgressEnabled = (task.project_use_manual_progress || task.project_use_weighted_progress || task.project_use_time_progress);;
   const isSubtask = task.is_sub_task;
   const hasManualProgress = task.manual_progress;
 
