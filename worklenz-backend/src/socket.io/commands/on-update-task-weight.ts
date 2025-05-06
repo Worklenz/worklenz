@@ -3,6 +3,7 @@ import db from "../../config/db";
 import { SocketEvents } from "../events";
 import { log, log_error, notifyProjectUpdates } from "../util";
 import { logWeightChange } from "../../services/activity-logs/activity-logs.service";
+import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 
 interface UpdateTaskWeightData {
   task_id: string;
@@ -29,13 +30,8 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
     const currentWeight = currentWeightResult.rows[0]?.weight;
     const projectId = currentWeightResult.rows[0]?.project_id;
     
-    // Update the task weight in the database
-    await db.query(
-      `UPDATE tasks 
-      SET weight = $1, updated_at = NOW() 
-      WHERE id = $2`,
-      [weight, task_id]
-    );
+    // Update the task weight using our controller method
+    await TasksControllerV2.updateTaskWeight(task_id, weight);
     
     // Log the weight change using the activity logs service
     await logWeightChange({
@@ -57,6 +53,10 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
       
       // If this is a subtask, update the parent task's progress
       if (parent_task_id) {
+        // Use the controller to update the parent task progress
+        await TasksControllerV2.updateTaskProgress(parent_task_id);
+        
+        // Get the updated progress to emit to clients
         const progressRatio = await db.query(
           "SELECT get_task_complete_ratio($1) as ratio",
           [parent_task_id]
@@ -70,6 +70,32 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
             progress_value: progressRatio?.rows[0]?.ratio?.ratio || 0
           }
         );
+        
+        // We also need to update any grandparent tasks
+        const grandparentResult = await db.query(
+          "SELECT parent_task_id FROM tasks WHERE id = $1",
+          [parent_task_id]
+        );
+        
+        const grandparentId = grandparentResult.rows[0]?.parent_task_id;
+        
+        if (grandparentId) {
+          await TasksControllerV2.updateTaskProgress(grandparentId);
+          
+          // Emit the grandparent's updated progress
+          const grandparentProgressRatio = await db.query(
+            "SELECT get_task_complete_ratio($1) as ratio",
+            [grandparentId]
+          );
+          
+          socket.emit(
+            SocketEvents.TASK_PROGRESS_UPDATED.toString(),
+            {
+              task_id: grandparentId,
+              progress_value: grandparentProgressRatio?.rows[0]?.ratio?.ratio || 0
+            }
+          );
+        }
       }
       
       // Notify that project updates are available
