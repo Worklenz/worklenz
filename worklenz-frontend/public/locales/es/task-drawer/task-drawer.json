@@ -82,5 +82,11 @@
   },
   "taskActivityLogTab": {
     "title": "Registro de actividad"
+  },
+  "taskProgress": {
+    "markAsDoneTitle": "¿Marcar Tarea como Completada?",
+    "confirmMarkAsDone": "Sí, marcar como completada",
+    "cancelMarkAsDone": "No, mantener estado actual",
+    "markAsDoneDescription": "Has establecido el progreso al 100%. ¿Quieres actualizar el estado de la tarea a \"Completada\"?"
   }
 } 

@@ -242,8 +242,19 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
             formatter={percentFormatter}
             parser={percentParser}
             onBlur={e => {
-              const value = percentParser(e.target.value);
+              let value = percentParser(e.target.value);
+              // Ensure value doesn't exceed 100
+              if (value > 100) {
+                value = 100;
+                form.setFieldsValue({ weight: 100 });
+              }
               handleWeightChange(value);
+            }}
+            onChange={value => {
+              if (value !== null && value > 100) {
+                form.setFieldsValue({ weight: 100 });
+                handleWeightChange(100);
+              }
             }}
           />
         </Form.Item>
@@ -274,22 +285,33 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
             formatter={percentFormatter}
             parser={percentParser}
             onBlur={e => {
-              const value = percentParser(e.target.value);
+              let value = percentParser(e.target.value);
+              // Ensure value doesn't exceed 100
+              if (value > 100) {
+                value = 100;
+                form.setFieldsValue({ progress_value: 100 });
+              }
               handleProgressChange(value);
+            }}
+            onChange={value => {
+              if (value !== null && value > 100) {
+                form.setFieldsValue({ progress_value: 100 });
+                handleProgressChange(100);
+              }
             }}
           />
         </Form.Item>
       )}
 
       <Modal
-        title="Mark Task as Done?"
+        title={t('taskProgress.markAsDoneTitle', 'Mark Task as Done?')}
         open={isCompletionModalVisible}
         onOk={handleMarkTaskAsComplete}
         onCancel={() => setIsCompletionModalVisible(false)}
-        okText="Yes, mark as done"
-        cancelText="No, keep current status"
+        okText={t('taskProgress.confirmMarkAsDone', 'Yes, mark as done')}
+        cancelText={t('taskProgress.cancelMarkAsDone', 'No, keep current status')}
       >
-        <p>You've set the progress to 100%. Would you like to update the task status to "Done"?</p>
+        <p>{t('taskProgress.markAsDoneDescription', 'You\'ve set the progress to 100%. Would you like to update the task status to "Done"?')}</p>
       </Modal>
     </>
   );
