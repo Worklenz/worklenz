@@ -82,5 +82,11 @@
   },
   "taskActivityLogTab": {
     "title": "Activity Log"
+  },
+  "taskProgress": {
+    "markAsDoneTitle": "Mark Task as Done?",
+    "confirmMarkAsDone": "Yes, mark as done",
+    "cancelMarkAsDone": "No, keep current status",
+    "markAsDoneDescription": "You've set the progress to 100%. Would you like to update the task status to \"Done\"?"
   }
 }
