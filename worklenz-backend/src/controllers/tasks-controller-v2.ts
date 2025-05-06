@@ -97,12 +97,14 @@ export default class TasksControllerV2 extends TasksControllerBase {
     try {
       const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [taskId]);
       const [data] = result.rows;
+      console.log("data", data);
       if (data && data.info && data.info.ratio !== undefined) {
         data.info.ratio = +((data.info.ratio || 0).toFixed());
         return data.info;
       }
       return null;
     } catch (error) {
+      log_error(`Error in getTaskCompleteRatio: ${error}`);
       return null;
     }
   }
@@ -325,6 +327,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   @HandleExceptions()
   public static async getList(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Before doing anything else, refresh task progress values for this project
+    if (req.params.id) {
+      await this.refreshProjectTaskProgressValues(req.params.id);
+    }
+
     const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
     
@@ -366,25 +373,25 @@ export default class TasksControllerV2 extends TasksControllerBase {
   public static async updateMapByGroup(tasks: any[], groupBy: string, map: { [p: string]: ITaskGroup }) {
     let index = 0;
     const unmapped = [];
+    
+    // First, ensure we have the latest progress values for all tasks
     for (const task of tasks) {
-      task.index = index++;
-      
-      // For tasks with subtasks, get the complete ratio from the database function
+      // For any task with subtasks, ensure we have the latest progress values
       if (task.sub_tasks_count > 0) {
-        try {
-          const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [task.id]);
-          const [data] = result.rows;
-          if (data && data.info) {
-            task.complete_ratio = +(data.info.ratio || 0).toFixed();
-            task.completed_count = data.info.total_completed;
-            task.total_tasks_count = data.info.total_tasks;
-          }
-        } catch (error) {
-          // Proceed with default calculation if database call fails
+        const info = await this.getTaskCompleteRatio(task.id);
+        if (info) {
+          task.complete_ratio = info.ratio;
+          task.progress_value = info.ratio; // Ensure progress_value reflects the calculated ratio
+          console.log(`Updated task ${task.name} (${task.id}): complete_ratio=${task.complete_ratio}`);
         }
       }
-      
+    }
+    
+    // Now group the tasks with their updated progress values
+    for (const task of tasks) {
+      task.index = index++;
       TasksControllerV2.updateTaskViewModel(task);
+      
       if (groupBy === GroupBy.STATUS) {
         map[task.status]?.tasks.push(task);
       } else if (groupBy === GroupBy.PRIORITY) {
@@ -420,6 +427,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   @HandleExceptions()
   public static async getTasksOnly(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Before doing anything else, refresh task progress values for this project
+    if (req.params.id) {
+      await this.refreshProjectTaskProgressValues(req.params.id);
+    }
+
     const isSubTasks = !!req.query.parent_task;
       
     // Add customColumns flag to query params
@@ -818,5 +830,129 @@ export default class TasksControllerV2 extends TasksControllerBase {
       column_key,
       value
     }));
+  }
+
+  public static async refreshProjectTaskProgressValues(projectId: string): Promise<void> {
+    try {
+      console.log(`Refreshing progress values for project ${projectId}`);
+      
+      // Run the recalculate_all_task_progress function only for tasks in this project
+      const query = `
+      DO $$
+      BEGIN
+        -- First, reset manual_progress flag for all tasks that have subtasks within this project
+        UPDATE tasks AS t
+        SET manual_progress = FALSE
+        WHERE project_id = $1
+        AND EXISTS (
+            SELECT 1
+            FROM tasks
+            WHERE parent_task_id = t.id
+            AND archived IS FALSE
+        );
+        
+        -- Start recalculation from leaf tasks (no subtasks) and propagate upward
+        -- This ensures calculations are done in the right order
+        WITH RECURSIVE task_hierarchy AS (
+            -- Base case: Start with all leaf tasks (no subtasks) in this project
+            SELECT 
+                id,
+                parent_task_id,
+                0 AS level
+            FROM tasks
+            WHERE project_id = $1
+            AND NOT EXISTS (
+                SELECT 1 FROM tasks AS sub
+                WHERE sub.parent_task_id = tasks.id
+                AND sub.archived IS FALSE
+            )
+            AND archived IS FALSE
+            
+            UNION ALL
+            
+            -- Recursive case: Move up to parent tasks, but only after processing all their children
+            SELECT 
+                t.id,
+                t.parent_task_id,
+                th.level + 1
+            FROM tasks t
+            JOIN task_hierarchy th ON t.id = th.parent_task_id
+            WHERE t.archived IS FALSE
+        )
+        -- Sort by level to ensure we calculate in the right order (leaves first, then parents)
+        UPDATE tasks
+        SET progress_value = (SELECT (get_task_complete_ratio(tasks.id)->>'ratio')::FLOAT)
+        FROM (
+            SELECT id, level
+            FROM task_hierarchy
+            ORDER BY level
+        ) AS ordered_tasks
+        WHERE tasks.id = ordered_tasks.id
+        AND tasks.project_id = $1
+        AND (manual_progress IS FALSE OR manual_progress IS NULL);
+      END $$;
+      `;
+      
+      const result = await db.query(query, [projectId]);
+      console.log(`Finished refreshing progress values for project ${projectId}`);
+    } catch (error) {
+      log_error('Error refreshing project task progress values', error);
+    }
+  }
+
+  public static async updateTaskProgress(taskId: string): Promise<void> {
+    try {
+      // Calculate the task's progress using get_task_complete_ratio
+      const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [taskId]);
+      const [data] = result.rows;
+      
+      if (data && data.info && data.info.ratio !== undefined) {
+        const progressValue = +((data.info.ratio || 0).toFixed());
+        
+        // Update the task's progress_value in the database
+        await db.query(
+          "UPDATE tasks SET progress_value = $1 WHERE id = $2",
+          [progressValue, taskId]
+        );
+        
+        console.log(`Updated progress for task ${taskId} to ${progressValue}%`);
+        
+        // If this task has a parent, update the parent's progress as well
+        const parentResult = await db.query(
+          "SELECT parent_task_id FROM tasks WHERE id = $1",
+          [taskId]
+        );
+        
+        if (parentResult.rows.length > 0 && parentResult.rows[0].parent_task_id) {
+          await this.updateTaskProgress(parentResult.rows[0].parent_task_id);
+        }
+      }
+    } catch (error) {
+      log_error(`Error updating task progress: ${error}`);
+    }
+  }
+
+  // Add this method to update progress when a task's weight is changed
+  public static async updateTaskWeight(taskId: string, weight: number): Promise<void> {
+    try {
+      // Update the task's weight
+      await db.query(
+        "UPDATE tasks SET weight = $1 WHERE id = $2",
+        [weight, taskId]
+      );
+      
+      // Get the parent task ID
+      const parentResult = await db.query(
+        "SELECT parent_task_id FROM tasks WHERE id = $1",
+        [taskId]
+      );
+      
+      // If this task has a parent, update the parent's progress
+      if (parentResult.rows.length > 0 && parentResult.rows[0].parent_task_id) {
+        await this.updateTaskProgress(parentResult.rows[0].parent_task_id);
+      }
+    } catch (error) {
+      log_error(`Error updating task weight: ${error}`);
+    }
   }
 }

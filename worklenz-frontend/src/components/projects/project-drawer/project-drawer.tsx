@@ -266,7 +266,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     setLoading(true);
     resetForm();
     dispatch(setProjectData({} as IProjectViewModel));
-    dispatch(setProjectId(null));
+    // dispatch(setProjectId(null));
     dispatch(setDrawerProjectId(null));
     dispatch(toggleProjectDrawer());
     onClose();
