@@ -3,6 +3,7 @@ import db from "../../config/db";
 import { SocketEvents } from "../events";
 import { log, log_error, notifyProjectUpdates } from "../util";
 import { logProgressChange } from "../../services/activity-logs/activity-logs.service";
+import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 
 interface UpdateTaskProgressData {
   task_id: string;
@@ -21,6 +22,9 @@ async function updateTaskAncestors(io: any, socket: Socket, projectId: string, t
   if (!taskId) return;
   
   try {
+    // Use the new controller method to update the task progress
+    await TasksControllerV2.updateTaskProgress(taskId);
+    
     // Get the current task's progress ratio
     const progressRatio = await db.query(
       "SELECT get_task_complete_ratio($1) as ratio",
@@ -156,8 +160,13 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
       
       log(`Emitted progress update for task ${task_id} to project room ${projectId}`, null);
       
-      // Recursively update all ancestors in the task hierarchy
-      await updateTaskAncestors(io, socket, projectId, parent_task_id);
+      // If this task has a parent, use our controller to update all ancestors
+      if (parent_task_id) {
+        // Use the controller method to update the parent task's progress
+        await TasksControllerV2.updateTaskProgress(parent_task_id);
+        // Also use the existing method for socket notifications
+        await updateTaskAncestors(io, socket, projectId, parent_task_id);
+      }
       
       // Notify that project updates are available
       notifyProjectUpdates(socket, task_id);
