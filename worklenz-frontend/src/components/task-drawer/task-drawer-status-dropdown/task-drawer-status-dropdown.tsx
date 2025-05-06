@@ -46,6 +46,7 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
       SocketEvents.TASK_STATUS_CHANGE.toString(),
       (data: ITaskListStatusChangeResponse) => {
         dispatch(setTaskStatus(data));
+        socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
 
         if (tab === 'tasks-list') {
           dispatch(updateTaskStatus(data));
@@ -65,7 +66,6 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
         );
       }
     }
-
   };
 
   const options = useMemo(
