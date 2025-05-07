@@ -232,7 +232,11 @@ export default class AdminCenterController extends WorklenzControllerBase {
                                      FROM team_member_info_view
                                      WHERE team_member_info_view.team_member_id = tm.id),
                                     role_id,
-                                    r.name AS role_name
+                                    r.name AS role_name,
+                                    EXISTS(SELECT email
+                                           FROM email_invitations
+                                           WHERE team_member_id = tm.id
+                                             AND email_invitations.team_id = tm.team_id) AS pending_invitation
                              FROM team_members tm
                                     LEFT JOIN users u on tm.user_id = u.id
                                     LEFT JOIN roles r on tm.role_id = r.id
