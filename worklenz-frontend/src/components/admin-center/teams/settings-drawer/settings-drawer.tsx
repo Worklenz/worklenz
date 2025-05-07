@@ -10,6 +10,7 @@ import {
   Table,
   TableProps,
   Typography,
+  Tooltip,
 } from 'antd';
 import React, { useState } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -22,8 +23,6 @@ import {
 } from '@/types/admin-center/admin-center.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL } from '@/shared/constants';
-import apiClient from '@/api/api-client';
 
 interface SettingTeamDrawerProps {
   teamId: string;
@@ -126,15 +125,32 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
           }
         };
 
+        const isDisabled = record.role_name === 'Owner' || record.pending_invitation;
+        const tooltipTitle = record.role_name === 'Owner' 
+          ? t('cannotChangeOwnerRole') 
+          : record.pending_invitation 
+            ? t('pendingInvitation')
+            : '';
+
+        const selectComponent = (
+          <Select
+            style={{ width: '150px', height: '32px' }}
+            options={roleOptions}
+            defaultValue={record.role_name || ''}
+            disabled={isDisabled}
+            onChange={handleRoleChange}
+          />
+        );
+
         return (
           <div>
-            <Select
-              style={{ width: '150px', height: '32px' }}
-              options={roleOptions}
-              defaultValue={record.role_name || ''}
-              disabled={record.role_name === 'Owner'}
-              onChange={handleRoleChange}
-            />
+            {isDisabled ? (
+              <Tooltip title={tooltipTitle}>
+                {selectComponent}
+              </Tooltip>
+            ) : (
+              selectComponent
+            )}
           </div>
         );
       },

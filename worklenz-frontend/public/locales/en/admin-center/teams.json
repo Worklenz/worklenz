@@ -29,5 +29,7 @@
   "role": "Role",
   "owner": "Owner",
   "admin": "Admin",
-  "member": "Member"
+  "member": "Member",
+  "cannotChangeOwnerRole": "Owner role cannot be changed",
+  "pendingInvitation": "Pending invitation"
 }
