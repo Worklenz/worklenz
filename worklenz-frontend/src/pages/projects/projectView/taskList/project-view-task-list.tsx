@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Flex from 'antd/es/flex';
 import Skeleton from 'antd/es/skeleton';
 import { useSearchParams } from 'react-router-dom';
@@ -17,6 +17,8 @@ const ProjectViewTaskList = () => {
   const dispatch = useAppDispatch();
   const { projectView } = useTabSearchParam();
   const [searchParams, setSearchParams] = useSearchParams();
+  // Add local loading state to immediately show skeleton
+  const [isLoading, setIsLoading] = useState(true);
 
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { taskGroups, loadingGroups, groupBy, archived, fields, search } = useAppSelector(
@@ -38,26 +40,40 @@ const ProjectViewTaskList = () => {
   }, [projectView, searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (projectId && groupBy) {
-      if (!loadingColumns) dispatch(fetchTaskListColumns(projectId));
-      if (!loadingPhases) dispatch(fetchPhasesByProjectId(projectId));
-      if (!loadingGroups && projectView === 'list') {
-        dispatch(fetchTaskGroups(projectId));
+    // Set loading state based on all loading conditions
+    setIsLoading(loadingGroups || loadingColumns || loadingPhases || loadingStatusCategories);
+  }, [loadingGroups, loadingColumns, loadingPhases, loadingStatusCategories]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (projectId && groupBy) {
+        const promises = [];
+        
+        if (!loadingColumns) promises.push(dispatch(fetchTaskListColumns(projectId)));
+        if (!loadingPhases) promises.push(dispatch(fetchPhasesByProjectId(projectId)));
+        if (!loadingGroups && projectView === 'list') {
+          promises.push(dispatch(fetchTaskGroups(projectId)));
+        }
+        if (!statusCategories.length) {
+          promises.push(dispatch(fetchStatusesCategories()));
+        }
+        
+        // Wait for all data to load
+        await Promise.all(promises);
       }
-    }
-    if (!statusCategories.length) {
-      dispatch(fetchStatusesCategories());
-    }
+    };
+    
+    loadData();
   }, [dispatch, projectId, groupBy, fields, search, archived]);
 
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
       <TaskListFilters position="list" />
 
-      {(taskGroups && taskGroups.length === 0 && !loadingGroups) ? (
+      {(taskGroups && taskGroups.length === 0 && !isLoading) ? (
         <Empty description="No tasks group found" />
       ) : (
-        <Skeleton active loading={loadingGroups} className='mt-4 p-4'>
+        <Skeleton active loading={isLoading} className='mt-4 p-4'>
           <TaskGroupWrapper taskGroups={taskGroups} groupBy={groupBy} />
         </Skeleton>
       )}
