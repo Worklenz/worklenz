@@ -13,21 +13,17 @@ import {
 } from 'antd';
 import React, { useState } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleSettingDrawer, updateTeam } from '@/features/teams/teamSlice';
-import { TeamsType } from '@/types/admin-center/team.types';
 import './settings-drawer.css';
-import CustomAvatar from '@/components/CustomAvatar';
-import { teamsApiService } from '@/api/teams/teams.api.service';
 import logger from '@/utils/errorLogger';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import {
   IOrganizationTeam,
   IOrganizationTeamMember,
 } from '@/types/admin-center/admin-center.types';
-import Avatars from '@/components/avatars/avatars';
-import { AvatarNamesMap } from '@/shared/constants';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '@/shared/constants';
+import apiClient from '@/api/api-client';
 
 interface SettingTeamDrawerProps {
   teamId: string;
@@ -68,26 +64,30 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
   };
 
   const handleFormSubmit = async (values: any) => {
-    console.log(values);
-    // const newTeam: TeamsType = {
-    //   teamId: teamId,
-    //   teamName: values.name,
-    //   membersCount: team?.membersCount || 1,
-    //   members: team?.members || ['Raveesha Dilanka'],
-    //   owner: values.name,
-    //   created: team?.created || new Date(),
-    //   isActive: false,
-    // };
-    // dispatch(updateTeam(newTeam));
-    // dispatch(toggleSettingDrawer());
-    // form.resetFields();
-    // message.success('Team updated!');
+    try {
+      setUpdatingTeam(true);
+
+      const body = {
+        name: values.name,
+        teamMembers: teamData?.team_members || []
+      };
+      
+      const response = await adminCenterApiService.updateTeam(teamId, body);
+      
+      if (response.done) {
+        setIsSettingDrawerOpen(false);
+      }
+    } catch (error) {
+      logger.error('Error updating team', error);
+    } finally {
+      setUpdatingTeam(false);
+    }
   };
 
   const roleOptions = [
-    { value: 'Admin', label: t('admin') },
-    { value: 'Member', label: t('member') },
-    { value: 'Owner', label: t('owner') },
+    { key: 'Admin', value: 'Admin', label: t('admin') },
+    { key: 'Member', value: 'Member', label: t('member') },
+    { key: 'Owner', value: 'Owner', label: t('owner'), disabled: true },
   ];
 
   const columns: TableProps['columns'] = [
@@ -104,16 +104,40 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
     {
       title: t('role'),
       key: 'role',
-      render: (_, record: IOrganizationTeamMember) => (
-        <div>
-          <Select
-            style={{ width: '150px', height: '32px' }}
-            options={roleOptions.map(option => ({ ...option, key: option.value }))}
-            defaultValue={record.role_name || ''}
-            disabled={record.role_name === 'Owner'}
-          />
-        </div>
-      ),
+      render: (_, record: IOrganizationTeamMember) => {
+        const handleRoleChange = (value: string) => {
+          if (value === 'Owner') {
+            return;
+          }
+          
+          // Update the team member's role in teamData
+          if (teamData && teamData.team_members) {
+            const updatedMembers = teamData.team_members.map(member => {
+              if (member.id === record.id) {
+                return { ...member, role_name: value };
+              }
+              return member;
+            });
+            
+            setTeamData({
+              ...teamData,
+              team_members: updatedMembers
+            });
+          }
+        };
+
+        return (
+          <div>
+            <Select
+              style={{ width: '150px', height: '32px' }}
+              options={roleOptions}
+              defaultValue={record.role_name || ''}
+              disabled={record.role_name === 'Owner'}
+              onChange={handleRoleChange}
+            />
+          </div>
+        );
+      },
     },
   ];
 
