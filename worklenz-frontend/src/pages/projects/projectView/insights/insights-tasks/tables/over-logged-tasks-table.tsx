@@ -105,8 +105,8 @@ const OverLoggedTasksTable = () => {
     {
       key: 'overLoggedTime',
       title: 'Over Logged Time',
-      render: (record: IInsightTasks) => (
-        <Typography.Text>{record.overlogged_time}</Typography.Text>
+      render: (_, record: IInsightTasks) => (
+        <Typography.Text>{record.overlogged_time_string}</Typography.Text>
       ),
     },
   ];
