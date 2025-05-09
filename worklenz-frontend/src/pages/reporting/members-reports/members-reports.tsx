@@ -25,9 +25,7 @@ const MembersReports = () => {
   useDocumentTitle('Reporting - Members');
   const currentSession = useAuthService().getCurrentSession();
 
-  const { archived, searchQuery } = useAppSelector(
-    state => state.membersReportsReducer,
-  );
+  const { archived, searchQuery, total } = useAppSelector(state => state.membersReportsReducer);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
 
 
@@ -44,7 +42,7 @@ const MembersReports = () => {
   return (
     <Flex vertical>
       <CustomPageHeader
-        title={`Members`}
+        title={`Members (${total})`}
         children={
           <Space>
             <Button>
