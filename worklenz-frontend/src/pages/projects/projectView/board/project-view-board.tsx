@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskListFilters from '../taskList/task-list-filters/task-list-filters';
 import { Flex, Skeleton } from 'antd';
@@ -35,7 +35,6 @@ import { evt_project_board_visit, evt_project_task_list_drag_and_move } from '@/
 import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-request';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import logger from '@/utils/errorLogger';
-import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 
 const ProjectViewBoard = () => {
@@ -45,7 +44,10 @@ const ProjectViewBoard = () => {
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const [ currentTaskIndex, setCurrentTaskIndex] = useState(-1);
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(-1);
+  // Add local loading state to immediately show skeleton
+  const [isLoading, setIsLoading] = useState(true);
+  
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { taskGroups, groupBy, loadingGroups, search, archived } = useAppSelector(state => state.boardReducer);
   const { statusCategories, loading: loadingStatusCategories } = useAppSelector(
@@ -56,14 +58,34 @@ const ProjectViewBoard = () => {
   // Store the original source group ID when drag starts
   const originalSourceGroupIdRef = useRef<string | null>(null);
 
+  // Update loading state based on all loading conditions
   useEffect(() => {
-    if (projectId && groupBy && projectView === 'kanban') {
-      if (!loadingGroups) {
-        dispatch(fetchBoardTaskGroups(projectId));
+    setIsLoading(loadingGroups || loadingStatusCategories);
+  }, [loadingGroups, loadingStatusCategories]);
+
+  // Load data efficiently with async/await and Promise.all
+  useEffect(() => {
+    const loadData = async () => {
+      if (projectId && groupBy && projectView === 'kanban') {
+        const promises = [];
+        
+        if (!loadingGroups) {
+          promises.push(dispatch(fetchBoardTaskGroups(projectId)));
+        }
+        
+        if (!statusCategories.length) {
+          promises.push(dispatch(fetchStatusesCategories()));
+        }
+        
+        // Wait for all data to load
+        await Promise.all(promises);
       }
-    }
+    };
+    
+    loadData();
   }, [dispatch, projectId, groupBy, projectView, search, archived]);
 
+  // Create sensors with memoization to prevent unnecessary re-renders
   const sensors = useSensors(
     useSensor(MouseSensor, {
       // Require the mouse to move by 10 pixels before activating
@@ -394,18 +416,16 @@ const ProjectViewBoard = () => {
     };
   }, [socket]);
 
+  // Track analytics event on component mount
   useEffect(() => {
     trackMixpanelEvent(evt_project_board_visit);
-    if (!statusCategories.length && projectId) {
-      dispatch(fetchStatusesCategories());
-    }
-  }, [dispatch, projectId]);
+  }, []);
 
   return (
     <Flex vertical gap={16}>
       <TaskListFilters position={'board'} />
 
-      <Skeleton active loading={loadingGroups} className='mt-4 p-4'>
+      <Skeleton active loading={isLoading} className='mt-4 p-4'>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
