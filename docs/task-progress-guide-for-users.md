@@ -1,8 +1,20 @@
 # WorkLenz Task Progress Guide for Users
 
 ## Introduction
-
 WorkLenz offers three different ways to track and calculate task progress, each designed for different project management needs. This guide explains how each method works and when to use them.
+
+## Default Progress Method
+
+WorkLenz uses a simple completion-based approach as the default progress calculation method. This method is applied when no special progress methods are enabled.
+
+### Example
+
+If you have a parent task with four subtasks and two of the subtasks are marked complete:
+- Parent task: Not done
+- 2 subtasks: Done
+- 2 subtasks: Not done
+
+The parent task will show as 40% complete (2 completed out of 5 total tasks).
 
 ## Available Progress Tracking Methods
 
@@ -150,10 +162,6 @@ The parent task would be approximately 29% complete.
 
 This demonstrates how tasks with longer time estimates (like Subtask C) have more influence on the overall progress calculation. Even though Subtask B is 80% complete, its shorter time estimate means it contributes less to the overall progress than the partially-completed but longer Subtask A.
 
-## Default Progress Method
-
-If none of the special progress methods are enabled, WorkLenz uses a simple completion-based approach:
-
 ### How It Works
 
 - Tasks are either 0% (not done) or 100% (done)
@@ -212,4 +220,4 @@ A: Open the task drawer, go to the Info tab, and use the progress slider for tas
 A: Yes, each project can have its own progress method.
 
 **Q: What if I don't see progress fields in my task drawer?**
-A: Progress input is only visible for tasks without subtasks. Parent tasks' progress is automatically calculated. 
+A: Progress input is only visible for tasks without subtasks. Parent tasks' progress is automatically calculated.
