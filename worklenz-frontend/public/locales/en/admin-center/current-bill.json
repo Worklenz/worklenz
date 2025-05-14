@@ -109,5 +109,13 @@
   "expiredDaysAgo": "{{days}} days ago",
   
   "continueWith": "Continue with {{plan}}",
-  "changeToPlan": "Change to {{plan}}"
+  "changeToPlan": "Change to {{plan}}",
+  "creditPlan": "Credit Plan",
+  "customPlan": "Custom Plan",
+  "planValidTill": "Your plan is valid till {{date}}",
+  "purchaseSeatsText": "To continue, you'll need to purchase additional seats.",
+  "currentSeatsText": "You currently have {{seats}} seats available.",
+  "selectSeatsText": "Please select the number of additional seats to purchase.",
+  "purchase": "Purchase",
+  "contactSales": "Contact sales"
 }
