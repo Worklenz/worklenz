@@ -15,7 +15,9 @@ services:
       - worklenz
 
   backend:
-    image: docker.io/chamikajaycey/worklenz-backend:latest
+    build:
+      context: ./worklenz-backend
+      dockerfile: Dockerfile
     container_name: worklenz_backend
     ports:
       - "3000:3000"
@@ -51,28 +53,25 @@ services:
     depends_on:
       - minio
     entrypoint: >
-      /bin/sh -c "
-      # Wait for MinIO to be available
-      echo 'Waiting for MinIO to start...'
-      sleep 15;
-      # Retry up to 5 times
-      for i in 1 2 3 4 5; do
-        echo \"Attempt $$i to connect to MinIO...\"
-        if /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin; then
-          echo \"Successfully connected to MinIO!\"
-          /usr/bin/mc mb --ignore-existing myminio/worklenz-bucket;
-          /usr/bin/mc policy set public myminio/worklenz-bucket;
-          exit 0;
-        fi
-        echo \"Connection failed, retrying in 5 seconds...\"
-        sleep 5;
-      done
-      echo \"Failed to connect to MinIO after 5 attempts\"
-      exit 1;
-      "
+      /bin/sh -c '
+        echo "Waiting for MinIO to start...";
+        sleep 15;
+        for i in 1 2 3 4 5; do
+          echo "Attempt $i to connect to MinIO...";
+          if /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin; then
+            echo "Successfully connected to MinIO!";
+            /usr/bin/mc mb --ignore-existing myminio/worklenz-bucket;
+            /usr/bin/mc policy set public myminio/worklenz-bucket;
+            exit 0;
+          fi
+          echo "Connection failed, retrying in 5 seconds...";
+          sleep 5;
+        done;
+        echo "Failed to connect to MinIO after 5 attempts";
+        exit 1;
+            '
     networks:
       - worklenz
-
   db:
     image: postgres:15
     container_name: worklenz_db
@@ -94,22 +93,19 @@ services:
         target: /docker-entrypoint-initdb.d
         consistency: cached
     command: >
-      bash -c '
-      if command -v apt-get >/dev/null 2>&1; then
+      bash -c ' if command -v apt-get >/dev/null 2>&1; then
         apt-get update && apt-get install -y dos2unix
       elif command -v apk >/dev/null 2>&1; then
         apk add --no-cache dos2unix
-      fi &&
-      find /docker-entrypoint-initdb.d -type f -name "*.sh" -exec sh -c '\''
+      fi && find /docker-entrypoint-initdb.d -type f -name "*.sh" -exec sh -c '\''
         dos2unix "{}" 2>/dev/null || true
         chmod +x "{}"
-      '\'' \; &&
-      exec docker-entrypoint.sh postgres
-      '
+      '\'' \; && exec docker-entrypoint.sh postgres '
 
 volumes:
   worklenz_postgres_data:
   worklenz_minio_data:
+
 
 networks:
   worklenz:
