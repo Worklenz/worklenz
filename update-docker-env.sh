@@ -80,6 +80,14 @@ COOKIE_SECRET=change_me_in_production
 SOCKET_IO_CORS=${FRONTEND_URL}
 SERVER_CORS=${FRONTEND_URL}
 
+
+# Google Login
+GOOGLE_CLIENT_ID="your_google_client_id"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
+GOOGLE_CALLBACK_URL="${FRONTEND_URL}/secure/google/verify"
+LOGIN_FAILURE_REDIRECT="${FRONTEND_URL}/auth/authenticating"
+LOGIN_SUCCESS_REDIRECT="${FRONTEND_URL}/auth/authenticating"
+
 # Database
 DB_HOST=db
 DB_PORT=5432
