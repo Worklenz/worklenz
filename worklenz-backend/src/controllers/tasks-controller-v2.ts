@@ -843,7 +843,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         -- First, reset manual_progress flag for all tasks that have subtasks within this project
         UPDATE tasks AS t
         SET manual_progress = FALSE
-        WHERE project_id = $1
+        WHERE project_id = '${projectId}'
         AND EXISTS (
             SELECT 1
             FROM tasks
@@ -860,7 +860,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
                 parent_task_id,
                 0 AS level
             FROM tasks
-            WHERE project_id = $1
+            WHERE project_id = '${projectId}'
             AND NOT EXISTS (
                 SELECT 1 FROM tasks AS sub
                 WHERE sub.parent_task_id = tasks.id
@@ -888,12 +888,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
             ORDER BY level
         ) AS ordered_tasks
         WHERE tasks.id = ordered_tasks.id
-        AND tasks.project_id = $1
+        AND tasks.project_id = '${projectId}'
         AND (manual_progress IS FALSE OR manual_progress IS NULL);
       END $$;
       `;
       
-      const result = await db.query(query, [projectId]);
+      const result = await db.query(query);
       console.log(`Finished refreshing progress values for project ${projectId}`);
     } catch (error) {
       log_error('Error refreshing project task progress values', error);
