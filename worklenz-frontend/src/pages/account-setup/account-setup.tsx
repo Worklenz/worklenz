@@ -24,8 +24,8 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { getUserSession, setSession } from '@/utils/session-helper';
 import { validateEmail } from '@/utils/validateEmail';
 import { sanitizeInput } from '@/utils/sanitizeInput';
-import logo from '@/assets/images/logo.png';
-import logoDark from '@/assets/images/logo-dark-mode.png';
+import logo from '@/assets/images/worklenz-light-mode.png';
+import logoDark from '@/assets/images/worklenz-dark-mode.png';
 
 import './account-setup.css';
 import { IAccountSetupRequest } from '@/types/project-templates/project-templates.types';
