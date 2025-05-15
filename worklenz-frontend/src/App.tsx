@@ -39,7 +39,6 @@ const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     <Suspense fallback={<SuspenseFallback />}>
       <ThemeWrapper>
         <RouterProvider router={router} future={{ v7_startTransition: true }} />
-        <PreferenceSelector />
       </ThemeWrapper>
     </Suspense>
   );
