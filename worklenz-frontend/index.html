@@ -26,13 +26,21 @@
       })(window, document, "clarity", "script", "dx77073klh");
     }
   </script>
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7KSRKQ1397"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-7KSRKQ1397');
+  <!-- Google Analytics (only on production) -->
+  <script type="text/javascript">
+    if (window.location.hostname === 'app.worklenz.com') {
+      var gaScript = document.createElement('script');
+      gaScript.async = true;
+      gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-7KSRKQ1397';
+      document.head.appendChild(gaScript);
+      
+      gaScript.onload = function() {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-7KSRKQ1397');
+      };
+    }
   </script>
 </head>
 
