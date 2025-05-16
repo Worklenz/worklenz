@@ -22,6 +22,7 @@ import { ITaskPhaseChangeResponse } from '@/types/tasks/task-phase-change-respon
 import { produce } from 'immer';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import { SocketEvents } from '@/shared/socket-events';
+import { ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -1006,6 +1007,15 @@ const taskSlice = createSlice({
         column.pinned = isVisible;
       }
     },
+
+    updateRecurringChange: (state, action: PayloadAction<ITaskRecurringScheduleData>) => {
+      const {id, schedule_type, task_id} = action.payload;
+      const taskInfo = findTaskInGroups(state.taskGroups, task_id as string); 
+      if (!taskInfo) return;
+
+      const { task } = taskInfo;
+      task.schedule_id = id;
+    } 
   },
 
   extraReducers: builder => {
@@ -1165,6 +1175,7 @@ export const {
   updateSubTasks,
   updateCustomColumnValue,
   updateCustomColumnPinned,
+  updateRecurringChange
 } = taskSlice.actions;
 
 export default taskSlice.reducer;
