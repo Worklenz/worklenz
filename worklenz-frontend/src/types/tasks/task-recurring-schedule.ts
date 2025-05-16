@@ -1,19 +1,37 @@
+export enum ITaskRecurring {
+  Daily = 'daily',
+  Weekly = 'weekly',
+  Monthly = 'monthly',
+  EveryXDays = 'every_x_days',
+  EveryXWeeks = 'every_x_weeks',
+  EveryXMonths = 'every_x_months'
+}
+
 export interface ITaskRecurringSchedule {
-    type: 'daily' | 'weekly' | 'monthly' | 'interval';
-    dayOfWeek?: number; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday (for weekly tasks)
-    dayOfMonth?: number; // 1 - 31 (for monthly tasks)
-    weekOfMonth?: number; // 1 = 1st week, 2 = 2nd week, ..., 5 = Last week (for monthly tasks)
-    hour: number; // Time of the day in 24-hour format
-    minute: number; // Minute of the hour
-    interval?: {
-        days?: number;   // Interval in days (for every x days)
-        weeks?: number;  // Interval in weeks (for every x weeks)
-        months?: number; // Interval in months (for every x months)
-    };
+  created_at?: string;
+  day_of_month?: number | null;
+  date_of_month?: number | null;
+  days_of_week?: number[] | null;
+  id?: string;  // UUID v4
+  interval_days?: number | null;
+  interval_months?: number | null;
+  interval_weeks?: number | null;
+  schedule_type?: ITaskRecurring;
+  week_of_month?: number | null;
+}
+
+export interface IRepeatOption {
+  value?: ITaskRecurring
+  label?: string
 }
 
 export interface ITaskRecurringScheduleData {
-    task_id?: string,
-    id?: string,
-    schedule_type?: string
+  task_id?: string,
+  id?: string,
+  schedule_type?: string
+}
+
+export interface IRepeatOption {
+    value?: ITaskRecurring
+    label?: string
 }

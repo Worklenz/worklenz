@@ -105,6 +105,15 @@ const taskDrawerSlice = createSlice({
     }>) => {
       state.timeLogEditing = action.payload;
     },
+    setTaskRecurringSchedule: (state, action: PayloadAction<{
+      schedule_id: string;
+      task_id: string;
+    }>) => {
+      const { schedule_id, task_id } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === task_id) {
+        state.taskFormViewModel.task.schedule_id = schedule_id;
+      }
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchTask.pending, state => {
@@ -133,5 +142,6 @@ export const {
   setTaskLabels,
   setTaskSubscribers,
   setTimeLogEditing,
+  setTaskRecurringSchedule
 } = taskDrawerSlice.actions;
 export default taskDrawerSlice.reducer;

@@ -15,21 +15,17 @@ import {
 import { SettingOutlined } from '@ant-design/icons';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
+import { IRepeatOption, ITaskRecurring, ITaskRecurringSchedule, ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateRecurringChange } from '@/features/tasks/tasks.slice';
+import { taskRecurringApiService } from '@/api/tasks/task-recurring.api.service';
+import logger from '@/utils/errorLogger';
+import { setTaskRecurringSchedule } from '@/features/task-drawer/task-drawer.slice';
 
-const ITaskRecurring = {
-  Weekly: 'weekly',
-  EveryXDays: 'every_x_days',
-  EveryXWeeks: 'every_x_weeks',
-  EveryXMonths: 'every_x_months',
-  Monthly: 'monthly',
-};
-
-const repeatOptions = [
+const repeatOptions: IRepeatOption[] = [
+  { label: 'Daily', value: ITaskRecurring.Daily },
   { label: 'Weekly', value: ITaskRecurring.Weekly },
   { label: 'Every X Days', value: ITaskRecurring.EveryXDays },
   { label: 'Every X Weeks', value: ITaskRecurring.EveryXWeeks },
@@ -38,22 +34,22 @@ const repeatOptions = [
 ];
 
 const daysOfWeek = [
-  { label: 'Mon', value: 'mon' },
-  { label: 'Tue', value: 'tue' },
-  { label: 'Wed', value: 'wed' },
-  { label: 'Thu', value: 'thu' },
-  { label: 'Fri', value: 'fri' },
-  { label: 'Sat', value: 'sat' },
-  { label: 'Sun', value: 'sun' },
+  { label: 'Sunday', value: 0, checked: false },
+  { label: 'Monday', value: 1, checked: false },
+  { label: 'Tuesday', value: 2, checked: false },
+  { label: 'Wednesday', value: 3, checked: false },
+  { label: 'Thursday', value: 4, checked: false },
+  { label: 'Friday', value: 5, checked: false },
+  { label: 'Saturday', value: 6, checked: false }
 ];
 
-const monthlyDateOptions = Array.from({ length: 31 }, (_, i) => i + 1);
+const monthlyDateOptions = Array.from({ length: 28 }, (_, i) => i + 1);
 const weekOptions = [
-  { label: 'First', value: 'first' },
-  { label: 'Second', value: 'second' },
-  { label: 'Third', value: 'third' },
-  { label: 'Fourth', value: 'fourth' },
-  { label: 'Last', value: 'last' },
+  { label: 'First', value: 1 },
+  { label: 'Second', value: 2 },
+  { label: 'Third', value: 3 },
+  { label: 'Fourth', value: 4 },
+  { label: 'Last', value: 5 }
 ];
 const dayOptions = daysOfWeek.map(d => ({ label: d.label, value: d.value }));
 
@@ -64,7 +60,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
 
   const [recurring, setRecurring] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
-  const [repeatOption, setRepeatOption] = useState(repeatOptions[0]);
+  const [repeatOption, setRepeatOption] = useState<IRepeatOption>({});
   const [selectedDays, setSelectedDays] = useState([]);
   const [monthlyOption, setMonthlyOption] = useState('date');
   const [selectedMonthlyDate, setSelectedMonthlyDate] = useState(1);
@@ -75,6 +71,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
   const [intervalMonths, setIntervalMonths] = useState(1);
   const [loadingData, setLoadingData] = useState(false);
   const [updatingData, setUpdatingData] = useState(false);
+  const [scheduleData, setScheduleData] = useState<ITaskRecurringSchedule>({});
 
   const handleChange = (checked: boolean) => {
     if (!task.id) return;
@@ -92,6 +89,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
           if (selected) setRepeatOption(selected);
         }
         dispatch(updateRecurringChange(schedule));
+        dispatch(setTaskRecurringSchedule({ schedule_id: schedule.id as string, task_id: task.id }));
 
         setRecurring(checked);
         if (!checked) setShowConfig(false);
@@ -112,35 +110,119 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     setSelectedDays(checkedValues as unknown as string[]);
   };
 
-  const handleSave = () => {
-    // Compose the schedule data and call the update handler
-    const data = {
-      recurring,
-      repeatOption,
-      selectedDays,
-      monthlyOption,
-      selectedMonthlyDate,
-      selectedMonthlyWeek,
-      selectedMonthlyDay,
-      intervalDays,
-      intervalWeeks,
-      intervalMonths,
+  const getSelectedDays = () => {
+    return daysOfWeek
+      .filter(day => day.checked)   // Get only the checked days
+      .map(day => day.value);       // Extract their numeric values
+  }
+
+  const getUpdateBody = () => {
+    if (!task.id || !task.schedule_id || !repeatOption.value) return;
+
+    const body: ITaskRecurringSchedule = {
+      id: task.id,
+      schedule_type: repeatOption.value
     };
-    // if (onUpdateSchedule) onUpdateSchedule(data);
-    setShowConfig(false);
+
+    switch (repeatOption.value) {
+      case ITaskRecurring.Weekly:
+        body.days_of_week = getSelectedDays();
+        break;
+
+      case ITaskRecurring.Monthly:
+        if (monthlyOption === 'date') {
+          body.date_of_month = selectedMonthlyDate;
+          setSelectedMonthlyDate(0);
+          setSelectedMonthlyDay(0);
+        } else {
+          body.week_of_month = selectedMonthlyWeek;
+          body.day_of_month = selectedMonthlyDay;
+          setSelectedMonthlyDate(0);
+        }
+        break;
+
+      case ITaskRecurring.EveryXDays:
+        body.interval_days = intervalDays;
+        break;
+
+      case ITaskRecurring.EveryXWeeks:
+        body.interval_weeks = intervalWeeks;
+        break;
+
+      case ITaskRecurring.EveryXMonths:
+        body.interval_months = intervalMonths;
+        break;
+    }
+    return body;
+  }
+
+  const handleSave = async () => {
+    if (!task.id || !task.schedule_id) return;
+
+    try {
+      setUpdatingData(true);
+      const body = getUpdateBody();
+
+      const res = await taskRecurringApiService.updateTaskRecurringData(task.schedule_id, body);
+      if (res.done) {
+        setShowConfig(false);
+      }
+    } catch (e) {
+      logger.error("handleSave", e);
+    } finally {
+      setUpdatingData(false);
+    }
   };
 
-  const getScheduleData = () => {};
+  const updateDaysOfWeek = () => {
+    for (let i = 0; i < daysOfWeek.length; i++) {
+      daysOfWeek[i].checked = scheduleData.days_of_week?.includes(daysOfWeek[i].value) ?? false;
+    }
+  };
+
+  const getScheduleData = async () => {
+    if (!task.schedule_id) return;
+    setLoadingData(true);
+    try {
+      const res = await taskRecurringApiService.getTaskRecurringData(task.schedule_id);
+      if (res.done) {
+        setScheduleData(res.body);
+        if (!res.body) {
+          setRepeatOption(repeatOptions[0]);
+        } else {
+          const selected = repeatOptions.find(e => e.value == res.body.schedule_type);
+          if (selected) {
+            setRepeatOption(selected);
+            setSelectedMonthlyDate(scheduleData.date_of_month || 1);
+            setSelectedMonthlyDay(scheduleData.day_of_month || 0);
+            setSelectedMonthlyWeek(scheduleData.week_of_month || 0);
+            setIntervalDays(scheduleData.interval_days || 1);
+            setIntervalWeeks(scheduleData.interval_weeks || 1);
+            setIntervalMonths(scheduleData.interval_months || 1);
+            setMonthlyOption(selectedMonthlyDate ? 'date' : 'day');
+            updateDaysOfWeek();
+          }
+        }
+      };
+    } catch (e) {
+      logger.error("getScheduleData", e);
+    }
+    finally {
+      setLoadingData(false);
+    }
+  }
 
   const handleResponse = (response: ITaskRecurringScheduleData) => {
     if (!task || !response.task_id) return;
   };
 
   useEffect(() => {
+    if (!task) return;
+
     if (task) setRecurring(!!task.schedule_id);
     if (recurring) void getScheduleData();
     socket?.on(SocketEvents.TASK_RECURRING_CHANGE.toString(), handleResponse);
-  }, []);
+  }, [task]);
 
   return (
     <div>
