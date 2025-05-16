@@ -15,7 +15,8 @@
     "hide-start-date": "Ocultar fecha de inicio",
     "show-start-date": "Mostrar fecha de inicio",
     "hours": "Horas",
-    "minutes": "Minutos"
+    "minutes": "Minutos",
+    "recurring": "Recurrente"
   },
   "description": {
     "title": "Descripción",
