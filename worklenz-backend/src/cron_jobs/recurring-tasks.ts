@@ -7,7 +7,7 @@ import TasksController from "../controllers/tasks-controller";
 
 // At 11:00+00 (4.30pm+530) on every day-of-month if it's on every day-of-week from Monday through Friday.
 // const TIME = "0 11 */1 * 1-5";
-const TIME = "*/2 * * * *";
+const TIME = "*/2 * * * *"; // runs every 2 minutes - for testing purposes
 const TIME_FORMAT = "YYYY-MM-DD";
 // const TIME = "0 0 * * *"; // Runs at midnight every day
 
