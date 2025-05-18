@@ -1,5 +1,6 @@
 import {
   BankOutlined,
+  DollarCircleOutlined,
   FileZipOutlined,
   GlobalOutlined,
   GroupOutlined,
@@ -25,6 +26,7 @@ import TeamMembersSettings from '@/pages/settings/team-members/team-members-sett
 import TeamsSettings from '../../pages/settings/teams/teams-settings';
 import ChangePassword from '@/pages/settings/change-password/change-password';
 import LanguageAndRegionSettings from '@/pages/settings/language-and-region/language-and-region-settings';
+import RatecardSettings from '@/pages/settings/ratecard/ratecard-settings';
 
 // type of menu item in settings sidebar
 type SettingMenuItems = {
@@ -122,6 +124,13 @@ export const settingsItems: SettingMenuItems[] = [
     icon: React.createElement(TeamOutlined),
     element: React.createElement(TeamMembersSettings),
     adminOnly: true,
+  },
+  {
+    key: 'ratecard',
+    name: 'Ratecard',
+    endpoint: 'ratecard',
+    icon: React.createElement(DollarCircleOutlined),
+    element: React.createElement(RatecardSettings),
   },
   {
     key: 'teams',

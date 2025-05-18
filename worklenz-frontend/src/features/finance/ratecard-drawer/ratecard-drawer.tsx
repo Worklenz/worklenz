@@ -20,7 +20,7 @@ const RatecardDrawer = ({
   const [roles, setRoles] = useState<JobType[]>([]);
 
   // localization
-  const { t } = useTranslation('ratecard-settings');
+  const { t } = useTranslation('settings/ratecard-settings');
 
   // get drawer state from client reducer
   const isDrawerOpen = useAppSelector(

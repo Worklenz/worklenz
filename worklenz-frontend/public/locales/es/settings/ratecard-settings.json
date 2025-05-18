@@ -1,0 +1,20 @@
+{
+  "nameColumn": "Nombre",
+  "createdColumn": "Creado",
+  "noProjectsAvailable": "No hay proyectos disponibles",
+  "deleteConfirmationTitle": "¿Estás seguro?",
+  "deleteConfirmationOk": "Sí",
+  "deleteConfirmationCancel": "Cancelar",
+  "searchPlaceholder": "Buscar por nombre",
+  "createRatecard": "Crear Tarifa",
+
+  "jobTitleColumn": "Puesto de trabajo",
+  "ratePerHourColumn": "Tarifa por hora",
+  "saveButton": "Guardar",
+  "addRoleButton": "+ Agregar Rol",
+  "createRatecardSuccessMessage": "¡Tarifa creada con éxito!",
+  "createRatecardErrorMessage": "¡Error al crear la tarifa!",
+  "updateRatecardSuccessMessage": "¡Tarifa actualizada con éxito!",
+  "updateRatecardErrorMessage": "¡Error al actualizar la tarifa!",
+  "currency": "Moneda"
+}

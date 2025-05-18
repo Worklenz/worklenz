@@ -1,0 +1,163 @@
+[
+  {
+    "id": "c2669c5f-a019-445b-b703-b941bbefdab7",
+    "type": "todo",
+    "name": "To Do",
+    "color_code": "#d8d7d8",
+    "color_code_dark": "#989898",
+    "tasks": [
+      {
+        "id": "1be5ef5c-1234-4247-b159-6d8df2b37d01",
+        "task": "UI Design",
+        "isBillable": true,
+        "hours": 120,
+        "cost": 12000,
+        "fixedCost": 1500,
+        "totalBudget": 14000,
+        "totalActual": 13500,
+        "variance": 500,
+        "members": [
+          {
+            "memberId": "1",
+            "name": "John Doe",
+            "jobId": "J001",
+            "jobRole": "UI/UX Designer",
+            "hourlyRate": 100
+          },
+          {
+            "memberId": "2",
+            "name": "Jane Smith",
+            "jobId": "J002",
+            "jobRole": "Frontend Developer",
+            "hourlyRate": 120
+          }
+        ]
+      },
+      {
+        "id": "2be5ef5c-1234-4247-b159-6d8df2b37d02",
+        "task": "API Integration",
+        "isBillable": true,
+        "hours": 200,
+        "cost": 20000,
+        "fixedCost": 3000,
+        "totalBudget": 25000,
+        "totalActual": 26000,
+        "variance": -1000,
+        "members": [
+          {
+            "memberId": "3",
+            "name": "Alice Johnson",
+            "jobId": "J003",
+            "jobRole": "Backend Developer",
+            "hourlyRate": 100
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d3f9c5f1-b019-445b-b703-b941bbefdab8",
+    "type": "doing",
+    "name": "In Progress",
+    "color_code": "#c0d5f6",
+    "color_code_dark": "#4190ff",
+    "tasks": [
+      {
+        "id": "3be5ef5c-1234-4247-b159-6d8df2b37d03",
+        "task": "Performance Optimization",
+        "isBillable": true,
+        "hours": 300,
+        "cost": 45000,
+        "fixedCost": 5000,
+        "totalBudget": 50000,
+        "totalActual": 47000,
+        "variance": 3000,
+        "members": [
+          {
+            "memberId": "4",
+            "name": "Bob Brown",
+            "jobId": "J004",
+            "jobRole": "Performance Engineer",
+            "hourlyRate": 150
+          },
+          {
+            "memberId": "5",
+            "name": "Charlie Davis",
+            "jobId": "J005",
+            "jobRole": "Full Stack Developer",
+            "hourlyRate": 130
+          }
+        ]
+      },
+      {
+        "id": "4be5ef5c-1234-4247-b159-6d8df2b37d04",
+        "task": "Testing and QA",
+        "isBillable": false,
+        "hours": 180,
+        "cost": 18000,
+        "fixedCost": 2500,
+        "totalBudget": 20000,
+        "totalActual": 21000,
+        "variance": -1000,
+        "members": [
+          {
+            "memberId": "6",
+            "name": "Eve Adams",
+            "jobId": "J006",
+            "jobRole": "QA Engineer",
+            "hourlyRate": 100
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "e3f9c5f1-b019-445b-b703-b941bbefdab9",
+    "type": "done",
+    "name": "Done",
+    "color_code": "#c2e4d0",
+    "color_code_dark": "#46d980",
+    "tasks": [
+      {
+        "id": "5be5ef5c-1234-4247-b159-6d8df2b37d05",
+        "task": "Database Migration",
+        "isBillable": true,
+        "hours": 250,
+        "cost": 37500,
+        "fixedCost": 4000,
+        "totalBudget": 42000,
+        "totalActual": 41000,
+        "variance": 1000,
+        "members": [
+          {
+            "memberId": "7",
+            "name": "Frank Harris",
+            "jobId": "J007",
+            "jobRole": "Database Administrator",
+            "hourlyRate": 150
+          }
+        ]
+      },
+      {
+        "id": "6be5ef5c-1234-4247-b159-6d8df2b37d06",
+        "task": "Project Documentation",
+        "isBillable": false,
+        "hours": 100,
+        "cost": 10000,
+        "fixedCost": 1000,
+        "totalBudget": 12000,
+        "totalActual": 12500,
+        "variance": -500,
+        "members": [
+          {
+            "memberId": "8",
+            "name": "Grace Lee",
+            "jobId": "J008",
+            "jobRole": "Technical Writer",
+            "hourlyRate": 100
+          }
+        ]
+      }
+    ]
+  }
+]
