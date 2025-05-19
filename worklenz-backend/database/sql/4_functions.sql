@@ -3351,15 +3351,15 @@ BEGIN
     SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
     FROM (SELECT team_member_id,
                  project_member_id,
-                 (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id),
-                 (SELECT email_notifications_enabled
+                 COALESCE((SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id), '') as name,
+                 COALESCE((SELECT email_notifications_enabled
                   FROM notification_settings
                   WHERE team_id = tm.team_id
-                    AND notification_settings.user_id = u.id) AS email_notifications_enabled,
-                 u.avatar_url,
+                    AND notification_settings.user_id = u.id), false) AS email_notifications_enabled,
+                 COALESCE(u.avatar_url, '') as avatar_url,
                  u.id AS user_id,
-                 u.email,
-                 u.socket_id AS socket_id,
+                 COALESCE(u.email, '') as email,
+                 COALESCE(u.socket_id, '') as socket_id,
                  tm.team_id AS team_id
           FROM tasks_assignees
                    INNER JOIN team_members tm ON tm.id = tasks_assignees.team_member_id
@@ -4066,14 +4066,14 @@ DECLARE
     _schedule_id          JSON;
     _task_completed_at    TIMESTAMPTZ;
 BEGIN
-    SELECT name FROM tasks WHERE id = _task_id INTO _task_name;
+    SELECT COALESCE(name, '') FROM tasks WHERE id = _task_id INTO _task_name;
 
-    SELECT name
+    SELECT COALESCE(name, '')
     FROM task_statuses
     WHERE id = (SELECT status_id FROM tasks WHERE id = _task_id)
     INTO _previous_status_name;
 
-    SELECT name FROM task_statuses WHERE id = _status_id INTO _new_status_name;
+    SELECT COALESCE(name, '') FROM task_statuses WHERE id = _status_id INTO _new_status_name;
 
     IF (_previous_status_name != _new_status_name)
     THEN
@@ -4081,14 +4081,22 @@ BEGIN
 
         SELECT get_task_complete_info(_task_id, _status_id) INTO _task_info;
 
-        SELECT name FROM users WHERE id = _user_id INTO _updater_name;
+        SELECT COALESCE(name, '') FROM users WHERE id = _user_id INTO _updater_name;
 
         _message = CONCAT(_updater_name, ' transitioned "', _task_name, '" from ', _previous_status_name, ' ⟶ ',
                           _new_status_name);
     END IF;
 
     SELECT completed_at FROM tasks WHERE id = _task_id INTO _task_completed_at;
-    SELECT schedule_id FROM tasks WHERE id = _task_id INTO _schedule_id;
+    
+    -- Handle schedule_id properly for recurring tasks
+    SELECT CASE 
+        WHEN schedule_id IS NULL THEN 'null'::json
+        ELSE json_build_object('id', schedule_id)
+    END
+    FROM tasks 
+    WHERE id = _task_id 
+    INTO _schedule_id;
 
     SELECT COALESCE(ROW_TO_JSON(r), '{}'::JSON)
     FROM (SELECT is_done, is_doing, is_todo
@@ -4097,7 +4105,7 @@ BEGIN
     INTO _status_category;
 
     RETURN JSON_BUILD_OBJECT(
-            'message', _message,
+            'message', COALESCE(_message, ''),
             'project_id', (SELECT project_id FROM tasks WHERE id = _task_id),
             'parent_done', (CASE
                                 WHEN EXISTS(SELECT 1
@@ -4105,14 +4113,14 @@ BEGIN
                                             WHERE tasks_with_status_view.task_id = _task_id
                                               AND is_done IS TRUE) THEN 1
                                 ELSE 0 END),
-            'color_code', (_task_info ->> 'color_code')::TEXT,
-            'color_code_dark', (_task_info ->> 'color_code_dark')::TEXT,
-            'total_tasks', (_task_info ->> 'total_tasks')::INT,
-            'total_completed', (_task_info ->> 'total_completed')::INT,
-            'members', (_task_info ->> 'members')::JSON,
+            'color_code', COALESCE((_task_info ->> 'color_code')::TEXT, ''),
+            'color_code_dark', COALESCE((_task_info ->> 'color_code_dark')::TEXT, ''),
+            'total_tasks', COALESCE((_task_info ->> 'total_tasks')::INT, 0),
+            'total_completed', COALESCE((_task_info ->> 'total_completed')::INT, 0),
+            'members', COALESCE((_task_info ->> 'members')::JSON, '[]'::JSON),
             'completed_at', _task_completed_at,
-            'status_category', _status_category,
-            'schedule_id', _schedule_id
+            'status_category', COALESCE(_status_category, '{}'::JSON),
+            'schedule_id', COALESCE(_schedule_id, 'null'::JSON)
            );
 END
 $$;
