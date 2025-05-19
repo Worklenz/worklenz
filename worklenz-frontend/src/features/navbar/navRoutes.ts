@@ -1,7 +1,7 @@
 export type NavRoutesType = {
   name: string;
   path: string;
-  adminOnly: boolean;
+  adminOnly?: boolean;
   freePlanFeature?: boolean;
 };
 
