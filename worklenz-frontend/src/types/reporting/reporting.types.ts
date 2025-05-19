@@ -406,6 +406,9 @@ export interface IRPTTimeMember {
   value?: number;
   color_code: string;
   logged_time?: string;
+  utilized_hours?: string;
+  utilization_percent?: string;
+  over_under_utilized_hours?: string;
 }
 
 export interface IMemberTaskStatGroupResonse {
