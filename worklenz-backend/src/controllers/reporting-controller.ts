@@ -415,15 +415,20 @@ export default class ReportingController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getMyTeams(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const selectedTeamId = req.user?.team_id;
+    if (!selectedTeamId) {
+      return res.status(400).send(new ServerResponse(false, "No selected team"));
+    }
     const q = `SELECT team_id AS id, name
                FROM team_members tm
                       LEFT JOIN teams ON teams.id = tm.team_id
                WHERE tm.user_id = $1
+                 AND tm.team_id = $2
                  AND role_id IN (SELECT id
                                  FROM roles
                                  WHERE (admin_role IS TRUE OR owner IS TRUE))
                ORDER BY name;`;
-    const result = await db.query(q, [req.user?.id]);
+    const result = await db.query(q, [req.user?.id, selectedTeamId]);
     result.rows.forEach((team: any) => team.selected = true);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }

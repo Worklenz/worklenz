@@ -4,5 +4,19 @@
   "owner": "Organization Owner",
   "admins": "Organization Admins",
   "contactNumber": "Add Contact Number",
-  "edit": "Edit"
+  "edit": "Edit",
+  "organizationWorkingDaysAndHours": "Organization Working Days & Hours",
+  "workingDays": "Working Days",
+  "workingHours": "Working Hours",
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
+  "saturday": "Saturday",
+  "sunday": "Sunday",
+  "hours": "hours",
+  "saveButton": "Save",
+  "saved": "Saved successfully!",
+  "errorSaving": "Error saving settings."
 }
