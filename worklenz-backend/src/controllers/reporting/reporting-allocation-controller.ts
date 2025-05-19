@@ -414,6 +414,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
     if (date_range && date_range.length === 2) {
       startDate = moment(date_range[0]);
       endDate = moment(date_range[1]);
+    } else if (duration === DATE_RANGES.ALL_TIME) {
+      // Fetch the earliest start_date (or created_at if null) from selected projects
+      const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
+      const minDateResult = await db.query(minDateQuery, []);
+      const minDate = minDateResult.rows[0]?.min_date;
+      startDate = minDate ? moment(minDate) : moment('2000-01-01');
+      endDate = moment();
     } else {
       switch (duration) {
         case DATE_RANGES.YESTERDAY:
