@@ -1,14 +1,22 @@
-import { JobType } from "./job.types";
 
-
-export interface JobRoleType extends JobType {
+export interface IJobType {
+    jobId: string;
+    jobTitle: string;
+    ratePerHour?: number;
+  };
+export interface JobRoleType extends IJobType {
   members: string[] | null;
 }
 
-export type RatecardType = {
-  ratecardId: string;
-  ratecardName: string;
-  jobRolesList: JobType[];
-  createdDate: Date;
+export interface RatecardType {
+  id?: string;
+  created_at?: string;
+  name?: string;
+  jobRolesList?: IJobType[];
   currency?: string;
 };
+
+export interface IRatecardViewModel {
+  total?: number;
+  data?: RatecardType[];
+}

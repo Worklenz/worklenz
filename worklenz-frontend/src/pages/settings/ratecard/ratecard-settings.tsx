@@ -15,189 +15,207 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { colors } from '../../../styles/colors';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '../../../hooks/useDoumentTItle';
 import { durationDateFormat } from '../../../utils/durationDateFormat';
-import { toggleRatecardDrawer } from '../../../features/finance/finance-slice';
+import { createRateCard, deleteRateCard, toggleRatecardDrawer } from '../../../features/finance/finance-slice';
 import RatecardDrawer from '../../../features/finance/ratecard-drawer/ratecard-drawer';
-import { fetchData } from '../../../utils/fetchData';
+import { rateCardApiService } from '@/api/settings/rate-cards/rate-cards.api.service';
+import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import { RatecardType } from '@/types/project/ratecard.types';
+import { useAppSelector } from '../../../hooks/useAppSelector';
 
-const RatecardSettings = () => {
-  const [ratecardsList, setRatecardsList] = useState<RatecardType[]>([]);
-  // get currently selected ratecard id
-  const [selectedRatecardId, setSelectedRatecardId] = useState<string | null>(
-    null
-  );
-  const [ratecardDrawerType, setRatecardDrawerType] = useState<
-    'create' | 'update'
-  >('create');
+interface PaginationType {
+  current: number;
+  pageSize: number;
+  field: string;
+  order: string;
+  total: number;
+  pageSizeOptions: string[];
+  size: 'small' | 'default';
+}
 
-  // localization
+const RatecardSettings: React.FC = () => {
   const { t } = useTranslation('/settings/ratecard-settings');
-
+  const dispatch = useAppDispatch();
   useDocumentTitle('Manage Rate Cards');
 
-  // Fetch rate cards data
+  const [loading, setLoading] = useState(false);
+  const [ratecardsList, setRatecardsList] = useState<RatecardType[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRatecardId, setSelectedRatecardId] = useState<string | null>(null);
+  const [ratecardDrawerType, setRatecardDrawerType] = useState<'create' | 'update'>('create');
+  const [pagination, setPagination] = useState<PaginationType>({
+    current: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+    field: 'name',
+    order: 'desc',
+    total: 0,
+    pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
+    size: 'small',
+  });
+
+  const fetchRateCards = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await rateCardApiService.getRateCards(
+        pagination.current,
+        pagination.pageSize,
+        pagination.field,
+        pagination.order,
+        searchQuery
+      );
+      if (response.done) {
+        setRatecardsList(response.body.data || []);
+        setPagination(prev => ({ ...prev, total: response.body.total || 0 }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch rate cards:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination.current, pagination.pageSize, pagination.field, pagination.order, searchQuery]);
+
   useEffect(() => {
-    fetchData('/finance-mock-data/ratecards-data.json', setRatecardsList);
+    fetchRateCards();
   }, []);
 
-  const dispatch = useAppDispatch();
-
-  // this is for get the current string that type on search bar
-  const [searchQuery, setSearchQuery] = useState<string>('');
-
-  // used useMemo hook for re render the list when searching
   const filteredRatecardsData = useMemo(() => {
     return ratecardsList.filter((item) =>
-      item.ratecardName.toLowerCase().includes(searchQuery.toLowerCase())
+      item.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [ratecardsList, searchQuery]);
 
-  // function to create ratecard
-  const onRatecardCreate = () => {
-    setRatecardDrawerType('create');
-    dispatch(toggleRatecardDrawer());
-  };
+  const handleRatecardCreate = useCallback(async () => {
 
-  // function to update a ratecard
-  const onRatecardUpdate = (id: string) => {
+    const resultAction = await dispatch(createRateCard({
+      name: 'Untitled Rate Card',
+      jobRolesList: [],
+      currency: 'LKR',
+    }) as any);
+
+    if (createRateCard.fulfilled.match(resultAction)) {
+      const created = resultAction.payload;
+      setRatecardDrawerType('update');
+      setSelectedRatecardId(created.id ?? null);
+      dispatch(toggleRatecardDrawer());
+    }
+  }, [dispatch]);
+
+  const handleRatecardUpdate = useCallback((id: string) => {
     setRatecardDrawerType('update');
     setSelectedRatecardId(id);
     dispatch(toggleRatecardDrawer());
-  };
+  }, [dispatch]);
 
-  // table columns
-  const columns: TableProps['columns'] = [
+
+
+
+  const handleTableChange = useCallback((newPagination: any, filters: any, sorter: any) => {
+    setPagination(prev => ({
+      ...prev,
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+      field: sorter.field || 'name',
+      order: sorter.order === 'ascend' ? 'asc' : 'desc',
+    }));
+  }, []);
+
+  const columns: TableProps['columns'] = useMemo(() => [
     {
       key: 'rateName',
       title: t('nameColumn'),
-      onCell: (record) => ({
-        onClick: () => {
-          setSelectedRatecardId(record.ratecardId);
-          //   dispatch(toggleUpdateRateDrawer());
-        },
-      }),
-      render: (record) => (
-        <Typography.Text className="group-hover:text-[#1890ff]">
-          {record.ratecardName}
+      render: (record: RatecardType) => (
+        <Typography.Text style={{ color: '#1890ff', cursor: 'pointer' }}
+          onClick={() => setSelectedRatecardId(record.id ?? null)}>
+          {record.name}
         </Typography.Text>
       ),
     },
     {
       key: 'created',
       title: t('createdColumn'),
-      onCell: (record) => ({
-        onClick: () => {
-          setSelectedRatecardId(record.ratecardId);
-          //   dispatch(toggleUpdateRateDrawer());
-        },
-      }),
-      render: (record) => (
-        <Typography.Text>
-          {durationDateFormat(record.createdDate)}
+      render: (record: RatecardType) => (
+        <Typography.Text onClick={() => setSelectedRatecardId(record.id ?? null)}>
+          {durationDateFormat(record.created_at)}
         </Typography.Text>
       ),
     },
     {
       key: 'actionBtns',
       width: 80,
-      render: (record) => (
-        <Flex
-          gap={8}
-          style={{ padding: 0 }}
-          className="hidden group-hover:block"
-        >
+      render: (record: RatecardType) => (
+        <Flex gap={8} className="hidden group-hover:flex">
           <Tooltip title="Edit">
             <Button
               size="small"
               icon={<EditOutlined />}
-              onClick={() => {
-                onRatecardUpdate(record.ratecardId);
-              }}
+              onClick={() => record.id && handleRatecardUpdate(record.id)}
             />
           </Tooltip>
-
           <Popconfirm
             title={t('deleteConfirmationTitle')}
-            icon={
-              <ExclamationCircleFilled
-                style={{ color: colors.vibrantOrange }}
-              />
-            }
+            icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
             okText={t('deleteConfirmationOk')}
             cancelText={t('deleteConfirmationCancel')}
-            // onConfirm={() => dispatch(deleteRatecard(record.ratecardId))}
+            onConfirm={() => {
+              setLoading(true);
+              record.id && dispatch(deleteRateCard(record.id));
+              setLoading(false);
+            }}
           >
             <Tooltip title="Delete">
               <Button
                 shape="default"
                 icon={<DeleteOutlined />}
                 size="small"
-                style={{ marginInlineStart: 8 }}
               />
             </Tooltip>
           </Popconfirm>
         </Flex>
       ),
     },
-  ];
+  ], [t, handleRatecardUpdate]);
 
   return (
     <Card
       style={{ width: '100%' }}
       title={
-        <Flex justify="flex-end">
-          <Flex
-            gap={8}
-            align="center"
-            justify="flex-end"
-            style={{ width: '100%', maxWidth: 400 }}
-          >
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.currentTarget.value)}
-              placeholder={t('searchPlaceholder')}
-              style={{ maxWidth: 232 }}
-              suffix={<SearchOutlined />}
-            />
-            <Button type="primary" onClick={onRatecardCreate}>
-              {t('createRatecard')}
-            </Button>
-          </Flex>
+        <Flex justify="flex-end" align="center" gap={8}>
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('searchPlaceholder')}
+            style={{ maxWidth: 232 }}
+            suffix={<SearchOutlined />}
+          />
+          <Button type="primary" onClick={handleRatecardCreate}>
+            {t('createRatecard')}
+          </Button>
         </Flex>
       }
     >
       <Table
+        loading={loading}
         className="custom-two-colors-row-table"
         dataSource={filteredRatecardsData}
         columns={columns}
-        rowKey={(record) => record.rateId}
+        rowKey="id"
         pagination={{
+          ...pagination,
           showSizeChanger: true,
-          defaultPageSize: 20,
-          pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
-          size: 'small',
+          onChange: (page, pageSize) => setPagination(prev => ({ ...prev, current: page, pageSize })),
         }}
-        onRow={(record) => {
-          return {
-            className: 'group',
-            style: {
-              cursor: 'pointer',
-              height: 36,
-            },
-          };
-        }}
+        onChange={handleTableChange}
+        rowClassName="group"
       />
-
-      {/*  rate drawers  */}
       <RatecardDrawer
         type={ratecardDrawerType}
         ratecardId={selectedRatecardId || ''}
+        onSaved={fetchRateCards} // Pass the fetch function as a prop
       />
     </Card>
   );

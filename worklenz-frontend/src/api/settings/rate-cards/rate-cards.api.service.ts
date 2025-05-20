@@ -3,10 +3,9 @@ import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
 import { IJobTitle, IJobTitlesViewModel } from '@/types/job.types';
 import { toQueryString } from '@/utils/toQueryString';
+import { RatecardType, IRatecardViewModel } from '@/types/project/ratecard.types';
 
 type IRatecard = {
-  id: string;}
-type IRatecardViewModel = {
   id: string;}
 
 const rootUrl = `${API_BASE_URL}/rate-cards`;
@@ -26,18 +25,18 @@ export const rateCardApiService = {
     );
     return response.data;
   },
-  async getRateCardById(id: string): Promise<IServerResponse<IRatecard>> {
-    const response = await apiClient.get<IServerResponse<IRatecard>>(`${rootUrl}/${id}`);
+  async getRateCardById(id: string): Promise<IServerResponse<RatecardType>> {
+    const response = await apiClient.get<IServerResponse<RatecardType>>(`${rootUrl}/${id}`);
     return response.data;
   },
 
-  async createRateCard(body: IRatecard): Promise<IServerResponse<IRatecard>> {
-    const response = await apiClient.post<IServerResponse<IRatecard>>(rootUrl, body);
+  async createRateCard(body: RatecardType): Promise<IServerResponse<RatecardType>> {
+    const response = await apiClient.post<IServerResponse<RatecardType>>(rootUrl, body);
     return response.data;
   },
 
-  async updateRateCard(id: string, body: IRatecard): Promise<IServerResponse<IRatecard>> {
-    const response = await apiClient.put<IServerResponse<IRatecard>>(`${rootUrl}/${id}`, body);
+  async updateRateCard(id: string, body: RatecardType): Promise<IServerResponse<RatecardType>> {
+    const response = await apiClient.put<IServerResponse<RatecardType>>(`${rootUrl}/${id}`, body);
     return response.data;
   },
 

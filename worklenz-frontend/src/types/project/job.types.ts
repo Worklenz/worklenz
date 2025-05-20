@@ -1,4 +1,4 @@
-export type JobType = {
+export interface IJobType {
     jobId: string;
     jobTitle: string;
     ratePerHour?: number;
