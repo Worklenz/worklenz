@@ -87,7 +87,6 @@ export const updateRateCard = createAsyncThunk(
   async ({ id, body }: { id: string; body: RatecardType }, { rejectWithValue }) => {
     try {
       const response = await rateCardApiService.updateRateCard(id, body);
-      console.log('response', response);
       return response.body;
     } catch (error) {
       logger.error('Update RateCard', error);
