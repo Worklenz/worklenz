@@ -7,5 +7,5 @@ export function startCronJobs() {
   startNotificationsJob();
   startDailyDigestJob();
   startProjectDigestJob();
-  startRecurringTasksJob();
+  // startRecurringTasksJob();
 }

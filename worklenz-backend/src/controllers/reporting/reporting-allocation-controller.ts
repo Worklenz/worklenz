@@ -413,13 +413,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
     let endDate: moment.Moment;
     if (date_range && date_range.length === 2) {
       // Parse dates and convert to UTC while preserving the intended local date
-      startDate = moment(date_range[0]).utc().startOf('day');
-      endDate = moment(date_range[1]).utc().endOf('day');
+      startDate = moment(date_range[0]).startOf('day');
+      endDate = moment(date_range[1]).endOf('day');
       
       console.log("Original start date:", date_range[0]);
       console.log("Original end date:", date_range[1]);
-      console.log("UTC startDate:", startDate.format());
-      console.log("UTC endDate:", endDate.format());
+      console.log("Local startDate:", startDate.format());
+      console.log("Local endDate:", endDate.format());
     } else if (duration === DATE_RANGES.ALL_TIME) {
       // Fetch the earliest start_date (or created_at if null) from selected projects
       const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
@@ -495,6 +495,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
       current.add(1, 'day');
     }
     console.log("workingDays", workingDays);
+    console.log("Start date for working days:", startDate.format());
+    console.log("End date for working days:", endDate.format());
 
     // Use organization working hours for total working hours
     const totalWorkingHours = workingDays * orgWorkingHours;
