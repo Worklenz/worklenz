@@ -522,11 +522,18 @@ export default class ReportingAllocationController extends ReportingControllerBa
       member.value = member.logged_time ? parseFloat(moment.duration(member.logged_time, "seconds").asHours().toFixed(2)) : 0;
       member.color_code = getColor(member.name);
       member.total_working_hours = totalWorkingHours;
-      member.utilization_percent = (totalWorkingHours > 0 && member.logged_time) ? ((parseFloat(member.logged_time) / (totalWorkingHours * 3600)) * 100).toFixed(2) : '0.00';
-      member.utilized_hours = member.logged_time ? (parseFloat(member.logged_time) / 3600).toFixed(2) : '0.00';
-      // Over/under utilized hours: utilized_hours - total_working_hours
-      const overUnder = member.utilized_hours && member.total_working_hours ? (parseFloat(member.utilized_hours) - member.total_working_hours) : 0;
-      member.over_under_utilized_hours = overUnder.toFixed(2);
+      if (totalWorkingHours === 0) {
+        member.utilization_percent = member.logged_time && parseFloat(member.logged_time) > 0 ? 'N/A' : '0.00';
+        member.utilized_hours = member.logged_time ? (parseFloat(member.logged_time) / 3600).toFixed(2) : '0.00';
+        // Over/under utilized hours: all logged time is over-utilized
+        member.over_under_utilized_hours = member.utilized_hours;
+      } else {
+        member.utilization_percent = (member.logged_time && totalWorkingHours > 0) ? ((parseFloat(member.logged_time) / (totalWorkingHours * 3600)) * 100).toFixed(2) : '0.00';
+        member.utilized_hours = member.logged_time ? (parseFloat(member.logged_time) / 3600).toFixed(2) : '0.00';
+        // Over/under utilized hours: utilized_hours - total_working_hours
+        const overUnder = member.utilized_hours && member.total_working_hours ? (parseFloat(member.utilized_hours) - member.total_working_hours) : 0;
+        member.over_under_utilized_hours = overUnder.toFixed(2);
+      }
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
