@@ -1,8 +1,11 @@
 
 export interface IJobType {
-    jobId: string;
-    jobTitle: string;
+    jobId?: string;
+    jobtitle?: string;
     ratePerHour?: number;
+    rate_card_id?: string;
+    job_title_id: string;
+    rate?: number;
   };
 export interface JobRoleType extends IJobType {
   members: string[] | null;

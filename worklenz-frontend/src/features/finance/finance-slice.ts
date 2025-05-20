@@ -161,5 +161,6 @@ export const {
   toggleImportRatecardsDrawer,
   changeCurrency,
   ratecardDrawerLoading,
+  clearDrawerRatecard,
 } = financeSlice.actions;
 export default financeSlice.reducer;

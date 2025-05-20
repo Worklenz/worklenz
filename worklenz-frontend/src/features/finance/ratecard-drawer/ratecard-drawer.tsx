@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
-import { fetchRateCardById, fetchRateCards, toggleRatecardDrawer, updateRateCard } from '../finance-slice';
+import { clearDrawerRatecard, fetchRateCardById, fetchRateCards, toggleRatecardDrawer, updateRateCard } from '../finance-slice';
 import { RatecardType, IJobType } from '@/types/project/ratecard.types';
 import { IJobTitlesViewModel } from '@/types/job.types';
 import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
@@ -40,6 +40,7 @@ const RatecardDrawer = ({
     (state) => state.financeReducer.isRatecardDrawerOpen
   );
   const dispatch = useAppDispatch();
+
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [selectedJobTitleId, setSelectedJobTitleId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
@@ -90,6 +91,7 @@ const RatecardDrawer = ({
   }, [type, ratecardId, dispatch]);
 
   useEffect(() => {
+
     if (type === 'update' && drawerRatecard) {
       setRoles(drawerRatecard.jobRolesList || []);
       setName(drawerRatecard.name || '');
@@ -113,11 +115,12 @@ const RatecardDrawer = ({
     const jobTitle = jobTitles.data?.find(jt => jt.id === jobTitleId);
     if (jobTitle) {
       const newRole = {
-        rate_card_id: jobTitleId,
-        jobTitle: jobTitle.name || 'New Role',
-        ratePerHour: 0,
+        jobtitle: jobTitle.name,
+        rate_card_id: ratecardId,
+        job_title_id: jobTitleId,
+        rate: 0,
       };
-      // setRoles([...roles, newRole]);
+      setRoles([...roles, newRole]);
     }
     setIsAddingRole(false);
     setSelectedJobTitleId(undefined);
@@ -144,8 +147,13 @@ const RatecardDrawer = ({
         }) as any);
         if (onSaved) onSaved();
         dispatch(toggleRatecardDrawer());
+
       } catch (error) {
         console.error('Failed to update rate card', error);
+      } finally {
+        setRoles([]);
+        setName('Untitled Rate Card');
+        setCurrency('LKR');
       }
     }
   };
@@ -154,7 +162,7 @@ const RatecardDrawer = ({
   const columns = [
     {
       title: t('jobTitleColumn'),
-      dataIndex: 'jobTitle',
+      dataIndex: 'jobtitle',
       render: (text: string, record: any, index: number) => (
         <Input
           value={text}
@@ -168,7 +176,7 @@ const RatecardDrawer = ({
           }}
           onChange={(e) => {
             const updatedRoles = [...roles];
-            updatedRoles[index].jobTitle = e.target.value;
+            updatedRoles[index].jobtitle = e.target.value;
             setRoles(updatedRoles);
           }}
         />
@@ -176,7 +184,7 @@ const RatecardDrawer = ({
     },
     {
       title: `${t('ratePerHourColumn')} (${currency})`,
-      dataIndex: 'ratePerHour',
+      dataIndex: 'rate',
       render: (text: number, record: any, index: number) => (
         <Input
           type="number"
@@ -189,7 +197,7 @@ const RatecardDrawer = ({
           }}
           onChange={(e) => {
             const updatedRoles = [...roles];
-            updatedRoles[index].ratePerHour = parseInt(e.target.value, 10) || 0;
+            updatedRoles[index].rate = parseInt(e.target.value, 10) || 0;
             setRoles(updatedRoles);
           }}
         />
@@ -210,6 +218,7 @@ const RatecardDrawer = ({
 
   return (
     <Drawer
+      loading={drawerLoading}
       title={
         <Flex align="center" justify="space-between">
           <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
@@ -252,7 +261,7 @@ const RatecardDrawer = ({
       <Table
         dataSource={roles}
         columns={columns}
-        rowKey={(record) => record.jobId}
+        rowKey={(record) => record.job_title_id}
         pagination={false}
         footer={() => (
           isAddingRole ? (

@@ -30,7 +30,7 @@ DROP TABLE IF EXISTS finance_rate_card_roles;
 CREATE TABLE finance_rate_card_roles
 (
     rate_card_id UUID                     NOT NULL REFERENCES finance_rate_cards (id) ON DELETE CASCADE,
-    role_id      UUID                     REFERENCES roles (id) ON DELETE SET NULL,
+    job_title_id      UUID                     REFERENCES job_titles(id) ON DELETE SET NULL,
     rate         DECIMAL(10, 2)           NOT NULL CHECK (rate >= 0),
     created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP

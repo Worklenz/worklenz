@@ -21,7 +21,7 @@ import { useAppDispatch } from '../../../hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '../../../hooks/useDoumentTItle';
 import { durationDateFormat } from '../../../utils/durationDateFormat';
-import { createRateCard, deleteRateCard, toggleRatecardDrawer } from '../../../features/finance/finance-slice';
+import { createRateCard, deleteRateCard, fetchRateCardById, toggleRatecardDrawer } from '../../../features/finance/finance-slice';
 import RatecardDrawer from '../../../features/finance/ratecard-drawer/ratecard-drawer';
 import { rateCardApiService } from '@/api/settings/rate-cards/rate-cards.api.service';
 import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
@@ -58,6 +58,12 @@ const RatecardSettings: React.FC = () => {
     size: 'small',
   });
 
+  const filteredRatecardsData = useMemo(() => {
+    return ratecardsList.filter((item) =>
+      item.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [ratecardsList, searchQuery]);
+
   const fetchRateCards = useCallback(async () => {
     setLoading(true);
     try {
@@ -81,13 +87,9 @@ const RatecardSettings: React.FC = () => {
 
   useEffect(() => {
     fetchRateCards();
-  }, []);
+  }, [toggleRatecardDrawer]);
 
-  const filteredRatecardsData = useMemo(() => {
-    return ratecardsList.filter((item) =>
-      item.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [ratecardsList, searchQuery]);
+
 
   const handleRatecardCreate = useCallback(async () => {
 
@@ -107,6 +109,7 @@ const RatecardSettings: React.FC = () => {
 
   const handleRatecardUpdate = useCallback((id: string) => {
     setRatecardDrawerType('update');
+    dispatch(fetchRateCardById(id));
     setSelectedRatecardId(id);
     dispatch(toggleRatecardDrawer());
   }, [dispatch]);
@@ -161,9 +164,12 @@ const RatecardSettings: React.FC = () => {
             icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
             okText={t('deleteConfirmationOk')}
             cancelText={t('deleteConfirmationCancel')}
-            onConfirm={() => {
+            onConfirm={async () => {
               setLoading(true);
-              record.id && dispatch(deleteRateCard(record.id));
+              if (record.id) {
+                await dispatch(deleteRateCard(record.id));
+                await fetchRateCards();
+              }
               setLoading(false);
             }}
           >
