@@ -188,7 +188,7 @@ const RatecardDrawer = ({
       render: (text: number, record: any, index: number) => (
         <Input
           type="number"
-          value={text}
+          value={roles[index]?.rate ?? 0}
           style={{
             background: 'transparent',
             border: 'none',
@@ -196,8 +196,9 @@ const RatecardDrawer = ({
             padding: 0,
           }}
           onChange={(e) => {
-            const updatedRoles = [...roles];
-            updatedRoles[index].rate = parseInt(e.target.value, 10) || 0;
+            const updatedRoles = roles.map((role, idx) =>
+              idx === index ? { ...role, rate: parseInt(e.target.value, 10) || 0 } : role
+            );
             setRoles(updatedRoles);
           }}
         />

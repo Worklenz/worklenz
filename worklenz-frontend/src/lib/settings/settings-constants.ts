@@ -127,7 +127,7 @@ export const settingsItems: SettingMenuItems[] = [
   },
   {
     key: 'ratecard',
-    name: 'Ratecard',
+    name: 'Rate Card',
     endpoint: 'ratecard',
     icon: React.createElement(DollarCircleOutlined),
     element: React.createElement(RatecardSettings),
