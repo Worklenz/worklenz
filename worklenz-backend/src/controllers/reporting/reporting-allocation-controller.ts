@@ -412,8 +412,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
     let startDate: moment.Moment;
     let endDate: moment.Moment;
     if (date_range && date_range.length === 2) {
-      startDate = moment(date_range[0]);
-      endDate = moment(date_range[1]);
+      // Parse dates and convert to UTC while preserving the intended local date
+      startDate = moment(date_range[0]).utc().startOf('day');
+      endDate = moment(date_range[1]).utc().endOf('day');
+      
+      console.log("Original start date:", date_range[0]);
+      console.log("Original end date:", date_range[1]);
+      console.log("UTC startDate:", startDate.format());
+      console.log("UTC endDate:", endDate.format());
     } else if (duration === DATE_RANGES.ALL_TIME) {
       // Fetch the earliest start_date (or created_at if null) from selected projects
       const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
@@ -427,9 +433,17 @@ export default class ReportingAllocationController extends ReportingControllerBa
           startDate = moment().subtract(1, "day");
           endDate = moment().subtract(1, "day");
           break;
+        case DATE_RANGES.LAST_7_DAYS:
+          startDate = moment().subtract(7, "days");
+          endDate = moment();
+          break;
         case DATE_RANGES.LAST_WEEK:
           startDate = moment().subtract(1, "week").startOf("isoWeek");
           endDate = moment().subtract(1, "week").endOf("isoWeek");
+          break;
+        case DATE_RANGES.LAST_30_DAYS:
+          startDate = moment().subtract(30, "days");
+          endDate = moment();
           break;
         case DATE_RANGES.LAST_MONTH:
           startDate = moment().subtract(1, "month").startOf("month");
@@ -480,6 +494,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       if (orgWorkingDays[weekday]) workingDays++;
       current.add(1, 'day');
     }
+    console.log("workingDays", workingDays);
 
     // Use organization working hours for total working hours
     const totalWorkingHours = workingDays * orgWorkingHours;
