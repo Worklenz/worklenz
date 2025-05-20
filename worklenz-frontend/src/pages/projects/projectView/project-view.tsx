@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { PushpinFilled, PushpinOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Badge, Button, ConfigProvider, Flex, Tabs, TabsProps, Tooltip } from 'antd';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -43,6 +43,14 @@ const ProjectView = () => {
   const [pinnedTab, setPinnedTab] = useState<string>(searchParams.get('pinned_tab') || '');
   const [taskid, setTaskId] = useState<string>(searchParams.get('task') || '');
 
+  const resetProjectData = useCallback(() => {
+    dispatch(setProjectId(null));
+    dispatch(resetStatuses());
+    dispatch(deselectAll());
+    dispatch(resetTaskListData());
+    dispatch(resetBoardData());
+  }, [dispatch]);
+
   useEffect(() => {
     if (projectId) {
       dispatch(setProjectId(projectId));
@@ -59,9 +67,13 @@ const ProjectView = () => {
       dispatch(setSelectedTaskId(taskid || ''));
       dispatch(setShowTaskDrawer(true));
     }
-  }, [dispatch, navigate, projectId, taskid]);
 
-  const pinToDefaultTab = async (itemKey: string) => {
+    return () => {
+      resetProjectData();
+    };
+  }, [dispatch, navigate, projectId, taskid, resetProjectData]);
+
+  const pinToDefaultTab = useCallback(async (itemKey: string) => {
     if (!itemKey || !projectId) return;
 
     const defaultView = itemKey === 'tasks-list' ? 'TASK_LIST' : 'BOARD';
@@ -88,9 +100,9 @@ const ProjectView = () => {
         }).toString(),
       });
     }
-  };
+  }, [projectId, activeTab, navigate]);
 
-  const handleTabChange = (key: string) => {
+  const handleTabChange = useCallback((key: string) => {
     setActiveTab(key);
     dispatch(setProjectView(key === 'board' ? 'kanban' : 'list'));
     navigate({
@@ -100,9 +112,9 @@ const ProjectView = () => {
         pinned_tab: pinnedTab,
       }).toString(),
     });
-  };
+  }, [dispatch, location.pathname, navigate, pinnedTab]);
 
-  const tabMenuItems = tabItems.map(item => ({
+  const tabMenuItems = useMemo(() => tabItems.map(item => ({
     key: item.key,
     label: (
       <Flex align="center" style={{ color: colors.skyBlue }}>
@@ -144,21 +156,17 @@ const ProjectView = () => {
       </Flex>
     ),
     children: item.element,
-  }));
+  })), [pinnedTab, pinToDefaultTab]);
 
-  const resetProjectData = () => {
-    dispatch(setProjectId(null));
-    dispatch(resetStatuses());
-    dispatch(deselectAll());
-    dispatch(resetTaskListData());
-    dispatch(resetBoardData());
-  };
-
-  useEffect(() => {
-    return () => {
-      resetProjectData();
-    };
-  }, []);
+  const portalElements = useMemo(() => (
+    <>
+      {createPortal(<ProjectMemberDrawer />, document.body, 'project-member-drawer')}
+      {createPortal(<PhaseDrawer />, document.body, 'phase-drawer')}
+      {createPortal(<StatusDrawer />, document.body, 'status-drawer')}
+      {createPortal(<TaskDrawer />, document.body, 'task-drawer')}
+      {createPortal(<DeleteStatusDrawer />, document.body, 'delete-status-drawer')}
+    </>
+  ), []);
 
   return (
     <div style={{ marginBlockStart: 80, marginBlockEnd: 24, minHeight: '80vh' }}>
@@ -170,33 +178,11 @@ const ProjectView = () => {
         items={tabMenuItems}
         tabBarStyle={{ paddingInline: 0 }}
         destroyInactiveTabPane={true}
-      // tabBarExtraContent={
-      // <div>
-      //   <span style={{ position: 'relative', top: '-10px' }}>
-      //     <Tooltip title="Members who are active on this project will be displayed here.">
-      //       <QuestionCircleOutlined />
-      //     </Tooltip>
-      //   </span>
-      //   <span
-      //     style={{
-      //       position: 'relative',
-      //       right: '20px',
-      //       top: '10px',
-      //     }}
-      //   >
-      //     <Badge status="success" dot className="profile-badge" />
-      //   </span>
-      // </div>
-      // }
       />
 
-      {createPortal(<ProjectMemberDrawer />, document.body, 'project-member-drawer')}
-      {createPortal(<PhaseDrawer />, document.body, 'phase-drawer')}
-      {createPortal(<StatusDrawer />, document.body, 'status-drawer')}
-      {createPortal(<TaskDrawer />, document.body, 'task-drawer')}
-      {createPortal(<DeleteStatusDrawer />, document.body, 'delete-status-drawer')}
+      {portalElements}
     </div>
   );
 };
 
-export default ProjectView;
+export default React.memo(ProjectView);

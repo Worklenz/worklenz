@@ -30,7 +30,8 @@
       "taskWeight": "Task Weight",
       "taskWeightTooltip": "Set the weight of this subtask (percentage)",
       "taskWeightRequired": "Please enter a task weight",
-      "taskWeightRange": "Weight must be between 0 and 100"
+      "taskWeightRange": "Weight must be between 0 and 100",
+      "recurring": "Recurring"
     },
     "labels": {
       "labelInputPlaceholder": "Search or create",
