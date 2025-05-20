@@ -412,7 +412,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     let startDate: moment.Moment;
     let endDate: moment.Moment;
     if (date_range && date_range.length === 2) {
-      // Parse dates without timezone
+      // Parse simple YYYY-MM-DD dates
       startDate = moment(date_range[0]).startOf('day');
       endDate = moment(date_range[1]).endOf('day');
       
