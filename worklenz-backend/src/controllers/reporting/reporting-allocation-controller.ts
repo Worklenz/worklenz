@@ -412,14 +412,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
     let startDate: moment.Moment;
     let endDate: moment.Moment;
     if (date_range && date_range.length === 2) {
-      // Parse dates and convert to UTC while preserving the intended local date
+      // Parse dates without timezone
       startDate = moment(date_range[0]).startOf('day');
       endDate = moment(date_range[1]).endOf('day');
       
       console.log("Original start date:", date_range[0]);
       console.log("Original end date:", date_range[1]);
-      console.log("Local startDate:", startDate.format());
-      console.log("Local endDate:", endDate.format());
+      console.log("Start date:", startDate.format('YYYY-MM-DD'));
+      console.log("End date:", endDate.format('YYYY-MM-DD'));
     } else if (duration === DATE_RANGES.ALL_TIME) {
       // Fetch the earliest start_date (or created_at if null) from selected projects
       const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
@@ -495,13 +495,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
       current.add(1, 'day');
     }
     console.log("workingDays", workingDays);
-    console.log("Start date for working days:", startDate.format());
-    console.log("End date for working days:", endDate.format());
+    console.log("Start date for working days:", startDate.format('YYYY-MM-DD'));
+    console.log("End date for working days:", endDate.format('YYYY-MM-DD'));
 
     // Use organization working hours for total working hours
     const totalWorkingHours = workingDays * orgWorkingHours;
 
-    const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
+    const durationClause = `AND DATE(task_work_log.created_at) >= '${startDate.format('YYYY-MM-DD')}' AND DATE(task_work_log.created_at) <= '${endDate.format('YYYY-MM-DD')}'`;
     const archivedClause = archived
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
