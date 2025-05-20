@@ -412,14 +412,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
     let startDate: moment.Moment;
     let endDate: moment.Moment;
     if (date_range && date_range.length === 2) {
-      // Parse simple YYYY-MM-DD dates
-      startDate = moment(date_range[0]).startOf('day');
-      endDate = moment(date_range[1]).endOf('day');
-      
-      console.log("Original start date:", date_range[0]);
-      console.log("Original end date:", date_range[1]);
-      console.log("Start date:", startDate.format('YYYY-MM-DD'));
-      console.log("End date:", endDate.format('YYYY-MM-DD'));
+      startDate = moment(date_range[0]);
+      endDate = moment(date_range[1]);
     } else if (duration === DATE_RANGES.ALL_TIME) {
       // Fetch the earliest start_date (or created_at if null) from selected projects
       const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
@@ -433,17 +427,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
           startDate = moment().subtract(1, "day");
           endDate = moment().subtract(1, "day");
           break;
-        case DATE_RANGES.LAST_7_DAYS:
-          startDate = moment().subtract(7, "days");
-          endDate = moment();
-          break;
         case DATE_RANGES.LAST_WEEK:
           startDate = moment().subtract(1, "week").startOf("isoWeek");
           endDate = moment().subtract(1, "week").endOf("isoWeek");
-          break;
-        case DATE_RANGES.LAST_30_DAYS:
-          startDate = moment().subtract(30, "days");
-          endDate = moment();
           break;
         case DATE_RANGES.LAST_MONTH:
           startDate = moment().subtract(1, "month").startOf("month");
@@ -459,49 +445,61 @@ export default class ReportingAllocationController extends ReportingControllerBa
       }
     }
 
-    // Fetch organization_id from the selected team
-    const selectedTeamId = req.user?.team_id;
-    let organizationId: string | undefined = undefined;
-    if (selectedTeamId) {
-      const orgIdQuery = `SELECT organization_id FROM teams WHERE id = $1`;
-      const orgIdResult = await db.query(orgIdQuery, [selectedTeamId]);
-      organizationId = orgIdResult.rows[0]?.organization_id;
-    }
-
-    // Fetch organization working hours and working days
-    let orgWorkingHours = 8;
-    let orgWorkingDays: { [key: string]: boolean } = {
-      monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: false, sunday: false
+    // Get organization working days
+    const orgWorkingDaysQuery = `
+      SELECT monday, tuesday, wednesday, thursday, friday, saturday, sunday
+      FROM organization_working_days
+      WHERE organization_id IN (
+        SELECT t.organization_id 
+        FROM teams t 
+        WHERE t.id IN (${teamIds})
+        LIMIT 1
+      );
+    `;
+    const orgWorkingDaysResult = await db.query(orgWorkingDaysQuery, []);
+    const workingDaysConfig = orgWorkingDaysResult.rows[0] || {
+      monday: true,
+      tuesday: true,
+      wednesday: true,
+      thursday: true,
+      friday: true,
+      saturday: false,
+      sunday: false
     };
-    if (organizationId) {
-      const orgHoursQuery = `SELECT working_hours FROM organizations WHERE id = $1`;
-      const orgHoursResult = await db.query(orgHoursQuery, [organizationId]);
-      if (orgHoursResult.rows[0]?.working_hours) {
-        orgWorkingHours = orgHoursResult.rows[0].working_hours;
-      }
-      const orgDaysQuery = `SELECT monday, tuesday, wednesday, thursday, friday, saturday, sunday FROM organization_working_days WHERE organization_id = $1 ORDER BY created_at DESC LIMIT 1`;
-      const orgDaysResult = await db.query(orgDaysQuery, [organizationId]);
-      if (orgDaysResult.rows[0]) {
-        orgWorkingDays = orgDaysResult.rows[0];
-      }
-    }
 
-    // Count only organization working days in the period
+    // Count working days based on organization settings
     let workingDays = 0;
     let current = startDate.clone();
     while (current.isSameOrBefore(endDate, 'day')) {
-      const weekday = current.format('dddd').toLowerCase(); // e.g., 'monday'
-      if (orgWorkingDays[weekday]) workingDays++;
+      const day = current.isoWeekday();
+      if (
+        (day === 1 && workingDaysConfig.monday) ||
+        (day === 2 && workingDaysConfig.tuesday) ||
+        (day === 3 && workingDaysConfig.wednesday) ||
+        (day === 4 && workingDaysConfig.thursday) ||
+        (day === 5 && workingDaysConfig.friday) ||
+        (day === 6 && workingDaysConfig.saturday) ||
+        (day === 7 && workingDaysConfig.sunday)
+      ) {
+        workingDays++;
+      }
       current.add(1, 'day');
     }
-    console.log("workingDays", workingDays);
-    console.log("Start date for working days:", startDate.format('YYYY-MM-DD'));
-    console.log("End date for working days:", endDate.format('YYYY-MM-DD'));
 
-    // Use organization working hours for total working hours
-    const totalWorkingHours = workingDays * orgWorkingHours;
+    // Get hours_per_day for all selected projects
+    const projectHoursQuery = `SELECT id, hours_per_day FROM projects WHERE id IN (${projectIds})`;
+    const projectHoursResult = await db.query(projectHoursQuery, []);
+    const projectHoursMap: Record<string, number> = {};
+    for (const row of projectHoursResult.rows) {
+      projectHoursMap[row.id] = row.hours_per_day || 8;
+    }
+    // Sum total working hours for all selected projects
+    let totalWorkingHours = 0;
+    for (const pid of Object.keys(projectHoursMap)) {
+      totalWorkingHours += workingDays * projectHoursMap[pid];
+    }
 
-    const durationClause = `AND DATE(task_work_log.created_at) >= '${startDate.format('YYYY-MM-DD')}' AND DATE(task_work_log.created_at) <= '${endDate.format('YYYY-MM-DD')}'`;
+    const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
     const archivedClause = archived
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
