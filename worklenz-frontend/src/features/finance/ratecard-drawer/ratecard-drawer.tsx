@@ -3,14 +3,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
-import { fetchData } from '../../../utils/fetchData';
 import { fetchRateCardById, fetchRateCards, toggleRatecardDrawer, updateRateCard } from '../finance-slice';
 import { RatecardType, IJobType } from '@/types/project/ratecard.types';
 import { IJobTitlesViewModel } from '@/types/job.types';
 import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
 import { DeleteOutlined } from '@ant-design/icons';
-import { rateCardApiService } from '@/api/settings/rate-cards/rate-cards.api.service';
 
 interface PaginationType {
   current: number;
@@ -36,20 +34,16 @@ const RatecardDrawer = ({
 
   const { t } = useTranslation('settings/ratecard-settings');
   // get drawer state from client reducer
-  const drawerLoading = useAppSelector(state => state.financeReducer.drawerLoading);
+  const drawerLoading = useAppSelector(state => state.financeReducer.isFinanceDrawerloading);
   const drawerRatecard = useAppSelector(state => state.financeReducer.drawerRatecard);
   const isDrawerOpen = useAppSelector(
     (state) => state.financeReducer.isRatecardDrawerOpen
   );
-  // get currently using currency from finance reducer
-  const cur = useAppSelector(
-    (state) => state.financeReducer.currency
-  ).toUpperCase();
   const dispatch = useAppDispatch();
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [selectedJobTitleId, setSelectedJobTitleId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currency, setCurrency] = useState(cur);
+  const [currency, setCurrency] = useState('LKR');
   const [name, setName] = useState<string>('Untitled Rate Card');
   const [jobTitles, setJobTitles] = useState<IJobTitlesViewModel>({});
   const [pagination, setPagination] = useState<PaginationType>({
@@ -99,7 +93,7 @@ const RatecardDrawer = ({
     if (type === 'update' && drawerRatecard) {
       setRoles(drawerRatecard.jobRolesList || []);
       setName(drawerRatecard.name || '');
-      setCurrency(drawerRatecard.currency || cur);
+      setCurrency(drawerRatecard.currency || 'LKR');
     }
   }, [drawerRatecard, type]);
 
@@ -119,11 +113,11 @@ const RatecardDrawer = ({
     const jobTitle = jobTitles.data?.find(jt => jt.id === jobTitleId);
     if (jobTitle) {
       const newRole = {
-        jobId: jobTitleId,
+        rate_card_id: jobTitleId,
         jobTitle: jobTitle.name || 'New Role',
         ratePerHour: 0,
       };
-      setRoles([...roles, newRole]);
+      // setRoles([...roles, newRole]);
     }
     setIsAddingRole(false);
     setSelectedJobTitleId(undefined);
@@ -239,13 +233,13 @@ const RatecardDrawer = ({
           <Flex gap={8} align="center">
             <Typography.Text>{t('currency')}</Typography.Text>
             <Select
-              value={currency.toLowerCase()}
+              value={currency}
               options={[
-                { value: 'lkr', label: 'LKR' },
-                { value: 'usd', label: 'USD' },
-                { value: 'inr', label: 'INR' },
+                { value: 'LKR', label: 'LKR' },
+                { value: 'USD', label: 'USD' },
+                { value: 'INR', label: 'INR' },
               ]}
-              onChange={(value) => setCurrency(value.toUpperCase())}
+              onChange={(value) => setCurrency(value)}
             />
           </Flex>
         </Flex>

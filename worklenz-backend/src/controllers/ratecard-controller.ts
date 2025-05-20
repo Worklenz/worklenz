@@ -29,7 +29,7 @@ public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<
         (
           SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
           FROM (
-            SELECT id, name, team_id, created_at, updated_at
+            SELECT id, name, team_id, currency, created_at, updated_at
             FROM finance_rate_cards
             WHERE team_id = $1 ${searchQuery}
             ORDER BY ${sortField} ${sortOrder}
@@ -49,7 +49,7 @@ public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<
   @HandleExceptions()
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `
-      SELECT id, name, team_id, created_at, updated_at
+      SELECT id, name, team_id, currency, created_at, updated_at
       FROM finance_rate_cards
       WHERE id = $1 AND team_id = $2;
     `;
@@ -62,11 +62,11 @@ public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `
       UPDATE finance_rate_cards
-      SET name = $3, updated_at = NOW()
+      SET name = $3, currency = $4, updated_at = NOW()
       WHERE id = $1 AND team_id = $2
-      RETURNING id, name, team_id, created_at, updated_at;
+      RETURNING id, name, team_id, currency, created_at, updated_at;
     `;
-    const result = await db.query(q, [req.params.id, req.user?.team_id || null, req.body.name]);
+    const result = await db.query(q, [req.params.id, req.user?.team_id || null, req.body.name, req.body.currency]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));
   }
