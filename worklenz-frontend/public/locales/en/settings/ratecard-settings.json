@@ -16,5 +16,9 @@
   "createRatecardErrorMessage": "Create Rate Card failed!",
   "updateRatecardSuccessMessage": "Update Rate Card success!",
   "updateRatecardErrorMessage": "Update Rate Card failed!",
-  "currency": "Currency"
+  "currency": "Currency",
+  "actionsColumn": "Actions",
+  "addAllButton": "Add All",
+  "removeAllButton": "Remove All"
+
 }

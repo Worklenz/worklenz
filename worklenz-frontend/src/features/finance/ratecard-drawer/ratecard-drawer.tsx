@@ -3,10 +3,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
-import { clearDrawerRatecard, fetchRateCardById, fetchRateCards, toggleRatecardDrawer, updateRateCard } from '../finance-slice';
+import { deleteRateCard, fetchRateCardById, fetchRateCards, toggleRatecardDrawer, updateRateCard } from '../finance-slice';
 import { RatecardType, IJobType } from '@/types/project/ratecard.types';
 import { IJobTitlesViewModel } from '@/types/job.types';
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
 import { DeleteOutlined } from '@ant-design/icons';
 
@@ -31,7 +30,7 @@ const RatecardDrawer = ({
   const [ratecardsList, setRatecardsList] = useState<RatecardType[]>([]);
   // initial Job Roles List (dummy data)
   const [roles, setRoles] = useState<IJobType[]>([]);
-
+  const [addingRowIndex, setAddingRowIndex] = useState<number | null>(null);
   const { t } = useTranslation('settings/ratecard-settings');
   // get drawer state from client reducer
   const drawerLoading = useAppSelector(state => state.financeReducer.isFinanceDrawerloading);
@@ -49,13 +48,14 @@ const RatecardDrawer = ({
   const [jobTitles, setJobTitles] = useState<IJobTitlesViewModel>({});
   const [pagination, setPagination] = useState<PaginationType>({
     current: 1,
-    pageSize: DEFAULT_PAGE_SIZE,
+    pageSize: 10000,
     field: 'name',
     order: 'desc',
     total: 0,
     pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
     size: 'small',
   });
+  const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
 
   const getJobTitles = useMemo(() => {
     return async () => {
@@ -102,23 +102,33 @@ const RatecardDrawer = ({
   // Add All handler
   const handleAddAllRoles = () => {
     if (!jobTitles.data) return;
-    // Filter out job titles already in roles
+    // Get current job_title_ids in roles
     const existingIds = new Set(roles.map(r => r.job_title_id));
+    // Only add job titles not already present
     const newRoles = jobTitles.data
-      .filter(jt => !existingIds.has(jt.id!))
+      .filter(jt => jt.id && !existingIds.has(jt.id))
       .map(jt => ({
         jobtitle: jt.name,
         rate_card_id: ratecardId,
         job_title_id: jt.id!,
         rate: 0,
       }));
-    setRoles([...roles, ...newRoles]);
+    // Prevent any accidental duplicates by merging and filtering again
+    const mergedRoles = [...roles, ...newRoles].filter(
+      (role, idx, arr) =>
+        arr.findIndex(r => r.job_title_id === role.job_title_id) === idx
+    );
+    setRoles(mergedRoles);
   };
 
-  // add new job role handler
   const handleAddRole = () => {
-    setIsAddingRole(true);
-    setSelectedJobTitleId(undefined);
+    // Only allow adding if there are job titles not already in roles
+    const existingIds = new Set(roles.map(r => r.job_title_id));
+    const availableJobTitles = jobTitles.data?.filter(jt => !existingIds.has(jt.id!));
+    if (availableJobTitles && availableJobTitles.length > 0) {
+      setRoles([...roles, { job_title_id: '', rate: 0 }]);
+      setAddingRowIndex(roles.length); // index of the new row
+    }
   };
   const handleDeleteRole = (index: number) => {
     const updatedRoles = [...roles];
@@ -126,6 +136,12 @@ const RatecardDrawer = ({
     setRoles(updatedRoles);
   };
   const handleSelectJobTitle = (jobTitleId: string) => {
+    // Prevent duplicate job_title_id
+    if (roles.some(role => role.job_title_id === jobTitleId)) {
+      setIsAddingRole(false);
+      setSelectedJobTitleId(undefined);
+      return;
+    }
     const jobTitle = jobTitles.data?.find(jt => jt.id === jobTitleId);
     if (jobTitle) {
       const newRole = {
@@ -143,12 +159,14 @@ const RatecardDrawer = ({
   const handleSave = async () => {
     if (type === 'update' && ratecardId) {
       try {
+        // Filter out roles with no jobtitle or empty jobtitle
+        const filteredRoles = roles.filter(role => role.jobtitle && role.jobtitle.trim() !== '');
         await dispatch(updateRateCard({
           id: ratecardId,
           body: {
             name,
             currency,
-            jobRolesList: roles,
+            jobRolesList: filteredRoles,
           },
         }) as any);
         // Refresh the rate cards list in Redux
@@ -177,24 +195,56 @@ const RatecardDrawer = ({
     {
       title: t('jobTitleColumn'),
       dataIndex: 'jobtitle',
-      render: (text: string, record: any, index: number) => (
-        <Input
-          value={text}
-          placeholder="Enter job title"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-            padding: 0,
-            color: '#1890ff',
-          }}
-          onChange={(e) => {
-            const updatedRoles = [...roles];
-            updatedRoles[index].jobtitle = e.target.value;
-            setRoles(updatedRoles);
-          }}
-        />
-      ),
+      render: (text: string, record: any, index: number) => {
+        if (index === addingRowIndex || index === editingRowIndex) {
+          return (
+            <Select
+              showSearch
+              autoFocus
+              placeholder={t('selectJobTitle')}
+              style={{ minWidth: 150 }}
+              value={record.job_title_id || undefined}
+              onChange={value => {
+                // Prevent duplicate job_title_id
+                if (roles.some((role, idx) => role.job_title_id === value && idx !== index)) {
+                  return;
+                }
+                const updatedRoles = [...roles];
+                const selectedJob = jobTitles.data?.find(jt => jt.id === value);
+                updatedRoles[index].job_title_id = value;
+                updatedRoles[index].jobtitle = selectedJob?.name || '';
+                setRoles(updatedRoles);
+                setEditingRowIndex(null);
+                setAddingRowIndex(null);
+              }}
+              onBlur={() => {
+                setEditingRowIndex(null);
+                setAddingRowIndex(null);
+              }}
+              filterOption={(input, option) =>
+                (option?.children as string).toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {jobTitles.data
+                ?.filter(jt => !roles.some((role, idx) => role.job_title_id === jt.id && idx !== index))
+                .map(jt => (
+                  <Select.Option key={jt.id} value={jt.id}>
+                    {jt.name}
+                  </Select.Option>
+                ))}
+            </Select>
+          );
+        }
+        // Render as clickable text for existing rows
+        return (
+          <span
+            style={{ cursor: 'pointer' }}
+            onClick={() => setEditingRowIndex(index)}
+          >
+            {record.jobtitle}
+          </span>
+        );
+      },
     },
     {
       title: `${t('ratePerHourColumn')} (${currency})`,
@@ -230,10 +280,21 @@ const RatecardDrawer = ({
       ),
     },
   ];
+  const handleDrawerClose = async () => {
+    if (
+      drawerRatecard &&
+      (drawerRatecard.jobRolesList?.length === 0 || !drawerRatecard.jobRolesList) &&
+      name === 'Untitled Rate Card'
+    ) {
+      await dispatch(deleteRateCard(drawerRatecard.id as string));
+    }
+    dispatch(toggleRatecardDrawer());
+  };
 
   return (
     <Drawer
       loading={drawerLoading}
+      onClose={handleDrawerClose}
       title={
         <Flex align="center" justify="space-between">
           <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
@@ -272,7 +333,6 @@ const RatecardDrawer = ({
         </Flex>
       }
       open={isDrawerOpen}
-      onClose={() => dispatch(toggleRatecardDrawer())}
       width={700}
       footer={
         <Flex justify="end" gap={16} style={{ marginTop: 16 }}>
