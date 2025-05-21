@@ -146,10 +146,3 @@ tr:hover .action-buttons {
   opacity: 1;
 }
 
-/* Prevent global styles from affecting HubSpot chat widget */
-#hubspot-messages-iframe-container,
-#hubspot-messages-iframe-container * {
-  background: none !important;
-  border-radius: 50% !important;
-  box-shadow: none !important;
-}
