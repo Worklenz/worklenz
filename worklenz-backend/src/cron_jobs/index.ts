@@ -7,5 +7,5 @@ export function startCronJobs() {
   startNotificationsJob();
   startDailyDigestJob();
   startProjectDigestJob();
-  startRecurringTasksJob();
+  if (process.env.ENABLE_RECURRING_JOBS === "true") startRecurringTasksJob();
 }
