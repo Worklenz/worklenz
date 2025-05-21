@@ -22,7 +22,8 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
       INSERT INTO finance_project_rate_card_roles (project_id, job_title_id, rate)
       VALUES ${values.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(",")}
       ON CONFLICT (project_id, job_title_id) DO UPDATE SET rate = EXCLUDED.rate
-      RETURNING *;
+      RETURNING *,
+      (SELECT name FROM job_titles jt WHERE jt.id = finance_project_rate_card_roles.job_title_id) AS Jobtitle;
     `;
     const flatValues = values.flat();
     const result = await db.query(q, flatValues);
@@ -94,7 +95,8 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
     const q = `
       INSERT INTO finance_project_rate_card_roles (project_id, job_title_id, rate)
       VALUES ${values.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(",")}
-      RETURNING *;
+      RETURNING *,
+      (SELECT name FROM job_titles jt WHERE jt.id = finance_project_rate_card_roles.job_title_id) AS jobtitle;
     `;
     const flatValues = values.flat();
     const result = await db.query(q, flatValues);

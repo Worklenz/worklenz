@@ -10,7 +10,7 @@ import { useParams } from 'react-router-dom';
 
 const ImportRatecardsDrawer: React.FC = () => {
   const dispatch = useAppDispatch();
-const { projectId } = useParams();
+  const { projectId } = useParams();
   const { t } = useTranslation('project-view-finance');
 
   const drawerRatecard = useAppSelector(
@@ -25,6 +25,8 @@ const { projectId } = useParams();
   const currency = useAppSelector(
     (state) => state.financeReducer.currency
   ).toUpperCase();
+
+  const rolesRedux = useAppSelector((state) => state.projectFinanceRateCard.rateCardRoles) || [];
 
   // Loading states
   const isRatecardsLoading = useAppSelector(
@@ -83,31 +85,32 @@ const { projectId } = useParams();
       }
       footer={
         <div style={{ textAlign: 'right' }}>
-          <Button
-  type="primary"
-  onClick={() => {
-    if (!projectId) {
-      // Handle missing project id (show error, etc.)
-      return;
-    }
-    if (drawerRatecard?.jobRolesList?.length) {
-      dispatch(
-        insertProjectRateCardRoles({
-          project_id: projectId,
-          roles: drawerRatecard.jobRolesList
-            .filter((role) => typeof role.rate !== 'undefined')
-            .map((role) => ({
-              ...role,
-              rate: Number(role.rate),
-            })),
-        })
-      );
-    }
-    dispatch(toggleImportRatecardsDrawer());
-  }}
->
-  {t('import')}
-</Button>
+            <Button
+            type="primary"
+            disabled={rolesRedux.length !== 0}
+            onClick={() => {
+              if (!projectId) {
+              // Handle missing project id (show error, etc.)
+              return;
+              }
+              if (drawerRatecard?.jobRolesList?.length) {
+              dispatch(
+                insertProjectRateCardRoles({
+                project_id: projectId,
+                roles: drawerRatecard.jobRolesList
+                  .filter((role) => typeof role.rate !== 'undefined')
+                  .map((role) => ({
+                  ...role,
+                  rate: Number(role.rate),
+                  })),
+                })
+              );
+              }
+              dispatch(toggleImportRatecardsDrawer());
+            }}
+            >
+            {t('import')}
+            </Button>
         </div>
       }
       open={isDrawerOpen}

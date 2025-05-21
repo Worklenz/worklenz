@@ -7,6 +7,7 @@ export interface IJobType {
   rate_card_id?: string;
   job_title_id: string;
   rate?: number;
+  name?: string;
 };
 export interface JobRoleType extends IJobType {
   members?: string[] | null;
