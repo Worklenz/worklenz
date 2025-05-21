@@ -68,7 +68,6 @@ const MainLayout = () => {
             <Outlet />
           </Col>
         </Layout.Content>
-        {import.meta.env.VITE_APP_ENV === 'production' && <HubSpot />}
       </Layout>
     </ConfigProvider>
   );
