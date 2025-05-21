@@ -17,6 +17,51 @@ The recurring tasks cron job automates the creation of tasks based on predefined
   3. Checks if a task for the next occurrence already exists.
   4. Creates a new task if it does not exist and the next occurrence is within the allowed future window.
 
+## Future Limit Logic
+The system implements different future limits based on the schedule type to maintain an appropriate number of future tasks:
+
+```typescript
+const FUTURE_LIMITS = {
+  daily: moment.duration(7, 'days'),
+  weekly: moment.duration(2, 'weeks'),
+  monthly: moment.duration(2, 'months'),
+  every_x_days: (interval: number) => moment.duration(interval * 2, 'days'),
+  every_x_weeks: (interval: number) => moment.duration(interval * 2, 'weeks'),
+  every_x_months: (interval: number) => moment.duration(interval * 2, 'months')
+};
+```
+
+### Implementation Details
+- **Base Calculation:**
+  ```typescript
+  const futureLimit = moment(template.last_checked_at || template.created_at)
+    .add(getFutureLimit(schedule.schedule_type, schedule.interval), 'days');
+  ```
+
+- **Task Creation Rules:**
+  1. Only create tasks if the next occurrence is before the future limit
+  2. Skip creation if a task already exists for that date
+  3. Update `last_checked_at` after processing
+
+- **Benefits:**
+  - Prevents excessive task creation
+  - Maintains system performance
+  - Ensures timely task visibility
+  - Allows for schedule modifications
+
+## Date Handling
+- **Monthly Tasks:**
+  - Dates are limited to 1-28 to ensure consistency across all months
+  - This prevents issues with months having different numbers of days
+  - No special handling needed for February or months with 30/31 days
+- **Weekly Tasks:**
+  - Supports multiple days of the week (0-6, where 0 is Sunday)
+  - Tasks are created for each selected day
+- **Interval-based Tasks:**
+  - Every X days/weeks/months from the last task's end date
+  - Minimum interval is 1 day/week/month
+  - No maximum limit, but tasks are only created up to the future limit
+
 ## Database Interactions
 - **Templates and Schedules:**
   - Templates are stored in `task_recurring_templates`.
@@ -27,6 +72,7 @@ The recurring tasks cron job automates the creation of tasks based on predefined
   - Assigns team members and labels by calling appropriate functions/controllers.
 - **State Tracking:**
   - Updates `last_checked_at` and `last_created_task_end_date` in the schedule after processing.
+  - Maintains future limits based on schedule type.
 
 ## Task Creation Process
 1. **Fetch Templates:** Retrieve all templates and their associated schedules.
@@ -41,10 +87,12 @@ The recurring tasks cron job automates the creation of tasks based on predefined
 - **Cron Expression:** Modify the `TIME` constant in the code to change the schedule.
 - **Task Template Structure:** Extend the template or schedule interfaces to support additional fields.
 - **Task Creation Logic:** Customize the task creation process or add new assignment/labeling logic as needed.
+- **Future Window:** Adjust the future limits by modifying the `FUTURE_LIMITS` configuration.
 
 ## Error Handling
 - Errors are logged using the `log_error` utility.
 - The job continues processing other templates even if one fails.
+- Failed task creations are not retried automatically.
 
 ## References
 - Source: `src/cron_jobs/recurring-tasks.ts`

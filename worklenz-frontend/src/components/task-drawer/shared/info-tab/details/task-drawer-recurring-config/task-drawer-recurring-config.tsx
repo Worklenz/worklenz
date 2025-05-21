@@ -24,44 +24,46 @@ import { taskRecurringApiService } from '@/api/tasks/task-recurring.api.service'
 import logger from '@/utils/errorLogger';
 import { setTaskRecurringSchedule } from '@/features/task-drawer/task-drawer.slice';
 
-const repeatOptions: IRepeatOption[] = [
-  { label: 'Daily', value: ITaskRecurring.Daily },
-  { label: 'Weekly', value: ITaskRecurring.Weekly },
-  { label: 'Every X Days', value: ITaskRecurring.EveryXDays },
-  { label: 'Every X Weeks', value: ITaskRecurring.EveryXWeeks },
-  { label: 'Every X Months', value: ITaskRecurring.EveryXMonths },
-  { label: 'Monthly', value: ITaskRecurring.Monthly },
-];
-
-const daysOfWeek = [
-  { label: 'Sunday', value: 0, checked: false },
-  { label: 'Monday', value: 1, checked: false },
-  { label: 'Tuesday', value: 2, checked: false },
-  { label: 'Wednesday', value: 3, checked: false },
-  { label: 'Thursday', value: 4, checked: false },
-  { label: 'Friday', value: 5, checked: false },
-  { label: 'Saturday', value: 6, checked: false }
-];
-
 const monthlyDateOptions = Array.from({ length: 28 }, (_, i) => i + 1);
-const weekOptions = [
-  { label: 'First', value: 1 },
-  { label: 'Second', value: 2 },
-  { label: 'Third', value: 3 },
-  { label: 'Fourth', value: 4 },
-  { label: 'Last', value: 5 }
-];
-const dayOptions = daysOfWeek.map(d => ({ label: d.label, value: d.value }));
 
 const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
   const { socket, connected } = useSocket();
   const dispatch = useAppDispatch();
   const { t } = useTranslation('task-drawer/task-drawer-recurring-config');
 
+  const repeatOptions: IRepeatOption[] = [
+    { label: t('daily'), value: ITaskRecurring.Daily },
+    { label: t('weekly'), value: ITaskRecurring.Weekly },
+    { label: t('everyXDays'), value: ITaskRecurring.EveryXDays },
+    { label: t('everyXWeeks'), value: ITaskRecurring.EveryXWeeks },
+    { label: t('everyXMonths'), value: ITaskRecurring.EveryXMonths },
+    { label: t('monthly'), value: ITaskRecurring.Monthly },
+  ];
+
+  const daysOfWeek = [
+    { label: t('sun'), value: 0, checked: false },
+    { label: t('mon'), value: 1, checked: false },
+    { label: t('tue'), value: 2, checked: false },
+    { label: t('wed'), value: 3, checked: false },
+    { label: t('thu'), value: 4, checked: false },
+    { label: t('fri'), value: 5, checked: false },
+    { label: t('sat'), value: 6, checked: false }
+  ];
+
+  const weekOptions = [
+    { label: t('first'), value: 1 },
+    { label: t('second'), value: 2 },
+    { label: t('third'), value: 3 },
+    { label: t('fourth'), value: 4 },
+    { label: t('last'), value: 5 }
+  ];
+
+  const dayOptions = daysOfWeek.map(d => ({ label: d.label, value: d.value }));
+
   const [recurring, setRecurring] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [repeatOption, setRepeatOption] = useState<IRepeatOption>({});
-  const [selectedDays, setSelectedDays] = useState([]);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [monthlyOption, setMonthlyOption] = useState('date');
   const [selectedMonthlyDate, setSelectedMonthlyDate] = useState(1);
   const [selectedMonthlyWeek, setSelectedMonthlyWeek] = useState(weekOptions[0].value);
@@ -106,8 +108,8 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     [repeatOption]
   );
 
-  const handleDayCheckboxChange = (checkedValues: string[]) => {
-    setSelectedDays(checkedValues as unknown as string[]);
+  const handleDayCheckboxChange = (checkedValues: number[]) => {
+    setSelectedDays(checkedValues);
   };
 
   const getSelectedDays = () => {
@@ -165,7 +167,9 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
 
       const res = await taskRecurringApiService.updateTaskRecurringData(task.schedule_id, body);
       if (res.done) {
+        setRecurring(true);
         setShowConfig(false);
+        configVisibleChange(false);
       }
     } catch (e) {
       logger.error("handleSave", e);
@@ -220,9 +224,9 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     if (!task) return;
 
     if (task) setRecurring(!!task.schedule_id);
-    if (recurring) void getScheduleData();
+    if (task.schedule_id) void getScheduleData();
     socket?.on(SocketEvents.TASK_RECURRING_CHANGE.toString(), handleResponse);
-  }, [task]);
+  }, [task?.schedule_id]);
 
   return (
     <div>
@@ -232,11 +236,11 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
           &nbsp;
           {recurring && (
             <Popover
-              title="Recurring task configuration"
+              title={t('recurringTaskConfiguration')}
               content={
                 <Skeleton loading={loadingData} active>
                   <Form layout="vertical">
-                    <Form.Item label="Repeats">
+                    <Form.Item label={t('repeats')}>
                       <Select
                         value={repeatOption.value}
                         onChange={val => {
@@ -251,9 +255,12 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
                     </Form.Item>
 
                     {repeatOption.value === ITaskRecurring.Weekly && (
-                      <Form.Item label="Select Days of the Week">
+                      <Form.Item label={t('selectDaysOfWeek')}>
                         <Checkbox.Group
-                          options={daysOfWeek}
+                          options={daysOfWeek.map(day => ({
+                            label: day.label,
+                            value: day.value
+                          }))}
                           value={selectedDays}
                           onChange={handleDayCheckboxChange}
                           style={{ width: '100%' }}
@@ -271,17 +278,17 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
 
                     {isMonthlySelected && (
                       <>
-                        <Form.Item label="Monthly repeat type">
+                        <Form.Item label={t('monthlyRepeatType')}>
                           <Radio.Group
                             value={monthlyOption}
                             onChange={e => setMonthlyOption(e.target.value)}
                           >
-                            <Radio.Button value="date">On a specific date</Radio.Button>
-                            <Radio.Button value="day">On a specific day</Radio.Button>
+                            <Radio.Button value="date">{t('onSpecificDate')}</Radio.Button>
+                            <Radio.Button value="day">{t('onSpecificDay')}</Radio.Button>
                           </Radio.Group>
                         </Form.Item>
                         {monthlyOption === 'date' && (
-                          <Form.Item label="Date of the month">
+                          <Form.Item label={t('dateOfMonth')}>
                             <Select
                               value={selectedMonthlyDate}
                               onChange={setSelectedMonthlyDate}
@@ -295,7 +302,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
                         )}
                         {monthlyOption === 'day' && (
                           <>
-                            <Form.Item label="Week of the month">
+                            <Form.Item label={t('weekOfMonth')}>
                               <Select
                                 value={selectedMonthlyWeek}
                                 onChange={setSelectedMonthlyWeek}
@@ -303,7 +310,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
                                 style={{ width: 150 }}
                               />
                             </Form.Item>
-                            <Form.Item label="Day of the week">
+                            <Form.Item label={t('dayOfWeek')}>
                               <Select
                                 value={selectedMonthlyDay}
                                 onChange={setSelectedMonthlyDay}
@@ -317,7 +324,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
                     )}
 
                     {repeatOption.value === ITaskRecurring.EveryXDays && (
-                      <Form.Item label="Interval (days)">
+                      <Form.Item label={t('intervalDays')}>
                         <InputNumber
                           min={1}
                           value={intervalDays}
@@ -326,7 +333,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
                       </Form.Item>
                     )}
                     {repeatOption.value === ITaskRecurring.EveryXWeeks && (
-                      <Form.Item label="Interval (weeks)">
+                      <Form.Item label={t('intervalWeeks')}>
                         <InputNumber
                           min={1}
                           value={intervalWeeks}
@@ -335,7 +342,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
                       </Form.Item>
                     )}
                     {repeatOption.value === ITaskRecurring.EveryXMonths && (
-                      <Form.Item label="Interval (months)">
+                      <Form.Item label={t('intervalMonths')}>
                         <InputNumber
                           min={1}
                           value={intervalMonths}
@@ -350,7 +357,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
                         loading={updatingData}
                         onClick={handleSave}
                       >
-                        Save Changes
+                        {t('saveChanges')}
                       </Button>
                     </Form.Item>
                   </Form>
