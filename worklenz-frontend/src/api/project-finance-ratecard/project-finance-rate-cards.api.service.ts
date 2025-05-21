@@ -1,0 +1,60 @@
+import apiClient from '@api/api-client';
+import { API_BASE_URL } from '@/shared/constants';
+import { IServerResponse } from '@/types/common.types';
+import { IJobType } from '@/types/project/ratecard.types';
+
+const rootUrl = `${API_BASE_URL}/project-rate-cards`;
+
+export interface IProjectRateCardRole {
+  id?: string;
+  project_id: string;
+  job_title_id: string;
+  jobtitle?: string;
+  rate: number;
+  data?: object;
+  roles?: IJobType[];
+}
+
+export const projectRateCardApiService = {
+  // Insert multiple roles for a project
+  async insertMany(project_id: string, roles: Omit<IProjectRateCardRole, 'id' | 'project_id'>[]): Promise<IServerResponse<IProjectRateCardRole[]>> {
+    const response = await apiClient.post<IServerResponse<IProjectRateCardRole[]>>(rootUrl, { project_id, roles });
+    return response.data;
+  },
+
+  // Get all roles for a project
+  async getFromProjectId(project_id: string): Promise<IServerResponse<IProjectRateCardRole[]>> {
+    const response = await apiClient.get<IServerResponse<IProjectRateCardRole[]>>(`${rootUrl}/project/${project_id}`);
+    return response.data;
+  },
+
+  // Get a single role by id
+  async getFromId(id: string): Promise<IServerResponse<IProjectRateCardRole>> {
+    const response = await apiClient.get<IServerResponse<IProjectRateCardRole>>(`${rootUrl}/${id}`);
+    return response.data;
+  },
+
+  // Update a single role by id
+  async updateFromId(id: string, body: { job_title_id: string; rate: string }): Promise<IServerResponse<IProjectRateCardRole>> {
+    const response = await apiClient.put<IServerResponse<IProjectRateCardRole>>(`${rootUrl}/${id}`, body);
+    return response.data;
+  },
+
+  // Update all roles for a project (delete then insert)
+  async updateFromProjectId(project_id: string, roles: Omit<IProjectRateCardRole, 'id' | 'project_id'>[]): Promise<IServerResponse<IProjectRateCardRole[]>> {
+    const response = await apiClient.put<IServerResponse<IProjectRateCardRole[]>>(`${rootUrl}/project/${project_id}`, { project_id, roles });
+    return response.data;
+  },
+
+  // Delete a single role by id
+  async deleteFromId(id: string): Promise<IServerResponse<IProjectRateCardRole>> {
+    const response = await apiClient.delete<IServerResponse<IProjectRateCardRole>>(`${rootUrl}/${id}`);
+    return response.data;
+  },
+
+  // Delete all roles for a project
+  async deleteFromProjectId(project_id: string): Promise<IServerResponse<IProjectRateCardRole[]>> {
+    const response = await apiClient.delete<IServerResponse<IProjectRateCardRole[]>>(`${rootUrl}/project/${project_id}`);
+    return response.data;
+  },
+};

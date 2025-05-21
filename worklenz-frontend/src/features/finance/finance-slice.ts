@@ -8,8 +8,10 @@ type financeState = {
   isFinanceDrawerOpen: boolean;
   isImportRatecardsDrawerOpen: boolean;
   currency: string;
+  isRatecardsLoading?: boolean;
   isFinanceDrawerloading?: boolean;
   drawerRatecard?: RatecardType | null;
+  ratecardsList?: RatecardType[] | null;
 };
 
 const initialState: financeState = {
@@ -17,8 +19,10 @@ const initialState: financeState = {
   isFinanceDrawerOpen: false,
   isImportRatecardsDrawerOpen: false,
   currency: 'LKR',
+  isRatecardsLoading: false,
   isFinanceDrawerloading: false,
   drawerRatecard: null,
+  ratecardsList: null,
 };
 interface FetchRateCardsParams {
   index: number;
@@ -139,7 +143,21 @@ const financeSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // ...other cases...
+      .addCase(fetchRateCards.pending, (state) => {
+        state.isRatecardsLoading = true;
+      })
+      .addCase(fetchRateCards.fulfilled, (state, action) => {
+        state.isRatecardsLoading = false;
+        state.ratecardsList = Array.isArray(action.payload.data)
+          ? action.payload.data
+          : Array.isArray(action.payload)
+          ? action.payload
+          : [];
+      })
+      .addCase(fetchRateCards.rejected, (state) => {
+        state.isRatecardsLoading = false;
+        state.ratecardsList = [];
+      })
       .addCase(fetchRateCardById.pending, (state) => {
         state.isFinanceDrawerloading = true;
         state.drawerRatecard = null;

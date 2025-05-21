@@ -18,7 +18,7 @@ const RatecardTab = () => {
       >
         {t('ratecardImportantNotice')}
       </Typography.Text>
-      <Button
+      {/* <Button
         type="primary"
         style={{
           marginTop: '10px',
@@ -27,7 +27,7 @@ const RatecardTab = () => {
         }}
       >
         {t('saveButton')}
-      </Button>
+      </Button> */}
 
       {/* import ratecards drawer  */}
       <ImportRatecardsDrawer />
