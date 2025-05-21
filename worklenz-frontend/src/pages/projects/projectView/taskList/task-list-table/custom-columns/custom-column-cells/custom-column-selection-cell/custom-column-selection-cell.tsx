@@ -23,11 +23,11 @@ const CustomColumnSelectionCell = ({
   const { t } = useTranslation('task-list-table');
 
   // Debug the selectionsList and value
-  console.log('CustomColumnSelectionCell props:', { 
-    selectionsList, 
-    value,
-    selectionsCount: selectionsList?.length || 0
-  });
+  // console.log('CustomColumnSelectionCell props:', { 
+  //   selectionsList, 
+  //   value,
+  //   selectionsCount: selectionsList?.length || 0
+  // });
 
   // Set initial selection based on value prop
   useEffect(() => {

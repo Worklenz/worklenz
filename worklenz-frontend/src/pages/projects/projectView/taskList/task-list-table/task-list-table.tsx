@@ -854,10 +854,10 @@ const SelectionFieldCell: React.FC<{
 
   useEffect(() => {
     if (!loggedInfo) {
-      console.log('Selection column data:', {
-        columnKey,
-        selectionsList,
-      });
+      // console.log('Selection column data:', {
+      //   columnKey,
+      //   selectionsList,
+      // });
       setLoggedInfo(true);
     }
   }, [columnKey, selectionsList, loggedInfo]);

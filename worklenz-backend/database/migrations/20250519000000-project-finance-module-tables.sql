@@ -11,17 +11,17 @@ CREATE TABLE finance_rate_cards
 );
 
 -- Dropping existing finance_project_rate_card_roles table
-DROP TABLE IF EXISTS finance_project_rate_card_roles;
+DROP TABLE IF EXISTS finance_project_rate_card_roles CASCADE;
 -- Creating table with single id primary key
 CREATE TABLE finance_project_rate_card_roles
 (
     id         UUID PRIMARY KEY                  DEFAULT uuid_generate_v4(),
     project_id UUID                     NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
-    role_id    UUID                     NOT NULL REFERENCES roles (id) ON DELETE CASCADE,
+    job_title_id    UUID                     NOT NULL REFERENCES job_titles (id) ON DELETE CASCADE,
     rate       DECIMAL(10, 2)           NOT NULL CHECK (rate >= 0),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_project_role UNIQUE (project_id, role_id)
+    CONSTRAINT unique_project_role UNIQUE (project_id, job_title_id)
 );
 
 -- Dropping existing finance_rate_card_roles table
