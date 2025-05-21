@@ -2,6 +2,7 @@
   "recurring": "Recurring",
   "recurringTaskConfiguration": "Recurring task configuration",
   "repeats": "Repeats",
+  "daily": "Daily",
   "weekly": "Weekly",
   "everyXDays": "Every X Days",
   "everyXWeeks": "Every X Weeks",

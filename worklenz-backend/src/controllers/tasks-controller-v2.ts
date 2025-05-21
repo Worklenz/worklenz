@@ -97,7 +97,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
     try {
       const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [taskId]);
       const [data] = result.rows;
-      console.log("data", data);
       if (data && data.info && data.info.ratio !== undefined) {
         data.info.ratio = +((data.info.ratio || 0).toFixed());
         return data.info;
