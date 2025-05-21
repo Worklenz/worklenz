@@ -1,47 +1,66 @@
-import { Drawer, Typography, Button, Table, Menu, Flex } from 'antd';
+import { Drawer, Typography, Button, Table, Menu, Flex, Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
-import { fetchData } from '../../../utils/fetchData';
-import { toggleImportRatecardsDrawer } from '../finance-slice';
-import { RatecardType } from '@/types/project/ratecard.types';
-const ImportRatecardsDrawer: React.FC = () => {
-  const [ratecardsList, setRatecardsList] = useState<RatecardType[]>([]);
-  const [selectedRatecardId, setSelectedRatecardId] = useState<string | null>(
-    null
-  );
+import { fetchRateCards, toggleImportRatecardsDrawer } from '../finance-slice';
+import { fetchRateCardById } from '../finance-slice';
+import { insertProjectRateCardRoles } from '../project-finance-slice';
+import { useParams } from 'react-router-dom';
 
-  // localization
+const ImportRatecardsDrawer: React.FC = () => {
+  const dispatch = useAppDispatch();
+const { projectId } = useParams();
   const { t } = useTranslation('project-view-finance');
 
-  // get drawer state from client reducer
+  const drawerRatecard = useAppSelector(
+    (state) => state.financeReducer.drawerRatecard
+  );
+  const ratecardsList = useAppSelector(
+    (state) => state.financeReducer.ratecardsList || []
+  );
   const isDrawerOpen = useAppSelector(
     (state) => state.financeReducer.isImportRatecardsDrawerOpen
   );
-  const dispatch = useAppDispatch();
-
-  // fetch rate cards data
-  useEffect(() => {
-    fetchData('/finance-mock-data/ratecards-data.json', setRatecardsList);
-  }, []);
-
-  // get currently using currency from finance reducer
   const currency = useAppSelector(
     (state) => state.financeReducer.currency
   ).toUpperCase();
 
-  // find the selected rate card's job roles
-  const selectedRatecard =
-    ratecardsList.find(
-      (ratecard) => ratecard.ratecardId === selectedRatecardId
-    ) || null;
+  // Loading states
+  const isRatecardsLoading = useAppSelector(
+    (state) => state.financeReducer.isRatecardsLoading
+  );
 
-  // table columns
+  const [selectedRatecardId, setSelectedRatecardId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selectedRatecardId) {
+      dispatch(fetchRateCardById(selectedRatecardId));
+    }
+  }, [selectedRatecardId, dispatch]);
+
+  useEffect(() => {
+    if (isDrawerOpen) {
+      dispatch(fetchRateCards({
+        index: 1,
+        size: 1000,
+        field: 'name',
+        order: 'asc',
+        search: '',
+      }));
+    }
+  }, [isDrawerOpen, dispatch]);
+
+  useEffect(() => {
+    if (ratecardsList.length > 0 && !selectedRatecardId) {
+      setSelectedRatecardId(ratecardsList[0].id || null);
+    }
+  }, [ratecardsList, selectedRatecardId]);
+
   const columns = [
     {
       title: t('jobTitleColumn'),
-      dataIndex: 'jobTitle',
+      dataIndex: 'jobtitle',
       render: (text: string) => (
         <Typography.Text className="group-hover:text-[#1890ff]">
           {text}
@@ -50,7 +69,7 @@ const ImportRatecardsDrawer: React.FC = () => {
     },
     {
       title: `${t('ratePerHourColumn')} (${currency})`,
-      dataIndex: 'ratePerHour',
+      dataIndex: 'rate',
       render: (text: number) => <Typography.Text>{text}</Typography.Text>,
     },
   ];
@@ -64,7 +83,31 @@ const ImportRatecardsDrawer: React.FC = () => {
       }
       footer={
         <div style={{ textAlign: 'right' }}>
-          <Button type="primary">Import</Button>
+          <Button
+  type="primary"
+  onClick={() => {
+    if (!projectId) {
+      // Handle missing project id (show error, etc.)
+      return;
+    }
+    if (drawerRatecard?.jobRolesList?.length) {
+      dispatch(
+        insertProjectRateCardRoles({
+          project_id: projectId,
+          roles: drawerRatecard.jobRolesList
+            .filter((role) => typeof role.rate !== 'undefined')
+            .map((role) => ({
+              ...role,
+              rate: Number(role.rate),
+            })),
+        })
+      );
+    }
+    dispatch(toggleImportRatecardsDrawer());
+  }}
+>
+  {t('import')}
+</Button>
         </div>
       }
       open={isDrawerOpen}
@@ -72,39 +115,40 @@ const ImportRatecardsDrawer: React.FC = () => {
       width={1000}
     >
       <Flex gap={12}>
-        {/* sidebar menu */}
-        <Menu
-          mode="vertical"
-          style={{ width: '20%' }}
-          selectedKeys={
-            selectedRatecardId
-              ? [selectedRatecardId]
-              : [ratecardsList[0]?.ratecardId]
-          }
-          onClick={({ key }) => setSelectedRatecardId(key)}
-        >
-          {ratecardsList.map((ratecard) => (
-            <Menu.Item key={ratecard.ratecardId}>
-              {ratecard.ratecardName}
-            </Menu.Item>
-          ))}
-        </Menu>
+        {/* Sidebar menu with loading */}
+        <Spin spinning={isRatecardsLoading} style={{ width: '20%' }}>
+          <Menu
+            mode="vertical"
+            style={{ width: '100%' }}
+            selectedKeys={
+              selectedRatecardId
+                ? [selectedRatecardId]
+                : ratecardsList[0]?.id
+                  ? [ratecardsList[0].id]
+                  : []
+            }
+            onClick={({ key }) => setSelectedRatecardId(key)}
+          >
+            {ratecardsList.map((ratecard) => (
+              <Menu.Item key={ratecard.id}>
+                {ratecard.name}
+              </Menu.Item>
+            ))}
+          </Menu>
+        </Spin>
 
-        {/* table for job roles */}
+        {/* Table for job roles with loading */}
         <Table
           style={{ flex: 1 }}
-          dataSource={selectedRatecard?.jobRolesList || []}
+          dataSource={drawerRatecard?.jobRolesList || []}
           columns={columns}
-          rowKey={(record) => record.jobId}
-          onRow={() => {
-            return {
-              className: 'group',
-              style: {
-                cursor: 'pointer',
-              },
-            };
-          }}
+          rowKey={(record) => record.job_title_id}
+          onRow={() => ({
+            className: 'group',
+            style: { cursor: 'pointer' },
+          })}
           pagination={false}
+          loading={isRatecardsLoading}
         />
       </Flex>
     </Drawer>

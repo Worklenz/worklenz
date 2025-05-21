@@ -59,6 +59,7 @@ import taskRecurringApiRouter from "./task-recurring-api-router";
 
 import customColumnsApiRouter from "./custom-columns-api-router";
 import ratecardApiRouter from "./ratecard-api-router";
+import projectRatecardApiRouter from "./project-ratecard-api-router";
 
 const api = express.Router();
 
@@ -67,6 +68,7 @@ api.use("/team-members", teamMembersApiRouter);
 api.use("/job-titles", jobTitlesApiRouter);
 api.use("/clients", clientsApiRouter);
 api.use("/rate-cards", ratecardApiRouter);
+api.use("/project-rate-cards", projectRatecardApiRouter);
 api.use("/teams", teamsApiRouter);
 api.use("/tasks", tasksApiRouter);
 api.use("/settings", settingsApiRouter);

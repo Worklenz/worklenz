@@ -1,102 +1,50 @@
-import { Avatar, Button, Input, Table, TableProps } from 'antd';
-import React, { useState } from 'react';
+import { Avatar, Button, Input, Popconfirm, Table, TableProps } from 'antd';
+import React, { useEffect } from 'react';
 import CustomAvatar from '../../../../../../components/CustomAvatar';
-import { PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAppSelector } from '../../../../../../hooks/useAppSelector';
+import { useAppDispatch } from '../../../../../../hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { JobRoleType } from '@/types/project/ratecard.types';
-
-const initialJobRolesList: JobRoleType[] = [
-  {
-    jobId: 'J001',
-    jobTitle: 'Project Manager',
-    ratePerHour: 50,
-    members: ['Alice Johnson', 'Bob Smith'],
-  },
-  {
-    jobId: 'J002',
-    jobTitle: 'Senior Software Engineer',
-    ratePerHour: 40,
-    members: ['Charlie Brown', 'Diana Prince'],
-  },
-  {
-    jobId: 'J003',
-    jobTitle: 'Junior Software Engineer',
-    ratePerHour: 25,
-    members: ['Eve Davis', 'Frank Castle'],
-  },
-  {
-    jobId: 'J004',
-    jobTitle: 'UI/UX Designer',
-    ratePerHour: 30,
-    members: null,
-  },
-];
+import { deleteProjectRateCardRoleById, fetchProjectRateCardRoles } from '@/features/finance/project-finance-slice';
+import { useParams } from 'react-router-dom';
 
 const RatecardTable: React.FC = () => {
-  const [roles, setRoles] = useState<JobRoleType[]>(initialJobRolesList);
-
-  // localization
+  const dispatch = useAppDispatch();
   const { t } = useTranslation('project-view-finance');
+  const { projectId } = useParams();
+
+  // Fetch roles from Redux
+  const roles = useAppSelector((state) => state.projectFinanceRateCard.rateCardRoles) || [];
+  const isLoading = useAppSelector((state) => state.projectFinanceRateCard.isLoading);
 
   // get currently using currency from finance reducer
   const currency = useAppSelector(
     (state) => state.financeReducer.currency
   ).toUpperCase();
 
+  useEffect(() => {
+    if (projectId) {
+      dispatch(fetchProjectRateCardRoles(projectId));
+    }
+  }, [dispatch, projectId]);
+
   const handleAddRole = () => {
-    const newRole: JobRoleType = {
-      jobId: `J00${roles.length + 1}`,
-      jobTitle: 'New Role',
-      ratePerHour: 0,
-      members: [],
-    };
-    setRoles([...roles, newRole]);
+    // You can implement add role logic here if needed
   };
 
   const columns: TableProps<JobRoleType>['columns'] = [
     {
       title: t('jobTitleColumn'),
-      dataIndex: 'jobTitle',
-      render: (text: string, record: JobRoleType, index: number) => (
-        <Input
-          value={text}
-          placeholder="Enter job title"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-            padding: 0,
-            color: '#1890ff',
-          }}
-          onChange={(e) => {
-            const updatedRoles = [...roles];
-            updatedRoles[index].jobTitle = e.target.value;
-            setRoles(updatedRoles);
-          }}
-        />
+      dataIndex: 'jobtitle',
+      render: (text: string) => (
+        <span style={{ color: '#1890ff' }}>{text}</span>
       ),
     },
     {
       title: `${t('ratePerHourColumn')} (${currency})`,
-      dataIndex: 'ratePerHour',
-      render: (text: number, record: JobRoleType, index: number) => (
-        <Input
-          type="number"
-          value={text}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-            padding: 0,
-          }}
-          onChange={(e) => {
-            const updatedRoles = [...roles];
-            updatedRoles[index].ratePerHour = parseInt(e.target.value, 10) || 0;
-            setRoles(updatedRoles);
-          }}
-        />
-      ),
+      dataIndex: 'rate',
+      render: (text: number) => <span>{text}</span>,
     },
     {
       title: t('membersColumn'),
@@ -126,14 +74,37 @@ const RatecardTable: React.FC = () => {
           />
         ),
     },
+    {
+      title: t('actions'),
+      key: 'actions',
+      render: (_: any, record: JobRoleType) => (
+        <Popconfirm
+          title={t('deleteConfirm')}
+          onConfirm={() => {
+            if (record.id) {
+              dispatch(deleteProjectRateCardRoleById(record.id));
+            }
+          }}
+          okText={t('yes')}
+          cancelText={t('no')}
+        >
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+          />
+        </Popconfirm>
+      ),
+    },
   ];
 
   return (
     <Table
       dataSource={roles}
       columns={columns}
-      rowKey={(record) => record.jobId}
+      rowKey={(record) => record.id || record.job_title_id}
       pagination={false}
+      loading={isLoading}
       footer={() => (
         <Button
           type="dashed"
