@@ -1,6 +1,6 @@
 <h1 align="center">
     <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
-        <img src="https://app.worklenz.com/assets/icons/icon-144x144.png" alt="Worklenz Logo" width="75">
+        <img src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/icon-144x144.png" alt="Worklenz Logo" width="75">
     </a>
     <br>
     Worklenz    
