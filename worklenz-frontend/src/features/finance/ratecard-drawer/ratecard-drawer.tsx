@@ -99,7 +99,21 @@ const RatecardDrawer = ({
     }
   }, [drawerRatecard, type]);
 
-
+  // Add All handler
+  const handleAddAllRoles = () => {
+    if (!jobTitles.data) return;
+    // Filter out job titles already in roles
+    const existingIds = new Set(roles.map(r => r.job_title_id));
+    const newRoles = jobTitles.data
+      .filter(jt => !existingIds.has(jt.id!))
+      .map(jt => ({
+        jobtitle: jt.name,
+        rate_card_id: ratecardId,
+        job_title_id: jt.id!,
+        rate: 0,
+      }));
+    setRoles([...roles, ...newRoles]);
+  };
 
   // add new job role handler
   const handleAddRole = () => {
@@ -239,7 +253,6 @@ const RatecardDrawer = ({
               }}
             />
           </Typography.Text>
-
           <Flex gap={8} align="center">
             <Typography.Text>{t('currency')}</Typography.Text>
             <Select
@@ -251,12 +264,21 @@ const RatecardDrawer = ({
               ]}
               onChange={(value) => setCurrency(value)}
             />
+            {/* Add All Button */}
+            <Button onClick={handleAddAllRoles} type="default">
+              {t('addAllButton') || 'Add All'}
+            </Button>
           </Flex>
         </Flex>
       }
       open={isDrawerOpen}
       onClose={() => dispatch(toggleRatecardDrawer())}
-      width={800}
+      width={700}
+      footer={
+        <Flex justify="end" gap={16} style={{ marginTop: 16 }}>
+          <Button style={{ marginBottom: 24 }} onClick={handleSave} type="primary">{t('saveButton')}</Button>
+        </Flex>
+      }
     >
       {/* ratecard Table directly inside the Drawer */}
       <Table
@@ -288,17 +310,14 @@ const RatecardDrawer = ({
             <Button
               type="dashed"
               onClick={handleAddRole}
-              style={{ width: 'fit-content' }}
+              block
+              style={{ margin: 0, padding: 0 }}
             >
               {t('addRoleButton')}
             </Button>
           )
         )}
       />
-
-      <Flex justify="end" gap={16} style={{ marginTop: 16 }}>
-        <Button onClick={handleSave} type="primary">{t('saveButton')}</Button>
-      </Flex>
     </Drawer>
   );
 };
