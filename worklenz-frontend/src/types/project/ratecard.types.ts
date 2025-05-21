@@ -1,0 +1,25 @@
+
+export interface IJobType {
+    jobId?: string;
+    jobtitle?: string;
+    ratePerHour?: number;
+    rate_card_id?: string;
+    job_title_id: string;
+    rate?: number;
+  };
+export interface JobRoleType extends IJobType {
+  members: string[] | null;
+}
+
+export interface RatecardType {
+  id?: string;
+  created_at?: string;
+  name?: string;
+  jobRolesList?: IJobType[];
+  currency?: string;
+};
+
+export interface IRatecardViewModel {
+  total?: number;
+  data?: RatecardType[];
+}

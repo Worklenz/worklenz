@@ -1,0 +1,31 @@
+{
+    "financeText": "Finance",
+    "ratecardSingularText": "Rate Card",
+    "groupByText": "Group by",
+    "statusText": "Status",
+    "phaseText": "Phase",
+    "priorityText": "Priority",
+    "exportButton": "Export",
+    "currencyText": "Currency",
+    "importButton": "Import",
+  
+    "taskColumn": "Task",
+    "membersColumn": "Members",
+    "hoursColumn": "Hours",
+    "costColumn": "Cost",
+    "fixedCostColumn": "Fixed Cost",
+    "totalBudgetedCostColumn": "Total Budgeted Cost",
+    "totalActualCostColumn": "Total Actual Cost",
+    "varianceColumn": "Variance",
+    "totalText": "Total",
+  
+    "addRoleButton": "+ Add Role",
+    "ratecardImportantNotice": "* This rate card is generated based on the company's standard job titles and rates. However, you have the flexibility to modify it according to the project. These changes will not impact the organization's standard job titles and rates.",
+    "saveButton": "Save",
+  
+    "jobTitleColumn": "Job Title",
+    "ratePerHourColumn": "Rate per hour",
+    "ratecardPluralText": "Rate Cards",
+    "labourHoursColumn": "Labour Hours"
+  }
+  

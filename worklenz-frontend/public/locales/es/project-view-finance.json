@@ -1,0 +1,31 @@
+{
+  "financeText": "Finanzas",
+  "ratecardSingularText": "Tarifa",
+  "groupByText": "Agrupar por",
+  "statusText": "Estado",
+  "phaseText": "Fase",
+  "priorityText": "Prioridad",
+  "exportButton": "Exportar",
+  "currencyText": "Moneda",
+  "importButton": "Importar",
+  
+  "taskColumn": "Tarea",
+  "membersColumn": "Miembros",
+  "hoursColumn": "Horas",
+  "costColumn": "Costo",
+  "fixedCostColumn": "Costo Fijo",
+  "totalBudgetedCostColumn": "Costo Total Presupuestado",
+  "totalActualCostColumn": "Costo Total Real",
+  "varianceColumn": "Diferencia",
+  "totalText": "Total",
+  
+  "addRoleButton": "+ Agregar Rol",
+  "ratecardImportantNotice": "* Esta tarifa se genera en función de los títulos de trabajo y tarifas estándar de la empresa. Sin embargo, tienes la flexibilidad de modificarla según el proyecto. Estos cambios no afectarán los títulos de trabajo y tarifas estándar de la organización.",
+  "saveButton": "Guardar",
+  
+  "jobTitleColumn": "Título del Trabajo",
+  "ratePerHourColumn": "Tarifa por hora",
+  "ratecardPluralText": "Tarifas",
+  "labourHoursColumn": "Horas de Trabajo"
+}
+  

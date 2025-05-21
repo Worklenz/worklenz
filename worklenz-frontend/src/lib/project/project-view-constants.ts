@@ -5,6 +5,7 @@ import ProjectViewMembers from '@/pages/projects/projectView/members/project-vie
 import ProjectViewUpdates from '@/pages/projects/project-view-1/updates/project-view-updates';
 import ProjectViewTaskList from '@/pages/projects/projectView/taskList/project-view-task-list';
 import ProjectViewBoard from '@/pages/projects/projectView/board/project-view-board';
+import ProjectViewFinance from '@/pages/projects/projectView/finance/project-view-finance';
 
 // type of a tab items
 type TabItems = {
@@ -66,5 +67,11 @@ export const tabItems: TabItems[] = [
     key: 'updates',
     label: 'Updates',
     element: React.createElement(ProjectViewUpdates),
+  },
+  {
+    index: 8,
+    key: 'finance',
+    label: 'Finance',
+    element: React.createElement(ProjectViewFinance),
   },
 ];

@@ -1,0 +1,31 @@
+{
+  "financeText": "Finanças",
+  "ratecardSingularText": "Tabela de Taxas",
+  "groupByText": "Agrupar por",
+  "statusText": "Status",
+  "phaseText": "Fase",
+  "priorityText": "Prioridade",
+  "exportButton": "Exportar",
+  "currencyText": "Moeda",
+  "importButton": "Importar",
+  
+  "taskColumn": "Tarefa",
+  "membersColumn": "Membros",
+  "hoursColumn": "Horas",
+  "costColumn": "Custo",
+  "fixedCostColumn": "Custo Fixo",
+  "totalBudgetedCostColumn": "Custo Total Orçado",
+  "totalActualCostColumn": "Custo Total Real",
+  "varianceColumn": "Variação",
+  "totalText": "Total",
+  
+  "addRoleButton": "+ Adicionar Função",
+  "ratecardImportantNotice": "* Esta tabela de taxas é gerada com base nos cargos e taxas padrão da empresa. No entanto, você tem a flexibilidade de modificá-la de acordo com o projeto. Essas alterações não impactarão os cargos e taxas padrão da organização.",
+  "saveButton": "Salvar",
+  
+  "jobTitleColumn": "Título do Cargo",
+  "ratePerHourColumn": "Taxa por Hora",
+  "ratecardPluralText": "Tabelas de Taxas",
+  "labourHoursColumn": "Horas de Trabalho"
+}
+  

@@ -1,0 +1,20 @@
+{
+  "nameColumn": "Nome",
+  "createdColumn": "Criado",
+  "noProjectsAvailable": "Nenhum projeto disponível",
+  "deleteConfirmationTitle": "Tem certeza?",
+  "deleteConfirmationOk": "Sim",
+  "deleteConfirmationCancel": "Cancelar",
+  "searchPlaceholder": "Pesquisar por nome",
+  "createRatecard": "Criar Tabela de Preços",
+
+  "jobTitleColumn": "Cargo",
+  "ratePerHourColumn": "Taxa por hora",
+  "saveButton": "Salvar",
+  "addRoleButton": "+ Adicionar Função",
+  "createRatecardSuccessMessage": "Tabela de Preços criada com sucesso!",
+  "createRatecardErrorMessage": "Falha ao criar Tabela de Preços!",
+  "updateRatecardSuccessMessage": "Tabela de Preços atualizada com sucesso!",
+  "updateRatecardErrorMessage": "Falha ao atualizar Tabela de Preços!",
+  "currency": "Moeda"
+}

@@ -1,0 +1,51 @@
+[
+  {
+    "ratecardId": "RC001",
+    "ratecardName": "Rate Card 1",
+    "jobRolesList": [
+      {
+        "jobId": "J001",
+        "jobTitle": "Project Manager",
+        "ratePerHour": 100
+      },
+      {
+        "jobId": "J002",
+        "jobTitle": "Senior Software Engineer",
+        "ratePerHour": 120
+      },
+      {
+        "jobId": "J003",
+        "jobTitle": "Junior Software Engineer",
+        "ratePerHour": 80
+      },
+      {
+        "jobId": "J004",
+        "jobTitle": "UI/UX Designer",
+        "ratePerHour": 50
+      }
+    ],
+    "createdDate": "2024-12-01T00:00:00.000Z"
+  },
+  {
+    "ratecardId": "RC002",
+    "ratecardName": "Rate Card 2",
+    "jobRolesList": [
+      {
+        "jobId": "J001",
+        "jobTitle": "Project Manager",
+        "ratePerHour": 80
+      },
+      {
+        "jobId": "J002",
+        "jobTitle": "Senior Software Engineer",
+        "ratePerHour": 100
+      },
+      {
+        "jobId": "J003",
+        "jobTitle": "Junior Software Engineer",
+        "ratePerHour": 60
+      }
+    ],
+    "createdDate": "2024-12-15T00:00:00.000Z"
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "nameColumn": "Name",
+  "createdColumn": "Created",
+  "noProjectsAvailable": "No projects available",
+  "deleteConfirmationTitle": "Are you sure?",
+  "deleteConfirmationOk": "Yes",
+  "deleteConfirmationCancel": "Cancel",
+  "searchPlaceholder": "Search by name",
+  "createRatecard": "Create Rate Card",
+
+  "jobTitleColumn": "Job title",
+  "ratePerHourColumn": "Rate per hour",
+  "saveButton": "Save",
+  "addRoleButton": "+ Add Role",
+  "createRatecardSuccessMessage": "Create Rate Card success!",
+  "createRatecardErrorMessage": "Create Rate Card failed!",
+  "updateRatecardSuccessMessage": "Update Rate Card success!",
+  "updateRatecardErrorMessage": "Update Rate Card failed!",
+  "currency": "Currency"
+}
