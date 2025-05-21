@@ -48,6 +48,17 @@
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>
   <script type="module" src="./src/index.tsx"></script>
+  <script type="text/javascript">
+    if (window.location.hostname === 'app.worklenz.com') {
+      var hs = document.createElement('script');
+      hs.type = 'text/javascript';
+      hs.id = 'hs-script-loader';
+      hs.async = true;
+      hs.defer = true;
+      hs.src = '//js.hs-scripts.com/22348300.js';
+      document.body.appendChild(hs);
+    }
+  </script>
 </body>
 
 </html>
