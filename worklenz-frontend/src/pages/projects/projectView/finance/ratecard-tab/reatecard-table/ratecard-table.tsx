@@ -5,7 +5,7 @@ import { DeleteOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
 import { useAppSelector } from '../../../../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../../../../hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
-import { JobRoleType, IJobType } from '@/types/project/ratecard.types';
+import { JobRoleType, IJobType, RatecardType } from '@/types/project/ratecard.types';
 import {
   deleteProjectRateCardRoleById,
   fetchProjectRateCardRoles,
