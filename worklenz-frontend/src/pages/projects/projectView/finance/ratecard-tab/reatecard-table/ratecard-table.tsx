@@ -14,8 +14,13 @@ import {
 } from '@/features/finance/project-finance-slice';
 import { useParams } from 'react-router-dom';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
+import RateCardAssigneeSelector from '@/components/project-ratecard/ratecard-assignee-selector';
+import { projectsApiService } from '@/api/projects/projects.api.service';
+import { IProjectMemberViewModel } from '@/types/projectMember.types';
+
 
 const RatecardTable: React.FC = () => {
+
   const dispatch = useAppDispatch();
   const { t } = useTranslation('project-view-finance');
   const { projectId } = useParams();
@@ -30,6 +35,40 @@ const RatecardTable: React.FC = () => {
   const [addingRow, setAddingRow] = useState<boolean>(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [jobTitles, setJobTitles] = useState<RatecardType[]>([]);
+  const [members, setMembers] = useState<IProjectMemberViewModel[]>([]);
+  const [isLoadingMembers, setIsLoading] = useState(false);
+  const pagination = {
+    current: 1,
+    pageSize: 100,
+    field: 'name',
+    order: 'asc',
+  };
+  const getProjectMembers = async () => {
+    if (!projectId) return;
+    setIsLoading(true);
+    try {
+      const res = await projectsApiService.getMembers(
+        projectId,
+        pagination.current,
+        pagination.pageSize,
+        pagination.field,
+        pagination.order,
+        null
+      );
+      if (res.done) {
+        setMembers(res.body?.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching members:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getProjectMembers();
+    // eslint-disable-next-line
+  }, []);
 
   // Fetch job titles for selection
   useEffect(() => {
@@ -72,7 +111,7 @@ const RatecardTable: React.FC = () => {
   };
 
   // Handle job title select for new row
-  const handleSelectJobTitle = async(jobTitleId: string) => {
+  const handleSelectJobTitle = async (jobTitleId: string) => {
     const jobTitle = jobTitles.find((jt) => jt.id === jobTitleId);
     if (!jobTitle || !projectId) return;
     // Prevent duplicates
@@ -180,30 +219,24 @@ const RatecardTable: React.FC = () => {
     {
       title: t('membersColumn'),
       dataIndex: 'members',
-      render: (members: string[] | null | undefined) =>
-        members && members.length > 0 ? (
+      render: (memberscol: string[] | null | undefined, record: JobRoleType, index: number) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, position: 'relative' }}>
           <Avatar.Group>
-            {members.map((member, i) => (
-              <CustomAvatar key={i} avatarName={member} size={26} />
-            ))}
+            {memberscol && memberscol.length > 0 &&
+              memberscol.map((member, i) => (
+                <CustomAvatar key={i} avatarName={member} size={26} />
+              ))}
           </Avatar.Group>
-        ) : (
-          <Button
-            shape="circle"
-            icon={
-              <PlusOutlined
-                style={{
-                  fontSize: 12,
-                  width: 22,
-                  height: 22,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              />
-            }
-          />
-        ),
+          <div>
+            <RateCardAssigneeSelector
+              projectId={projectId as string}
+              selectedMemberIds={memberscol || []}
+              onChange={memberId => handleMemberChange(memberId, index)}
+              memberlist={members}
+            />
+          </div>
+        </div>
+      ),
     },
     {
       title: t('actions'),
@@ -224,6 +257,22 @@ const RatecardTable: React.FC = () => {
       ),
     },
   ];
+
+  const handleMemberChange = (memberId: string, rowIndex: number) => {
+    setRoles(prev =>
+      prev.map((role, idx) => {
+        if (idx !== rowIndex) return role;
+        const members = Array.isArray(role.members) ? [...role.members] : [];
+        const memberIdx = members.indexOf(memberId);
+        if (memberIdx > -1) {
+          members.splice(memberIdx, 1); // remove if exists
+        } else {
+          members.push(memberId); // add if not exists
+        }
+        return { ...role, members };
+      })
+    );
+  };
 
   return (
     <Table

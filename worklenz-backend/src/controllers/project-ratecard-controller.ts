@@ -9,7 +9,7 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
 
   // Insert a single role for a project
 @HandleExceptions()
-public static async insertOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+public static async createOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
   const { project_id, job_title_id, rate } = req.body;
   if (!project_id || !job_title_id || typeof rate !== "number") {
     return res.status(400).send(new ServerResponse(false, null, "Invalid input"));
@@ -26,7 +26,7 @@ public static async insertOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Pr
 }
   // Insert multiple roles for a project
   @HandleExceptions()
-  public static async insertMany(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async createMany(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { project_id, roles } = req.body;
     if (!Array.isArray(roles) || !project_id) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid input"));
@@ -50,10 +50,17 @@ public static async insertOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Pr
 
   // Get all roles for a project
   @HandleExceptions()
-  public static async getFromProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getByProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { project_id } = req.params;
     const q = `
-      SELECT fprr.*, jt.name as jobtitle
+      SELECT
+      fprr.*,
+      jt.name as jobtitle,
+      (
+        SELECT COALESCE(json_agg(pm.id), '[]'::json)
+        FROM project_members pm
+        WHERE pm.project_rate_card_role_id = fprr.id
+      ) AS members
       FROM finance_project_rate_card_roles fprr
       LEFT JOIN job_titles jt ON fprr.job_title_id = jt.id
       WHERE fprr.project_id = $1
@@ -65,10 +72,17 @@ public static async insertOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Pr
 
   // Get a single role by id
   @HandleExceptions()
-  public static async getFromId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const q = `
-      SELECT fprr.*, jt.name as jobtitle
+      SELECT
+      fprr.*,
+      jt.name as jobtitle,
+      (
+        SELECT COALESCE(json_agg(pm.id), '[]'::json)
+        FROM project_members pm
+        WHERE pm.project_rate_card_role_id = fprr.id
+      ) AS members
       FROM finance_project_rate_card_roles fprr
       LEFT JOIN job_titles jt ON fprr.job_title_id = jt.id
       WHERE fprr.id = $1;
@@ -79,7 +93,7 @@ public static async insertOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Pr
 
   // Update a single role by id
   @HandleExceptions()
-  public static async updateFromId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async updateById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const { job_title_id, rate } = req.body;
     const q = `
@@ -94,7 +108,7 @@ public static async insertOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Pr
 
   // Update all roles for a project (delete then insert)
   @HandleExceptions()
-  public static async updateFromProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async updateByProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { project_id, roles } = req.body;
     if (!Array.isArray(roles) || !project_id) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid input"));
@@ -123,7 +137,7 @@ public static async insertOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Pr
 
   // Delete a single role by id
   @HandleExceptions()
-  public static async deleteFromId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const q = `DELETE FROM finance_project_rate_card_roles WHERE id = $1 RETURNING *;`;
     const result = await db.query(q, [id]);
@@ -132,7 +146,7 @@ public static async insertOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Pr
 
   // Delete all roles for a project
   @HandleExceptions()
-  public static async deleteFromProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async deleteByProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { project_id } = req.params;
     const q = `DELETE FROM finance_project_rate_card_roles WHERE project_id = $1 RETURNING *;`;
     const result = await db.query(q, [project_id]);
