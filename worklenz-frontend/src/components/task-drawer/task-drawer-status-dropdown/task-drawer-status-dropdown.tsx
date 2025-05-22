@@ -12,7 +12,7 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { Select } from 'antd';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 interface TaskDrawerStatusDropdownProps {
   statuses: ITaskStatus[];
@@ -21,7 +21,7 @@ interface TaskDrawerStatusDropdownProps {
 }
 
 const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDropdownProps) => {
-  const { socket, connected } = useSocket();
+  const { socket } = useSocket();
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { tab } = useTabSearchParam();
