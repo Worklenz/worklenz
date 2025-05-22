@@ -249,6 +249,7 @@ const RatecardDrawer = ({
     {
       title: `${t('ratePerHourColumn')} (${currency})`,
       dataIndex: 'rate',
+      align: 'right',
       render: (text: number, record: any, index: number) => (
         <Input
           type="number"
@@ -258,6 +259,7 @@ const RatecardDrawer = ({
             border: 'none',
             boxShadow: 'none',
             padding: 0,
+            textAlign: 'right',
           }}
           onChange={(e) => {
             const updatedRoles = roles.map((role, idx) =>

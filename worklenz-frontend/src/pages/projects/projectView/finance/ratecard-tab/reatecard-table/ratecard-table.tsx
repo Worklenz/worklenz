@@ -151,6 +151,7 @@ const RatecardTable: React.FC = () => {
     {
       title: `${t('ratePerHourColumn')} (${currency})`,
       dataIndex: 'rate',
+      align: 'right',
       render: (value: number, record: JobRoleType, index: number) => (
         <Input
           type="number"
@@ -161,6 +162,7 @@ const RatecardTable: React.FC = () => {
             boxShadow: 'none',
             padding: 0,
             width: 80,
+            textAlign: 'right',
           }}
           onChange={(e) => handleRateChange(e.target.value, index)}
         />
