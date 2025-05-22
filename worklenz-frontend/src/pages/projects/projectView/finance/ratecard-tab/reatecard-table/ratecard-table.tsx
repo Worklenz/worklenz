@@ -9,6 +9,7 @@ import { JobRoleType, IJobType, RatecardType } from '@/types/project/ratecard.ty
 import {
   deleteProjectRateCardRoleById,
   fetchProjectRateCardRoles,
+  insertProjectRateCardRole,
   updateProjectRateCardRolesByProjectId,
 } from '@/features/finance/project-finance-slice';
 import { useParams } from 'react-router-dom';
@@ -40,9 +41,8 @@ const RatecardTable: React.FC = () => {
 
   // Sync local roles with redux roles
   useEffect(() => {
-    console.log('Roles Redux:', rolesRedux);
     setRoles(rolesRedux);
-  }, [rolesRedux]);
+  }, [rolesRedux, dispatch]);
 
   // Fetch roles on mount
   useEffect(() => {
@@ -72,20 +72,29 @@ const RatecardTable: React.FC = () => {
   };
 
   // Handle job title select for new row
-  const handleSelectJobTitle = (jobTitleId: string) => {
+  const handleSelectJobTitle = async(jobTitleId: string) => {
     const jobTitle = jobTitles.find((jt) => jt.id === jobTitleId);
-    if (!jobTitle) return;
+    if (!jobTitle || !projectId) return;
     // Prevent duplicates
     if (roles.some((r) => r.job_title_id === jobTitleId)) return;
-    setRoles([
-      ...roles,
-      {
-        job_title_id: jobTitleId,
-        jobtitle: jobTitle.name || '',
-        rate: 0,
-        members: [],
-      },
-    ]);
+    // Dispatch and wait for result
+    const resultAction = await dispatch(
+      insertProjectRateCardRole({ project_id: projectId, job_title_id: jobTitleId, rate: 0 })
+    );
+
+    // If fulfilled, update local state with returned id
+    if (insertProjectRateCardRole.fulfilled.match(resultAction)) {
+      const newRole = resultAction.payload;
+      setRoles([
+        ...roles,
+        {
+          id: newRole.id,
+          job_title_id: newRole.job_title_id,
+          jobtitle: newRole.jobtitle,
+          rate: newRole.rate,
+        },
+      ]);
+    }
     setAddingRow(false);
   };
 
@@ -221,14 +230,14 @@ const RatecardTable: React.FC = () => {
       dataSource={
         addingRow
           ? [
-              ...roles,
-              {
-                job_title_id: '',
-                jobtitle: '',
-                rate: 0,
-                members: [],
-              },
-            ]
+            ...roles,
+            {
+              job_title_id: '',
+              jobtitle: '',
+              rate: 0,
+              members: [],
+            },
+          ]
           : roles
       }
       columns={columns}

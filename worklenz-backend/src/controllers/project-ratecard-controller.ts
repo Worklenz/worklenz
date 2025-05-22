@@ -6,6 +6,24 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import WorklenzControllerBase from "./worklenz-controller-base";
 
 export default class ProjectRateCardController extends WorklenzControllerBase {
+
+  // Insert a single role for a project
+@HandleExceptions()
+public static async insertOne(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  const { project_id, job_title_id, rate } = req.body;
+  if (!project_id || !job_title_id || typeof rate !== "number") {
+    return res.status(400).send(new ServerResponse(false, null, "Invalid input"));
+  }
+  const q = `
+    INSERT INTO finance_project_rate_card_roles (project_id, job_title_id, rate)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (project_id, job_title_id) DO UPDATE SET rate = EXCLUDED.rate
+    RETURNING *,
+      (SELECT name FROM job_titles jt WHERE jt.id = finance_project_rate_card_roles.job_title_id) AS jobtitle;
+  `;
+  const result = await db.query(q, [project_id, job_title_id, rate]);
+  return res.status(200).send(new ServerResponse(true, result.rows[0]));
+}
   // Insert multiple roles for a project
   @HandleExceptions()
   public static async insertMany(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -81,12 +99,11 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
     if (!Array.isArray(roles) || !project_id) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid input"));
     }
-    // Delete existing
-    await db.query(`DELETE FROM finance_project_rate_card_roles WHERE project_id = $1`, [project_id]);
-    // Insert new
     if (roles.length === 0) {
+      // If no roles provided, do nothing and return empty array
       return res.status(200).send(new ServerResponse(true, []));
     }
+    // Build upsert query for all roles
     const values = roles.map((role: any) => [
       project_id,
       role.job_title_id,
@@ -95,8 +112,9 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
     const q = `
       INSERT INTO finance_project_rate_card_roles (project_id, job_title_id, rate)
       VALUES ${values.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(",")}
+      ON CONFLICT (project_id, job_title_id) DO UPDATE SET rate = EXCLUDED.rate, updated_at = NOW()
       RETURNING *,
-      (SELECT name FROM job_titles jt WHERE jt.id = finance_project_rate_card_roles.job_title_id) AS jobtitle;
+        (SELECT name FROM job_titles jt WHERE jt.id = finance_project_rate_card_roles.job_title_id) AS jobtitle;
     `;
     const flatValues = values.flat();
     const result = await db.query(q, flatValues);

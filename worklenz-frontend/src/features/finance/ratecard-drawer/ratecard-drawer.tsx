@@ -253,6 +253,7 @@ const RatecardDrawer = ({
       render: (text: number, record: any, index: number) => (
         <Input
           type="number"
+          autoFocus={index === addingRowIndex}
           value={roles[index]?.rate ?? 0}
           style={{
             background: 'transparent',

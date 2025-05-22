@@ -21,6 +21,14 @@ export const projectRateCardApiService = {
     const response = await apiClient.post<IServerResponse<IProjectRateCardRole[]>>(rootUrl, { project_id, roles });
     return response.data;
   },
+  // Insert a single role for a project
+  async insertOne({ project_id, job_title_id, rate }: { project_id: string; job_title_id: string; rate: number }): Promise<IServerResponse<IProjectRateCardRole>> {
+    const response = await apiClient.post<IServerResponse<IProjectRateCardRole>>(
+      `${rootUrl}/create-project-rate-card-role`,
+      { project_id, job_title_id, rate }
+    );
+    return response.data;
+  },
 
   // Get all roles for a project
   async getFromProjectId(project_id: string): Promise<IServerResponse<IProjectRateCardRole[]>> {

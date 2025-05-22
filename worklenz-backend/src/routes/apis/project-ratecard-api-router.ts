@@ -12,6 +12,12 @@ projectRatecardApiRouter.post(
   projectManagerValidator,
   safeControllerFunction(ProjectRateCardController.insertMany)
 );
+// Insert a single role for a project
+projectRatecardApiRouter.post(
+  "/create-project-rate-card-role",
+  projectManagerValidator,
+  safeControllerFunction(ProjectRateCardController.insertOne)
+);
 
 // Get all roles for a project
 projectRatecardApiRouter.get(
