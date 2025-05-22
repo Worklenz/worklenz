@@ -60,6 +60,7 @@ import taskRecurringApiRouter from "./task-recurring-api-router";
 import customColumnsApiRouter from "./custom-columns-api-router";
 import ratecardApiRouter from "./ratecard-api-router";
 import projectRatecardApiRouter from "./project-ratecard-api-router";
+import projectFinanceApiRouter from "./project-finance-api-router";
 
 const api = express.Router();
 
@@ -121,5 +122,7 @@ api.use("/task-dependencies", taskDependenciesApiRouter);
 api.use("/task-recurring", taskRecurringApiRouter);
 
 api.use("/custom-columns", customColumnsApiRouter);
+
+api.use("/project-finance", projectFinanceApiRouter);
 
 export default api;

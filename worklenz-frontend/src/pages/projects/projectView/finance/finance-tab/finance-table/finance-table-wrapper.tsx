@@ -9,28 +9,43 @@ import { financeTableColumns } from '@/lib/project/project-view-finance-table-co
 import FinanceTable from './finance-table';
 import FinanceDrawer from '@/features/finance/finance-drawer/finance-drawer';
 
-const FinanceTableWrapper = ({
+interface FinanceTableWrapperProps {
+  activeTablesList: {
+    id: string;
+    name: string;
+    color_code: string;
+    color_code_dark: string;
+    tasks: {
+      taskId: string;
+      task: string;
+      hours: number;
+      cost: number;
+      fixedCost: number;
+      totalBudget: number;
+      totalActual: number;
+      variance: number;
+      members: any[];
+      isbBillable: boolean;
+    }[];
+  }[];
+  loading: boolean;
+}
+
+const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({
   activeTablesList,
-}: {
-  activeTablesList: any;
+  loading
 }) => {
   const [isScrolling, setIsScrolling] = useState(false);
-
-  //? this state for inside this state individualy in finance table only display the data of the last table's task when a task is clicked The selectedTask state does not synchronize across tables so thats why move the selectedTask state to a parent component
   const [selectedTask, setSelectedTask] = useState(null);
 
-  // localization
   const { t } = useTranslation('project-view-finance');
-
   const dispatch = useAppDispatch();
 
-  // function on task click
   const onTaskClick = (task: any) => {
     setSelectedTask(task);
     dispatch(toggleFinanceDrawer());
   };
 
-  // trigger the table scrolling
   useEffect(() => {
     const tableContainer = document.querySelector('.tasklist-container');
     const handleScroll = () => {
@@ -39,22 +54,15 @@ const FinanceTableWrapper = ({
       }
     };
 
-    // add the scroll event listener
     tableContainer?.addEventListener('scroll', handleScroll);
-
-    // cleanup on unmount
     return () => {
       tableContainer?.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
-  // get theme data from theme reducer
   const themeMode = useAppSelector((state) => state.themeReducer.mode);
-
-  // get tasklist and currently using currency from finance reducer
   const { currency } = useAppSelector((state) => state.financeReducer);
 
-  // totals of all the tasks
   const totals = activeTablesList.reduce(
     (
       acc: {
@@ -135,7 +143,6 @@ const FinanceTableWrapper = ({
     }
   };
 
-  // layout styles for table and the columns
   const customColumnHeaderStyles = (key: string) =>
     `px-2 text-left ${key === 'selector' && 'sticky left-0 z-10'} ${key === 'task' && 'sticky left-[48px] z-10'} ${key === 'members' && `sticky left-[288px] z-10 ${isScrolling ? 'after:content after:absolute after:top-0 after:-right-1 after:-z-10  after:h-[68px] after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent' : ''}`} ${themeMode === 'dark' ? 'bg-[#1d1d1d] border-[#303030]' : 'bg-[#fafafa]'}`;
 
@@ -233,7 +240,7 @@ const FinanceTableWrapper = ({
               )}
             </tr>
 
-            {activeTablesList.map((table: any, index: number) => (
+            {activeTablesList.map((table, index) => (
               <FinanceTable
                 key={index}
                 table={table}

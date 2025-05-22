@@ -10,6 +10,7 @@ import {
 import { themeWiseColor } from '../../../../../../utils/themeWiseColor';
 import { colors } from '../../../../../../styles/colors';
 import { financeTableColumns } from '@/lib/project/project-view-finance-table-columns';
+import Avatars from '@/components/avatars/avatars';
 
 type FinanceTableProps = {
   table: any;
@@ -132,11 +133,7 @@ const FinanceTable = ({
         );
       case 'members':
         return (
-          <Avatar.Group>
-            {task.members.map((member: any) => (
-              <CustomAvatar avatarName={member.name} size={26} />
-            ))}
-          </Avatar.Group>
+          task?.assignees && <Avatars members={task.assignees} />
         );
       case 'hours':
         return <Typography.Text>{task.hours}</Typography.Text>;
