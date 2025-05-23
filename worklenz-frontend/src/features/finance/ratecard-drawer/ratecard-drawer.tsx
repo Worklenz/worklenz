@@ -220,6 +220,9 @@ const RatecardDrawer = ({
                 setAddingRowIndex(null);
               }}
               onBlur={() => {
+                if (roles[index].job_title_id === ""){
+                  handleDeleteRole(index);
+                }
                 setEditingRowIndex(null);
                 setAddingRowIndex(null);
               }}
@@ -241,7 +244,7 @@ const RatecardDrawer = ({
         return (
           <span
             style={{ cursor: 'pointer' }}
-            onClick={() => setEditingRowIndex(index)}
+            // onClick={() => setEditingRowIndex(index)}
           >
             {record.jobtitle}
           </span>

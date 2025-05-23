@@ -255,6 +255,7 @@ const RatecardTable: React.FC = () => {
     {
       title: t('actions'),
       key: 'actions',
+      align: 'center',
       render: (_: any, record: JobRoleType, index: number) => (
         <Popconfirm
           title={t('deleteConfirm')}
@@ -288,18 +289,18 @@ const RatecardTable: React.FC = () => {
       pagination={false}
       loading={isLoading || isLoadingMembers}
       footer={() => (
-        <Flex gap={8}>
+        <Flex gap={0}>
           <Button type="dashed" onClick={handleAddRole} style={{ width: 'fit-content' }}>
             {t('addRoleButton')}
           </Button>
-          <Button
+          {/* <Button
             type="primary"
             icon={<SaveOutlined />}
             onClick={handleSaveAll}
             disabled={roles.length === 0}
           >
             {t('saveButton') || 'Save'}
-          </Button>
+          </Button> */}
         </Flex>
       )}
     />
