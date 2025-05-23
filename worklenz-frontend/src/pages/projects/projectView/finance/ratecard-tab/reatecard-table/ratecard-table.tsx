@@ -18,9 +18,7 @@ import RateCardAssigneeSelector from '@/components/project-ratecard/ratecard-ass
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { IProjectMemberViewModel } from '@/types/projectMember.types';
 
-
 const RatecardTable: React.FC = () => {
-
   const dispatch = useAppDispatch();
   const { t } = useTranslation('project-view-finance');
   const { projectId } = useParams();
@@ -33,16 +31,17 @@ const RatecardTable: React.FC = () => {
   // Local state for editing
   const [roles, setRoles] = useState<JobRoleType[]>(rolesRedux);
   const [addingRow, setAddingRow] = useState<boolean>(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [jobTitles, setJobTitles] = useState<RatecardType[]>([]);
   const [members, setMembers] = useState<IProjectMemberViewModel[]>([]);
   const [isLoadingMembers, setIsLoading] = useState(false);
+
   const pagination = {
     current: 1,
-    pageSize: 100,
+    pageSize: 1000,
     field: 'name',
     order: 'asc',
   };
+
   const getProjectMembers = async () => {
     if (!projectId) return;
     setIsLoading(true);
@@ -67,8 +66,7 @@ const RatecardTable: React.FC = () => {
 
   useEffect(() => {
     getProjectMembers();
-    // eslint-disable-next-line
-  }, []);
+  }, [projectId]);
 
   // Fetch job titles for selection
   useEffect(() => {
@@ -81,7 +79,7 @@ const RatecardTable: React.FC = () => {
   // Sync local roles with redux roles
   useEffect(() => {
     setRoles(rolesRedux);
-  }, [rolesRedux, dispatch]);
+  }, [rolesRedux]);
 
   // Fetch roles on mount
   useEffect(() => {
@@ -98,7 +96,6 @@ const RatecardTable: React.FC = () => {
   // Save all roles (bulk update)
   const handleSaveAll = () => {
     if (projectId) {
-      // Only send roles with job_title_id and rate
       const filteredRoles = roles
         .filter((r) => r.job_title_id && typeof r.rate !== 'undefined')
         .map((r) => ({
@@ -114,14 +111,11 @@ const RatecardTable: React.FC = () => {
   const handleSelectJobTitle = async (jobTitleId: string) => {
     const jobTitle = jobTitles.find((jt) => jt.id === jobTitleId);
     if (!jobTitle || !projectId) return;
-    // Prevent duplicates
     if (roles.some((r) => r.job_title_id === jobTitleId)) return;
-    // Dispatch and wait for result
     const resultAction = await dispatch(
       insertProjectRateCardRole({ project_id: projectId, job_title_id: jobTitleId, rate: 0 })
     );
 
-    // If fulfilled, update local state with returned id
     if (insertProjectRateCardRole.fulfilled.match(resultAction)) {
       const newRole = resultAction.payload;
       setRoles([
@@ -131,6 +125,7 @@ const RatecardTable: React.FC = () => {
           job_title_id: newRole.job_title_id,
           jobtitle: newRole.jobtitle,
           rate: newRole.rate,
+          members: [], // Initialize members array
         },
       ]);
     }
@@ -150,9 +145,32 @@ const RatecardTable: React.FC = () => {
     if (record.id) {
       dispatch(deleteProjectRateCardRoleById(record.id));
     } else {
-      // Remove unsaved row
       setRoles(roles.filter((_, idx) => idx !== index));
     }
+  };
+
+  // Handle member change
+  const handleMemberChange = (memberId: string, rowIndex: number, record: JobRoleType) => {
+    if (!projectId && !memberId) return;
+    setRoles((prev) =>
+      prev.map((role, idx) => {
+        if (idx !== rowIndex) return role;
+        const members = Array.isArray(role.members) ? [...role.members] : [];
+        const memberIdx = members.indexOf(memberId);
+        if (memberIdx > -1) {
+          members.splice(memberIdx, 1); // Remove if exists
+        } else {
+          members.push(memberId); // Add if not exists
+        }
+        return { ...role, members };
+      })
+    );
+    // Log the required values
+    console.log({
+      project_id: projectId,
+      id: memberId,
+      project_rate_card_role_id: record.id,
+    });
   };
 
   // Columns
@@ -161,7 +179,6 @@ const RatecardTable: React.FC = () => {
       title: t('jobTitleColumn'),
       dataIndex: 'jobtitle',
       render: (text: string, record: JobRoleType, index: number) => {
-        // Only show Select if addingRow and this is the last row (new row)
         if (addingRow && index === roles.length) {
           return (
             <Select
@@ -173,12 +190,12 @@ const RatecardTable: React.FC = () => {
               onChange={handleSelectJobTitle}
               onBlur={() => setAddingRow(false)}
               filterOption={(input, option) =>
-                (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
               }
             >
               {jobTitles
-                .filter(jt => !roles.some((role) => role.job_title_id === jt.id))
-                .map(jt => (
+                .filter((jt) => !roles.some((role) => role.job_title_id === jt.id))
+                .map((jt) => (
                   <Select.Option key={jt.id} value={jt.id!}>
                     {jt.name}
                   </Select.Option>
@@ -186,14 +203,7 @@ const RatecardTable: React.FC = () => {
             </Select>
           );
         }
-        return (
-          <span
-            style={{ cursor: 'pointer' }}
-            onClick={() => setEditingIndex(index)}
-          >
-            {text || record.name}
-          </span>
-        );
+        return <span>{text || record.name}</span>;
       },
     },
     {
@@ -222,16 +232,18 @@ const RatecardTable: React.FC = () => {
       render: (memberscol: string[] | null | undefined, record: JobRoleType, index: number) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, position: 'relative' }}>
           <Avatar.Group>
-            {memberscol && memberscol.length > 0 &&
-              memberscol.map((member, i) => (
-                <CustomAvatar key={i} avatarName={member} size={26} />
-              ))}
+            {memberscol?.map((memberId, i) => {
+              const member = members.find((m) => m.id === memberId);
+              return member ? (
+                <CustomAvatar key={i} avatarName={member.name} size={26} />
+              ) : null;
+            })}
           </Avatar.Group>
           <div>
             <RateCardAssigneeSelector
               projectId={projectId as string}
               selectedMemberIds={memberscol || []}
-              onChange={memberId => handleMemberChange(memberId, index)}
+              onChange={(memberId) => handleMemberChange(memberId, index, record)}
               memberlist={members}
             />
           </div>
@@ -248,31 +260,11 @@ const RatecardTable: React.FC = () => {
           okText={t('yes')}
           cancelText={t('no')}
         >
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-          />
+          <Button type="text" danger icon={<DeleteOutlined />} />
         </Popconfirm>
       ),
     },
   ];
-
-  const handleMemberChange = (memberId: string, rowIndex: number) => {
-    setRoles(prev =>
-      prev.map((role, idx) => {
-        if (idx !== rowIndex) return role;
-        const members = Array.isArray(role.members) ? [...role.members] : [];
-        const memberIdx = members.indexOf(memberId);
-        if (memberIdx > -1) {
-          members.splice(memberIdx, 1); // remove if exists
-        } else {
-          members.push(memberId); // add if not exists
-        }
-        return { ...role, members };
-      })
-    );
-  };
 
   return (
     <Table
@@ -290,16 +282,12 @@ const RatecardTable: React.FC = () => {
           : roles
       }
       columns={columns}
-      rowKey={(record, idx) => record.id || record.job_title_id || idx}
+      rowKey={(record, idx) => record.id || record.job_title_id || String(idx)}
       pagination={false}
-      loading={isLoading}
+      loading={isLoading || isLoadingMembers}
       footer={() => (
         <Flex gap={8}>
-          <Button
-            type="dashed"
-            onClick={handleAddRole}
-            style={{ width: 'fit-content' }}
-          >
+          <Button type="dashed" onClick={handleAddRole} style={{ width: 'fit-content' }}>
             {t('addRoleButton')}
           </Button>
           <Button
