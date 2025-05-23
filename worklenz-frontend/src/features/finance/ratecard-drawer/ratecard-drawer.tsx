@@ -43,7 +43,7 @@ const RatecardDrawer = ({
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [selectedJobTitleId, setSelectedJobTitleId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currency, setCurrency] = useState('LKR');
+  const [currency, setCurrency] = useState('USD');
   const [name, setName] = useState<string>('Untitled Rate Card');
   const [jobTitles, setJobTitles] = useState<IJobTitlesViewModel>({});
   const [pagination, setPagination] = useState<PaginationType>({
@@ -95,7 +95,7 @@ const RatecardDrawer = ({
     if (type === 'update' && drawerRatecard) {
       setRoles(drawerRatecard.jobRolesList || []);
       setName(drawerRatecard.name || '');
-      setCurrency(drawerRatecard.currency || 'LKR');
+      setCurrency(drawerRatecard.currency || 'USD');
     }
   }, [drawerRatecard, type]);
 
@@ -121,15 +121,17 @@ const RatecardDrawer = ({
     setRoles(mergedRoles);
   };
 
+
   const handleAddRole = () => {
-    // Only allow adding if there are job titles not already in roles
     const existingIds = new Set(roles.map(r => r.job_title_id));
     const availableJobTitles = jobTitles.data?.filter(jt => !existingIds.has(jt.id!));
     if (availableJobTitles && availableJobTitles.length > 0) {
       setRoles([...roles, { job_title_id: '', rate: 0 }]);
-      setAddingRowIndex(roles.length); // index of the new row
+      setAddingRowIndex(roles.length);
+      setIsAddingRole(true);
     }
   };
+
   const handleDeleteRole = (index: number) => {
     const updatedRoles = [...roles];
     updatedRoles.splice(index, 1);
@@ -185,7 +187,7 @@ const RatecardDrawer = ({
       } finally {
         setRoles([]);
         setName('Untitled Rate Card');
-        setCurrency('LKR');
+        setCurrency('USD');
       }
     }
   };
@@ -253,14 +255,13 @@ const RatecardDrawer = ({
       render: (text: number, record: any, index: number) => (
         <Input
           type="number"
-          autoFocus={index === addingRowIndex}
           value={roles[index]?.rate ?? 0}
           style={{
             background: 'transparent',
             border: 'none',
             boxShadow: 'none',
-            padding: 0,
             textAlign: 'right',
+            padding: 0,
           }}
           onChange={(e) => {
             const updatedRoles = roles.map((role, idx) =>
@@ -322,8 +323,8 @@ const RatecardDrawer = ({
             <Select
               value={currency}
               options={[
-                { value: 'LKR', label: 'LKR' },
                 { value: 'USD', label: 'USD' },
+                { value: 'LKR', label: 'LKR' },
                 { value: 'INR', label: 'INR' },
               ]}
               onChange={(value) => setCurrency(value)}
@@ -350,27 +351,7 @@ const RatecardDrawer = ({
         rowKey={(record) => record.job_title_id}
         pagination={false}
         footer={() => (
-          isAddingRole ? (
-            <Select
-              showSearch
-              style={{ minWidth: 200 }}
-              placeholder={t('selectJobTitle')}
-              optionFilterProp="children"
-              value={selectedJobTitleId}
-              onChange={handleSelectJobTitle}
-              onBlur={() => setIsAddingRole(false)}
-              filterOption={(input, option) =>
-                (option?.children as string).toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {jobTitles.data?.map((jt) => (
-                <Select.Option key={jt.id} value={jt.id}>
-                  {jt.name}
-                </Select.Option>
-              ))}
-            </Select>
-          ) : (
-            <Button
+          <Button
               type="dashed"
               onClick={handleAddRole}
               block
@@ -378,7 +359,6 @@ const RatecardDrawer = ({
             >
               {t('addRoleButton')}
             </Button>
-          )
         )}
       />
     </Drawer>
