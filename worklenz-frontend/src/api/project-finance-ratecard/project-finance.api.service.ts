@@ -16,6 +16,18 @@ export const projectFinanceApiService = {
             params: { group_by: groupBy }
           }
         );
+        console.log(response.data);
+        return response.data;
+      },
+
+    updateTaskFixedCost: async (
+        taskId: string,
+        fixedCost: number
+      ): Promise<IServerResponse<any>> => {
+        const response = await apiClient.put<IServerResponse<any>>(
+          `${rootUrl}/task/${taskId}/fixed-cost`,
+          { fixed_cost: fixedCost }
+        );
         return response.data;
       },
 }

@@ -1,9 +1,8 @@
 import React from "react";
-import { Card, Col, Row, Spin } from "antd";
-import { useThemeContext } from "../../../../../context/theme-context";
-import { FinanceTable } from "./finance-table";
-import { IFinanceTable } from "./finance-table.interface";
+import { Card, Col, Row } from "antd";
+
 import { IProjectFinanceGroup } from "../../../../../types/project/project-finance.types";
+import FinanceTable from "./finance-table/finance-table";
 
 interface Props {
   activeTablesList: IProjectFinanceGroup[];
@@ -32,7 +31,7 @@ export const FinanceTableWrapper: React.FC<Props> = ({ activeTablesList, loading
                 <h3>{table.group_name}</h3>
               </div>
               <FinanceTable
-                table={table as unknown as IFinanceTable}
+                table={table}
                 loading={loading}
               />
             </Card>

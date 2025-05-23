@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Checkbox, Flex, Typography } from 'antd';
+import { Checkbox, Flex, Tooltip, Typography } from 'antd';
 import { themeWiseColor } from '../../../../../../utils/themeWiseColor';
 import { useAppSelector } from '../../../../../../hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,7 @@ import { toggleFinanceDrawer } from '@/features/finance/finance-slice';
 import { financeTableColumns } from '@/lib/project/project-view-finance-table-columns';
 import FinanceTable from './finance-table';
 import FinanceDrawer from '@/features/finance/finance-drawer/finance-drawer';
+import { convertToHoursMinutes, formatHoursToReadable } from '@/utils/format-hours-to-readable';
 
 interface FinanceTableWrapperProps {
   activeTablesList: {
@@ -26,6 +27,8 @@ interface FinanceTableWrapperProps {
       variance: number;
       members: any[];
       isbBillable: boolean;
+      total_time_logged: number;
+      estimated_cost: number;
     }[];
   }[];
   loading: boolean;
@@ -72,6 +75,8 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({
         totalBudget: number;
         totalActual: number;
         variance: number;
+        total_time_logged: number;
+        estimated_cost: number;
       },
       table: { tasks: any[] }
     ) => {
@@ -82,6 +87,8 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({
         acc.totalBudget += task.totalBudget || 0;
         acc.totalActual += task.totalActual || 0;
         acc.variance += task.variance || 0;
+        acc.total_time_logged += task.total_time_logged || 0;
+        acc.estimated_cost += task.estimated_cost || 0;
       });
       return acc;
     },
@@ -92,15 +99,21 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({
       totalBudget: 0,
       totalActual: 0,
       variance: 0,
+      total_time_logged: 0,
+      estimated_cost: 0,
     }
   );
+
+  console.log("totals", totals);
 
   const renderFinancialTableHeaderContent = (columnKey: any) => {
     switch (columnKey) {
       case 'hours':
         return (
           <Typography.Text style={{ fontSize: 18 }}>
-            {totals.hours}
+            <Tooltip title={convertToHoursMinutes(totals.hours)}>
+              {formatHoursToReadable(totals.hours)}
+            </Tooltip>
           </Typography.Text>
         );
       case 'cost':
@@ -136,6 +149,18 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({
             }}
           >
             {totals.variance}
+          </Typography.Text>
+        );
+      case 'total_time_logged':
+        return (
+          <Typography.Text style={{ fontSize: 18 }}>
+            {totals.total_time_logged?.toFixed(2)}
+          </Typography.Text>
+        );
+      case 'estimated_cost':
+        return (
+          <Typography.Text style={{ fontSize: 18 }}>
+            {`${currency.toUpperCase()} ${totals.estimated_cost?.toFixed(2)}`}
           </Typography.Text>
         );
       default:
@@ -189,7 +214,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({
                   className={`${customColumnHeaderStyles(col.key)} before:constent relative before:absolute before:left-0 before:top-1/2 before:h-[36px] before:w-0.5 before:-translate-y-1/2 ${themeMode === 'dark' ? 'before:bg-white/10' : 'before:bg-black/5'}`}
                 >
                   <Typography.Text>
-                    {t(`${col.name}Column`)}{' '}
+                    {t(`${col.name}`)}{' '}
                     {col.type === 'currency' && `(${currency.toUpperCase()})`}
                   </Typography.Text>
                 </td>

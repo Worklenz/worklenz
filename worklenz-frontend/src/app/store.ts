@@ -73,6 +73,7 @@ import financeReducer from '../features/finance/finance-slice';
 import roadmapReducer from '../features/roadmap/roadmap-slice';
 import teamMembersReducer from '@features/team-members/team-members.slice';
 import projectFinanceRateCardReducer from '../features/finance/project-finance-slice';
+import projectFinancesReducer from '../features/projects/finance/project-finance.slice';
 import groupByFilterDropdownReducer from '../features/group-by-filter-dropdown/group-by-filter-dropdown-slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
@@ -158,6 +159,7 @@ export const store = configureStore({
     timeReportsOverviewReducer: timeReportsOverviewReducer,
     financeReducer: financeReducer,
     projectFinanceRateCard: projectFinanceRateCardReducer,
+    projectFinances: projectFinancesReducer,
   },
 });
 

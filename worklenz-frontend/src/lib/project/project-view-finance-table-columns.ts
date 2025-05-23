@@ -3,55 +3,68 @@ type FinanceTableColumnsType = {
     name: string;
     width: number;
     type: 'string' | 'hours' | 'currency';
+    render?: (value: any) => React.ReactNode;
   };
   
   // finance table columns
   export const financeTableColumns: FinanceTableColumnsType[] = [
     {
       key: 'task',
-      name: 'task',
+      name: 'taskColumn',
       width: 240,
       type: 'string',
     },
     {
       key: 'members',
-      name: 'members',
+      name: 'membersColumn',
       width: 160,
       type: 'string',
     },
     {
       key: 'hours',
-      name: 'hours',
+      name: 'hoursColumn',
       width: 80,
       type: 'hours',
     },
     {
+      key: 'total_time_logged',
+      name: 'totalTimeLoggedColumn',
+      width: 120,
+      type: 'hours',
+    },
+    {
+      key: 'estimated_cost',
+      name: 'estimatedCostColumn',
+      width: 120,
+      type: 'currency',
+    },
+    {
       key: 'cost',
-      name: 'cost',
+      name: 'costColumn',
       width: 120,
       type: 'currency',
     },
     {
       key: 'fixedCost',
-      name: 'fixedCost',
+      name: 'fixedCostColumn',
       width: 120,
       type: 'currency',
     },
     {
       key: 'totalBudget',
-      name: 'totalBudgetedCost',
+      name: 'totalBudgetedCostColumn',
       width: 120,
       type: 'currency',
     },
     {
       key: 'totalActual',
-      name: 'totalActualCost',
+      name: 'totalActualCostColumn',
       width: 120,
       type: 'currency',
     },
     {
       key: 'variance',
-      name: 'variance',
+      name: 'varianceColumn',
       width: 120,
       type: 'currency',
     },

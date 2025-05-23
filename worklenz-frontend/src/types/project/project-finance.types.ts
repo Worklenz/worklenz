@@ -10,28 +10,30 @@ export interface IProjectFinanceJobTitle {
 }
 
 export interface IProjectFinanceMember {
-  id: string;
   team_member_id: string;
-  job_title_id: string;
-  rate: number | null;
-  user: IProjectFinanceUser;
-  job_title: IProjectFinanceJobTitle;
+  project_member_id: string;
+  name: string;
+  email_notifications_enabled: boolean;
+  avatar_url: string | null;
+  user_id: string;
+  email: string;
+  socket_id: string;
+  team_id: string;
 }
 
 export interface IProjectFinanceTask {
   id: string;
   name: string;
-  status_id: string;
-  priority_id: string;
-  phase_id: string;
   estimated_hours: number;
-  actual_hours: number;
-  completed_at: string | null;
-  created_at: string;
-  updated_at: string;
-  billable: boolean;
-  assignees: any[]; // Using any[] since we don't have the assignee structure yet
+  total_time_logged: number;
+  estimated_cost: number;
   members: IProjectFinanceMember[];
+  billable: boolean;
+  fixed_cost?: number;
+  variance?: number;
+  total_budget?: number;
+  total_actual?: number;
+  cost?: number;
 }
 
 export interface IProjectFinanceGroup {

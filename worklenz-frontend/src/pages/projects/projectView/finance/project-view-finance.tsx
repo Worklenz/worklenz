@@ -1,61 +1,33 @@
 import { Flex } from 'antd';
-import React, { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import ProjectViewFinanceHeader from './project-view-finance-header/project-view-finance-header';
 import FinanceTab from './finance-tab/finance-tab';
 import RatecardTab from './ratecard-tab/ratecard-tab';
-import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
-import { IProjectFinanceGroup } from '@/types/project/project-finance.types';
-
-type FinanceTabType = 'finance' | 'ratecard';
-type GroupTypes = 'status' | 'priority' | 'phases';
-
-interface TaskGroup {
-  group_id: string;
-  group_name: string;
-  tasks: any[];
-}
-
-interface FinanceTabProps {
-  groupType: GroupTypes;
-  taskGroups: TaskGroup[];
-  loading: boolean;
-}
+import { fetchProjectFinances, setActiveTab, setActiveGroup } from '@/features/projects/finance/project-finance.slice';
+import { RootState } from '@/app/store';
 
 const ProjectViewFinance = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const [activeTab, setActiveTab] = useState<FinanceTabType>('finance');
-  const [activeGroup, setActiveGroup] = useState<GroupTypes>('status');
-  const [loading, setLoading] = useState(false);
-  const [taskGroups, setTaskGroups] = useState<IProjectFinanceGroup[]>([]);
-
-  const fetchTasks = async () => {
-    if (!projectId) return;
-    
-    try {
-      setLoading(true);
-      const response = await projectFinanceApiService.getProjectTasks(projectId, activeGroup);
-      if (response.done) {
-        setTaskGroups(response.body);
-      }
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const dispatch = useAppDispatch();
+  
+  const { activeTab, activeGroup, loading, taskGroups } = useAppSelector((state: RootState) => state.projectFinances);
 
   useEffect(() => {
-    fetchTasks();
-  }, [projectId, activeGroup]);
+    if (projectId) {
+      dispatch(fetchProjectFinances({ projectId, groupBy: activeGroup }));
+    }
+  }, [projectId, activeGroup, dispatch]);
 
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
       <ProjectViewFinanceHeader
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => dispatch(setActiveTab(tab))}
         activeGroup={activeGroup}
-        setActiveGroup={setActiveGroup}
+        setActiveGroup={(group) => dispatch(setActiveGroup(group))}
       />
 
       {activeTab === 'finance' ? (
