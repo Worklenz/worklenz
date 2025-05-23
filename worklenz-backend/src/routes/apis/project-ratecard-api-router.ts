@@ -45,6 +45,14 @@ projectRatecardApiRouter.put(
   safeControllerFunction(ProjectRateCardController.updateByProjectId)
 );
 
+// Update project member rate card role
+projectRatecardApiRouter.put(
+  "/project/:project_id/members/:id/rate-card-role",
+  idParamValidator,
+  projectManagerValidator,
+  safeControllerFunction(ProjectRateCardController.updateProjectMemberByProjectIdAndMemberId)
+);
+
 // Delete a single role by id
 projectRatecardApiRouter.delete(
   "/:id",

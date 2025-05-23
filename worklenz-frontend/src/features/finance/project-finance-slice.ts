@@ -121,6 +121,14 @@ export const deleteProjectRateCardRoleById = createAsyncThunk(
   }
 );
 
+export const assignMemberToRateCardRole = createAsyncThunk(
+  'projectFinance/assignMemberToRateCardRole',
+  async ({ project_id, member_id, project_rate_card_role_id }: { project_id: string; member_id: string; project_rate_card_role_id: string }) => {
+    const response = await projectRateCardApiService.updateMemberRateCardRole(project_id, member_id, project_rate_card_role_id);
+    return response.body;
+  }
+);
+
 export const deleteProjectRateCardRolesByProjectId = createAsyncThunk(
   'projectFinance/deleteByProjectId',
   async (project_id: string, { rejectWithValue }) => {

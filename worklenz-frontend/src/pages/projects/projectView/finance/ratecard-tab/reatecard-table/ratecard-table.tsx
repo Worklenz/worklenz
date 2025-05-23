@@ -7,6 +7,7 @@ import { useAppDispatch } from '../../../../../../hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { JobRoleType, IJobType, RatecardType } from '@/types/project/ratecard.types';
 import {
+  assignMemberToRateCardRole,
   deleteProjectRateCardRoleById,
   fetchProjectRateCardRoles,
   insertProjectRateCardRole,
@@ -150,27 +151,28 @@ const RatecardTable: React.FC = () => {
   };
 
   // Handle member change
-  const handleMemberChange = (memberId: string, rowIndex: number, record: JobRoleType) => {
-    if (!projectId && !memberId) return;
-    setRoles((prev) =>
-      prev.map((role, idx) => {
-        if (idx !== rowIndex) return role;
-        const members = Array.isArray(role.members) ? [...role.members] : [];
-        const memberIdx = members.indexOf(memberId);
-        if (memberIdx > -1) {
-          members.splice(memberIdx, 1); // Remove if exists
-        } else {
-          members.push(memberId); // Add if not exists
-        }
-        return { ...role, members };
-      })
-    );
-    // Log the required values
-    console.log({
-      project_id: projectId,
-      id: memberId,
-      project_rate_card_role_id: record.id,
-    });
+  const handleMemberChange = async (memberId: string, rowIndex: number, record: JobRoleType) => {
+    if (!projectId || !record.id) return; // Ensure required IDs are present
+    try {
+      const resultAction = await dispatch(
+        assignMemberToRateCardRole({
+          project_id: projectId,
+          member_id: memberId,
+          project_rate_card_role_id: record.id,
+        })
+      );
+      if (assignMemberToRateCardRole.fulfilled.match(resultAction)) {
+        const updatedMembers = resultAction.payload; // Array of member IDs
+        setRoles((prev) =>
+          prev.map((role, idx) => {
+            if (idx !== rowIndex) return role;
+            return { ...role, members: updatedMembers?.members || [] };
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error assigning member:', error);
+    }
   };
 
   // Columns
