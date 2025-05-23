@@ -19,6 +19,7 @@
   "currency": "Currency",
   "actionsColumn": "Actions",
   "addAllButton": "Add All",
-  "removeAllButton": "Remove All"
+  "removeAllButton": "Remove All",
+  "selectJobTitle": "Select job title"
 
 }

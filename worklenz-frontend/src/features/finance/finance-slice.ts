@@ -18,7 +18,7 @@ const initialState: financeState = {
   isRatecardDrawerOpen: false,
   isFinanceDrawerOpen: false,
   isImportRatecardsDrawerOpen: false,
-  currency: 'LKR',
+  currency: 'USD',
   isRatecardsLoading: false,
   isFinanceDrawerloading: false,
   drawerRatecard: null,

@@ -28,6 +28,10 @@
     "jobTitleColumn": "Job Title",
     "ratePerHourColumn": "Rate per hour",
     "ratecardPluralText": "Rate Cards",
-    "labourHoursColumn": "Labour Hours"
+    "labourHoursColumn": "Labour Hours",
+    "actions": "Actions",
+    "selectJobTitle": "Select Job Title",
+    "ratecardsPluralText": "Rate Card Templates"
+
   }
   

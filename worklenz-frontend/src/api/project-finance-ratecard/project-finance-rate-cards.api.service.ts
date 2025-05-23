@@ -1,7 +1,7 @@
 import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { IJobType } from '@/types/project/ratecard.types';
+import { IJobType, JobRoleType } from '@/types/project/ratecard.types';
 
 const rootUrl = `${API_BASE_URL}/project-rate-cards`;
 
@@ -19,6 +19,14 @@ export const projectRateCardApiService = {
   // Insert multiple roles for a project
   async insertMany(project_id: string, roles: Omit<IProjectRateCardRole, 'id' | 'project_id'>[]): Promise<IServerResponse<IProjectRateCardRole[]>> {
     const response = await apiClient.post<IServerResponse<IProjectRateCardRole[]>>(rootUrl, { project_id, roles });
+    return response.data;
+  },
+  // Insert a single role for a project
+  async insertOne({ project_id, job_title_id, rate }: { project_id: string; job_title_id: string; rate: number }): Promise<IServerResponse<IProjectRateCardRole>> {
+    const response = await apiClient.post<IServerResponse<IProjectRateCardRole>>(
+      `${rootUrl}/create-project-rate-card-role`,
+      { project_id, job_title_id, rate }
+    );
     return response.data;
   },
 
@@ -43,6 +51,19 @@ export const projectRateCardApiService = {
   // Update all roles for a project (delete then insert)
   async updateFromProjectId(project_id: string, roles: Omit<IProjectRateCardRole, 'id' | 'project_id'>[]): Promise<IServerResponse<IProjectRateCardRole[]>> {
     const response = await apiClient.put<IServerResponse<IProjectRateCardRole[]>>(`${rootUrl}/project/${project_id}`, { project_id, roles });
+    return response.data;
+  },
+
+  // Update project member rate card role
+  async updateMemberRateCardRole(
+    project_id: string,
+    member_id: string,
+    project_rate_card_role_id: string
+  ): Promise<IServerResponse<JobRoleType>> {
+    const response = await apiClient.put<IServerResponse<JobRoleType>>(
+      `${rootUrl}/project/${project_id}/members/${member_id}/rate-card-role`,
+      { project_rate_card_role_id }
+    );
     return response.data;
   },
 

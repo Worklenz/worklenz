@@ -45,4 +45,4 @@ ALTER TABLE projects
  ADD COLUMN rate_card UUID REFERENCES finance_rate_cards(id) ON DELETE SET NULL;
 
 ALTER TABLE finance_rate_cards
-    ADD COLUMN currency TEXT NOT NULL DEFAULT 'LKR';
+    ADD COLUMN currency TEXT NOT NULL DEFAULT 'USD';
