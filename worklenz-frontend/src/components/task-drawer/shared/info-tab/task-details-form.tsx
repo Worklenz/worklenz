@@ -29,6 +29,7 @@ import TaskDrawerBillable from './details/task-drawer-billable/task-drawer-billa
 import TaskDrawerProgress from './details/task-drawer-progress/task-drawer-progress';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import logger from '@/utils/errorLogger';
+import TaskDrawerRecurringConfig from './details/task-drawer-recurring-config/task-drawer-recurring-config';
 
 interface TaskDetailsFormProps {
   taskFormViewModel?: ITaskFormViewModel | null;
@@ -173,6 +174,10 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
 
         <Form.Item name="billable" label={t('taskInfoTab.details.billable')}>
           <TaskDrawerBillable task={taskFormViewModel?.task as ITaskViewModel} />
+        </Form.Item>
+
+        <Form.Item name="recurring" label={t('taskInfoTab.details.recurring')}>
+          <TaskDrawerRecurringConfig task={taskFormViewModel?.task as ITaskViewModel} />
         </Form.Item>
 
         <Form.Item name="notify" label={t('taskInfoTab.details.notify')}>
