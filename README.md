@@ -443,3 +443,30 @@ The Docker setup uses environment variables to configure the services:
 
 For custom configuration, edit the `.env` file or the `update-docker-env.sh` script.
 
+## Kubernetes Deployment
+
+### Prerequisites
+
+- PostgreSQL database
+- S3-compatible storage service (like MinIO) or Azure Blob Storage
+- Own Ingress configuration for Worklenz Frontend / Backend for https (currently not supported)
+
+### How to deploy
+
+1. Build the frontend and backend image and push both to your registry 
+   ```bash
+   # Build frontend image
+   cd worklenz-frontend
+   docker build -t your-registry.com/worklenz/frontend:tag .
+   docker push your-registry.com/worklenz/frontend:tag
+   
+   # Build backend image
+   cd ../worklenz-backend
+   docker build -t your-registry.com/worklenz/backend:tag .
+   docker push your-registry.com/worklenz/backend:tag
+   ```
+2. Setup your values.yaml with all urls, settings, and credentials
+3. Change directory into chart direction
+   ```bash
+   helm install worklenz . -n worklenz --create-namespace --values values.yaml
+   ```

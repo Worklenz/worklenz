@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "worklenz.fullname" . }}-backend
+  labels:
+    {{- include "worklenz.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.global.environment | quote }}
+  PORT: "3000"
+  SESSION_NAME: {{ .Values.backend.sessionName | quote }}
+
+  # CORS
+  SOCKET_IO_CORS: {{ (printf "https://%s" .Values.url.frontend) | quote }}
+  SERVER_CORS: {{ (printf "https://%s" .Values.url.frontend) | quote }}
+
+  # Google Login
+  GOOGLE_CALLBACK_URL: {{ (printf "https://%s/%s" .Values.url.frontend .Values.backend.googleCallbackUrl  ) | quote }}
+  LOGIN_FAILURE_REDIRECT: {{ (printf "https://%s/%s" .Values.url.frontend .Values.backend.loginFailureRedirect  ) | quote }}
+  LOGIN_SUCCESS_REDIRECT: {{ (printf "https://%s/%s" .Values.url.frontend .Values.backend.loginSuccessRedirect  ) | quote }}
+
+  # Database
+  DB_HOST: {{ .Values.backend.database.host | quote }}
+  DB_PORT: {{ .Values.backend.database.port | quote }}
+  DB_NAME: {{ .Values.backend.database.name | quote }}
+  DB_MAX_CLIENTS: {{ .Values.backend.database.maxClients | quote }}
+  USE_PG_NATIVE: {{ .Values.backend.database.usePgNative | quote }}
+
+  # Storage Configuration
+  STORAGE_PROVIDER: {{ .Values.backend.storage.provider | quote }}
+  AWS_REGION: {{ .Values.backend.storage.awsRegion | quote }}
+  AWS_BUCKET: {{ .Values.backend.storage.awsBucket | quote }}
+  S3_URL: {{ .Values.backend.storage.s3Url | quote }}
+
+  # Host
+  HOSTNAME: {{ .Values.url.frontend | quote }}
+  FRONTEND_URL: {{ (printf "https://%s" .Values.url.frontend ) | quote }}
+
+  # Email
+  SOURCE_EMAIL: {{ .Values.backend.sourceEmail | quote }}
+
+  # Other Settings
+  COMMIT_BUILD_IMMEDIATELY: {{ .Values.backend.commitBuildImmediately | quote }}
