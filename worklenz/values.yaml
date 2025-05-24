@@ -1,0 +1,119 @@
+nameOverride: ""
+fullnameOverride: ""
+
+global:
+  environment: "production"
+
+url:
+  backend: worklenz-api.de
+  frontend: worklenz.de
+
+backend:
+  replicaCount: 1
+
+  image:
+    repository: your-registry/worklenz-backend
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  podAnnotations: {}
+  podLabels: {}
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 0m
+      memory: 0Mi
+
+  nodeEnv: "production"
+  sessionName: "worklenz-session-id"
+
+  # Google Login
+  googleCallbackUrl: "/secure/google/verify"
+  loginFailureRedirect: "/auth/authenticating"
+  loginSuccessRedirect: "/auth/authenticating"
+
+  # Database
+  database:
+    host: "postges"
+    port: "5432"
+    user: "app_worklenz"
+    password: "password"
+    name: "worklenz"
+    maxClients: "50"
+    usePgNative: "true"
+
+  # Storage Configuration
+  storage:
+    provider: "s3"
+    awsRegion: "us-east-1"
+    awsBucket: "worklenz-bucket"
+    s3Url: "https://minio-api.de"
+
+  # Email
+  sourceEmail: "no-reply@example.com"
+
+  # Other Settings
+  commitBuildImmediately: "true"
+
+  sessionSecret: "change_me_in_production"
+  cookieSecret: "change_me_in_production"
+  googleClientId: "your_google_client_id"
+  googleClientSecret: "your_google_client_secret"
+  awsAccessKeyId: "minioadmin"
+  awsSecretAccessKey: "minioadmin"
+  jwtSecret: "change_me_in_production"
+  slackWebhook: ""
+
+frontend:
+  replicaCount: 1
+
+  image:
+    repository: harbor.vpn.rjst.de/lib/worklenz-frontend
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  podAnnotations: {}
+  podLabels: {}
+
+  podSecurityContext: {}
+  # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+  # runAsUser: 1000
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 0m
+      memory: 0Mi
+
+  appTitle: "Worklenz"
+  reCaptchaEnabled: false
+  reCaptchaSiteKey: ""
+
+  mixPanelToken: ""
+  sessionId: "worklenz-session-id"
+
+
+

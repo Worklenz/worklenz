@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "worklenz.fullname" . }}-backend
+  labels:
+    {{- include "worklenz.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "worklenz.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
