@@ -29,7 +29,10 @@
     "labourHoursColumn": "Labour Hours",
     "actions": "Actions",
     "selectJobTitle": "Select Job Title",
-    "ratecardsPluralText": "Rate Card Templates"
+    "ratecardsPluralText": "Rate Card Templates",
+    "deleteConfirm": "Are you sure ?",
+    "yes": "Yes",
+    "no": "No"
 
   }
   
