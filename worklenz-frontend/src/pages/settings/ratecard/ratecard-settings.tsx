@@ -87,7 +87,7 @@ const RatecardSettings: React.FC = () => {
 
   useEffect(() => {
     fetchRateCards();
-  }, [toggleRatecardDrawer]);
+  }, [toggleRatecardDrawer, dispatch]);
 
 
 
