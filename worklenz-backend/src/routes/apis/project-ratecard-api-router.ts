@@ -10,46 +10,60 @@ const projectRatecardApiRouter = express.Router();
 projectRatecardApiRouter.post(
   "/",
   projectManagerValidator,
-  safeControllerFunction(ProjectRateCardController.insertMany)
+  safeControllerFunction(ProjectRateCardController.createMany)
+);
+// Insert a single role for a project
+projectRatecardApiRouter.post(
+  "/create-project-rate-card-role",
+  projectManagerValidator,
+  safeControllerFunction(ProjectRateCardController.createOne)
 );
 
 // Get all roles for a project
 projectRatecardApiRouter.get(
   "/project/:project_id",
-  safeControllerFunction(ProjectRateCardController.getFromProjectId)
+  safeControllerFunction(ProjectRateCardController.getByProjectId)
 );
 
 // Get a single role by id
 projectRatecardApiRouter.get(
   "/:id",
   idParamValidator,
-  safeControllerFunction(ProjectRateCardController.getFromId)
+  safeControllerFunction(ProjectRateCardController.getById)
 );
 
 // Update a single role by id
 projectRatecardApiRouter.put(
   "/:id",
   idParamValidator,
-  safeControllerFunction(ProjectRateCardController.updateFromId)
+  safeControllerFunction(ProjectRateCardController.updateById)
 );
 
 // Update all roles for a project (delete then insert)
 projectRatecardApiRouter.put(
   "/project/:project_id",
-  safeControllerFunction(ProjectRateCardController.updateFromProjectId)
+  safeControllerFunction(ProjectRateCardController.updateByProjectId)
+);
+
+// Update project member rate card role
+projectRatecardApiRouter.put(
+  "/project/:project_id/members/:id/rate-card-role",
+  idParamValidator,
+  projectManagerValidator,
+  safeControllerFunction(ProjectRateCardController.updateProjectMemberByProjectIdAndMemberId)
 );
 
 // Delete a single role by id
 projectRatecardApiRouter.delete(
   "/:id",
   idParamValidator,
-  safeControllerFunction(ProjectRateCardController.deleteFromId)
+  safeControllerFunction(ProjectRateCardController.deleteById)
 );
 
 // Delete all roles for a project
 projectRatecardApiRouter.delete(
   "/project/:project_id",
-  safeControllerFunction(ProjectRateCardController.deleteFromProjectId)
+  safeControllerFunction(ProjectRateCardController.deleteByProjectId)
 );
 
 export default projectRatecardApiRouter;

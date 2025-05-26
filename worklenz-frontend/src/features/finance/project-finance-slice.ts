@@ -25,7 +25,6 @@ export const fetchProjectRateCardRoles = createAsyncThunk(
   async (project_id: string, { rejectWithValue }) => {
     try {
       const response = await projectRateCardApiService.getFromProjectId(project_id);
-      console.log('Project RateCard Roles:', response);
       return response.body;
     } catch (error) {
       logger.error('Fetch Project RateCard Roles', error);
@@ -59,6 +58,23 @@ export const insertProjectRateCardRoles = createAsyncThunk(
       logger.error('Insert Project RateCard Roles', error);
       if (error instanceof Error) return rejectWithValue(error.message);
       return rejectWithValue('Failed to insert project rate card roles');
+    }
+  }
+);
+
+export const insertProjectRateCardRole = createAsyncThunk(
+  'projectFinance/insertOne',
+  async (
+    { project_id, job_title_id, rate }: { project_id: string; job_title_id: string; rate: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await projectRateCardApiService.insertOne({ project_id, job_title_id, rate });
+      return response.body;
+    } catch (error) {
+      logger.error('Insert Project RateCard Role', error);
+      if (error instanceof Error) return rejectWithValue(error.message);
+      return rejectWithValue('Failed to insert project rate card role');
     }
   }
 );
@@ -102,6 +118,14 @@ export const deleteProjectRateCardRoleById = createAsyncThunk(
       if (error instanceof Error) return rejectWithValue(error.message);
       return rejectWithValue('Failed to delete project rate card role');
     }
+  }
+);
+
+export const assignMemberToRateCardRole = createAsyncThunk(
+  'projectFinance/assignMemberToRateCardRole',
+  async ({ project_id, member_id, project_rate_card_role_id }: { project_id: string; member_id: string; project_rate_card_role_id: string }) => {
+    const response = await projectRateCardApiService.updateMemberRateCardRole(project_id, member_id, project_rate_card_role_id);
+    return response.body;
   }
 );
 
