@@ -20,6 +20,7 @@
     "totalActualCostColumn": "Total Actual Cost",
     "varianceColumn": "Variance",
     "totalText": "Total",
+    "noTasksFound": "No tasks found",
   
     "addRoleButton": "+ Add Role",
     "ratecardImportantNotice": "* This rate card is generated based on the company's standard job titles and rates. However, you have the flexibility to modify it according to the project. These changes will not impact the organization's standard job titles and rates.",

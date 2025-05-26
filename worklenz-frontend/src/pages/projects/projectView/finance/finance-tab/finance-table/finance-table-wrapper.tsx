@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Flex, InputNumber, Tooltip, Typography } from 'antd';
+import { Flex, InputNumber, Tooltip, Typography, Empty } from 'antd';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
@@ -159,7 +159,10 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
     `px-2 text-left ${key === FinanceTableColumnKeys.TASK && 'sticky left-0 z-10'} ${key === FinanceTableColumnKeys.MEMBERS && `sticky left-[240px] z-10 ${isScrolling ? 'after:content after:absolute after:top-0 after:-right-1 after:-z-10  after:h-[68px] after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent' : ''}`} ${themeMode === 'dark' ? 'bg-[#1d1d1d] border-[#303030]' : 'bg-[#fafafa]'}`;
 
   const customColumnStyles = (key: FinanceTableColumnKeys) =>
-    `px-2 text-left ${key === FinanceTableColumnKeys.TASK && `sticky left-0 z-10 ${isScrolling ? 'after:content after:absolute after:top-0 after:-right-1 after:-z-10  after:h-[68px] after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent' : ''}`} ${themeMode === 'dark' ? 'bg-[#141414]' : 'bg-[#fbfbfb]'}`;
+    `px-2 text-left ${key === FinanceTableColumnKeys.TASK && `sticky left-0 z-10 ${isScrolling ? 'after:content after:absolute after:top-0 after:-right-1 after:-z-10 after:h-[56px] after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent' : ''}`} ${key === FinanceTableColumnKeys.MEMBERS && `sticky left-[240px] z-10 ${isScrolling ? 'after:content after:absolute after:top-0 after:-right-1 after:-z-10 after:h-[56px] after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent' : ''}`} ${themeMode === 'dark' ? 'bg-[#141414]' : 'bg-[#fbfbfb]'}`;
+
+  // Check if there are any tasks across all groups
+  const hasAnyTasks = activeTablesList.some(table => table.tasks && table.tasks.length > 0);
 
   return (
     <>
@@ -191,42 +194,59 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
               ))}
             </tr>
 
-            <tr
-              style={{
-                height: 56,
-                fontWeight: 500,
-                backgroundColor: themeWiseColor('#fbfbfb', '#141414', themeMode),
-              }}
-            >
-              {financeTableColumns.map((col, index) => (
-                <td
-                  key={col.key}
-                  style={{
-                    minWidth: col.width,
-                    paddingInline: 16,
-                    textAlign: col.key === FinanceTableColumnKeys.TASK ? 'left' : 'right',
-                    backgroundColor: themeWiseColor('#fbfbfb', '#141414', themeMode),
-                  }}
-                  className={customColumnStyles(col.key)}
-                >
-                  {col.key === FinanceTableColumnKeys.TASK ? (
-                    <Typography.Text style={{ fontSize: 18 }}>{t('totalText')}</Typography.Text>
-                  ) : col.key === FinanceTableColumnKeys.MEMBERS ? null : (
-                    (col.type === 'hours' || col.type === 'currency') && renderFinancialTableHeaderContent(col.key)
-                  )}
-                </td>
-              ))}
-            </tr>
+            {hasAnyTasks && (
+              <tr
+                style={{
+                  height: 56,
+                  fontWeight: 500,
+                  backgroundColor: themeWiseColor('#fbfbfb', '#141414', themeMode),
+                }}
+              >
+                {financeTableColumns.map((col, index) => (
+                  <td
+                    key={col.key}
+                    style={{
+                      minWidth: col.width,
+                      paddingInline: 16,
+                      textAlign: col.key === FinanceTableColumnKeys.TASK ? 'left' : 'right',
+                      backgroundColor: themeWiseColor('#fbfbfb', '#141414', themeMode),
+                    }}
+                    className={customColumnStyles(col.key)}
+                  >
+                    {col.key === FinanceTableColumnKeys.TASK ? (
+                      <Typography.Text style={{ fontSize: 18 }}>{t('totalText')}</Typography.Text>
+                    ) : col.key === FinanceTableColumnKeys.MEMBERS ? null : (
+                      (col.type === 'hours' || col.type === 'currency') && renderFinancialTableHeaderContent(col.key)
+                    )}
+                  </td>
+                ))}
+              </tr>
+            )}
 
-            {activeTablesList.map((table) => (
-              <FinanceTable
-                key={table.group_id}
-                table={table}
-                isScrolling={isScrolling}
-                onTaskClick={onTaskClick}
-                loading={loading}
-              />
-            ))}
+            {hasAnyTasks ? (
+              activeTablesList.map((table) => (
+                <FinanceTable
+                  key={table.group_id}
+                  table={table}
+                  isScrolling={isScrolling}
+                  onTaskClick={onTaskClick}
+                  loading={loading}
+                />
+              ))
+            ) : (
+              <tr>
+                <td colSpan={financeTableColumns.length} style={{ padding: '40px 0', textAlign: 'center' }}>
+                  <Empty
+                    description={
+                      <Typography.Text type="secondary">
+                        {t('noTasksFound')}
+                      </Typography.Text>
+                    }
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </Flex>

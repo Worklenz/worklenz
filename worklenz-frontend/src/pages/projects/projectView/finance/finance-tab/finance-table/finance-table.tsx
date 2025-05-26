@@ -13,6 +13,7 @@ import Avatars from '@/components/avatars/avatars';
 import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/project-finance.types';
 import { updateTaskFixedCostAsync, updateTaskFixedCost } from '@/features/projects/finance/project-finance.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import './finance-table.css';
 
 type FinanceTableProps = {
   table: IProjectFinanceGroup;
@@ -130,16 +131,7 @@ const FinanceTable = ({
             }}
             style={{ 
               cursor: 'pointer', 
-              width: '100%',
-              padding: '4px',
-              borderRadius: '4px',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = themeWiseColor('#f0f0f0', '#333', themeMode);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
+              width: '100%'
             }}
           >
             <Avatars 
@@ -239,7 +231,7 @@ const FinanceTable = ({
             ),
             fontWeight: 600,
           }}
-          className="group"
+          className={`group ${themeMode === 'dark' ? 'dark' : ''}`}
         >
           {financeTableColumns.map(
             (col, index) => (
@@ -280,6 +272,7 @@ const FinanceTable = ({
               background: idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode),
               transition: 'background 0.2s',
             }}
+            className={themeMode === 'dark' ? 'dark' : ''}
             onMouseEnter={e => e.currentTarget.style.background = themeWiseColor('#f0f0f0', '#333', themeMode)}
             onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode)}
           >
