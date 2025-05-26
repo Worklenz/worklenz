@@ -90,6 +90,7 @@ const Navbar = () => {
   }, [location]);
 
   return (
+    
     <Col
       style={{
         width: '100%',
@@ -101,14 +102,14 @@ const Navbar = () => {
         justifyContent: 'space-between',
       }}
     >
-      {daysUntilExpiry !== null && ((daysUntilExpiry <= 3 && daysUntilExpiry > 0) || (daysUntilExpiry >= -7 && daysUntilExpiry < 0)) && (
+      {/* {daysUntilExpiry !== null && ((daysUntilExpiry <= 3 && daysUntilExpiry > 0) || (daysUntilExpiry >= -7 && daysUntilExpiry < 0)) && (
         <Alert
           message={daysUntilExpiry > 0 ? `Your license will expire in ${daysUntilExpiry} days` : `Your license has expired ${Math.abs(daysUntilExpiry)} days ago`}
           type="warning"
           showIcon
           style={{ width: '100%', marginTop: 12 }}
         />
-      )}
+      )} */}
       <Flex
         style={{
           width: '100%',

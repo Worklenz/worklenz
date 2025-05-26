@@ -48,7 +48,16 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
     const loggedTimeInHours = parseFloat(item.logged_time || '0') / 3600;
     return loggedTimeInHours.toFixed(2);
   }) : [];
-  const colors = Array.isArray(jsonData) ? jsonData.map(item => item.color_code) : [];
+  const colors = Array.isArray(jsonData) ? jsonData.map(item => {
+    const overUnder = parseFloat(item.over_under_utilized_hours || '0');
+    if (overUnder > 0) {
+      return '#ef4444'; // Red for over-utilized
+    } else if (overUnder < 0) {
+      return '#22c55e'; // Green for under-utilized
+    } else {
+      return '#6b7280'; // Gray for exactly on target
+    }
+  }) : [];
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 

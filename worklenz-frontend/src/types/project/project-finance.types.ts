@@ -17,8 +17,13 @@ export interface IProjectFinanceMember {
   avatar_url: string | null;
   user_id: string;
   email: string;
-  socket_id: string;
+  socket_id: string | null;
   team_id: string;
+  color_code: string;
+  project_rate_card_role_id: string | null;
+  rate: number;
+  job_title_id: string | null;
+  job_title_name: string | null;
 }
 
 export interface IProjectFinanceTask {
@@ -29,11 +34,10 @@ export interface IProjectFinanceTask {
   estimated_cost: number;
   members: IProjectFinanceMember[];
   billable: boolean;
-  fixed_cost?: number;
-  variance?: number;
-  total_budget?: number;
-  total_actual?: number;
-  cost?: number;
+  fixed_cost: number;
+  variance: number;
+  total_budget: number;
+  total_actual: number;
 }
 
 export interface IProjectFinanceGroup {
@@ -42,6 +46,59 @@ export interface IProjectFinanceGroup {
   color_code: string;
   color_code_dark: string;
   tasks: IProjectFinanceTask[];
+}
+
+export interface IProjectRateCard {
+  id: string;
+  project_id: string;
+  job_title_id: string;
+  rate: string;
+  job_title_name: string;
+}
+
+export interface IProjectFinanceResponse {
+  groups: IProjectFinanceGroup[];
+  project_rate_cards: IProjectRateCard[];
+}
+
+export interface ITaskBreakdownMember {
+  team_member_id: string;
+  name: string;
+  avatar_url: string;
+  hourly_rate: number;
+  estimated_hours: number;
+  logged_hours: number;
+  estimated_cost: number;
+  actual_cost: number;
+}
+
+export interface ITaskBreakdownJobRole {
+  jobRole: string;
+  estimated_hours: number;
+  logged_hours: number;
+  estimated_cost: number;
+  actual_cost: number;
+  members: ITaskBreakdownMember[];
+}
+
+export interface ITaskBreakdownTask {
+  id: string;
+  name: string;
+  project_id: string;
+  billable: boolean;
+  estimated_hours: number;
+  logged_hours: number;
+  estimated_labor_cost: number;
+  actual_labor_cost: number;
+  fixed_cost: number;
+  total_estimated_cost: number;
+  total_actual_cost: number;
+}
+
+export interface ITaskBreakdownResponse {
+  task: ITaskBreakdownTask;
+  grouped_members: ITaskBreakdownJobRole[];
+  members: Array<ITaskBreakdownMember & { job_title_name: string }>;
 }
 
 export type ProjectFinanceGroupType = 'status' | 'priority' | 'phases';

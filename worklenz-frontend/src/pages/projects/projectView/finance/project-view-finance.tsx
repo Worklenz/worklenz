@@ -14,12 +14,13 @@ const ProjectViewFinance = () => {
   const dispatch = useAppDispatch();
   
   const { activeTab, activeGroup, loading, taskGroups } = useAppSelector((state: RootState) => state.projectFinances);
+  const { refreshTimestamp } = useAppSelector((state: RootState) => state.projectReducer);
 
   useEffect(() => {
     if (projectId) {
       dispatch(fetchProjectFinances({ projectId, groupBy: activeGroup }));
     }
-  }, [projectId, activeGroup, dispatch]);
+  }, [projectId, activeGroup, dispatch, refreshTimestamp]);
 
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>

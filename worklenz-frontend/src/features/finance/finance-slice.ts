@@ -12,6 +12,7 @@ type financeState = {
   isFinanceDrawerloading?: boolean;
   drawerRatecard?: RatecardType | null;
   ratecardsList?: RatecardType[] | null;
+  selectedTask?: any | null;
 };
 
 const initialState: financeState = {
@@ -23,6 +24,7 @@ const initialState: financeState = {
   isFinanceDrawerloading: false,
   drawerRatecard: null,
   ratecardsList: null,
+  selectedTask: null,
 };
 interface FetchRateCardsParams {
   index: number;
@@ -128,6 +130,17 @@ const financeSlice = createSlice({
     toggleFinanceDrawer: (state) => {
       state.isFinanceDrawerOpen = !state.isFinanceDrawerOpen;
     },
+    openFinanceDrawer: (state, action: PayloadAction<any>) => {
+      state.isFinanceDrawerOpen = true;
+      state.selectedTask = action.payload;
+    },
+    closeFinanceDrawer: (state) => {
+      state.isFinanceDrawerOpen = false;
+      state.selectedTask = null;
+    },
+    setSelectedTask: (state, action: PayloadAction<any>) => {
+      state.selectedTask = action.payload;
+    },
     toggleImportRatecardsDrawer: (state) => {
       state.isImportRatecardsDrawerOpen = !state.isImportRatecardsDrawerOpen;
     },
@@ -176,6 +189,9 @@ const financeSlice = createSlice({
 export const {
   toggleRatecardDrawer,
   toggleFinanceDrawer,
+  openFinanceDrawer,
+  closeFinanceDrawer,
+  setSelectedTask,
   toggleImportRatecardsDrawer,
   changeCurrency,
   ratecardDrawerLoading,

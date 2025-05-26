@@ -4,19 +4,20 @@ import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 interface AvatarsProps {
   members: InlineMember[];
   maxCount?: number;
+  allowClickThrough?: boolean;
 }
 
-const renderAvatar = (member: InlineMember, index: number) => (
+const renderAvatar = (member: InlineMember, index: number, allowClickThrough: boolean = false) => (
   <Tooltip
     key={member.team_member_id || index}
     title={member.end && member.names ? member.names.join(', ') : member.name}
   >
     {member.avatar_url ? (
-      <span onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+      <span onClick={allowClickThrough ? undefined : (e: React.MouseEvent) => e.stopPropagation()}>
         <Avatar src={member.avatar_url} size={28} key={member.team_member_id || index} />
       </span>
     ) : ( 
-      <span onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+      <span onClick={allowClickThrough ? undefined : (e: React.MouseEvent) => e.stopPropagation()}>
         <Avatar
           size={28}
           key={member.team_member_id || index}
@@ -32,12 +33,12 @@ const renderAvatar = (member: InlineMember, index: number) => (
   </Tooltip>
 );
 
-const Avatars: React.FC<AvatarsProps> = ({ members, maxCount }) => {
+const Avatars: React.FC<AvatarsProps> = ({ members, maxCount, allowClickThrough = false }) => {
   const visibleMembers = maxCount ? members.slice(0, maxCount) : members;
   return (
-    <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+    <div onClick={allowClickThrough ? undefined : (e: React.MouseEvent) => e.stopPropagation()}>
       <Avatar.Group>
-        {visibleMembers.map((member, index) => renderAvatar(member, index))}
+        {visibleMembers.map((member, index) => renderAvatar(member, index, allowClickThrough))}
       </Avatar.Group>
     </div>
   );

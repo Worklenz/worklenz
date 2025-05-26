@@ -1,6 +1,6 @@
 import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/project-finance.types';
+import { IProjectFinanceGroup, IProjectFinanceTask, IProjectRateCard } from '@/types/project/project-finance.types';
 
 type FinanceTabType = 'finance' | 'ratecard';
 type GroupTypes = 'status' | 'priority' | 'phases';
@@ -10,6 +10,7 @@ interface ProjectFinanceState {
   activeGroup: GroupTypes;
   loading: boolean;
   taskGroups: IProjectFinanceGroup[];
+  projectRateCards: IProjectRateCard[];
 }
 
 // Utility functions for frontend calculations
@@ -67,6 +68,7 @@ const initialState: ProjectFinanceState = {
   activeGroup: 'status',
   loading: false,
   taskGroups: [],
+  projectRateCards: [],
 };
 
 export const fetchProjectFinances = createAsyncThunk(
@@ -74,6 +76,14 @@ export const fetchProjectFinances = createAsyncThunk(
   async ({ projectId, groupBy }: { projectId: string; groupBy: GroupTypes }) => {
     const response = await projectFinanceApiService.getProjectTasks(projectId, groupBy);
     return response.body;
+  }
+);
+
+export const updateTaskFixedCostAsync = createAsyncThunk(
+  'projectFinances/updateTaskFixedCostAsync',
+  async ({ taskId, groupId, fixedCost }: { taskId: string; groupId: string; fixedCost: number }) => {
+    await projectFinanceApiService.updateTaskFixedCost(taskId, fixedCost);
+    return { taskId, groupId, fixedCost };
   }
 );
 
@@ -140,10 +150,26 @@ export const projectFinancesSlice = createSlice({
       })
       .addCase(fetchProjectFinances.fulfilled, (state, action) => {
         state.loading = false;
-        state.taskGroups = action.payload;
+        state.taskGroups = action.payload.groups;
+        state.projectRateCards = action.payload.project_rate_cards;
       })
       .addCase(fetchProjectFinances.rejected, (state) => {
         state.loading = false;
+      })
+      .addCase(updateTaskFixedCostAsync.fulfilled, (state, action) => {
+        const { taskId, groupId, fixedCost } = action.payload;
+        const group = state.taskGroups.find(g => g.group_id === groupId);
+        if (group) {
+          const task = group.tasks.find(t => t.id === taskId);
+          if (task) {
+            task.fixed_cost = fixedCost;
+            // Recalculate task costs after updating fixed cost
+            const { totalBudget, totalActual, variance } = calculateTaskCosts(task);
+            task.total_budget = totalBudget;
+            task.total_actual = totalActual;
+            task.variance = variance;
+          }
+        }
       });
   },
 });

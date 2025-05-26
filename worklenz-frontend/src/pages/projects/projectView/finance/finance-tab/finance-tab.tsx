@@ -1,4 +1,3 @@
-import React from 'react';
 import FinanceTableWrapper from './finance-table/finance-table-wrapper';
 import { IProjectFinanceGroup } from '@/types/project/project-finance.types';
 
@@ -23,11 +22,11 @@ const FinanceTab = ({
       id: task.id,
       name: task.name,
       hours: task.estimated_hours || 0,
-      cost: 0, // TODO: Calculate based on rate and hours
-      fixedCost: 0, // TODO: Add fixed cost field
-      totalBudget: 0, // TODO: Calculate total budget
+      cost: task.estimated_cost || 0,
+      fixedCost: task.fixed_cost || 0,
+      totalBudget: task.total_budget || 0,
       totalActual: task.total_actual || 0,
-      variance: 0, // TODO: Calculate variance
+      variance: task.variance || 0,
       members: task.members || [],
       isbBillable: task.billable,
       total_time_logged: task.total_time_logged || 0,

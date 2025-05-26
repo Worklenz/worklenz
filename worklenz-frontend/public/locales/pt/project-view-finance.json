@@ -11,7 +11,7 @@
   
   "taskColumn": "Tarefa",
   "membersColumn": "Membros",
-  "hoursColumn": "Horas",
+  "hoursColumn": "Horas Estimadas",
   "totalTimeLoggedColumn": "Tempo Total Registrado",
   "costColumn": "Custo",
   "estimatedCostColumn": "Custo Estimado",

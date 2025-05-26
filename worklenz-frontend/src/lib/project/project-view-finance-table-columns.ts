@@ -1,5 +1,18 @@
+export enum FinanceTableColumnKeys {
+  TASK = 'task',
+  MEMBERS = 'members',
+  HOURS = 'hours',
+  TOTAL_TIME_LOGGED = 'total_time_logged',
+  ESTIMATED_COST = 'estimated_cost',
+  COST = 'cost',
+  FIXED_COST = 'fixedCost',
+  TOTAL_BUDGET = 'totalBudget',
+  TOTAL_ACTUAL = 'totalActual',
+  VARIANCE = 'variance',
+}
+
 type FinanceTableColumnsType = {
-    key: string;
+    key: FinanceTableColumnKeys;
     name: string;
     width: number;
     type: 'string' | 'hours' | 'currency';
@@ -9,61 +22,61 @@ type FinanceTableColumnsType = {
   // finance table columns
   export const financeTableColumns: FinanceTableColumnsType[] = [
     {
-      key: 'task',
+      key: FinanceTableColumnKeys.TASK,
       name: 'taskColumn',
       width: 240,
       type: 'string',
     },
     {
-      key: 'members',
+      key: FinanceTableColumnKeys.MEMBERS,
       name: 'membersColumn',
       width: 160,
       type: 'string',
     },
     {
-      key: 'hours',
+      key: FinanceTableColumnKeys.HOURS,
       name: 'hoursColumn',
-      width: 80,
+      width: 100,
       type: 'hours',
     },
     {
-      key: 'total_time_logged',
+      key: FinanceTableColumnKeys.TOTAL_TIME_LOGGED,
       name: 'totalTimeLoggedColumn',
       width: 120,
       type: 'hours',
     },
     {
-      key: 'estimated_cost',
+      key: FinanceTableColumnKeys.ESTIMATED_COST,
       name: 'estimatedCostColumn',
       width: 120,
       type: 'currency',
     },
     {
-      key: 'cost',
+      key: FinanceTableColumnKeys.COST,
       name: 'costColumn',
       width: 120,
       type: 'currency',
     },
     {
-      key: 'fixedCost',
+      key: FinanceTableColumnKeys.FIXED_COST,
       name: 'fixedCostColumn',
       width: 120,
       type: 'currency',
     },
     {
-      key: 'totalBudget',
+      key: FinanceTableColumnKeys.TOTAL_BUDGET,
       name: 'totalBudgetedCostColumn',
       width: 120,
       type: 'currency',
     },
     {
-      key: 'totalActual',
+      key: FinanceTableColumnKeys.TOTAL_ACTUAL,
       name: 'totalActualCostColumn',
       width: 120,
       type: 'currency',
     },
     {
-      key: 'variance',
+      key: FinanceTableColumnKeys.VARIANCE,
       name: 'varianceColumn',
       width: 120,
       type: 'currency',

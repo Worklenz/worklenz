@@ -11,7 +11,7 @@
   
     "taskColumn": "Task",
     "membersColumn": "Members",
-    "hoursColumn": "Hours",
+    "hoursColumn": "Estimated Hours",
     "totalTimeLoggedColumn": "Total Time Logged",
     "costColumn": "Cost",
     "estimatedCostColumn": "Estimated Cost",

@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "@/shared/constants";
 import { IServerResponse } from "@/types/common.types";
 import apiClient from "../api-client";
-import { IProjectFinanceGroup } from "@/types/project/project-finance.types";
+import { IProjectFinanceResponse, ITaskBreakdownResponse } from "@/types/project/project-finance.types";
 
 const rootUrl = `${API_BASE_URL}/project-finance`;
 
@@ -9,14 +9,23 @@ export const projectFinanceApiService = {
     getProjectTasks: async (
         projectId: string,
         groupBy: 'status' | 'priority' | 'phases' = 'status'
-      ): Promise<IServerResponse<IProjectFinanceGroup[]>> => {
-        const response = await apiClient.get<IServerResponse<IProjectFinanceGroup[]>>(
+      ): Promise<IServerResponse<IProjectFinanceResponse>> => {
+        const response = await apiClient.get<IServerResponse<IProjectFinanceResponse>>(
           `${rootUrl}/project/${projectId}/tasks`,
           {
             params: { group_by: groupBy }
           }
         );
         console.log(response.data);
+        return response.data;
+      },
+
+    getTaskBreakdown: async (
+        taskId: string
+      ): Promise<IServerResponse<ITaskBreakdownResponse>> => {
+        const response = await apiClient.get<IServerResponse<ITaskBreakdownResponse>>(
+          `${rootUrl}/task/${taskId}/breakdown`
+        );
         return response.data;
       },
 
