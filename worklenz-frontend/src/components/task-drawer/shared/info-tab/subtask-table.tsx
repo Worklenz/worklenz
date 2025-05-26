@@ -166,9 +166,11 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
     {
       key: 'name',
       dataIndex: 'name',
+      title: 'Name',
     },
     {
       key: 'priority',
+      title: 'Priority',
       render: (record: IProjectTask) => (
         <Tag
           color={themeMode === 'dark' ? record.priority_color_dark : record.priority_color}
@@ -180,6 +182,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
     },
     {
       key: 'status',
+      title: 'Status',
       render: (record: IProjectTask) => (
         <Tag
           color={themeMode === 'dark' ? record.status_color_dark : record.status_color}
@@ -191,10 +194,12 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
     },
     {
       key: 'assignee',
+      title: 'Assignees',
       render: (record: ISubTask) => <Avatars members={record.names || []} />,
     },
     {
       key: 'actionBtns',
+      title: 'Actions',
       width: 80,
       render: (record: IProjectTask) => (
         <Flex gap={8} align="center" className="action-buttons">
@@ -230,7 +235,6 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
         {subTasks.length > 0 && (
           <Table
             className="custom-two-colors-row-table subtask-table"
-            showHeader={false}
             dataSource={subTasks}
             columns={columns}
             rowKey={record => record?.id || nanoid()}
