@@ -1,4 +1,4 @@
-import { Drawer, Select, Typography, Flex, Button, Input, Table } from 'antd';
+import { Drawer, Select, Typography, Flex, Button, Input, Table, Popconfirm, Tooltip } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
@@ -7,7 +7,8 @@ import { deleteRateCard, fetchRateCardById, fetchRateCards, toggleRatecardDrawer
 import { RatecardType, IJobType } from '@/types/project/ratecard.types';
 import { IJobTitlesViewModel } from '@/types/job.types';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import { colors } from '@/styles/colors';
 
 interface PaginationType {
   current: number;
@@ -220,7 +221,7 @@ const RatecardDrawer = ({
                 setAddingRowIndex(null);
               }}
               onBlur={() => {
-                if (roles[index].job_title_id === ""){
+                if (roles[index].job_title_id === "") {
                   handleDeleteRole(index);
                 }
                 setEditingRowIndex(null);
@@ -244,7 +245,7 @@ const RatecardDrawer = ({
         return (
           <span
             style={{ cursor: 'pointer' }}
-            // onClick={() => setEditingRowIndex(index)}
+          // onClick={() => setEditingRowIndex(index)}
           >
             {record.jobtitle}
           </span>
@@ -280,11 +281,25 @@ const RatecardDrawer = ({
       title: t('actionsColumn') || 'Actions',
       dataIndex: 'actions',
       render: (_: any, __: any, index: number) => (
-        <Button
-          size="small"
-          icon={<DeleteOutlined />}
-          onClick={() => handleDeleteRole(index)}
-        />
+        <Popconfirm
+          title={t('deleteConfirmationTitle')}
+          icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+          okText={t('deleteConfirmationOk')}
+          cancelText={t('deleteConfirmationCancel')}
+          onConfirm={async () => {
+            if (index) {
+              handleDeleteRole(index);
+            }
+          }}
+        >
+          <Tooltip title="Delete">
+            <Button
+              size="small"
+              icon={<DeleteOutlined />}
+            />
+          </Tooltip>
+        </Popconfirm>
+
       ),
     },
   ];
@@ -344,7 +359,7 @@ const RatecardDrawer = ({
       width={700}
       footer={
         <Flex justify="end" gap={16} style={{ marginTop: 16 }}>
-          <Button style={{ marginBottom: 24 }} onClick={handleSave} type="primary" disabled={name === '' || name === 'Untitled Rate Card' && roles.length ===0}>{t('saveButton')}</Button>
+          <Button style={{ marginBottom: 24 }} onClick={handleSave} type="primary" disabled={name === '' || name === 'Untitled Rate Card' && roles.length === 0}>{t('saveButton')}</Button>
         </Flex>
       }
     >
@@ -356,13 +371,13 @@ const RatecardDrawer = ({
         pagination={false}
         footer={() => (
           <Button
-              type="dashed"
-              onClick={handleAddRole}
-              block
-              style={{ margin: 0, padding: 0 }}
-            >
-              {t('addRoleButton')}
-            </Button>
+            type="dashed"
+            onClick={handleAddRole}
+            block
+            style={{ margin: 0, padding: 0 }}
+          >
+            {t('addRoleButton')}
+          </Button>
         )}
       />
     </Drawer>
