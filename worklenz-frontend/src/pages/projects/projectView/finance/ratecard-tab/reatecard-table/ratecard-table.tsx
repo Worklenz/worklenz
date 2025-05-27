@@ -11,6 +11,7 @@ import {
   deleteProjectRateCardRoleById,
   fetchProjectRateCardRoles,
   insertProjectRateCardRole,
+  updateProjectRateCardRoleById,
   updateProjectRateCardRolesByProjectId,
 } from '@/features/finance/project-finance-slice';
 import { useParams } from 'react-router-dom';
@@ -18,6 +19,7 @@ import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.se
 import RateCardAssigneeSelector from '@/components/project-ratecard/ratecard-assignee-selector';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { IProjectMemberViewModel } from '@/types/projectMember.types';
+import { parse } from 'path';
 
 const RatecardTable: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -226,6 +228,17 @@ const RatecardTable: React.FC = () => {
             textAlign: 'right',
           }}
           onChange={(e) => handleRateChange(e.target.value, index)}
+          onBlur={(e) => {
+            if (e.target.value !== roles[index].rate) {
+              dispatch(updateProjectRateCardRoleById({
+                id: roles[index].id!,
+                body: {
+                  job_title_id: roles[index].job_title_id,
+                  rate: e.target.value,
+                }
+              }));
+            }
+          }}
         />
       ),
     },

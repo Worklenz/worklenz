@@ -42,7 +42,7 @@ const RatecardSettings: React.FC = () => {
   const { t } = useTranslation('/settings/ratecard-settings');
   const dispatch = useAppDispatch();
   useDocumentTitle('Manage Rate Cards');
-
+  const isDrawerOpen = useAppSelector(state => state.financeReducer.isRatecardDrawerOpen);
   const [loading, setLoading] = useState(false);
   const [ratecardsList, setRatecardsList] = useState<RatecardType[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,7 +87,7 @@ const RatecardSettings: React.FC = () => {
 
   useEffect(() => {
     fetchRateCards();
-  }, [toggleRatecardDrawer, dispatch]);
+  }, [toggleRatecardDrawer, isDrawerOpen]);
 
 
 
