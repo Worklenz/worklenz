@@ -19,6 +19,7 @@ import emailTemplatesRouter from "./routes/email-templates";
 import public_router from "./routes/public";
 import { isInternalServer, isProduction } from "./shared/utils";
 import sessionMiddleware from "./middlewares/session-middleware";
+import { sanitizeRequestData } from "./middlewares/sanitization-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
@@ -35,6 +36,9 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(hpp());
+
+// Input sanitization middleware - apply early to sanitize all incoming data
+app.use(sanitizeRequestData);
 
 // Helmet security headers
 app.use(helmet({

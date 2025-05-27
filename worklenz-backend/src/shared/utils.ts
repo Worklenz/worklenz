@@ -275,3 +275,167 @@ export function megabytesToBytes(megabytes: number): number {
   return megabytes * 1024 * 1024; // 1 MB = 1024 KB = 1024 * 1024 bytes
 }
 
+/**
+ * Enhanced sanitization for user input data
+ * Removes potentially dangerous content while preserving legitimate data
+ */
+export function sanitizeUserInput(value: string): string {
+  if (!value) return "";
+  
+  // First pass: HTML sanitization
+  let sanitized = sanitizeHtml(value, {
+    allowedTags: [],
+    allowedAttributes: {},
+    disallowedTagsMode: 'discard',
+    allowedSchemes: [],
+    allowedSchemesAppliedToAttributes: [],
+    allowProtocolRelative: false,
+  });
+  
+  // Second pass: Remove dangerous patterns
+  sanitized = sanitized
+    .replace(/javascript:/gi, '')
+    .replace(/vbscript:/gi, '')
+    .replace(/data:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .replace(/[<>]/g, '')
+    .trim();
+  
+  return sanitized;
+}
+
+/**
+ * Sanitizes email input specifically
+ */
+export function sanitizeEmail(email: string): string {
+  if (!email) return "";
+  
+  // Remove HTML and keep only valid email characters
+  let sanitized = sanitizeHtml(email, {
+    allowedTags: [],
+    allowedAttributes: {},
+  });
+  
+  // Keep only valid email characters: letters, numbers, @, ., -, _, +
+  sanitized = sanitized.replace(/[^a-zA-Z0-9@.\-_+]/g, '').toLowerCase().trim();
+  
+  return sanitized;
+}
+
+/**
+ * Sanitizes name input (for user names, team names, etc.)
+ */
+export function sanitizeName(name: string): string {
+  if (!name) return "";
+  
+  // Remove HTML
+  let sanitized = sanitizeHtml(name, {
+    allowedTags: [],
+    allowedAttributes: {},
+  });
+  
+  // Keep letters, numbers, spaces, hyphens, apostrophes, and periods
+  // Remove multiple consecutive spaces
+  sanitized = sanitized
+    .replace(/[^a-zA-Z0-9\s\-'.]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  return sanitized;
+}
+
+/**
+ * Sanitizes password input (minimal sanitization to preserve password integrity)
+ */
+export function sanitizePassword(password: string): string {
+  if (!password) return "";
+  
+  // Only remove HTML tags and dangerous scripts, preserve special characters for passwords
+  let sanitized = sanitizeHtml(password, {
+    allowedTags: [],
+    allowedAttributes: {},
+  });
+  
+  // Remove only the most dangerous patterns
+  sanitized = sanitized
+    .replace(/javascript:/gi, '')
+    .replace(/vbscript:/gi, '')
+    .replace(/[<>]/g, '')
+    .trim();
+  
+  return sanitized;
+}
+
+/**
+ * Sanitizes URL input
+ */
+export function sanitizeUrl(url: string): string {
+  if (!url) return "";
+  
+  // Remove HTML
+  let sanitized = sanitizeHtml(url, {
+    allowedTags: [],
+    allowedAttributes: {},
+  });
+  
+  // Remove dangerous protocols
+  sanitized = sanitized
+    .replace(/javascript:/gi, '')
+    .replace(/vbscript:/gi, '')
+    .replace(/data:/gi, '')
+    .replace(/file:/gi, '')
+    .trim();
+  
+  return sanitized;
+}
+
+/**
+ * Sanitizes rich text content with allowed HTML tags
+ */
+export function sanitizeRichText(content: string): string {
+  if (!content) return "";
+  
+  return sanitizeHtml(content, {
+    allowedTags: [
+      'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+      'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      'code', 'pre', 'span', 'div'
+    ],
+    allowedAttributes: {
+      'a': ['href', 'target', 'rel'],
+      'img': ['src', 'alt', 'title', 'width', 'height'],
+      'table': ['class'],
+      'td': ['colspan', 'rowspan'],
+      'th': ['colspan', 'rowspan'],
+      '*': ['class']
+    },
+    allowedSchemes: ['http', 'https', 'mailto', 'tel'],
+    allowedSchemesAppliedToAttributes: ['href', 'src'],
+    allowProtocolRelative: false,
+    disallowedTagsMode: 'discard',
+    selfClosing: ['img', 'br', 'hr'],
+  });
+}
+
+/**
+ * Validates and sanitizes object properties recursively
+ */
+export function sanitizeObject(obj: any): any {
+  if (!obj || typeof obj !== 'object') {
+    return typeof obj === 'string' ? sanitizeUserInput(obj) : obj;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeObject(item));
+  }
+  
+  const sanitizedObj: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const sanitizedKey = sanitizeUserInput(key);
+    sanitizedObj[sanitizedKey] = sanitizeObject(value);
+  }
+  
+  return sanitizedObj;
+}
+

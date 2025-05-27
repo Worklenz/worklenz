@@ -23,6 +23,8 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
 import alertService from '@/services/alerts/alertService';
 import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
+import { sanitizeName, sanitizeEmail, sanitizeFormInput } from '@/utils/sanitizeInput';
+import { useSanitizedForm, FORM_SANITIZATION_CONFIGS } from '@/hooks/useSanitizedForm';
 
 // Define the global grecaptcha type
 declare global {
@@ -35,10 +37,14 @@ declare global {
 }
 
 const SignupPage = () => {
-  const [form] = Form.useForm();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  
+  // Use sanitized form hook with user form configuration
+  const { form, handleSubmit } = useSanitizedForm({
+    sanitizationConfig: FORM_SANITIZATION_CONFIGS.userForm,
+  });
 
   const { t } = useTranslation('auth/signup');
   const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
@@ -197,11 +203,26 @@ const SignupPage = () => {
         }
       }
 
+      // Sanitize all input data before sending to backend
       const body = {
-        name: values.name,
-        email: values.email,
-        password: values.password,
+        name: sanitizeName(values.name),
+        email: sanitizeEmail(values.email),
+        password: sanitizeFormInput(values.password), // Don't use aggressive sanitization on passwords
       };
+
+      // Validate sanitized data
+      if (!body.name.trim()) {
+        message.error(t('nameRequired'));
+        return;
+      }
+      if (!body.email.trim()) {
+        message.error(t('emailRequired'));
+        return;
+      }
+      if (!body.password.trim()) {
+        message.error(t('passwordRequired'));
+        return;
+      }
 
       const res = await authApiService.signUpCheck(body);
       if (res.done) {

@@ -7,6 +7,7 @@ import signUpValidator from "../../middlewares/validators/sign-up-validator";
 import resetEmailValidator from "../../middlewares/validators/reset-email-validator";
 import updatePasswordValidator from "../../middlewares/validators/update-password-validator";
 import passwordValidator from "../../middlewares/validators/password-validator";
+import { sanitizeFormData } from "../../middlewares/sanitization-middleware";
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const authRouter = express.Router();
@@ -18,8 +19,8 @@ const options = (key: string): passport.AuthenticateOptions => ({
 });
 
 authRouter.post("/login", passport.authenticate("local-login", options("login")));
-authRouter.post("/signup", signUpValidator, passwordValidator, passport.authenticate("local-signup", options("signup")));
-authRouter.post("/signup/check", signUpValidator, passwordValidator, safeControllerFunction(AuthController.status_check));
+authRouter.post("/signup", sanitizeFormData, signUpValidator, passwordValidator, passport.authenticate("local-signup", options("signup")));
+authRouter.post("/signup/check", sanitizeFormData, signUpValidator, passwordValidator, safeControllerFunction(AuthController.status_check));
 authRouter.get("/verify", AuthController.verify);
 authRouter.get("/check-password", safeControllerFunction(AuthController.checkPasswordStrength));
 
