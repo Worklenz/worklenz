@@ -57,14 +57,14 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
       fprr.*,
       jt.name as jobtitle,
       (
-        SELECT COALESCE(json_agg(pm.id), '[]'::json)
-        FROM project_members pm
-        WHERE pm.project_rate_card_role_id = fprr.id
+      SELECT COALESCE(json_agg(pm.id), '[]'::json)
+      FROM project_members pm
+      WHERE pm.project_rate_card_role_id = fprr.id
       ) AS members
       FROM finance_project_rate_card_roles fprr
       LEFT JOIN job_titles jt ON fprr.job_title_id = jt.id
       WHERE fprr.project_id = $1
-      ORDER BY jt.name;
+      ORDER BY fprr.created_at;
     `;
     const result = await db.query(q, [project_id]);
     return res.status(200).send(new ServerResponse(true, result.rows));
@@ -97,10 +97,26 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
     const { id } = req.params;
     const { job_title_id, rate } = req.body;
     const q = `
+      WITH updated AS (
       UPDATE finance_project_rate_card_roles
       SET job_title_id = $1, rate = $2, updated_at = NOW()
       WHERE id = $3
-      RETURNING *;
+      RETURNING *
+      ),
+      jobtitles AS (
+      SELECT u.*, jt.name AS jobtitle
+      FROM updated u
+      JOIN job_titles jt ON jt.id = u.job_title_id
+      ),
+      members AS (
+      SELECT json_agg(pm.id) AS members, pm.project_rate_card_role_id
+      FROM project_members pm
+      WHERE pm.project_rate_card_role_id IN (SELECT id FROM jobtitles)
+      GROUP BY pm.project_rate_card_role_id
+      )
+      SELECT jt.*, m.members
+      FROM jobtitles jt
+      LEFT JOIN members m ON m.project_rate_card_role_id = jt.id;
     `;
     const result = await db.query(q, [job_title_id, rate, id]);
     return res.status(200).send(new ServerResponse(true, result.rows[0]));

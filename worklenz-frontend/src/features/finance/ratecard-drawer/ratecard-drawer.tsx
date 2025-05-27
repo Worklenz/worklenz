@@ -1,4 +1,4 @@
-import { Drawer, Select, Typography, Flex, Button, Input, Table, Popconfirm, Tooltip } from 'antd';
+import { Drawer, Select, Typography, Flex, Button, Input, Table, Tooltip, Alert, Space, message, Popconfirm } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
@@ -19,6 +19,7 @@ interface PaginationType {
   pageSizeOptions: string[];
   size: 'small' | 'default';
 }
+
 const RatecardDrawer = ({
   type,
   ratecardId,
@@ -29,11 +30,12 @@ const RatecardDrawer = ({
   onSaved?: () => void;
 }) => {
   const [ratecardsList, setRatecardsList] = useState<RatecardType[]>([]);
-  // initial Job Roles List (dummy data)
   const [roles, setRoles] = useState<IJobType[]>([]);
+  const [initialRoles, setInitialRoles] = useState<IJobType[]>([]);
+  const [initialName, setInitialName] = useState<string>('Untitled Rate Card');
+  const [initialCurrency, setInitialCurrency] = useState<string>('USD');
   const [addingRowIndex, setAddingRowIndex] = useState<number | null>(null);
   const { t } = useTranslation('settings/ratecard-settings');
-  // get drawer state from client reducer
   const drawerLoading = useAppSelector(state => state.financeReducer.isFinanceDrawerloading);
   const drawerRatecard = useAppSelector(state => state.financeReducer.drawerRatecard);
   const isDrawerOpen = useAppSelector(
@@ -57,6 +59,15 @@ const RatecardDrawer = ({
     size: 'small',
   });
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
+  const [showUnsavedAlert, setShowUnsavedAlert] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
+  // Detect changes
+  const hasChanges = useMemo(() => {
+    const rolesChanged = JSON.stringify(roles) !== JSON.stringify(initialRoles);
+    const nameChanged = name !== initialName;
+    const currencyChanged = currency !== initialCurrency;
+    return rolesChanged || nameChanged || currencyChanged;
+  }, [roles, name, currency, initialRoles, initialName, initialCurrency]);
 
   const getJobTitles = useMemo(() => {
     return async () => {
@@ -74,12 +85,10 @@ const RatecardDrawer = ({
     };
   }, [pagination.current, pagination.pageSize, pagination.field, pagination.order, searchQuery]);
 
-  // fetch rate cards data
   useEffect(() => {
     getJobTitles();
   }, []);
 
-  // get currently selected ratecard
   const selectedRatecard = ratecardsList.find(
     (ratecard) => ratecard.id === ratecardId
   );
@@ -88,24 +97,22 @@ const RatecardDrawer = ({
     if (type === 'update' && ratecardId) {
       dispatch(fetchRateCardById(ratecardId));
     }
-    // ...reset logic for create...
   }, [type, ratecardId, dispatch]);
 
   useEffect(() => {
-
     if (type === 'update' && drawerRatecard) {
       setRoles(drawerRatecard.jobRolesList || []);
+      setInitialRoles(drawerRatecard.jobRolesList || []);
       setName(drawerRatecard.name || '');
+      setInitialName(drawerRatecard.name || '');
       setCurrency(drawerRatecard.currency || 'USD');
+      setInitialCurrency(drawerRatecard.currency || 'USD');
     }
   }, [drawerRatecard, type]);
 
-  // Add All handler
   const handleAddAllRoles = () => {
     if (!jobTitles.data) return;
-    // Get current job_title_ids in roles
     const existingIds = new Set(roles.map(r => r.job_title_id));
-    // Only add job titles not already present
     const newRoles = jobTitles.data
       .filter(jt => jt.id && !existingIds.has(jt.id))
       .map(jt => ({
@@ -114,14 +121,12 @@ const RatecardDrawer = ({
         job_title_id: jt.id!,
         rate: 0,
       }));
-    // Prevent any accidental duplicates by merging and filtering again
     const mergedRoles = [...roles, ...newRoles].filter(
       (role, idx, arr) =>
         arr.findIndex(r => r.job_title_id === role.job_title_id) === idx
     );
     setRoles(mergedRoles);
   };
-
 
   const handleAddRole = () => {
     const existingIds = new Set(roles.map(r => r.job_title_id));
@@ -138,8 +143,8 @@ const RatecardDrawer = ({
     updatedRoles.splice(index, 1);
     setRoles(updatedRoles);
   };
+
   const handleSelectJobTitle = (jobTitleId: string) => {
-    // Prevent duplicate job_title_id
     if (roles.some(role => role.job_title_id === jobTitleId)) {
       setIsAddingRole(false);
       setSelectedJobTitleId(undefined);
@@ -162,7 +167,6 @@ const RatecardDrawer = ({
   const handleSave = async () => {
     if (type === 'update' && ratecardId) {
       try {
-        // Filter out roles with no jobtitle or empty jobtitle
         const filteredRoles = roles.filter(role => role.jobtitle && role.jobtitle.trim() !== '');
         await dispatch(updateRateCard({
           id: ratecardId,
@@ -172,7 +176,6 @@ const RatecardDrawer = ({
             jobRolesList: filteredRoles,
           },
         }) as any);
-        // Refresh the rate cards list in Redux
         await dispatch(fetchRateCards({
           index: 1,
           size: 10,
@@ -182,18 +185,24 @@ const RatecardDrawer = ({
         }) as any);
         if (onSaved) onSaved();
         dispatch(toggleRatecardDrawer());
-
+        // Reset initial states after save
+        setInitialRoles(filteredRoles);
+        setInitialName(name);
+        setInitialCurrency(currency);
+        setShowUnsavedAlert(false);
       } catch (error) {
         console.error('Failed to update rate card', error);
       } finally {
         setRoles([]);
         setName('Untitled Rate Card');
         setCurrency('USD');
+        setInitialRoles([]);
+        setInitialName('Untitled Rate Card');
+        setInitialCurrency('USD');
       }
     }
   };
 
-  // table columns
   const columns = [
     {
       title: t('jobTitleColumn'),
@@ -208,7 +217,6 @@ const RatecardDrawer = ({
               style={{ minWidth: 150 }}
               value={record.job_title_id || undefined}
               onChange={value => {
-                // Prevent duplicate job_title_id
                 if (roles.some((role, idx) => role.job_title_id === value && idx !== index)) {
                   return;
                 }
@@ -241,11 +249,9 @@ const RatecardDrawer = ({
             </Select>
           );
         }
-        // Render as clickable text for existing rows
         return (
           <span
             style={{ cursor: 'pointer' }}
-          // onClick={() => setEditingRowIndex(index)}
           >
             {record.jobtitle}
           </span>
@@ -287,9 +293,7 @@ const RatecardDrawer = ({
           okText={t('deleteConfirmationOk')}
           cancelText={t('deleteConfirmationCancel')}
           onConfirm={async () => {
-            if (index) {
-              handleDeleteRole(index);
-            }
+            handleDeleteRole(index);
           }}
         >
           <Tooltip title="Delete">
@@ -299,22 +303,43 @@ const RatecardDrawer = ({
             />
           </Tooltip>
         </Popconfirm>
-
       ),
     },
   ];
-  const handleDrawerClose = async () => {
-    if (
-      drawerRatecard &&
-      (drawerRatecard.jobRolesList?.length === 0 || !drawerRatecard.jobRolesList) &&
-      (name === 'Untitled Rate Card' || name === '' || name === undefined)
-    ) {
-      await dispatch(deleteRateCard(drawerRatecard.id as string));
+
+  const handleDrawerClose = () => {
+    if (!name || name.trim() === '' || name === 'Untitled Rate Card') {
+      messageApi.open({
+      type: 'warning',
+      content: t('ratecardNameRequired') || 'Rate card name is required.',
+    });
+    return;
+  } else if (hasChanges) {
+      setShowUnsavedAlert(true);
+    } else {
+      dispatch(toggleRatecardDrawer());
     }
+  };
+
+  const handleConfirmSave = async () => {
+    await handleSave();
+    setShowUnsavedAlert(false);
+  };
+
+  const handleConfirmDiscard = () => {
     dispatch(toggleRatecardDrawer());
+    setRoles([]);
+    setName('Untitled Rate Card');
+    setCurrency('USD');
+    setInitialRoles([]);
+    setInitialName('Untitled Rate Card');
+    setInitialCurrency('USD');
+    setShowUnsavedAlert(false);
   };
 
   return (
+    <>
+    {contextHolder}
     <Drawer
       loading={drawerLoading}
       onClose={handleDrawerClose}
@@ -348,7 +373,6 @@ const RatecardDrawer = ({
               ]}
               onChange={(value) => setCurrency(value)}
             />
-            {/* Add All Button */}
             <Button onClick={handleAddAllRoles} type="default">
               {t('addAllButton') || 'Add All'}
             </Button>
@@ -359,11 +383,32 @@ const RatecardDrawer = ({
       width={700}
       footer={
         <Flex justify="end" gap={16} style={{ marginTop: 16 }}>
-          <Button style={{ marginBottom: 24 }} onClick={handleSave} type="primary" disabled={name === '' || name === 'Untitled Rate Card' && roles.length === 0}>{t('saveButton')}</Button>
+          <Button style={{ marginBottom: 24 }} onClick={handleSave} type="primary" disabled={name === '' || (name === 'Untitled Rate Card' && roles.length === 0)}>
+            {t('saveButton')}
+          </Button>
         </Flex>
       }
     >
-      {/* ratecard Table directly inside the Drawer */}
+      {showUnsavedAlert && (
+        <Alert
+          message={t('unsavedChangesTitle') || 'Unsaved Changes'}
+          type="warning"
+          showIcon
+          closable
+          onClose={() => setShowUnsavedAlert(false)}
+          action={
+            <Space direction="horizontal">
+              <Button size="small" type="primary" onClick={handleConfirmSave}>
+                Save
+              </Button>
+              <Button size="small" danger onClick={handleConfirmDiscard}>
+                Discard
+              </Button>
+            </Space>
+          }
+          style={{ marginBottom: 16 }}
+        />
+      )}
       <Table
         dataSource={roles}
         columns={columns}
@@ -381,6 +426,8 @@ const RatecardDrawer = ({
         )}
       />
     </Drawer>
+    </>
+    
   );
 };
 

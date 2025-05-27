@@ -20,6 +20,9 @@
   "actionsColumn": "Actions",
   "addAllButton": "Add All",
   "removeAllButton": "Remove All",
-  "selectJobTitle": "Select job title"
+  "selectJobTitle": "Select job title",
+  "unsavedChangesTitle": "Unsaved changes",
+  "ratecardNameRequired": "Rate card name is required"
+
 
 }
