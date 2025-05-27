@@ -57,14 +57,14 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
       fprr.*,
       jt.name as jobtitle,
       (
-        SELECT COALESCE(json_agg(pm.id), '[]'::json)
-        FROM project_members pm
-        WHERE pm.project_rate_card_role_id = fprr.id
+      SELECT COALESCE(json_agg(pm.id), '[]'::json)
+      FROM project_members pm
+      WHERE pm.project_rate_card_role_id = fprr.id
       ) AS members
       FROM finance_project_rate_card_roles fprr
       LEFT JOIN job_titles jt ON fprr.job_title_id = jt.id
       WHERE fprr.project_id = $1
-      ORDER BY jt.name;
+      ORDER BY fprr.created_at;
     `;
     const result = await db.query(q, [project_id]);
     return res.status(200).send(new ServerResponse(true, result.rows));

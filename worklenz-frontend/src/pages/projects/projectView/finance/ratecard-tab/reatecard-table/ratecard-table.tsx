@@ -30,13 +30,14 @@ const RatecardTable: React.FC = () => {
   const rolesRedux = useAppSelector((state) => state.projectFinanceRateCard.rateCardRoles) || [];
   const isLoading = useAppSelector((state) => state.projectFinanceRateCard.isLoading);
   const currency = useAppSelector((state) => state.financeReducer.currency).toUpperCase();
-
+  const rateInputRefs = React.useRef<Array<HTMLInputElement | null>>([]);
   // Local state for editing
   const [roles, setRoles] = useState<JobRoleType[]>(rolesRedux);
   const [addingRow, setAddingRow] = useState<boolean>(false);
   const [jobTitles, setJobTitles] = useState<RatecardType[]>([]);
   const [members, setMembers] = useState<IProjectMemberViewModel[]>([]);
   const [isLoadingMembers, setIsLoading] = useState(false);
+  const [focusRateIndex, setFocusRateIndex] = useState<number | null>(null);
 
   const pagination = {
     current: 1,
@@ -91,6 +92,13 @@ const RatecardTable: React.FC = () => {
     }
   }, [dispatch, projectId]);
 
+  useEffect(() => {
+    if (focusRateIndex !== null && rateInputRefs.current[focusRateIndex]) {
+      rateInputRefs.current[focusRateIndex]?.focus();
+      setFocusRateIndex(null);
+    }
+  }, [roles, focusRateIndex]);
+
   // Add new role row
   const handleAddRole = () => {
     setAddingRow(true);
@@ -110,7 +118,7 @@ const RatecardTable: React.FC = () => {
     }
   };
 
-  // Handle job title select for new row
+  // In handleSelectJobTitle, after successful insert, update the rate if needed
   const handleSelectJobTitle = async (jobTitleId: string) => {
     const jobTitle = jobTitles.find((jt) => jt.id === jobTitleId);
     if (!jobTitle || !projectId) return;
@@ -120,27 +128,21 @@ const RatecardTable: React.FC = () => {
     );
 
     if (insertProjectRateCardRole.fulfilled.match(resultAction)) {
-      const newRole = resultAction.payload;
-      setRoles([
-        ...roles,
-        {
-          id: newRole.id,
-          job_title_id: newRole.job_title_id,
-          jobtitle: newRole.jobtitle,
-          rate: newRole.rate,
-          members: [], // Initialize members array
-        },
-      ]);
+      // Re-fetch roles and focus the last one (newly added)
+      dispatch(fetchProjectRateCardRoles(projectId)).then(() => {
+        setFocusRateIndex(roles.length); // The new row will be at the end
+      });
     }
     setAddingRow(false);
   };
 
-  // Handle rate change
+  // Update handleRateChange to always update local state
   const handleRateChange = (value: string | number, index: number) => {
-    const updatedRoles = roles.map((role, idx) =>
-      idx === index ? { ...role, rate: Number(value) } : role
+    setRoles(prev =>
+      prev.map((role, idx) =>
+        idx === index ? { ...role, rate: Number(value) } : role
+      )
     );
-    setRoles(updatedRoles);
   };
 
   // Handle delete
@@ -174,6 +176,18 @@ const RatecardTable: React.FC = () => {
       }
     } catch (error) {
       console.error('Error assigning member:', error);
+    }
+  };
+  // Separate function for updating rate if changed
+  const handleRateBlur = (value: string, index: number) => {
+    if (value !== roles[index].rate) {
+      dispatch(updateProjectRateCardRoleById({
+        id: roles[index].id!,
+        body: {
+          job_title_id: roles[index].job_title_id,
+          rate: value,
+        }
+      }));
     }
   };
 
@@ -216,6 +230,7 @@ const RatecardTable: React.FC = () => {
       align: 'right',
       render: (value: number, record: JobRoleType, index: number) => (
         <Input
+          ref={el => rateInputRefs.current[index] = el}
           type="number"
           value={roles[index]?.rate ?? 0}
           min={0}
@@ -228,17 +243,8 @@ const RatecardTable: React.FC = () => {
             textAlign: 'right',
           }}
           onChange={(e) => handleRateChange(e.target.value, index)}
-          onBlur={(e) => {
-            if (e.target.value !== roles[index].rate) {
-              dispatch(updateProjectRateCardRoleById({
-                id: roles[index].id!,
-                body: {
-                  job_title_id: roles[index].job_title_id,
-                  rate: e.target.value,
-                }
-              }));
-            }
-          }}
+          onBlur={(e) => handleRateBlur(e.target.value, index)}
+          onPressEnter={(e) => handleRateBlur(e.target.value, index)}
         />
       ),
     },
