@@ -22,8 +22,18 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
-import { setProject, setImportTaskTemplateDrawerOpen, setRefreshTimestamp, getProject } from '@features/project/project.slice';
-import { addTask, fetchTaskGroups, fetchTaskListColumns, IGroupBy } from '@features/tasks/tasks.slice';
+import {
+  setProject,
+  setImportTaskTemplateDrawerOpen,
+  setRefreshTimestamp,
+  getProject,
+} from '@features/project/project.slice';
+import {
+  addTask,
+  fetchTaskGroups,
+  fetchTaskListColumns,
+  IGroupBy,
+} from '@features/tasks/tasks.slice';
 import ProjectStatusIcon from '@/components/common/project-status-icon/project-status-icon';
 import { formatDate } from '@/utils/timeUtils';
 import { toggleSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
@@ -60,10 +70,7 @@ const ProjectViewHeader = () => {
 
   const { socket } = useSocket();
 
-  const {
-    project: selectedProject,
-    projectId,
-  } = useAppSelector(state => state.projectReducer);
+  const { project: selectedProject, projectId } = useAppSelector(state => state.projectReducer);
   const { loadingGroups, groupBy } = useAppSelector(state => state.taskReducer);
 
   const [creatingTask, setCreatingTask] = useState(false);
@@ -74,7 +81,7 @@ const ProjectViewHeader = () => {
     switch (tab) {
       case 'tasks-list':
         dispatch(fetchTaskListColumns(projectId));
-        dispatch(fetchPhasesByProjectId(projectId))
+        dispatch(fetchPhasesByProjectId(projectId));
         dispatch(fetchTaskGroups(projectId));
         break;
       case 'board':
@@ -90,6 +97,9 @@ const ProjectViewHeader = () => {
         dispatch(setRefreshTimestamp());
         break;
       case 'updates':
+        dispatch(setRefreshTimestamp());
+        break;
+      case 'finance':
         dispatch(setRefreshTimestamp());
         break;
       default:
@@ -222,7 +232,7 @@ const ProjectViewHeader = () => {
         />
       </Tooltip>
 
-      {(isOwnerOrAdmin) && (
+      {isOwnerOrAdmin && (
         <Tooltip title="Save as template">
           <Button
             shape="circle"
@@ -299,10 +309,9 @@ const ProjectViewHeader = () => {
         style={{ paddingInline: 0, marginBlockEnd: 12 }}
         extra={renderHeaderActions()}
       />
-      {createPortal(<ProjectDrawer onClose={() => { }} />, document.body, 'project-drawer')}
+      {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
-
     </>
   );
 };

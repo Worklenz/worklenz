@@ -1,17 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import { Drawer, Typography } from 'antd';
+import { Drawer, Typography, Spin } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
-import { toggleFinanceDrawer } from '../finance-slice';
+import { closeFinanceDrawer } from '../finance-slice';
+import { projectFinanceApiService } from '../../../api/project-finance-ratecard/project-finance.api.service';
+import { ITaskBreakdownResponse } from '../../../types/project/project-finance.types';
 
-const FinanceDrawer = ({ task }: { task: any }) => {
-  const [selectedTask, setSelectedTask] = useState(task);
+const FinanceDrawer = () => {
+  const [taskBreakdown, setTaskBreakdown] = useState<ITaskBreakdownResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Get task and drawer state from Redux store
+  const selectedTask = useAppSelector((state) => state.financeReducer.selectedTask);
+  const isDrawerOpen = useAppSelector((state) => state.financeReducer.isFinanceDrawerOpen);
 
   useEffect(() => {
-    setSelectedTask(task);
-  }, [task]);
+    if (selectedTask?.id && isDrawerOpen) {
+      fetchTaskBreakdown(selectedTask.id);
+    } else {
+      setTaskBreakdown(null);
+    }
+  }, [selectedTask, isDrawerOpen]);
+
+  const fetchTaskBreakdown = async (taskId: string) => {
+    try {
+      setLoading(true);
+      const response = await projectFinanceApiService.getTaskBreakdown(taskId);
+      setTaskBreakdown(response.body);
+    } catch (error) {
+      console.error('Error fetching task breakdown:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // localization
   const { t } = useTranslation('project-view-finance');
@@ -19,9 +42,6 @@ const FinanceDrawer = ({ task }: { task: any }) => {
   // get theme data from theme reducer
   const themeMode = useAppSelector((state) => state.themeReducer.mode);
 
-  const isDrawerOpen = useAppSelector(
-    (state) => state.financeReducer.isFinanceDrawerOpen
-  );
   const dispatch = useAppDispatch();
   const currency = useAppSelector(
     (state) => state.financeReducer.currency
@@ -29,41 +49,15 @@ const FinanceDrawer = ({ task }: { task: any }) => {
 
   // function handle drawer close
   const handleClose = () => {
-    setSelectedTask(null);
-    dispatch(toggleFinanceDrawer());
+    setTaskBreakdown(null);
+    dispatch(closeFinanceDrawer());
   };
-
-  // group members by job roles and calculate labor hours and costs
-  const groupedMembers =
-    selectedTask?.members?.reduce((acc: any, member: any) => {
-      const memberHours = selectedTask.hours / selectedTask.members.length;
-      const memberCost = memberHours * member.hourlyRate;
-
-      if (!acc[member.jobRole]) {
-        acc[member.jobRole] = {
-          jobRole: member.jobRole,
-          laborHours: 0,
-          cost: 0,
-          members: [],
-        };
-      }
-
-      acc[member.jobRole].laborHours += memberHours;
-      acc[member.jobRole].cost += memberCost;
-      acc[member.jobRole].members.push({
-        name: member.name,
-        laborHours: memberHours,
-        cost: memberCost,
-      });
-
-      return acc;
-    }, {}) || {};
 
   return (
     <Drawer
       title={
         <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
-          {selectedTask?.task || t('noTaskSelected')}
+          {taskBreakdown?.task?.name || selectedTask?.name || t('noTaskSelected')}
         </Typography.Text>
       }
       open={isDrawerOpen}
@@ -72,98 +66,77 @@ const FinanceDrawer = ({ task }: { task: any }) => {
       width={480}
     >
       <div>
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            marginBottom: '16px',
-          }}
-        >
-          <thead>
-            <tr
-              style={{
-                height: 48,
-                backgroundColor: themeWiseColor(
-                  '#F5F5F5',
-                  '#1d1d1d',
-                  themeMode
-                ),
-              }}
-            >
-              <th
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <Spin size="large" />
+          </div>
+        ) : (
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              marginBottom: '16px',
+            }}
+          >
+            <thead>
+              <tr
                 style={{
-                  textAlign: 'left',
-                  padding: 8,
-                }}
-              ></th>
-              <th
-                style={{
-                  textAlign: 'right',
-                  padding: 8,
+                  height: 48,
+                  backgroundColor: themeWiseColor(
+                    '#F5F5F5',
+                    '#1d1d1d',
+                    themeMode
+                  ),
                 }}
               >
-                {t('labourHoursColumn')}
-              </th>
-              <th
-                style={{
-                  textAlign: 'right',
-                  padding: 8,
-                }}
-              >
-                {t('costColumn')} ({currency})
-              </th>
-            </tr>
-          </thead>
-
-          <div className="mb-4"></div>
-
-          <tbody>
-            {Object.values(groupedMembers).map((group: any) => (
-              <React.Fragment key={group.jobRole}>
-                {/* Group Header */}
-                <tr
+                <th
                   style={{
-                    backgroundColor: themeWiseColor(
-                      '#D9D9D9',
-                      '#000',
-                      themeMode
-                    ),
-                    height: 56,
+                    textAlign: 'left',
+                    padding: 8,
                   }}
-                  className="border-b-[1px] font-semibold"
+                ></th>
+                <th
+                  style={{
+                    textAlign: 'right',
+                    padding: 8,
+                  }}
                 >
-                  <td style={{ padding: 8 }}>{group.jobRole}</td>
-                  <td
-                    style={{
-                      textAlign: 'right',
-                      padding: 8,
-                    }}
-                  >
-                    {group.laborHours}
-                  </td>
-                  <td
-                    style={{
-                      textAlign: 'right',
-                      padding: 8,
-                    }}
-                  >
-                    {group.cost}
-                  </td>
-                </tr>
-                {/* Member Rows */}
-                {group.members.map((member: any, index: number) => (
+                  {t('labourHoursColumn')}
+                </th>
+                <th
+                  style={{
+                    textAlign: 'right',
+                    padding: 8,
+                  }}
+                >
+                  {t('costColumn')} ({currency})
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {taskBreakdown?.grouped_members?.map((group: any) => (
+                <React.Fragment key={group.jobRole}>
+                  {/* Group Header */}
                   <tr
-                    key={`${group.jobRole}-${index}`}
-                    className="border-b-[1px]"
-                    style={{ height: 56 }}
+                    style={{
+                      backgroundColor: themeWiseColor(
+                        '#D9D9D9',
+                        '#000',
+                        themeMode
+                      ),
+                      height: 56,
+                    }}
+                    className="border-b-[1px] font-semibold"
                   >
+                    <td style={{ padding: 8 }}>{group.jobRole}</td>
                     <td
                       style={{
+                        textAlign: 'right',
                         padding: 8,
-                        paddingLeft: 32,
                       }}
                     >
-                      {member.name}
+                      {group.estimated_hours?.toFixed(2) || '0.00'}
                     </td>
                     <td
                       style={{
@@ -171,22 +144,47 @@ const FinanceDrawer = ({ task }: { task: any }) => {
                         padding: 8,
                       }}
                     >
-                      {member.laborHours}
-                    </td>
-                    <td
-                      style={{
-                        textAlign: 'right',
-                        padding: 8,
-                      }}
-                    >
-                      {member.cost}
+                      {group.estimated_cost?.toFixed(2) || '0.00'}
                     </td>
                   </tr>
-                ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+                  {/* Member Rows */}
+                  {group.members?.map((member: any, index: number) => (
+                    <tr
+                      key={`${group.jobRole}-${index}`}
+                      className="border-b-[1px]"
+                      style={{ height: 56 }}
+                    >
+                      <td
+                        style={{
+                          padding: 8,
+                          paddingLeft: 32,
+                        }}
+                      >
+                        {member.name}
+                      </td>
+                      <td
+                        style={{
+                          textAlign: 'right',
+                          padding: 8,
+                        }}
+                      >
+                        {member.estimated_hours?.toFixed(2) || '0.00'}
+                      </td>
+                      <td
+                        style={{
+                          textAlign: 'right',
+                          padding: 8,
+                        }}
+                      >
+                        {member.estimated_cost?.toFixed(2) || '0.00'}
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </Drawer>
   );

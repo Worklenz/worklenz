@@ -6372,3 +6372,44 @@ BEGIN
     );
 END;
 $$;
+
+CREATE OR REPLACE VIEW project_finance_view AS
+SELECT 
+    t.id,
+    t.name,
+    t.total_minutes / 3600.0 as estimated_hours,
+    COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) / 3600.0 as total_time_logged,
+    COALESCE((SELECT SUM(rate * (time_spent / 3600.0)) 
+              FROM task_work_log twl 
+              LEFT JOIN users u ON twl.user_id = u.id
+              LEFT JOIN team_members tm ON u.id = tm.user_id
+              LEFT JOIN project_members pm ON tm.id = pm.team_member_id
+              LEFT JOIN finance_project_rate_card_roles pmr ON pm.project_rate_card_role_id = pmr.id
+              WHERE twl.task_id = t.id), 0) as estimated_cost,
+    0 as fixed_cost, -- Default to 0 since the column doesn't exist
+    COALESCE(t.total_minutes / 3600.0 * 
+        (SELECT rate FROM finance_project_rate_card_roles 
+         WHERE project_id = t.project_id 
+         AND id = (SELECT project_rate_card_role_id FROM project_members WHERE team_member_id = t.reporter_id LIMIT 1)
+         LIMIT 1), 0) as total_budgeted_cost,
+    COALESCE((SELECT SUM(rate * (time_spent / 3600.0)) 
+              FROM task_work_log twl 
+              LEFT JOIN users u ON twl.user_id = u.id
+              LEFT JOIN team_members tm ON u.id = tm.user_id
+              LEFT JOIN project_members pm ON tm.id = pm.team_member_id
+              LEFT JOIN finance_project_rate_card_roles pmr ON pm.project_rate_card_role_id = pmr.id
+              WHERE twl.task_id = t.id), 0) as total_actual_cost,
+    COALESCE((SELECT SUM(rate * (time_spent / 3600.0)) 
+              FROM task_work_log twl 
+              LEFT JOIN users u ON twl.user_id = u.id
+              LEFT JOIN team_members tm ON u.id = tm.user_id
+              LEFT JOIN project_members pm ON tm.id = pm.team_member_id
+              LEFT JOIN finance_project_rate_card_roles pmr ON pm.project_rate_card_role_id = pmr.id
+              WHERE twl.task_id = t.id), 0) - 
+    COALESCE(t.total_minutes / 3600.0 * 
+        (SELECT rate FROM finance_project_rate_card_roles 
+         WHERE project_id = t.project_id 
+         AND id = (SELECT project_rate_card_role_id FROM project_members WHERE team_member_id = t.reporter_id LIMIT 1)
+         LIMIT 1), 0) as variance,
+    t.project_id
+FROM tasks t;

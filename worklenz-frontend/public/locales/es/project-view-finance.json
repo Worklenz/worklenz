@@ -11,13 +11,16 @@
   
   "taskColumn": "Tarea",
   "membersColumn": "Miembros",
-  "hoursColumn": "Horas",
+  "hoursColumn": "Horas Estimadas",
+  "totalTimeLoggedColumn": "Tiempo Total Registrado",
   "costColumn": "Costo",
+  "estimatedCostColumn": "Costo Estimado",
   "fixedCostColumn": "Costo Fijo",
   "totalBudgetedCostColumn": "Costo Total Presupuestado",
   "totalActualCostColumn": "Costo Total Real",
   "varianceColumn": "Diferencia",
   "totalText": "Total",
+  "noTasksFound": "No se encontraron tareas",
   
   "addRoleButton": "+ Agregar Rol",
   "ratecardImportantNotice": "* Esta tarifa se genera en función de los títulos de trabajo y tarifas estándar de la empresa. Sin embargo, tienes la flexibilidad de modificarla según el proyecto. Estos cambios no afectarán los títulos de trabajo y tarifas estándar de la organización.",

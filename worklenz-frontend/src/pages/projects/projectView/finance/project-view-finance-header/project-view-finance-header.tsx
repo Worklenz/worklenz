@@ -1,5 +1,4 @@
 import { Button, ConfigProvider, Flex, Select, Typography } from 'antd';
-import React from 'react';
 import GroupByFilterDropdown from './group-by-filter-dropdown';
 import { DownOutlined } from '@ant-design/icons';
 import { useAppDispatch } from '../../../../../hooks/useAppDispatch';

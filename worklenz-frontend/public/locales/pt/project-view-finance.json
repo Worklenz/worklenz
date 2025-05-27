@@ -11,13 +11,16 @@
   
   "taskColumn": "Tarefa",
   "membersColumn": "Membros",
-  "hoursColumn": "Horas",
+  "hoursColumn": "Horas Estimadas",
+  "totalTimeLoggedColumn": "Tempo Total Registrado",
   "costColumn": "Custo",
+  "estimatedCostColumn": "Custo Estimado",
   "fixedCostColumn": "Custo Fixo",
   "totalBudgetedCostColumn": "Custo Total Orçado",
   "totalActualCostColumn": "Custo Total Real",
   "varianceColumn": "Variação",
   "totalText": "Total",
+  "noTasksFound": "Nenhuma tarefa encontrada",
   
   "addRoleButton": "+ Adicionar Função",
   "ratecardImportantNotice": "* Esta tabela de taxas é gerada com base nos cargos e taxas padrão da empresa. No entanto, você tem a flexibilidade de modificá-la de acordo com o projeto. Essas alterações não impactarão os cargos e taxas padrão da organização.",
