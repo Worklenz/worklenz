@@ -216,6 +216,7 @@ const RatecardTable: React.FC = () => {
         <Input
           type="number"
           value={roles[index]?.rate ?? 0}
+          min={0}
           style={{
             background: 'transparent',
             border: 'none',

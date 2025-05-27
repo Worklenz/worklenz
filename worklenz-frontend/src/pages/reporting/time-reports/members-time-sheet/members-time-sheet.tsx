@@ -92,17 +92,38 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
       },
       tooltip: {
         callbacks: {
-          label: function(context: any) {
+          label: function (context: any) {
             const idx = context.dataIndex;
             const member = jsonData[idx];
             const hours = member?.utilized_hours || '0.00';
-            const percent = member?.utilization_percent || '0.00';
+            const percent = parseFloat(member?.utilization_percent || '0.00');
             const overUnder = member?.over_under_utilized_hours || '0.00';
+            let status = '';
+            let color = '';
+            if (percent < 90) {
+              status = 'Under';
+            } else if (percent <= 110) {
+              status = 'Optimal';
+            } else {
+              status = 'Over';
+            }
             return [
               `${context.dataset.label}: ${hours} h`,
               `Utilization: ${percent}%`,
-              `Over/Under Utilized: ${overUnder} h`
+              `${status} Utilized: ${overUnder} h`
             ];
+          },
+          labelTextColor: function (context: any) {
+            const idx = context.dataIndex;
+            const member = jsonData[idx];
+            const utilization = parseFloat(member?.utilization_percent || '0');
+            if (utilization < 90) {
+              return '#FFB546';
+            } else if (utilization >= 90 && utilization <= 110) {
+              return '#B2EF9A';
+            } else {
+              return '#FE7173';
+            }
           }
         }
       }
@@ -145,7 +166,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
   const fetchChartData = async () => {
     try {
       setLoading(true);
-      
+
       const selectedTeams = teams.filter(team => team.selected);
       const selectedProjects = filterProjects.filter(project => project.selected);
       const selectedCategories = categories.filter(category => category.selected);
@@ -178,7 +199,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
     if (chartRef.current) {
       // Get the canvas element
       const canvas = chartRef.current.canvas;
-      
+
       // Create a temporary canvas to draw with background
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
