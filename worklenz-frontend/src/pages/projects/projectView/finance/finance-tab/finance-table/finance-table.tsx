@@ -13,6 +13,9 @@ import Avatars from '@/components/avatars/avatars';
 import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/project-finance.types';
 import { updateTaskFixedCostAsync, updateTaskFixedCost } from '@/features/projects/finance/project-finance.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { setSelectedTaskId, setShowTaskDrawer, fetchTask } from '@/features/task-drawer/task-drawer.slice';
+import { useParams } from 'react-router-dom';
+import { parseTimeToSeconds } from '@/utils/timeUtils';
 import './finance-table.css';
 
 type FinanceTableProps = {
@@ -78,19 +81,19 @@ const FinanceTable = ({
   const renderFinancialTableHeaderContent = (columnKey: FinanceTableColumnKeys) => {
     switch (columnKey) {
       case FinanceTableColumnKeys.HOURS:
-        return <Typography.Text>{formatNumber(totals.hours)}</Typography.Text>;
+        return <Typography.Text>{formattedTotals.hours}</Typography.Text>;
       case FinanceTableColumnKeys.TOTAL_TIME_LOGGED:
-        return <Typography.Text>{formatNumber(totals.total_time_logged)}</Typography.Text>;
+        return <Typography.Text>{formattedTotals.total_time_logged}</Typography.Text>;
       case FinanceTableColumnKeys.ESTIMATED_COST:
-        return <Typography.Text>{formatNumber(totals.estimated_cost)}</Typography.Text>;
+        return <Typography.Text>{formatNumber(formattedTotals.estimated_cost)}</Typography.Text>;
       case FinanceTableColumnKeys.FIXED_COST:
-        return <Typography.Text>{formatNumber(totals.fixed_cost)}</Typography.Text>;
+        return <Typography.Text>{formatNumber(formattedTotals.fixed_cost)}</Typography.Text>;
       case FinanceTableColumnKeys.TOTAL_BUDGET:
-        return <Typography.Text>{formatNumber(totals.total_budget)}</Typography.Text>;
+        return <Typography.Text>{formatNumber(formattedTotals.total_budget)}</Typography.Text>;
       case FinanceTableColumnKeys.TOTAL_ACTUAL:
-        return <Typography.Text>{formatNumber(totals.total_actual)}</Typography.Text>;
+        return <Typography.Text>{formatNumber(formattedTotals.total_actual)}</Typography.Text>;
       case FinanceTableColumnKeys.VARIANCE:
-        return <Typography.Text>{formatNumber(totals.variance)}</Typography.Text>;
+        return <Typography.Text style={{ color: formattedTotals.variance > 0 ? '#FF0000' : '#6DC376' }}>{formatNumber(formattedTotals.variance)}</Typography.Text>;
       default:
         return null;
     }
@@ -106,6 +109,16 @@ const FinanceTable = ({
     dispatch(updateTaskFixedCostAsync({ taskId, groupId: table.group_id, fixedCost }));
   };
 
+  const { projectId } = useParams<{ projectId: string }>();
+
+  const handleTaskNameClick = (taskId: string) => {
+    if (!taskId || !projectId) return;
+    
+    dispatch(setSelectedTaskId(taskId));
+    dispatch(setShowTaskDrawer(true));
+    dispatch(fetchTask({ taskId, projectId }));
+  };
+
   const renderFinancialTableColumnContent = (columnKey: FinanceTableColumnKeys, task: IProjectFinanceTask) => {
     switch (columnKey) {
       case FinanceTableColumnKeys.TASK:
@@ -114,7 +127,21 @@ const FinanceTable = ({
             <Flex gap={8} align="center">
               <Typography.Text
                 ellipsis={{ expanded: false }}
-                style={{ maxWidth: 160 }}
+                style={{ 
+                  maxWidth: 160,
+                  cursor: 'pointer',
+                  color: '#1890ff'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTaskNameClick(task.id);
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.textDecoration = 'underline';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.textDecoration = 'none';
+                }}
               >
                 {task.name}
               </Typography.Text>
@@ -144,9 +171,9 @@ const FinanceTable = ({
           </div>
         );
       case FinanceTableColumnKeys.HOURS:
-        return <Typography.Text>{formatNumber(task.estimated_hours / 60)}</Typography.Text>;
+        return <Typography.Text>{task.estimated_hours}</Typography.Text>;
       case FinanceTableColumnKeys.TOTAL_TIME_LOGGED:
-        return <Typography.Text>{formatNumber(task.total_time_logged / 60)}</Typography.Text>;
+        return <Typography.Text>{task.total_time_logged}</Typography.Text>;
       case FinanceTableColumnKeys.ESTIMATED_COST:
         return <Typography.Text>{formatNumber(task.estimated_cost)}</Typography.Text>;
       case FinanceTableColumnKeys.FIXED_COST:
@@ -181,7 +208,15 @@ const FinanceTable = ({
           </Typography.Text>
         );
       case FinanceTableColumnKeys.VARIANCE:
-        return <Typography.Text>{formatNumber(task.variance)}</Typography.Text>;
+        return (
+          <Typography.Text 
+            style={{ 
+              color: formattedTotals.variance > 0 ? '#FF0000' : '#6DC376' 
+            }}
+          >
+            {formatNumber(formattedTotals.variance)}
+          </Typography.Text>
+        );
       case FinanceTableColumnKeys.TOTAL_BUDGET:
         return <Typography.Text>{formatNumber(task.total_budget)}</Typography.Text>;
       case FinanceTableColumnKeys.TOTAL_ACTUAL:
@@ -193,12 +228,28 @@ const FinanceTable = ({
     }
   };
 
+  // Utility function to format seconds to time string
+  const formatSecondsToTimeString = (totalSeconds: number): string => {
+    if (!totalSeconds || totalSeconds === 0) return "0s";
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    const parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+    
+    return parts.join(' ');
+  };
+
   // Calculate totals for the current table
   const totals = useMemo(() => {
     return tasks.reduce(
       (acc, task) => ({
-        hours: acc.hours + (task.estimated_hours / 60),
-        total_time_logged: acc.total_time_logged + (task.total_time_logged / 60),
+        hours: acc.hours + (task.estimated_seconds || 0),
+        total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
         estimated_cost: acc.estimated_cost + (task.estimated_cost || 0),
         fixed_cost: acc.fixed_cost + (task.fixed_cost || 0),
         total_budget: acc.total_budget + (task.total_budget || 0),
@@ -216,6 +267,17 @@ const FinanceTable = ({
       }
     );
   }, [tasks]);
+
+  // Format the totals for display
+  const formattedTotals = useMemo(() => ({
+    hours: formatSecondsToTimeString(totals.hours),
+    total_time_logged: formatSecondsToTimeString(totals.total_time_logged),
+    estimated_cost: totals.estimated_cost,
+    fixed_cost: totals.fixed_cost,
+    total_budget: totals.total_budget,
+    total_actual: totals.total_actual,
+    variance: totals.variance
+  }), [totals]);
 
   return (
     <Skeleton active loading={loading}>

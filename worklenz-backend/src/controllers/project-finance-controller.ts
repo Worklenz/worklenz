@@ -8,6 +8,38 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import { TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
 import { getColor } from "../shared/utils";
 
+// Utility function to format time in hours, minutes, seconds format
+const formatTimeToHMS = (totalSeconds: number): string => {
+  if (!totalSeconds || totalSeconds === 0) return "0s";
+  
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+  
+  return parts.join(' ');
+};
+
+// Utility function to parse time string back to seconds for calculations
+const parseTimeToSeconds = (timeString: string): number => {
+  if (!timeString || timeString === "0s") return 0;
+  
+  let totalSeconds = 0;
+  const hourMatch = timeString.match(/(\d+)h/);
+  const minuteMatch = timeString.match(/(\d+)m/);
+  const secondMatch = timeString.match(/(\d+)s/);
+  
+  if (hourMatch) totalSeconds += parseInt(hourMatch[1]) * 3600;
+  if (minuteMatch) totalSeconds += parseInt(minuteMatch[1]) * 60;
+  if (secondMatch) totalSeconds += parseInt(secondMatch[1]);
+  
+  return totalSeconds;
+};
+
 export default class ProjectfinanceController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getTasks(
@@ -40,8 +72,8 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         SELECT 
           t.id,
           t.name,
-          COALESCE(t.total_minutes, 0) / 60.0::float as estimated_hours,
-          COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) / 3600.0::float as total_time_logged,
+          COALESCE(t.total_minutes * 60, 0) as estimated_seconds,
+          COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) as total_time_logged_seconds,
           t.project_id,
           t.status_id,
           t.priority_id,
@@ -57,7 +89,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           tc.*,
           -- Calculate estimated cost based on estimated hours and assignee rates from project_members
           COALESCE((
-            SELECT SUM(tc.estimated_hours * COALESCE(fprr.rate, 0))
+            SELECT SUM((tc.estimated_seconds / 3600.0) * COALESCE(fprr.rate, 0))
             FROM json_array_elements(tc.assignees) AS assignee_json
             LEFT JOIN project_members pm ON pm.team_member_id = (assignee_json->>'team_member_id')::uuid 
               AND pm.project_id = tc.project_id
@@ -198,8 +230,10 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         tasks: groupTasks.map(task => ({
           id: task.id,
           name: task.name,
-          estimated_hours: Number(task.estimated_hours) || 0,
-          total_time_logged: Number(task.total_time_logged) || 0,
+          estimated_seconds: Number(task.estimated_seconds) || 0,
+          estimated_hours: formatTimeToHMS(Number(task.estimated_seconds) || 0),
+          total_time_logged_seconds: Number(task.total_time_logged_seconds) || 0,
+          total_time_logged: formatTimeToHMS(Number(task.total_time_logged_seconds) || 0),
           estimated_cost: Number(task.estimated_cost) || 0,
           fixed_cost: Number(task.fixed_cost) || 0,
           total_budget: Number(task.total_budget) || 0,

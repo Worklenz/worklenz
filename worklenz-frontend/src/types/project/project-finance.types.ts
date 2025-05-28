@@ -29,8 +29,10 @@ export interface IProjectFinanceMember {
 export interface IProjectFinanceTask {
   id: string;
   name: string;
-  estimated_hours: number;
-  total_time_logged: number;
+  estimated_seconds: number;
+  estimated_hours: string; // Formatted time string like "4h 30m 12s"
+  total_time_logged_seconds: number;
+  total_time_logged: string; // Formatted time string like "4h 30m 12s"
   estimated_cost: number;
   members: IProjectFinanceMember[];
   billable: boolean;

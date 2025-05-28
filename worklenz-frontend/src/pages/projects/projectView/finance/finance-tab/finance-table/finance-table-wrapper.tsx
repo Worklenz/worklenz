@@ -17,6 +17,22 @@ interface FinanceTableWrapperProps {
   loading: boolean;
 }
 
+// Utility function to format seconds to time string
+const formatSecondsToTimeString = (totalSeconds: number): string => {
+  if (!totalSeconds || totalSeconds === 0) return "0s";
+  
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+  
+  return parts.join(' ');
+};
+
 const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesList, loading }) => {
   const [isScrolling, setIsScrolling] = useState(false);
   const [editingFixedCost, setEditingFixedCost] = useState<{ taskId: string; groupId: string } | null>(null);
@@ -80,13 +96,13 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
         table: IProjectFinanceGroup
       ) => {
         table.tasks.forEach((task) => {
-          acc.hours += (task.estimated_hours / 60) || 0;
+          acc.hours += (task.estimated_seconds) || 0;
           acc.cost += task.estimated_cost || 0;
           acc.fixedCost += task.fixed_cost || 0;
           acc.totalBudget += task.total_budget || 0;
           acc.totalActual += task.total_actual || 0;
           acc.variance += task.variance || 0;
-          acc.total_time_logged += (task.total_time_logged / 60) || 0;
+          acc.total_time_logged += (task.total_time_logged_seconds) || 0;
           acc.estimated_cost += task.estimated_cost || 0;
         });
         return acc;
@@ -114,9 +130,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
       case FinanceTableColumnKeys.HOURS:
         return (
           <Typography.Text style={{ fontSize: 18 }}>
-            <Tooltip title={convertToHoursMinutes(totals.hours)}>
-              {formatHoursToReadable(totals.hours).toFixed(2)}
-            </Tooltip>
+            {formatSecondsToTimeString(totals.hours)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.COST:
@@ -131,7 +145,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
         return (
           <Typography.Text
             style={{
-              color: totals.variance < 0 ? '#FF0000' : '#6DC376',
+              color: totals.variance > 0 ? '#FF0000' : '#6DC376',
               fontSize: 18,
             }}
           >
@@ -141,7 +155,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
       case FinanceTableColumnKeys.TOTAL_TIME_LOGGED:
         return (
           <Typography.Text style={{ fontSize: 18 }}>
-            {totals.total_time_logged?.toFixed(2)}
+            {formatSecondsToTimeString(totals.total_time_logged)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.ESTIMATED_COST:

@@ -1,6 +1,7 @@
 import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { IProjectFinanceGroup, IProjectFinanceTask, IProjectRateCard } from '@/types/project/project-finance.types';
+import { parseTimeToSeconds } from '@/utils/timeUtils';
 
 type FinanceTabType = 'finance' | 'ratecard';
 type GroupTypes = 'status' | 'priority' | 'phases';
@@ -14,11 +15,11 @@ interface ProjectFinanceState {
 }
 
 // Utility functions for frontend calculations
-const minutesToHours = (minutes: number) => minutes / 60;
+const secondsToHours = (seconds: number) => seconds / 3600;
 
 const calculateTaskCosts = (task: IProjectFinanceTask) => {
-  const hours = minutesToHours(task.estimated_hours || 0);
-  const timeLoggedHours = minutesToHours(task.total_time_logged || 0);
+  const hours = secondsToHours(task.estimated_seconds || 0);
+  const timeLoggedHours = secondsToHours(task.total_time_logged_seconds || 0);
   const fixedCost = task.fixed_cost || 0;
   
   // Calculate total budget (estimated hours * rate + fixed cost)
@@ -127,13 +128,14 @@ export const projectFinancesSlice = createSlice({
         }
       }
     },
-    updateTaskTimeLogged: (state, action: PayloadAction<{ taskId: string; groupId: string; timeLogged: number }>) => {
-      const { taskId, groupId, timeLogged } = action.payload;
+    updateTaskTimeLogged: (state, action: PayloadAction<{ taskId: string; groupId: string; timeLoggedSeconds: number; timeLoggedString: string }>) => {
+      const { taskId, groupId, timeLoggedSeconds, timeLoggedString } = action.payload;
       const group = state.taskGroups.find(g => g.group_id === groupId);
       if (group) {
         const task = group.tasks.find(t => t.id === taskId);
         if (task) {
-          task.total_time_logged = timeLogged;
+          task.total_time_logged_seconds = timeLoggedSeconds;
+          task.total_time_logged = timeLoggedString;
           // Recalculate task costs after updating time logged
           const { totalBudget, totalActual, variance } = calculateTaskCosts(task);
           task.total_budget = totalBudget;
