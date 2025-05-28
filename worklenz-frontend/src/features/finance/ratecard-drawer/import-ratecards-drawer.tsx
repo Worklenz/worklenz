@@ -1,4 +1,4 @@
-import { Drawer, Typography, Button, Table, Menu, Flex, Spin } from 'antd';
+import { Drawer, Typography, Button, Table, Menu, Flex, Spin, Alert } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
@@ -85,32 +85,45 @@ const ImportRatecardsDrawer: React.FC = () => {
       }
       footer={
         <div style={{ textAlign: 'right' }}>
-            <Button
-            type="primary"
-            disabled={rolesRedux.length !== 0}
-            onClick={() => {
-              if (!projectId) {
-              // Handle missing project id (show error, etc.)
-              return;
-              }
-              if (drawerRatecard?.jobRolesList?.length) {
-              dispatch(
-                insertProjectRateCardRoles({
-                project_id: projectId,
-                roles: drawerRatecard.jobRolesList
-                  .filter((role) => typeof role.rate !== 'undefined')
-                  .map((role) => ({
-                  ...role,
-                  rate: Number(role.rate),
-                  })),
-                })
-              );
-              }
-              dispatch(toggleImportRatecardsDrawer());
-            }}
-            >
-            {t('import')}
-            </Button>
+          {/* Alert message */}
+          {rolesRedux.length !== 0 ? (
+            <div style={{ textAlign: 'right' }}>
+              <Alert
+                message={t('alreadyImportedRateCardMessage') || 'A rate card has already been imported. Clear all imported rate cards to add a new one.'}
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            </div>
+          ) : (
+            <div style={{ textAlign: 'right' }}>
+              <Button
+                type="primary"
+                onClick={() => {
+                  if (!projectId) {
+                    // Handle missing project id (show error, etc.)
+                    return;
+                  }
+                  if (drawerRatecard?.jobRolesList?.length) {
+                    dispatch(
+                      insertProjectRateCardRoles({
+                        project_id: projectId,
+                        roles: drawerRatecard.jobRolesList
+                          .filter((role) => typeof role.rate !== 'undefined')
+                          .map((role) => ({
+                            ...role,
+                            rate: Number(role.rate),
+                          })),
+                      })
+                    );
+                  }
+                  dispatch(toggleImportRatecardsDrawer());
+                }}
+              >
+                {t('import')}
+              </Button>
+            </div>
+          )}
         </div>
       }
       open={isDrawerOpen}

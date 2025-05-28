@@ -23,7 +23,8 @@ const RateCardAssigneeSelector = ({
   onChange,
   selectedMemberIds = [],
   memberlist = [],
-}: RateCardAssigneeSelectorProps) => {
+  assignedMembers = [], // New prop: List of all assigned member IDs across all job titles
+}: RateCardAssigneeSelectorProps & { assignedMembers: string[] }) => {
   const membersInputRef = useRef<InputRef>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [members, setMembers] = useState<IProjectMemberViewModel[]>(memberlist);
@@ -46,33 +47,39 @@ const RateCardAssigneeSelector = ({
       />
       <List style={{ padding: 0, maxHeight: 200, overflow: 'auto' }}>
         {filteredMembers.length ? (
-          filteredMembers.map((member) => (
-            <List.Item
-              key={member.id}
-              style={{
-                display: 'flex',
-                gap: 8,
-                alignItems: 'center',
-                padding: '4px 8px',
-                border: 'none',
-                opacity: member.pending_invitation ? 0.5 : 1,
-                justifyContent: 'flex-start',
-                textAlign: 'left',
-              }}
-            >
-              <Checkbox
-                checked={selectedMemberIds.includes(member.id || '')}
-                disabled={member.pending_invitation}
-                onChange={() => onChange?.(member.id || '')}
-              />
-              <SingleAvatar
-                avatarUrl={member.avatar_url}
-                name={member.name}
-                email={member.email}
-              />
-              <span>{member.name}</span>
-            </List.Item>
-          ))
+          filteredMembers.map((member) => {
+            const isAssignedToAnotherJobTitle =
+              assignedMembers.includes(member.id || '') &&
+              !selectedMemberIds.includes(member.id || ''); // Check if the member is assigned elsewhere
+
+            return (
+              <List.Item
+                key={member.id}
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  alignItems: 'center',
+                  padding: '4px 8px',
+                  border: 'none',
+                  opacity: member.pending_invitation || isAssignedToAnotherJobTitle ? 0.5 : 1,
+                  justifyContent: 'flex-start',
+                  textAlign: 'left',
+                }}
+              >
+                <Checkbox
+                  checked={selectedMemberIds.includes(member.id || '')}
+                  disabled={member.pending_invitation || isAssignedToAnotherJobTitle}
+                  onChange={() => onChange?.(member.id || '')}
+                />
+                <SingleAvatar
+                  avatarUrl={member.avatar_url}
+                  name={member.name}
+                  email={member.email}
+                />
+                <span>{member.name}</span>
+              </List.Item>
+            );
+          })
         ) : (
           <Empty description="No members found" />
         )}
