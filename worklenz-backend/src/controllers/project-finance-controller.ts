@@ -40,7 +40,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         SELECT 
           t.id,
           t.name,
-          COALESCE(t.total_minutes, 0)::float as estimated_hours,
+          COALESCE(t.total_minutes, 0) / 60.0::float as estimated_hours,
           COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) / 3600.0::float as total_time_logged,
           t.project_id,
           t.status_id,
