@@ -315,6 +315,7 @@ docker-compose up -d
 docker-compose down
 ```
 
+
 ## MinIO Integration
 
 The project uses MinIO as an S3-compatible object storage service, which provides an open-source alternative to AWS S3 for development and production.
@@ -403,6 +404,10 @@ This script generates properly configured environment files for both development
    - Frontend: http://localhost:5000
    - Backend API: http://localhost:3000 (or https://localhost:3000 with SSL)
 
+4. Video Guide
+   
+   For a visual walkthrough of the local Docker deployment process, check out our [step-by-step video guide](https://www.youtube.com/watch?v=AfwAKxJbqLg).
+
 ### Remote Server Deployment
 
 When deploying to a remote server:
@@ -427,6 +432,10 @@ When deploying to a remote server:
 3. Access the application through your server's hostname:
    - Frontend: http://your-server-hostname:5000
    - Backend API: http://your-server-hostname:3000
+
+4. Video Guide
+   
+   For a complete walkthrough of deploying Worklenz to a remote server, check out our [deployment video guide](https://www.youtube.com/watch?v=CAZGu2iOXQs&t=10s).
 
 ### Environment Configuration
 
