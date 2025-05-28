@@ -1,11 +1,11 @@
-import {Server, Socket} from "socket.io";
+import { Server, Socket } from "socket.io";
 import db from "../../config/db";
-import {getColor, toMinutes} from "../../shared/utils";
-import {SocketEvents} from "../events";
+import { getColor, toMinutes } from "../../shared/utils";
+import { SocketEvents } from "../events";
 
-import {log_error, notifyProjectUpdates} from "../util";
+import { log_error, notifyProjectUpdates } from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
-import {TASK_STATUS_COLOR_ALPHA, UNMAPPED} from "../../shared/constants";
+import { TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
 import moment from "moment";
 import momentTime from "moment-timezone";
 import { logEndDateChange, logStartDateChange, logStatusChange } from "../../services/activity-logs/activity-logs.service";
@@ -18,8 +18,9 @@ export async function getTaskCompleteInfo(task: any) {
   const [d2] = result2.rows;
 
   task.completed_count = d2.res.total_completed || 0;
-  if (task.sub_tasks_count > 0)
+  if (task.sub_tasks_count > 0 && d2.res.total_tasks > 0) {
     task.sub_tasks_count = d2.res.total_tasks;
+  }
   return task;
 }
 
@@ -97,8 +98,8 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
           logEndDateChange({
             task_id: d.task.id,
             socket,
-            new_value:  body.time_zone && d.task.end_date ? momentTime.tz(d.task.end_date, `${body.time_zone}`) : d.task.end_date,
-            old_value:  null
+            new_value: body.time_zone && d.task.end_date ? momentTime.tz(d.task.end_date, `${body.time_zone}`) : d.task.end_date,
+            old_value: null
           });
         }
 

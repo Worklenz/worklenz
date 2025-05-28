@@ -23,6 +23,7 @@
       "show-start-date": "Mostrar fecha de inicio",
       "hours": "Horas",
       "minutes": "Minutos",
+      "time-estimation-disabled-tooltip": "La estimación de tiempo está deshabilitada porque esta tarea tiene {{count}} subtareas. La estimación mostrada es la suma de todas las subtareas.",
       "progressValue": "Valor de Progreso",
       "progressValueTooltip": "Establecer el porcentaje de progreso (0-100%)",
       "progressValueRequired": "Por favor, introduce un valor de progreso",

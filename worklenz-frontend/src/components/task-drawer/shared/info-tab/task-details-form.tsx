@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';
 import { ITaskFormViewModel, ITaskViewModel } from '@/types/tasks/task.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import { ISubTask } from '@/types/tasks/subTask.types';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 
 import NotifyMemberSelector from './notify-member-selector';
@@ -33,6 +34,7 @@ import TaskDrawerRecurringConfig from './details/task-drawer-recurring-config/ta
 
 interface TaskDetailsFormProps {
   taskFormViewModel?: ITaskFormViewModel | null;
+  subTasks?: ISubTask[]; // Array of subtasks to calculate estimation sum
 }
 
 // Custom wrapper that enforces stricter rules for displaying progress input
@@ -71,10 +73,19 @@ const ConditionalProgressInput = ({ task, form }: ConditionalProgressInputProps)
   return null;
 };
 
-const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => {
+const TaskDetailsForm = ({ taskFormViewModel = null, subTasks = [] }: TaskDetailsFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const [form] = Form.useForm();
   const { project } = useAppSelector(state => state.projectReducer);
+
+  // Calculate sum of subtasks estimation
+  const subTasksEstimation = subTasks.reduce(
+    (acc, subTask) => ({
+      hours: acc.hours + (subTask.total_hours || 0),
+      minutes: acc.minutes + (subTask.total_minutes || 0)
+    }),
+    { hours: 0, minutes: 0 }
+  );
 
   useEffect(() => {
     if (!taskFormViewModel) {
@@ -157,7 +168,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
 
         <TaskDrawerDueDate task={taskFormViewModel?.task as ITaskViewModel} t={t} form={form} />
 
-        <TaskDrawerEstimation t={t} task={taskFormViewModel?.task as ITaskViewModel} form={form} />
+        <TaskDrawerEstimation t={t} task={taskFormViewModel?.task as ITaskViewModel} form={form} subTasksEstimation={subTasksEstimation} />
 
         {taskFormViewModel?.task && (
           <ConditionalProgressInput 

@@ -85,6 +85,14 @@ export const fetchProjectFinancesSilent = createAsyncThunk(
   }
 );
 
+export const fetchSubTasks = createAsyncThunk(
+  'projectFinances/fetchSubTasks',
+  async ({ projectId, parentTaskId }: { projectId: string; parentTaskId: string }) => {
+    const response = await projectFinanceApiService.getSubTasks(projectId, parentTaskId);
+    return { parentTaskId, subTasks: response.body };
+  }
+);
+
 export const updateTaskFixedCostAsync = createAsyncThunk(
   'projectFinances/updateTaskFixedCostAsync',
   async ({ taskId, groupId, fixedCost }: { taskId: string; groupId: string; fixedCost: number }) => {
@@ -144,6 +152,16 @@ export const projectFinancesSlice = createSlice({
           task.variance = variance;
         }
       }
+    },
+    toggleTaskExpansion: (state, action: PayloadAction<{ taskId: string; groupId: string }>) => {
+      const { taskId, groupId } = action.payload;
+      const group = state.taskGroups.find(g => g.group_id === groupId);
+      if (group) {
+        const task = group.tasks.find(t => t.id === taskId);
+        if (task) {
+          task.show_sub_tasks = !task.show_sub_tasks;
+        }
+      }
     }
   },
   extraReducers: (builder) => {
@@ -174,6 +192,22 @@ export const projectFinancesSlice = createSlice({
             // Don't recalculate here - trigger a refresh instead for accuracy
           }
         }
+      })
+      .addCase(fetchSubTasks.fulfilled, (state, action) => {
+        const { parentTaskId, subTasks } = action.payload;
+        // Find the parent task in any group and add the subtasks
+        for (const group of state.taskGroups) {
+          const parentTask = group.tasks.find(t => t.id === parentTaskId);
+          if (parentTask) {
+            parentTask.sub_tasks = subTasks.map(subTask => ({
+              ...subTask,
+              is_sub_task: true,
+              parent_task_id: parentTaskId
+            }));
+            parentTask.show_sub_tasks = true;
+            break;
+          }
+        }
       });
   },
 });
@@ -183,7 +217,8 @@ export const {
   setActiveGroup, 
   updateTaskFixedCost,
   updateTaskEstimatedCost,
-  updateTaskTimeLogged
+  updateTaskTimeLogged,
+  toggleTaskExpansion
 } = projectFinancesSlice.actions;
 
 export default projectFinancesSlice.reducer;

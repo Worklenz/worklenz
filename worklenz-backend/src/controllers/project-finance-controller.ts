@@ -66,56 +66,132 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     const rateCardResult = await db.query(rateCardQuery, [projectId]);
     const projectRateCards = rateCardResult.rows;
 
-    // Get all tasks with their financial data - using project_members.project_rate_card_role_id
+    // Get tasks with their financial data - support hierarchical loading
     const q = `
-      WITH task_costs AS (
+      WITH RECURSIVE task_tree AS (
+        -- Get the requested tasks (parent tasks or subtasks of a specific parent)
         SELECT 
           t.id,
           t.name,
-          COALESCE(t.total_minutes * 60, 0) as estimated_seconds,
-          COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) as total_time_logged_seconds,
+          t.parent_task_id,
           t.project_id,
           t.status_id,
           t.priority_id,
           (SELECT phase_id FROM task_phase WHERE task_id = t.id) as phase_id,
           (SELECT get_task_assignees(t.id)) as assignees,
           t.billable,
-          COALESCE(t.fixed_cost, 0) as fixed_cost
+          COALESCE(t.fixed_cost, 0) as fixed_cost,
+          COALESCE(t.total_minutes * 60, 0) as estimated_seconds,
+          COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) as total_time_logged_seconds,
+          (SELECT COUNT(*) FROM tasks WHERE parent_task_id = t.id AND archived = false) as sub_tasks_count,
+          0 as level,
+          t.id as root_id
         FROM tasks t
-        WHERE t.project_id = $1 AND t.archived = false
-      ),
-      task_estimated_costs AS (
+        WHERE t.project_id = $1 
+          AND t.archived = false
+          AND t.parent_task_id IS NULL  -- Only load parent tasks initially
+        
+        UNION ALL
+        
+        -- Get all descendant tasks for aggregation
         SELECT 
-          tc.*,
-          -- Calculate estimated cost based on estimated hours and assignee rates from project_members
+          t.id,
+          t.name,
+          t.parent_task_id,
+          t.project_id,
+          t.status_id,
+          t.priority_id,
+          (SELECT phase_id FROM task_phase WHERE task_id = t.id) as phase_id,
+          (SELECT get_task_assignees(t.id)) as assignees,
+          t.billable,
+          COALESCE(t.fixed_cost, 0) as fixed_cost,
+          COALESCE(t.total_minutes * 60, 0) as estimated_seconds,
+          COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) as total_time_logged_seconds,
+          0 as sub_tasks_count,
+          tt.level + 1 as level,
+          tt.root_id
+        FROM tasks t
+        INNER JOIN task_tree tt ON t.parent_task_id = tt.id
+        WHERE t.archived = false
+      ),
+      task_costs AS (
+        SELECT 
+          tt.*,
+          -- Calculate estimated cost based on estimated hours and assignee rates
           COALESCE((
-            SELECT SUM((tc.estimated_seconds / 3600.0) * COALESCE(fprr.rate, 0))
-            FROM json_array_elements(tc.assignees) AS assignee_json
+            SELECT SUM((tt.estimated_seconds / 3600.0) * COALESCE(fprr.rate, 0))
+            FROM json_array_elements(tt.assignees) AS assignee_json
             LEFT JOIN project_members pm ON pm.team_member_id = (assignee_json->>'team_member_id')::uuid 
-              AND pm.project_id = tc.project_id
+              AND pm.project_id = tt.project_id
             LEFT JOIN finance_project_rate_card_roles fprr ON fprr.id = pm.project_rate_card_role_id
             WHERE assignee_json->>'team_member_id' IS NOT NULL
           ), 0) as estimated_cost,
-          -- Calculate actual cost based on time logged and assignee rates from project_members
+          -- Calculate actual cost based on time logged and assignee rates
           COALESCE((
-            SELECT SUM(
-              COALESCE(fprr.rate, 0) * (twl.time_spent / 3600.0)
-            )
+            SELECT SUM(COALESCE(fprr.rate, 0) * (twl.time_spent / 3600.0))
             FROM task_work_log twl 
             LEFT JOIN users u ON twl.user_id = u.id
             LEFT JOIN team_members tm ON u.id = tm.user_id
-            LEFT JOIN project_members pm ON pm.team_member_id = tm.id AND pm.project_id = tc.project_id
+            LEFT JOIN project_members pm ON pm.team_member_id = tm.id AND pm.project_id = tt.project_id
             LEFT JOIN finance_project_rate_card_roles fprr ON fprr.id = pm.project_rate_card_role_id
-            WHERE twl.task_id = tc.id
+            WHERE twl.task_id = tt.id
           ), 0) as actual_cost_from_logs
+        FROM task_tree tt
+      ),
+      aggregated_tasks AS (
+        SELECT 
+          tc.id,
+          tc.name,
+          tc.parent_task_id,
+          tc.status_id,
+          tc.priority_id,
+          tc.phase_id,
+          tc.assignees,
+          tc.billable,
+          tc.fixed_cost,
+          tc.sub_tasks_count,
+          -- For parent tasks, sum values from all descendants including self
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.estimated_seconds)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.estimated_seconds
+          END as estimated_seconds,
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.total_time_logged_seconds)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.total_time_logged_seconds
+          END as total_time_logged_seconds,
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.estimated_cost)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.estimated_cost
+          END as estimated_cost,
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.actual_cost_from_logs)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.actual_cost_from_logs
+          END as actual_cost_from_logs
         FROM task_costs tc
+        WHERE tc.level = 0  -- Only return the requested level
       )
       SELECT 
-        tec.*,
-        (tec.estimated_cost + tec.fixed_cost) as total_budget,
-        (tec.actual_cost_from_logs + tec.fixed_cost) as total_actual,
-        ((tec.actual_cost_from_logs + tec.fixed_cost) - (tec.estimated_cost + tec.fixed_cost)) as variance
-      FROM task_estimated_costs tec;
+        at.*,
+        (at.estimated_cost + at.fixed_cost) as total_budget,
+        (at.actual_cost_from_logs + at.fixed_cost) as total_actual,
+        ((at.actual_cost_from_logs + at.fixed_cost) - (at.estimated_cost + at.fixed_cost)) as variance
+      FROM aggregated_tasks at;
     `;
 
     const result = await db.query(q, [projectId]);
@@ -240,7 +316,8 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           total_actual: Number(task.total_actual) || 0,
           variance: Number(task.variance) || 0,
           members: task.assignees,
-          billable: task.billable
+          billable: task.billable,
+          sub_tasks_count: Number(task.sub_tasks_count) || 0
         }))
       };
     });
@@ -425,5 +502,139 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     };
 
     return res.status(200).send(new ServerResponse(true, responseData));
+  }
+
+  @HandleExceptions()
+  public static async getSubTasks(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const projectId = req.params.project_id;
+    const parentTaskId = req.params.parent_task_id;
+
+    if (!parentTaskId) {
+      return res.status(400).send(new ServerResponse(false, null, "Parent task ID is required"));
+    }
+
+    // Get subtasks with their financial data
+    const q = `
+      WITH task_costs AS (
+        SELECT 
+          t.id,
+          t.name,
+          t.parent_task_id,
+          t.project_id,
+          t.status_id,
+          t.priority_id,
+          (SELECT phase_id FROM task_phase WHERE task_id = t.id) as phase_id,
+          (SELECT get_task_assignees(t.id)) as assignees,
+          t.billable,
+          COALESCE(t.fixed_cost, 0) as fixed_cost,
+          COALESCE(t.total_minutes * 60, 0) as estimated_seconds,
+          COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) as total_time_logged_seconds,
+          (SELECT COUNT(*) FROM tasks WHERE parent_task_id = t.id AND archived = false) as sub_tasks_count
+        FROM tasks t
+        WHERE t.project_id = $1 
+          AND t.archived = false
+          AND t.parent_task_id = $2
+      ),
+      task_estimated_costs AS (
+        SELECT 
+          tc.*,
+          -- Calculate estimated cost based on estimated hours and assignee rates
+          COALESCE((
+            SELECT SUM((tc.estimated_seconds / 3600.0) * COALESCE(fprr.rate, 0))
+            FROM json_array_elements(tc.assignees) AS assignee_json
+            LEFT JOIN project_members pm ON pm.team_member_id = (assignee_json->>'team_member_id')::uuid 
+              AND pm.project_id = tc.project_id
+            LEFT JOIN finance_project_rate_card_roles fprr ON fprr.id = pm.project_rate_card_role_id
+            WHERE assignee_json->>'team_member_id' IS NOT NULL
+          ), 0) as estimated_cost,
+          -- Calculate actual cost based on time logged and assignee rates
+          COALESCE((
+            SELECT SUM(COALESCE(fprr.rate, 0) * (twl.time_spent / 3600.0))
+            FROM task_work_log twl 
+            LEFT JOIN users u ON twl.user_id = u.id
+            LEFT JOIN team_members tm ON u.id = tm.user_id
+            LEFT JOIN project_members pm ON pm.team_member_id = tm.id AND pm.project_id = tc.project_id
+            LEFT JOIN finance_project_rate_card_roles fprr ON fprr.id = pm.project_rate_card_role_id
+            WHERE twl.task_id = tc.id
+          ), 0) as actual_cost_from_logs
+        FROM task_costs tc
+      )
+      SELECT 
+        tec.*,
+        (tec.estimated_cost + tec.fixed_cost) as total_budget,
+        (tec.actual_cost_from_logs + tec.fixed_cost) as total_actual,
+        ((tec.actual_cost_from_logs + tec.fixed_cost) - (tec.estimated_cost + tec.fixed_cost)) as variance
+      FROM task_estimated_costs tec;
+    `;
+
+    const result = await db.query(q, [projectId, parentTaskId]);
+    const tasks = result.rows;
+
+    // Add color_code to each assignee and include their rate information
+    for (const task of tasks) {
+      if (Array.isArray(task.assignees)) {
+        for (const assignee of task.assignees) {
+          assignee.color_code = getColor(assignee.name);
+          
+          // Get the rate for this assignee
+          const memberRateQuery = `
+            SELECT 
+              pm.project_rate_card_role_id,
+              fprr.rate,
+              fprr.job_title_id,
+              jt.name as job_title_name
+            FROM project_members pm
+            LEFT JOIN finance_project_rate_card_roles fprr ON fprr.id = pm.project_rate_card_role_id
+            LEFT JOIN job_titles jt ON fprr.job_title_id = jt.id
+            WHERE pm.team_member_id = $1 AND pm.project_id = $2
+          `;
+          
+          try {
+            const memberRateResult = await db.query(memberRateQuery, [assignee.team_member_id, projectId]);
+            if (memberRateResult.rows.length > 0) {
+              const memberRate = memberRateResult.rows[0];
+              assignee.project_rate_card_role_id = memberRate.project_rate_card_role_id;
+              assignee.rate = memberRate.rate ? Number(memberRate.rate) : 0;
+              assignee.job_title_id = memberRate.job_title_id;
+              assignee.job_title_name = memberRate.job_title_name;
+            } else {
+              assignee.project_rate_card_role_id = null;
+              assignee.rate = 0;
+              assignee.job_title_id = null;
+              assignee.job_title_name = null;
+            }
+          } catch (error) {
+            console.error("Error fetching member rate:", error);
+            assignee.project_rate_card_role_id = null;
+            assignee.rate = 0;
+            assignee.job_title_id = null;
+            assignee.job_title_name = null;
+          }
+        }
+      }
+    }
+
+    // Format the response to match the expected structure
+    const formattedTasks = tasks.map(task => ({
+      id: task.id,
+      name: task.name,
+      estimated_seconds: Number(task.estimated_seconds) || 0,
+      estimated_hours: formatTimeToHMS(Number(task.estimated_seconds) || 0),
+      total_time_logged_seconds: Number(task.total_time_logged_seconds) || 0,
+      total_time_logged: formatTimeToHMS(Number(task.total_time_logged_seconds) || 0),
+      estimated_cost: Number(task.estimated_cost) || 0,
+      fixed_cost: Number(task.fixed_cost) || 0,
+      total_budget: Number(task.total_budget) || 0,
+      total_actual: Number(task.total_actual) || 0,
+      variance: Number(task.variance) || 0,
+      members: task.assignees,
+      billable: task.billable,
+      sub_tasks_count: Number(task.sub_tasks_count) || 0
+    }));
+
+    return res.status(200).send(new ServerResponse(true, formattedTasks));
   }
 }

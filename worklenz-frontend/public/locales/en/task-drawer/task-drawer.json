@@ -23,6 +23,7 @@
       "show-start-date": "Show Start Date",
       "hours": "Hours",
       "minutes": "Minutes",
+      "time-estimation-disabled-tooltip": "Time estimation is disabled because this task has {{count}} subtasks. The estimation shown is the sum of all subtasks.",
       "progressValue": "Progress Value",
       "progressValueTooltip": "Set the progress percentage (0-100%)",
       "progressValueRequired": "Please enter a progress value",

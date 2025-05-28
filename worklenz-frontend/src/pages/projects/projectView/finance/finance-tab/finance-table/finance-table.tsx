@@ -11,7 +11,13 @@ import { colors } from '@/styles/colors';
 import { financeTableColumns, FinanceTableColumnKeys } from '@/lib/project/project-view-finance-table-columns';
 import Avatars from '@/components/avatars/avatars';
 import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/project-finance.types';
-import { updateTaskFixedCostAsync, updateTaskFixedCost, fetchProjectFinancesSilent } from '@/features/projects/finance/project-finance.slice';
+import { 
+  updateTaskFixedCostAsync, 
+  updateTaskFixedCost, 
+  fetchProjectFinancesSilent,
+  toggleTaskExpansion,
+  fetchSubTasks
+} from '@/features/projects/finance/project-finance.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSelectedTaskId, setShowTaskDrawer, fetchTask } from '@/features/task-drawer/task-drawer.slice';
 import { useParams } from 'react-router-dom';
@@ -143,6 +149,19 @@ const FinanceTable = ({
     dispatch(fetchTask({ taskId, projectId }));
   };
 
+  // Handle task expansion/collapse
+  const handleTaskExpansion = async (task: IProjectFinanceTask) => {
+    if (!projectId) return;
+    
+    // If task has subtasks but they're not loaded yet, load them
+    if (task.sub_tasks_count > 0 && !task.sub_tasks) {
+      dispatch(fetchSubTasks({ projectId, parentTaskId: task.id }));
+    } else {
+      // Just toggle the expansion state
+      dispatch(toggleTaskExpansion({ taskId: task.id, groupId: table.group_id }));
+    }
+  };
+
   // Debounced save function for fixed cost
   const debouncedSaveFixedCost = (value: number | null, taskId: string) => {
     // Clear existing timeout
@@ -181,10 +200,27 @@ const FinanceTable = ({
         return (
           <Tooltip title={task.name}>
             <Flex gap={8} align="center">
+              {/* Indentation for subtasks */}
+              {task.is_sub_task && <div style={{ width: 20 }} />}
+              
+              {/* Expand/collapse icon for parent tasks */}
+              {task.sub_tasks_count > 0 && (
+                <div
+                  style={{ cursor: 'pointer', width: 16, display: 'flex', justifyContent: 'center' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTaskExpansion(task);
+                  }}
+                >
+                  {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
+                </div>
+              )}
+              
+              {/* Task name */}
               <Typography.Text
                 ellipsis={{ expanded: false }}
                 style={{ 
-                  maxWidth: 160,
+                  maxWidth: task.is_sub_task ? 140 : (task.sub_tasks_count > 0 ? 140 : 160),
                   cursor: 'pointer',
                   color: '#1890ff'
                 }}
@@ -341,6 +377,25 @@ const FinanceTable = ({
     variance: totals.variance
   }), [totals]);
 
+  // Flatten tasks to include subtasks for rendering
+  const flattenedTasks = useMemo(() => {
+    const flattened: IProjectFinanceTask[] = [];
+    
+    tasks.forEach(task => {
+      // Add the parent task
+      flattened.push(task);
+      
+      // Add subtasks if they are expanded and loaded
+      if (task.show_sub_tasks && task.sub_tasks) {
+        task.sub_tasks.forEach(subTask => {
+          flattened.push(subTask);
+        });
+      }
+    });
+    
+    return flattened;
+  }, [tasks]);
+
   return (
     <Skeleton active loading={loading}>
       <>
@@ -388,7 +443,7 @@ const FinanceTable = ({
         </tr>
 
         {/* task rows */}
-        {!isCollapse && tasks.map((task, idx) => (
+        {!isCollapse && flattenedTasks.map((task, idx) => (
           <tr
             key={task.id}
             style={{

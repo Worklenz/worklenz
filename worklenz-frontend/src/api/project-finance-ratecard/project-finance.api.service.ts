@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "@/shared/constants";
 import { IServerResponse } from "@/types/common.types";
 import apiClient from "../api-client";
-import { IProjectFinanceResponse, ITaskBreakdownResponse } from "@/types/project/project-finance.types";
+import { IProjectFinanceResponse, ITaskBreakdownResponse, IProjectFinanceTask } from "@/types/project/project-finance.types";
 
 const rootUrl = `${API_BASE_URL}/project-finance`;
 
@@ -17,6 +17,16 @@ export const projectFinanceApiService = {
           }
         );
         console.log(response.data);
+        return response.data;
+      },
+
+    getSubTasks: async (
+        projectId: string,
+        parentTaskId: string
+      ): Promise<IServerResponse<IProjectFinanceTask[]>> => {
+        const response = await apiClient.get<IServerResponse<IProjectFinanceTask[]>>(
+          `${rootUrl}/project/${projectId}/tasks/${parentTaskId}/subtasks`
+        );
         return response.data;
       },
 

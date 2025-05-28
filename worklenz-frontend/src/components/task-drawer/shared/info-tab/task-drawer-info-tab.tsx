@@ -100,7 +100,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     {
       key: 'details',
       label: <Typography.Text strong>{t('taskInfoTab.details.title')}</Typography.Text>,
-      children: <TaskDetailsForm taskFormViewModel={taskFormViewModel} />,
+      children: <TaskDetailsForm taskFormViewModel={taskFormViewModel} subTasks={subTasks} />,
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
     },

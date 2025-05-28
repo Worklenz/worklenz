@@ -40,6 +40,11 @@ export interface IProjectFinanceTask {
   variance: number;
   total_budget: number;
   total_actual: number;
+  sub_tasks_count: number; // Number of subtasks
+  sub_tasks?: IProjectFinanceTask[]; // Loaded subtasks
+  show_sub_tasks?: boolean; // Whether subtasks are expanded
+  is_sub_task?: boolean; // Whether this is a subtask
+  parent_task_id?: string; // Parent task ID for subtasks
 }
 
 export interface IProjectFinanceGroup {
