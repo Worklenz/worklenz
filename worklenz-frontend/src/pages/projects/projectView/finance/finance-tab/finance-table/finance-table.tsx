@@ -1,5 +1,5 @@
 import { Checkbox, Flex, Input, InputNumber, Skeleton, Tooltip, Typography } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   DollarCircleOutlined,
@@ -11,7 +11,7 @@ import { colors } from '@/styles/colors';
 import { financeTableColumns, FinanceTableColumnKeys } from '@/lib/project/project-view-finance-table-columns';
 import Avatars from '@/components/avatars/avatars';
 import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/project-finance.types';
-import { updateTaskFixedCostAsync, updateTaskFixedCost } from '@/features/projects/finance/project-finance.slice';
+import { updateTaskFixedCostAsync, updateTaskFixedCost, fetchProjectFinancesSilent } from '@/features/projects/finance/project-finance.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSelectedTaskId, setShowTaskDrawer, fetchTask } from '@/features/task-drawer/task-drawer.slice';
 import { useParams } from 'react-router-dom';
@@ -33,11 +33,14 @@ const FinanceTable = ({
 }: FinanceTableProps) => {
   const [isCollapse, setIsCollapse] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<IProjectFinanceTask | null>(null);
+  const [editingFixedCostValue, setEditingFixedCostValue] = useState<number | null>(null);
   const [tasks, setTasks] = useState<IProjectFinanceTask[]>(table.tasks);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dispatch = useAppDispatch();
   
   // Get the latest task groups from Redux store
   const taskGroups = useAppSelector((state) => state.projectFinances.taskGroups);
+  const activeGroup = useAppSelector((state) => state.projectFinances.activeGroup);
   
   // Update local state when table.tasks or Redux store changes
   useEffect(() => {
@@ -53,7 +56,13 @@ const FinanceTable = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (selectedTask && !(event.target as Element)?.closest('.fixed-cost-input')) {
-        setSelectedTask(null);
+        // Save current value before closing
+        if (editingFixedCostValue !== null) {
+          immediateSaveFixedCost(editingFixedCostValue, selectedTask.id);
+        } else {
+          setSelectedTask(null);
+          setEditingFixedCostValue(null);
+        }
       }
     };
 
@@ -61,7 +70,16 @@ const FinanceTable = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [selectedTask]);
+  }, [selectedTask, editingFixedCostValue]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // get theme data from theme reducer
   const themeMode = useAppSelector((state) => state.themeReducer.mode);
@@ -99,14 +117,20 @@ const FinanceTable = ({
     }
   };
 
-  const handleFixedCostChange = (value: number | null, taskId: string) => {
+  const handleFixedCostChange = async (value: number | null, taskId: string) => {
     const fixedCost = value || 0;
     
-    // Optimistic update for immediate UI feedback
-    dispatch(updateTaskFixedCost({ taskId, groupId: table.group_id, fixedCost }));
-    
-    // Then make the API call to persist the change
-    dispatch(updateTaskFixedCostAsync({ taskId, groupId: table.group_id, fixedCost }));
+    try {
+      // Make the API call to persist the change
+      await dispatch(updateTaskFixedCostAsync({ taskId, groupId: table.group_id, fixedCost })).unwrap();
+      
+      // Silent refresh the data to get accurate calculations from backend without loading animation
+      if (projectId) {
+        dispatch(fetchProjectFinancesSilent({ projectId, groupBy: activeGroup }));
+      }
+    } catch (error) {
+      console.error('Failed to update fixed cost:', error);
+    }
   };
 
   const { projectId } = useParams<{ projectId: string }>();
@@ -117,6 +141,38 @@ const FinanceTable = ({
     dispatch(setSelectedTaskId(taskId));
     dispatch(setShowTaskDrawer(true));
     dispatch(fetchTask({ taskId, projectId }));
+  };
+
+  // Debounced save function for fixed cost
+  const debouncedSaveFixedCost = (value: number | null, taskId: string) => {
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout
+    saveTimeoutRef.current = setTimeout(() => {
+      if (value !== null) {
+        handleFixedCostChange(value, taskId);
+        setSelectedTask(null);
+        setEditingFixedCostValue(null);
+      }
+    }, 1000); // Save after 1 second of inactivity
+  };
+
+  // Immediate save function (for enter/blur)
+  const immediateSaveFixedCost = (value: number | null, taskId: string) => {
+    // Clear any pending debounced save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    
+    if (value !== null) {
+      handleFixedCostChange(value, taskId);
+    }
+    setSelectedTask(null);
+    setEditingFixedCostValue(null);
   };
 
   const renderFinancialTableColumnContent = (columnKey: FinanceTableColumnKeys, task: IProjectFinanceTask) => {
@@ -179,14 +235,19 @@ const FinanceTable = ({
       case FinanceTableColumnKeys.FIXED_COST:
         return selectedTask?.id === task.id ? (
           <InputNumber
-            value={task.fixed_cost}
-            onBlur={(e) => {
-              handleFixedCostChange(Number(e.target.value), task.id);
-              setSelectedTask(null);
+            value={editingFixedCostValue !== null ? editingFixedCostValue : task.fixed_cost}
+            onChange={(value) => {
+              setEditingFixedCostValue(value);
+              // Trigger debounced save for up/down arrow clicks
+              debouncedSaveFixedCost(value, task.id);
             }}
-            onPressEnter={(e) => {
-              handleFixedCostChange(Number((e.target as HTMLInputElement).value), task.id);
-              setSelectedTask(null);
+            onBlur={() => {
+              // Immediate save on blur
+              immediateSaveFixedCost(editingFixedCostValue, task.id);
+            }}
+            onPressEnter={() => {
+              // Immediate save on enter
+              immediateSaveFixedCost(editingFixedCostValue, task.id);
             }}
             autoFocus
             style={{ width: '100%', textAlign: 'right' }}
@@ -202,6 +263,7 @@ const FinanceTable = ({
             onClick={(e) => {
               e.stopPropagation();
               setSelectedTask(task);
+              setEditingFixedCostValue(task.fixed_cost);
             }}
           >
             {formatNumber(task.fixed_cost)}
@@ -211,10 +273,10 @@ const FinanceTable = ({
         return (
           <Typography.Text 
             style={{ 
-              color: formattedTotals.variance > 0 ? '#FF0000' : '#6DC376' 
+              color: task.variance > 0 ? '#FF0000' : '#6DC376' 
             }}
           >
-            {formatNumber(formattedTotals.variance)}
+            {formatNumber(task.variance)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.TOTAL_BUDGET:

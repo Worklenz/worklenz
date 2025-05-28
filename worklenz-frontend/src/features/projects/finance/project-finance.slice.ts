@@ -22,13 +22,10 @@ const calculateTaskCosts = (task: IProjectFinanceTask) => {
   const timeLoggedHours = secondsToHours(task.total_time_logged_seconds || 0);
   const fixedCost = task.fixed_cost || 0;
   
-  // Calculate total budget (estimated hours * rate + fixed cost)
-  const totalBudget = task.estimated_cost + fixedCost;
-  
-  // Calculate total actual (time logged * rate + fixed cost)
+  // For fixed cost updates, we'll rely on the backend values
+  // and trigger a re-fetch to ensure accuracy
+  const totalBudget = (task.estimated_cost || 0) + fixedCost;
   const totalActual = task.total_actual || 0;
-  
-  // Calculate variance (total actual - total budget)
   const variance = totalActual - totalBudget;
 
   return {
@@ -80,6 +77,14 @@ export const fetchProjectFinances = createAsyncThunk(
   }
 );
 
+export const fetchProjectFinancesSilent = createAsyncThunk(
+  'projectFinances/fetchProjectFinancesSilent',
+  async ({ projectId, groupBy }: { projectId: string; groupBy: GroupTypes }) => {
+    const response = await projectFinanceApiService.getProjectTasks(projectId, groupBy);
+    return response.body;
+  }
+);
+
 export const updateTaskFixedCostAsync = createAsyncThunk(
   'projectFinances/updateTaskFixedCostAsync',
   async ({ taskId, groupId, fixedCost }: { taskId: string; groupId: string; fixedCost: number }) => {
@@ -105,11 +110,7 @@ export const projectFinancesSlice = createSlice({
         const task = group.tasks.find(t => t.id === taskId);
         if (task) {
           task.fixed_cost = fixedCost;
-          // Recalculate task costs after updating fixed cost
-          const { totalBudget, totalActual, variance } = calculateTaskCosts(task);
-          task.total_budget = totalBudget;
-          task.total_actual = totalActual;
-          task.variance = variance;
+          // Don't recalculate here - let the backend handle it and we'll refresh
         }
       }
     },
@@ -158,6 +159,11 @@ export const projectFinancesSlice = createSlice({
       .addCase(fetchProjectFinances.rejected, (state) => {
         state.loading = false;
       })
+      .addCase(fetchProjectFinancesSilent.fulfilled, (state, action) => {
+        // Update data without changing loading state for silent refresh
+        state.taskGroups = action.payload.groups;
+        state.projectRateCards = action.payload.project_rate_cards;
+      })
       .addCase(updateTaskFixedCostAsync.fulfilled, (state, action) => {
         const { taskId, groupId, fixedCost } = action.payload;
         const group = state.taskGroups.find(g => g.group_id === groupId);
@@ -165,11 +171,7 @@ export const projectFinancesSlice = createSlice({
           const task = group.tasks.find(t => t.id === taskId);
           if (task) {
             task.fixed_cost = fixedCost;
-            // Recalculate task costs after updating fixed cost
-            const { totalBudget, totalActual, variance } = calculateTaskCosts(task);
-            task.total_budget = totalBudget;
-            task.total_actual = totalActual;
-            task.variance = variance;
+            // Don't recalculate here - trigger a refresh instead for accuracy
           }
         }
       });
