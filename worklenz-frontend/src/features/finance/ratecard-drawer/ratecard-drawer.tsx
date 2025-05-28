@@ -307,16 +307,21 @@ const RatecardDrawer = ({
     },
   ];
 
-  const handleDrawerClose = () => {
-    if (!name || name.trim() === '' || name === 'Untitled Rate Card') {
+  const handleDrawerClose = async() => {
+    if (!name || name.trim() === '') {
       messageApi.open({
-      type: 'warning',
-      content: t('ratecardNameRequired') || 'Rate card name is required.',
-    });
-    return;
-  } else if (hasChanges) {
+        type: 'warning',
+        content: t('ratecardNameRequired') || 'Rate card name is required.',
+      });
+      return;
+    } else if (hasChanges) {
       setShowUnsavedAlert(true);
-    } else {
+    } 
+    else if (name === 'Untitled Rate Card' && roles.length === 0){
+      await dispatch(deleteRateCard(ratecardId));
+      dispatch(toggleRatecardDrawer());
+    }
+    else {
       dispatch(toggleRatecardDrawer());
     }
   };
@@ -339,95 +344,95 @@ const RatecardDrawer = ({
 
   return (
     <>
-    {contextHolder}
-    <Drawer
-      loading={drawerLoading}
-      onClose={handleDrawerClose}
-      title={
-        <Flex align="center" justify="space-between">
-          <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
-            <Input
-              value={name}
-              placeholder="Enter rate card name"
-              style={{
-                fontWeight: 500,
-                fontSize: 16,
-                background: 'transparent',
-                border: 'none',
-                boxShadow: 'none',
-                padding: 0,
-              }}
-              onChange={e => {
-                setName(e.target.value);
-              }}
-            />
-          </Typography.Text>
-          <Flex gap={8} align="center">
-            <Typography.Text>{t('currency')}</Typography.Text>
-            <Select
-              value={currency}
-              options={[
-                { value: 'USD', label: 'USD' },
-                { value: 'LKR', label: 'LKR' },
-                { value: 'INR', label: 'INR' },
-              ]}
-              onChange={(value) => setCurrency(value)}
-            />
-            <Button onClick={handleAddAllRoles} type="default">
-              {t('addAllButton') || 'Add All'}
+      {contextHolder}
+      <Drawer
+        loading={drawerLoading}
+        onClose={handleDrawerClose}
+        title={
+          <Flex align="center" justify="space-between">
+            <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
+              <Input
+                value={name}
+                placeholder="Enter rate card name"
+                style={{
+                  fontWeight: 500,
+                  fontSize: 16,
+                  background: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                  padding: 0,
+                }}
+                onChange={e => {
+                  setName(e.target.value);
+                }}
+              />
+            </Typography.Text>
+            <Flex gap={8} align="center">
+              <Typography.Text>{t('currency')}</Typography.Text>
+              <Select
+                value={currency}
+                options={[
+                  { value: 'USD', label: 'USD' },
+                  { value: 'LKR', label: 'LKR' },
+                  { value: 'INR', label: 'INR' },
+                ]}
+                onChange={(value) => setCurrency(value)}
+              />
+              <Button onClick={handleAddAllRoles} type="default">
+                {t('addAllButton') || 'Add All'}
+              </Button>
+            </Flex>
+          </Flex>
+        }
+        open={isDrawerOpen}
+        width={700}
+        footer={
+          <Flex justify="end" gap={16} style={{ marginTop: 16 }}>
+            <Button style={{ marginBottom: 24 }} onClick={handleSave} type="primary" disabled={name === '' || (name === 'Untitled Rate Card' && roles.length === 0)}>
+              {t('saveButton')}
             </Button>
           </Flex>
-        </Flex>
-      }
-      open={isDrawerOpen}
-      width={700}
-      footer={
-        <Flex justify="end" gap={16} style={{ marginTop: 16 }}>
-          <Button style={{ marginBottom: 24 }} onClick={handleSave} type="primary" disabled={name === '' || (name === 'Untitled Rate Card' && roles.length === 0)}>
-            {t('saveButton')}
-          </Button>
-        </Flex>
-      }
-    >
-      {showUnsavedAlert && (
-        <Alert
-          message={t('unsavedChangesTitle') || 'Unsaved Changes'}
-          type="warning"
-          showIcon
-          closable
-          onClose={() => setShowUnsavedAlert(false)}
-          action={
-            <Space direction="horizontal">
-              <Button size="small" type="primary" onClick={handleConfirmSave}>
-                Save
-              </Button>
-              <Button size="small" danger onClick={handleConfirmDiscard}>
-                Discard
-              </Button>
-            </Space>
-          }
-          style={{ marginBottom: 16 }}
-        />
-      )}
-      <Table
-        dataSource={roles}
-        columns={columns}
-        rowKey={(record) => record.job_title_id}
-        pagination={false}
-        footer={() => (
-          <Button
-            type="dashed"
-            onClick={handleAddRole}
-            block
-            style={{ margin: 0, padding: 0 }}
-          >
-            {t('addRoleButton')}
-          </Button>
+        }
+      >
+        {showUnsavedAlert && (
+          <Alert
+            message={t('unsavedChangesTitle') || 'Unsaved Changes'}
+            type="warning"
+            showIcon
+            closable
+            onClose={() => setShowUnsavedAlert(false)}
+            action={
+              <Space direction="horizontal">
+                <Button size="small" type="primary" onClick={handleConfirmSave}>
+                  Save
+                </Button>
+                <Button size="small" danger onClick={handleConfirmDiscard}>
+                  Discard
+                </Button>
+              </Space>
+            }
+            style={{ marginBottom: 16 }}
+          />
         )}
-      />
-    </Drawer>
+        <Table
+          dataSource={roles}
+          columns={columns}
+          rowKey={(record) => record.job_title_id}
+          pagination={false}
+          footer={() => (
+            <Button
+              type="dashed"
+              onClick={handleAddRole}
+              block
+              style={{ margin: 0, padding: 0 }}
+            >
+              {t('addRoleButton')}
+            </Button>
+          )}
+        />
+      </Drawer>
     </>
-    
+
   );
 };
 
