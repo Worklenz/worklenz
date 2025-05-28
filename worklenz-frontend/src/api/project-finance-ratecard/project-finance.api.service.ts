@@ -49,4 +49,18 @@ export const projectFinanceApiService = {
         );
         return response.data;
       },
+
+    exportFinanceData: async (
+        projectId: string,
+        groupBy: 'status' | 'priority' | 'phases' = 'status'
+      ): Promise<Blob> => {
+        const response = await apiClient.get(
+          `${rootUrl}/project/${projectId}/export`,
+          {
+            params: { groupBy },
+            responseType: 'blob'
+          }
+        );
+        return response.data;
+      },
 }
