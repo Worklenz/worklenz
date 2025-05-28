@@ -191,6 +191,10 @@ const RatecardTable: React.FC = () => {
     }
   };
 
+  const assignedMembers = roles
+    .flatMap((role) => role.members || [])
+    .filter((memberId, index, self) => self.indexOf(memberId) === index);
+
   // Columns
   const columns: TableProps<JobRoleType>['columns'] = [
     {
@@ -267,6 +271,7 @@ const RatecardTable: React.FC = () => {
               selectedMemberIds={memberscol || []}
               onChange={(memberId) => handleMemberChange(memberId, index, record)}
               memberlist={members}
+              assignedMembers={assignedMembers} // Pass assigned members here
             />
           </div>
         </div>
