@@ -35,7 +35,8 @@
     "ratecardsPluralText": "Rate Card Templates",
     "deleteConfirm": "Are you sure ?",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "alreadyImportedRateCardMessage": "A rate card has already been imported. Clear all imported rate cards to add a new one."
 
   }
   
