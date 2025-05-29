@@ -409,6 +409,7 @@ export interface IRPTTimeMember {
   utilized_hours?: string;
   utilization_percent?: string;
   over_under_utilized_hours?: string;
+  utilization_state?: string;
 }
 
 export interface IMemberTaskStatGroupResonse {

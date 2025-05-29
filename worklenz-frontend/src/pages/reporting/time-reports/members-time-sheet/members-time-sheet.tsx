@@ -37,6 +37,8 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
     loadingProjects,
     members,
     loadingMembers,
+    utilization,
+    loadingUtilization,
     billable,
     archived,
   } = useAppSelector(state => state.timeReportsOverviewReducer);
@@ -100,22 +102,24 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
             const hours = member?.utilized_hours || '0.00';
             const percent = parseFloat(member?.utilization_percent || '0.00');
             const overUnder = member?.over_under_utilized_hours || '0.00';
-            let status = '';
             let color = '';
-            if (percent < 90) {
-              status = 'Under';
-                color = '🟧';
-            } else if (percent <= 110) {
-              status = 'Optimal';
-                color = '🟩';
-            } else {
-              status = 'Over';
-                color = '🟥';
+            switch (member.utilization_state) {
+              case 'under':
+              color = '🟧';
+              break;
+              case 'optimal':
+              color = '🟩';
+              break;
+              case 'over':
+              color = '🟥';
+              break;
+              default:
+              color = '';
             }
             return [
               `${context.dataset.label}: ${hours} h`,
               `${color} Utilization: ${percent}%`,
-              `${status} Utilized: ${overUnder} h`
+              `${member.utilization_state} Utilized: ${overUnder} h`
             ];
           },
         }
@@ -163,13 +167,14 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
       const selectedTeams = teams.filter(team => team.selected);
       const selectedProjects = filterProjects.filter(project => project.selected);
       const selectedCategories = categories.filter(category => category.selected);
-      const selectedMembers = members.filter(member => member.selected); // Use selected members
-
+      const selectedMembers = members.filter(member => member.selected);
+      const selectedUtilization = utilization.filter(item => item.selected);
       const body = {
         teams: selectedTeams.map(t => t.id),
         projects: selectedProjects.map(project => project.id),
         categories: selectedCategories.map(category => category.id),
-        members: selectedMembers.map(member => member.id), // Include members in the request
+        members: selectedMembers.map(member => member.id),
+        utilization: selectedUtilization.map(item => item.id),
         duration,
         date_range: dateRange,
         billable,
@@ -189,7 +194,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
 
   useEffect(() => {
     fetchChartData();
-  }, [dispatch, duration, dateRange, billable, archived, teams, filterProjects, categories, members]);
+  }, [dispatch, duration, dateRange, billable, archived, teams, filterProjects, categories, members, utilization]);
 
   const exportChart = () => {
     if (chartRef.current) {

@@ -42,5 +42,7 @@
   "noTeams": "No teams found",
   "noData": "No data found",
   "members": "Members",
-  "searchByMember": "Search by member"
+  "searchByMember": "Search by member",
+  "utilization": "Utilization"
+  
 }

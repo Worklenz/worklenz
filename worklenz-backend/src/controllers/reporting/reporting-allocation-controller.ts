@@ -492,19 +492,43 @@ export default class ReportingAllocationController extends ReportingControllerBa
       GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id
       ORDER BY logged_time DESC;`;
     const result = await db.query(q, []);
+    const utilization = (req.body.utilization || []) as string[];
 
-    for (const member of result.rows) {
-      member.value = member.logged_time ? parseFloat(moment.duration(member.logged_time, "seconds").asHours().toFixed(2)) : 0;
+    // Precompute totalWorkingHours * 3600 for efficiency
+    const totalWorkingSeconds = totalWorkingHours * 3600;
+    const hasUtilizationFilter = utilization.length > 0;
+
+    // calculate utilization state
+    for (let i = 0, len = result.rows.length; i < len; i++) {
+      const member = result.rows[i];
+      const loggedSeconds = member.logged_time ? parseFloat(member.logged_time) : 0;
+      const utilizedHours = loggedSeconds / 3600;
+      const utilizationPercent = totalWorkingSeconds > 0 && loggedSeconds
+      ? ((loggedSeconds / totalWorkingSeconds) * 100)
+      : 0;
+      const overUnder = utilizedHours - totalWorkingHours;
+
+      member.value = utilizedHours ? parseFloat(utilizedHours.toFixed(2)) : 0;
       member.color_code = getColor(member.name);
       member.total_working_hours = totalWorkingHours;
-      member.utilization_percent = (totalWorkingHours > 0 && member.logged_time) ? ((parseFloat(member.logged_time) / (totalWorkingHours * 3600)) * 100).toFixed(2) : '0.00';
-      member.utilized_hours = member.logged_time ? (parseFloat(member.logged_time) / 3600).toFixed(2) : '0.00';
-      // Over/under utilized hours: utilized_hours - total_working_hours
-      const overUnder = member.utilized_hours && member.total_working_hours ? (parseFloat(member.utilized_hours) - member.total_working_hours) : 0;
+      member.utilization_percent = utilizationPercent.toFixed(2);
+      member.utilized_hours = utilizedHours.toFixed(2);
       member.over_under_utilized_hours = overUnder.toFixed(2);
+
+      if (utilizationPercent < 90) {
+      member.utilization_state = 'under';
+      } else if (utilizationPercent <= 110) {
+      member.utilization_state = 'optimal';
+      } else {
+      member.utilization_state = 'over';
+      }
     }
 
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    const filteredRows = hasUtilizationFilter
+      ? result.rows.filter(member => utilization.includes(member.utilization_state))
+      : result.rows;
+
+    return res.status(200).send(new ServerResponse(true, filteredRows));
   }
 
   @HandleExceptions()

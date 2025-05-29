@@ -9,8 +9,10 @@ import {
   fetchReportingProjects,
   fetchReportingCategories,
   fetchReportingMembers,
+  fetchReportingUtilization,
 } from '@/features/reporting/time-reports/time-reports-overview.slice';
 import Members from './members';
+import Utilization from './utilization';
 
 const TimeReportPageHeader: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -21,6 +23,7 @@ const TimeReportPageHeader: React.FC = () => {
       await dispatch(fetchReportingCategories());
       await dispatch(fetchReportingProjects());
       await dispatch(fetchReportingMembers());
+      await dispatch(fetchReportingUtilization());
     };
 
     fetchData();
@@ -33,6 +36,7 @@ const TimeReportPageHeader: React.FC = () => {
       <Projects />
       <Billable />
       <Members/>
+      <Utilization />
     </div>
   );
 };

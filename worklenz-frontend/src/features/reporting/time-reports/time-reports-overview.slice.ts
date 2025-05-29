@@ -26,6 +26,9 @@ interface ITimeReportsOverviewState {
 
   members: any[];
   loadingMembers: boolean;
+
+  utilization: any[];
+  loadingUtilization: boolean;
 }
 
 const initialState: ITimeReportsOverviewState = {
@@ -47,6 +50,9 @@ const initialState: ITimeReportsOverviewState = {
   },
   members: [],
   loadingMembers: false,
+
+  utilization: [],
+  loadingUtilization: false,
 };
 
 const selectedMembers = (state: ITimeReportsOverviewState) => {
@@ -63,6 +69,36 @@ const selectedCategories = (state: ITimeReportsOverviewState) => {
     .map(category => category.id) as string[];
 };
 
+const selectedUtilization = (state: ITimeReportsOverviewState) => {
+  return state.utilization
+    .filter(utilization => utilization.selected)
+    .map(utilization => utilization.id) as string[];
+};
+
+const allUtilization = (state: ITimeReportsOverviewState) => {
+  return state.utilization;
+};
+
+export const fetchReportingUtilization = createAsyncThunk(
+  'timeReportsOverview/fetchReportingUtilization',
+  async (_, { rejectWithValue }) => {
+    try {
+      const utilization = [
+        { id: 'under', name: 'Under-utilized (Under 90%)', selected: true },
+        { id: 'optimal', name: 'Optimal-utilized (90%-110%)', selected: true },
+        { id: 'over', name: 'Over-utilized (Over 110%)', selected: true },
+      ];
+      return utilization;
+    } catch (error) {
+      let errorMessage = 'An error occurred while fetching utilization';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 export const fetchReportingMembers = createAsyncThunk(
   'timeReportsOverview/fetchReportingMembers',
   async (_, { rejectWithValue, getState }) => {
@@ -78,7 +114,11 @@ export const fetchReportingMembers = createAsyncThunk(
         return rejectWithValue(res.message || 'Failed to fetch members');
       }
     } catch (error) {
-      return rejectWithValue(error.message || 'An error occurred while fetching members');
+      let errorMessage = 'An error occurred while fetching members';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -181,6 +221,20 @@ const timeReportsOverviewSlice = createSlice({
         member.selected = action.payload;
       });
     },
+    setSelectOrDeselectUtilization: (
+      state,
+      action: PayloadAction<{ id: string; selected: boolean }>
+    ) => {
+      const utilization = state.utilization.find(u => u.id === action.payload.id);
+      if (utilization) {
+        utilization.selected = action.payload.selected;
+      }
+    },
+    setSelectOrDeselectAllUtilization: (state, action: PayloadAction<boolean>) => {
+      state.utilization.forEach(utilization => {
+        utilization.selected = action.payload;
+      });
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchReportingTeams.fulfilled, (state, action) => {
@@ -229,8 +283,8 @@ const timeReportsOverviewSlice = createSlice({
       const members = action.payload.map((member: any) => ({
         id: member.id,
         name: member.name,
-        selected: true, 
-        avatar_url: member.avatar_url, 
+        selected: true,
+        avatar_url: member.avatar_url,
         email: member.email,
       }));
       state.members = members;
@@ -244,6 +298,17 @@ const timeReportsOverviewSlice = createSlice({
     builder.addCase(fetchReportingMembers.rejected, (state, action) => {
       state.loadingMembers = false;
       console.error('Error fetching members:', action.payload);
+    });
+    builder.addCase(fetchReportingUtilization.fulfilled, (state, action) => {
+      state.utilization = action.payload;
+      state.loadingUtilization = false;
+    });
+    builder.addCase(fetchReportingUtilization.pending, state => {
+      state.loadingUtilization = true;
+    });
+    builder.addCase(fetchReportingUtilization.rejected, (state, action) => {
+      state.loadingUtilization = false;
+      console.error('Error fetching utilization:', action.payload);
     });
   },
 });
@@ -259,6 +324,8 @@ export const {
   setSelectOrDeselectBillable,
   setSelectOrDeselectMember,
   setSelectOrDeselectAllMembers,
+  setSelectOrDeselectUtilization,
+  setSelectOrDeselectAllUtilization,
   setNoCategory,
   setArchived,
 } = timeReportsOverviewSlice.actions;
