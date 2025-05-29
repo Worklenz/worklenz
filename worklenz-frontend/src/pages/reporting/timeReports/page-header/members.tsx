@@ -23,13 +23,11 @@ const Members: React.FC = () => {
 
   // Handle checkbox change for individual members
   const handleCheckboxChange = (id: string, checked: boolean) => {
-    console.log('Select Change:', id);
     dispatch(setSelectOrDeselectMember({ id, selected: checked }));
   };
 
   // Handle "Select All" checkbox change
   const handleSelectAllChange = (e: CheckboxChangeEvent) => {
-    console.log('Select All Change:', e);
     const isChecked = e.target.checked;
     setSelectAll(isChecked);
     dispatch(setSelectOrDeselectAllMembers(isChecked));

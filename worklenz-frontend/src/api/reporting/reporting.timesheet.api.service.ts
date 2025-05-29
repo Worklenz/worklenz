@@ -27,9 +27,7 @@ export const reportingTimesheetApiService = {
 
   getMemberTimeSheets: async (body = {}, archived = false): Promise<IServerResponse<IRPTTimeMember[]>> => {
     const q = toQueryString({ archived });
-    console.log('getMemberTimeSheets body:', body);
     const response = await apiClient.post(`${rootUrl}/time-reports/members/${q}`, body);
-    console.log('getMemberTimeSheets response:', response);
     return response.data;
   },
 

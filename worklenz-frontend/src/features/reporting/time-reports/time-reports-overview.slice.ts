@@ -152,7 +152,6 @@ const timeReportsOverviewSlice = createSlice({
     setSelectOrDeselectProject: (state, action) => {
       const project = state.projects.find(project => project.id === action.payload.id);
       if (project) {
-        console.log('setSelectOrDeselectProject', project, action.payload);
         project.selected = action.payload.selected;
       }
     },
@@ -227,25 +226,22 @@ const timeReportsOverviewSlice = createSlice({
       state.loadingProjects = false;
     });
     builder.addCase(fetchReportingMembers.fulfilled, (state, action) => {
-      console.log('fetchReportingMembers fulfilled', action.payload);
       const members = action.payload.map((member: any) => ({
         id: member.id,
         name: member.name,
-        selected: true, // Default to selected
-        avatar_url: member.avatar_url, // Include avatar URL if needed
-        email: member.email, // Include email if needed
+        selected: true, 
+        avatar_url: member.avatar_url, 
+        email: member.email,
       }));
       state.members = members;
       state.loadingMembers = false;
     });
 
     builder.addCase(fetchReportingMembers.pending, state => {
-      console.log('fetchReportingMembers pending');
       state.loadingMembers = true;
     });
 
     builder.addCase(fetchReportingMembers.rejected, (state, action) => {
-      console.log('fetchReportingMembers rejected', action.payload);
       state.loadingMembers = false;
       console.error('Error fetching members:', action.payload);
     });
