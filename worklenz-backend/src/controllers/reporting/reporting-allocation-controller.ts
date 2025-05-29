@@ -94,7 +94,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
                         SELECT name,
                                (SELECT COALESCE(SUM(time_spent), 0)
                                 FROM task_work_log
-                                       LEFT JOIN tasks ON task_work_log.task_id = tasks.id 
+                                       LEFT JOIN tasks ON task_work_log.task_id = tasks.id
                                 WHERE user_id = users.id ${billableQuery}
                                   AND CASE WHEN ($1 IS TRUE) THEN tasks.project_id IS NOT NULL ELSE tasks.archived = FALSE END
                                   AND tasks.project_id = projects.id
@@ -473,17 +473,24 @@ export default class ReportingAllocationController extends ReportingControllerBa
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
     const billableQuery = this.buildBillableQuery(billable);
-
+    const members = (req.body.members || []) as string[];
+    // Prepare members filter
+    let membersFilter = "";
+    if (members.length > 0) {
+      const memberIds = members.map(id => `'${id}'`).join(",");
+      membersFilter = `AND tmiv.team_member_id IN (${memberIds})`;
+    }
     const q = `
-        SELECT tmiv.email, tmiv.name, SUM(time_spent) AS logged_time
-            FROM team_member_info_view tmiv
-                    LEFT JOIN task_work_log ON task_work_log.user_id = tmiv.user_id
-                    LEFT JOIN tasks ON tasks.id = task_work_log.task_id ${billableQuery}
-                    LEFT JOIN projects p ON p.id = tasks.project_id AND p.team_id = tmiv.team_id
-            WHERE p.id IN (${projectIds})
-            ${durationClause} ${archivedClause}
-            GROUP BY tmiv.email, tmiv.name
-            ORDER BY logged_time DESC;`;
+      SELECT tmiv.team_member_id, tmiv.email, tmiv.name, SUM(time_spent) AS logged_time
+      FROM team_member_info_view tmiv
+        LEFT JOIN task_work_log ON task_work_log.user_id = tmiv.user_id
+        LEFT JOIN tasks ON tasks.id = task_work_log.task_id ${billableQuery}
+        LEFT JOIN projects p ON p.id = tasks.project_id AND p.team_id = tmiv.team_id
+      WHERE p.id IN (${projectIds})
+        ${durationClause} ${archivedClause}
+        ${membersFilter}
+      GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id
+      ORDER BY logged_time DESC;`;
     const result = await db.query(q, []);
 
     for (const member of result.rows) {

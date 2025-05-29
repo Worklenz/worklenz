@@ -35,6 +35,8 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
     loadingCategories,
     projects: filterProjects,
     loadingProjects,
+    members,
+    loadingMembers,
     billable,
     archived,
   } = useAppSelector(state => state.timeReportsOverviewReducer);
@@ -170,11 +172,13 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
       const selectedTeams = teams.filter(team => team.selected);
       const selectedProjects = filterProjects.filter(project => project.selected);
       const selectedCategories = categories.filter(category => category.selected);
+      const selectedMembers = members.filter(member => member.selected); // Use selected members
 
       const body = {
         teams: selectedTeams.map(t => t.id),
         projects: selectedProjects.map(project => project.id),
         categories: selectedCategories.map(category => category.id),
+        members: selectedMembers.map(member => member.id), // Include members in the request
         duration,
         date_range: dateRange,
         billable,
@@ -185,6 +189,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
         setJsonData(res.body || []);
       }
     } catch (error) {
+      console.error('Error fetching chart data:', error);
       logger.error('Error fetching chart data:', error);
     } finally {
       setLoading(false);
@@ -193,7 +198,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
 
   useEffect(() => {
     fetchChartData();
-  }, [dispatch, duration, dateRange, billable, archived, teams, filterProjects, categories]);
+  }, [dispatch, duration, dateRange, billable, archived, teams, filterProjects, categories, members]);
 
   const exportChart = () => {
     if (chartRef.current) {

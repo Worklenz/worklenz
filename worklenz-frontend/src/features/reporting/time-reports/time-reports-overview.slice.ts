@@ -23,6 +23,9 @@ interface ITimeReportsOverviewState {
     billable: boolean;
     nonBillable: boolean;
   };
+
+  members: any[];
+  loadingMembers: boolean;
 }
 
 const initialState: ITimeReportsOverviewState = {
@@ -42,6 +45,12 @@ const initialState: ITimeReportsOverviewState = {
     billable: true,
     nonBillable: true,
   },
+  members: [],
+  loadingMembers: false,
+};
+
+const selectedMembers = (state: ITimeReportsOverviewState) => {
+  return state.members.filter(member => member.selected).map(member => member.id) as string[];
 };
 
 const selectedTeams = (state: ITimeReportsOverviewState) => {
@@ -53,6 +62,26 @@ const selectedCategories = (state: ITimeReportsOverviewState) => {
     .filter(category => category.selected)
     .map(category => category.id) as string[];
 };
+
+export const fetchReportingMembers = createAsyncThunk(
+  'timeReportsOverview/fetchReportingMembers',
+  async (_, { rejectWithValue, getState }) => {
+    const state = getState() as { timeReportsOverviewReducer: ITimeReportsOverviewState };
+    const { timeReportsOverviewReducer } = state;
+
+    try {
+      const res = await reportingApiService.getMembers(selectedMembers(timeReportsOverviewReducer));
+      if (res.done) {
+        // Extract members from the response
+        return res.body.members; // Use `body.members` instead of `body`
+      } else {
+        return rejectWithValue(res.message || 'Failed to fetch members');
+      }
+    } catch (error) {
+      return rejectWithValue(error.message || 'An error occurred while fetching members');
+    }
+  }
+);
 
 export const fetchReportingTeams = createAsyncThunk(
   'timeReportsOverview/fetchReportingTeams',
@@ -123,6 +152,7 @@ const timeReportsOverviewSlice = createSlice({
     setSelectOrDeselectProject: (state, action) => {
       const project = state.projects.find(project => project.id === action.payload.id);
       if (project) {
+        console.log('setSelectOrDeselectProject', project, action.payload);
         project.selected = action.payload.selected;
       }
     },
@@ -140,6 +170,17 @@ const timeReportsOverviewSlice = createSlice({
     },
     setArchived: (state, action: PayloadAction<boolean>) => {
       state.archived = action.payload;
+    },
+    setSelectOrDeselectMember: (state, action: PayloadAction<{ id: string; selected: boolean }>) => {
+      const member = state.members.find(member => member.id === action.payload.id);
+      if (member) {
+        member.selected = action.payload.selected;
+      }
+    },
+    setSelectOrDeselectAllMembers: (state, action: PayloadAction<boolean>) => {
+      state.members.forEach(member => {
+        member.selected = action.payload;
+      });
     },
   },
   extraReducers: builder => {
@@ -185,6 +226,29 @@ const timeReportsOverviewSlice = createSlice({
     builder.addCase(fetchReportingProjects.rejected, state => {
       state.loadingProjects = false;
     });
+    builder.addCase(fetchReportingMembers.fulfilled, (state, action) => {
+      console.log('fetchReportingMembers fulfilled', action.payload);
+      const members = action.payload.map((member: any) => ({
+        id: member.id,
+        name: member.name,
+        selected: true, // Default to selected
+        avatar_url: member.avatar_url, // Include avatar URL if needed
+        email: member.email, // Include email if needed
+      }));
+      state.members = members;
+      state.loadingMembers = false;
+    });
+
+    builder.addCase(fetchReportingMembers.pending, state => {
+      console.log('fetchReportingMembers pending');
+      state.loadingMembers = true;
+    });
+
+    builder.addCase(fetchReportingMembers.rejected, (state, action) => {
+      console.log('fetchReportingMembers rejected', action.payload);
+      state.loadingMembers = false;
+      console.error('Error fetching members:', action.payload);
+    });
   },
 });
 
@@ -197,6 +261,8 @@ export const {
   setSelectOrDeselectProject,
   setSelectOrDeselectAllProjects,
   setSelectOrDeselectBillable,
+  setSelectOrDeselectMember,
+  setSelectOrDeselectAllMembers,
   setNoCategory,
   setArchived,
 } = timeReportsOverviewSlice.actions;
