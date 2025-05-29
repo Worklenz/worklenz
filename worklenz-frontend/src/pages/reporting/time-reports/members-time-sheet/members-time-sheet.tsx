@@ -19,11 +19,14 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
+interface MembersTimeSheetProps {
+  onTotalsUpdate: (totals: { total_time_logs: string; total_estimated_hours: string; total_utilization: string }) => void;
+}
 export interface MembersTimeSheetRef {
   exportChart: () => void;
 }
 
-const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
+const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(({ onTotalsUpdate }, ref) => {
   const { t } = useTranslation('time-report');
   const dispatch = useAppDispatch();
   const chartRef = React.useRef<ChartJS<'bar', string[], unknown>>(null);
@@ -181,8 +184,17 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
       };
 
       const res = await reportingTimesheetApiService.getMemberTimeSheets(body, archived);
+      console.log('Members Time Sheet Data:', res.body.totals);
       if (res.done) {
-        setJsonData(res.body || []);
+        setJsonData(res.body.filteredRows || []);
+
+      const totalsRaw = res.body.totals || {};
+      const totals = {
+        total_time_logs: totalsRaw.total_time_logs ?? "0",
+        total_estimated_hours: totalsRaw.total_estimated_hours ?? "0",
+        total_utilization: totalsRaw.total_utilization ?? "0",
+      };
+      onTotalsUpdate(totals);
       }
     } catch (error) {
       console.error('Error fetching chart data:', error);

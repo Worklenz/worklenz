@@ -504,8 +504,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const loggedSeconds = member.logged_time ? parseFloat(member.logged_time) : 0;
       const utilizedHours = loggedSeconds / 3600;
       const utilizationPercent = totalWorkingSeconds > 0 && loggedSeconds
-      ? ((loggedSeconds / totalWorkingSeconds) * 100)
-      : 0;
+        ? ((loggedSeconds / totalWorkingSeconds) * 100)
+        : 0;
       const overUnder = utilizedHours - totalWorkingHours;
 
       member.value = utilizedHours ? parseFloat(utilizedHours.toFixed(2)) : 0;
@@ -516,11 +516,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
       member.over_under_utilized_hours = overUnder.toFixed(2);
 
       if (utilizationPercent < 90) {
-      member.utilization_state = 'under';
+        member.utilization_state = 'under';
       } else if (utilizationPercent <= 110) {
-      member.utilization_state = 'optimal';
+        member.utilization_state = 'optimal';
       } else {
-      member.utilization_state = 'over';
+        member.utilization_state = 'over';
       }
     }
 
@@ -528,7 +528,21 @@ export default class ReportingAllocationController extends ReportingControllerBa
       ? result.rows.filter(member => utilization.includes(member.utilization_state))
       : result.rows;
 
-    return res.status(200).send(new ServerResponse(true, filteredRows));
+    // Calculate totals
+    const total_time_logs = filteredRows.reduce((sum, member) => sum + parseFloat(member.logged_time || '0'), 0);
+    const total_estimated_hours = totalWorkingHours;
+    const total_utilization = total_time_logs > 0 && totalWorkingSeconds > 0
+      ? ((total_time_logs / totalWorkingSeconds) * 100).toFixed(2)
+      : '0.00';
+
+    return res.status(200).send(new ServerResponse(true, {
+      filteredRows,
+      totals: {
+      total_time_logs: ((total_time_logs / 3600).toFixed(2)).toString(),
+      total_estimated_hours: total_estimated_hours.toString(),
+      total_utilization: total_utilization.toString(),
+      },
+    }));
   }
 
   @HandleExceptions()
