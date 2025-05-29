@@ -104,29 +104,20 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
             let color = '';
             if (percent < 90) {
               status = 'Under';
+                color = '🟧';
             } else if (percent <= 110) {
               status = 'Optimal';
+                color = '🟩';
             } else {
               status = 'Over';
+                color = '🟥';
             }
             return [
               `${context.dataset.label}: ${hours} h`,
-              `Utilization: ${percent}%`,
+              `${color} Utilization: ${percent}%`,
               `${status} Utilized: ${overUnder} h`
             ];
           },
-          labelTextColor: function (context: any) {
-            const idx = context.dataIndex;
-            const member = jsonData[idx];
-            const utilization = parseFloat(member?.utilization_percent || '0');
-            if (utilization < 90) {
-              return '#FFB546';
-            } else if (utilization >= 90 && utilization <= 110) {
-              return '#B2EF9A';
-            } else {
-              return '#FE7173';
-            }
-          }
         }
       }
     },
