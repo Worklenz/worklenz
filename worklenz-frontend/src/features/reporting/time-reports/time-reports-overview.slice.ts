@@ -108,8 +108,7 @@ export const fetchReportingMembers = createAsyncThunk(
     try {
       const res = await reportingApiService.getMembers(selectedMembers(timeReportsOverviewReducer));
       if (res.done) {
-        // Extract members from the response
-        return res.body.members; // Use `body.members` instead of `body`
+        return res.body;
       } else {
         return rejectWithValue(res.message || 'Failed to fetch members');
       }
@@ -280,7 +279,7 @@ const timeReportsOverviewSlice = createSlice({
       state.loadingProjects = false;
     });
     builder.addCase(fetchReportingMembers.fulfilled, (state, action) => {
-      const members = action.payload.map((member: any) => ({
+      const members = action.payload.members.map((member: any) => ({
         id: member.id,
         name: member.name,
         selected: true,
