@@ -39,9 +39,9 @@ async function testSessionStore() {
       
       // Check recent sessions
       const recentQuery = await db.query(`
-        SELECT sid, expire, created_at 
+        SELECT sid, expire 
         FROM pg_sessions 
-        ORDER BY created_at DESC 
+        ORDER BY expire DESC 
         LIMIT 3
       `);
       console.log("Recent sessions:", recentQuery.rows);
@@ -54,8 +54,7 @@ async function testSessionStore() {
         CREATE TABLE IF NOT EXISTS pg_sessions (
           sid VARCHAR NOT NULL COLLATE "default",
           sess JSON NOT NULL,
-          expire TIMESTAMP(6) NOT NULL,
-          created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP
+          expire TIMESTAMP(6) NOT NULL
         )
         WITH (OIDS=FALSE);
         
