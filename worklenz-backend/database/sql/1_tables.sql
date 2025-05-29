@@ -14,6 +14,9 @@ CREATE TYPE SCHEDULE_TYPE AS ENUM ('daily', 'weekly', 'yearly', 'monthly', 'ever
 
 CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt');
 
+-- Add progress mode type for tasks progress tracking
+CREATE TYPE PROGRESS_MODE_TYPE AS ENUM ('manual', 'weighted', 'time', 'default');
+
 -- START: Users
 CREATE SEQUENCE IF NOT EXISTS users_user_no_seq START 1;
 
@@ -777,7 +780,10 @@ CREATE TABLE IF NOT EXISTS projects (
     estimated_man_days     INTEGER                  DEFAULT 0,
     hours_per_day          INTEGER                  DEFAULT 8,
     health_id              UUID,
-    estimated_working_days INTEGER                  DEFAULT 0
+    estimated_working_days INTEGER                  DEFAULT 0,
+    use_manual_progress    BOOLEAN                  DEFAULT FALSE,
+    use_weighted_progress  BOOLEAN                  DEFAULT FALSE,
+    use_time_progress      BOOLEAN                  DEFAULT FALSE
 );
 
 ALTER TABLE projects
@@ -1411,8 +1417,15 @@ CREATE TABLE IF NOT EXISTS tasks (
     sort_order         INTEGER                  DEFAULT 0                  NOT NULL,
     roadmap_sort_order INTEGER                  DEFAULT 0                  NOT NULL,
     billable           BOOLEAN                  DEFAULT TRUE,
-    schedule_id        UUID
+    schedule_id        UUID,
+    manual_progress    BOOLEAN                  DEFAULT FALSE,
+    progress_value     INTEGER                  DEFAULT NULL,
+    progress_mode      PROGRESS_MODE_TYPE      DEFAULT 'default',
+    weight             INTEGER                  DEFAULT NULL,
+    fixed_cost         DECIMAL(10, 2)           DEFAULT 0 CHECK (fixed_cost >= 0)
 );
+
+COMMENT ON COLUMN tasks.fixed_cost IS 'Fixed cost for the task in addition to hourly rate calculations';
 
 ALTER TABLE tasks
     ADD CONSTRAINT tasks_pk
@@ -2279,3 +2292,37 @@ ALTER TABLE organization_working_days
 ALTER TABLE organization_working_days
     ADD CONSTRAINT org_organization_id_fk
         FOREIGN KEY (organization_id) REFERENCES organizations;
+
+-- Finance module tables
+CREATE TABLE IF NOT EXISTS finance_rate_cards (
+    id         UUID PRIMARY KEY                  DEFAULT uuid_generate_v4(),
+    team_id    UUID                     NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
+    name       VARCHAR                  NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    currency   TEXT NOT NULL DEFAULT 'USD'
+);
+
+CREATE TABLE IF NOT EXISTS finance_project_rate_card_roles (
+    id         UUID PRIMARY KEY                  DEFAULT uuid_generate_v4(),
+    project_id UUID                     NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
+    job_title_id    UUID                     NOT NULL REFERENCES job_titles (id) ON DELETE CASCADE,
+    rate       DECIMAL(10, 2)           NOT NULL CHECK (rate >= 0),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_project_role UNIQUE (project_id, job_title_id)
+);
+
+CREATE TABLE IF NOT EXISTS finance_rate_card_roles (
+    rate_card_id UUID                     NOT NULL REFERENCES finance_rate_cards (id) ON DELETE CASCADE,
+    job_title_id      UUID                     REFERENCES job_titles(id) ON DELETE SET NULL,
+    rate         DECIMAL(10, 2)           NOT NULL CHECK (rate >= 0),
+    created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE project_members
+    ADD COLUMN IF NOT EXISTS project_rate_card_role_id UUID REFERENCES finance_project_rate_card_roles(id) ON DELETE SET NULL;
+
+ALTER TABLE projects
+    ADD COLUMN IF NOT EXISTS rate_card UUID REFERENCES finance_rate_cards(id) ON DELETE SET NULL;
