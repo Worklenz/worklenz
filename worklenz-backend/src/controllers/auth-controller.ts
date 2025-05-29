@@ -32,7 +32,26 @@ export default class AuthController extends WorklenzControllerBase {
     console.log("req.user:", req.user);
     console.log("req.isAuthenticated():", req.isAuthenticated());
     console.log("req.session.passport:", (req.session as any).passport);
+    console.log("req.session.id:", req.sessionID);
+    console.log("Full session object:", JSON.stringify(req.session, null, 2));
     console.log("req.query.strategy:", req.query.strategy);
+    
+    // Check if session exists in database
+    if (req.sessionID) {
+      db.query("SELECT sid, sess FROM pg_sessions WHERE sid = $1", [req.sessionID])
+        .then(result => {
+          if (result.rows.length > 0) {
+            console.log("Session found in database:");
+            console.log("Session ID:", result.rows[0].sid);
+            console.log("Session data:", JSON.stringify(result.rows[0].sess, null, 2));
+          } else {
+            console.log("Session NOT FOUND in database for ID:", req.sessionID);
+          }
+        })
+        .catch(err => {
+          console.log("Error checking session in database:", err);
+        });
+    }
     
     // Flash messages sent from passport-local-signup.ts and passport-local-login.ts
     const errors = req.flash()["error"] || [];

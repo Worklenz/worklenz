@@ -33,11 +33,23 @@ export async function deserialize(user: { id: string | null }, done: IDeserializ
     const {id} = user;
     console.log("Deserializing user ID:", id);
     
+    // First check if user exists in users table
+    const userCheck = await db.query("SELECT id, active_team FROM users WHERE id = $1", [id]);
+    console.log("User exists check:", userCheck.rowCount, userCheck.rows[0]);
+    
+    if (!userCheck.rowCount) {
+      console.log("User not found in users table");
+      return done(null, null);
+    }
+    
     const excludedSubscriptionTypes = ["TRIAL", "PADDLE"];
     const q = `SELECT deserialize_user($1) AS user;`;
+    console.log("Calling deserialize_user with ID:", id);
+    
     const result = await db.query(q, [id]);
     
     console.log("Database query result rows length:", result.rows.length);
+    console.log("Raw database result:", result.rows);
     
     if (result.rows.length) {
       const [data] = result.rows;
@@ -58,7 +70,7 @@ export async function deserialize(user: { id: string | null }, done: IDeserializ
         console.log("Returning successful user:", data.user);
         return done(null, data.user as IPassportSession);
       }
-      console.log("No user data in result");
+      console.log("No user data in result - deserialize_user returned null");
     }
     console.log("No rows returned from database");
     

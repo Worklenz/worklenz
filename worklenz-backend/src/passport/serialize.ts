@@ -7,5 +7,10 @@ export function serialize($user: IPassportSession, done: ISerializeCallback) {
   console.log("Serializing user:", $user);
   console.log("User ID:", $user?.id);
   
-  done(null, { id: $user?.id ?? null });
+  const serializedUser = { id: $user?.id ?? null };
+  console.log("Serialized user object:", serializedUser);
+  
+  done(null, serializedUser);
+  
+  console.log("Serialize done callback completed");
 }
