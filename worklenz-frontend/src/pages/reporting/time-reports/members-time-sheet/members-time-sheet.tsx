@@ -184,7 +184,6 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
       };
 
       const res = await reportingTimesheetApiService.getMemberTimeSheets(body, archived);
-      console.log('Members Time Sheet Data:', res.body.totals);
       if (res.done) {
         setJsonData(res.body.filteredRows || []);
 

@@ -532,8 +532,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const total_time_logs = filteredRows.reduce((sum, member) => sum + parseFloat(member.logged_time || '0'), 0);
     const total_estimated_hours = totalWorkingHours;
     const total_utilization = total_time_logs > 0 && totalWorkingSeconds > 0
-      ? ((total_time_logs / totalWorkingSeconds) * 100).toFixed(2)
-      : '0.00';
+      ? ((total_time_logs / totalWorkingSeconds) * 100).toFixed(1)
+      : '0';
 
     return res.status(200).send(new ServerResponse(true, {
       filteredRows,
