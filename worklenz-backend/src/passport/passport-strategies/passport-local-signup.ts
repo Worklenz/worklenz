@@ -37,8 +37,15 @@ async function registerUser(password: string, team_id: string, name: string, tea
     team_member_id,
   };
 
+  console.log("=== REGISTER USER DEBUG ===");
+  console.log("Calling register_user with body:", body);
+
   const result = await db.query(q, [JSON.stringify(body)]);
   const [data] = result.rows;
+  
+  console.log("Register user result:", data);
+  console.log("User object returned:", data.user);
+  
   return data.user;
 }
 
@@ -47,41 +54,66 @@ async function handleSignUp(req: Request, email: string, password: string, done:
   // team = Invited team_id if req.body.from_invitation is true
   const {name, team_name, team_member_id, team_id, timezone} = req.body;
 
-  if (!team_name) return done(null, null, req.flash(ERROR_KEY, "Team name is required"));
+  if (!team_name) {
+    req.flash(ERROR_KEY, "Team name is required");
+    return done(null, null, {message: "Team name is required"});
+  }
 
   const googleAccountFound = await isGoogleAccountFound(email);
-  if (googleAccountFound)
-    return done(null, null, req.flash(ERROR_KEY, `${req.body.email} is already linked with a Google account.`));
+  if (googleAccountFound) {
+    req.flash(ERROR_KEY, `${req.body.email} is already linked with a Google account.`);
+    return done(null, null, {message: `${req.body.email} is already linked with a Google account.`});
+  }
 
   try {
+    console.log("=== SIGNUP DEBUG ===");
+    console.log("About to register user with data:", {name, team_name, email, timezone, team_member_id, team_id});
+    
     const user = await registerUser(password, team_id, name, team_name, email, timezone, team_member_id);
+    
+    console.log("User registration successful, user object:", user);
+    
     sendWelcomeEmail(email, name);
-    return done(null, user, req.flash(SUCCESS_KEY, "Registration successful. Please check your email for verification."));
+    
+    console.log("About to call done with user:", user);
+    req.flash(SUCCESS_KEY, "Registration successful. Please check your email for verification.");
+    return done(null, user, {message: "Registration successful. Please check your email for verification."});
   } catch (error: any) {
+    console.log("=== SIGNUP ERROR ===");
+    console.log("Error during signup:", error);
+    
     const message = (error?.message) || "";
 
     if (message === "ERROR_INVALID_JOINING_EMAIL") {
-      return done(null, null, req.flash(ERROR_KEY, `No invitations found for email ${req.body.email}.`));
+      req.flash(ERROR_KEY, `No invitations found for email ${req.body.email}.`);
+      return done(null, null, {message: `No invitations found for email ${req.body.email}.`});
     }
 
     // if error.message is "email already exists" then it should have the email address in the error message after ":".
     if (message.includes("EMAIL_EXISTS_ERROR") || error.constraint === "users_google_id_uindex") {
       const [, value] = error.message.split(":");
-      return done(null, null, req.flash(ERROR_KEY, `Worklenz account already exists for email ${value}.`));
+      const errorMsg = `Worklenz account already exists for email ${value}.`;
+      req.flash(ERROR_KEY, errorMsg);
+      return done(null, null, {message: errorMsg});
     }
 
     if (message.includes("TEAM_NAME_EXISTS_ERROR")) {
       const [, value] = error.message.split(":");
-      return done(null, null, req.flash(ERROR_KEY, `Team name "${value}" already exists. Please choose a different team name.`));
+      const errorMsg = `Team name "${value}" already exists. Please choose a different team name.`;
+      req.flash(ERROR_KEY, errorMsg);
+      return done(null, null, {message: errorMsg});
     }
 
     // The Team name is already taken.
     if (error.constraint === "teams_url_uindex" || error.constraint === "teams_name_uindex") {
-      return done(null, null, req.flash(ERROR_KEY, `Team name "${team_name}" is already taken. Please choose a different team name.`));
+      const errorMsg = `Team name "${team_name}" is already taken. Please choose a different team name.`;
+      req.flash(ERROR_KEY, errorMsg);
+      return done(null, null, {message: errorMsg});
     }
 
     log_error(error, req.body);
-    return done(null, null, req.flash(ERROR_KEY, DEFAULT_ERROR_MESSAGE));
+    req.flash(ERROR_KEY, DEFAULT_ERROR_MESSAGE);
+    return done(null, null, {message: DEFAULT_ERROR_MESSAGE});
   }
 }
 

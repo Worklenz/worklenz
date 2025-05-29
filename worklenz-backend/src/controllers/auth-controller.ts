@@ -28,20 +28,39 @@ export default class AuthController extends WorklenzControllerBase {
   }
 
   public static verify(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    console.log("=== VERIFY DEBUG ===");
+    console.log("req.user:", req.user);
+    console.log("req.isAuthenticated():", req.isAuthenticated());
+    console.log("req.session.passport:", (req.session as any).passport);
+    console.log("req.query.strategy:", req.query.strategy);
+    
     // Flash messages sent from passport-local-signup.ts and passport-local-login.ts
     const errors = req.flash()["error"] || [];
     const messages = req.flash()["success"] || [];
+    
+    console.log("Flash errors:", errors);
+    console.log("Flash messages:", messages);
+    
     // If there are multiple messages, we will send one at a time.
     const auth_error = errors.length > 0 ? errors[0] : null;
     const message = messages.length > 0 ? messages[0] : null;
 
     const midTitle = req.query.strategy === "login" ? "Login Failed!" : "Signup Failed!";
     const title = req.query.strategy ? midTitle : null;
+    
+    console.log("Title:", title);
+    console.log("Auth error:", auth_error);
+    console.log("Success message:", message);
+    console.log("Is authenticated:", req.isAuthenticated());
+    console.log("Has user:", !!req.user);
 
     if (req.user)
       req.user.build_v = FileConstants.getRelease();
 
-    return res.status(200).send(new AuthResponse(title, req.isAuthenticated(), req.user || null, auth_error, message));
+    const response = new AuthResponse(title, req.isAuthenticated(), req.user || null, auth_error, message);
+    console.log("Sending response:", response);
+    
+    return res.status(200).send(response);
   }
 
   public static logout(req: IWorkLenzRequest, res: IWorkLenzResponse) {

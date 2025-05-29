@@ -22,6 +22,7 @@ async function handleLogin(req: Request, email: string, password: string, done: 
     console.log("User query result count:", result.rowCount);
     
     const [data] = result.rows;
+    console.log("data", data);
 
     if (!data?.password) {
       console.log("No account found");
@@ -33,6 +34,9 @@ async function handleLogin(req: Request, email: string, password: string, done: 
     
     if (passwordMatch && email === data.email) {
       delete data.password;
+      console.log("=== LOGIN SUCCESS DEBUG ===");
+      console.log("About to call done with user:", data);
+      console.log("User structure:", JSON.stringify(data, null, 2));
       return done(null, data, {message: "User successfully logged in"});
     }
     return done(null, false, { message: "Incorrect email or password" });

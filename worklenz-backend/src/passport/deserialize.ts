@@ -22,17 +22,30 @@ async function clearEmailInvitations(email: string, teamId: string) {
 // Check whether the user still exists on the database
 export async function deserialize(user: { id: string | null }, done: IDeserializeCallback) {
   try {
+    console.log("=== DESERIALIZE DEBUG ===");
+    console.log("User object:", user);
+    
     if (!user || !user.id) {
+      console.log("No user or user.id, returning null");
       return done(null, null);
     }
     
     const {id} = user;
+    console.log("Deserializing user ID:", id);
+    
     const excludedSubscriptionTypes = ["TRIAL", "PADDLE"];
     const q = `SELECT deserialize_user($1) AS user;`;
     const result = await db.query(q, [id]);
+    
+    console.log("Database query result rows length:", result.rows.length);
+    
     if (result.rows.length) {
       const [data] = result.rows;
+      console.log("Database result data:", data);
+      
       if (data?.user) {
+        console.log("User data found:", data.user);
+        
         const realExpiredDate = moment(data.user.valid_till_date).add(7, "days");
         data.user.is_expired = false;
 
@@ -42,11 +55,17 @@ export async function deserialize(user: { id: string | null }, done: IDeserializ
         void setLastActive(data.user.id);
         void clearEmailInvitations(data.user.email, data.user.team_id);
 
+        console.log("Returning successful user:", data.user);
         return done(null, data.user as IPassportSession);
       }
+      console.log("No user data in result");
     }
+    console.log("No rows returned from database");
+    
+    console.log("Returning null user");
     return done(null, null);
   } catch (error) {
+    console.log("Deserialize error:", error);
     return done(error, null);
   }
 }
