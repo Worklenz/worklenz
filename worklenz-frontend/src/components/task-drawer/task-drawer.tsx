@@ -1,4 +1,4 @@
-import { TabsProps, Tabs, Button } from 'antd';
+import { TabsProps, Tabs, Button, Tooltip } from 'antd';
 import Drawer from 'antd/es/drawer';
 import { InputRef } from 'antd/es/input';
 import { useTranslation } from 'react-i18next';
@@ -146,16 +146,40 @@ const TaskDrawer = () => {
           />
         );
       } else {
+        // Check if task has subtasks
+        const hasSubTasks = (taskFormViewModel?.task?.sub_tasks_count || 0) > 0;
+        const addTimeLogTooltip = hasSubTasks 
+          ? t('taskTimeLogTab.timeLogDisabledTooltip', { 
+              count: taskFormViewModel?.task?.sub_tasks_count || 0,
+              defaultValue: `Time logging is disabled because this task has ${taskFormViewModel?.task?.sub_tasks_count || 0} subtasks. Time should be logged on individual subtasks.`
+            })
+          : '';
+
+        const addButton = (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddTimeLog}
+            style={{ 
+              width: '100%',
+              opacity: hasSubTasks ? 0.5 : 1,
+              cursor: hasSubTasks ? 'not-allowed' : 'pointer'
+            }}
+            disabled={hasSubTasks}
+          >
+            Add new time log
+          </Button>
+        );
+
         return (
           <Flex justify="center" style={{ width: '100%', padding: '16px 0 0' }}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddTimeLog}
-              style={{ width: '100%' }}
-            >
-              Add new time log
-            </Button>
+            {hasSubTasks ? (
+              <Tooltip title={addTimeLogTooltip}>
+                {addButton}
+              </Tooltip>
+            ) : (
+              addButton
+            )}
           </Flex>
         );
       }

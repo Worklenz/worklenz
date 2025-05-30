@@ -16,4 +16,6 @@ export interface ITaskLogViewModel {
   time_spent?: number;
   avatar_color?: string;
   user_id?: string;
+  task_id?: string;
+  task_name?: string;
 }

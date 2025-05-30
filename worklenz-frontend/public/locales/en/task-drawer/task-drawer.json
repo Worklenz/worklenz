@@ -80,7 +80,21 @@
     "addTimeLog": "Add new time log",
     "totalLogged": "Total Logged",
     "exportToExcel": "Export to Excel",
-    "noTimeLogsFound": "No time logs found"
+    "noTimeLogsFound": "No time logs found",
+    "timerDisabledTooltip": "Timer is disabled because this task has {{count}} subtasks. Time should be logged on individual subtasks.",
+    "timeLogDisabledTooltip": "Time logging is disabled because this task has {{count}} subtasks. Time should be logged on individual subtasks.",
+    "date": "Date",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "workDescription": "Work Description",
+    "requiredFields": "Please fill in all required fields",
+    "dateRequired": "Please select a date",
+    "startTimeRequired": "Please select start time",
+    "endTimeRequired": "Please select end time",
+    "workDescriptionPlaceholder": "Add a description",
+    "cancel": "Cancel",
+    "logTime": "Log time",
+    "updateTime": "Update time"
   },
   "taskActivityLogTab": {
     "title": "Activity Log"

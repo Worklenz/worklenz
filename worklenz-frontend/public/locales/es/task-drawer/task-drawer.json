@@ -80,7 +80,21 @@
     "addTimeLog": "Añadir nuevo registro de tiempo",
     "totalLogged": "Total registrado",
     "exportToExcel": "Exportar a Excel",
-    "noTimeLogsFound": "No se encontraron registros de tiempo"
+    "noTimeLogsFound": "No se encontraron registros de tiempo",
+    "timerDisabledTooltip": "El temporizador está deshabilitado porque esta tarea tiene {{count}} subtareas. El tiempo debe registrarse en las subtareas individuales.",
+    "timeLogDisabledTooltip": "El registro de tiempo está deshabilitado porque esta tarea tiene {{count}} subtareas. El tiempo debe registrarse en las subtareas individuales.",
+    "date": "Fecha",
+    "startTime": "Hora de inicio",
+    "endTime": "Hora de finalización",
+    "workDescription": "Descripción del trabajo",
+    "requiredFields": "Por favor, complete todos los campos requeridos",
+    "dateRequired": "Por favor, seleccione una fecha",
+    "startTimeRequired": "Por favor, seleccione la hora de inicio",
+    "endTimeRequired": "Por favor, seleccione la hora de finalización",
+    "workDescriptionPlaceholder": "Añadir una descripción",
+    "cancel": "Cancelar",
+    "logTime": "Registrar tiempo",
+    "updateTime": "Actualizar tiempo"
   },
   "taskActivityLogTab": {
     "title": "Registro de actividad"

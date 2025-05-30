@@ -28,32 +28,50 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     if (!id) return [];
 
     const q = `
-      WITH time_logs AS (
-        --
-        SELECT id,
-               description,
-               time_spent,
-               created_at,
-               user_id,
-               logged_by_timer,
-               (SELECT name FROM users WHERE users.id = task_work_log.user_id) AS user_name,
-               (SELECT email FROM users WHERE users.id = task_work_log.user_id) AS user_email,
-               (SELECT avatar_url FROM users WHERE users.id = task_work_log.user_id) AS avatar_url
-        FROM task_work_log
-        WHERE task_id = $1
-        --
+      WITH RECURSIVE task_hierarchy AS (
+        -- Base case: Start with the given task
+        SELECT id, name, 0 as level
+        FROM tasks
+        WHERE id = $1
+        
+        UNION ALL
+        
+        -- Recursive case: Get all subtasks
+        SELECT t.id, t.name, th.level + 1
+        FROM tasks t
+        INNER JOIN task_hierarchy th ON t.parent_task_id = th.id
+        WHERE t.archived IS FALSE
+      ),
+      time_logs AS (
+        SELECT 
+          twl.id,
+          twl.description,
+          twl.time_spent,
+          twl.created_at,
+          twl.user_id,
+          twl.logged_by_timer,
+          twl.task_id,
+          th.name AS task_name,
+          (SELECT name FROM users WHERE users.id = twl.user_id) AS user_name,
+          (SELECT email FROM users WHERE users.id = twl.user_id) AS user_email,
+          (SELECT avatar_url FROM users WHERE users.id = twl.user_id) AS avatar_url
+        FROM task_work_log twl
+        INNER JOIN task_hierarchy th ON twl.task_id = th.id
       )
-      SELECT id,
-             time_spent,
-             description,
-             created_at,
-             user_id,
-             logged_by_timer,
-             created_at AS start_time,
-             (created_at + INTERVAL '1 second' * time_spent) AS end_time,
-             user_name,
-             user_email,
-             avatar_url
+      SELECT 
+        id,
+        time_spent,
+        description,
+        created_at,
+        user_id,
+        logged_by_timer,
+        task_id,
+        task_name,
+        created_at AS start_time,
+        (created_at + INTERVAL '1 second' * time_spent) AS end_time,
+        user_name,
+        user_email,
+        avatar_url
       FROM time_logs
       ORDER BY created_at DESC;
     `;
@@ -143,6 +161,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     };
 
     sheet.columns = [
+      {header: "Task Name", key: "task_name", width: 30},
       {header: "Reporter Name", key: "user_name", width: 25},
       {header: "Reporter Email", key: "user_email", width: 25},
       {header: "Start Time", key: "start_time", width: 25},
@@ -153,14 +172,15 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     ];
 
     sheet.getCell("A1").value = metadata.project_name;
-    sheet.mergeCells("A1:G1");
+    sheet.mergeCells("A1:H1");
     sheet.getCell("A1").alignment = {horizontal: "center"};
 
     sheet.getCell("A2").value = `${metadata.name} (${exportDate})`;
-    sheet.mergeCells("A2:G2");
+    sheet.mergeCells("A2:H2");
     sheet.getCell("A2").alignment = {horizontal: "center"};
 
     sheet.getRow(4).values = [
+      "Task Name",
       "Reporter Name",
       "Reporter Email",
       "Start Time",
@@ -176,6 +196,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     for (const item of results) {
       totalLogged += parseFloat((item.time_spent || 0).toString());
       const data = {
+        task_name: item.task_name,
         user_name: item.user_name,
         user_email: item.user_email,
         start_time: moment(item.start_time).add(timezone.hours || 0, "hours").add(timezone.minutes || 0, "minutes").format(timeFormat),
@@ -210,6 +231,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     };
 
     sheet.addRow({
+      task_name: "",
       user_name: "",
       user_email: "",
       start_time: "Total",
@@ -219,7 +241,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       time_spent: formatDuration(moment.duration(totalLogged, "seconds")),
     });
 
-    sheet.mergeCells(`A${sheet.rowCount}:F${sheet.rowCount}`);
+    sheet.mergeCells(`A${sheet.rowCount}:G${sheet.rowCount}`);
 
     sheet.getCell(`A${sheet.rowCount}`).value = "Total";
     sheet.getCell(`A${sheet.rowCount}`).alignment = {

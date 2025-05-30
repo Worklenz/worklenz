@@ -25,8 +25,6 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
   const [totalTimeText, setTotalTimeText] = useState<string>('0m 0s');
   const [loading, setLoading] = useState<boolean>(false);
 
-  const dispatch = useAppDispatch();
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { selectedTaskId, taskFormViewModel, timeLogEditing } = useAppSelector(
     state => state.taskDrawerReducer
   );
@@ -35,6 +33,15 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
     selectedTaskId || '',
     taskFormViewModel?.task?.timer_start_time || null
   );
+
+  // Check if task has subtasks
+  const hasSubTasks = (taskFormViewModel?.task?.sub_tasks_count || 0) > 0;
+  const timerDisabledTooltip = hasSubTasks 
+    ? t('taskTimeLogTab.timerDisabledTooltip', { 
+        count: taskFormViewModel?.task?.sub_tasks_count || 0,
+        defaultValue: `Timer is disabled because this task has ${taskFormViewModel?.task?.sub_tasks_count || 0} subtasks. Time should be logged on individual subtasks.`
+      })
+    : '';
 
   const formatTimeComponents = (hours: number, minutes: number, seconds: number): string => {
     const parts = [];
@@ -131,6 +138,8 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
               handleStartTimer={handleStartTimer}
               handleStopTimer={handleTimerStop}
               timeString={timeString}
+              disabled={hasSubTasks}
+              disabledTooltip={timerDisabledTooltip}
             />
             <Button size="small" icon={<DownloadOutlined />} onClick={handleExportToExcel}>
               {t('taskTimeLogTab.exportToExcel')}

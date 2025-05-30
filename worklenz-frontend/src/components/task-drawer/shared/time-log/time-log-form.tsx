@@ -1,7 +1,8 @@
 import React from 'react';
-import { Button, DatePicker, Form, Input, TimePicker, Flex } from 'antd';
+import { Button, DatePicker, Form, Input, TimePicker, Flex, Tooltip } from 'antd';
 import { ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@/utils/themeWiseColor';
@@ -25,6 +26,7 @@ const TimeLogForm = ({
   initialValues, 
   mode = 'create' 
 }: TimeLogFormProps) => {
+  const { t } = useTranslation('task-drawer/task-drawer');
   const currentSession = useAuthService().getCurrentSession();
   const { socket, connected } = useSocket();
   const [form] = Form.useForm();
@@ -40,6 +42,9 @@ const TimeLogForm = ({
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
+
+  // Check if task has subtasks
+  const hasSubTasks = (taskFormViewModel?.task?.sub_tasks_count || 0) > 0;
 
   React.useEffect(() => {
     if (initialValues && mode === 'edit') {
@@ -164,7 +169,6 @@ const TimeLogForm = ({
         console.log('Creating new time log:', requestBody);
         await taskTimeLogsApiService.create(requestBody);
       }
-      console.log('Received values:', values);
       
       // Call onSubmitSuccess if provided, otherwise just cancel
       if (onSubmitSuccess) {
@@ -179,6 +183,23 @@ const TimeLogForm = ({
 
   const isFormValid = () => {
     return formValues.date && formValues.startTime && formValues.endTime;
+  };
+
+  const isSubmitDisabled = () => {
+    return !isFormValid() || hasSubTasks;
+  };
+
+  const getSubmitTooltip = () => {
+    if (hasSubTasks) {
+      return t('taskTimeLogTab.timeLogDisabledTooltip', { 
+        count: taskFormViewModel?.task?.sub_tasks_count || 0,
+        defaultValue: `Time logging is disabled because this task has ${taskFormViewModel?.task?.sub_tasks_count || 0} subtasks. Time should be logged on individual subtasks.`
+      });
+    }
+    if (!isFormValid()) {
+      return t('taskTimeLogTab.requiredFields');
+    }
+    return '';
   };
 
   return (
@@ -219,45 +240,51 @@ const TimeLogForm = ({
           <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
             <Form.Item
               name="date"
-              label="Date"
-              rules={[{ required: true, message: 'Please select a date' }]}
+              label={t('taskTimeLogTab.date')}
+              rules={[{ required: true, message: t('taskTimeLogTab.dateRequired') }]}
             >
               <DatePicker disabledDate={current => current && current.toDate() > new Date()} />
             </Form.Item>
 
             <Form.Item
               name="startTime"
-              label="Start Time"
-              rules={[{ required: true, message: 'Please select start time' }]}
+              label={t('taskTimeLogTab.startTime')}
+              rules={[{ required: true, message: t('taskTimeLogTab.startTimeRequired') }]}
             >
               <TimePicker format="HH:mm" />
             </Form.Item>
 
             <Form.Item
               name="endTime"
-              label="End Time"
-              rules={[{ required: true, message: 'Please select end time' }]}
+              label={t('taskTimeLogTab.endTime')}
+              rules={[{ required: true, message: t('taskTimeLogTab.endTimeRequired') }]}
             >
               <TimePicker format="HH:mm" />
             </Form.Item>
           </Flex>
         </Form.Item>
 
-        <Form.Item name="description" label="Work Description" style={{ marginBlockEnd: 12 }}>
-          <Input.TextArea placeholder="Add a description" />
+        <Form.Item name="description" label={t('taskTimeLogTab.workDescription')} style={{ marginBlockEnd: 12 }}>
+          <Input.TextArea placeholder={t('taskTimeLogTab.workDescriptionPlaceholder')} />
         </Form.Item>
 
         <Form.Item style={{ marginBlockEnd: 0 }}>
           <Flex gap={8}>
-            <Button onClick={onCancel}>Cancel</Button>
-            <Button
-              type="primary"
-              icon={<ClockCircleOutlined />}
-              disabled={!isFormValid()}
-              htmlType="submit"
-            >
-              {mode === 'edit' ? 'Update time' : 'Log time'}
-            </Button>
+            <Button onClick={onCancel}>{t('taskTimeLogTab.cancel')}</Button>
+            <Tooltip title={getSubmitTooltip()} trigger={isSubmitDisabled() ? 'hover' : []}>
+              <Button
+                type="primary"
+                icon={<ClockCircleOutlined />}
+                disabled={isSubmitDisabled()}
+                htmlType="submit"
+                style={{ 
+                  opacity: hasSubTasks ? 0.5 : 1,
+                  cursor: hasSubTasks ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {mode === 'edit' ? t('taskTimeLogTab.updateTime') : t('taskTimeLogTab.logTime')}
+              </Button>
+            </Tooltip>
           </Flex>
         </Form.Item>
       </Form>
