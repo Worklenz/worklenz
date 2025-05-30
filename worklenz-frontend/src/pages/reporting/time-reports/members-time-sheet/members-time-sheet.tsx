@@ -81,6 +81,22 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
         display: false,
         position: 'top' as const,
       },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const idx = context.dataIndex;
+            const member = jsonData[idx];
+            const hours = member?.utilized_hours || '0.00';
+            const percent = member?.utilization_percent || '0.00';
+            const overUnder = member?.over_under_utilized_hours || '0.00';
+            return [
+              `${context.dataset.label}: ${hours} h`,
+              `Utilization: ${percent}%`,
+              `Over/Under Utilized: ${overUnder} h`
+            ];
+          }
+        }
+      }
     },
     backgroundColor: 'black',
     indexAxis: 'y' as const,

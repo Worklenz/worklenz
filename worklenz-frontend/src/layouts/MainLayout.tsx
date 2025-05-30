@@ -7,7 +7,7 @@ import { colors } from '../styles/colors';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import TawkTo from '@/components/TawkTo';
+import HubSpot from '@/components/HubSpot';
 
 const MainLayout = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -68,9 +68,6 @@ const MainLayout = () => {
             <Outlet />
           </Col>
         </Layout.Content>
-        {import.meta.env.VITE_APP_ENV === 'production' && (
-          <TawkTo propertyId="67ecc524f62fbf190db18bde" widgetId="1inqe45sq" />
-        )}
       </Layout>
     </ConfigProvider>
   );
