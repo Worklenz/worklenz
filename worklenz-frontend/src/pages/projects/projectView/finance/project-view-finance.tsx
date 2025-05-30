@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Flex, Select, Typography, message } from 'antd';
+import { Button, ConfigProvider, Flex, Select, Typography, message, Alert } from 'antd';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,8 @@ import { RootState } from '@/app/store';
 import FinanceTableWrapper from './finance-tab/finance-table/finance-table-wrapper';
 import RatecardTable from './ratecard-tab/reatecard-table/ratecard-table';
 import ImportRatecardsDrawer from '@/features/finance/ratecard-drawer/import-ratecards-drawer';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasFinanceEditPermission } from '@/utils/finance-permissions';
 
 const ProjectViewFinance = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -22,6 +24,11 @@ const ProjectViewFinance = () => {
   const { activeTab, activeGroup, loading, taskGroups } = useAppSelector((state: RootState) => state.projectFinances);
   const { refreshTimestamp, project } = useAppSelector((state: RootState) => state.projectReducer);
   const phaseList = useAppSelector((state) => state.phaseReducer.phaseList);
+
+  // Auth and permissions
+  const auth = useAuthService();
+  const currentSession = auth.getCurrentSession();
+  const hasEditPermission = hasFinanceEditPermission(currentSession, project);
 
   useEffect(() => {
     if (projectId) {
@@ -146,10 +153,28 @@ const ProjectViewFinance = () => {
       {/* Tab Content */}
       {activeTab === 'finance' ? (
         <div>
+          {!hasEditPermission && (
+            <Alert
+              message="Limited Access"
+              description="You can view finance data but cannot edit fixed costs. Only project managers, team admins, and team owners can make changes."
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
           <FinanceTableWrapper activeTablesList={taskGroups} loading={loading} />
         </div>
       ) : (
         <Flex vertical gap={8}>
+          {!hasEditPermission && (
+            <Alert
+              message="Limited Access"
+              description="You can view rate card data but cannot edit rates or manage member assignments. Only project managers, team admins, and team owners can make changes."
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
           <RatecardTable />
           <Typography.Text
             type="danger"

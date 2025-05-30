@@ -22,6 +22,8 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSelectedTaskId, setShowTaskDrawer, fetchTask } from '@/features/task-drawer/task-drawer.slice';
 import { useParams } from 'react-router-dom';
 import { parseTimeToSeconds } from '@/utils/timeUtils';
+import { useAuthService } from '@/hooks/useAuth';
+import { canEditFixedCost } from '@/utils/finance-permissions';
 import './finance-table.css';
 
 type FinanceTableProps = {
@@ -47,6 +49,12 @@ const FinanceTable = ({
   // Get the latest task groups from Redux store
   const taskGroups = useAppSelector((state) => state.projectFinances.taskGroups);
   const activeGroup = useAppSelector((state) => state.projectFinances.activeGroup);
+  
+  // Auth and permissions
+  const auth = useAuthService();
+  const currentSession = auth.getCurrentSession();
+  const { project } = useAppSelector((state) => state.projectReducer);
+  const hasEditPermission = canEditFixedCost(currentSession, project);
   
   // Update local state when table.tasks or Redux store changes
   useEffect(() => {
@@ -109,6 +117,8 @@ const FinanceTable = ({
       case FinanceTableColumnKeys.TOTAL_TIME_LOGGED:
         return <Typography.Text>{formattedTotals.total_time_logged}</Typography.Text>;
       case FinanceTableColumnKeys.ESTIMATED_COST:
+        return <Typography.Text>{formatNumber(formattedTotals.estimated_cost)}</Typography.Text>;
+      case FinanceTableColumnKeys.COST:
         return <Typography.Text>{formatNumber(formattedTotals.estimated_cost)}</Typography.Text>;
       case FinanceTableColumnKeys.FIXED_COST:
         return <Typography.Text>{formatNumber(formattedTotals.fixed_cost)}</Typography.Text>;
@@ -269,7 +279,7 @@ const FinanceTable = ({
       case FinanceTableColumnKeys.ESTIMATED_COST:
         return <Typography.Text>{formatNumber(task.estimated_cost)}</Typography.Text>;
       case FinanceTableColumnKeys.FIXED_COST:
-        return selectedTask?.id === task.id ? (
+        return selectedTask?.id === task.id && hasEditPermission ? (
           <InputNumber
             value={editingFixedCostValue !== null ? editingFixedCostValue : task.fixed_cost}
             onChange={(value) => {
@@ -295,12 +305,17 @@ const FinanceTable = ({
           />
         ) : (
           <Typography.Text 
-            style={{ cursor: 'pointer', width: '100%', display: 'block' }}
-            onClick={(e) => {
+            style={{ 
+              cursor: hasEditPermission ? 'pointer' : 'default', 
+              width: '100%', 
+              display: 'block',
+              opacity: hasEditPermission ? 1 : 0.7
+            }}
+            onClick={hasEditPermission ? (e) => {
               e.stopPropagation();
               setSelectedTask(task);
               setEditingFixedCostValue(task.fixed_cost);
-            }}
+            } : undefined}
           >
             {formatNumber(task.fixed_cost)}
           </Typography.Text>

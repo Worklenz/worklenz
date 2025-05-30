@@ -19,6 +19,8 @@ import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.se
 import RateCardAssigneeSelector from '@/components/project-ratecard/ratecard-assignee-selector';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { IProjectMemberViewModel } from '@/types/projectMember.types';
+import { useAuthService } from '@/hooks/useAuth';
+import { canEditRateCard, canAddMembersToRateCard } from '@/utils/finance-permissions';
 import { parse } from 'path';
 
 const RatecardTable: React.FC = () => {
@@ -31,6 +33,14 @@ const RatecardTable: React.FC = () => {
   const isLoading = useAppSelector((state) => state.projectFinanceRateCard.isLoading);
   const currency = useAppSelector((state) => state.financeReducer.currency).toUpperCase();
   const rateInputRefs = React.useRef<Array<HTMLInputElement | null>>([]);
+  
+  // Auth and permissions
+  const auth = useAuthService();
+  const currentSession = auth.getCurrentSession();
+  const { project } = useAppSelector((state) => state.projectReducer);
+  const hasEditPermission = canEditRateCard(currentSession, project);
+  const canAddMembers = canAddMembersToRateCard(currentSession, project);
+
   // Local state for editing
   const [roles, setRoles] = useState<JobRoleType[]>(rolesRedux);
   const [addingRow, setAddingRow] = useState<boolean>(false);
@@ -238,6 +248,7 @@ const RatecardTable: React.FC = () => {
           type="number"
           value={roles[index]?.rate ?? 0}
           min={0}
+          disabled={!hasEditPermission}
           style={{
             background: 'transparent',
             border: 'none',
@@ -245,10 +256,12 @@ const RatecardTable: React.FC = () => {
             padding: 0,
             width: 80,
             textAlign: 'right',
+            opacity: hasEditPermission ? 1 : 0.7,
+            cursor: hasEditPermission ? 'text' : 'not-allowed'
           }}
-          onChange={(e) => handleRateChange(e.target.value, index)}
-          onBlur={(e) => handleRateBlur(e.target.value, index)}
-          onPressEnter={(e) => handleRateBlur(e.target.value, index)}
+          onChange={hasEditPermission ? (e) => handleRateChange(e.target.value, index) : undefined}
+          onBlur={hasEditPermission ? (e) => handleRateBlur(e.target.value, index) : undefined}
+          onPressEnter={hasEditPermission ? (e) => handleRateBlur(e.target.value, index) : undefined}
         />
       ),
     },
@@ -265,15 +278,17 @@ const RatecardTable: React.FC = () => {
               ) : null;
             })}
           </Avatar.Group>
-          <div>
-            <RateCardAssigneeSelector
-              projectId={projectId as string}
-              selectedMemberIds={memberscol || []}
-              onChange={(memberId) => handleMemberChange(memberId, index, record)}
-              memberlist={members}
-              assignedMembers={assignedMembers} // Pass assigned members here
-            />
-          </div>
+          {canAddMembers && (
+            <div>
+              <RateCardAssigneeSelector
+                projectId={projectId as string}
+                selectedMemberIds={memberscol || []}
+                onChange={(memberId) => handleMemberChange(memberId, index, record)}
+                memberlist={members}
+                assignedMembers={assignedMembers} // Pass assigned members here
+              />
+            </div>
+          )}
         </div>
       ),
     },
@@ -282,14 +297,16 @@ const RatecardTable: React.FC = () => {
       key: 'actions',
       align: 'center',
       render: (_: any, record: JobRoleType, index: number) => (
-        <Popconfirm
-          title={t('deleteConfirm')}
-          onConfirm={() => handleDelete(record, index)}
-          okText={t('yes')}
-          cancelText={t('no')}
-        >
-          <Button type="text" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
+        hasEditPermission ? (
+          <Popconfirm
+            title={t('deleteConfirm')}
+            onConfirm={() => handleDelete(record, index)}
+            okText={t('yes')}
+            cancelText={t('no')}
+          >
+            <Button type="text" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        ) : null
       ),
     },
   ];
@@ -315,9 +332,11 @@ const RatecardTable: React.FC = () => {
       loading={isLoading || isLoadingMembers}
       footer={() => (
         <Flex gap={0}>
-          <Button type="dashed" onClick={handleAddRole} style={{ width: 'fit-content' }}>
-            {t('addRoleButton')}
-          </Button>
+          {hasEditPermission && (
+            <Button type="dashed" onClick={handleAddRole} style={{ width: 'fit-content' }}>
+              {t('addRoleButton')}
+            </Button>
+          )}
           {/* <Button
             type="primary"
             icon={<SaveOutlined />}
