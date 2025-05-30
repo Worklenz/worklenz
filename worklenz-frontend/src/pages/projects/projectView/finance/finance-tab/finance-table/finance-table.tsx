@@ -119,7 +119,7 @@ const FinanceTable = ({
       case FinanceTableColumnKeys.ESTIMATED_COST:
         return <Typography.Text>{formatNumber(formattedTotals.estimated_cost)}</Typography.Text>;
       case FinanceTableColumnKeys.COST:
-        return <Typography.Text>{formatNumber(formattedTotals.estimated_cost)}</Typography.Text>;
+        return <Typography.Text>{formatNumber(formattedTotals.actual_cost_from_logs)}</Typography.Text>;
       case FinanceTableColumnKeys.FIXED_COST:
         return <Typography.Text>{formatNumber(formattedTotals.fixed_cost)}</Typography.Text>;
       case FinanceTableColumnKeys.TOTAL_BUDGET:
@@ -335,7 +335,7 @@ const FinanceTable = ({
       case FinanceTableColumnKeys.TOTAL_ACTUAL:
         return <Typography.Text>{formatNumber(task.total_actual)}</Typography.Text>;
       case FinanceTableColumnKeys.COST:
-        return <Typography.Text>{formatNumber(task.estimated_cost || 0)}</Typography.Text>;
+        return <Typography.Text>{formatNumber((task.total_actual || 0) - (task.fixed_cost || 0))}</Typography.Text>;
       default:
         return null;
     }
@@ -364,6 +364,7 @@ const FinanceTable = ({
         hours: acc.hours + (task.estimated_seconds || 0),
         total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
         estimated_cost: acc.estimated_cost + (task.estimated_cost || 0),
+        actual_cost_from_logs: acc.actual_cost_from_logs + ((task.total_actual || 0) - (task.fixed_cost || 0)),
         fixed_cost: acc.fixed_cost + (task.fixed_cost || 0),
         total_budget: acc.total_budget + (task.total_budget || 0),
         total_actual: acc.total_actual + (task.total_actual || 0),
@@ -373,6 +374,7 @@ const FinanceTable = ({
         hours: 0,
         total_time_logged: 0,
         estimated_cost: 0,
+        actual_cost_from_logs: 0,
         fixed_cost: 0,
         total_budget: 0,
         total_actual: 0,
@@ -386,6 +388,7 @@ const FinanceTable = ({
     hours: formatSecondsToTimeString(totals.hours),
     total_time_logged: formatSecondsToTimeString(totals.total_time_logged),
     estimated_cost: totals.estimated_cost,
+    actual_cost_from_logs: totals.actual_cost_from_logs,
     fixed_cost: totals.fixed_cost,
     total_budget: totals.total_budget,
     total_actual: totals.total_actual,
