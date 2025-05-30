@@ -74,14 +74,9 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
             .map(day => `${day.toLowerCase()} = ${workingDays.includes(day)}`)
             .join(", ");
 
-        const updateQuery = `
-      UPDATE public.organization_working_days
+        const updateQuery = `UPDATE public.organization_working_days
       SET ${setClause}, updated_at = CURRENT_TIMESTAMP
-      WHERE organization_id IN (
-                                SELECT organization_id FROM organizations 
-                                WHERE user_id = $1
-                            );
-    `;
+      WHERE organization_id IN (SELECT id FROM organizations WHERE user_id = $1);`;
 
         await db.query(updateQuery, [req.user?.owner_id]);
 

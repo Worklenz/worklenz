@@ -16,6 +16,7 @@ import { reportingTimesheetApiService } from '@/api/reporting/reporting.timeshee
 import { IRPTTimeMember } from '@/types/reporting/reporting.types';
 import logger from '@/utils/errorLogger';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { format } from 'date-fns';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
@@ -172,6 +173,13 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
       const selectedCategories = categories.filter(category => category.selected);
       const selectedMembers = members.filter(member => member.selected);
       const selectedUtilization = utilization.filter(item => item.selected);
+
+      // Format dates using date-fns
+      const formattedDateRange = dateRange ? [
+        format(new Date(dateRange[0]), 'yyyy-MM-dd'),
+        format(new Date(dateRange[1]), 'yyyy-MM-dd')
+      ] : undefined;
+
       const body = {
         teams: selectedTeams.map(t => t.id),
         projects: selectedProjects.map(project => project.id),
@@ -179,7 +187,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         members: selectedMembers.map(member => member.id),
         utilization: selectedUtilization.map(item => item.id),
         duration,
-        date_range: dateRange,
+        date_range: formattedDateRange,
         billable,
       };
 

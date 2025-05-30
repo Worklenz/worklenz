@@ -445,27 +445,52 @@ export default class ReportingAllocationController extends ReportingControllerBa
       }
     }
 
-    // Count only weekdays (Mon-Fri) in the period
+    // Get organization working days
+    const orgWorkingDaysQuery = `
+      SELECT monday, tuesday, wednesday, thursday, friday, saturday, sunday
+      FROM organization_working_days
+      WHERE organization_id IN (
+        SELECT t.organization_id 
+        FROM teams t 
+        WHERE t.id IN (${teamIds})
+        LIMIT 1
+      );
+    `;
+    const orgWorkingDaysResult = await db.query(orgWorkingDaysQuery, []);
+    const workingDaysConfig = orgWorkingDaysResult.rows[0] || {
+      monday: true,
+      tuesday: true,
+      wednesday: true,
+      thursday: true,
+      friday: true,
+      saturday: false,
+      sunday: false
+    };
+
+    // Count working days based on organization settings
     let workingDays = 0;
     let current = startDate.clone();
     while (current.isSameOrBefore(endDate, 'day')) {
       const day = current.isoWeekday();
-      if (day >= 1 && day <= 5) workingDays++;
+      if (
+        (day === 1 && workingDaysConfig.monday) ||
+        (day === 2 && workingDaysConfig.tuesday) ||
+        (day === 3 && workingDaysConfig.wednesday) ||
+        (day === 4 && workingDaysConfig.thursday) ||
+        (day === 5 && workingDaysConfig.friday) ||
+        (day === 6 && workingDaysConfig.saturday) ||
+        (day === 7 && workingDaysConfig.sunday)
+      ) {
+        workingDays++;
+      }
       current.add(1, 'day');
     }
 
-    // Get hours_per_day for all selected projects
-    const projectHoursQuery = `SELECT id, hours_per_day FROM projects WHERE id IN (${projectIds})`;
-    const projectHoursResult = await db.query(projectHoursQuery, []);
-    const projectHoursMap: Record<string, number> = {};
-    for (const row of projectHoursResult.rows) {
-      projectHoursMap[row.id] = row.hours_per_day || 8;
-    }
-    // Sum total working hours for all selected projects
-    let totalWorkingHours = 0;
-    for (const pid of Object.keys(projectHoursMap)) {
-      totalWorkingHours += workingDays * projectHoursMap[pid];
-    }
+    // Get organization working hours
+    const orgWorkingHoursQuery = `SELECT working_hours FROM organizations WHERE id = (SELECT t.organization_id FROM teams t WHERE t.id IN (${teamIds}) LIMIT 1)`;
+    const orgWorkingHoursResult = await db.query(orgWorkingHoursQuery, []);
+    const orgWorkingHours = orgWorkingHoursResult.rows[0]?.working_hours || 8;
+    let totalWorkingHours = workingDays * orgWorkingHours;
 
     const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
     const archivedClause = archived

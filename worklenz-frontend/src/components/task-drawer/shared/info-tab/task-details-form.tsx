@@ -187,9 +187,9 @@ const TaskDetailsForm = ({ taskFormViewModel = null, subTasks = [] }: TaskDetail
           <TaskDrawerBillable task={taskFormViewModel?.task as ITaskViewModel} />
         </Form.Item>
 
-        <Form.Item name="recurring" label={t('taskInfoTab.details.recurring')}>
+        {/* <Form.Item name="recurring" label={t('taskInfoTab.details.recurring')}>
           <TaskDrawerRecurringConfig task={taskFormViewModel?.task as ITaskViewModel} />
-        </Form.Item>
+        </Form.Item> */}
 
         <Form.Item name="notify" label={t('taskInfoTab.details.notify')}>
           <NotifyMemberSelector task={taskFormViewModel?.task as ITaskViewModel} t={t} />

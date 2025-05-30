@@ -118,7 +118,7 @@ BEGIN
                         SELECT SUM(time_spent)
                         FROM task_work_log
                         WHERE task_id = t.id
-                    ), 0) as logged_minutes
+                    ), 0) / 60.0 as logged_minutes
                 FROM tasks t
                 WHERE t.id = _task_id
             )
