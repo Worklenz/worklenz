@@ -4,7 +4,7 @@ import Skeleton from 'antd/es/skeleton';
 import { useSearchParams } from 'react-router-dom';
 
 import TaskListFilters from './task-list-filters/task-list-filters';
-import TaskGroupWrapper from './task-list-table/task-group-wrapper/task-group-wrapper';
+import TaskGroupWrapperOptimized from './task-group-wrapper-optimized';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchTaskGroups, fetchTaskListColumns } from '@/features/tasks/tasks.slice';
@@ -17,29 +17,50 @@ const ProjectViewTaskList = () => {
   const dispatch = useAppDispatch();
   const { projectView } = useTabSearchParam();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isLoading, setIsLoading] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  const { projectId } = useAppSelector(state => state.projectReducer);
-  const { taskGroups, loadingGroups, groupBy, archived, fields, search } = useAppSelector(
-    state => state.taskReducer
-  );
-  const { statusCategories, loading: loadingStatusCategories } = useAppSelector(
-    state => state.taskStatusReducer
-  );
-  const { loadingPhases } = useAppSelector(state => state.phaseReducer);
-  const { loadingColumns } = useAppSelector(state => state.taskReducer);
+  // Combine related selectors to reduce subscriptions
+  const {
+    projectId,
+    taskGroups,
+    loadingGroups,
+    groupBy,
+    archived,
+    fields,
+    search,
+  } = useAppSelector(state => ({
+    projectId: state.projectReducer.projectId,
+    taskGroups: state.taskReducer.taskGroups,
+    loadingGroups: state.taskReducer.loadingGroups,
+    groupBy: state.taskReducer.groupBy,
+    archived: state.taskReducer.archived,
+    fields: state.taskReducer.fields,
+    search: state.taskReducer.search,
+  }));
 
-  // Memoize the loading state calculation - ignoring task list filter loading
-  const isLoadingState = useMemo(() => 
-    loadingGroups || loadingPhases || loadingStatusCategories,
-    [loadingGroups, loadingPhases, loadingStatusCategories]
+  const {
+    statusCategories,
+    loading: loadingStatusCategories,
+  } = useAppSelector(state => ({
+    statusCategories: state.taskStatusReducer.statusCategories,
+    loading: state.taskStatusReducer.loading,
+  }));
+
+  const { loadingPhases } = useAppSelector(state => ({
+    loadingPhases: state.phaseReducer.loadingPhases,
+  }));
+
+  // Single source of truth for loading state - EXCLUDE labels loading from skeleton
+  // Labels loading should not block the main task list display
+  const isLoading = useMemo(() => 
+    loadingGroups || loadingPhases || loadingStatusCategories || !initialLoadComplete,
+    [loadingGroups, loadingPhases, loadingStatusCategories, initialLoadComplete]
   );
 
   // Memoize the empty state check
   const isEmptyState = useMemo(() => 
-    taskGroups && taskGroups.length === 0 && !isLoadingState,
-    [taskGroups, isLoadingState]
+    taskGroups && taskGroups.length === 0 && !isLoading,
+    [taskGroups, isLoading]
   );
 
   // Handle view type changes
@@ -50,34 +71,32 @@ const ProjectViewTaskList = () => {
       newParams.set('pinned_tab', 'tasks-list');
       setSearchParams(newParams);
     }
-  }, [projectView, setSearchParams]);
+  }, [projectView, setSearchParams, searchParams]);
 
-  // Update loading state
-  useEffect(() => {
-    setIsLoading(isLoadingState);
-  }, [isLoadingState]);
-
-  // Fetch initial data only once
+  // Batch initial data fetching - core data only
   useEffect(() => {
     const fetchInitialData = async () => {
       if (!projectId || !groupBy || initialLoadComplete) return;
 
       try {
-        await Promise.all([
+        // Batch only essential API calls for initial load
+        // Filter data (labels, assignees, etc.) will load separately and not block the UI
+        await Promise.allSettled([
           dispatch(fetchTaskListColumns(projectId)),
           dispatch(fetchPhasesByProjectId(projectId)),
-          dispatch(fetchStatusesCategories())
+          dispatch(fetchStatusesCategories()),
         ]);
         setInitialLoadComplete(true);
       } catch (error) {
         console.error('Error fetching initial data:', error);
+        setInitialLoadComplete(true); // Still mark as complete to prevent infinite loading
       }
     };
 
     fetchInitialData();
   }, [projectId, groupBy, dispatch, initialLoadComplete]);
 
-  // Fetch task groups
+  // Fetch task groups with dependency on initial load completion
   useEffect(() => {
     const fetchTasks = async () => {
       if (!projectId || !groupBy || projectView !== 'list' || !initialLoadComplete) return;
@@ -92,15 +111,22 @@ const ProjectViewTaskList = () => {
     fetchTasks();
   }, [projectId, groupBy, projectView, dispatch, fields, search, archived, initialLoadComplete]);
 
+  // Memoize the task groups to prevent unnecessary re-renders
+  const memoizedTaskGroups = useMemo(() => taskGroups || [], [taskGroups]);
+
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
+      {/* Filters load independently and don't block the main content */}
       <TaskListFilters position="list" />
 
       {isEmptyState ? (
         <Empty description="No tasks group found" />
       ) : (
         <Skeleton active loading={isLoading} className='mt-4 p-4'>
-          <TaskGroupWrapper taskGroups={taskGroups} groupBy={groupBy} />
+          <TaskGroupWrapperOptimized 
+            taskGroups={memoizedTaskGroups} 
+            groupBy={groupBy} 
+          />
         </Skeleton>
       )}
     </Flex>
