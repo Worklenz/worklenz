@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { PushpinFilled, PushpinOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { Badge, Button, ConfigProvider, Flex, Tabs, TabsProps, Tooltip } from 'antd';
+import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
+import { Button, ConfigProvider, Flex, Tabs } from 'antd';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 
@@ -117,7 +117,7 @@ const ProjectView = () => {
   const tabMenuItems = useMemo(() => tabItems.map(item => ({
     key: item.key,
     label: (
-      <Flex align="center" style={{ color: colors.skyBlue }}>
+      <Flex align="center" >
         {item.label}
         {item.key === 'tasks-list' || item.key === 'board' ? (
           <ConfigProvider wave={{ disabled: true }}>
@@ -140,9 +140,6 @@ const ProjectView = () => {
                 ) : (
                   <PushpinOutlined
                     size={20}
-                    style={{
-                      color: colors.skyBlue,
-                    }}
                   />
                 )
               }

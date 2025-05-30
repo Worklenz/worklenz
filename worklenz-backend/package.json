@@ -42,6 +42,9 @@
     "reportFile": "test-reporter.xml",
     "indent": 4
   },
+  "overrides": {
+    "rimraf": "^6.0.1"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.378.0",
     "@aws-sdk/client-ses": "^3.378.0",

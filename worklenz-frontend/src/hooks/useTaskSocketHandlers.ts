@@ -49,8 +49,9 @@ export const useTaskSocketHandlers = () => {
   const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
   
-  const { loadingAssignees, taskGroups } = useAppSelector((state: any) => state.taskReducer);
-  const { projectId } = useAppSelector((state: any) => state.projectReducer);
+  const loadingAssignees = useAppSelector((state: any) => state.taskReducer.loadingAssignees);
+  const taskGroups = useAppSelector((state: any) => state.taskReducer.taskGroups);
+  const projectId = useAppSelector((state: any) => state.projectReducer.projectId);
 
   // Memoize socket event handlers
   const handleAssigneesUpdate = useCallback(

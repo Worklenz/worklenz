@@ -306,7 +306,7 @@ const ProjectViewHeader = () => {
             {renderProjectAttributes()}
           </Flex>
         }
-        style={{ paddingInline: 0, marginBlockEnd: 12 }}
+        style={{ paddingInline: 0}}
         extra={renderHeaderActions()}
       />
       {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
