@@ -11,29 +11,54 @@ import Excel from "exceljs";
 import ChartJsImage from "chartjs-to-image";
 
 enum IToggleOptions {
-  'WORKING_DAYS' = 'WORKING_DAYS', 'MAN_DAYS' = 'MAN_DAYS'
+  "WORKING_DAYS" = "WORKING_DAYS",
+  "MAN_DAYS" = "MAN_DAYS",
 }
 
 export default class ReportingAllocationController extends ReportingControllerBase {
-  private static async getTimeLoggedByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false, user_id = "", billable: { billable: boolean; nonBillable: boolean }): Promise<any> {
+  private static async getTimeLoggedByProjects(
+    projects: string[],
+    users: string[],
+    key: string,
+    dateRange: string[],
+    archived = false,
+    user_id = "",
+    billable: { billable: boolean; nonBillable: boolean }
+  ): Promise<any> {
     try {
-      const projectIds = projects.map(p => `'${p}'`).join(",");
-      const userIds = users.map(u => `'${u}'`).join(",");
+      const projectIds = projects.map((p) => `'${p}'`).join(",");
+      const userIds = users.map((u) => `'${u}'`).join(",");
 
-      const duration = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange);
+      const duration = this.getDateRangeClause(
+        key || DATE_RANGES.LAST_WEEK,
+        dateRange
+      );
       const archivedClause = archived
         ? ""
         : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND user_id = '${user_id}') `;
 
       const billableQuery = this.buildBillableQuery(billable);
 
-      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, duration, projectIds, userIds, archivedClause, billableQuery);
-      const userTimeLogs = await this.getTotalTimeLogsByUser(archived, duration, projectIds, userIds, billableQuery);
+      const projectTimeLogs = await this.getTotalTimeLogsByProject(
+        archived,
+        duration,
+        projectIds,
+        userIds,
+        archivedClause,
+        billableQuery
+      );
+      const userTimeLogs = await this.getTotalTimeLogsByUser(
+        archived,
+        duration,
+        projectIds,
+        userIds,
+        billableQuery
+      );
 
       const format = (seconds: number) => {
         if (seconds === 0) return "-";
         const duration = moment.duration(seconds, "seconds");
-        const formattedDuration = `${~~(duration.asHours())}h ${duration.minutes()}m ${duration.seconds()}s`;
+        const formattedDuration = `${~~duration.asHours()}h ${duration.minutes()}m ${duration.seconds()}s`;
         return formattedDuration;
       };
 
@@ -42,7 +67,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
       for (const project of projectTimeLogs) {
         if (project.all_tasks_count > 0) {
-          project.progress = Math.round((project.completed_tasks_count / project.all_tasks_count) * 100);
+          project.progress = Math.round(
+            (project.completed_tasks_count / project.all_tasks_count) * 100
+          );
         } else {
           project.progress = 0;
         }
@@ -57,7 +84,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       }
 
       for (const log of userTimeLogs) {
-        log.totalUsersTime = totalUsersTime + parseInt(log.time_logged)
+        log.totalUsersTime = totalUsersTime + parseInt(log.time_logged);
         log.time_logged = format(parseInt(log.time_logged));
       }
 
@@ -68,7 +95,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
     return [];
   }
 
-  private static async getTotalTimeLogsByProject(archived: boolean, duration: string, projectIds: string, userIds: string, archivedClause = "", billableQuery = '') {
+  private static async getTotalTimeLogsByProject(
+    archived: boolean,
+    duration: string,
+    projectIds: string,
+    userIds: string,
+    archivedClause = "",
+    billableQuery = ""
+  ) {
     try {
       const q = `SELECT projects.name,
                projects.color_code,
@@ -116,7 +150,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
     }
   }
 
-  private static async getTotalTimeLogsByUser(archived: boolean, duration: string, projectIds: string, userIds: string, billableQuery = "") {
+  private static async getTotalTimeLogsByUser(
+    archived: boolean,
+    duration: string,
+    projectIds: string,
+    userIds: string,
+    billableQuery = ""
+  ) {
     try {
       const q = `(SELECT id,
                     (SELECT COALESCE(SUM(time_spent), 0)
@@ -155,26 +195,42 @@ export default class ReportingAllocationController extends ReportingControllerBa
   }
 
   @HandleExceptions()
-  public static async getAllocation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getAllocation(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const teams = (req.body.teams || []) as string[]; // ids
     const billable = req.body.billable;
 
-    const teamIds = teams.map(id => `'${id}'`).join(",");
+    const teamIds = teams.map((id) => `'${id}'`).join(",");
     const projectIds = (req.body.projects || []) as string[];
 
     if (!teamIds || !projectIds.length)
-      return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { users: [], projects: [] }));
 
     const users = await this.getUserIds(teamIds);
     const userIds = users.map((u: any) => u.id);
 
-    const { projectTimeLogs, userTimeLogs } = await this.getTimeLoggedByProjects(projectIds, userIds, req.body.duration, req.body.date_range, (req.query.archived === "true"), req.user?.id, billable);
+    const { projectTimeLogs, userTimeLogs } =
+      await this.getTimeLoggedByProjects(
+        projectIds,
+        userIds,
+        req.body.duration,
+        req.body.date_range,
+        req.query.archived === "true",
+        req.user?.id,
+        billable
+      );
 
     for (const [i, user] of users.entries()) {
       user.total_time = userTimeLogs[i].time_logged;
     }
 
-    return res.status(200).send(new ServerResponse(true, { users, projects: projectTimeLogs }));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, { users, projects: projectTimeLogs }));
   }
 
   public static formatDurationDate = (date: Date) => {
@@ -187,8 +243,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
   @HandleExceptions()
   public static async export(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     const teams = (req.query.teams as string)?.split(",");
-    const teamIds = teams.map(t => `'${t}'`).join(",");
-    const billable = req.body.billable ? req.body.billable : { billable: req.query.billable === "true", nonBillable: req.query.nonBillable === "true" };
+    const teamIds = teams.map((t) => `'${t}'`).join(",");
+    const billable = req.body.billable
+      ? req.body.billable
+      : {
+          billable: req.query.billable === "true",
+          nonBillable: req.query.nonBillable === "true",
+        };
 
     const projectIds = (req.query.projects as string)?.split(",");
 
@@ -200,8 +261,12 @@ export default class ReportingAllocationController extends ReportingControllerBa
     let end = "-";
 
     if (dateRange.length === 2) {
-      start = dateRange[0] ? this.formatDurationDate(new Date(dateRange[0])).toString() : "-";
-      end = dateRange[1] ? this.formatDurationDate(new Date(dateRange[1])).toString() : "-";
+      start = dateRange[0]
+        ? this.formatDurationDate(new Date(dateRange[0])).toString()
+        : "-";
+      end = dateRange[1]
+        ? this.formatDurationDate(new Date(dateRange[1])).toString()
+        : "-";
     } else {
       switch (duration) {
         case DATE_RANGES.YESTERDAY:
@@ -214,7 +279,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
           start = moment().subtract(1, "month").format("YYYY-MM-DD").toString();
           break;
         case DATE_RANGES.LAST_QUARTER:
-          start = moment().subtract(3, "months").format("YYYY-MM-DD").toString();
+          start = moment()
+            .subtract(3, "months")
+            .format("YYYY-MM-DD")
+            .toString();
           break;
       }
       end = moment().format("YYYY-MM-DD").toString();
@@ -223,7 +291,16 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const users = await this.getUserIds(teamIds);
     const userIds = users.map((u: any) => u.id);
 
-    const { projectTimeLogs, userTimeLogs } = await this.getTimeLoggedByProjects(projectIds, userIds, duration as string, dateRange, (req.query.include_archived === "true"), req.user?.id, billable);
+    const { projectTimeLogs, userTimeLogs } =
+      await this.getTimeLoggedByProjects(
+        projectIds,
+        userIds,
+        duration as string,
+        dateRange,
+        req.query.include_archived === "true",
+        req.user?.id,
+        billable
+      );
 
     for (const [i, user] of users.entries()) {
       user.total_time = userTimeLogs[i].time_logged;
@@ -245,13 +322,21 @@ export default class ReportingAllocationController extends ReportingControllerBa
     sheet.getCell("A1").value = `Reporting Time Sheet`;
     sheet.mergeCells("A1:G1");
     sheet.getCell("A1").alignment = { horizontal: "center" };
-    sheet.getCell("A1").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9D9D9" } };
+    sheet.getCell("A1").style.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "D9D9D9" },
+    };
     sheet.getCell("A1").font = { size: 16 };
 
     sheet.getCell("A2").value = `Exported on : ${exportDate}`;
     sheet.mergeCells("A2:G2");
     sheet.getCell("A2").alignment = { horizontal: "center" };
-    sheet.getCell("A2").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F2F2F2" } };
+    sheet.getCell("A2").style.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "F2F2F2" },
+    };
     sheet.getCell("A2").font = { size: 12 };
 
     // set duration
@@ -265,22 +350,27 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const rowTop = sheet.getRow(5);
       rowTop.getCell(1).value = "";
 
-      users.forEach((user: { id: string, name: string, total_time: string }, index: any) => {
-        rowTop.getCell(index + 2).value = user.name;
-      });
+      users.forEach(
+        (
+          user: { id: string; name: string; total_time: string },
+          index: any
+        ) => {
+          rowTop.getCell(index + 2).value = user.name;
+        }
+      );
 
       rowTop.getCell(users.length + 2).value = "Total";
 
       rowTop.font = {
-        bold: true
+        bold: true,
       };
 
       for (const project of projectTimeLogs) {
-
         const rowValues = [];
         rowValues[1] = project.name;
         project.time_logs.forEach((log: any, index: any) => {
-          rowValues[index + 2] = log.time_logged === "0h 0m 0s" ? "-" : log.time_logged;
+          rowValues[index + 2] =
+            log.time_logged === "0h 0m 0s" ? "-" : log.time_logged;
         });
         rowValues[project.time_logs.length + 2] = project.total;
         sheet.addRow(rowValues);
@@ -290,70 +380,82 @@ export default class ReportingAllocationController extends ReportingControllerBa
           const totalCell = lastRow.getCell(project.time_logs.length + 2);
           totalCell.style.font = { bold: true };
         }
-        totalProjectTime = totalProjectTime + project.totalProjectsTime
+        totalProjectTime = totalProjectTime + project.totalProjectsTime;
       }
 
       const rowBottom = sheet.getRow(projectTimeLogs.length + 6);
       rowBottom.getCell(1).value = "Total";
       rowBottom.getCell(1).style.font = { bold: true };
-      userTimeLogs.forEach((log: { id: string, time_logged: string, totalUsersTime: number }, index: any) => {
-        totalMemberTime = totalMemberTime + log.totalUsersTime
-        rowBottom.getCell(index + 2).value = log.time_logged;
-      });
+      userTimeLogs.forEach(
+        (
+          log: { id: string; time_logged: string; totalUsersTime: number },
+          index: any
+        ) => {
+          totalMemberTime = totalMemberTime + log.totalUsersTime;
+          rowBottom.getCell(index + 2).value = log.time_logged;
+        }
+      );
       rowBottom.font = {
-        bold: true
+        bold: true,
       };
-
     }
 
     const format = (seconds: number) => {
       if (seconds === 0) return "-";
       const duration = moment.duration(seconds, "seconds");
-      const formattedDuration = `${~~(duration.asHours())}h ${duration.minutes()}m ${duration.seconds()}s`;
+      const formattedDuration = `${~~duration.asHours()}h ${duration.minutes()}m ${duration.seconds()}s`;
       return formattedDuration;
     };
 
     const projectTotalTimeRow = sheet.getRow(projectTimeLogs.length + 8);
-    projectTotalTimeRow.getCell(1).value = "Total logged time of Projects"
-    projectTotalTimeRow.getCell(2).value = `${format(totalProjectTime)}`
+    projectTotalTimeRow.getCell(1).value = "Total logged time of Projects";
+    projectTotalTimeRow.getCell(2).value = `${format(totalProjectTime)}`;
     projectTotalTimeRow.getCell(1).style.font = { bold: true };
     projectTotalTimeRow.getCell(2).style.font = { bold: true };
 
     const membersTotalTimeRow = sheet.getRow(projectTimeLogs.length + 9);
-    membersTotalTimeRow.getCell(1).value = "Total logged time of Members"
-    membersTotalTimeRow.getCell(2).value = `${format(totalMemberTime)}`
+    membersTotalTimeRow.getCell(1).value = "Total logged time of Members";
+    membersTotalTimeRow.getCell(2).value = `${format(totalMemberTime)}`;
     membersTotalTimeRow.getCell(1).style.font = { bold: true };
     membersTotalTimeRow.getCell(2).style.font = { bold: true };
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats");
-    res.setHeader("Content-Disposition", `attachment; filename=${fileName}.xlsx`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${fileName}.xlsx`
+    );
 
-    await workbook.xlsx.write(res)
-      .then(() => {
-        res.end();
-      });
-
+    await workbook.xlsx.write(res).then(() => {
+      res.end();
+    });
   }
 
-
   @HandleExceptions()
-  public static async getProjectTimeSheets(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getProjectTimeSheets(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const archived = req.query.archived === "true";
 
     const teams = (req.body.teams || []) as string[]; // ids
-    const teamIds = teams.map(id => `'${id}'`).join(",");
+    const teamIds = teams.map((id) => `'${id}'`).join(",");
 
     const projects = (req.body.projects || []) as string[];
-    const projectIds = projects.map(p => `'${p}'`).join(",");
+    const projectIds = projects.map((p) => `'${p}'`).join(",");
 
     const billable = req.body.billable;
 
     if (!teamIds || !projectIds.length)
-      return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { users: [], projects: [] }));
 
     const { duration, date_range } = req.body;
 
-    const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
+    const durationClause = this.getDateRangeClause(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range
+    );
 
     const archivedClause = archived
       ? ""
@@ -378,33 +480,50 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const data = [];
 
     for (const project of result.rows) {
-      project.value = project.logged_time ? parseFloat(moment.duration(project.logged_time, "seconds").asHours().toFixed(2)) : 0;
-      project.estimated_value = project.estimated ? parseFloat(moment.duration(project.estimated, "minutes").asHours().toFixed(2)) : 0;
+      project.value = project.logged_time
+        ? parseFloat(
+            moment.duration(project.logged_time, "seconds").asHours().toFixed(2)
+          )
+        : 0;
+      project.estimated_value = project.estimated
+        ? parseFloat(
+            moment.duration(project.estimated, "minutes").asHours().toFixed(2)
+          )
+        : 0;
 
       if (project.value > 0) {
         data.push(project);
       }
-
     }
 
     return res.status(200).send(new ServerResponse(true, data));
   }
 
-
   @HandleExceptions()
-  public static async getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getMemberTimeSheets(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const archived = req.query.archived === "true";
 
     const teams = (req.body.teams || []) as string[]; // ids
-    const teamIds = teams.map(id => `'${id}'`).join(",");
+    const teamIds = teams.map((id) => `'${id}'`).join(",");
 
     const projects = (req.body.projects || []) as string[];
-    const projectIds = projects.map(p => `'${p}'`).join(",");
-
+    const projectIds = projects.map((p) => `'${p}'`).join(",");
     const billable = req.body.billable;
+    const members = (req.body.members || []) as string[];
+    const utilization = (req.body.utilization || []) as string[];
 
-    if (!teamIds || !projectIds.length)
-      return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
+    if (
+      !teamIds ||
+      !projectIds.length ||
+      !members.length ||
+      !utilization.length
+    )
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { users: [], projects: [] }));
 
     const { duration, date_range } = req.body;
 
@@ -419,7 +538,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
       const minDateResult = await db.query(minDateQuery, []);
       const minDate = minDateResult.rows[0]?.min_date;
-      startDate = minDate ? moment(minDate) : moment('2000-01-01');
+      startDate = minDate ? moment(minDate) : moment("2000-01-01");
       endDate = moment();
     } else {
       switch (duration) {
@@ -448,10 +567,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
     // Count only weekdays (Mon-Fri) in the period
     let workingDays = 0;
     let current = startDate.clone();
-    while (current.isSameOrBefore(endDate, 'day')) {
+    while (current.isSameOrBefore(endDate, "day")) {
       const day = current.isoWeekday();
       if (day >= 1 && day <= 5) workingDays++;
-      current.add(1, 'day');
+      current.add(1, "day");
     }
 
     // Get hours_per_day for all selected projects
@@ -467,17 +586,19 @@ export default class ReportingAllocationController extends ReportingControllerBa
       totalWorkingHours += workingDays * projectHoursMap[pid];
     }
 
-    const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
+    const durationClause = this.getDateRangeClause(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range
+    );
     const archivedClause = archived
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
     const billableQuery = this.buildBillableQuery(billable);
-    const members = (req.body.members || []) as string[];
     // Prepare members filter
     let membersFilter = "";
     if (members.length > 0) {
-      const memberIds = members.map(id => `'${id}'`).join(",");
+      const memberIds = members.map((id) => `'${id}'`).join(",");
       membersFilter = `AND tmiv.team_member_id IN (${memberIds})`;
     }
     const q = `
@@ -492,7 +613,6 @@ export default class ReportingAllocationController extends ReportingControllerBa
       GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id
       ORDER BY logged_time DESC;`;
     const result = await db.query(q, []);
-    const utilization = (req.body.utilization || []) as string[];
 
     // Precompute totalWorkingHours * 3600 for efficiency
     const totalWorkingSeconds = totalWorkingHours * 3600;
@@ -501,11 +621,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
     // calculate utilization state
     for (let i = 0, len = result.rows.length; i < len; i++) {
       const member = result.rows[i];
-      const loggedSeconds = member.logged_time ? parseFloat(member.logged_time) : 0;
-      const utilizedHours = loggedSeconds / 3600;
-      const utilizationPercent = totalWorkingSeconds > 0 && loggedSeconds
-        ? ((loggedSeconds / totalWorkingSeconds) * 100)
+      const loggedSeconds = member.logged_time
+        ? parseFloat(member.logged_time)
         : 0;
+      const utilizedHours = loggedSeconds / 3600;
+      const utilizationPercent =
+        totalWorkingSeconds > 0 && loggedSeconds
+          ? (loggedSeconds / totalWorkingSeconds) * 100
+          : 0;
       const overUnder = utilizedHours - totalWorkingHours;
 
       member.value = utilizedHours ? parseFloat(utilizedHours.toFixed(2)) : 0;
@@ -516,43 +639,56 @@ export default class ReportingAllocationController extends ReportingControllerBa
       member.over_under_utilized_hours = overUnder.toFixed(2);
 
       if (utilizationPercent < 90) {
-        member.utilization_state = 'under';
+        member.utilization_state = "under";
       } else if (utilizationPercent <= 110) {
-        member.utilization_state = 'optimal';
+        member.utilization_state = "optimal";
       } else {
-        member.utilization_state = 'over';
+        member.utilization_state = "over";
       }
     }
 
     const filteredRows = hasUtilizationFilter
-      ? result.rows.filter(member => utilization.includes(member.utilization_state))
+      ? result.rows.filter((member) =>
+          utilization.includes(member.utilization_state)
+        )
       : result.rows;
 
     // Calculate totals
-    const total_time_logs = filteredRows.reduce((sum, member) => sum + parseFloat(member.logged_time || '0'), 0);
+    const total_time_logs = filteredRows.reduce(
+      (sum, member) => sum + parseFloat(member.logged_time || "0"),
+      0
+    );
     const total_estimated_hours = totalWorkingHours;
-    const total_utilization = total_time_logs > 0 && totalWorkingSeconds > 0
-      ? ((total_time_logs / totalWorkingSeconds) * 100).toFixed(1)
-      : '0';
+    const total_utilization =
+      total_time_logs > 0 && totalWorkingSeconds > 0
+        ? ((total_time_logs / totalWorkingSeconds) * 100).toFixed(1)
+        : "0";
 
-    return res.status(200).send(new ServerResponse(true, {
-      filteredRows,
-      totals: {
-      total_time_logs: ((total_time_logs / 3600).toFixed(2)).toString(),
-      total_estimated_hours: total_estimated_hours.toString(),
-      total_utilization: total_utilization.toString(),
-      },
-    }));
+    return res.status(200).send(
+      new ServerResponse(true, {
+        filteredRows,
+        totals: {
+          total_time_logs: (total_time_logs / 3600).toFixed(2).toString(),
+          total_estimated_hours: total_estimated_hours.toString(),
+          total_utilization: total_utilization.toString(),
+        },
+      })
+    );
   }
 
   @HandleExceptions()
-  public static async exportTest(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-
+  public static async exportTest(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const archived = req.query.archived === "true";
     const teamId = this.getCurrentTeamId(req);
     const { duration, date_range } = req.query;
 
-    const durationClause = this.getDateRangeClause(duration as string || DATE_RANGES.LAST_WEEK, date_range as string[]);
+    const durationClause = this.getDateRangeClause(
+      (duration as string) || DATE_RANGES.LAST_WEEK,
+      date_range as string[]
+    );
 
     const archivedClause = archived
       ? ""
@@ -577,8 +713,16 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const dataX = [];
 
     for (const project of result.rows) {
-      project.value = project.logged_time ? parseFloat(moment.duration(project.logged_time, "seconds").asHours().toFixed(2)) : 0;
-      project.estimated_value = project.estimated ? parseFloat(moment.duration(project.estimated, "minutes").asHours().toFixed(2)) : 0;
+      project.value = project.logged_time
+        ? parseFloat(
+            moment.duration(project.logged_time, "seconds").asHours().toFixed(2)
+          )
+        : 0;
+      project.estimated_value = project.estimated
+        ? parseFloat(
+            moment.duration(project.estimated, "minutes").asHours().toFixed(2)
+          )
+        : 0;
       labelsX.push(project.name);
       dataX.push(project.value || 0);
     }
@@ -588,9 +732,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       type: "bar",
       data: {
         labels: labelsX,
-        datasets: [
-          { label: "", data: dataX }
-        ]
+        datasets: [{ label: "", data: dataX }],
       },
     });
     chart.setWidth(1920).setHeight(1080).setBackgroundColor("transparent");
@@ -606,10 +748,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     switch (type) {
       case IToggleOptions.MAN_DAYS:
-        return project.estimated_man_days ?? 0;;
+        return project.estimated_man_days ?? 0;
 
       case IToggleOptions.WORKING_DAYS:
-        return project.estimated_working_days ?? 0;;
+        return project.estimated_working_days ?? 0;
 
       default:
         return 0;
@@ -617,22 +759,30 @@ export default class ReportingAllocationController extends ReportingControllerBa
   }
 
   @HandleExceptions()
-  public static async getEstimatedVsActual(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getEstimatedVsActual(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const archived = req.query.archived === "true";
 
     const teams = (req.body.teams || []) as string[]; // ids
-    const teamIds = teams.map(id => `'${id}'`).join(",");
+    const teamIds = teams.map((id) => `'${id}'`).join(",");
 
     const projects = (req.body.projects || []) as string[];
-    const projectIds = projects.map(p => `'${p}'`).join(",");
+    const projectIds = projects.map((p) => `'${p}'`).join(",");
     const { type, billable } = req.body;
 
     if (!teamIds || !projectIds.length)
-      return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { users: [], projects: [] }));
 
     const { duration, date_range } = req.body;
 
-    const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
+    const durationClause = this.getDateRangeClause(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range
+    );
 
     const archivedClause = archived
       ? ""
@@ -663,10 +813,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const data = [];
 
     for (const project of result.rows) {
-      const durationInHours = parseFloat(moment.duration(project.logged_time, "seconds").asHours().toFixed(2));
+      const durationInHours = parseFloat(
+        moment.duration(project.logged_time, "seconds").asHours().toFixed(2)
+      );
       const hoursPerDay = parseInt(project.hours_per_day ?? 1);
 
-      project.value = parseFloat((durationInHours / hoursPerDay).toFixed(2)) ?? 0;
+      project.value =
+        parseFloat((durationInHours / hoursPerDay).toFixed(2)) ?? 0;
 
       project.estimated_value = this.getEstimated(project, type);
       project.estimated_man_days = project.estimated_man_days ?? 0;
@@ -676,7 +829,6 @@ export default class ReportingAllocationController extends ReportingControllerBa
       if (project.value > 0 || project.estimated_value > 0) {
         data.push(project);
       }
-
     }
 
     return res.status(200).send(new ServerResponse(true, data));
