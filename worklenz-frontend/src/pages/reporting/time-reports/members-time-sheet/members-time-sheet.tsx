@@ -99,33 +99,67 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         position: 'top' as const,
       },
       tooltip: {
+        // Basic styling
+        backgroundColor: themeMode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+        titleColor: themeMode === 'dark' ? '#ffffff' : '#000000',
+        bodyColor: themeMode === 'dark' ? '#ffffff' : '#000000',
+        borderColor: themeMode === 'dark' ? '#4a5568' : '#e2e8f0',
+        cornerRadius: 8,
+        padding: 12,
+        
+        // Remove colored squares
+        displayColors: false,
+        
+        // Positioning - better alignment for horizontal bar chart
+        xAlign: 'left' as const,
+        yAlign: 'center' as const,
+        
         callbacks: {
+          // Customize the title (member name)
+          title: function (context: any) {
+            const idx = context[0].dataIndex;
+            const member = jsonData[idx];
+            return `👤 ${member?.name || 'Unknown Member'}`;
+          },
+          
+          // Customize the label content
           label: function (context: any) {
             const idx = context.dataIndex;
             const member = jsonData[idx];
             const hours = member?.utilized_hours || '0.00';
             const percent = parseFloat(member?.utilization_percent || '0.00');
             const overUnder = member?.over_under_utilized_hours || '0.00';
-            let color = '';
+            
+            // Color indicators based on utilization state
+            let statusText = '';
             switch (member.utilization_state) {
               case 'under':
-              color = '🟧';
-              break;
+                statusText = '🟠 Under-Utilized';
+                break;
               case 'optimal':
-              color = '🟩';
-              break;
+                statusText = '🟢 Optimally Utilized';
+                break;
               case 'over':
-              color = '🟥';
-              break;
+                statusText = '🔴 Over-Utilized';
+                break;
               default:
-              color = '';
+                statusText = '⚪ Unknown';
             }
+            
             return [
-              `${context.dataset.label}: ${hours} h`,
-              `${color} Utilization: ${percent}%`,
-              `${member.utilization_state} Utilized: ${overUnder} h`
+              `⏱️ ${context.dataset.label}: ${hours} h`,
+              `📊 Utilization: ${percent}%`,
+              `${statusText}: ${overUnder} h`
             ];
           },
+          
+          // Add a footer with additional info
+          footer: function (context: any) {
+            const idx = context[0].dataIndex;
+            const member = jsonData[idx];
+            const loggedTime = parseFloat(member?.logged_time || '0') / 3600;
+            return `📊 Total Logged: ${loggedTime.toFixed(2)}h`;
+          }
         }
       }
     },
