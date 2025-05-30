@@ -27,6 +27,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const { socket, connected } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
   const isDeleting = useRef(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const [taskName, setTaskName] = useState<string>(taskFormViewModel?.task?.name ?? '');
@@ -88,6 +89,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   };
 
   const handleInputBlur = () => {
+    setIsEditing(false);
     if (
       !selectedTaskId ||
       !connected ||
@@ -113,21 +115,39 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   return (
     <Flex gap={12} align="center" style={{ marginBlockEnd: 6 }}>
       <Flex style={{ position: 'relative', width: '100%' }}>
-        <Input
-          ref={inputRef}
-          size="large"
-          value={taskName}
-          onChange={e => onTaskNameChange(e)}
-          onBlur={handleInputBlur}
-          placeholder={t('taskHeader.taskNamePlaceholder')}
-          className="task-name-input"
-          style={{ 
-            width: '100%', 
-            border: 'none',
-          }}
-          showCount={false}
-          maxLength={250}
-        />
+        {isEditing ? (
+          <Input
+            ref={inputRef}
+            size="large"
+            value={taskName}
+            onChange={e => onTaskNameChange(e)}
+            onBlur={handleInputBlur}
+            placeholder={t('taskHeader.taskNamePlaceholder')}
+            className="task-name-input"
+            style={{ 
+              width: '100%', 
+              border: 'none',
+            }}
+            showCount={true}
+            maxLength={250}
+            autoFocus
+          />
+        ) : (
+          <p 
+            onClick={() => setIsEditing(true)} 
+            style={{ 
+              margin: 0, 
+              padding: '4px 11px',
+              fontSize: '16px',
+              cursor: 'pointer',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              width: '100%'
+            }}
+          >
+            {taskName || t('taskHeader.taskNamePlaceholder')}
+          </p>
+        )}
       </Flex>
 
       <TaskDrawerStatusDropdown
