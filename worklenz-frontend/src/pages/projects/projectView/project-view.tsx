@@ -169,7 +169,7 @@ const ProjectView = () => {
   ), []);
 
   return (
-    <div style={{ marginBlockStart: 80, marginBlockEnd: 24, minHeight: '80vh' }}>
+    <div style={{ marginBlockStart: 15, marginBlockEnd: 24, minHeight: '80vh' }}>
       <ProjectViewHeader />
 
       <Tabs

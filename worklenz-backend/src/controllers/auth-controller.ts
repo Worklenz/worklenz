@@ -28,37 +28,9 @@ export default class AuthController extends WorklenzControllerBase {
   }
 
   public static verify(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    console.log("=== VERIFY DEBUG ===");
-    console.log("req.user:", req.user);
-    console.log("req.isAuthenticated():", req.isAuthenticated());
-    console.log("req.session.passport:", (req.session as any).passport);
-    console.log("req.session.id:", req.sessionID);
-    console.log("Full session object:", JSON.stringify(req.session, null, 2));
-    console.log("req.query.strategy:", req.query.strategy);
-    
-    // Check if session exists in database
-    if (req.sessionID) {
-      db.query("SELECT sid, sess FROM pg_sessions WHERE sid = $1", [req.sessionID])
-        .then(result => {
-          if (result.rows.length > 0) {
-            console.log("Session found in database:");
-            console.log("Session ID:", result.rows[0].sid);
-            console.log("Session data:", JSON.stringify(result.rows[0].sess, null, 2));
-          } else {
-            console.log("Session NOT FOUND in database for ID:", req.sessionID);
-          }
-        })
-        .catch(err => {
-          console.log("Error checking session in database:", err);
-        });
-    }
-    
     // Flash messages sent from passport-local-signup.ts and passport-local-login.ts
     const errors = req.flash()["error"] || [];
     const messages = req.flash()["success"] || [];
-    
-    console.log("Flash errors:", errors);
-    console.log("Flash messages:", messages);
     
     // If there are multiple messages, we will send one at a time.
     const auth_error = errors.length > 0 ? errors[0] : null;
@@ -66,20 +38,11 @@ export default class AuthController extends WorklenzControllerBase {
 
     const midTitle = req.query.strategy === "login" ? "Login Failed!" : "Signup Failed!";
     const title = req.query.strategy ? midTitle : null;
-    
-    console.log("Title:", title);
-    console.log("Auth error:", auth_error);
-    console.log("Success message:", message);
-    console.log("Is authenticated:", req.isAuthenticated());
-    console.log("Has user:", !!req.user);
 
     if (req.user)
       req.user.build_v = FileConstants.getRelease();
 
-    const response = new AuthResponse(title, req.isAuthenticated(), req.user || null, auth_error, message);
-    console.log("Sending response:", response);
-    
-    return res.status(200).send(response);
+    return res.status(200).send(new AuthResponse(title, req.isAuthenticated(), req.user || null, auth_error, message));
   }
 
   public static logout(req: IWorkLenzRequest, res: IWorkLenzResponse) {

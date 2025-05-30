@@ -37,15 +37,8 @@ async function registerUser(password: string, team_id: string, name: string, tea
     team_member_id,
   };
 
-  console.log("=== REGISTER USER DEBUG ===");
-  console.log("Calling register_user with body:", body);
-
   const result = await db.query(q, [JSON.stringify(body)]);
   const [data] = result.rows;
-  
-  console.log("Register user result:", data);
-  console.log("User object returned:", data.user);
-  
   return data.user;
 }
 
@@ -66,22 +59,11 @@ async function handleSignUp(req: Request, email: string, password: string, done:
   }
 
   try {
-    console.log("=== SIGNUP DEBUG ===");
-    console.log("About to register user with data:", {name, team_name, email, timezone, team_member_id, team_id});
-    
     const user = await registerUser(password, team_id, name, team_name, email, timezone, team_member_id);
-    
-    console.log("User registration successful, user object:", user);
-    
     sendWelcomeEmail(email, name);
-    
-    console.log("About to call done with user:", user);
     req.flash(SUCCESS_KEY, "Registration successful. Please check your email for verification.");
     return done(null, user, {message: "Registration successful. Please check your email for verification."});
   } catch (error: any) {
-    console.log("=== SIGNUP ERROR ===");
-    console.log("Error during signup:", error);
-    
     const message = (error?.message) || "";
 
     if (message === "ERROR_INVALID_JOINING_EMAIL") {
