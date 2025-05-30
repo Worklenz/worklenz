@@ -3,7 +3,7 @@ import { toQueryString } from '@/utils/toQueryString';
 import apiClient from '../api-client';
 import { IServerResponse } from '@/types/common.types';
 import { IAllocationViewModel } from '@/types/reporting/reporting-allocation.types';
-import { IProjectLogsBreakdown, IRPTTimeMember, IRPTTimeProject, ITimeLogBreakdownReq } from '@/types/reporting/reporting.types';
+import { IProjectLogsBreakdown, IRPTTimeMember, IRPTTimeMemberViewModel, IRPTTimeProject, ITimeLogBreakdownReq } from '@/types/reporting/reporting.types';
 
 const rootUrl = `${API_BASE_URL}/reporting`;
 
@@ -25,7 +25,7 @@ export const reportingTimesheetApiService = {
     return response.data;
   },
 
-  getMemberTimeSheets: async (body = {}, archived = false): Promise<IServerResponse<IRPTTimeMember[]>> => {
+  getMemberTimeSheets: async (body = {}, archived = false): Promise<IServerResponse<IRPTTimeMemberViewModel>> => {
     const q = toQueryString({ archived });
     const response = await apiClient.post(`${rootUrl}/time-reports/members/${q}`, body);
     return response.data;

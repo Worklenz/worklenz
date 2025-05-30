@@ -40,5 +40,9 @@
   "noCategory": "No Category",
   "noProjects": "No projects found",
   "noTeams": "No teams found",
-  "noData": "No data found"
+  "noData": "No data found",
+  "members": "Members",
+  "searchByMember": "Search by member",
+  "utilization": "Utilization"
+  
 }

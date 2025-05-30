@@ -19,11 +19,14 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
+interface MembersTimeSheetProps {
+  onTotalsUpdate: (totals: { total_time_logs: string; total_estimated_hours: string; total_utilization: string }) => void;
+}
 export interface MembersTimeSheetRef {
   exportChart: () => void;
 }
 
-const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
+const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(({ onTotalsUpdate }, ref) => {
   const { t } = useTranslation('time-report');
   const dispatch = useAppDispatch();
   const chartRef = React.useRef<ChartJS<'bar', string[], unknown>>(null);
@@ -35,6 +38,10 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
     loadingCategories,
     projects: filterProjects,
     loadingProjects,
+    members,
+    loadingMembers,
+    utilization,
+    loadingUtilization,
     billable,
     archived,
   } = useAppSelector(state => state.timeReportsOverviewReducer);
@@ -98,33 +105,26 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
             const hours = member?.utilized_hours || '0.00';
             const percent = parseFloat(member?.utilization_percent || '0.00');
             const overUnder = member?.over_under_utilized_hours || '0.00';
-            let status = '';
             let color = '';
-            if (percent < 90) {
-              status = 'Under';
-            } else if (percent <= 110) {
-              status = 'Optimal';
-            } else {
-              status = 'Over';
+            switch (member.utilization_state) {
+              case 'under':
+              color = '🟧';
+              break;
+              case 'optimal':
+              color = '🟩';
+              break;
+              case 'over':
+              color = '🟥';
+              break;
+              default:
+              color = '';
             }
             return [
               `${context.dataset.label}: ${hours} h`,
-              `Utilization: ${percent}%`,
-              `${status} Utilized: ${overUnder} h`
+              `${color} Utilization: ${percent}%`,
+              `${member.utilization_state} Utilized: ${overUnder} h`
             ];
           },
-          labelTextColor: function (context: any) {
-            const idx = context.dataIndex;
-            const member = jsonData[idx];
-            const utilization = parseFloat(member?.utilization_percent || '0');
-            if (utilization < 90) {
-              return '#FFB546';
-            } else if (utilization >= 90 && utilization <= 110) {
-              return '#B2EF9A';
-            } else {
-              return '#FE7173';
-            }
-          }
         }
       }
     },
@@ -170,11 +170,14 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
       const selectedTeams = teams.filter(team => team.selected);
       const selectedProjects = filterProjects.filter(project => project.selected);
       const selectedCategories = categories.filter(category => category.selected);
-
+      const selectedMembers = members.filter(member => member.selected);
+      const selectedUtilization = utilization.filter(item => item.selected);
       const body = {
         teams: selectedTeams.map(t => t.id),
         projects: selectedProjects.map(project => project.id),
         categories: selectedCategories.map(category => category.id),
+        members: selectedMembers.map(member => member.id),
+        utilization: selectedUtilization.map(item => item.id),
         duration,
         date_range: dateRange,
         billable,
@@ -182,9 +185,18 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
 
       const res = await reportingTimesheetApiService.getMemberTimeSheets(body, archived);
       if (res.done) {
-        setJsonData(res.body || []);
+        setJsonData(res.body.filteredRows || []);
+
+      const totalsRaw = res.body.totals || {};
+      const totals = {
+        total_time_logs: totalsRaw.total_time_logs ?? "0",
+        total_estimated_hours: totalsRaw.total_estimated_hours ?? "0",
+        total_utilization: totalsRaw.total_utilization ?? "0",
+      };
+      onTotalsUpdate(totals);
       }
     } catch (error) {
+      console.error('Error fetching chart data:', error);
       logger.error('Error fetching chart data:', error);
     } finally {
       setLoading(false);
@@ -193,7 +205,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef>((_, ref) => {
 
   useEffect(() => {
     fetchChartData();
-  }, [dispatch, duration, dateRange, billable, archived, teams, filterProjects, categories]);
+  }, [dispatch, duration, dateRange, billable, archived, teams, filterProjects, categories, members, utilization]);
 
   const exportChart = () => {
     if (chartRef.current) {

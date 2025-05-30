@@ -94,7 +94,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
                         SELECT name,
                                (SELECT COALESCE(SUM(time_spent), 0)
                                 FROM task_work_log
-                                       LEFT JOIN tasks ON task_work_log.task_id = tasks.id 
+                                       LEFT JOIN tasks ON task_work_log.task_id = tasks.id
                                 WHERE user_id = users.id ${billableQuery}
                                   AND CASE WHEN ($1 IS TRUE) THEN tasks.project_id IS NOT NULL ELSE tasks.archived = FALSE END
                                   AND tasks.project_id = projects.id
@@ -473,31 +473,76 @@ export default class ReportingAllocationController extends ReportingControllerBa
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
     const billableQuery = this.buildBillableQuery(billable);
-
+    const members = (req.body.members || []) as string[];
+    // Prepare members filter
+    let membersFilter = "";
+    if (members.length > 0) {
+      const memberIds = members.map(id => `'${id}'`).join(",");
+      membersFilter = `AND tmiv.team_member_id IN (${memberIds})`;
+    }
     const q = `
-        SELECT tmiv.email, tmiv.name, SUM(time_spent) AS logged_time
-            FROM team_member_info_view tmiv
-                    LEFT JOIN task_work_log ON task_work_log.user_id = tmiv.user_id
-                    LEFT JOIN tasks ON tasks.id = task_work_log.task_id ${billableQuery}
-                    LEFT JOIN projects p ON p.id = tasks.project_id AND p.team_id = tmiv.team_id
-            WHERE p.id IN (${projectIds})
-            ${durationClause} ${archivedClause}
-            GROUP BY tmiv.email, tmiv.name
-            ORDER BY logged_time DESC;`;
+      SELECT tmiv.team_member_id, tmiv.email, tmiv.name, SUM(time_spent) AS logged_time
+      FROM team_member_info_view tmiv
+        LEFT JOIN task_work_log ON task_work_log.user_id = tmiv.user_id
+        LEFT JOIN tasks ON tasks.id = task_work_log.task_id ${billableQuery}
+        LEFT JOIN projects p ON p.id = tasks.project_id AND p.team_id = tmiv.team_id
+      WHERE p.id IN (${projectIds})
+        ${durationClause} ${archivedClause}
+        ${membersFilter}
+      GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id
+      ORDER BY logged_time DESC;`;
     const result = await db.query(q, []);
+    const utilization = (req.body.utilization || []) as string[];
 
-    for (const member of result.rows) {
-      member.value = member.logged_time ? parseFloat(moment.duration(member.logged_time, "seconds").asHours().toFixed(2)) : 0;
+    // Precompute totalWorkingHours * 3600 for efficiency
+    const totalWorkingSeconds = totalWorkingHours * 3600;
+    const hasUtilizationFilter = utilization.length > 0;
+
+    // calculate utilization state
+    for (let i = 0, len = result.rows.length; i < len; i++) {
+      const member = result.rows[i];
+      const loggedSeconds = member.logged_time ? parseFloat(member.logged_time) : 0;
+      const utilizedHours = loggedSeconds / 3600;
+      const utilizationPercent = totalWorkingSeconds > 0 && loggedSeconds
+        ? ((loggedSeconds / totalWorkingSeconds) * 100)
+        : 0;
+      const overUnder = utilizedHours - totalWorkingHours;
+
+      member.value = utilizedHours ? parseFloat(utilizedHours.toFixed(2)) : 0;
       member.color_code = getColor(member.name);
       member.total_working_hours = totalWorkingHours;
-      member.utilization_percent = (totalWorkingHours > 0 && member.logged_time) ? ((parseFloat(member.logged_time) / (totalWorkingHours * 3600)) * 100).toFixed(2) : '0.00';
-      member.utilized_hours = member.logged_time ? (parseFloat(member.logged_time) / 3600).toFixed(2) : '0.00';
-      // Over/under utilized hours: utilized_hours - total_working_hours
-      const overUnder = member.utilized_hours && member.total_working_hours ? (parseFloat(member.utilized_hours) - member.total_working_hours) : 0;
+      member.utilization_percent = utilizationPercent.toFixed(2);
+      member.utilized_hours = utilizedHours.toFixed(2);
       member.over_under_utilized_hours = overUnder.toFixed(2);
+
+      if (utilizationPercent < 90) {
+        member.utilization_state = 'under';
+      } else if (utilizationPercent <= 110) {
+        member.utilization_state = 'optimal';
+      } else {
+        member.utilization_state = 'over';
+      }
     }
 
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    const filteredRows = hasUtilizationFilter
+      ? result.rows.filter(member => utilization.includes(member.utilization_state))
+      : result.rows;
+
+    // Calculate totals
+    const total_time_logs = filteredRows.reduce((sum, member) => sum + parseFloat(member.logged_time || '0'), 0);
+    const total_estimated_hours = totalWorkingHours;
+    const total_utilization = total_time_logs > 0 && totalWorkingSeconds > 0
+      ? ((total_time_logs / totalWorkingSeconds) * 100).toFixed(1)
+      : '0';
+
+    return res.status(200).send(new ServerResponse(true, {
+      filteredRows,
+      totals: {
+      total_time_logs: ((total_time_logs / 3600).toFixed(2)).toString(),
+      total_estimated_hours: total_estimated_hours.toString(),
+      total_utilization: total_utilization.toString(),
+      },
+    }));
   }
 
   @HandleExceptions()
