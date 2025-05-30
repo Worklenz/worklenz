@@ -110,14 +110,14 @@ export const settingsItems: SettingMenuItems[] = [
     element: React.createElement(CategoriesSettings),
     adminOnly: true,
   },
-  // {
-  //   key: 'project-templates',
-  //   name: 'project-templates',
-  //   endpoint: 'project-templates',
-  //   icon: React.createElement(FileZipOutlined),
-  //   element: React.createElement(ProjectTemplatesSettings),
-  //   adminOnly: true,
-  // },
+  {
+    key: 'project-templates',
+    name: 'project-templates',
+    endpoint: 'project-templates',
+    icon: React.createElement(FileZipOutlined),
+    element: React.createElement(ProjectTemplatesSettings),
+    adminOnly: true,
+  },
   {
     key: 'task-templates',
     name: 'task-templates',
