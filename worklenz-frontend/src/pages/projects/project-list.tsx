@@ -15,7 +15,7 @@ import {
   Tooltip,
 } from 'antd';
 import { PageHeader } from '@ant-design/pro-components';
-import { SearchOutlined, SyncOutlined } from '@ant-design/icons';
+import { SearchOutlined, SyncOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
 
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
@@ -56,6 +56,7 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 const ProjectList: React.FC = () => {
   const [filteredInfo, setFilteredInfo] = useState<Record<string, FilterValue | null>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'group'>('list');
   const { t } = useTranslation('all-project-list');
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -98,6 +99,28 @@ const ProjectList: React.FC = () => {
       label: t(filter.toLowerCase())
     }));
   }, [filters, t]);
+
+  // Toggle options for List/Group view
+  const viewToggleOptions = useMemo(() => [
+    {
+      value: 'list' as const,
+      label: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <UnorderedListOutlined />
+          List
+        </div>
+      )
+    },
+    {
+      value: 'group' as const,
+      label: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AppstoreOutlined />
+          Group
+        </div>
+      )
+    }
+  ], []);
 
   useEffect(() => {
     setIsLoading(loadingProjects || isFetchingProjects);
@@ -175,6 +198,10 @@ const ProjectList: React.FC = () => {
     dispatch(setRequestParams({ search: value }));
   }, []);
 
+  const handleViewToggle = useCallback((value: 'list' | 'group') => {
+    setViewMode(value);
+  }, []);
+
   const paginationConfig = useMemo(
     () => ({
       current: requestParams.index,
@@ -192,6 +219,7 @@ const ProjectList: React.FC = () => {
     dispatch(setProject({} as IProjectViewModel));
     dispatch(setProjectId(null));
   };
+  
   const navigateToProject = (project_id: string | undefined, default_view: string | undefined) => {
     if (project_id) {
       navigate(`/worklenz/projects/${project_id}?tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}&pinned_tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}`); // Update the route as per your project structure
@@ -224,6 +252,15 @@ const ProjectList: React.FC = () => {
               options={segmentOptions}
               defaultValue={filters[getFilterIndex()] ?? filters[0]}
               onChange={handleSegmentChange}
+            />
+            <Segmented
+              options={viewToggleOptions}
+              value={viewMode}
+              onChange={handleViewToggle}
+              style={{
+                backgroundColor: '#1f2937',
+                border: 'none',
+              }}
             />
             <Input
               placeholder={t('placeholder')}
