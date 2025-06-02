@@ -39,4 +39,4 @@ export const mockTimeLogs: TimeLog[] = [
     date: 'Sep 12, 2023, 8:30:19 AM - Sep 12, 2023, 8:30:49 AM',
     via: 'Timer',
   },
-];
+]; 

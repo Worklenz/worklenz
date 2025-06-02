@@ -1,18 +1,19 @@
 import { Button, Flex, Select, Typography } from 'antd';
 import { useState } from 'react';
-import StatusGroupTables from '../../../projects/project-view-1/taskList/statusTables/StatusGroupTables';
+import TaskGroupList from '@/pages/projects/projectView/taskList/groupTables/TaskGroupList';
 import { TaskType } from '../../../../types/task.types';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { PageHeader } from '@ant-design/pro-components';
 import { ArrowLeftOutlined, CaretDownFilled } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import SearchDropdown from '../../../projects/project-view-1/taskList/taskListFilters/SearchDropdown';
+import TaskListFilters from '@/pages/projects/projectView/taskList/task-list-filters/task-list-filters';
 import { useSelectedProject } from '../../../../hooks/useSelectedProject';
 import { useTranslation } from 'react-i18next';
 import { toggleDrawer as togglePhaseDrawer } from '../../../../features/projects/singleProject/phase/phases.slice';
 import { toggleDrawer } from '../../../../features/projects/status/StatusSlice';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import React from 'react';
+import { ITaskListGroup } from '@/types/tasks/taskList.types';
 
 const PhaseDrawer = React.lazy(() => import('@features/projects/singleProject/phase/PhaseDrawer'));
 const StatusDrawer = React.lazy(
@@ -20,7 +21,8 @@ const StatusDrawer = React.lazy(
 );
 
 const ProjectTemplateEditView = () => {
-  const dataSource: TaskType[] = useAppSelector(state => state.taskReducer.tasks);
+  const dataSource: ITaskListGroup[] = useAppSelector(state => state.taskReducer.taskGroups);
+  const groupBy = useAppSelector(state => state.taskReducer.groupBy);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { templateId, templateName } = useParams();
@@ -40,7 +42,7 @@ const ProjectTemplateEditView = () => {
   //get phases details from phases slice
   const phase =
     useAppSelector(state => state.phaseReducer.phaseList).find(
-      phase => phase.projectId === selectedProject?.id
+      phase => phase.id === selectedProject?.id
     ) || null;
 
   const groupDropdownMenuItems = [
@@ -49,7 +51,7 @@ const ProjectTemplateEditView = () => {
     {
       key: 'phase',
       value: 'phase',
-      label: phase ? phase?.phase : t('phaseText'),
+      label: phase ? phase?.name : t('phaseText'),
     },
   ];
   return (
@@ -68,7 +70,7 @@ const ProjectTemplateEditView = () => {
       />
       <Flex vertical gap={16}>
         <Flex gap={8} wrap={'wrap'}>
-          <SearchDropdown />
+          <TaskListFilters position="list" />
           <Flex align="center" gap={4} style={{ marginInlineStart: 12 }}>
             {t('groupByText')}:
             <Select
@@ -91,8 +93,7 @@ const ProjectTemplateEditView = () => {
           )}
         </Flex>
 
-        <StatusGroupTables datasource={dataSource} />
-        {/* <PriorityGroupTables datasource={dataSource} /> */}
+        <TaskGroupList taskGroups={dataSource} groupBy={groupBy} />
       </Flex>
       {/* phase drawer  */}
       <PhaseDrawer />

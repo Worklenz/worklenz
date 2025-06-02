@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import ProjectViewInsights from '@/pages/projects/projectView/insights/project-view-insights';
 import ProjectViewFiles from '@/pages/projects/projectView/files/project-view-files';
 import ProjectViewMembers from '@/pages/projects/projectView/members/project-view-members';
-import ProjectViewUpdates from '@/pages/projects/project-view-1/updates/project-view-updates';
+import ProjectViewUpdates from '@/pages/projects/projectView/updates/ProjectViewUpdates';
 import ProjectViewTaskList from '@/pages/projects/projectView/taskList/project-view-task-list';
 import ProjectViewBoard from '@/pages/projects/projectView/board/project-view-board';
 import ProjectViewFinance from '@/pages/projects/projectView/finance/project-view-finance';
@@ -32,18 +32,6 @@ export const tabItems: TabItems[] = [
     isPinned: true,
     element: React.createElement(ProjectViewBoard),
   },
-  // {
-  //   index: 2,
-  //   key: 'workload',
-  //   label: 'Workload',
-  //   element: React.createElement(ProjectViewWorkload),
-  // },
-  // {
-  //   index: 3,
-  //   key: 'roadmap',
-  //   label: 'Roadmap',
-  //   element: React.createElement(ProjectViewRoadmap),
-  // },
   {
     index: 4,
     key: 'project-insights-member-overview',

@@ -1,11 +1,13 @@
-import StatusGroupTables from '@/pages/projects/project-view-1/taskList/statusTables/StatusGroupTables';
+import TaskGroupList from '@/pages/projects/projectView/taskList/groupTables/TaskGroupList';
 import { TaskType } from '@/types/task.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import GroupByFilterDropdown from '@/pages/projects/project-view-1/taskList/taskListFilters/GroupByFilterDropdown';
+import GroupByFilterDropdown from '@/components/project-task-filters/filter-dropdowns/group-by-filter-dropdown';
 import { useTranslation } from 'react-i18next';
+import { ITaskListGroup } from '@/types/tasks/taskList.types';
 
 const WithStartAndEndDates = () => {
-  const dataSource: TaskType[] = useAppSelector(state => state.taskReducer.tasks);
+  const dataSource: ITaskListGroup[] = useAppSelector(state => state.taskReducer.taskGroups);
+  const groupBy = useAppSelector(state => state.taskReducer.groupBy);
   const { t } = useTranslation('schedule');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -57,7 +59,7 @@ const WithStartAndEndDates = () => {
         <GroupByFilterDropdown />
       </div>
       <div>
-        <StatusGroupTables datasource={dataSource} />
+        <TaskGroupList taskGroups={dataSource} groupBy={groupBy} />
       </div>
     </div>
   );
