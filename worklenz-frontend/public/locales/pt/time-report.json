@@ -58,5 +58,7 @@
   "underCapacity": "Abaixo da capacidade",
   "considerWorkloadRedistribution": "Considerar redistribuição da carga de trabalho",
   "capacityAvailableForNewProjects": "Capacidade disponível para novos projetos",
-  "targetRange": "Meta: 90-110%"
+  "targetRange": "Meta: 90-110%",
+  "overtimeWork": "Trabalho de Horas Extras",
+  "reviewWorkLifeBalance": "Revisar políticas de equilíbrio trabalho-vida"
 }

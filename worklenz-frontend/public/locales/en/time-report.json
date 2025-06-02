@@ -58,5 +58,7 @@
   "underCapacity": "Under capacity",
   "considerWorkloadRedistribution": "Consider workload redistribution",
   "capacityAvailableForNewProjects": "Capacity available for new projects",
-  "targetRange": "Target: 90-110%"
+  "targetRange": "Target: 90-110%",
+  "overtimeWork": "Overtime Work",
+  "reviewWorkLifeBalance": "Review work-life balance policies"
 }

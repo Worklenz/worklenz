@@ -497,7 +497,19 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const orgWorkingHoursQuery = `SELECT working_hours FROM organizations WHERE id = (SELECT t.organization_id FROM teams t WHERE t.id IN (${teamIds}) LIMIT 1)`;
     const orgWorkingHoursResult = await db.query(orgWorkingHoursQuery, []);
     const orgWorkingHours = orgWorkingHoursResult.rows[0]?.working_hours || 8;
+    
+    // Calculate total working hours with minimum baseline for non-working day scenarios
     let totalWorkingHours = workingDays * orgWorkingHours;
+    let isNonWorkingPeriod = false;
+    
+    // If no working days but there might be logged time, set minimum baseline
+    // This ensures that time logged on non-working days is treated as over-utilization
+    // Business Logic: If someone works on weekends/holidays when workingDays = 0,
+    // we use a minimal baseline (1 hour) so any logged time results in >100% utilization
+    if (totalWorkingHours === 0) {
+      totalWorkingHours = 1; // Minimal baseline to ensure over-utilization
+      isNonWorkingPeriod = true;
+    }
 
     const archivedClause = archived
       ? ""
@@ -586,14 +598,22 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const member = result.rows[i];
       const loggedSeconds = member.logged_time ? parseFloat(member.logged_time) : 0;
       const utilizedHours = loggedSeconds / 3600;
-      const utilizationPercent = totalWorkingSeconds > 0 && loggedSeconds
-        ? ((loggedSeconds / totalWorkingSeconds) * 100)
+      
+      // For individual members, use the same logic as total calculation
+      let memberWorkingHours = totalWorkingHours;
+      if (isNonWorkingPeriod && loggedSeconds > 0) {
+        // Any time logged during non-working period should be treated as over-utilization
+        memberWorkingHours = Math.min(utilizedHours, 1); // Use actual time or 1 hour, whichever is smaller
+      }
+      
+      const utilizationPercent = memberWorkingHours > 0 && loggedSeconds
+        ? ((loggedSeconds / (memberWorkingHours * 3600)) * 100)
         : 0;
-      const overUnder = utilizedHours - totalWorkingHours;
+      const overUnder = utilizedHours - memberWorkingHours;
 
       member.value = utilizedHours ? parseFloat(utilizedHours.toFixed(2)) : 0;
       member.color_code = getColor(member.name);
-      member.total_working_hours = totalWorkingHours;
+      member.total_working_hours = memberWorkingHours;
       member.utilization_percent = utilizationPercent.toFixed(2);
       member.utilized_hours = utilizedHours.toFixed(2);
       member.over_under_utilized_hours = overUnder.toFixed(2);
