@@ -17,19 +17,7 @@ const options = (key: string): passport.AuthenticateOptions => ({
   successRedirect: `/secure/verify?strategy=${key}`
 });
 
-// Debug middleware for login
-const loginDebugMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.log("=== LOGIN ROUTE HIT ===");
-  console.log("Request method:", req.method);
-  console.log("Request URL:", req.url);
-  console.log("Request body:", req.body);
-  console.log("Content-Type:", req.headers["content-type"]);
-  console.log("Session ID:", req.sessionID);
-  console.log("Is authenticated before:", req.isAuthenticated());
-  next();
-};
-
-authRouter.post("/login", loginDebugMiddleware, passport.authenticate("local-login", options("login")));
+authRouter.post("/login", passport.authenticate("local-login", options("login")));
 authRouter.post("/signup", signUpValidator, passwordValidator, passport.authenticate("local-signup", options("signup")));
 authRouter.post("/signup/check", signUpValidator, passwordValidator, safeControllerFunction(AuthController.status_check));
 authRouter.get("/verify", AuthController.verify);
