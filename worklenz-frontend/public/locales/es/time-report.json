@@ -40,5 +40,23 @@
   "noCategory": "No Categoría",
   "noProjects": "No se encontraron proyectos",
   "noTeams": "No se encontraron equipos",
-  "noData": "No se encontraron datos"
+  "noData": "No se encontraron datos",
+  "members": "Miembros",
+  "searchByMember": "Buscar por miembro",
+  "utilization": "Utilización",
+
+  "totalTimeLogged": "Tiempo Total Registrado",
+  "expectedCapacity": "Capacidad Esperada",
+  "teamUtilization": "Utilización del Equipo",
+  "variance": "Varianza",
+  "acrossAllTeamMembers": "En todos los miembros del equipo",
+  "basedOnWorkingSchedule": "Basado en horario de trabajo",
+  "optimal": "Óptimo",
+  "underUtilized": "Sub-utilizado",
+  "overUtilized": "Sobre-utilizado",
+  "overCapacity": "Sobre capacidad",
+  "underCapacity": "Bajo capacidad",
+  "considerWorkloadRedistribution": "Considerar redistribución de carga de trabajo",
+  "capacityAvailableForNewProjects": "Capacidad disponible para nuevos proyectos",
+  "targetRange": "Objetivo: 90-110%"
 }

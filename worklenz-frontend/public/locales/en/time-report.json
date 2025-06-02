@@ -43,6 +43,20 @@
   "noData": "No data found",
   "members": "Members",
   "searchByMember": "Search by member",
-  "utilization": "Utilization"
-  
+  "utilization": "Utilization",
+
+  "totalTimeLogged": "Total Time Logged",
+  "expectedCapacity": "Expected Capacity",
+  "teamUtilization": "Team Utilization",
+  "variance": "Variance",
+  "acrossAllTeamMembers": "Across all team members",
+  "basedOnWorkingSchedule": "Based on working schedule",
+  "optimal": "Optimal",
+  "underUtilized": "Under-utilized",
+  "overUtilized": "Over-utilized",
+  "overCapacity": "Over capacity",
+  "underCapacity": "Under capacity",
+  "considerWorkloadRedistribution": "Consider workload redistribution",
+  "capacityAvailableForNewProjects": "Capacity available for new projects",
+  "targetRange": "Target: 90-110%"
 }
