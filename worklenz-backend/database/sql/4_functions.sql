@@ -4117,7 +4117,7 @@ BEGIN
             'color_code_dark', COALESCE((_task_info ->> 'color_code_dark')::TEXT, ''),
             'total_tasks', COALESCE((_task_info ->> 'total_tasks')::INT, 0),
             'total_completed', COALESCE((_task_info ->> 'total_completed')::INT, 0),
-            'members', COALESCE((_task_info ->> 'members')::JSON, '[]'::JSON),
+            'members', COALESCE((_task_info -> 'members'), '[]'::JSON),
             'completed_at', _task_completed_at,
             'status_category', COALESCE(_status_category, '{}'::JSON),
             'schedule_id', COALESCE(_schedule_id, 'null'::JSON)
