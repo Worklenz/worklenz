@@ -373,7 +373,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
         WHERE p.id IN (${projectIds}) ${durationClause} ${archivedClause}
         GROUP BY p.id, p.name
         ORDER BY logged_time DESC;`;
+    console.log('Query:', q);
     const result = await db.query(q, []);
+    console.log('Query result count:', result.rows.length);
+    console.log('Query results:', result.rows);
+    const utilization = (req.body.utilization || []) as string[];
 
     const data = [];
 
@@ -401,10 +405,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const projects = (req.body.projects || []) as string[];
     const projectIds = projects.map(p => `'${p}'`).join(",");
 
+    const categories = (req.body.categories || []) as string[];
     const billable = req.body.billable;
 
-    if (!teamIds || !projectIds.length)
-      return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
+    if (!teamIds)
+      return res.status(200).send(new ServerResponse(true, { filteredRows: [], totals: { total_time_logs: "0", total_estimated_hours: "0", total_utilization: "0" } }));
 
     const { duration, date_range } = req.body;
 
@@ -416,7 +421,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
       endDate = moment(date_range[1]);
     } else if (duration === DATE_RANGES.ALL_TIME) {
       // Fetch the earliest start_date (or created_at if null) from selected projects
-      const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
+      const minDateQuery = projectIds.length > 0 
+        ? `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`
+        : `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE team_id IN (${teamIds})`;
       const minDateResult = await db.query(minDateQuery, []);
       const minDate = minDateResult.rows[0]?.min_date;
       startDate = minDate ? moment(minDate) : moment('2000-01-01');
@@ -492,30 +499,81 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const orgWorkingHours = orgWorkingHoursResult.rows[0]?.working_hours || 8;
     let totalWorkingHours = workingDays * orgWorkingHours;
 
-    const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
     const archivedClause = archived
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
     const billableQuery = this.buildBillableQuery(billable);
     const members = (req.body.members || []) as string[];
+    
     // Prepare members filter
     let membersFilter = "";
     if (members.length > 0) {
       const memberIds = members.map(id => `'${id}'`).join(",");
       membersFilter = `AND tmiv.team_member_id IN (${memberIds})`;
     }
+
+    // Prepare projects filter
+    let projectsFilter = "";
+    if (projectIds.length > 0) {
+      projectsFilter = `AND p.id IN (${projectIds})`;
+    }
+
+    // Prepare categories filter
+    let categoriesFilter = "";
+    if (categories.length > 0) {
+      const categoryIds = categories.map(id => `'${id}'`).join(",");
+      categoriesFilter = `AND p.category_id IN (${categoryIds})`;
+    }
+
+    // Create custom duration clause for twl table alias
+    let customDurationClause = "";
+    if (date_range && date_range.length === 2) {
+      const start = moment(date_range[0]).format("YYYY-MM-DD");
+      const end = moment(date_range[1]).format("YYYY-MM-DD");
+      if (start === end) {
+        customDurationClause = `AND twl.created_at::DATE = '${start}'::DATE`;
+      } else {
+        customDurationClause = `AND twl.created_at::DATE >= '${start}'::DATE AND twl.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+      }
+    } else {
+      const key = duration || DATE_RANGES.LAST_WEEK;
+      if (key === DATE_RANGES.YESTERDAY)
+        customDurationClause = "AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND twl.created_at < CURRENT_DATE::DATE";
+      else if (key === DATE_RANGES.LAST_WEEK)
+        customDurationClause = "AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
+      else if (key === DATE_RANGES.LAST_MONTH)
+        customDurationClause = "AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
+      else if (key === DATE_RANGES.LAST_QUARTER)
+        customDurationClause = "AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
+    }
+
+    // Modified query to start from team members and calculate filtered time logs
     const q = `
-      SELECT tmiv.team_member_id, tmiv.email, tmiv.name, SUM(time_spent) AS logged_time
+      SELECT 
+        tmiv.team_member_id, 
+        tmiv.email, 
+        tmiv.name, 
+        COALESCE(
+          (SELECT SUM(twl.time_spent)
+           FROM task_work_log twl
+           LEFT JOIN tasks t ON t.id = twl.task_id ${billableQuery}
+           LEFT JOIN projects p ON p.id = t.project_id
+           WHERE twl.user_id = tmiv.user_id
+             ${customDurationClause}
+             ${projectsFilter}
+             ${categoriesFilter}
+             ${archivedClause}
+             AND p.team_id = tmiv.team_id
+          ), 0
+        ) AS logged_time
       FROM team_member_info_view tmiv
-        LEFT JOIN task_work_log ON task_work_log.user_id = tmiv.user_id
-        LEFT JOIN tasks ON tasks.id = task_work_log.task_id ${billableQuery}
-        LEFT JOIN projects p ON p.id = tasks.project_id AND p.team_id = tmiv.team_id
-      WHERE p.id IN (${projectIds})
-        ${durationClause} ${archivedClause}
+      WHERE tmiv.team_id IN (${teamIds})
+        AND tmiv.active = TRUE
         ${membersFilter}
-      GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id
+      GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id, tmiv.user_id, tmiv.team_id
       ORDER BY logged_time DESC;`;
+    
     const result = await db.query(q, []);
     const utilization = (req.body.utilization || []) as string[];
 
@@ -555,17 +613,17 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     // Calculate totals
     const total_time_logs = filteredRows.reduce((sum, member) => sum + parseFloat(member.logged_time || '0'), 0);
-    const total_estimated_hours = totalWorkingHours;
-    const total_utilization = total_time_logs > 0 && totalWorkingSeconds > 0
-      ? ((total_time_logs / totalWorkingSeconds) * 100).toFixed(1)
+    const total_estimated_hours = totalWorkingHours * filteredRows.length; // Total for all members
+    const total_utilization = total_time_logs > 0 && total_estimated_hours > 0
+      ? ((total_time_logs / (total_estimated_hours * 3600)) * 100).toFixed(1)
       : '0';
 
     return res.status(200).send(new ServerResponse(true, {
       filteredRows,
       totals: {
-      total_time_logs: ((total_time_logs / 3600).toFixed(2)).toString(),
-      total_estimated_hours: total_estimated_hours.toString(),
-      total_utilization: total_utilization.toString(),
+        total_time_logs: ((total_time_logs / 3600).toFixed(2)).toString(),
+        total_estimated_hours: total_estimated_hours.toString(),
+        total_utilization: total_utilization.toString(),
       },
     }));
   }
