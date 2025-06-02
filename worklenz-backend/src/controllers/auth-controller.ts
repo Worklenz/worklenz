@@ -35,8 +35,32 @@ export default class AuthController extends WorklenzControllerBase {
     const auth_error = errors.length > 0 ? errors[0] : null;
     const message = messages.length > 0 ? messages[0] : null;
 
-    const midTitle = req.query.strategy === "login" ? "Login Failed!" : "Signup Failed!";
-    const title = req.query.strategy ? midTitle : null;
+    // Debug logging
+    console.log("=== VERIFY ENDPOINT HIT ===");
+    console.log("Verify endpoint - Strategy:", req.query.strategy);
+    console.log("Verify endpoint - Authenticated:", req.isAuthenticated());
+    console.log("Verify endpoint - User:", !!req.user);
+    console.log("Verify endpoint - User ID:", req.user?.id);
+    console.log("Verify endpoint - Auth error:", auth_error);
+    console.log("Verify endpoint - Success message:", message);
+    console.log("Verify endpoint - Flash errors:", errors);
+    console.log("Verify endpoint - Flash messages:", messages);
+    console.log("Verify endpoint - Session ID:", req.sessionID);
+    console.log("Verify endpoint - Session passport:", (req.session as any).passport);
+    console.log("Verify endpoint - Session flash:", (req.session as any).flash);
+
+    // Determine title based on authentication status and strategy
+    let title = null;
+    if (req.query.strategy) {
+      if (auth_error) {
+        // Show failure title only when there's an actual error
+        title = req.query.strategy === "login" ? "Login Failed!" : "Signup Failed!";
+      } else if (req.isAuthenticated() && message) {
+        // Show success title when authenticated and there's a success message
+        title = req.query.strategy === "login" ? "Login Successful!" : "Signup Successful!";
+      }
+      // If no error and not authenticated, don't show any title (this might be a redirect without completion)
+    }
 
     if (req.user)
       req.user.build_v = FileConstants.getRelease();
