@@ -21,7 +21,7 @@ import { Language } from './features/i18n/localesSlice';
 import logger from './utils/errorLogger';
 import { SuspenseFallback } from './components/suspense-fallback/suspense-fallback';
 
-const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const App: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const language = useAppSelector(state => state.localesReducer.lng);
 

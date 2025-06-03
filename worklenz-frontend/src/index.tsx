@@ -1,3 +1,6 @@
+// Import React polyfill first to ensure React is available globally
+import './utils/react-polyfill';
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
