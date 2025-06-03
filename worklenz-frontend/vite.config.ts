@@ -1,11 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
-import { UserConfig } from 'vite'; // Import type for better auto-completion
 
-export default defineConfig(async ({ command }: { command: 'build' | 'serve' }) => {
-  const tsconfigPaths = (await import('vite-tsconfig-paths')).default;
-
+export default defineConfig(({ command }) => {
   return {
     // **Plugins**
     plugins: [
@@ -39,6 +37,9 @@ export default defineConfig(async ({ command }: { command: 'build' | 'serve' }) 
       outDir: 'build',
       assetsDir: 'assets', // Consider a more specific directory for better organization, e.g., 'build/assets'
       cssCodeSplit: true,
+      
+      // **Chunk Size Optimization**
+      chunkSizeWarningLimit: 1000, // Increase limit for vendor chunks but keep warning for others
 
       // **Sourcemaps**
       sourcemap: command === 'serve' ? 'inline' : true, // Adjust sourcemap strategy based on command
@@ -49,22 +50,89 @@ export default defineConfig(async ({ command }: { command: 'build' | 'serve' }) 
         compress: {
           drop_console: command === 'build',
           drop_debugger: command === 'build',
+          // Remove unused code more aggressively
+          unused: true,
+          dead_code: true,
         },
         // **Additional Optimization**
         format: {
           comments: command === 'serve', // Preserve comments during development
+        },
+        mangle: {
+          // Mangle private properties for smaller bundles
+          properties: {
+            regex: /^_/,
+          },
         },
       },
 
       // **Rollup Options**
       rollupOptions: {
         output: {
-          // **Chunking Strategy**
+          // **Enhanced Chunking Strategy**
           manualChunks(id) {
-            if (['react', 'react-dom', 'react-router-dom'].includes(id)) return 'vendor';
-            if (id.includes('antd')) return 'antd';
-            if (id.includes('i18next')) return 'i18n';
-            // Add more conditions as needed
+            // Core React dependencies
+            if (['react', 'react-dom'].includes(id)) return 'react-vendor';
+            
+            // Router and navigation
+            if (id.includes('react-router-dom') || id.includes('react-router')) return 'router';
+            
+            // UI Library
+            if (id.includes('antd')) return 'antd-ui';
+            
+            // Internationalization
+            if (id.includes('i18next') || id.includes('react-i18next')) return 'i18n';
+            
+            // Redux and state management
+            if (id.includes('@reduxjs/toolkit') || id.includes('redux') || id.includes('react-redux')) return 'redux';
+            
+            // Date and time utilities
+            if (id.includes('moment') || id.includes('dayjs') || id.includes('date-fns')) return 'date-utils';
+            
+            // Drag and drop
+            if (id.includes('@dnd-kit')) return 'dnd-kit';
+            
+            // Charts and visualization
+            if (id.includes('chart') || id.includes('echarts') || id.includes('highcharts') || id.includes('recharts')) return 'charts';
+            
+            // Text editor
+            if (id.includes('tinymce') || id.includes('quill') || id.includes('editor')) return 'editors';
+            
+            // Project view components - split into separate chunks for better lazy loading
+            if (id.includes('/pages/projects/projectView/taskList/')) return 'project-task-list';
+            if (id.includes('/pages/projects/projectView/board/')) return 'project-board';
+            if (id.includes('/pages/projects/projectView/insights/')) return 'project-insights';
+            if (id.includes('/pages/projects/projectView/finance/')) return 'project-finance';
+            if (id.includes('/pages/projects/projectView/members/')) return 'project-members';
+            if (id.includes('/pages/projects/projectView/files/')) return 'project-files';
+            if (id.includes('/pages/projects/projectView/updates/')) return 'project-updates';
+            
+            // Task-related components
+            if (id.includes('/components/task-') || id.includes('/features/tasks/')) return 'task-components';
+            
+            // Filter components
+            if (id.includes('/components/project-task-filters/') || id.includes('filter-dropdown')) return 'filter-components';
+            
+            // Other project components
+            if (id.includes('/pages/projects/') && !id.includes('/projectView/')) return 'project-pages';
+            
+            // Settings and admin
+            if (id.includes('/pages/settings/') || id.includes('/pages/admin-center/')) return 'settings-admin';
+            
+            // Reporting
+            if (id.includes('/pages/reporting/') || id.includes('/features/reporting/')) return 'reporting';
+            
+            // Schedule components  
+            if (id.includes('/components/schedule') || id.includes('/features/schedule')) return 'schedule';
+            
+            // Common utilities
+            if (id.includes('/utils/') || id.includes('/shared/') || id.includes('/hooks/')) return 'common-utils';
+            
+            // API and services
+            if (id.includes('/api/') || id.includes('/services/')) return 'api-services';
+            
+            // Other vendor libraries
+            if (id.includes('node_modules')) return 'vendor';
           },
           // **File Naming Strategies**
           chunkFileNames: 'assets/js/[name]-[hash].js',

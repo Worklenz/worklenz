@@ -1,11 +1,14 @@
-import React, { ReactNode } from 'react';
-import ProjectViewInsights from '@/pages/projects/projectView/insights/project-view-insights';
-import ProjectViewFiles from '@/pages/projects/projectView/files/project-view-files';
-import ProjectViewMembers from '@/pages/projects/projectView/members/project-view-members';
-import ProjectViewUpdates from '@/pages/projects/projectView/updates/ProjectViewUpdates';
-import ProjectViewTaskList from '@/pages/projects/projectView/taskList/project-view-task-list';
-import ProjectViewBoard from '@/pages/projects/projectView/board/project-view-board';
-import ProjectViewFinance from '@/pages/projects/projectView/finance/project-view-finance';
+import React, { ReactNode, lazy } from 'react';
+
+// Lazy load all project view components for better code splitting
+const ProjectViewTaskList = lazy(() => import('@/pages/projects/projectView/taskList/project-view-task-list'));
+const ProjectViewBoard = lazy(() => import('@/pages/projects/projectView/board/project-view-board'));
+const ProjectViewGantt = lazy(() => import('@/pages/projects/projectView/gantt/project-view-gantt'));
+const ProjectViewInsights = lazy(() => import('@/pages/projects/projectView/insights/project-view-insights'));
+const ProjectViewFiles = lazy(() => import('@/pages/projects/projectView/files/project-view-files'));
+const ProjectViewMembers = lazy(() => import('@/pages/projects/projectView/members/project-view-members'));
+const ProjectViewUpdates = lazy(() => import('@/pages/projects/projectView/updates/ProjectViewUpdates'));
+const ProjectViewFinance = lazy(() => import('@/pages/projects/projectView/finance/project-view-finance'));
 
 // type of a tab items
 type TabItems = {
@@ -32,6 +35,12 @@ export const tabItems: TabItems[] = [
     isPinned: true,
     element: React.createElement(ProjectViewBoard),
   },
+  // {
+  //   index: 2,
+  //   key: 'gantt',
+  //   label: 'Gantt Chart',
+  //   element: React.createElement(ProjectViewGantt),
+  // },
   {
     index: 4,
     key: 'project-insights-member-overview',

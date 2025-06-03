@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
 import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
-import { Button, ConfigProvider, Flex, Tabs } from 'antd';
+import { Button, ConfigProvider, Flex, Tabs, Spin } from 'antd';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 
@@ -29,6 +29,18 @@ const ProjectMemberDrawer = React.lazy(
   () => import('@/components/projects/project-member-invite-drawer/project-member-invite-drawer')
 );
 const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
+
+// Loading component for lazy-loaded tabs
+const TabLoadingFallback = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    minHeight: '400px' 
+  }}>
+    <Spin size="large" />
+  </div>
+);
 
 const ProjectView = () => {
   const location = useLocation();
@@ -76,7 +88,11 @@ const ProjectView = () => {
   const pinToDefaultTab = useCallback(async (itemKey: string) => {
     if (!itemKey || !projectId) return;
 
-    const defaultView = itemKey === 'tasks-list' ? 'TASK_LIST' : 'BOARD';
+    let defaultView = 'TASK_LIST';
+    if (itemKey === 'board') {
+      defaultView = 'BOARD';
+    }
+
     const res = await projectsApiService.updateDefaultTab({
       project_id: projectId,
       default_view: defaultView,
@@ -104,7 +120,13 @@ const ProjectView = () => {
 
   const handleTabChange = useCallback((key: string) => {
     setActiveTab(key);
-    dispatch(setProjectView(key === 'board' ? 'kanban' : 'list'));
+    let projectView: 'list' | 'kanban' | 'gantt' = 'list';
+    if (key === 'board') {
+      projectView = 'kanban';
+    } else if (key === 'gantt') {
+      projectView = 'gantt';
+    }
+    dispatch(setProjectView(projectView));
     navigate({
       pathname: location.pathname,
       search: new URLSearchParams({
@@ -119,7 +141,7 @@ const ProjectView = () => {
     label: (
       <Flex align="center" >
         {item.label}
-        {item.key === 'tasks-list' || item.key === 'board' ? (
+        {(item.key === 'tasks-list' || item.key === 'board') ? (
           <ConfigProvider wave={{ disabled: true }}>
             <Button
               className="borderless-icon-btn"
@@ -152,7 +174,11 @@ const ProjectView = () => {
         ) : null}
       </Flex>
     ),
-    children: item.element,
+    children: (
+      <Suspense fallback={<TabLoadingFallback />}>
+        {item.element}
+      </Suspense>
+    ),
   })), [pinnedTab, pinToDefaultTab]);
 
   const portalElements = useMemo(() => (

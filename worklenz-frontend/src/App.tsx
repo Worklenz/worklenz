@@ -6,6 +6,7 @@ import i18next from 'i18next';
 // Components
 import ThemeWrapper from './features/theme/ThemeWrapper';
 import PreferenceSelector from './components/PreferenceSelector';
+import ResourcePreloader from './components/resource-preloader/resource-preloader';
 
 // Routes
 import router from './app/routes';
@@ -47,6 +48,7 @@ const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     <Suspense fallback={<SuspenseFallback />}>
       <ThemeWrapper>
         <RouterProvider router={router} future={{ v7_startTransition: true }} />
+        <ResourcePreloader />
       </ThemeWrapper>
     </Suspense>
   );

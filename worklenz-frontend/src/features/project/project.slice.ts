@@ -27,7 +27,7 @@ interface TaskListState {
   error: string | null;
   importTaskTemplateDrawerOpen: boolean;
   createTaskTemplateDrawerOpen: boolean;
-  projectView: 'list' | 'kanban';
+  projectView: 'list' | 'kanban' | 'gantt';
   refreshTimestamp: string | null;
 }
 
@@ -35,9 +35,9 @@ const initialState: TaskListState = {
   projectId: null,
   project: null,
   projectLoading: false,
-  activeMembers: [],
   columns: [],
   members: [],
+  activeMembers: [],
   labels: [],
   statuses: [],
   priorities: [],
@@ -173,7 +173,7 @@ const projectSlice = createSlice({
     setRefreshTimestamp: (state) => {
       state.refreshTimestamp = new Date().getTime().toString();
     },
-    setProjectView: (state, action: PayloadAction<'list' | 'kanban'>) => {
+    setProjectView: (state, action: PayloadAction<'list' | 'kanban' | 'gantt'>) => {
       state.projectView = action.payload;
     },
   },
