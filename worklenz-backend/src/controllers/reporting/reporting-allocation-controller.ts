@@ -567,11 +567,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const billableQuery = this.buildBillableQueryWithAlias(billable, 't');
     const members = (req.body.members || []) as string[];
     
-    // Prepare members filter
+    // Prepare members filter - updated logic to handle Clear All scenario
     let membersFilter = "";
     if (members.length > 0) {
       const memberIds = members.map(id => `'${id}'`).join(",");
       membersFilter = `AND tmiv.team_member_id IN (${memberIds})`;
+    } else {
+      // No members selected - show no data (Clear All scenario)
+      membersFilter = `AND 1=0`; // This will match no rows
     }
 
     // Prepare projects filter
@@ -655,7 +658,6 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     // Precompute totalWorkingHours * 3600 for efficiency
     const totalWorkingSeconds = totalWorkingHours * 3600;
-    const hasUtilizationFilter = utilization.length > 0;
 
     // calculate utilization state
     for (let i = 0, len = result.rows.length; i < len; i++) {
@@ -691,9 +693,15 @@ export default class ReportingAllocationController extends ReportingControllerBa
       }
     }
 
-    const filteredRows = hasUtilizationFilter
-      ? result.rows.filter(member => utilization.includes(member.utilization_state))
-      : result.rows;
+    // Apply utilization filter
+    let filteredRows;
+    if (utilization.length > 0) {
+      // Filter to only show selected utilization states
+      filteredRows = result.rows.filter(member => utilization.includes(member.utilization_state));
+    } else {
+      // No utilization states selected - show no data (Clear All scenario)
+      filteredRows = [];
+    }
 
     // Calculate totals
     const total_time_logs = filteredRows.reduce((sum, member) => sum + parseFloat(member.logged_time || '0'), 0);
