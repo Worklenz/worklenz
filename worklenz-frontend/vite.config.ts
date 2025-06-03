@@ -28,6 +28,31 @@ export default defineConfig(({ command }) => {
       ],
     },
 
+    // **Optimize Dependencies**
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        'antd',
+        '@dnd-kit/core',
+        '@dnd-kit/sortable',
+        '@dnd-kit/modifiers',
+        '@dnd-kit/utilities',
+        'react-redux',
+        '@reduxjs/toolkit',
+        'i18next',
+        'react-i18next',
+        'react-router-dom',
+        'moment',
+        'date-fns',
+        'axios',
+        'socket.io-client'
+      ],
+      force: true, // Force re-optimization on every dev server start
+    },
+
     // **Build**
     build: {
       // **Target**
