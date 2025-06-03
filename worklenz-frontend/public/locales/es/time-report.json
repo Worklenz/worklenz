@@ -5,6 +5,7 @@
 
   "searchByName": "Buscar por nombre",
   "selectAll": "Seleccionar Todo",
+  "clearAll": "Limpiar Todo",
   "teams": "Equipos",
 
   "searchByProject": "Buscar por nombre de proyecto",
@@ -15,6 +16,8 @@
 
   "billable": "Facturable",
   "nonBillable": "No Facturable",
+  "filterByBillableStatus": "Filtrar por Estado Facturable",
+  "allBillableTypes": "Todos los Tipos Facturables",
 
   "total": "Total",
 

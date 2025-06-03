@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Team from './team';
 import Categories from './categories';
 import Projects from './projects';
@@ -16,18 +17,26 @@ import Utilization from './utilization';
 
 const TimeReportPageHeader: React.FC = () => {
   const dispatch = useAppDispatch();
+  const location = useLocation();
+
+  // Check if current route is members time sheet
+  const isMembersTimeSheet = location.pathname.includes('time-sheet-members');
 
   useEffect(() => {
     const fetchData = async () => {
       await dispatch(fetchReportingTeams());
       await dispatch(fetchReportingCategories());
       await dispatch(fetchReportingProjects());
-      await dispatch(fetchReportingMembers());
-      await dispatch(fetchReportingUtilization());
+      
+      // Only fetch members and utilization data for members time sheet
+      if (isMembersTimeSheet) {
+        await dispatch(fetchReportingMembers());
+        await dispatch(fetchReportingUtilization());
+      }
     };
 
     fetchData();
-  }, [dispatch]);
+  }, [dispatch, isMembersTimeSheet]);
 
   return (
     <div style={{ display: 'flex', gap: '8px' }}>
@@ -35,8 +44,8 @@ const TimeReportPageHeader: React.FC = () => {
       <Categories />
       <Projects />
       <Billable />
-      <Members/>
-      <Utilization />
+      {isMembersTimeSheet && <Members/>}
+      {isMembersTimeSheet && <Utilization />}
     </div>
   );
 };

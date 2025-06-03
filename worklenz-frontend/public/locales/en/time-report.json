@@ -5,6 +5,7 @@
 
   "searchByName": "Search by name",
   "selectAll": "Select All",
+  "clearAll": "Clear All",
   "teams": "Teams",
 
   "searchByProject": "Search by project name",
@@ -15,6 +16,8 @@
 
   "billable": "Billable",
   "nonBillable": "Non Billable",
+  "filterByBillableStatus": "Filter by Billable Status",
+  "allBillableTypes": "All Billable Types",
 
   "total": "Total",
 

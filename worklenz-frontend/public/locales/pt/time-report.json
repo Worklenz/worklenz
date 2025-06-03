@@ -5,6 +5,7 @@
 
   "searchByName": "Pesquisar por nome",
   "selectAll": "Selecionar Todos",
+  "clearAll": "Limpar Todos",
   "teams": "Equipes",
 
   "searchByProject": "Pesquisar por nome do projeto",
@@ -15,6 +16,8 @@
 
   "billable": "Cobrável",
   "nonBillable": "Não Cobrável",
+  "filterByBillableStatus": "Filtrar por Status de Cobrança",
+  "allBillableTypes": "Todos os Tipos Cobráveis",
 
   "total": "Total",
 
