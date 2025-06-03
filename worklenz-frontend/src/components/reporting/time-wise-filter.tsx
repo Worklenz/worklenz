@@ -147,6 +147,10 @@ const TimeWiseFilter = () => {
           format={'MMM DD, YYYY'}
           onChange={handleDateRangeChange}
           value={customRange ? [dayjs(customRange[0]), dayjs(customRange[1])] : null}
+          disabledDate={(current) => {
+            // Disable dates after today
+            return current && current > dayjs().endOf('day');
+          }}
         />
 
         <Button
