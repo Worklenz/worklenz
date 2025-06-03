@@ -15,7 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
 import { IRPTTimeMember } from '@/types/reporting/reporting.types';
 import logger from '@/utils/errorLogger';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { format } from 'date-fns';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
@@ -29,7 +28,6 @@ export interface MembersTimeSheetRef {
 
 const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(({ onTotalsUpdate }, ref) => {
   const { t } = useTranslation('time-report');
-  const dispatch = useAppDispatch();
   const chartRef = React.useRef<ChartJS<'bar', string[], unknown>>(null);
 
   const {
@@ -45,6 +43,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
     loadingUtilization,
     billable,
     archived,
+    noCategory,
   } = useAppSelector(state => state.timeReportsOverviewReducer);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
 
@@ -223,23 +222,41 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         duration,
         date_range: formattedDateRange,
         billable,
+        noCategory,
       };
 
       const res = await reportingTimesheetApiService.getMemberTimeSheets(body, archived);
+      
       if (res.done) {
-        setJsonData(res.body.filteredRows || []);
+        // Ensure filteredRows is always an array, even if API returns null/undefined
+        setJsonData(res.body?.filteredRows || []);
 
-      const totalsRaw = res.body.totals || {};
-      const totals = {
-        total_time_logs: totalsRaw.total_time_logs ?? "0",
-        total_estimated_hours: totalsRaw.total_estimated_hours ?? "0",
-        total_utilization: totalsRaw.total_utilization ?? "0",
-      };
-      onTotalsUpdate(totals);
+        const totalsRaw = res.body?.totals || {};
+        const totals = {
+          total_time_logs: totalsRaw.total_time_logs ?? "0",
+          total_estimated_hours: totalsRaw.total_estimated_hours ?? "0",
+          total_utilization: totalsRaw.total_utilization ?? "0",
+        };
+        onTotalsUpdate(totals);
+      } else {
+        // Handle API error case
+        setJsonData([]);
+        onTotalsUpdate({
+          total_time_logs: "0",
+          total_estimated_hours: "0", 
+          total_utilization: "0"
+        });
       }
     } catch (error) {
       console.error('Error fetching chart data:', error);
       logger.error('Error fetching chart data:', error);
+      // Reset data on error
+      setJsonData([]);
+      onTotalsUpdate({
+        total_time_logs: "0",
+        total_estimated_hours: "0",
+        total_utilization: "0"
+      });
     } finally {
       setLoading(false);
     }
@@ -247,7 +264,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
 
   useEffect(() => {
     fetchChartData();
-  }, [dispatch, duration, dateRange, billable, archived, teams, filterProjects, categories, members, utilization]);
+  }, [duration, dateRange, billable, archived, teams, filterProjects, categories, members, utilization]);
 
   const exportChart = () => {
     if (chartRef.current) {

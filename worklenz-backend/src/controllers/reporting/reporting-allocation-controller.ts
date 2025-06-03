@@ -77,8 +77,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
                sps.icon AS status_icon,
                (SELECT COUNT(*)
                 FROM tasks
-                WHERE CASE WHEN ($1 IS TRUE) THEN project_id IS NOT NULL ELSE archived = FALSE END ${billableQuery}
-                  AND project_id = projects.id) AS all_tasks_count,
+                WHERE CASE WHEN ($1 IS TRUE) THEN project_id IS NOT NULL ELSE archived = FALSE END
+                  AND project_id = projects.id ${billableQuery}) AS all_tasks_count,
                (SELECT COUNT(*)
                 FROM tasks
                 WHERE CASE WHEN ($1 IS TRUE) THEN project_id IS NOT NULL ELSE archived = FALSE END
@@ -95,9 +95,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
                                (SELECT COALESCE(SUM(time_spent), 0)
                                 FROM task_work_log
                                        LEFT JOIN tasks ON task_work_log.task_id = tasks.id
-                                WHERE user_id = users.id ${billableQuery}
+                                WHERE user_id = users.id
                                   AND CASE WHEN ($1 IS TRUE) THEN tasks.project_id IS NOT NULL ELSE tasks.archived = FALSE END
                                   AND tasks.project_id = projects.id
+                                  ${billableQuery}
                                   ${duration}) AS time_logged
                         FROM users
                         WHERE id IN (${userIds})
@@ -121,10 +122,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
       const q = `(SELECT id,
                     (SELECT COALESCE(SUM(time_spent), 0)
                     FROM task_work_log
-                            LEFT JOIN tasks ON task_work_log.task_id = tasks.id ${billableQuery}
+                            LEFT JOIN tasks ON task_work_log.task_id = tasks.id
                     WHERE user_id = users.id
                     AND CASE WHEN ($1 IS TRUE) THEN tasks.project_id IS NOT NULL ELSE tasks.archived = FALSE END
                     AND tasks.project_id IN (${projectIds})
+                    ${billableQuery}
                     ${duration}) AS time_logged
                     FROM users
                     WHERE id IN (${userIds})
@@ -346,6 +348,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const projects = (req.body.projects || []) as string[];
     const projectIds = projects.map(p => `'${p}'`).join(",");
 
+    const categories = (req.body.categories || []) as string[];
+    const noCategory = req.body.noCategory || false;
     const billable = req.body.billable;
 
     if (!teamIds || !projectIds.length)
@@ -361,6 +365,33 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const billableQuery = this.buildBillableQuery(billable);
 
+    // Prepare projects filter
+    let projectsFilter = "";
+    if (projectIds.length > 0) {
+      projectsFilter = `AND p.id IN (${projectIds})`;
+    } else {
+      // If no projects are selected, don't show any data
+      projectsFilter = `AND 1=0`; // This will match no rows
+    }
+
+    // Prepare categories filter - updated logic
+    let categoriesFilter = "";
+    if (categories.length > 0 && noCategory) {
+      // Both specific categories and "No Category" are selected
+      const categoryIds = categories.map(id => `'${id}'`).join(",");
+      categoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIds}))`;
+    } else if (categories.length === 0 && noCategory) {
+      // Only "No Category" is selected
+      categoriesFilter = `AND p.category_id IS NULL`;
+    } else if (categories.length > 0 && !noCategory) {
+      // Only specific categories are selected
+      const categoryIds = categories.map(id => `'${id}'`).join(",");
+      categoriesFilter = `AND p.category_id IN (${categoryIds})`;
+    } else {
+      // categories.length === 0 && !noCategory - no categories selected, show nothing
+      categoriesFilter = `AND 1=0`; // This will match no rows
+    }
+
     const q = `
         SELECT p.id,
             p.name,
@@ -368,15 +399,13 @@ export default class ReportingAllocationController extends ReportingControllerBa
             SUM(total_minutes) AS estimated,
             color_code
         FROM projects p
-                LEFT JOIN tasks ON tasks.project_id = p.id ${billableQuery}
+                LEFT JOIN tasks ON tasks.project_id = p.id
                 LEFT JOIN task_work_log ON task_work_log.task_id = tasks.id
-        WHERE p.id IN (${projectIds}) ${durationClause} ${archivedClause}
+        WHERE p.id IN (${projectIds}) ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
         GROUP BY p.id, p.name
         ORDER BY logged_time DESC;`;
-    console.log('Query:', q);
     const result = await db.query(q, []);
-    console.log('Query result count:', result.rows.length);
-    console.log('Query results:', result.rows);
+
     const utilization = (req.body.utilization || []) as string[];
 
     const data = [];
@@ -406,6 +435,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const projectIds = projects.map(p => `'${p}'`).join(",");
 
     const categories = (req.body.categories || []) as string[];
+    const noCategory = req.body.noCategory || false;
     const billable = req.body.billable;
 
     if (!teamIds)
@@ -529,13 +559,27 @@ export default class ReportingAllocationController extends ReportingControllerBa
     let projectsFilter = "";
     if (projectIds.length > 0) {
       projectsFilter = `AND p.id IN (${projectIds})`;
+    } else {
+      // If no projects are selected, don't show any data
+      projectsFilter = `AND 1=0`; // This will match no rows
     }
 
-    // Prepare categories filter
+    // Prepare categories filter - updated logic
     let categoriesFilter = "";
-    if (categories.length > 0) {
+    if (categories.length > 0 && noCategory) {
+      // Both specific categories and "No Category" are selected
+      const categoryIds = categories.map(id => `'${id}'`).join(",");
+      categoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIds}))`;
+    } else if (categories.length === 0 && noCategory) {
+      // Only "No Category" is selected
+      categoriesFilter = `AND p.category_id IS NULL`;
+    } else if (categories.length > 0 && !noCategory) {
+      // Only specific categories are selected
       const categoryIds = categories.map(id => `'${id}'`).join(",");
       categoriesFilter = `AND p.category_id IN (${categoryIds})`;
+    } else {
+      // categories.length === 0 && !noCategory - no categories selected, show nothing
+      categoriesFilter = `AND 1=0`; // This will match no rows
     }
 
     // Create custom duration clause for twl table alias
@@ -569,13 +613,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
         COALESCE(
           (SELECT SUM(twl.time_spent)
            FROM task_work_log twl
-           LEFT JOIN tasks t ON t.id = twl.task_id ${billableQuery}
+           LEFT JOIN tasks t ON t.id = twl.task_id
            LEFT JOIN projects p ON p.id = t.project_id
            WHERE twl.user_id = tmiv.user_id
              ${customDurationClause}
              ${projectsFilter}
              ${categoriesFilter}
              ${archivedClause}
+             ${billableQuery}
              AND p.team_id = tmiv.team_id
           ), 0
         ) AS logged_time
@@ -585,7 +630,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
         ${membersFilter}
       GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id, tmiv.user_id, tmiv.team_id
       ORDER BY logged_time DESC;`;
-    
+
     const result = await db.query(q, []);
     const utilization = (req.body.utilization || []) as string[];
 
@@ -728,6 +773,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const projects = (req.body.projects || []) as string[];
     const projectIds = projects.map(p => `'${p}'`).join(",");
+    
+    const categories = (req.body.categories || []) as string[];
+    const noCategory = req.body.noCategory || false;
     const { type, billable } = req.body;
 
     if (!teamIds || !projectIds.length)
@@ -743,6 +791,33 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const billableQuery = this.buildBillableQuery(billable);
 
+    // Prepare projects filter
+    let projectsFilter = "";
+    if (projectIds.length > 0) {
+      projectsFilter = `AND p.id IN (${projectIds})`;
+    } else {
+      // If no projects are selected, don't show any data
+      projectsFilter = `AND 1=0`; // This will match no rows
+    }
+
+    // Prepare categories filter - updated logic
+    let categoriesFilter = "";
+    if (categories.length > 0 && noCategory) {
+      // Both specific categories and "No Category" are selected
+      const categoryIds = categories.map(id => `'${id}'`).join(",");
+      categoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIds}))`;
+    } else if (categories.length === 0 && noCategory) {
+      // Only "No Category" is selected
+      categoriesFilter = `AND p.category_id IS NULL`;
+    } else if (categories.length > 0 && !noCategory) {
+      // Only specific categories are selected
+      const categoryIds = categories.map(id => `'${id}'`).join(",");
+      categoriesFilter = `AND p.category_id IN (${categoryIds})`;
+    } else {
+      // categories.length === 0 && !noCategory - no categories selected, show nothing
+      categoriesFilter = `AND 1=0`; // This will match no rows
+    }
+
     const q = `
         SELECT p.id,
             p.name,
@@ -756,9 +831,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
             WHERE project_id = p.id) AS estimated,
             color_code
         FROM projects p
-                LEFT JOIN tasks ON tasks.project_id = p.id ${billableQuery}
+                LEFT JOIN tasks ON tasks.project_id = p.id
                 LEFT JOIN task_work_log ON task_work_log.task_id = tasks.id
-        WHERE p.id IN (${projectIds}) ${durationClause} ${archivedClause}
+        WHERE p.id IN (${projectIds}) ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
         GROUP BY p.id, p.name
         ORDER BY logged_time DESC;`;
     const result = await db.query(q, []);
