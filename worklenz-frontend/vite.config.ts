@@ -36,10 +36,6 @@ export default defineConfig(({ command }) => {
         'react/jsx-runtime',
         'react/jsx-dev-runtime',
         'antd',
-        '@dnd-kit/core',
-        '@dnd-kit/sortable',
-        '@dnd-kit/modifiers',
-        '@dnd-kit/utilities',
         'react-redux',
         '@reduxjs/toolkit',
         'i18next',
@@ -50,7 +46,24 @@ export default defineConfig(({ command }) => {
         'axios',
         'socket.io-client'
       ],
+      exclude: [
+        '@dnd-kit/core',
+        '@dnd-kit/sortable',
+        '@dnd-kit/modifiers',
+        '@dnd-kit/utilities'
+      ],
       force: true, // Force re-optimization on every dev server start
+    },
+
+    // **SSR Configuration**
+    ssr: {
+      noExternal: ['@dnd-kit/core', '@dnd-kit/utilities', '@dnd-kit/sortable', '@dnd-kit/modifiers'],
+    },
+
+    // **Additional Configuration for ES Modules**
+    define: {
+      // Ensure global is defined for some packages that expect it
+      global: 'globalThis',
     },
 
     // **Build**
@@ -96,8 +109,8 @@ export default defineConfig(({ command }) => {
         output: {
           // **Enhanced Chunking Strategy**
           manualChunks(id) {
-            // Core React dependencies
-            if (['react', 'react-dom'].includes(id)) return 'react-vendor';
+            // Core React dependencies - include @dnd-kit with React to fix loading order
+            if (['react', 'react-dom'].includes(id) || id.includes('@dnd-kit')) return 'react-vendor';
             
             // Router and navigation
             if (id.includes('react-router-dom') || id.includes('react-router')) return 'router';
@@ -113,9 +126,6 @@ export default defineConfig(({ command }) => {
             
             // Date and time utilities
             if (id.includes('moment') || id.includes('dayjs') || id.includes('date-fns')) return 'date-utils';
-            
-            // Drag and drop
-            if (id.includes('@dnd-kit')) return 'dnd-kit';
             
             // Charts and visualization
             if (id.includes('chart') || id.includes('echarts') || id.includes('highcharts') || id.includes('recharts')) return 'charts';
