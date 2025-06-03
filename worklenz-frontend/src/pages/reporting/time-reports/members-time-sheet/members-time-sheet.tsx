@@ -262,9 +262,35 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
     }
   };
 
+  // Create stable references for selected items to prevent unnecessary re-renders
+  const selectedTeamIds = React.useMemo(() => 
+    teams.filter(team => team.selected).map(t => t.id).join(','), 
+    [teams]
+  );
+  
+  const selectedProjectIds = React.useMemo(() => 
+    filterProjects.filter(project => project.selected).map(p => p.id).join(','), 
+    [filterProjects]
+  );
+  
+  const selectedCategoryIds = React.useMemo(() => 
+    categories.filter(category => category.selected).map(c => c.id).join(','), 
+    [categories]
+  );
+  
+  const selectedMemberIds = React.useMemo(() => 
+    members.filter(member => member.selected).map(m => m.id).join(','), 
+    [members]
+  );
+  
+  const selectedUtilizationIds = React.useMemo(() => 
+    utilization.filter(item => item.selected).map(u => u.id).join(','), 
+    [utilization]
+  );
+
   useEffect(() => {
     fetchChartData();
-  }, [duration, dateRange, billable, archived, teams, filterProjects, categories, members, utilization]);
+  }, [duration, dateRange, billable, archived, noCategory, selectedTeamIds, selectedProjectIds, selectedCategoryIds, selectedMemberIds, selectedUtilizationIds]);
 
   const exportChart = () => {
     if (chartRef.current) {

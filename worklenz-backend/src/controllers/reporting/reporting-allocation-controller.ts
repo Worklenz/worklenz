@@ -15,6 +15,25 @@ enum IToggleOptions {
 }
 
 export default class ReportingAllocationController extends ReportingControllerBase {
+  // Helper method to build billable query with custom table alias
+  private static buildBillableQueryWithAlias(selectedStatuses: { billable: boolean; nonBillable: boolean }, tableAlias: string = 'tasks'): string {
+    const { billable, nonBillable } = selectedStatuses;
+  
+    if (billable && nonBillable) {
+      // Both are enabled, no need to filter
+      return "";
+    } else if (billable && !nonBillable) {
+      // Only billable is enabled - show only billable tasks
+      return ` AND ${tableAlias}.billable IS TRUE`;
+    } else if (!billable && nonBillable) {
+      // Only non-billable is enabled - show only non-billable tasks
+      return ` AND ${tableAlias}.billable IS FALSE`;
+    } else {
+      // Neither selected - this shouldn't happen in normal UI flow
+      return "";
+    }
+  }
+
   private static async getTimeLoggedByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false, user_id = "", billable: { billable: boolean; nonBillable: boolean }): Promise<any> {
     try {
       const projectIds = projects.map(p => `'${p}'`).join(",");
@@ -545,7 +564,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
-    const billableQuery = this.buildBillableQuery(billable);
+    const billableQuery = this.buildBillableQueryWithAlias(billable, 't');
     const members = (req.body.members || []) as string[];
     
     // Prepare members filter
