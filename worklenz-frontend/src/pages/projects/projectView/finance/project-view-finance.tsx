@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { CaretDownFilled, DownOutlined } from '@ant-design/icons';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { fetchProjectFinances, setActiveTab, setActiveGroup } from '@/features/projects/finance/project-finance.slice';
+import { fetchProjectFinances, setActiveTab, setActiveGroup, updateProjectFinanceCurrency } from '@/features/projects/finance/project-finance.slice';
 import { changeCurrency, toggleImportRatecardsDrawer } from '@/features/finance/finance-slice';
 import { updateProjectCurrency } from '@/features/project/project.slice';
 import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
@@ -94,6 +94,7 @@ const ProjectViewFinance = () => {
       // Update both global currency state and project-specific currency
       dispatch(changeCurrency(currency));
       dispatch(updateProjectCurrency(upperCaseCurrency));
+      dispatch(updateProjectFinanceCurrency(upperCaseCurrency));
       
       message.success('Project currency updated successfully');
     } catch (error) {

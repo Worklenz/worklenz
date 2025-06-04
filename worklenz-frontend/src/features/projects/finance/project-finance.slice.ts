@@ -164,6 +164,11 @@ export const projectFinancesSlice = createSlice({
           task.show_sub_tasks = !task.show_sub_tasks;
         }
       }
+    },
+    updateProjectFinanceCurrency: (state, action: PayloadAction<string>) => {
+      if (state.project) {
+        state.project.currency = action.payload;
+      }
     }
   },
   extraReducers: (builder) => {
@@ -222,7 +227,8 @@ export const {
   updateTaskFixedCost,
   updateTaskEstimatedCost,
   updateTaskTimeLogged,
-  toggleTaskExpansion
+  toggleTaskExpansion,
+  updateProjectFinanceCurrency
 } = projectFinancesSlice.actions;
 
 export default projectFinancesSlice.reducer;
