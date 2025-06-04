@@ -1,0 +1,109 @@
+/* Optimized sticky column styles to prevent scroll lag */
+
+/* Base sticky column optimization */
+.sticky-column-optimized {
+  position: sticky;
+  background-clip: padding-box;
+  /* Hardware acceleration for smooth scrolling */
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
+  /* Ensure proper stacking without subpixel issues */
+  transform-style: preserve-3d;
+}
+
+/* Selector column (first sticky column) */
+.sticky-selector-column {
+  left: 0;
+  z-index: 25; /* Higher than other elements */
+  background-clip: padding-box;
+  /* Ensure it stays in place during virtual scrolling */
+  position: sticky !important;
+  transform: translate3d(0, 0, 0);
+  will-change: transform, background-color;
+  backface-visibility: hidden;
+}
+
+/* Task column (second sticky column) */
+.sticky-task-column {
+  left: 48px; /* After selector column */
+  z-index: 15; /* Lower than selector but higher than regular columns */
+  background-clip: padding-box;
+  position: sticky !important;
+  transform: translate3d(0, 0, 0);
+  will-change: transform, background-color;
+  backface-visibility: hidden;
+}
+
+/* Shadow effect for task column */
+.sticky-task-column::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -6px;
+  height: 100%;
+  width: 6px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* Show shadow when scrolling */
+.tasklist-container-scrolled .sticky-task-column::after {
+  opacity: 1;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .sticky-task-column::after {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0%, transparent 100%);
+}
+
+/* Prevent layout shifts during virtualization */
+.virtualized-row {
+  contain: layout style paint;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Optimize table container for sticky columns */
+.sticky-table-container {
+  /* Improve rendering performance */
+  contain: layout style paint;
+  /* Enable hardware acceleration */
+  transform: translate3d(0, 0, 0);
+  /* Smooth scrolling */
+  scroll-behavior: auto;
+  /* Optimize for frequent repaints */
+  will-change: scroll-position;
+}
+
+/* Header specific optimizations */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-clip: padding-box;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Prevent text selection during scroll for better performance */
+.sticky-column-optimized {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Re-enable text selection for content */
+.sticky-column-optimized .task-content,
+.sticky-column-optimized input,
+.sticky-column-optimized textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+} 

@@ -32,6 +32,12 @@ const StatusDropdownOptimized = React.memo<StatusDropdownProps>(({ task, teamId 
     [statusList, themeMode]
   );
 
+  // Memoize status lookup map for better performance
+  const statusMap = useMemo(
+    () => new Map(statusList.map(status => [status.id, status])),
+    [statusList]
+  );
+
   // Memoize the change handler to prevent recreation
   const handleStatusChange = useCallback((statusId: string) => {
     if (!task.id || !statusId) return;
@@ -48,10 +54,11 @@ const StatusDropdownOptimized = React.memo<StatusDropdownProps>(({ task, teamId 
     socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
   }, [task.id, task.parent_task_id, teamId, socket]);
 
-  // Memoize the label renderer to prevent recreation
+  // Memoize the label renderer with optimized lookup
   const labelRenderer = useCallback((status: any) => {
-    return status ? <span style={{ fontSize: 13 }}>{status.label}</span> : '';
-  }, []);
+    const statusData = statusMap.get(status.value);
+    return statusData ? <span style={{ fontSize: 13 }}>{statusData.name}</span> : '';
+  }, [statusMap]);
 
   // Memoize the option renderer to prevent recreation
   const optionRenderer = useCallback((option: any) => (

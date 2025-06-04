@@ -80,15 +80,21 @@ const PriorityDropdownOptimized = React.memo<PriorityDropdownProps>(({ task, tea
     [priorityList, themeMode]
   );
 
-  // Memoize label renderer
+  // Memoize priority lookup map for better performance
+  const priorityMap = useMemo(
+    () => new Map(priorityList.map(priority => [priority.id, priority])),
+    [priorityList]
+  );
+
+  // Memoize label renderer with optimized lookup
   const labelRenderer = useCallback((value: any) => {
-    const priority = priorityList.find(priority => priority.id === value.value);
+    const priority = priorityMap.get(value.value);
     return priority ? (
       <Typography.Text style={{ fontSize: 13, color: '#383838' }}>
         {priority.name}
       </Typography.Text>
     ) : '';
-  }, [priorityList]);
+  }, [priorityMap]);
 
   // Memoize style objects
   const selectStyle = useMemo(() => ({

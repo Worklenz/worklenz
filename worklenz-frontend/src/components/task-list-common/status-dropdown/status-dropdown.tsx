@@ -1,23 +1,24 @@
 import { Flex, Select } from 'antd';
 import './status-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { getCurrentGroup, GROUP_BY_STATUS_VALUE } from '@/features/tasks/tasks.slice';
+import React from 'react';
 
 type StatusDropdownProps = {
   task: IProjectTask;
   teamId: string;
 };
 
-const StatusDropdown = ({ task, teamId }: StatusDropdownProps) => {
+const StatusDropdown = React.memo<StatusDropdownProps>(({ task, teamId }) => {
   const { socket } = useSocket();
   const statusList = useAppSelector(state => state.taskStatusReducer.status);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  const handleStatusChange = (statusId: string) => {
+  const handleStatusChange = useCallback((statusId: string) => {
     if (!task.id || !statusId) return;
 
     socket?.emit(
@@ -30,11 +31,11 @@ const StatusDropdown = ({ task, teamId }: StatusDropdownProps) => {
       })
     );
     socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
-  };
+  }, [task.id, task.parent_task_id, teamId, socket]);
 
-  const isGroupByStatus = () => {
+  const isGroupByStatus = useCallback(() => {
     return getCurrentGroup().value === GROUP_BY_STATUS_VALUE;
-  };
+  }, []);
 
   const options = useMemo(
     () =>
@@ -46,6 +47,32 @@ const StatusDropdown = ({ task, teamId }: StatusDropdownProps) => {
     [statusList, themeMode]
   );
 
+  // Memoize style object
+  const selectStyle = useMemo(() => ({
+    backgroundColor: themeMode === 'dark' ? task.status_color_dark : task.status_color,
+    borderRadius: 16,
+    height: 22,
+  }), [themeMode, task.status_color_dark, task.status_color]);
+
+  // Memoize dropdown style
+  const dropdownStyle = useMemo(() => ({
+    borderRadius: 8,
+    minWidth: 150,
+    maxWidth: 200
+  }), []);
+
+  // Memoize label renderer
+  const labelRenderer = useCallback((status: any) => {
+    return status ? <span style={{ fontSize: 13 }}>{status.label}</span> : '';
+  }, []);
+
+  // Memoize option renderer
+  const optionRenderer = useCallback((option: any) => (
+    <Flex align="center">
+      {option.label}
+    </Flex>
+  ), []);
+
   return (
     <>
       {task.status && (
@@ -53,25 +80,31 @@ const StatusDropdown = ({ task, teamId }: StatusDropdownProps) => {
           variant="borderless"
           value={task.status}
           onChange={handleStatusChange}
-          dropdownStyle={{ borderRadius: 8, minWidth: 150, maxWidth: 200 }}
-          style={{
-            backgroundColor: themeMode === 'dark' ? task.status_color_dark : task.status_color,
-            borderRadius: 16,
-            height: 22,
-          }}
-          labelRender={status => {
-            return status ? <span style={{ fontSize: 13 }}>{status.label}</span> : '';
-          }}
+          dropdownStyle={dropdownStyle}
+          style={selectStyle}
+          labelRender={labelRenderer}
           options={options}
-          optionRender={(option) => (
-            <Flex align="center">
-              {option.label}
-            </Flex>
-          )}
+          optionRender={optionRenderer}
+          // Performance optimizations
+          virtual={false}
+          showSearch={false}
+          notFoundContent={null}
         />
       )}
     </>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for better memoization
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.status === nextProps.task.status &&
+    prevProps.task.status_color === nextProps.task.status_color &&
+    prevProps.task.status_color_dark === nextProps.task.status_color_dark &&
+    prevProps.task.parent_task_id === nextProps.task.parent_task_id &&
+    prevProps.teamId === nextProps.teamId
+  );
+});
+
+StatusDropdown.displayName = 'StatusDropdown';
 
 export default StatusDropdown;

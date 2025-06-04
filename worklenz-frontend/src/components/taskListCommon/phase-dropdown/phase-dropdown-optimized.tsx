@@ -72,10 +72,9 @@ const PhaseDropdownOptimized = React.memo<PhaseDropdownProps>(({ task }) => {
   // Memoize phase options
   const phaseOptions = useMemo(() => {
     return phaseList?.map(phase => ({
-      key: phase.id,
       value: phase.id,
-      label: <PhaseLabel phase={phase} />,
-      children: <PhaseOption phase={phase} />
+      label: phase.name,
+      phase: phase // Store the phase data for rendering
     })) || [];
   }, [phaseList]);
 
@@ -143,6 +142,16 @@ const PhaseDropdownOptimized = React.memo<PhaseDropdownProps>(({ task }) => {
   // Memoize dropdown style
   const dropdownStyle = useMemo(() => ({ minWidth: 150 }), []);
 
+  // Memoize option renderer
+  const optionRenderer = useCallback((option: any) => (
+    <PhaseOption phase={option.phase} />
+  ), []);
+
+  // Memoize label renderer  
+  const labelRenderer = useCallback((option: any) => (
+    <PhaseLabel phase={option.phase} />
+  ), []);
+
   return (
     <Select
       className="phase-select"
@@ -152,29 +161,17 @@ const PhaseDropdownOptimized = React.memo<PhaseDropdownProps>(({ task }) => {
       onClear={handlePhaseOptionClear}
       variant="borderless"
       dropdownStyle={dropdownStyle}
-      optionLabelProp="label"
-      classNames={{
-        popup: {
-          root: "phase-select-dropdown"
-        }
-      }}
+      popupClassName="phase-select-dropdown"
       allowClear
       style={selectStyle}
+      options={phaseOptions}
+      optionRender={optionRenderer}
+      labelRender={labelRenderer}
       // Performance optimizations
       virtual={false}
       showSearch={false}
       notFoundContent={null}
-    >
-      {phaseOptions.map(option => (
-        <Select.Option
-          key={option.key}
-          value={option.value}
-          label={option.label}
-        >
-          {option.children}
-        </Select.Option>
-      ))}
-    </Select>
+    />
   );
 }, (prevProps, nextProps) => {
   // Custom comparison for better memoization

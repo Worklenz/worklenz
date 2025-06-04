@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import DatePicker from 'antd/es/date-picker';
 import Checkbox from 'antd/es/checkbox';
 import Tag from 'antd/es/tag';
@@ -18,6 +18,7 @@ import { createPortal } from 'react-dom';
 import { DragEndEvent } from '@dnd-kit/core';
 import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from 'antd';
 import dayjs from 'dayjs';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -64,6 +65,9 @@ import { SocketEvents } from '@/shared/socket-events';
 import TaskListLabelsCellOptimized from './task-list-table-cells/task-list-labels-cell/task-list-labels-cell-optimized';
 import { selectVisibleColumns, selectTaskGroups } from '@/features/tasks/tasks.selectors';
 import PeopleSelectorOptimized from '@/components/taskListCommon/peopleSelector/PeopleSelectorOptimized';
+import useIsProjectManager from '@/hooks/useIsProjectManager';
+import './sticky-columns.css';
+import { createTaskListVirtualizerConfig, createOptimizedScrollHandler, HARDWARE_ACCELERATION_STYLES } from '@/utils/virtualScrollConfig';
 
 interface TaskListTableProps {
   taskList: IProjectTask[] | null;
@@ -115,7 +119,7 @@ const DraggableRow = ({ task, children, groupId }: DraggableRowProps) => {
     <tr
       ref={setNodeRef}
       style={{ ...style, ...borderStyle }}
-      className={`task-row h-[42px] ${isDragging ? 'shadow-lg' : ''}`}
+      className={`task-row virtualized-row h-[42px] ${isDragging ? 'shadow-lg' : ''}`}
       data-is-dragging={isDragging ? 'true' : 'false'}
       data-group-id={groupId}
     >
@@ -898,6 +902,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
+  const isProjectManager = useIsProjectManager();
   const { socket } = useSocket();
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -952,6 +957,10 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editColumnKey, setEditColumnKey] = useState<string | null>(null);
+
+  // Add refs for virtualization
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const tableBodyRef = useRef<HTMLTableSectionElement>(null);
 
   const toggleTaskExpansion = (taskId: string) => {
     const task = displayTasks.find(t => t.id === taskId);
@@ -1033,14 +1042,24 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     if (!tableContainer) return;
 
     const handleScroll = () => {
-      if (tableContainer.scrollLeft > 0) {
-        tableContainer.classList.add('scrolled');
+      const isScrolled = tableContainer.scrollLeft > 0;
+      
+      // Update scrolling state for shadow effects
+      if (isScrolled) {
+        tableContainer.classList.add('tasklist-container-scrolled');
+        setScrollingTables(prev => ({ ...prev, [tableId]: true }));
       } else {
-        tableContainer.classList.remove('scrolled');
+        tableContainer.classList.remove('tasklist-container-scrolled');
+        setScrollingTables(prev => ({ ...prev, [tableId]: false }));
       }
     };
 
-    tableContainer.addEventListener('scroll', handleScroll);
+    // Use passive listeners for better scroll performance
+    tableContainer.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Initial check
+    handleScroll();
+    
     return () => tableContainer.removeEventListener('scroll', handleScroll);
   }, [tableId]);
 
@@ -1066,13 +1085,9 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     const stickyStyles = (() => {
       switch (key) {
         case 'selector':
-          return 'sticky left-0 z-20';
+          return 'sticky-selector-column sticky-column-optimized';
         case 'TASK':
-          return `sticky left-[48px] z-10 after:content after:absolute after:top-0 after:-right-1 after:h-full after:-z-10 after:w-1.5 after:bg-transparent ${
-            scrollingTables[tableId]
-              ? 'after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent'
-              : ''
-          }`;
+          return `sticky-task-column sticky-column-optimized after:content after:absolute after:top-0 after:-right-1 after:h-full after:-z-10 after:w-1.5 after:bg-transparent`;
         default:
           return '';
       }
@@ -1144,8 +1159,141 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     return null;
   };
 
-  // Now update the renderTaskRow function to use our memoized component
-  const renderTaskRow = (task: IProjectTask | undefined, isSubtask = false) => {
+  // Get the tasks from the taskGroups state
+  const currentGroup = taskGroups.find(group => group.id === tableId);
+
+  // Use the tasks from the current group if available, otherwise fall back to taskList prop
+  const displayTasks = currentGroup?.tasks || taskList || [];
+
+  // Flatten tasks for virtualization (include subtasks)
+  const flattenedTasks = useMemo(() => {
+    const flattened: Array<{ task: IProjectTask; isSubtask: boolean; parentId?: string; isAddRow?: boolean }> = [];
+    
+    displayTasks?.forEach(task => {
+      // Add main task
+      flattened.push({ task, isSubtask: false });
+      
+      // Add subtasks if expanded
+      if (task.show_sub_tasks && task.sub_tasks?.length) {
+        task.sub_tasks.forEach(subtask => {
+          flattened.push({ 
+            task: subtask, 
+            isSubtask: true, 
+            parentId: task.id 
+          });
+        });
+        
+        // Add "Add subtask" row
+        flattened.push({
+          task: {
+            id: `add-subtask-${task.id}`,
+            name: '',
+            parent_task_id: task.id,
+            manual_progress: false
+          } as unknown as IProjectTask,
+          isSubtask: true,
+          parentId: task.id,
+          isAddRow: true
+        });
+      }
+    });
+    
+    return flattened;
+  }, [displayTasks]);
+
+  // Enhanced virtualization setup with immediate scroll position updates
+  const rowVirtualizer = useVirtualizer(
+    createTaskListVirtualizerConfig(
+      flattenedTasks.length,
+      () => tableContainerRef.current,
+      () => 42, // Standard row height
+      true // Aggressive mode for instant loading
+    )
+  );
+
+  // Virtual items
+  const virtualItems = rowVirtualizer.getVirtualItems();
+
+  // Enhanced scroll handler with immediate position updates for scroll synchronization
+  const optimizedScrollHandler = useMemo(
+    () => createOptimizedScrollHandler(() => {
+      const tableContainer = tableContainerRef.current;
+      if (!tableContainer) return;
+      
+      const isScrolled = tableContainer.scrollLeft > 0;
+      
+      // Update scrolling state for shadow effects
+      if (isScrolled) {
+        tableContainer.classList.add('tasklist-container-scrolled');
+        setScrollingTables(prev => ({ ...prev, [tableId]: true }));
+      } else {
+        tableContainer.classList.remove('tasklist-container-scrolled');
+        setScrollingTables(prev => ({ ...prev, [tableId]: false }));
+      }
+    }, true), // Enable immediate updates for scroll position sync
+    [tableId]
+  );
+
+  useEffect(() => {
+    const tableContainer = tableContainerRef.current;
+    if (!tableContainer) return;
+
+    // Use passive listeners for better scroll performance
+    tableContainer.addEventListener('scroll', optimizedScrollHandler, { passive: true });
+    
+    // Initial check
+    optimizedScrollHandler();
+    
+    return () => tableContainer.removeEventListener('scroll', optimizedScrollHandler);
+  }, [optimizedScrollHandler]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeIndex = displayTasks.findIndex(task => task.id === active.id);
+    const overIndex = displayTasks.findIndex(task => task.id === over.id);
+
+    if (activeIndex !== -1 && overIndex !== -1) {
+      dispatch(
+        reorderTasks({
+          activeGroupId: tableId,
+          overGroupId: tableId,
+          fromIndex: activeIndex,
+          toIndex: overIndex,
+          task: displayTasks[activeIndex],
+          updatedSourceTasks: displayTasks,
+          updatedTargetTasks: displayTasks,
+        })
+      );
+    }
+  };
+
+  const handleCustomColumnSettings = (columnKey: string) => {   
+    if (!columnKey) return;
+    setEditColumnKey(columnKey);
+    dispatch(setCustomColumnModalAttributes({modalType: 'edit', columnId: columnKey}));
+    dispatch(toggleCustomColumnModalOpen(true));
+  };
+
+  // Render virtualized task row
+  const renderTaskRow = useCallback((index: number) => {
+    const item = flattenedTasks[index];
+    if (!item) return null;
+
+    const { task, isSubtask, isAddRow } = item;
+
+    // Handle add task row
+    if (isAddRow) {
+      return (
+        <tr key={task.id} style={{ height: 42 }}>
+          <td colSpan={visibleColumns.length + 2}>
+            <AddTaskListRow groupId={tableId} parentTask={item.parentId} />
+          </td>
+        </tr>
+      );
+    }
+
     if (!task?.id) return null;
 
     return (
@@ -1198,46 +1346,14 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                 />
               </td>
             ))}
+            <td className={getColumnStyles('customColumn', false)}>
+              {/* Empty cell for custom column add button alignment */}
+            </td>
           </>
         )}
       </DraggableRow>
     );
-  };
-
-  // Get the tasks from the taskGroups state
-  const currentGroup = taskGroups.find(group => group.id === tableId);
-
-  // Use the tasks from the current group if available, otherwise fall back to taskList prop
-  const displayTasks = currentGroup?.tasks || taskList || [];
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const activeIndex = displayTasks.findIndex(task => task.id === active.id);
-    const overIndex = displayTasks.findIndex(task => task.id === over.id);
-
-    if (activeIndex !== -1 && overIndex !== -1) {
-      dispatch(
-        reorderTasks({
-          activeGroupId: tableId,
-          overGroupId: tableId,
-          fromIndex: activeIndex,
-          toIndex: overIndex,
-          task: displayTasks[activeIndex],
-          updatedSourceTasks: displayTasks,
-          updatedTargetTasks: displayTasks,
-        })
-      );
-    }
-  };
-
-  const handleCustomColumnSettings = (columnKey: string) => {   
-    if (!columnKey) return;
-    setEditColumnKey(columnKey);
-    dispatch(setCustomColumnModalAttributes({modalType: 'edit', columnId: columnKey}));
-    dispatch(toggleCustomColumnModalOpen(true));
-  };
+  }, [flattenedTasks, visibleColumns, tableId, selectedTaskIdsList, isDarkMode, getColumnStyles, getRowBackgroundColor, handleContextMenu, toggleRowSelection, renderCustomColumnContent, renderColumnContent, updateTaskCustomColumnValue]);
 
   return (
     <div className={`border-x border-b ${customBorderColor}`}>
@@ -1245,9 +1361,16 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
         items={(displayTasks?.map(t => t.id).filter(Boolean) || []) as string[]}
         strategy={verticalListSortingStrategy}
       >
-        <div className={`tasklist-container-${tableId} min-h-0 max-w-full overflow-x-auto`}>
+        <div 
+          ref={tableContainerRef}
+          className={`tasklist-container-${tableId} sticky-table-container min-h-0 max-w-full overflow-auto`}
+          style={{ 
+            height: '600px',
+            ...HARDWARE_ACCELERATION_STYLES, // Apply enhanced hardware acceleration
+          }}
+        >
           <table className="rounded-2 w-full min-w-max border-collapse relative">
-            <thead className="h-[42px]">
+            <thead className="h-[42px] sticky-header">
               <tr>
                 <th
                   className={getColumnStyles('selector', true)}
@@ -1295,29 +1418,39 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
               </tr>
             </thead>
             <tbody>
-              {displayTasks && displayTasks.length > 0 ? (
-                displayTasks.map(task => {
-                  const updatedTask = findTaskInGroups(task.id || '') || task;
-
-                  return (
-                    <React.Fragment key={updatedTask.id}>
-                      {renderTaskRow(updatedTask)}
-                      {updatedTask.show_sub_tasks && (
-                        <>
-                          {updatedTask?.sub_tasks?.map(subtask => renderTaskRow(subtask, true))}
-                            <tr>
-                            <td colSpan={visibleColumns.length + 1}>
-                              <AddTaskListRow groupId={tableId} parentTask={updatedTask.id} />
-                            </td>
-                            </tr>
-                        </>
-                      )}
-                    </React.Fragment>
-                  );
-                })
-              ) : (
+              {/* Virtual spacer before visible items */}
+              {virtualItems.length > 0 && virtualItems[0].index > 0 && (
                 <tr>
-                  <td colSpan={visibleColumns.length + 1} className="ps-2 py-2">
+                  <td colSpan={visibleColumns.length + 2} style={{ height: virtualItems[0].start, padding: 0 }}>
+                    {/* Empty spacer */}
+                  </td>
+                </tr>
+              )}
+
+              {/* Render only visible virtual items */}
+              {virtualItems.map((virtualItem) => {
+                const index = virtualItem.index;
+                return renderTaskRow(index);
+              })}
+
+              {/* Virtual spacer after visible items */}
+              {virtualItems.length > 0 && virtualItems[virtualItems.length - 1].index < flattenedTasks.length - 1 && (
+                <tr>
+                  <td 
+                    colSpan={visibleColumns.length + 2} 
+                    style={{ 
+                      height: rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end,
+                      padding: 0 
+                    }}
+                  >
+                    {/* Empty spacer */}
+                  </td>
+                </tr>
+              )}
+              
+              {flattenedTasks.length === 0 && (
+                <tr>
+                  <td colSpan={visibleColumns.length + 2} className="ps-2 py-2">
                     {t('noTasksAvailable', 'No tasks available')}
                   </td>
                 </tr>
@@ -1333,9 +1466,14 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
           easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
         }}
       >
-        {activeId && displayTasks?.length ? (
+        {activeId && flattenedTasks?.length ? (
           <table className="w-full">
-            <tbody>{renderTaskRow(displayTasks.find(t => t.id === activeId))}</tbody>
+            <tbody>
+              {(() => {
+                const dragIndex = flattenedTasks.findIndex(item => item.task.id === activeId);
+                return dragIndex >= 0 ? renderTaskRow(dragIndex) : null;
+              })()}
+            </tbody>
           </table>
         ) : null}
       </DragOverlay>

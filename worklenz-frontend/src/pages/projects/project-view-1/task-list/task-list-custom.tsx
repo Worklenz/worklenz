@@ -82,7 +82,13 @@ const TaskListCustom: React.FC<TaskListCustomProps> = ({ tasks, color, groupId, 
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
     estimateSize: () => 50,
-    overscan: 20,
+    overscan: 30,
+    scrollPaddingStart: 0,
+    scrollPaddingEnd: 0,
+    measureElement:
+      typeof window !== 'undefined' && navigator.userAgent.indexOf('Firefox') === -1
+        ? (element) => element?.getBoundingClientRect().height
+        : undefined,
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();

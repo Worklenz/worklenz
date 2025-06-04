@@ -4,6 +4,53 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import React from 'react';
+import { createTaskListVirtualizerConfig, HARDWARE_ACCELERATION_STYLES, createOptimizedScrollHandler } from '@/utils/virtualScrollConfig';
+
+// Memoized row component to prevent unnecessary re-renders
+const VirtualizedRow = React.memo<{
+  task: IProjectTask;
+  virtualRow: any;
+  visibleColumns: Array<{ key: string; width: number }>;
+  hoverRow: string | null;
+  renderCell: (columnKey: string | number, task: IProjectTask, isSubtask?: boolean) => React.ReactNode;
+}>(({ task, virtualRow, visibleColumns, hoverRow, renderCell }) => {
+  return (
+    <div
+      className="absolute top-0 left-0 flex w-full border-b hover:bg-gray-50 dark:hover:bg-gray-800"
+      style={{
+        height: 42,
+        transform: `translateY(${virtualRow.start}px) translate3d(0, 0, 0)`, // Combine transforms
+        willChange: 'transform, scroll-position',
+        backfaceVisibility: 'hidden',
+        contain: 'layout style paint size',
+        isolation: 'isolate',
+      }}
+    >
+      <div 
+        className="sticky left-0 z-10 w-8 flex items-center justify-center"
+        style={{
+          ...HARDWARE_ACCELERATION_STYLES,
+        }}
+      >
+        {/* <Checkbox checked={task.selected} /> */}
+      </div>
+      {visibleColumns.map(column => (
+        <div
+          key={column.key}
+          className={`flex items-center px-3 border-r ${
+            hoverRow === task.id ? 'bg-gray-50 dark:bg-gray-800' : ''
+          }`}
+          style={{ width: column.width }}
+        >
+          {renderCell(column.key, task, task.is_sub_task)}
+        </div>
+      ))}
+    </div>
+  );
+});
+
+VirtualizedRow.displayName = 'VirtualizedRow';
 
 const TaskListTable = ({
   taskListGroup,
@@ -33,13 +80,29 @@ const TaskListTable = ({
     }, []);
   }, [taskListGroup.tasks]);
 
-  // Virtual row renderer
-  const rowVirtualizer = useVirtualizer({
-    count: flattenedTasks.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 42, // row height
-    overscan: 5,
-  });
+  // Enhanced virtual row renderer with optimized settings
+  const rowVirtualizer = useVirtualizer(
+    createTaskListVirtualizerConfig(
+      flattenedTasks.length,
+      () => parentRef.current,
+      () => 42, // row height
+      true // Aggressive mode for instant loading
+    )
+  );
+
+  // Enhanced scroll handler for better performance (removed measure() call to prevent recursion)
+  const optimizedScrollHandler = useMemo(
+    () => createOptimizedScrollHandler(() => {
+      // Removed rowVirtualizer.measure() to prevent infinite recursion
+      // The virtualizer will handle measurements automatically
+    }, true), // Always immediate for scroll position accuracy
+    []
+  );
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    // Call the optimized scroll handler for throttling
+    optimizedScrollHandler();
+  }, [optimizedScrollHandler]);
 
   // Memoize cell render functions
   const renderCell = useCallback(
@@ -87,15 +150,15 @@ const TaskListTable = ({
     [visibleColumns]
   );
 
-  // Handle scroll shadows
-  const handleScroll = useCallback((e: { target: any }) => {
-    const target = e.target;
-    const hasHorizontalShadow = target.scrollLeft > 0;
-    target.classList.toggle('show-shadow', hasHorizontalShadow);
-  }, []);
-
   return (
-    <div ref={parentRef} className="h-[400px] overflow-auto" onScroll={handleScroll}>
+    <div 
+      ref={parentRef} 
+      className="h-[400px] overflow-auto" 
+      onScroll={handleScroll}
+      style={{
+        ...HARDWARE_ACCELERATION_STYLES, // Apply enhanced hardware acceleration
+      }}
+    >
       {TableHeader}
 
       <div
@@ -104,34 +167,20 @@ const TaskListTable = ({
           height: `${rowVirtualizer.getTotalSize()}px`,
           width: '100%',
           position: 'relative',
+          ...HARDWARE_ACCELERATION_STYLES, // Apply enhanced hardware acceleration
         }}
       >
         {rowVirtualizer.getVirtualItems().map(virtualRow => {
           const task = flattenedTasks[virtualRow.index];
           return (
-            <div
+            <VirtualizedRow
               key={task.id}
-              className="absolute top-0 left-0 flex w-full border-b hover:bg-gray-50 dark:hover:bg-gray-800"
-              style={{
-                height: 42,
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              <div className="sticky left-0 z-10 w-8 flex items-center justify-center">
-                {/* <Checkbox checked={task.selected} /> */}
-              </div>
-              {visibleColumns.map(column => (
-                <div
-                  key={column.key}
-                  className={`flex items-center px-3 border-r ${
-                    hoverRow === task.id ? 'bg-gray-50 dark:bg-gray-800' : ''
-                  }`}
-                  style={{ width: column.width }}
-                >
-                  {renderCell(column.key, task, task.is_sub_task)}
-                </div>
-              ))}
-            </div>
+              task={task}
+              virtualRow={virtualRow}
+              visibleColumns={visibleColumns}
+              hoverRow={hoverRow}
+              renderCell={renderCell}
+            />
           );
         })}
       </div>
