@@ -47,17 +47,23 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { CustomFieldsTypes, setCustomColumnModalAttributes, toggleCustomColumnModalOpen } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { selectTaskIds, selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
 import StatusDropdown from '@/components/task-list-common/status-dropdown/status-dropdown';
+import StatusDropdownOptimized from '@/components/task-list-common/status-dropdown/status-dropdown-optimized';
 import PriorityDropdown from '@/components/task-list-common/priorityDropdown/priority-dropdown';
+import PriorityDropdownOptimized from '@/components/task-list-common/priorityDropdown/priority-dropdown-optimized';
 import AddCustomColumnButton from './custom-columns/custom-column-modal/add-custom-column-button';
 import { fetchSubTasks, reorderTasks, toggleTaskRowExpansion, updateCustomColumnValue } from '@/features/tasks/tasks.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import ConfigPhaseButton from '@/features/projects/singleProject/phase/ConfigPhaseButton';
 import PhaseDropdown from '@/components/taskListCommon/phase-dropdown/phase-dropdown';
+import PhaseDropdownOptimized from '@/components/taskListCommon/phase-dropdown/phase-dropdown-optimized';
 import CustomColumnModal from './custom-columns/custom-column-modal/custom-column-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import TaskListLabelsCellOptimized from './task-list-table-cells/task-list-labels-cell/task-list-labels-cell-optimized';
+import { selectVisibleColumns, selectTaskGroups } from '@/features/tasks/tasks.selectors';
+import PeopleSelectorOptimized from '@/components/taskListCommon/peopleSelector/PeopleSelectorOptimized';
 
 interface TaskListTableProps {
   taskList: IProjectTask[] | null;
@@ -261,171 +267,13 @@ const PeopleFieldCell: React.FC<{
   columnKey: string; 
   updateValue: (taskId: string, columnKey: string, value: string) => void;
 }> = ({ selectedMemberIds, task, columnKey, updateValue }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const membersInputRef = useRef<InputRef>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const { t } = useTranslation('task-list-table');
-  const dispatch = useAppDispatch();
-
-  const filteredMembersData = useMemo(() => {
-    return members?.data?.filter(member =>
-      member.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [members, searchQuery]);
-
-  const handleInviteProjectMemberDrawer = () => {
-    dispatch(toggleProjectMemberDrawer());
-  };
-
-  const handleMembersDropdownOpen = (open: boolean) => {
-    setIsDropdownOpen(open);
-    if (open) {
-      setTimeout(() => {
-        membersInputRef.current?.focus();
-      }, 0);
-    }
-  };
-
-  const handleMemberSelection = (memberId: string) => {
-    // Toggle the selection of this member
-    const newSelectedIds = selectedMemberIds.includes(memberId)
-      ? selectedMemberIds.filter((id: string) => id !== memberId)
-      : [...selectedMemberIds, memberId];
-    
-    // Update the custom column value
-    if (task.id) {
-      updateValue(
-        task.id,
-        columnKey,
-        JSON.stringify(newSelectedIds)
-      );
-    }
-  };
-
-  const membersDropdownContent = (
-    <Card className="custom-card" styles={{ body: { padding: 8 } }}>
-      <Flex vertical>
-        <Input
-          ref={membersInputRef}
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.currentTarget.value)}
-          placeholder={t('searchInputPlaceholder')}
-        />
-
-        <List style={{ padding: 0, height: 250, overflow: 'auto' }}>
-          {filteredMembersData?.length ? (
-            filteredMembersData.map(member => (
-              <List.Item
-                className={`${themeMode === 'dark' ? 'custom-list-item dark' : 'custom-list-item'}`}
-                key={member.id || ''}
-                style={{
-                  display: 'flex',
-                  gap: 8,
-                  justifyContent: 'flex-start',
-                  padding: '4px 8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-                onClick={() => member.id && handleMemberSelection(member.id)}
-              >
-                <Checkbox 
-                  checked={member.id ? selectedMemberIds.includes(member.id) : false} 
-                  onClick={e => e.stopPropagation()}
-                  onChange={() => member.id && handleMemberSelection(member.id)}
-                />
-                <div>
-                  <SingleAvatar
-                    avatarUrl={member.avatar_url}
-                    name={member.name}
-                    email={member.email}
-                  />
-                </div>
-                <Flex vertical>
-                  <Typography.Text>{member.name}</Typography.Text>
-                  <Typography.Text
-                    style={{
-                      fontSize: 12,
-                      color: colors.lightGray,
-                    }}
-                  >
-                    {member.email}
-                  </Typography.Text>
-                </Flex>
-              </List.Item>
-            ))
-          ) : (
-            <Empty />
-          )}
-        </List>
-
-        <Divider style={{ marginBlock: 0 }} />
-
-        <Button
-          icon={<UsergroupAddOutlined />}
-          type="text"
-          style={{
-            color: colors.skyBlue,
-            border: 'none',
-            backgroundColor: colors.transparent,
-            width: '100%',
-          }}
-          onClick={handleInviteProjectMemberDrawer}
-        >
-          {t('assigneeSelectorInviteButton')}
-        </Button>
-      </Flex>
-    </Card>
-  );
-
-  // Display selected members as avatars
-  const selectedMembers = useMemo(() => {
-    if (!members?.data || !selectedMemberIds.length) return [];
-    return members.data.filter(member => selectedMemberIds.includes(member.id || ''));
-  }, [members, selectedMemberIds]);
-
   return (
-    <Dropdown
-      overlayClassName="custom-dropdown"
-      trigger={['click']}
-      dropdownRender={() => membersDropdownContent}
-      onOpenChange={handleMembersDropdownOpen}
-    >
-      <Flex align="center" gap={4}>
-        {selectedMembers.length > 0 ? (
-          <Avatar.Group max={{count: 3}} size="small">
-            {selectedMembers.map(member => (
-              <Tooltip key={member.id} title={member.name}>
-                <Avatar 
-                  src={member.avatar_url} 
-                  style={{ fontSize: '14px' }}
-                >
-                  {!member.avatar_url && member.name ? member.name.charAt(0).toUpperCase() : null}
-                </Avatar>
-              </Tooltip>
-            ))}
-          </Avatar.Group>
-        ) : null}
-        <Button
-          type="dashed"
-          shape="circle"
-          size="small"
-          icon={
-            <PlusOutlined
-              style={{
-                fontSize: 12,
-                width: 22,
-                height: 22,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            />
-          }
-        />
-      </Flex>
-    </Dropdown>
+    <PeopleSelectorOptimized
+      selectedMemberIds={selectedMemberIds}
+      task={task}
+      columnKey={columnKey}
+      updateValue={updateValue}
+    />
   );
 };
 
@@ -929,176 +777,14 @@ const renderCustomColumnContent = (
 
   const customComponents: Record<CustomFieldsTypes, () => React.ReactNode> = {
     people: () => {
-      // People component that uses the pre-processed selectedMemberIds
-      const PeopleSelector = () => {
-        const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-        const membersInputRef = useRef<InputRef>(null);
-        const [searchQuery, setSearchQuery] = useState<string>('');
-        const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
-        const themeMode = useAppSelector(state => state.themeReducer.mode);
-        const { t } = useTranslation('task-list-table');
-        const dispatch = useAppDispatch();
-
-        const filteredMembersData = useMemo(() => {
-          return members?.data?.filter(member =>
-            member.name?.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        }, [members, searchQuery]);
-
-        const handleInviteProjectMemberDrawer = () => {
-          dispatch(toggleProjectMemberDrawer());
-        };
-
-        const handleMembersDropdownOpen = (open: boolean) => {
-          setIsDropdownOpen(open);
-          if (open) {
-            setTimeout(() => {
-              membersInputRef.current?.focus();
-            }, 0);
-          }
-        };
-
-        const handleMemberSelection = (memberId: string) => {
-          // Toggle the selection of this member
-          const newSelectedIds = selectedMemberIds.includes(memberId)
-            ? selectedMemberIds.filter((id: string) => id !== memberId)
-            : [...selectedMemberIds, memberId];
-          
-          // Update the custom column value
-          if (task.id) {
-            updateTaskCustomColumnValue(
-              task.id,
-              columnKey,
-              JSON.stringify(newSelectedIds)
-            );
-          }
-        };
-
-        const membersDropdownContent = (
-          <Card className="custom-card" styles={{ body: { padding: 8 } }}>
-            <Flex vertical>
-              <Input
-                ref={membersInputRef}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.currentTarget.value)}
-                placeholder={t('searchInputPlaceholder')}
-              />
-
-              <List style={{ padding: 0, height: 250, overflow: 'auto' }}>
-                {filteredMembersData?.length ? (
-                  filteredMembersData.map(member => (
-                    <List.Item
-                      className={`${themeMode === 'dark' ? 'custom-list-item dark' : 'custom-list-item'}`}
-                      key={member.id || ''}
-                      style={{
-                        display: 'flex',
-                        gap: 8,
-                        justifyContent: 'flex-start',
-                        padding: '4px 8px',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => member.id && handleMemberSelection(member.id)}
-                    >
-                      <Checkbox 
-                        checked={member.id ? selectedMemberIds.includes(member.id) : false} 
-                        onClick={e => e.stopPropagation()}
-                        onChange={() => member.id && handleMemberSelection(member.id)}
-                      />
-                      <div>
-                        <SingleAvatar
-                          avatarUrl={member.avatar_url}
-                          name={member.name}
-                          email={member.email}
-                        />
-                      </div>
-                      <Flex vertical>
-                        <Typography.Text>{member.name}</Typography.Text>
-                        <Typography.Text
-                          style={{
-                            fontSize: 12,
-                            color: colors.lightGray,
-                          }}
-                        >
-                          {member.email}
-                        </Typography.Text>
-                      </Flex>
-                    </List.Item>
-                  ))
-                ) : (
-                  <Empty />
-                )}
-              </List>
-
-              <Divider style={{ marginBlock: 0 }} />
-
-              <Button
-                icon={<UsergroupAddOutlined />}
-                type="text"
-                style={{
-                  color: colors.skyBlue,
-                  border: 'none',
-                  backgroundColor: colors.transparent,
-                  width: '100%',
-                }}
-                onClick={handleInviteProjectMemberDrawer}
-              >
-                {t('assigneeSelectorInviteButton')}
-              </Button>
-            </Flex>
-          </Card>
-        );
-
-        // Display selected members as avatars
-        const selectedMembers = useMemo(() => {
-          if (!members?.data || !selectedMemberIds.length) return [];
-          return members.data.filter(member => selectedMemberIds.includes(member.id));
-        }, [members, selectedMemberIds]);
-
-        return (
-          <Dropdown
-            overlayClassName="custom-dropdown"
-            trigger={['click']}
-            dropdownRender={() => membersDropdownContent}
-            onOpenChange={handleMembersDropdownOpen}
-          >
-            <Flex align="center" gap={4}>
-              {selectedMembers.length > 0 ? (
-                <Avatar.Group max={{count: 3}} size="small">
-                  {selectedMembers.map(member => (
-                    <Tooltip key={member.id} title={member.name}>
-                      <Avatar 
-                        src={member.avatar_url} 
-                        style={{ fontSize: '14px' }}
-                      >
-                        {!member.avatar_url && member.name ? member.name.charAt(0).toUpperCase() : null}
-                      </Avatar>
-                    </Tooltip>
-                  ))}
-                </Avatar.Group>
-              ) : null}
-              <Button
-                type="dashed"
-                shape="circle"
-                size="small"
-                icon={
-                  <PlusOutlined
-                    style={{
-                      fontSize: 12,
-                      width: 22,
-                      height: 22,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  />
-                }
-              />
-            </Flex>
-          </Dropdown>
-        );
-      };
-      return <PeopleSelector />;
+      return (
+        <PeopleSelectorOptimized
+          selectedMemberIds={selectedMemberIds}
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
+        />
+      );
     },
     date: () => {
       const dateValue = customValue ? dayjs(customValue) : undefined;
@@ -1215,9 +901,8 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const { socket } = useSocket();
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const columnList = useAppSelector(state => state.taskReducer.columns);
-  const visibleColumns = columnList.filter(column => column.pinned);
-  const taskGroups = useAppSelector(state => state.taskReducer.taskGroups);
+  const visibleColumns = useAppSelector(selectVisibleColumns);
+  const taskGroups = useAppSelector(selectTaskGroups);
   const { project } = useAppSelector(state => state.projectReducer);
   const { selectedTaskIdsList, selectedTasks } = useAppSelector(state => state.bulkActionReducer);
 
@@ -1421,10 +1106,10 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
       DESCRIPTION: () => <TaskListDescriptionCell description={task.description || ''} />,
       PROGRESS: () => <TaskListProgressCell task={task} />,
       ASSIGNEES: () => <TaskListMembersCell groupId={tableId} task={task} />,
-      LABELS: () => <TaskListLabelsCell task={task} />,
-      PHASE: () => <PhaseDropdown task={task} />,
-      STATUS: () => <StatusDropdown task={task} teamId={currentSession?.team_id || ''} />,
-      PRIORITY: () => <PriorityDropdown task={task} teamId={currentSession?.team_id || ''} />,
+      LABELS: () => <TaskListLabelsCellOptimized task={task} />,
+      PHASE: () => <PhaseDropdownOptimized task={task} />,
+      STATUS: () => <StatusDropdownOptimized task={task} teamId={currentSession?.team_id || ''} />,
+      PRIORITY: () => <PriorityDropdownOptimized task={task} teamId={currentSession?.team_id || ''} />,
       TIME_TRACKING: () => <TaskListTimeTrackerCell task={task} />,
       ESTIMATION: () => <TaskListEstimationCell task={task} />,
       START_DATE: () => <TaskListStartDateCell task={task} />,

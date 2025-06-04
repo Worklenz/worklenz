@@ -80,7 +80,11 @@ const PhaseDropdown = ({ task }: PhaseDropdownProps) => {
       variant="borderless"
       dropdownStyle={{ minWidth: 150 }}
       optionLabelProp="label"
-      popupClassName="phase-select-dropdown"
+      classNames={{
+        popup: {
+          root: "phase-select-dropdown"
+        }
+      }}
       allowClear
       style={{
         backgroundColor: currentPhase ? task.phase_color + ALPHA_CHANNEL : undefined,

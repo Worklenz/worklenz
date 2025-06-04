@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -14,15 +14,28 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { updateTaskStatus } from '@/features/tasks/tasks.slice';
+import { selectTaskGroups, selectGroupBy } from '@/features/tasks/tasks.selectors';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
-export const useTaskDragAndDrop = () => {
+interface UseTaskDragAndDropProps {
+  taskGroups: ITaskListGroup[];
+  groupBy: string;
+}
+
+export const useTaskDragAndDrop = (props?: UseTaskDragAndDropProps) => {
   const dispatch = useAppDispatch();
-  const { taskGroups, groupBy } = useAppSelector(state => ({
-    taskGroups: state.taskReducer.taskGroups,
-    groupBy: state.taskReducer.groupBy,
-  }));
+  
+  // Use memoized selectors to avoid creating new objects
+  const taskGroupsFromState = useAppSelector(selectTaskGroups);
+  const groupByFromState = useAppSelector(selectGroupBy);
+  
+  // Use props if provided, otherwise use state
+  const taskGroups = props?.taskGroups || taskGroupsFromState;
+  const groupBy = props?.groupBy || groupByFromState;
+  
+  // Track active drag item
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   // Memoize sensors configuration for better performance
   const sensors = useSensors(
@@ -42,11 +55,26 @@ export const useTaskDragAndDrop = () => {
     })
   );
 
+  const resetTaskRowStyles = useCallback(() => {
+    // Reset any drag-related styles
+    const draggedElements = document.querySelectorAll('[data-is-dragging="true"]');
+    draggedElements.forEach(element => {
+      element.removeAttribute('data-is-dragging');
+    });
+  }, []);
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
     // Add visual feedback for drag start
     const { active } = event;
     if (active) {
+      setActiveId(active.id as string);
       document.body.style.cursor = 'grabbing';
+      
+      // Add dragging attribute to the element
+      const draggedElement = document.querySelector(`[data-task-id="${active.id}"]`);
+      if (draggedElement) {
+        draggedElement.setAttribute('data-is-dragging', 'true');
+      }
     }
   }, []);
 
@@ -57,8 +85,9 @@ export const useTaskDragAndDrop = () => {
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
-      // Reset cursor
+      // Reset cursor and active state
       document.body.style.cursor = '';
+      setActiveId(null);
 
       const { active, over } = event;
       
@@ -131,16 +160,17 @@ export const useTaskDragAndDrop = () => {
     [taskGroups, groupBy, dispatch]
   );
 
-  // Memoize the drag and drop configuration
-  const dragAndDropConfig = useMemo(
-    () => ({
-      sensors,
-      onDragStart: handleDragStart,
-      onDragOver: handleDragOver,
-      onDragEnd: handleDragEnd,
-    }),
-    [sensors, handleDragStart, handleDragOver, handleDragEnd]
-  );
-
-  return dragAndDropConfig;
+  // Return the expected interface
+  return {
+    activeId,
+    sensors,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    resetTaskRowStyles,
+    // Legacy support - return the old interface as well
+    onDragStart: handleDragStart,
+    onDragOver: handleDragOver,
+    onDragEnd: handleDragEnd,
+  };
 }; 
