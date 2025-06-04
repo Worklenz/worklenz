@@ -1,4 +1,4 @@
-import { Avatar, Button, Input, Popconfirm, Table, TableProps, Select, Flex } from 'antd';
+import { Avatar, Button, Input, Popconfirm, Table, TableProps, Select, Flex, InputRef } from 'antd';
 import React, { useEffect, useState } from 'react';
 import CustomAvatar from '../../../../../../components/CustomAvatar';
 import { DeleteOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
@@ -31,7 +31,7 @@ const RatecardTable: React.FC = () => {
   // Redux state
   const rolesRedux = useAppSelector((state) => state.projectFinanceRateCard.rateCardRoles) || [];
   const isLoading = useAppSelector((state) => state.projectFinanceRateCard.isLoading);
-  const currency = useAppSelector((state) => state.financeReducer.currency).toUpperCase();
+  const currency = useAppSelector((state) => state.projectFinances.project?.currency || "USD").toUpperCase();
   const rateInputRefs = React.useRef<Array<HTMLInputElement | null>>([]);
   
   // Auth and permissions
@@ -244,7 +244,9 @@ const RatecardTable: React.FC = () => {
       align: 'right',
       render: (value: number, record: JobRoleType, index: number) => (
         <Input
-          ref={el => rateInputRefs.current[index] = el}
+          ref={(el: InputRef | null) => {
+            if (el) rateInputRefs.current[index] = el as unknown as HTMLInputElement;
+          }}
           type="number"
           value={roles[index]?.rate ?? 0}
           min={0}

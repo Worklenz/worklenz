@@ -63,9 +63,16 @@ export interface IProjectRateCard {
   job_title_name: string;
 }
 
+export interface IProjectFinanceProject {
+  id: string;
+  name: string;
+  currency: string;
+}
+
 export interface IProjectFinanceResponse {
   groups: IProjectFinanceGroup[];
   project_rate_cards: IProjectRateCard[];
+  project: IProjectFinanceProject;
 }
 
 export interface ITaskBreakdownMember {

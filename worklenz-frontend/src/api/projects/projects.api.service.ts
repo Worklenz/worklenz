@@ -7,6 +7,7 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberOverviewGetResponse } from '@/types/project/project-insights.types';
 import { IProjectMembersViewModel } from '@/types/projectMember.types';
 import { IProjectManager } from '@/types/project/projectManager.types';
+import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 
 const rootUrl = `${API_BASE_URL}/projects`;
 
@@ -118,6 +119,15 @@ export const projectsApiService = {
   getProjectManagers: async (): Promise<IServerResponse<IProjectManager[]>> => {
     const url = `${API_BASE_URL}/project-managers`;
     const response = await apiClient.get<IServerResponse<IProjectManager[]>>(`${url}`);
+    return response.data;
+  },
+
+  updateProjectPhaseLabel: async (projectId: string, phaseLabel: string) => {
+    const q = toQueryString({ id: projectId, current_project_id: projectId });
+    const response = await apiClient.put<IServerResponse<ITaskPhase>>(
+      `${rootUrl}/label/${projectId}${q}`,
+      { name: phaseLabel }
+    );
     return response.data;
   },
 };

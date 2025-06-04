@@ -50,6 +50,17 @@ export const projectFinanceApiService = {
         return response.data;
       },
 
+    updateProjectCurrency: async (
+        projectId: string,
+        currency: string
+      ): Promise<IServerResponse<any>> => {
+        const response = await apiClient.put<IServerResponse<any>>(
+          `${rootUrl}/project/${projectId}/currency`,
+          { currency }
+        );
+        return response.data;
+      },
+
     exportFinanceData: async (
         projectId: string,
         groupBy: 'status' | 'priority' | 'phases' = 'status'

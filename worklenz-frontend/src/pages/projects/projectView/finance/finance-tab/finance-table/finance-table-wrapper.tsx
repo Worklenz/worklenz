@@ -76,7 +76,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
   }, [editingFixedCost]);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const { currency } = useAppSelector(state => state.financeReducer);
+  const currency = useAppSelector(state => state.projectFinances.project?.currency || "").toUpperCase();
   const taskGroups = useAppSelector(state => state.projectFinances.taskGroups);
 
   // Use Redux store data for totals calculation to ensure reactivity

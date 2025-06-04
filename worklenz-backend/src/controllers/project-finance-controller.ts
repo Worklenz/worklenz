@@ -51,6 +51,20 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     const projectId = req.params.project_id;
     const groupBy = req.query.group_by || "status";
 
+    // Get project information including currency
+    const projectQuery = `
+      SELECT id, name, currency
+      FROM projects 
+      WHERE id = $1
+    `;
+    const projectResult = await db.query(projectQuery, [projectId]);
+    
+    if (projectResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Project not found"));
+    }
+    
+    const project = projectResult.rows[0];
+
     // First, get the project rate cards for this project
     const rateCardQuery = `
       SELECT 
@@ -339,10 +353,15 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
       };
     });
 
-    // Include project rate cards in the response for reference
+    // Include project rate cards and currency in the response for reference
     const responseData = {
       groups: groupedTasks,
       project_rate_cards: projectRateCards,
+      project: {
+        id: project.id,
+        name: project.name,
+        currency: project.currency || "USD"
+      }
     };
 
     return res.status(200).send(new ServerResponse(true, responseData));
@@ -703,10 +722,12 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     const projectId = req.params.project_id;
     const groupBy = (req.query.groupBy as string) || "status";
 
-    // Get project name for filename
-    const projectNameQuery = `SELECT name FROM projects WHERE id = $1`;
-    const projectNameResult = await db.query(projectNameQuery, [projectId]);
-    const projectName = projectNameResult.rows[0]?.name || "Unknown Project";
+    // Get project name and currency for filename and export
+    const projectQuery = `SELECT name, currency FROM projects WHERE id = $1`;
+    const projectResult = await db.query(projectQuery, [projectId]);
+    const project = projectResult.rows[0];
+    const projectName = project?.name || "Unknown Project";
+    const projectCurrency = project?.currency || "USD";
 
     // First, get the project rate cards for this project
     const rateCardQuery = `
@@ -1025,7 +1046,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     // Add title row
     worksheet.getCell(
       "A1"
-    ).value = `Finance Data Export - ${projectName} - ${moment().format(
+    ).value = `Finance Data Export - ${projectName} (${projectCurrency}) - ${moment().format(
       "MMM DD, YYYY"
     )}`;
     worksheet.mergeCells("A1:L1");
@@ -1095,5 +1116,78 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
 
     // Send the Excel file as a response
     res.end(buffer);
+  }
+
+  @HandleExceptions()
+  public static async updateProjectCurrency(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const projectId = req.params.project_id;
+    const { currency } = req.body;
+
+    // Validate currency format (3-character uppercase code)
+    if (!currency || typeof currency !== "string" || !/^[A-Z]{3}$/.test(currency)) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Invalid currency format. Currency must be a 3-character uppercase code (e.g., USD, EUR, GBP)"));
+    }
+
+    // Check if project exists and user has access
+    const projectCheckQuery = `
+      SELECT p.id, p.name, p.currency as current_currency
+      FROM projects p
+      WHERE p.id = $1 AND p.team_id = $2
+    `;
+
+    const projectCheckResult = await db.query(projectCheckQuery, [projectId, req.user?.team_id]);
+
+    if (projectCheckResult.rows.length === 0) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Project not found or access denied"));
+    }
+
+    const project = projectCheckResult.rows[0];
+
+    // Update project currency
+    const updateQuery = `
+      UPDATE projects 
+      SET currency = $1, updated_at = NOW()
+      WHERE id = $2 AND team_id = $3
+      RETURNING id, name, currency;
+    `;
+
+    const result = await db.query(updateQuery, [currency, projectId, req.user?.team_id]);
+
+    if (result.rows.length === 0) {
+      return res
+        .status(500)
+        .send(new ServerResponse(false, null, "Failed to update project currency"));
+    }
+
+    const updatedProject = result.rows[0];
+
+    // Log the currency change for audit purposes
+    const logQuery = `
+      INSERT INTO project_logs (team_id, project_id, description)
+      VALUES ($1, $2, $3)
+    `;
+
+    const logDescription = `Project currency changed from ${project.current_currency || "USD"} to ${currency}`;
+    
+    try {
+      await db.query(logQuery, [req.user?.team_id, projectId, logDescription]);
+    } catch (error) {
+      console.error("Failed to log currency change:", error);
+      // Don't fail the request if logging fails
+    }
+
+    return res.status(200).send(new ServerResponse(true, {
+      id: updatedProject.id,
+      name: updatedProject.name,
+      currency: updatedProject.currency,
+      message: `Project currency updated to ${currency}`
+    }));
   }
 }

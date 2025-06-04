@@ -783,8 +783,11 @@ CREATE TABLE IF NOT EXISTS projects (
     estimated_working_days INTEGER                  DEFAULT 0,
     use_manual_progress    BOOLEAN                  DEFAULT FALSE,
     use_weighted_progress  BOOLEAN                  DEFAULT FALSE,
-    use_time_progress      BOOLEAN                  DEFAULT FALSE
+    use_time_progress      BOOLEAN                  DEFAULT FALSE,
+    currency               VARCHAR(3)               DEFAULT 'USD'
 );
+
+COMMENT ON COLUMN projects.currency IS 'Project-specific currency code (e.g., USD, EUR, GBP, JPY, etc.)';
 
 ALTER TABLE projects
     ADD CONSTRAINT projects_pk

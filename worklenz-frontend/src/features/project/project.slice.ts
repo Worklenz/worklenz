@@ -116,6 +116,11 @@ const projectSlice = createSlice({
         state.project.phase_label = action.payload;
       }
     },
+    updateProjectCurrency: (state, action: PayloadAction<string>) => {
+      if (state.project) {
+        state.project.currency = action.payload;
+      }
+    },
     addTask: (
       state,
       action: PayloadAction<{ task: IProjectTask; groupId: string; insert?: boolean }>
@@ -214,7 +219,8 @@ export const {
   setCreateTaskTemplateDrawerOpen,
   setProjectView,
   updatePhaseLabel,
-  setRefreshTimestamp
+  setRefreshTimestamp,
+  updateProjectCurrency
 } = projectSlice.actions;
 
 export default projectSlice.reducer;

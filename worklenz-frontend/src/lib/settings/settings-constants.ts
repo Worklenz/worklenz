@@ -27,7 +27,7 @@ import TeamMembersSettings from '@/pages/settings/team-members/team-members-sett
 import TeamsSettings from '../../pages/settings/teams/teams-settings';
 import ChangePassword from '@/pages/settings/change-password/change-password';
 import LanguageAndRegionSettings from '@/pages/settings/language-and-region/language-and-region-settings';
-import RatecardSettings from '@/pages/settings/ratecard/ratecard-settings';
+import RatecardSettings from '@/pages/settings/rate-card/rate-card-settings';
 import AppearanceSettings from '@/pages/settings/appearance/appearance-settings';
 
 // type of menu item in settings sidebar

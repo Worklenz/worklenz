@@ -5401,7 +5401,8 @@ BEGIN
         updated_at             = CURRENT_TIMESTAMP,
         estimated_working_days = (_body ->> 'working_days')::INTEGER,
         estimated_man_days     = (_body ->> 'man_days')::INTEGER,
-        hours_per_day          = (_body ->> 'hours_per_day')::INTEGER
+        hours_per_day          = (_body ->> 'hours_per_day')::INTEGER,
+        currency               = COALESCE(UPPER((_body ->> 'currency')::TEXT), currency)
     WHERE id = (_body ->> 'id')::UUID
       AND team_id = _team_id
     RETURNING id INTO _project_id;

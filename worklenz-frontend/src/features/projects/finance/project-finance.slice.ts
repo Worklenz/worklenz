@@ -1,6 +1,6 @@
 import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { IProjectFinanceGroup, IProjectFinanceTask, IProjectRateCard } from '@/types/project/project-finance.types';
+import { IProjectFinanceGroup, IProjectFinanceTask, IProjectRateCard, IProjectFinanceProject } from '@/types/project/project-finance.types';
 import { parseTimeToSeconds } from '@/utils/timeUtils';
 
 type FinanceTabType = 'finance' | 'ratecard';
@@ -12,6 +12,7 @@ interface ProjectFinanceState {
   loading: boolean;
   taskGroups: IProjectFinanceGroup[];
   projectRateCards: IProjectRateCard[];
+  project: IProjectFinanceProject | null;
 }
 
 // Utility functions for frontend calculations
@@ -67,6 +68,7 @@ const initialState: ProjectFinanceState = {
   loading: false,
   taskGroups: [],
   projectRateCards: [],
+  project: null,
 };
 
 export const fetchProjectFinances = createAsyncThunk(
@@ -173,6 +175,7 @@ export const projectFinancesSlice = createSlice({
         state.loading = false;
         state.taskGroups = action.payload.groups;
         state.projectRateCards = action.payload.project_rate_cards;
+        state.project = action.payload.project;
       })
       .addCase(fetchProjectFinances.rejected, (state) => {
         state.loading = false;
@@ -181,6 +184,7 @@ export const projectFinancesSlice = createSlice({
         // Update data without changing loading state for silent refresh
         state.taskGroups = action.payload.groups;
         state.projectRateCards = action.payload.project_rate_cards;
+        state.project = action.payload.project;
       })
       .addCase(updateTaskFixedCostAsync.fulfilled, (state, action) => {
         const { taskId, groupId, fixedCost } = action.payload;

@@ -395,6 +395,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.folder_id,
              projects.phase_label,
              projects.category_id,
+             projects.currency,
              (projects.estimated_man_days) AS man_days,
              (projects.estimated_working_days) AS working_days,
              (projects.hours_per_day) AS hours_per_day,

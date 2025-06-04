@@ -14,6 +14,7 @@ projectFinanceApiRouter.get(
   safeControllerFunction(ProjectfinanceController.getTaskBreakdown)
 );
 projectFinanceApiRouter.put("/task/:task_id/fixed-cost", ProjectfinanceController.updateTaskFixedCost);
+projectFinanceApiRouter.put("/project/:project_id/currency", ProjectfinanceController.updateProjectCurrency);
 projectFinanceApiRouter.get("/project/:project_id/export", ProjectfinanceController.exportFinanceData);
 
 export default projectFinanceApiRouter;
