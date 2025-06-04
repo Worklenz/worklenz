@@ -142,13 +142,6 @@ const ProjectViewTaskList = () => {
       {/* Filters load independently and don't block the main content */}
       <TaskListFilters position="list" />
 
-      {/* Subtle loading indicator for background processes */}
-      {isLoadingBackground && !shouldShowSkeleton && (
-        <Flex justify="center" style={{ padding: '8px' }}>
-          <Spin size="small" />
-        </Flex>
-      )}
-
       {isEmptyState ? (
         <Empty description="No tasks group found" />
       ) : (
