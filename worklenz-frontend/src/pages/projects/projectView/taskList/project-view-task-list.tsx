@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import Flex from 'antd/es/flex';
 import Skeleton from 'antd/es/skeleton';
 import { useSearchParams } from 'react-router-dom';
@@ -18,6 +18,7 @@ const ProjectViewTaskList = () => {
   const { projectView } = useTabSearchParam();
   const [searchParams, setSearchParams] = useSearchParams();
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const lastFetchParamsRef = useRef<string>('');
 
   // Combine related selectors to reduce subscriptions
   const {
@@ -96,10 +97,18 @@ const ProjectViewTaskList = () => {
     fetchInitialData();
   }, [projectId, groupBy, dispatch, initialLoadComplete]);
 
-  // Fetch task groups with dependency on initial load completion
+  // Fetch task groups - single source of truth for task fetching
   useEffect(() => {
     const fetchTasks = async () => {
       if (!projectId || !groupBy || projectView !== 'list' || !initialLoadComplete) return;
+
+      // Create a unique key for current fetch parameters to avoid duplicate calls
+      const currentParams = `${projectId}-${groupBy}-${JSON.stringify(fields)}-${search}-${archived}`;
+      
+      // Skip if we already fetched with the same parameters
+      if (lastFetchParamsRef.current === currentParams) return;
+      
+      lastFetchParamsRef.current = currentParams;
 
       try {
         await dispatch(fetchTaskGroups(projectId));
@@ -109,25 +118,7 @@ const ProjectViewTaskList = () => {
     };
 
     fetchTasks();
-  }, [projectId, groupBy, projectView, dispatch, initialLoadComplete]);
-
-  // Separate effect for filter changes (fields, search, archived)
-  useEffect(() => {
-    const fetchTasksForFilters = async () => {
-      if (!projectId || !groupBy || projectView !== 'list' || !initialLoadComplete) return;
-
-      try {
-        await dispatch(fetchTaskGroups(projectId));
-      } catch (error) {
-        console.error('Error fetching task groups for filters:', error);
-      }
-    };
-
-    // Only fetch if initial load is complete to avoid double execution
-    if (initialLoadComplete) {
-      fetchTasksForFilters();
-    }
-  }, [fields, search, archived]);
+  }, [projectId, groupBy, projectView, dispatch, fields, search, archived, initialLoadComplete]);
 
   // Memoize the task groups to prevent unnecessary re-renders
   const memoizedTaskGroups = useMemo(() => taskGroups || [], [taskGroups]);
