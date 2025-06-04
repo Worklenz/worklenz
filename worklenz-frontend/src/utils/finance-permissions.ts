@@ -28,6 +28,29 @@ export const hasFinanceEditPermission = (
 };
 
 /**
+ * Checks if the current user has permission to view finance data
+ * Only project managers, admins, and owners should be able to view the finance tab
+ */
+export const hasFinanceViewPermission = (
+  currentSession: ILocalSession | null,
+  currentProject?: IProjectViewModel | null
+): boolean => {
+  if (!currentSession) return false;
+
+  // Team owner or admin always have permission
+  if (currentSession.owner || currentSession.is_admin) {
+    return true;
+  }
+
+  // Project manager has permission
+  if (currentProject?.project_manager?.id === currentSession.team_member_id) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
  * Checks if the current user can edit fixed costs
  */
 export const canEditFixedCost = (
