@@ -13,7 +13,7 @@ interface LogOptions {
 }
 
 class ConsoleLogger {
-  private readonly isProduction = import.meta.env.PROD;
+  private readonly isProduction = false;
 
   private readonly styles: Record<LogLevel, LogStyles> = {
     info: {

@@ -12,9 +12,10 @@ import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSli
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { Empty } from 'antd';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import logger from '@/utils/errorLogger';
 
 const ProjectViewTaskList = () => {
-  console.log('🚀 ProjectViewTaskList component render/mount:', {
+  logger.debug('🚀 ProjectViewTaskList component render/mount', {
     timestamp: new Date().toISOString()
   });
 
@@ -80,7 +81,7 @@ const ProjectViewTaskList = () => {
 
   // Batch initial data fetching - core data only
   useEffect(() => {
-    console.log('🎯 Initial data fetch useEffect triggered:', {
+    logger.debug('🎯 Initial data fetch useEffect triggered:', {
       projectId,
       groupBy,
       initialLoadComplete,
@@ -89,26 +90,26 @@ const ProjectViewTaskList = () => {
 
     const fetchInitialData = async () => {
       if (!projectId || !groupBy || initialLoadComplete) {
-        console.log('❌ Initial data fetch early return');
+        logger.debug('❌ Initial data fetch early return');
         return;
       }
 
-      console.log('🚀 Starting initial data fetch...');
+      logger.debug('🚀 Starting initial data fetch...');
 
       try {
         // Batch only essential API calls for initial load
         // Filter data (labels, assignees, etc.) will load separately and not block the UI
-        console.log('📡 Dispatching initial API calls...');
+        logger.debug('📡 Dispatching initial API calls...');
         await Promise.allSettled([
           dispatch(fetchTaskListColumns(projectId)),
           dispatch(fetchPhasesByProjectId(projectId)),
           dispatch(fetchStatusesCategories()),
         ]);
-        console.log('✅ Initial API calls completed');
-        console.log('🏁 Setting initialLoadComplete to true');
+        logger.debug('✅ Initial API calls completed');
+        logger.debug('🏁 Setting initialLoadComplete to true');
         setInitialLoadComplete(true);
       } catch (error) {
-        console.error('❌ Error fetching initial data:', error);
+        logger.error('❌ Error fetching initial data:', error);
         setInitialLoadComplete(true); // Still mark as complete to prevent infinite loading
       }
     };
@@ -118,7 +119,7 @@ const ProjectViewTaskList = () => {
 
   // Track fields changes for debugging
   useEffect(() => {
-    console.log('🔧 Fields state changed:', {
+    logger.debug('🔧 Fields state changed:', {
       fieldsLength: fields?.length,
       fields: fields,
       timestamp: new Date().toISOString()
@@ -127,7 +128,7 @@ const ProjectViewTaskList = () => {
 
   // Track search changes for debugging
   useEffect(() => {
-    console.log('🔍 Search state changed:', {
+    logger.debug('🔍 Search state changed:', {
       search,
       timestamp: new Date().toISOString()
     });
@@ -135,7 +136,7 @@ const ProjectViewTaskList = () => {
 
   // Track archived changes for debugging
   useEffect(() => {
-    console.log('📦 Archived state changed:', {
+    logger.debug('📦 Archived state changed:', {
       archived,
       timestamp: new Date().toISOString()
     });
@@ -143,7 +144,7 @@ const ProjectViewTaskList = () => {
 
   // Fetch task groups - single source of truth for task fetching
   useEffect(() => {
-    console.log('🔄 fetchTasks useEffect triggered with dependencies:', {
+    logger.debug('🔄 fetchTasks useEffect triggered with dependencies:', {
       projectId,
       groupBy,
       projectView,
@@ -155,7 +156,7 @@ const ProjectViewTaskList = () => {
     });
 
     const fetchTasks = async () => {
-      console.log('📝 fetchTasks function called - checking conditions:', {
+      logger.debug('📝 fetchTasks function called - checking conditions:', {
         hasProjectId: !!projectId,
         hasGroupBy: !!groupBy,
         isListView: projectView === 'list',
@@ -163,30 +164,30 @@ const ProjectViewTaskList = () => {
       });
 
       if (!projectId || !groupBy || projectView !== 'list' || !initialLoadComplete) {
-        console.log('❌ fetchTasks early return - conditions not met');
+        logger.debug('❌ fetchTasks early return - conditions not met');
         return;
       }
 
       // Create a unique key for current fetch parameters to avoid duplicate calls
       const currentParams = `${projectId}-${groupBy}-${JSON.stringify(fields)}-${search}-${archived}`;
-      console.log('🔑 Current params:', currentParams);
-      console.log('🔑 Last params:   ', lastFetchParamsRef.current);
+      logger.debug('🔑 Current params:', currentParams);
+      logger.debug('🔑 Last params:   ', lastFetchParamsRef.current);
       
       // Skip if we already fetched with the same parameters
       if (lastFetchParamsRef.current === currentParams) {
-        console.log('🚫 Skipping duplicate fetch - same parameters');
+        logger.debug('🚫 Skipping duplicate fetch - same parameters');
         return;
       }
       
-      console.log('✅ Parameters changed - proceeding with fetch');
+      logger.debug('✅ Parameters changed - proceeding with fetch');
       lastFetchParamsRef.current = currentParams;
 
       try {
-        console.log('🚀 Starting fetchTaskGroups dispatch...');
+        logger.debug('🚀 Starting fetchTaskGroups dispatch...');
         await dispatch(fetchTaskGroups(projectId));
-        console.log('✅ fetchTaskGroups completed successfully');
+        logger.debug('✅ fetchTaskGroups completed successfully');
       } catch (error) {
-        console.error('❌ Error fetching task groups:', error);
+        logger.error('❌ Error fetching task groups:', error);
       }
     };
 
