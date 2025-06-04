@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import Flex from 'antd/es/flex';
 import Skeleton from 'antd/es/skeleton';
+import Spin from 'antd/es/spin';
 import { useSearchParams } from 'react-router-dom';
 
 import TaskListFilters from './task-list-filters/task-list-filters';
@@ -46,16 +47,29 @@ const ProjectViewTaskList = () => {
   const { loading: loadingStatusCategories } = statusState;
   const { loadingPhases } = phaseState;
 
-  // Memoize loading state calculation
-  const isLoading = useMemo(() => 
-    loadingGroups || loadingPhases || loadingStatusCategories || !initialLoadComplete,
-    [loadingGroups, loadingPhases, loadingStatusCategories, initialLoadComplete]
+  // Optimized loading state - only wait for essential task data
+  const isLoadingEssential = useMemo(() => 
+    loadingGroups || !initialLoadComplete,
+    [loadingGroups, initialLoadComplete]
   );
+
+  // Background loading state for non-essential data (for debugging/status)
+  const isLoadingBackground = useMemo(() => 
+    loadingPhases || loadingStatusCategories,
+    [loadingPhases, loadingStatusCategories]
+  );
+
+  // Show skeleton only for essential data, allow task list to render with background loading
+  const shouldShowSkeleton = useMemo(() => {
+    // If we have task groups already, don't show skeleton even if background data is loading
+    const hasTaskData = taskGroups && taskGroups.length > 0;
+    return isLoadingEssential && !hasTaskData;
+  }, [isLoadingEssential, taskGroups]);
 
   // Memoize empty state check
   const isEmptyState = useMemo(() => 
-    taskGroups && taskGroups.length === 0 && !isLoading,
-    [taskGroups, isLoading]
+    taskGroups && taskGroups.length === 0 && !isLoadingEssential,
+    [taskGroups, isLoadingEssential]
   );
 
   // Memoize task groups to prevent unnecessary re-renders
@@ -71,18 +85,24 @@ const ProjectViewTaskList = () => {
     }
   }, [projectView, setSearchParams, searchParams]);
 
-  // Batch initial data fetching - core data only
+  // Batch initial data fetching - prioritize task columns for faster initial render
   useEffect(() => {
     const fetchInitialData = async () => {
       if (!projectId || !groupBy || initialLoadComplete) return;
 
       try {
-        await Promise.allSettled([
-          dispatch(fetchTaskListColumns(projectId)),
+        // Prioritize task list columns first for faster rendering
+        await dispatch(fetchTaskListColumns(projectId));
+        setInitialLoadComplete(true);
+        
+        // Load other data in background without blocking UI
+        Promise.allSettled([
           dispatch(fetchPhasesByProjectId(projectId)),
           dispatch(fetchStatusesCategories()),
-        ]);
-        setInitialLoadComplete(true);
+        ]).catch(error => {
+          logger.error('Error fetching background data', error);
+        });
+        
       } catch (error) {
         logger.error('Error fetching initial data', error);
         setInitialLoadComplete(true);
@@ -122,10 +142,17 @@ const ProjectViewTaskList = () => {
       {/* Filters load independently and don't block the main content */}
       <TaskListFilters position="list" />
 
+      {/* Subtle loading indicator for background processes */}
+      {isLoadingBackground && !shouldShowSkeleton && (
+        <Flex justify="center" style={{ padding: '8px' }}>
+          <Spin size="small" />
+        </Flex>
+      )}
+
       {isEmptyState ? (
         <Empty description="No tasks group found" />
       ) : (
-        <Skeleton active loading={isLoading} className='mt-4 p-4'>
+        <Skeleton active loading={shouldShowSkeleton} className='mt-4 p-4'>
           <TaskGroupWrapperOptimized 
             taskGroups={memoizedTaskGroups} 
             groupBy={groupBy} 
