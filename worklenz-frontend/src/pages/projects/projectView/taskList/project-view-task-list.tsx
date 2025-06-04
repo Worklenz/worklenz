@@ -109,7 +109,25 @@ const ProjectViewTaskList = () => {
     };
 
     fetchTasks();
-  }, [projectId, groupBy, projectView, dispatch, fields, search, archived, initialLoadComplete]);
+  }, [projectId, groupBy, projectView, dispatch, initialLoadComplete]);
+
+  // Separate effect for filter changes (fields, search, archived)
+  useEffect(() => {
+    const fetchTasksForFilters = async () => {
+      if (!projectId || !groupBy || projectView !== 'list' || !initialLoadComplete) return;
+
+      try {
+        await dispatch(fetchTaskGroups(projectId));
+      } catch (error) {
+        console.error('Error fetching task groups for filters:', error);
+      }
+    };
+
+    // Only fetch if initial load is complete to avoid double execution
+    if (initialLoadComplete) {
+      fetchTasksForFilters();
+    }
+  }, [fields, search, archived]);
 
   // Memoize the task groups to prevent unnecessary re-renders
   const memoizedTaskGroups = useMemo(() => taskGroups || [], [taskGroups]);
