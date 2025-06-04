@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import Flex from 'antd/es/flex';
 import Skeleton from 'antd/es/skeleton';
 import { useSearchParams } from 'react-router-dom';
@@ -15,26 +15,14 @@ import useTabSearchParam from '@/hooks/useTabSearchParam';
 import logger from '@/utils/errorLogger';
 
 const ProjectViewTaskList = () => {
-  logger.debug('🚀 ProjectViewTaskList component render/mount', {
-    timestamp: new Date().toISOString()
-  });
-
   const dispatch = useAppDispatch();
   const { projectView } = useTabSearchParam();
   const [searchParams, setSearchParams] = useSearchParams();
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const lastFetchParamsRef = useRef<string>('');
 
-  // Combine related selectors to reduce subscriptions
-  const {
-    projectId,
-    taskGroups,
-    loadingGroups,
-    groupBy,
-    archived,
-    fields,
-    search,
-  } = useAppSelector(state => ({
+  // Memoize selectors to prevent unnecessary re-renders
+  const taskState = useAppSelector(state => ({
     projectId: state.projectReducer.projectId,
     taskGroups: state.taskReducer.taskGroups,
     loadingGroups: state.taskReducer.loadingGroups,
@@ -44,30 +32,34 @@ const ProjectViewTaskList = () => {
     search: state.taskReducer.search,
   }));
 
-  const {
-    statusCategories,
-    loading: loadingStatusCategories,
-  } = useAppSelector(state => ({
+  const statusState = useAppSelector(state => ({
     statusCategories: state.taskStatusReducer.statusCategories,
     loading: state.taskStatusReducer.loading,
   }));
 
-  const { loadingPhases } = useAppSelector(state => ({
+  const phaseState = useAppSelector(state => ({
     loadingPhases: state.phaseReducer.loadingPhases,
   }));
 
-  // Single source of truth for loading state - EXCLUDE labels loading from skeleton
-  // Labels loading should not block the main task list display
+  // Destructure after memoization
+  const { projectId, taskGroups, loadingGroups, groupBy, archived, fields, search } = taskState;
+  const { loading: loadingStatusCategories } = statusState;
+  const { loadingPhases } = phaseState;
+
+  // Memoize loading state calculation
   const isLoading = useMemo(() => 
     loadingGroups || loadingPhases || loadingStatusCategories || !initialLoadComplete,
     [loadingGroups, loadingPhases, loadingStatusCategories, initialLoadComplete]
   );
 
-  // Memoize the empty state check
+  // Memoize empty state check
   const isEmptyState = useMemo(() => 
     taskGroups && taskGroups.length === 0 && !isLoading,
     [taskGroups, isLoading]
   );
+
+  // Memoize task groups to prevent unnecessary re-renders
+  const memoizedTaskGroups = useMemo(() => taskGroups || [], [taskGroups]);
 
   // Handle view type changes
   useEffect(() => {
@@ -81,121 +73,49 @@ const ProjectViewTaskList = () => {
 
   // Batch initial data fetching - core data only
   useEffect(() => {
-    logger.debug('🎯 Initial data fetch useEffect triggered:', {
-      projectId,
-      groupBy,
-      initialLoadComplete,
-      timestamp: new Date().toISOString()
-    });
-
     const fetchInitialData = async () => {
-      if (!projectId || !groupBy || initialLoadComplete) {
-        logger.debug('❌ Initial data fetch early return');
-        return;
-      }
-
-      logger.debug('🚀 Starting initial data fetch...');
+      if (!projectId || !groupBy || initialLoadComplete) return;
 
       try {
-        // Batch only essential API calls for initial load
-        // Filter data (labels, assignees, etc.) will load separately and not block the UI
-        logger.debug('📡 Dispatching initial API calls...');
         await Promise.allSettled([
           dispatch(fetchTaskListColumns(projectId)),
           dispatch(fetchPhasesByProjectId(projectId)),
           dispatch(fetchStatusesCategories()),
         ]);
-        logger.debug('✅ Initial API calls completed');
-        logger.debug('🏁 Setting initialLoadComplete to true');
         setInitialLoadComplete(true);
       } catch (error) {
-        logger.error('❌ Error fetching initial data:', error);
-        setInitialLoadComplete(true); // Still mark as complete to prevent infinite loading
+        logger.error('Error fetching initial data', error);
+        setInitialLoadComplete(true);
       }
     };
 
     fetchInitialData();
   }, [projectId, groupBy, dispatch, initialLoadComplete]);
 
-  // Track fields changes for debugging
-  useEffect(() => {
-    logger.debug('🔧 Fields state changed:', {
-      fieldsLength: fields?.length,
-      fields: fields,
-      timestamp: new Date().toISOString()
-    });
-  }, [fields]);
+  // Memoize the fetch function to prevent unnecessary re-renders
+  const fetchTasks = useCallback(async () => {
+    if (!projectId || !groupBy || projectView !== 'list' || !initialLoadComplete) return;
 
-  // Track search changes for debugging
-  useEffect(() => {
-    logger.debug('🔍 Search state changed:', {
-      search,
-      timestamp: new Date().toISOString()
-    });
-  }, [search]);
+    const currentParams = `${projectId}-${groupBy}-${JSON.stringify(fields)}-${search}-${archived}`;
+    
+    if (lastFetchParamsRef.current === currentParams) {
+      logger.debug('Skipping duplicate fetch - same parameters');
+      return;
+    }
+    
+    lastFetchParamsRef.current = currentParams;
 
-  // Track archived changes for debugging
-  useEffect(() => {
-    logger.debug('📦 Archived state changed:', {
-      archived,
-      timestamp: new Date().toISOString()
-    });
-  }, [archived]);
-
-  // Fetch task groups - single source of truth for task fetching
-  useEffect(() => {
-    logger.debug('🔄 fetchTasks useEffect triggered with dependencies:', {
-      projectId,
-      groupBy,
-      projectView,
-      fieldsLength: fields?.length,
-      search,
-      archived,
-      initialLoadComplete,
-      timestamp: new Date().toISOString()
-    });
-
-    const fetchTasks = async () => {
-      logger.debug('📝 fetchTasks function called - checking conditions:', {
-        hasProjectId: !!projectId,
-        hasGroupBy: !!groupBy,
-        isListView: projectView === 'list',
-        isInitialLoadComplete: initialLoadComplete
-      });
-
-      if (!projectId || !groupBy || projectView !== 'list' || !initialLoadComplete) {
-        logger.debug('❌ fetchTasks early return - conditions not met');
-        return;
-      }
-
-      // Create a unique key for current fetch parameters to avoid duplicate calls
-      const currentParams = `${projectId}-${groupBy}-${JSON.stringify(fields)}-${search}-${archived}`;
-      logger.debug('🔑 Current params:', currentParams);
-      logger.debug('🔑 Last params:   ', lastFetchParamsRef.current);
-      
-      // Skip if we already fetched with the same parameters
-      if (lastFetchParamsRef.current === currentParams) {
-        logger.debug('🚫 Skipping duplicate fetch - same parameters');
-        return;
-      }
-      
-      logger.debug('✅ Parameters changed - proceeding with fetch');
-      lastFetchParamsRef.current = currentParams;
-
-      try {
-        logger.debug('🚀 Starting fetchTaskGroups dispatch...');
-        await dispatch(fetchTaskGroups(projectId));
-        logger.debug('✅ fetchTaskGroups completed successfully');
-      } catch (error) {
-        logger.error('❌ Error fetching task groups:', error);
-      }
-    };
-
-    fetchTasks();
+    try {
+      await dispatch(fetchTaskGroups(projectId));
+    } catch (error) {
+      logger.error('Error fetching task groups', error);
+    }
   }, [projectId, groupBy, projectView, dispatch, fields, search, archived, initialLoadComplete]);
 
-  // Memoize the task groups to prevent unnecessary re-renders
-  const memoizedTaskGroups = useMemo(() => taskGroups || [], [taskGroups]);
+  // Single effect for task fetching
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
