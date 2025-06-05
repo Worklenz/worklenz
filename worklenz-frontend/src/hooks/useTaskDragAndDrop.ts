@@ -19,10 +19,10 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
 export const useTaskDragAndDrop = () => {
   const dispatch = useAppDispatch();
-  const { taskGroups, groupBy } = useAppSelector(state => ({
-    taskGroups: state.taskReducer.taskGroups,
-    groupBy: state.taskReducer.groupBy,
-  }));
+  
+  // Memoize the selector to prevent unnecessary rerenders
+  const taskGroups = useAppSelector(state => state.taskReducer.taskGroups);
+  const groupBy = useAppSelector(state => state.taskReducer.groupBy);
 
   // Memoize sensors configuration for better performance
   const sensors = useSensors(
