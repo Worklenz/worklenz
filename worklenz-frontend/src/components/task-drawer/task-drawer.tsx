@@ -214,7 +214,9 @@ const TaskDrawer = () => {
     title: <TaskDrawerHeader inputRef={taskNameInputRef} t={t} />,
     footer: renderFooter(),
     bodyStyle: getBodyStyle(),
-    footerStyle: getFooterStyle(),
+    styles: {
+      footer: getFooterStyle(),
+    },
   };
 
   return (

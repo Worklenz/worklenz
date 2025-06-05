@@ -15,53 +15,61 @@ interface PhaseDropdownProps {
 }
 
 // Memoized option component
-const PhaseOption = React.memo(({ phase }: { phase: any }) => (
-  <Flex gap={4} align="center">
-    <Badge color={phase.color_code} />
-    <Tooltip title={phase.name}>
-      <Typography.Text ellipsis style={{ maxWidth: 100 }}>
-        {phase.name}
-      </Typography.Text>
-    </Tooltip>
-  </Flex>
-));
-
-// Memoized label component
-const PhaseLabel = React.memo(({ phase }: { phase: any }) => (
-  <div
-    style={{
-      width: '100%',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap',
-    }}
-  >
-    <Flex
-      gap={6}
-      align="center"
-      style={{
-        width: 'fit-content',
-        borderRadius: 24,
-        paddingInline: 8,
-        height: 22,
-        fontSize: 13,
-        color: colors.darkGray,
-      }}
-    >
-      <Tooltip title={phase.name}>
-        <Typography.Text
-          ellipsis
-          style={{
-            fontSize: 13,
-            maxWidth: 90,
-          }}
-        >
-          {phase.name}
+const PhaseOption = React.memo(({ phase }: { phase: any }) => {
+  if (!phase) return null;
+  
+  return (
+    <Flex gap={4} align="center">
+      <Badge color={phase.color_code} />
+      <Tooltip title={phase.name || ''}>
+        <Typography.Text ellipsis style={{ maxWidth: 100 }}>
+          {phase.name || ''}
         </Typography.Text>
       </Tooltip>
     </Flex>
-  </div>
-));
+  );
+});
+
+// Memoized label component
+const PhaseLabel = React.memo(({ phase }: { phase: any }) => {
+  if (!phase) return null;
+  
+  return (
+    <div
+      style={{
+        width: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <Flex
+        gap={6}
+        align="center"
+        style={{
+          width: 'fit-content',
+          borderRadius: 24,
+          paddingInline: 8,
+          height: 22,
+          fontSize: 13,
+          color: colors.darkGray,
+        }}
+      >
+        <Tooltip title={phase.name || ''}>
+          <Typography.Text
+            ellipsis
+            style={{
+              fontSize: 13,
+              maxWidth: 90,
+            }}
+          >
+            {phase.name || ''}
+          </Typography.Text>
+        </Tooltip>
+      </Flex>
+    </div>
+  );
+});
 
 const PhaseDropdownOptimized = React.memo<PhaseDropdownProps>(({ task }) => {
   const { t } = useTranslation('task-list-table');
@@ -71,11 +79,15 @@ const PhaseDropdownOptimized = React.memo<PhaseDropdownProps>(({ task }) => {
 
   // Memoize phase options
   const phaseOptions = useMemo(() => {
-    return phaseList?.map(phase => ({
-      value: phase.id,
-      label: phase.name,
-      phase: phase // Store the phase data for rendering
-    })) || [];
+    if (!phaseList || !Array.isArray(phaseList)) return [];
+    
+    return phaseList
+      .filter(phase => phase && phase.id && phase.name) // Filter out invalid phases
+      .map(phase => ({
+        value: phase.id,
+        label: phase.name,
+        phase: phase // Store the phase data for rendering
+      }));
   }, [phaseList]);
 
   // Memoize handlers
@@ -143,14 +155,16 @@ const PhaseDropdownOptimized = React.memo<PhaseDropdownProps>(({ task }) => {
   const dropdownStyle = useMemo(() => ({ minWidth: 150 }), []);
 
   // Memoize option renderer
-  const optionRenderer = useCallback((option: any) => (
-    <PhaseOption phase={option.phase} />
-  ), []);
+  const optionRenderer = useCallback((option: any) => {
+    if (!option || !option.phase) return null;
+    return <PhaseOption phase={option.phase} />;
+  }, []);
 
   // Memoize label renderer  
-  const labelRenderer = useCallback((option: any) => (
-    <PhaseLabel phase={option.phase} />
-  ), []);
+  const labelRenderer = useCallback((option: any) => {
+    if (!option || !option.phase) return null;
+    return <PhaseLabel phase={option.phase} />;
+  }, []);
 
   return (
     <Select
