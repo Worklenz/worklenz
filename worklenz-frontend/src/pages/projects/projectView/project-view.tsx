@@ -250,7 +250,7 @@ const ProjectView = () => {
         onChange={handleTabChange}
         items={tabMenuItems}
         tabBarStyle={{ paddingInline: 0 }}
-        destroyInactiveTabPane={true}
+        destroyOnHidden={true}
       />
 
       {portalElements}

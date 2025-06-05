@@ -6,7 +6,7 @@ import { isProduction } from "../shared/utils";
 const pgSession = require("connect-pg-simple")(session);
 
 export default session({
-  name: process.env.SESSION_NAME,
+  name: process.env.SESSION_NAME || "worklenz.sid",
   secret: process.env.SESSION_SECRET || "development-secret-key",
   proxy: false,
   resave: true,
