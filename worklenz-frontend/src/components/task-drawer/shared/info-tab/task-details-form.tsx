@@ -29,6 +29,8 @@ import TaskDrawerBillable from './details/task-drawer-billable/task-drawer-billa
 import TaskDrawerProgress from './details/task-drawer-progress/task-drawer-progress';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import logger from '@/utils/errorLogger';
+import TaskDrawerRecurringConfig from './details/task-drawer-recurring-config/task-drawer-recurring-config';
+import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 
 interface TaskDetailsFormProps {
   taskFormViewModel?: ITaskFormViewModel | null;
@@ -44,29 +46,32 @@ const ConditionalProgressInput = ({ task, form }: ConditionalProgressInputProps)
   const { project } = useAppSelector(state => state.projectReducer);
   const hasSubTasks = task?.sub_tasks_count > 0;
   const isSubTask = !!task?.parent_task_id;
-  
-  // Add more aggressive logging and checks
-  logger.debug(`Task ${task.id} status: hasSubTasks=${hasSubTasks}, isSubTask=${isSubTask}, modes: time=${project?.use_time_progress}, manual=${project?.use_manual_progress}, weighted=${project?.use_weighted_progress}`);
-  
+
   // STRICT RULE: Never show progress input for parent tasks with subtasks
   // This is the most important check and must be done first
   if (hasSubTasks) {
     logger.debug(`Task ${task.id} has ${task.sub_tasks_count} subtasks. Hiding progress input.`);
     return null;
   }
-  
+
   // Only for tasks without subtasks, determine which input to show based on project mode
   if (project?.use_time_progress) {
     // In time-based mode, show progress input ONLY for tasks without subtasks
-    return <TaskDrawerProgress task={{...task, sub_tasks_count: hasSubTasks ? 1 : 0}} form={form} />;
+    return (
+      <TaskDrawerProgress task={{ ...task, sub_tasks_count: hasSubTasks ? 1 : 0 }} form={form} />
+    );
   } else if (project?.use_manual_progress) {
     // In manual mode, show progress input ONLY for tasks without subtasks
-    return <TaskDrawerProgress task={{...task, sub_tasks_count: hasSubTasks ? 1 : 0}} form={form} />;
+    return (
+      <TaskDrawerProgress task={{ ...task, sub_tasks_count: hasSubTasks ? 1 : 0 }} form={form} />
+    );
   } else if (project?.use_weighted_progress && isSubTask) {
     // In weighted mode, show weight input for subtasks
-    return <TaskDrawerProgress task={{...task, sub_tasks_count: hasSubTasks ? 1 : 0}} form={form} />;
+    return (
+      <TaskDrawerProgress task={{ ...task, sub_tasks_count: hasSubTasks ? 1 : 0 }} form={form} />
+    );
   }
-  
+
   return null;
 };
 
@@ -147,7 +152,13 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
 
         <Form.Item name="assignees" label={t('taskInfoTab.details.assignees')}>
           <Flex gap={4} align="center">
-            <Avatars members={taskFormViewModel?.task?.assignee_names || []} />
+            <Avatars
+              members={
+                taskFormViewModel?.task?.assignee_names ||
+                (taskFormViewModel?.task?.names as unknown as InlineMember[]) ||
+                []
+              }
+            />
             <TaskDrawerAssigneeSelector
               task={(taskFormViewModel?.task as ITaskViewModel) || null}
             />
@@ -159,10 +170,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
         <TaskDrawerEstimation t={t} task={taskFormViewModel?.task as ITaskViewModel} form={form} />
 
         {taskFormViewModel?.task && (
-          <ConditionalProgressInput 
-            task={taskFormViewModel?.task as ITaskViewModel} 
-            form={form} 
-          />
+          <ConditionalProgressInput task={taskFormViewModel?.task as ITaskViewModel} form={form} />
         )}
 
         <Form.Item name="priority" label={t('taskInfoTab.details.priority')}>
@@ -173,6 +181,10 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
 
         <Form.Item name="billable" label={t('taskInfoTab.details.billable')}>
           <TaskDrawerBillable task={taskFormViewModel?.task as ITaskViewModel} />
+        </Form.Item>
+
+        <Form.Item name="recurring" label={t('taskInfoTab.details.recurring')}>
+          <TaskDrawerRecurringConfig task={taskFormViewModel?.task as ITaskViewModel} />
         </Form.Item>
 
         <Form.Item name="notify" label={t('taskInfoTab.details.notify')}>

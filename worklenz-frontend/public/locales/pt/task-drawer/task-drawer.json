@@ -30,7 +30,8 @@
       "taskWeight": "Peso da Tarefa",
       "taskWeightTooltip": "Definir o peso desta subtarefa (porcentagem)",
       "taskWeightRequired": "Por favor, insira um peso para a tarefa",
-      "taskWeightRange": "O peso deve estar entre 0 e 100"
+      "taskWeightRange": "O peso deve estar entre 0 e 100",
+      "recurring": "Recorrente"
     },
     "labels": {
       "labelInputPlaceholder": "Pesquisar ou criar",

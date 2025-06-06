@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
 import {
   fetchLabelsByProject,
   fetchTaskAssignees,
@@ -33,23 +34,49 @@ const TaskListFilters: React.FC<TaskListFiltersProps> = ({ position }) => {
   const { projectView } = useTabSearchParam();
 
   const priorities = useAppSelector(state => state.priorityReducer.priorities);
-
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const archived = useAppSelector(state => state.taskReducer.archived);
 
   const handleShowArchivedChange = () => dispatch(toggleArchived());
 
+  // Load filter data asynchronously and non-blocking
+  // This runs independently of the main task list loading
   useEffect(() => {
-    const fetchInitialData = async () => {
-      if (!priorities.length) await dispatch(fetchPriorities());
-      if (projectId) {
-        await dispatch(fetchLabelsByProject(projectId));
-        await dispatch(fetchTaskAssignees(projectId));
+    const loadFilterData = async () => {
+      try {
+        // Load priorities first (usually cached/fast)
+        if (!priorities.length) {
+          dispatch(fetchPriorities());
+        }
+
+        // Load project-specific filter data in parallel, but don't await
+        // This allows the main task list to load while filters are still loading
+        if (projectId) {
+          // Fire and forget - these will update the UI when ready
+          dispatch(fetchLabelsByProject(projectId));
+          dispatch(fetchTaskAssignees(projectId));
+        }
+
+        // Load team members (usually needed for member filters)
+        dispatch(getTeamMembers({ 
+          index: 0, 
+          size: 100, 
+          field: null, 
+          order: null, 
+          search: null, 
+          all: true 
+        }));
+      } catch (error) {
+        console.error('Error loading filter data:', error);
+        // Don't throw - filter loading errors shouldn't break the main UI
       }
-      dispatch(getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true }));
     };
 
-    fetchInitialData();
+    // Use setTimeout to ensure this runs after the main component render
+    // This prevents filter loading from blocking the initial render
+    const timeoutId = setTimeout(loadFilterData, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, [dispatch, priorities.length, projectId]);
 
   return (
