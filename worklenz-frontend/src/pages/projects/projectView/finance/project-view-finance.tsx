@@ -314,90 +314,99 @@ const ProjectViewFinance = () => {
             }
             style={{ marginBottom: 16 }}
             loading={loading}
+            size="small"
           >
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12} md={8} lg={6}>
+            <Row gutter={[12, 8]}>
+              <Col xs={12} sm={8} md={6} lg={4} xl={3}>
                 <Statistic
                   title="Total Budget"
                   value={budgetStatistics.totalBudget}
                   precision={2}
                   prefix={projectCurrency.toUpperCase()}
-                  valueStyle={{ color: '#1890ff' }}
+                  valueStyle={{ color: '#1890ff', fontSize: '16px' }}
+                  style={{ textAlign: 'center' }}
                 />
               </Col>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={12} sm={8} md={6} lg={4} xl={3}>
                 <Statistic
                   title="Actual Cost"
                   value={budgetStatistics.totalActualCost}
                   precision={2}
                   prefix={projectCurrency.toUpperCase()}
-                  valueStyle={{ color: '#52c41a' }}
+                  valueStyle={{ color: '#52c41a', fontSize: '16px' }}
+                  style={{ textAlign: 'center' }}
                 />
               </Col>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={12} sm={8} md={6} lg={4} xl={3}>
                 <Statistic
                   title="Variance"
-                  value={budgetStatistics.totalVariance}
+                  value={Math.abs(budgetStatistics.totalVariance)}
                   precision={2}
-                  prefix={budgetStatistics.totalVariance >= 0 ? '+' : ''}
-                  suffix={projectCurrency.toUpperCase()}
+                  prefix={projectCurrency.toUpperCase()}
+                  suffix={budgetStatistics.totalVariance < 0 ? ' under' : budgetStatistics.totalVariance > 0 ? ' over' : ''}
                   valueStyle={{ 
-                    color: budgetStatistics.totalVariance > 0 ? '#ff4d4f' : '#52c41a' 
+                    color: budgetStatistics.totalVariance > 0 ? '#ff4d4f' : '#52c41a',
+                    fontSize: '16px'
                   }}
+                  style={{ textAlign: 'center' }}
                 />
               </Col>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={12} sm={8} md={6} lg={4} xl={3}>
                 <Statistic
-                  title="Budget Utilization"
+                  title="Utilization"
                   value={budgetStatistics.budgetUtilization}
                   precision={1}
                   suffix="%"
                   valueStyle={{ 
                     color: budgetStatistics.budgetUtilization > 100 ? '#ff4d4f' : 
-                           budgetStatistics.budgetUtilization > 80 ? '#faad14' : '#52c41a'
+                           budgetStatistics.budgetUtilization > 80 ? '#faad14' : '#52c41a',
+                    fontSize: '16px'
                   }}
+                  style={{ textAlign: 'center' }}
                 />
               </Col>
-            </Row>
-            
-            <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={12} sm={8} md={6} lg={4} xl={3}>
                 <Statistic
-                  title="Estimated Cost"
+                  title="Estimated"
                   value={budgetStatistics.totalEstimatedCost}
                   precision={2}
                   prefix={projectCurrency.toUpperCase()}
-                  valueStyle={{ color: '#722ed1' }}
+                  valueStyle={{ color: '#722ed1', fontSize: '16px' }}
+                  style={{ textAlign: 'center' }}
                 />
               </Col>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={12} sm={8} md={6} lg={4} xl={3}>
                 <Statistic
                   title="Fixed Cost"
                   value={budgetStatistics.totalFixedCost}
                   precision={2}
                   prefix={projectCurrency.toUpperCase()}
-                  valueStyle={{ color: '#fa8c16' }}
+                  valueStyle={{ color: '#fa8c16', fontSize: '16px' }}
+                  style={{ textAlign: 'center' }}
                 />
               </Col>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={12} sm={8} md={6} lg={4} xl={3}>
                 <Statistic
-                  title="Cost from Time Logs"
+                  title="Time Logs"
                   value={budgetStatistics.totalActualCost - budgetStatistics.totalFixedCost}
                   precision={2}
                   prefix={projectCurrency.toUpperCase()}
-                  valueStyle={{ color: '#13c2c2' }}
+                  valueStyle={{ color: '#13c2c2', fontSize: '16px' }}
+                  style={{ textAlign: 'center' }}
                 />
               </Col>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={12} sm={8} md={6} lg={4} xl={3}>
                 <Statistic
-                  title="Budget Status"
+                  title="Remaining"
                   value={budgetStatistics.totalBudget - budgetStatistics.totalActualCost}
                   precision={2}
                   prefix={budgetStatistics.totalBudget - budgetStatistics.totalActualCost >= 0 ? '+' : ''}
-                  suffix={`${projectCurrency.toUpperCase()} remaining`}
+                  suffix={projectCurrency.toUpperCase()}
                   valueStyle={{ 
-                    color: budgetStatistics.totalBudget - budgetStatistics.totalActualCost >= 0 ? '#52c41a' : '#ff4d4f'
+                    color: budgetStatistics.totalBudget - budgetStatistics.totalActualCost >= 0 ? '#52c41a' : '#ff4d4f',
+                    fontSize: '16px'
                   }}
+                  style={{ textAlign: 'center' }}
                 />
               </Col>
             </Row>

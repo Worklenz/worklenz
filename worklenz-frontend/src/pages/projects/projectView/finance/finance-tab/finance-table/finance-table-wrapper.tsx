@@ -9,6 +9,7 @@ import { financeTableColumns, FinanceTableColumnKeys } from '@/lib/project/proje
 import FinanceTable from './finance-table';
 import FinanceDrawer from '@/features/finance/finance-drawer/finance-drawer';
 import { IProjectFinanceGroup } from '@/types/project/project-finance.types';
+import { createPortal } from 'react-dom';
 
 interface FinanceTableWrapperProps {
   activeTablesList: IProjectFinanceGroup[];
@@ -128,7 +129,9 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
               fontSize: 18,
             }}
           >
-            {`${totals.variance?.toFixed(2)}`}
+            {totals.variance < 0 ? `+${Math.abs(totals.variance).toFixed(2)}` : 
+             totals.variance > 0 ? `-${totals.variance.toFixed(2)}` : 
+             `${totals.variance?.toFixed(2)}`}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.TOTAL_TIME_LOGGED:
@@ -243,7 +246,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
         </table>
       </Flex>
 
-      <FinanceDrawer />
+      {createPortal(<FinanceDrawer />, document.body)}
     </>
   );
 };
