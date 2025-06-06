@@ -1,8 +1,8 @@
-// Updated project-list.tsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-
+import { ProjectViewType, ProjectGroupBy } from '@/types/project/project.types';
+import { setViewMode, setGroupBy } from '@features/project/project-view-slice';
 import {
   Button,
   Card,
@@ -10,11 +10,11 @@ import {
   Flex,
   Input,
   Segmented,
+  Select,
   Skeleton,
   Table,
   TablePaginationConfig,
   Tooltip,
-  Select,
 } from 'antd';
 import { PageHeader } from '@ant-design/pro-components';
 import {
@@ -38,7 +38,7 @@ import {
   PROJECT_SORT_FIELD,
   PROJECT_SORT_ORDER,
 } from '@/shared/constants';
-import { IProjectFilter, ProjectGroupBy } from '@/types/project/project.types';
+import { IProjectFilter } from '@/types/project/project.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -64,32 +64,26 @@ import {
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import ProjectGroupList from '@/components/project-list/project-group/project-group-list';
-import { groupProjectsByCategory, groupProjectsByClient } from '@/utils/project-group';
+import { groupProjects } from '@/utils/project-group';
 
 const ProjectList: React.FC = () => {
-  // All hooks must be called at the top level, in the same order every time
+  const [filteredInfo, setFilteredInfo] = useState<Record<string, FilterValue | null>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  
   const { t } = useTranslation('all-project-list');
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  useDocumentTitle('Projects');
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const { trackMixpanelEvent } = useMixpanelTracking();
-  
-  // State hooks
-  const [filteredInfo, setFilteredInfo] = useState<Record<string, FilterValue | null>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'group'>('list');
-  const [groupBy, setGroupBy] = useState<ProjectGroupBy>(ProjectGroupBy.CATEGORY);
-  
-  // Custom hooks
-  useDocumentTitle('Projects');
 
-  // Selector hooks
+  // Get view state from Redux
+  const { mode: viewMode, groupBy } = useAppSelector((state) => state.projectViewReducer);
   const { requestParams } = useAppSelector(state => state.projectsReducer);
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
 
-  // Query hooks
   const {
     data: projectsData,
     isLoading: loadingProjects,
@@ -97,7 +91,6 @@ const ProjectList: React.FC = () => {
     refetch: refetchProjects,
   } = useGetProjectsQuery(requestParams);
 
-  // Callback hooks
   const getFilterIndex = useCallback(() => {
     return +(localStorage.getItem(FILTER_INDEX_KEY) || 0);
   }, []);
@@ -111,10 +104,8 @@ const ProjectList: React.FC = () => {
     localStorage.setItem(PROJECT_SORT_ORDER, order);
   }, []);
 
-  // Memoized values
   const filters = useMemo(() => Object.values(IProjectFilter), []);
 
-  // Create translated segment options for the filters
   const segmentOptions = useMemo(() => {
     return filters.map(filter => ({
       value: filter,
@@ -122,54 +113,47 @@ const ProjectList: React.FC = () => {
     }));
   }, [filters, t]);
 
-  // Toggle options for List/Group view
   const viewToggleOptions = useMemo(
     () => [
       {
-        value: 'list' as const,
+        value: ProjectViewType.LIST,
         label: (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <UnorderedListOutlined />
-            List
-          </div>
+          <Tooltip title={t('listView')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <UnorderedListOutlined />
+              <span>{t('list')}</span>
+            </div>
+          </Tooltip>
         ),
       },
       {
-        value: 'group' as const,
+        value: ProjectViewType.GROUP,
         label: (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <AppstoreOutlined />
-            Group
-          </div>
+          <Tooltip title={t('groupView')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <AppstoreOutlined />
+              <span>{t('group')}</span>
+            </div>
+          </Tooltip>
         ),
       },
     ],
-    []
+    [t]
   );
 
-  // Group by options
   const groupByOptions = useMemo(
     () => [
-      { value: ProjectGroupBy.CATEGORY, label: 'Category' },
-      { value: ProjectGroupBy.CLIENT, label: 'Client' },
+      {
+        value: ProjectGroupBy.CATEGORY,
+        label: t('groupBy.category'),
+      },
+      {
+        value: ProjectGroupBy.CLIENT,
+        label: t('groupBy.client'),
+      },
     ],
-    []
+    [t]
   );
-
-  // Get grouped projects based on current groupBy selection
-  const groupedProjects = useMemo(() => {
-    const projects = projectsData?.body?.data || [];
-    if (viewMode !== 'group') return [];
-    
-    switch (groupBy) {
-      case ProjectGroupBy.CATEGORY:
-        return groupProjectsByCategory(projects);
-      case ProjectGroupBy.CLIENT:
-        return groupProjectsByClient(projects);
-      default:
-        return groupProjectsByCategory(projects);
-    }
-  }, [projectsData?.body?.data, viewMode, groupBy]);
 
   const paginationConfig = useMemo(
     () => ({
@@ -184,28 +168,6 @@ const ProjectList: React.FC = () => {
     [requestParams.index, requestParams.size, projectsData?.body?.total]
   );
 
-  // Effect hooks
-  useEffect(() => {
-    setIsLoading(loadingProjects || isFetchingProjects);
-  }, [loadingProjects, isFetchingProjects]);
-
-  useEffect(() => {
-    const filterIndex = getFilterIndex();
-    dispatch(setRequestParams({ filter: filterIndex }));
-  }, [dispatch, getFilterIndex]);
-
-  useEffect(() => {
-    trackMixpanelEvent(evt_projects_page_visit);
-    refetchProjects();
-  }, [requestParams, refetchProjects, trackMixpanelEvent]);
-
-  useEffect(() => {
-    if (projectStatuses.length === 0) dispatch(fetchProjectStatuses());
-    if (projectCategories.length === 0) dispatch(fetchProjectCategories());
-    if (projectHealths.length === 0) dispatch(fetchProjectHealth());
-  }, [dispatch, projectStatuses.length, projectCategories.length, projectHealths.length]);
-
-  // Event handlers
   const handleTableChange = useCallback(
     (
       newPagination: TablePaginationConfig,
@@ -242,13 +204,13 @@ const ProjectList: React.FC = () => {
       dispatch(setRequestParams(newParams));
       setFilteredInfo(filters);
     },
-    [dispatch, setSortingValues, requestParams]
+    [dispatch, setSortingValues]
   );
 
   const handleRefresh = useCallback(() => {
     trackMixpanelEvent(evt_projects_refresh_click);
     refetchProjects();
-  }, [refetchProjects, trackMixpanelEvent]);
+  }, [trackMixpanelEvent, refetchProjects]);
 
   const handleSegmentChange = useCallback(
     (value: IProjectFilter) => {
@@ -264,15 +226,15 @@ const ProjectList: React.FC = () => {
     trackMixpanelEvent(evt_projects_search);
     const value = e.target.value;
     dispatch(setRequestParams({ search: value }));
-  }, [dispatch, trackMixpanelEvent]);
+  }, [trackMixpanelEvent, dispatch]);
 
-  const handleViewToggle = useCallback((value: 'list' | 'group') => {
-    setViewMode(value);
-  }, []);
+  const handleViewToggle = useCallback((value: ProjectViewType) => {
+    dispatch(setViewMode(value));
+  }, [dispatch]);
 
   const handleGroupByChange = useCallback((value: ProjectGroupBy) => {
-    setGroupBy(value);
-  }, []);
+    dispatch(setGroupBy(value));
+  }, [dispatch]);
 
   const handleDrawerClose = useCallback(() => {
     dispatch(setProject({} as IProjectViewModel));
@@ -286,6 +248,26 @@ const ProjectList: React.FC = () => {
       );
     }
   }, [navigate]);
+
+  useEffect(() => {
+    setIsLoading(loadingProjects || isFetchingProjects);
+  }, [loadingProjects, isFetchingProjects]);
+
+  useEffect(() => {
+    const filterIndex = getFilterIndex();
+    dispatch(setRequestParams({ filter: filterIndex }));
+  }, [dispatch, getFilterIndex]);
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_projects_page_visit);
+    refetchProjects();
+  }, [requestParams, refetchProjects, trackMixpanelEvent]);
+
+  useEffect(() => {
+    if (projectStatuses.length === 0) dispatch(fetchProjectStatuses());
+    if (projectCategories.length === 0) dispatch(fetchProjectCategories());
+    if (projectHealths.length === 0) dispatch(fetchProjectHealth());
+  }, [dispatch, projectStatuses.length, projectCategories.length, projectHealths.length]);
 
   return (
     <div style={{ marginBlock: 65, minHeight: '90vh' }}>
@@ -317,13 +299,12 @@ const ProjectList: React.FC = () => {
                 border: 'none',
               }}
             />
-            {viewMode === 'group' && (
+            {viewMode === ProjectViewType.GROUP && (
               <Select
                 value={groupBy}
                 onChange={handleGroupByChange}
                 options={groupByOptions}
-                style={{ width: 120 }}
-                size="middle"
+                style={{ width: 150 }}
               />
             )}
             <Input
@@ -340,7 +321,7 @@ const ProjectList: React.FC = () => {
       />
       <Card className="project-card">
         <Skeleton active loading={isLoading} className="mt-4 p-4">
-          {viewMode === 'list' ? (
+          {viewMode === ProjectViewType.LIST ? (
             <Table<IProjectViewModel>
               columns={TableColumns({
                 navigate,
@@ -352,14 +333,14 @@ const ProjectList: React.FC = () => {
               size="small"
               onChange={handleTableChange}
               pagination={paginationConfig}
-              locale={{ emptyText: <Empty description={t('noProjects')} /> }}
+              locale={{ emptyText: <Empty description={t('noProjects')} />}}
               onRow={record => ({
                 onClick: () => navigateToProject(record.id, record.team_member_default_view),
               })}
             />
           ) : (
             <ProjectGroupList
-              groups={groupedProjects}
+              groups={groupProjects(projectsData?.body?.data || [], groupBy)}
               navigate={navigate}
               onProjectSelect={id => navigateToProject(id, undefined)}
               onArchive={() => {}}
