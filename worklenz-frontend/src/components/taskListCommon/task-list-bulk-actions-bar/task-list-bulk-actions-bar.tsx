@@ -58,7 +58,7 @@ import alertService from '@/services/alerts/alertService';
 
 interface ITaskAssignee {
   id: string;
-  name?: string;
+  name: string;
   email?: string;
   avatar_url?: string;
   team_member_id: string;
@@ -437,7 +437,7 @@ const TaskListBulkActionsBar = () => {
                 placement="top"
                 arrow
                 trigger={['click']}
-                destroyPopupOnHide
+                destroyOnHidden
                 onOpenChange={value => {
                   if (!value) {
                     setSelectedLabels([]);

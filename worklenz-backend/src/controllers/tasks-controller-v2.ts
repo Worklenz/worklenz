@@ -97,7 +97,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
     try {
       const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [taskId]);
       const [data] = result.rows;
-      console.log("data", data);
       if (data && data.info && data.info.ratio !== undefined) {
         data.info.ratio = +((data.info.ratio || 0).toFixed());
         return data.info;
@@ -833,9 +832,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   public static async refreshProjectTaskProgressValues(projectId: string): Promise<void> {
-    try {
-      console.log(`Refreshing progress values for project ${projectId}`);
-      
+    try {     
       // Run the recalculate_all_task_progress function only for tasks in this project
       const query = `
       DO $$
@@ -893,10 +890,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
       END $$;
       `;
       
-      const result = await db.query(query);
+      await db.query(query);
       console.log(`Finished refreshing progress values for project ${projectId}`);
     } catch (error) {
-      log_error('Error refreshing project task progress values', error);
+      log_error("Error refreshing project task progress values", error);
     }
   }
 
