@@ -141,7 +141,7 @@ services:
           bash -c "while true; do
             sleep 86400;
             PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h worklenz_db -U $$POSTGRES_USER -d $$POSTGRES_DB \
-            > /pg_backups/worklenz_db_\$(date +%Y-%m-%d_%H-%M-%S).sql;
+            > /pg_backups/worklenz_db_$(date +%Y-%m-%d_%H-%M-%S).sql;
             find /pg_backups -type f -name '*.sql' -mtime +30 -delete;
           done"
     restart: unless-stopped
