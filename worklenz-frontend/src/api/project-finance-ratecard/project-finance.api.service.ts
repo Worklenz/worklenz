@@ -5,27 +5,38 @@ import { IProjectFinanceResponse, ITaskBreakdownResponse, IProjectFinanceTask } 
 
 const rootUrl = `${API_BASE_URL}/project-finance`;
 
+type BillableFilterType = 'all' | 'billable' | 'non-billable';
+
 export const projectFinanceApiService = {
     getProjectTasks: async (
         projectId: string,
-        groupBy: 'status' | 'priority' | 'phases' = 'status'
+        groupBy: 'status' | 'priority' | 'phases' = 'status',
+        billableFilter: BillableFilterType = 'billable'
       ): Promise<IServerResponse<IProjectFinanceResponse>> => {
         const response = await apiClient.get<IServerResponse<IProjectFinanceResponse>>(
           `${rootUrl}/project/${projectId}/tasks`,
           {
-            params: { group_by: groupBy }
+            params: { 
+              group_by: groupBy,
+              billable_filter: billableFilter
+            }
           }
         );
-        console.log(response.data);
         return response.data;
       },
 
     getSubTasks: async (
         projectId: string,
-        parentTaskId: string
+        parentTaskId: string,
+        billableFilter: BillableFilterType = 'billable'
       ): Promise<IServerResponse<IProjectFinanceTask[]>> => {
         const response = await apiClient.get<IServerResponse<IProjectFinanceTask[]>>(
-          `${rootUrl}/project/${projectId}/tasks/${parentTaskId}/subtasks`
+          `${rootUrl}/project/${projectId}/tasks/${parentTaskId}/subtasks`,
+          {
+            params: {
+              billable_filter: billableFilter
+            }
+          }
         );
         return response.data;
       },
@@ -63,12 +74,16 @@ export const projectFinanceApiService = {
 
     exportFinanceData: async (
         projectId: string,
-        groupBy: 'status' | 'priority' | 'phases' = 'status'
+        groupBy: 'status' | 'priority' | 'phases' = 'status',
+        billableFilter: BillableFilterType = 'billable'
       ): Promise<Blob> => {
         const response = await apiClient.get(
           `${rootUrl}/project/${projectId}/export`,
           {
-            params: { groupBy },
+            params: { 
+              groupBy,
+              billable_filter: billableFilter
+            },
             responseType: 'blob'
           }
         );

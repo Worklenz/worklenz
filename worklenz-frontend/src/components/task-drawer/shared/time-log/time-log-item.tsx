@@ -13,6 +13,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setTimeLogEditing } from '@/features/task-drawer/task-drawer.slice';
 import TimeLogForm from './time-log-form';
 import { useAuthService } from '@/hooks/useAuth';
+import { setRefreshTimestamp } from '@/features/project/project.slice';
 
 type TimeLogItemProps = {
   log: ITaskLogViewModel;
@@ -41,6 +42,9 @@ const TimeLogItem = ({ log, onDelete }: TimeLogItemProps) => {
     if (!logId || !selectedTaskId) return;
     const res = await taskTimeLogsApiService.delete(logId, selectedTaskId);
     if (res.done) {
+      // Trigger refresh of finance data
+      dispatch(setRefreshTimestamp());
+      
       if (onDelete) onDelete();
     }
   };

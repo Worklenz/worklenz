@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Flex, InputNumber, Tooltip, Typography, Empty } from 'antd';
+import { Flex, Typography, Empty } from 'antd';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
@@ -8,9 +8,7 @@ import { openFinanceDrawer } from '@/features/finance/finance-slice';
 import { financeTableColumns, FinanceTableColumnKeys } from '@/lib/project/project-view-finance-table-columns';
 import FinanceTable from './finance-table';
 import FinanceDrawer from '@/features/finance/finance-drawer/finance-drawer';
-import { convertToHoursMinutes, formatHoursToReadable } from '@/utils/format-hours-to-readable';
 import { IProjectFinanceGroup } from '@/types/project/project-finance.types';
-import { updateTaskFixedCostAsync } from '@/features/projects/finance/project-finance.slice';
 
 interface FinanceTableWrapperProps {
   activeTablesList: IProjectFinanceGroup[];
@@ -35,13 +33,9 @@ const formatSecondsToTimeString = (totalSeconds: number): string => {
 
 const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesList, loading }) => {
   const [isScrolling, setIsScrolling] = useState(false);
-  const [editingFixedCost, setEditingFixedCost] = useState<{ taskId: string; groupId: string } | null>(null);
 
   const { t } = useTranslation('project-view-finance');
   const dispatch = useAppDispatch();
-
-  // Get selected task from Redux store
-  const selectedTask = useAppSelector(state => state.financeReducer.selectedTask);
 
   const onTaskClick = (task: any) => {
     dispatch(openFinanceDrawer(task));
@@ -61,19 +55,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
     };
   }, []);
 
-  // Handle click outside to close editing
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (editingFixedCost && !(event.target as Element)?.closest('.fixed-cost-input')) {
-        setEditingFixedCost(null);
-      }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [editingFixedCost]);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const currency = useAppSelector(state => state.projectFinances.project?.currency || "").toUpperCase();
@@ -97,7 +79,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
       ) => {
         table.tasks.forEach((task) => {
           acc.hours += (task.estimated_seconds) || 0;
-          acc.cost += task.estimated_cost || 0;
+          acc.cost += ((task.total_actual || 0) - (task.fixed_cost || 0));
           acc.fixedCost += task.fixed_cost || 0;
           acc.totalBudget += task.total_budget || 0;
           acc.totalActual += task.total_actual || 0;
@@ -120,10 +102,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
     );
   }, [taskGroups]);
 
-  const handleFixedCostChange = (value: number | null, taskId: string, groupId: string) => {
-    dispatch(updateTaskFixedCostAsync({ taskId, groupId, fixedCost: value || 0 }));
-    setEditingFixedCost(null);
-  };
+
 
   const renderFinancialTableHeaderContent = (columnKey: FinanceTableColumnKeys) => {
     switch (columnKey) {
@@ -242,7 +221,6 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
                 <FinanceTable
                   key={table.group_id}
                   table={table}
-                  isScrolling={isScrolling}
                   onTaskClick={onTaskClick}
                   loading={loading}
                 />

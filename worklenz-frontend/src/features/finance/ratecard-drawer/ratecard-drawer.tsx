@@ -7,8 +7,11 @@ import { deleteRateCard, fetchRateCardById, fetchRateCards, toggleRatecardDrawer
 import { RatecardType, IJobType } from '@/types/project/ratecard.types';
 import { IJobTitlesViewModel } from '@/types/job.types';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
-import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled, PlusOutlined } from '@ant-design/icons';
 import { colors } from '@/styles/colors';
+import CreateJobTitlesDrawer from '@/features/settings/job/CreateJobTitlesDrawer';
+import { toggleCreateJobTitleDrawer } from '@/features/settings/job/jobSlice';
+import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from '@/shared/constants/currencies';
 
 interface PaginationType {
   current: number;
@@ -33,7 +36,7 @@ const RatecardDrawer = ({
   const [roles, setRoles] = useState<IJobType[]>([]);
   const [initialRoles, setInitialRoles] = useState<IJobType[]>([]);
   const [initialName, setInitialName] = useState<string>('Untitled Rate Card');
-  const [initialCurrency, setInitialCurrency] = useState<string>('USD');
+  const [initialCurrency, setInitialCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [addingRowIndex, setAddingRowIndex] = useState<number | null>(null);
   const { t } = useTranslation('settings/ratecard-settings');
   const drawerLoading = useAppSelector(state => state.financeReducer.isFinanceDrawerloading);
@@ -46,7 +49,7 @@ const RatecardDrawer = ({
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [selectedJobTitleId, setSelectedJobTitleId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [name, setName] = useState<string>('Untitled Rate Card');
   const [jobTitles, setJobTitles] = useState<IJobTitlesViewModel>({});
   const [pagination, setPagination] = useState<PaginationType>({
@@ -61,6 +64,8 @@ const RatecardDrawer = ({
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const [showUnsavedAlert, setShowUnsavedAlert] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const [isCreatingJobTitle, setIsCreatingJobTitle] = useState(false);
+  const [newJobTitleName, setNewJobTitleName] = useState('');
   // Detect changes
   const hasChanges = useMemo(() => {
     const rolesChanged = JSON.stringify(roles) !== JSON.stringify(initialRoles);
@@ -105,8 +110,8 @@ const RatecardDrawer = ({
       setInitialRoles(drawerRatecard.jobRolesList || []);
       setName(drawerRatecard.name || '');
       setInitialName(drawerRatecard.name || '');
-      setCurrency(drawerRatecard.currency || 'USD');
-      setInitialCurrency(drawerRatecard.currency || 'USD');
+      setCurrency(drawerRatecard.currency || DEFAULT_CURRENCY);
+      setInitialCurrency(drawerRatecard.currency || DEFAULT_CURRENCY);
     }
   }, [drawerRatecard, type]);
 
@@ -129,13 +134,65 @@ const RatecardDrawer = ({
   };
 
   const handleAddRole = () => {
-    const existingIds = new Set(roles.map(r => r.job_title_id));
-    const availableJobTitles = jobTitles.data?.filter(jt => !existingIds.has(jt.id!));
-    if (availableJobTitles && availableJobTitles.length > 0) {
-      setRoles([...roles, { job_title_id: '', rate: 0 }]);
+    if (Object.keys(jobTitles).length === 0) {
+      // Allow inline job title creation
+      setIsCreatingJobTitle(true);
+    } else {
+      // Add a new empty role to the table
+      const newRole = {
+        jobtitle: '',
+        rate_card_id: ratecardId,
+        job_title_id: '',
+        rate: 0,
+      };
+      setRoles([...roles, newRole]);
       setAddingRowIndex(roles.length);
       setIsAddingRole(true);
     }
+  };
+
+  const handleCreateJobTitle = async () => {
+    if (!newJobTitleName.trim()) {
+      messageApi.warning(t('jobTitleNameRequired') || 'Job title name is required');
+      return;
+    }
+
+    try {
+      // Create the job title using the API
+      const response = await jobTitlesApiService.createJobTitle({
+        name: newJobTitleName.trim()
+      });
+
+      if (response.done) {
+        // Refresh job titles
+        await getJobTitles();
+        
+        // Create a new role with the newly created job title
+        const newRole = {
+          jobtitle: newJobTitleName.trim(),
+          rate_card_id: ratecardId,
+          job_title_id: response.body.id,
+          rate: 0,
+        };
+        setRoles([...roles, newRole]);
+        
+        // Reset creation state
+        setIsCreatingJobTitle(false);
+        setNewJobTitleName('');
+        
+        messageApi.success(t('jobTitleCreatedSuccess') || 'Job title created successfully');
+      } else {
+        messageApi.error(t('jobTitleCreateError') || 'Failed to create job title');
+      }
+    } catch (error) {
+      console.error('Failed to create job title:', error);
+      messageApi.error(t('jobTitleCreateError') || 'Failed to create job title');
+    }
+  };
+
+  const handleCancelJobTitleCreation = () => {
+    setIsCreatingJobTitle(false);
+    setNewJobTitleName('');
   };
 
   const handleDeleteRole = (index: number) => {
@@ -195,10 +252,10 @@ const RatecardDrawer = ({
       } finally {
         setRoles([]);
         setName('Untitled Rate Card');
-        setCurrency('USD');
+        setCurrency(DEFAULT_CURRENCY);
         setInitialRoles([]);
         setInitialName('Untitled Rate Card');
-        setInitialCurrency('USD');
+        setInitialCurrency(DEFAULT_CURRENCY);
       }
     }
   };
@@ -335,10 +392,10 @@ const RatecardDrawer = ({
     dispatch(toggleRatecardDrawer());
     setRoles([]);
     setName('Untitled Rate Card');
-    setCurrency('USD');
+    setCurrency(DEFAULT_CURRENCY);
     setInitialRoles([]);
     setInitialName('Untitled Rate Card');
-    setInitialCurrency('USD');
+    setInitialCurrency(DEFAULT_CURRENCY);
     setShowUnsavedAlert(false);
   };
 
@@ -353,7 +410,7 @@ const RatecardDrawer = ({
             <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
               <Input
                 value={name}
-                placeholder="Enter rate card name"
+                placeholder={t('ratecardNamePlaceholder')}
                 style={{
                   fontWeight: 500,
                   fontSize: 16,
@@ -371,15 +428,11 @@ const RatecardDrawer = ({
               <Typography.Text>{t('currency')}</Typography.Text>
               <Select
                 value={currency}
-                options={[
-                  { value: 'USD', label: 'USD' },
-                  { value: 'LKR', label: 'LKR' },
-                  { value: 'INR', label: 'INR' },
-                ]}
+                options={CURRENCY_OPTIONS}
                 onChange={(value) => setCurrency(value)}
               />
               <Button onClick={handleAddAllRoles} type="default">
-                {t('addAllButton') || 'Add All'}
+                {t('addAllButton')}
               </Button>
             </Flex>
           </Flex>
@@ -414,25 +467,63 @@ const RatecardDrawer = ({
             style={{ marginBottom: 16 }}
           />
         )}
-        <Table
-          dataSource={roles}
-          columns={columns}
-          rowKey={(record) => record.job_title_id}
-          pagination={false}
-          footer={() => (
-            <Button
-              type="dashed"
+        <Flex vertical gap={16}>
+          <Flex justify="space-between" align="center">
+            <Typography.Title level={5} style={{ margin: 0 }}>
+              {t('jobRolesTitle') || 'Job Roles'}
+            </Typography.Title>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
               onClick={handleAddRole}
-              block
-              style={{ margin: 0, padding: 0 }}
             >
               {t('addRoleButton')}
             </Button>
-          )}
-        />
+          </Flex>
+          
+          <Table
+            dataSource={roles}
+            columns={columns}
+            rowKey="job_title_id"
+            pagination={false}
+            locale={{
+              emptyText: isCreatingJobTitle ? (
+                <Flex vertical align="center" gap={16} style={{ padding: '24px 0' }}>
+                  <Typography.Text strong>
+                    {t('createNewJobTitle') || 'Create New Job Title'}
+                  </Typography.Text>
+                  <Flex gap={8} align="center">
+                    <Input
+                      placeholder={t('jobTitleNamePlaceholder') || 'Enter job title name'}
+                      value={newJobTitleName}
+                      onChange={(e) => setNewJobTitleName(e.target.value)}
+                      onPressEnter={handleCreateJobTitle}
+                      autoFocus
+                      style={{ width: 200 }}
+                    />
+                    <Button type="primary" onClick={handleCreateJobTitle}>
+                      {t('createButton') || 'Create'}
+                    </Button>
+                    <Button onClick={handleCancelJobTitleCreation}>
+                      {t('cancelButton') || 'Cancel'}
+                    </Button>
+                  </Flex>
+                </Flex>
+              ) : (
+                <Flex vertical align="center" gap={16} style={{ padding: '24px 0' }}>
+                  <Typography.Text type="secondary">
+                    {Object.keys(jobTitles).length === 0 
+                      ? t('noJobTitlesAvailable') 
+                      : t('noRolesAdded')}
+                  </Typography.Text>
+                </Flex>
+              ),
+            }}
+          />
+        </Flex>
       </Drawer>
+      <CreateJobTitlesDrawer />
     </>
-
   );
 };
 

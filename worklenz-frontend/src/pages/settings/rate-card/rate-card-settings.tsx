@@ -7,6 +7,7 @@ import {
 import {
   Button,
   Card,
+  Empty,
   Flex,
   Input,
   Popconfirm,
@@ -14,7 +15,10 @@ import {
   TableProps,
   Tooltip,
   Typography,
+  message,
 } from 'antd';
+import type { TablePaginationConfig } from 'antd/es/table';
+import type { FilterValue, SorterResult } from 'antd/es/table/interface';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { colors } from '../../../styles/colors';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
@@ -41,8 +45,13 @@ interface PaginationType {
 const RatecardSettings: React.FC = () => {
   const { t } = useTranslation('/settings/ratecard-settings');
   const dispatch = useAppDispatch();
+  const [messageApi, contextHolder] = message.useMessage();
   useDocumentTitle('Manage Rate Cards');
+  
+  // Redux state
   const isDrawerOpen = useAppSelector(state => state.financeReducer.isRatecardDrawerOpen);
+  
+  // Local state
   const [loading, setLoading] = useState(false);
   const [ratecardsList, setRatecardsList] = useState<RatecardType[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,12 +67,14 @@ const RatecardSettings: React.FC = () => {
     size: 'small',
   });
 
+  // Memoized filtered data
   const filteredRatecardsData = useMemo(() => {
     return ratecardsList.filter((item) =>
       item.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [ratecardsList, searchQuery]);
 
+  // Fetch rate cards with error handling
   const fetchRateCards = useCallback(async () => {
     setLoading(true);
     try {
@@ -77,36 +88,46 @@ const RatecardSettings: React.FC = () => {
       if (response.done) {
         setRatecardsList(response.body.data || []);
         setPagination(prev => ({ ...prev, total: response.body.total || 0 }));
+      } else {
+        messageApi.error(t('fetchError') || 'Failed to fetch rate cards');
       }
     } catch (error) {
       console.error('Failed to fetch rate cards:', error);
+      messageApi.error(t('fetchError') || 'Failed to fetch rate cards');
     } finally {
       setLoading(false);
     }
-  }, [pagination.current, pagination.pageSize, pagination.field, pagination.order, searchQuery]);
+  }, [pagination.current, pagination.pageSize, pagination.field, pagination.order, searchQuery, t, messageApi]);
 
+  // Fetch rate cards when drawer state changes
   useEffect(() => {
     fetchRateCards();
-  }, [toggleRatecardDrawer, isDrawerOpen]);
+  }, [fetchRateCards, isDrawerOpen]);
 
-
-
+  // Handle rate card creation
   const handleRatecardCreate = useCallback(async () => {
+    try {
+      const resultAction = await dispatch(createRateCard({
+        name: 'Untitled Rate Card',
+        jobRolesList: [],
+        currency: 'LKR',
+      }) as any);
 
-    const resultAction = await dispatch(createRateCard({
-      name: 'Untitled Rate Card',
-      jobRolesList: [],
-      currency: 'LKR',
-    }) as any);
-
-    if (createRateCard.fulfilled.match(resultAction)) {
-      const created = resultAction.payload;
-      setRatecardDrawerType('update');
-      setSelectedRatecardId(created.id ?? null);
-      dispatch(toggleRatecardDrawer());
+      if (createRateCard.fulfilled.match(resultAction)) {
+        const created = resultAction.payload;
+        setRatecardDrawerType('update');
+        setSelectedRatecardId(created.id ?? null);
+        dispatch(toggleRatecardDrawer());
+      } else {
+        messageApi.error(t('createError') || 'Failed to create rate card');
+      }
+    } catch (error) {
+      console.error('Failed to create rate card:', error);
+      messageApi.error(t('createError') || 'Failed to create rate card');
     }
-  }, [dispatch]);
+  }, [dispatch, t, messageApi]);
 
+  // Handle rate card update
   const handleRatecardUpdate = useCallback((id: string) => {
     setRatecardDrawerType('update');
     dispatch(fetchRateCardById(id));
@@ -114,26 +135,32 @@ const RatecardSettings: React.FC = () => {
     dispatch(toggleRatecardDrawer());
   }, [dispatch]);
 
-
-
-
-  const handleTableChange = useCallback((newPagination: any, filters: any, sorter: any) => {
+  // Handle table changes
+  const handleTableChange = useCallback((
+    newPagination: TablePaginationConfig,
+    filters: Record<string, FilterValue | null>,
+    sorter: SorterResult<RatecardType> | SorterResult<RatecardType>[]
+  ) => {
+    const sorterResult = Array.isArray(sorter) ? sorter[0] : sorter;
     setPagination(prev => ({
       ...prev,
-      current: newPagination.current,
-      pageSize: newPagination.pageSize,
-      field: sorter.field || 'name',
-      order: sorter.order === 'ascend' ? 'asc' : 'desc',
+      current: newPagination.current || 1,
+      pageSize: newPagination.pageSize || DEFAULT_PAGE_SIZE,
+      field: (sorterResult?.field as string) || 'name',
+      order: sorterResult?.order === 'ascend' ? 'asc' : 'desc',
     }));
   }, []);
 
+  // Table columns configuration
   const columns: TableProps['columns'] = useMemo(() => [
     {
       key: 'rateName',
       title: t('nameColumn'),
       render: (record: RatecardType) => (
-        <Typography.Text style={{ color: '#1890ff', cursor: 'pointer' }}
-          onClick={() => setSelectedRatecardId(record.id ?? null)}>
+        <Typography.Text 
+          style={{ color: '#1890ff', cursor: 'pointer' }}
+          onClick={() => record.id && handleRatecardUpdate(record.id)}
+        >
           {record.name}
         </Typography.Text>
       ),
@@ -142,7 +169,7 @@ const RatecardSettings: React.FC = () => {
       key: 'created',
       title: t('createdColumn'),
       render: (record: RatecardType) => (
-        <Typography.Text onClick={() => setSelectedRatecardId(record.id ?? null)}>
+        <Typography.Text onClick={() => record.id && handleRatecardUpdate(record.id)}>
           {durationDateFormat(record.created_at)}
         </Typography.Text>
       ),
@@ -152,7 +179,7 @@ const RatecardSettings: React.FC = () => {
       width: 80,
       render: (record: RatecardType) => (
         <Flex gap={8} className="hidden group-hover:flex">
-          <Tooltip title="Edit">
+          <Tooltip title={t('editTooltip') || 'Edit'}>
             <Button
               size="small"
               icon={<EditOutlined />}
@@ -166,14 +193,19 @@ const RatecardSettings: React.FC = () => {
             cancelText={t('deleteConfirmationCancel')}
             onConfirm={async () => {
               setLoading(true);
-              if (record.id) {
-                await dispatch(deleteRateCard(record.id));
-                await fetchRateCards();
+              try {
+                if (record.id) {
+                  await dispatch(deleteRateCard(record.id));
+                  await fetchRateCards();
+                }
+              } catch (error) {
+                console.error('Failed to delete rate card:', error);
+              } finally {
+                setLoading(false);
               }
-              setLoading(false);
             }}
           >
-            <Tooltip title="Delete">
+            <Tooltip title={t('deleteTooltip') || 'Delete'}>
               <Button
                 shape="default"
                 icon={<DeleteOutlined />}
@@ -184,46 +216,52 @@ const RatecardSettings: React.FC = () => {
         </Flex>
       ),
     },
-  ], [t, handleRatecardUpdate]);
+  ], [t, handleRatecardUpdate, fetchRateCards, dispatch, messageApi]);
 
   return (
-    <Card
-      style={{ width: '100%' }}
-      title={
-        <Flex justify="flex-end" align="center" gap={8}>
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('searchPlaceholder')}
-            style={{ maxWidth: 232 }}
-            suffix={<SearchOutlined />}
-          />
-          <Button type="primary" onClick={handleRatecardCreate}>
-            {t('createRatecard')}
-          </Button>
-        </Flex>
-      }
-    >
-      <Table
-        loading={loading}
-        className="custom-two-colors-row-table"
-        dataSource={filteredRatecardsData}
-        columns={columns}
-        rowKey="id"
-        pagination={{
-          ...pagination,
-          showSizeChanger: true,
-          onChange: (page, pageSize) => setPagination(prev => ({ ...prev, current: page, pageSize })),
-        }}
-        onChange={handleTableChange}
-        rowClassName="group"
-      />
-      <RatecardDrawer
-        type={ratecardDrawerType}
-        ratecardId={selectedRatecardId || ''}
-        onSaved={fetchRateCards} // Pass the fetch function as a prop
-      />
-    </Card>
+    <>
+      {contextHolder}
+      <Card
+        style={{ width: '100%' }}
+        title={
+          <Flex justify="flex-end" align="center" gap={8}>
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('searchPlaceholder')}
+              style={{ maxWidth: 232 }}
+              suffix={<SearchOutlined />}
+            />
+            <Button type="primary" onClick={handleRatecardCreate}>
+              {t('createRatecard')}
+            </Button>
+          </Flex>
+        }
+      >
+        <Table
+          loading={loading}
+          className="custom-two-colors-row-table"
+          dataSource={filteredRatecardsData}
+          columns={columns}
+          rowKey="id"
+          pagination={{
+            ...pagination,
+            showSizeChanger: true,
+            onChange: (page, pageSize) => setPagination(prev => ({ ...prev, current: page, pageSize })),
+          }}
+          onChange={handleTableChange}
+          rowClassName="group"
+          locale={{
+            emptyText: <Empty description={t('noRatecardsFound')} />,
+          }}
+        />
+        <RatecardDrawer
+          type={ratecardDrawerType}
+          ratecardId={selectedRatecardId || ''}
+          onSaved={fetchRateCards}
+        />
+      </Card>
+    </>
   );
 };
 
