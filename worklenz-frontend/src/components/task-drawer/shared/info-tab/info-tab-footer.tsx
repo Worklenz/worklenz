@@ -71,6 +71,8 @@ const InfoTabFooter = () => {
     setIsCommentBoxExpand(false);
     setSelectedFiles([]);
     setAttachmentComment(false);
+    setCommentValue('');
+    setSelectedMembers([]);
   };
 
   // Check if comment is valid (either has text or files)
@@ -97,30 +99,27 @@ const InfoTabFooter = () => {
   // mentions options
   const mentionsOptions =
     members?.map(member => ({
-      value: member.id,
+      value: member.name, // Use name as value so it displays correctly
       label: member.name,
+      key: member.id, // Keep ID as key for identification
     })) ?? [];
 
   const memberSelectHandler = useCallback((member: IMentionMemberSelectOption) => {
-    console.log('member', member);
     if (!member?.value || !member?.label) return;
+    
+    // Find the member ID from the members array using the name
+    const selectedMember = members.find(m => m.name === member.value);
+    if (!selectedMember || !selectedMember.id || !selectedMember.name) return;
+    
+    // Add to selected members if not already present
     setSelectedMembers(prev =>
-      prev.some(mention => mention.team_member_id === member.value)
+      prev.some(mention => mention.team_member_id === selectedMember.id)
         ? prev
-        : [...prev, { team_member_id: member.value, name: member.label }]
+        : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
     );
-
-    setCommentValue(prev => {
-      const parts = prev.split('@');
-      const lastPart = parts[parts.length - 1];
-      const mentionText = member.label;
-      // Keep only the part before the @ and add the new mention
-      return prev.slice(0, prev.length - lastPart.length) + mentionText;
-    });
-  }, []);
+  }, [members]);
 
   const handleCommentChange = useCallback((value: string) => {
-    // Only update the value without trying to replace mentions
     setCommentValue(value);
     setCharacterLength(value.trim().length);
   }, []);
@@ -152,6 +151,7 @@ const InfoTabFooter = () => {
         setAttachmentComment(false);
         setIsCommentBoxExpand(false);
         setCommentValue('');
+        setSelectedMembers([]);
         
         // Dispatch event to notify that a comment was created
         // This will trigger scrolling to the new comment
@@ -275,6 +275,12 @@ const InfoTabFooter = () => {
             maxLength={5000}
             onClick={() => setIsCommentBoxExpand(true)}
             onChange={e => setCharacterLength(e.length)}
+            prefix="@"
+            filterOption={(input, option) => {
+              if (!input) return true;
+              const optionLabel = (option as any)?.label || '';
+              return optionLabel.toLowerCase().includes(input.toLowerCase());
+            }}
             style={{
               minHeight: 60,
               resize: 'none',
@@ -371,7 +377,11 @@ const InfoTabFooter = () => {
                 onSelect={option => memberSelectHandler(option as IMentionMemberSelectOption)}
                 onChange={handleCommentChange}
                 prefix="@"
-                split=""
+                filterOption={(input, option) => {
+                  if (!input) return true;
+                  const optionLabel = (option as any)?.label || '';
+                  return optionLabel.toLowerCase().includes(input.toLowerCase());
+                }}
                 style={{
                   minHeight: 100,
                   maxHeight: 200,
@@ -437,31 +447,27 @@ const InfoTabFooter = () => {
       <Flex align="center" justify="space-between" style={{ width: '100%', marginTop: 8 }}>
         <Tooltip
           title={
-            taskFormViewModel?.task?.created_at
-              ? formatDateTimeWithLocale(taskFormViewModel.task.created_at)
+            taskFormViewModel?.task?.created_from_now
+              ? `Created ${taskFormViewModel.task.created_from_now}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             Created{' '}
-            {taskFormViewModel?.task?.created_at
-              ? calculateTimeDifference(taskFormViewModel.task.created_at)
-              : 'N/A'}{' '}
+            {taskFormViewModel?.task?.created_from_now || 'N/A'}{' '}
             by {taskFormViewModel?.task?.reporter}
           </Typography.Text>
         </Tooltip>
         <Tooltip
           title={
-            taskFormViewModel?.task?.updated_at
-              ? formatDateTimeWithLocale(taskFormViewModel.task.updated_at)
+            taskFormViewModel?.task?.updated_from_now
+              ? `Updated ${taskFormViewModel.task.updated_from_now}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             Updated{' '}
-            {taskFormViewModel?.task?.updated_at
-              ? calculateTimeDifference(taskFormViewModel.task.updated_at)
-              : 'N/A'}
+            {taskFormViewModel?.task?.updated_from_now || 'N/A'}
           </Typography.Text>
         </Tooltip>
       </Flex>
