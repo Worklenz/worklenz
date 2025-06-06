@@ -19,6 +19,8 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
 export const useTaskDragAndDrop = () => {
   const dispatch = useAppDispatch();
+  
+  // Memoize the selector to prevent unnecessary rerenders
   const taskGroups = useAppSelector(state => state.taskReducer.taskGroups);
   const groupBy = useAppSelector(state => state.taskReducer.groupBy);
 

@@ -19,7 +19,7 @@ const ProjectViewTaskList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Use separate selectors to avoid creating new objects
+  // Split selectors to prevent unnecessary rerenders
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const taskGroups = useAppSelector(state => state.taskReducer.taskGroups);
   const loadingGroups = useAppSelector(state => state.taskReducer.loadingGroups);
