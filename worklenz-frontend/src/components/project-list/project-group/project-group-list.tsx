@@ -33,9 +33,6 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
             )}
             <Title level={4} className="project-group-title">
               {group.groupName} 
-              <Text type="secondary" className="group-stats">
-                ({group.count} projects • {group.averageProgress}% avg • {group.totalTasks} tasks)
-              </Text>
             </Title>
           </div>
           <Row gutter={[16, 16]}>

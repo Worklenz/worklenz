@@ -90,7 +90,6 @@ export interface ProjectListTableProps {
   onArchive: (id: string) => void;
 }
 
-// New types for grouping functionality
 export enum ProjectViewType {
   LIST = 'list',
   GROUP = 'group'
@@ -108,18 +107,10 @@ export interface GroupedProject {
   count: number;
 }
 
-export interface IProjectFilterConfig{
-  current_tab: string | null;
-  projects_group_by: number;
-  current_view: number;
-  is_group_view: boolean;                            
-}
-
 export interface ProjectViewControlsProps {
-  viewType: ProjectViewType;
-  groupBy: ProjectGroupBy;
-  onViewTypeChange: (type: ProjectViewType) => void;
-  onGroupByChange: (groupBy: ProjectGroupBy) => void;
+  viewState: ProjectViewState;
+  onViewChange: (state: ProjectViewState) => void;
+  availableGroupByOptions?: ProjectGroupBy[];
   t: (key: string) => string;
 }
 
@@ -151,4 +142,10 @@ export interface GroupedProject {
   totalProgress: number;
   totalTasks: number;
   averageProgress?: number;
+}
+
+export interface ProjectViewState {
+  mode: ProjectViewType;
+  groupBy: ProjectGroupBy;
+  lastUpdated?: string;
 }
