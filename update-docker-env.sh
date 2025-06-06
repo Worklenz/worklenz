@@ -73,8 +73,8 @@ cat > worklenz-backend/.env << EOL
 NODE_ENV=production
 PORT=3000
 SESSION_NAME=worklenz.sid
-SESSION_SECRET=change_me_in_production
-COOKIE_SECRET=change_me_in_production
+SESSION_SECRET=$(openssl rand -base64 48)
+COOKIE_SECRET=$(openssl rand -base64 48)
 
 # CORS
 SOCKET_IO_CORS=${FRONTEND_URL}
@@ -123,7 +123,7 @@ SLACK_WEBHOOK=
 COMMIT_BUILD_IMMEDIATELY=true
 
 # JWT Secret
-JWT_SECRET=change_me_in_production
+JWT_SECRET=$(openssl rand -base64 48)
 EOL
 
 echo "Environment configuration updated for ${HOSTNAME} with" $([ "$USE_SSL" = "true" ] && echo "HTTPS/WSS" || echo "HTTP/WS")
@@ -138,4 +138,4 @@ echo "Frontend URL: ${FRONTEND_URL}"
 echo "API URL: ${HTTP_PREFIX}${HOSTNAME}:3000"
 echo "Socket URL: ${WS_PREFIX}${HOSTNAME}:3000"
 echo "MinIO Dashboard URL: ${MINIO_DASHBOARD_URL}"
-echo "CORS is configured to allow requests from: ${FRONTEND_URL}" 
+echo "CORS is configured to allow requests from: ${FRONTEND_URL}"
