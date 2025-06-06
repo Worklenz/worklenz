@@ -19,6 +19,8 @@ import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { tabItems } from '@/lib/project/project-view-constants';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasFinanceViewPermission } from '@/utils/finance-permissions';
 
 const DeleteStatusDrawer = React.lazy(() => import('@/components/project-task-filters/delete-status-drawer/delete-status-drawer'));
 const PhaseDrawer = React.lazy(() => import('@features/projects/singleProject/phase/PhaseDrawer'));
@@ -51,7 +53,33 @@ const ProjectView = () => {
 
   const selectedProject = useAppSelector(state => state.projectReducer.project);
   useDocumentTitle(selectedProject?.name || 'Project View');
-  const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || tabItems[0].key);
+
+  // Auth and permissions
+  const auth = useAuthService();
+  const currentSession = auth.getCurrentSession();
+  const hasFinancePermission = hasFinanceViewPermission(currentSession, selectedProject);
+
+  // Filter tab items based on permissions
+  const filteredTabItems = useMemo(() => {
+    return tabItems.filter(item => {
+      // Hide finance tab if user doesn't have permission
+      if (item.key === 'finance' && !hasFinancePermission) {
+        return false;
+      }
+      return true;
+    });
+  }, [hasFinancePermission]);
+
+  // Get the default tab from filtered items
+  const defaultTab = useMemo(() => {
+    const requestedTab = searchParams.get('tab');
+    if (requestedTab && filteredTabItems.some(item => item.key === requestedTab)) {
+      return requestedTab;
+    }
+    return filteredTabItems[0]?.key || 'tasks-list';
+  }, [searchParams, filteredTabItems]);
+
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [pinnedTab, setPinnedTab] = useState<string>(searchParams.get('pinned_tab') || '');
   const [taskid, setTaskId] = useState<string>(searchParams.get('task') || '');
 
@@ -84,6 +112,28 @@ const ProjectView = () => {
       resetProjectData();
     };
   }, [dispatch, navigate, projectId, taskid, resetProjectData]);
+
+  // Redirect if user is on finance tab but doesn't have permission
+  useEffect(() => {
+    if (activeTab === 'finance' && !hasFinancePermission) {
+      const fallbackTab = filteredTabItems[0]?.key || 'tasks-list';
+      setActiveTab(fallbackTab);
+      navigate({
+        pathname: location.pathname,
+        search: new URLSearchParams({
+          tab: fallbackTab,
+          pinned_tab: pinnedTab,
+        }).toString(),
+      }, { replace: true });
+    }
+  }, [activeTab, hasFinancePermission, filteredTabItems, navigate, location.pathname, pinnedTab]);
+
+  // Update active tab if default tab changes due to permission changes
+  useEffect(() => {
+    if (activeTab !== defaultTab && !filteredTabItems.some(item => item.key === activeTab)) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab, activeTab, filteredTabItems]);
 
   const pinToDefaultTab = useCallback(async (itemKey: string) => {
     if (!itemKey || !projectId) return;
@@ -136,7 +186,7 @@ const ProjectView = () => {
     });
   }, [dispatch, location.pathname, navigate, pinnedTab]);
 
-  const tabMenuItems = useMemo(() => tabItems.map(item => ({
+  const tabMenuItems = useMemo(() => filteredTabItems.map(item => ({
     key: item.key,
     label: (
       <Flex align="center" >
@@ -179,7 +229,7 @@ const ProjectView = () => {
         {item.element}
       </Suspense>
     ),
-  })), [pinnedTab, pinToDefaultTab]);
+  })), [pinnedTab, pinToDefaultTab, filteredTabItems]);
 
   const portalElements = useMemo(() => (
     <>
