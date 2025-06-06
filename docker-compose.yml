@@ -138,12 +138,12 @@ services:
       - ./pg_backups:/pg_backups #host dir for backups files
     #setup bassh loop to backup data evey 24h
     command: >
-          bash -c "while true; do
-            sleep 86400;
-            PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h worklenz_db -U $$POSTGRES_USER -d $$POSTGRES_DB \
-            > /pg_backups/worklenz_db_$(date +%Y-%m-%d_%H-%M-%S).sql;
-            find /pg_backups -type f -name '*.sql' -mtime +30 -delete;
-          done"
+           bash -c 'while true; do
+              sleep 86400;
+              PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h worklenz_db -U $$POSTGRES_USER -d $$POSTGRES_DB \
+              > /pg_backups/worklenz_db_$$(date +%Y-%m-%d_%H-%M-%S).sql;
+              find /pg_backups -type f -name "*.sql" -mtime +30 -delete;
+            done'
     restart: unless-stopped
     networks:
       - worklenz
