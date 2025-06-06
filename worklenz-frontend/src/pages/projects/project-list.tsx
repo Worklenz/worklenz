@@ -1,3 +1,4 @@
+// Updated project-list.tsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -13,9 +14,15 @@ import {
   Table,
   TablePaginationConfig,
   Tooltip,
+  Select,
 } from 'antd';
 import { PageHeader } from '@ant-design/pro-components';
-import { SearchOutlined, SyncOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
+import {
+  SearchOutlined,
+  SyncOutlined,
+  UnorderedListOutlined,
+  AppstoreOutlined,
+} from '@ant-design/icons';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
 
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
@@ -31,7 +38,7 @@ import {
   PROJECT_SORT_FIELD,
   PROJECT_SORT_ORDER,
 } from '@/shared/constants';
-import { IProjectFilter } from '@/types/project/project.types';
+import { IProjectFilter, ProjectGroupBy } from '@/types/project/project.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -50,20 +57,47 @@ import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/pr
 import { setProjectId, setStatuses } from '@/features/project/project.slice';
 import { setProject } from '@/features/project/project.slice';
 import { createPortal } from 'react-dom';
-import { evt_projects_page_visit, evt_projects_refresh_click, evt_projects_search } from '@/shared/worklenz-analytics-events';
+import {
+  evt_projects_page_visit,
+  evt_projects_refresh_click,
+  evt_projects_search,
+} from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import ProjectGroupList from '@/components/project-list/project-group/project-group-list';
+import { groupProjectsByCategory, groupProjectsByClient } from '@/utils/project-group';
 
 const ProjectList: React.FC = () => {
-  const [filteredInfo, setFilteredInfo] = useState<Record<string, FilterValue | null>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'group'>('list');
+  // All hooks must be called at the top level, in the same order every time
   const { t } = useTranslation('all-project-list');
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  useDocumentTitle('Projects');
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  
+  // State hooks
+  const [filteredInfo, setFilteredInfo] = useState<Record<string, FilterValue | null>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'group'>('list');
+  const [groupBy, setGroupBy] = useState<ProjectGroupBy>(ProjectGroupBy.CATEGORY);
+  
+  // Custom hooks
+  useDocumentTitle('Projects');
 
+  // Selector hooks
+  const { requestParams } = useAppSelector(state => state.projectsReducer);
+  const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
+  const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
+  const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
+
+  // Query hooks
+  const {
+    data: projectsData,
+    isLoading: loadingProjects,
+    isFetching: isFetchingProjects,
+    refetch: refetchProjects,
+  } = useGetProjectsQuery(requestParams);
+
+  // Callback hooks
   const getFilterIndex = useCallback(() => {
     return +(localStorage.getItem(FILTER_INDEX_KEY) || 0);
   }, []);
@@ -77,51 +111,80 @@ const ProjectList: React.FC = () => {
     localStorage.setItem(PROJECT_SORT_ORDER, order);
   }, []);
 
-  const { requestParams } = useAppSelector(state => state.projectsReducer);
-
-  const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
-  const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
-  const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
-
-  const {
-    data: projectsData,
-    isLoading: loadingProjects,
-    isFetching: isFetchingProjects,
-    refetch: refetchProjects,
-  } = useGetProjectsQuery(requestParams);
-
+  // Memoized values
   const filters = useMemo(() => Object.values(IProjectFilter), []);
-  
+
   // Create translated segment options for the filters
   const segmentOptions = useMemo(() => {
     return filters.map(filter => ({
       value: filter,
-      label: t(filter.toLowerCase())
+      label: t(filter.toLowerCase()),
     }));
   }, [filters, t]);
 
   // Toggle options for List/Group view
-  const viewToggleOptions = useMemo(() => [
-    {
-      value: 'list' as const,
-      label: (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <UnorderedListOutlined />
-          List
-        </div>
-      )
-    },
-    {
-      value: 'group' as const,
-      label: (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <AppstoreOutlined />
-          Group
-        </div>
-      )
-    }
-  ], []);
+  const viewToggleOptions = useMemo(
+    () => [
+      {
+        value: 'list' as const,
+        label: (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <UnorderedListOutlined />
+            List
+          </div>
+        ),
+      },
+      {
+        value: 'group' as const,
+        label: (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <AppstoreOutlined />
+            Group
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
+  // Group by options
+  const groupByOptions = useMemo(
+    () => [
+      { value: ProjectGroupBy.CATEGORY, label: 'Category' },
+      { value: ProjectGroupBy.CLIENT, label: 'Client' },
+    ],
+    []
+  );
+
+  // Get grouped projects based on current groupBy selection
+  const groupedProjects = useMemo(() => {
+    const projects = projectsData?.body?.data || [];
+    if (viewMode !== 'group') return [];
+    
+    switch (groupBy) {
+      case ProjectGroupBy.CATEGORY:
+        return groupProjectsByCategory(projects);
+      case ProjectGroupBy.CLIENT:
+        return groupProjectsByClient(projects);
+      default:
+        return groupProjectsByCategory(projects);
+    }
+  }, [projectsData?.body?.data, viewMode, groupBy]);
+
+  const paginationConfig = useMemo(
+    () => ({
+      current: requestParams.index,
+      pageSize: requestParams.size,
+      showSizeChanger: true,
+      defaultPageSize: DEFAULT_PAGE_SIZE,
+      pageSizeOptions: PAGE_SIZE_OPTIONS,
+      size: 'small' as const,
+      total: projectsData?.body?.total,
+    }),
+    [requestParams.index, requestParams.size, projectsData?.body?.total]
+  );
+
+  // Effect hooks
   useEffect(() => {
     setIsLoading(loadingProjects || isFetchingProjects);
   }, [loadingProjects, isFetchingProjects]);
@@ -134,8 +197,15 @@ const ProjectList: React.FC = () => {
   useEffect(() => {
     trackMixpanelEvent(evt_projects_page_visit);
     refetchProjects();
-  }, [requestParams, refetchProjects]);
+  }, [requestParams, refetchProjects, trackMixpanelEvent]);
 
+  useEffect(() => {
+    if (projectStatuses.length === 0) dispatch(fetchProjectStatuses());
+    if (projectCategories.length === 0) dispatch(fetchProjectCategories());
+    if (projectHealths.length === 0) dispatch(fetchProjectHealth());
+  }, [dispatch, projectStatuses.length, projectCategories.length, projectHealths.length]);
+
+  // Event handlers
   const handleTableChange = useCallback(
     (
       newPagination: TablePaginationConfig,
@@ -147,7 +217,6 @@ const ProjectList: React.FC = () => {
         newParams.statuses = null;
         dispatch(setFilteredStatuses([]));
       } else {
-        // dispatch(setFilteredStatuses(filters.status_id as Array<string>));
         newParams.statuses = filters.status_id.join(' ');
       }
 
@@ -155,7 +224,6 @@ const ProjectList: React.FC = () => {
         newParams.categories = null;
         dispatch(setFilteredCategories([]));
       } else {
-        // dispatch(setFilteredCategories(filters.category_id as Array<string>));
         newParams.categories = filters.category_id.join(' ');
       }
 
@@ -174,13 +242,13 @@ const ProjectList: React.FC = () => {
       dispatch(setRequestParams(newParams));
       setFilteredInfo(filters);
     },
-    [setSortingValues]
+    [dispatch, setSortingValues, requestParams]
   );
 
   const handleRefresh = useCallback(() => {
     trackMixpanelEvent(evt_projects_refresh_click);
     refetchProjects();
-  }, [refetchProjects, requestParams]);
+  }, [refetchProjects, trackMixpanelEvent]);
 
   const handleSegmentChange = useCallback(
     (value: IProjectFilter) => {
@@ -189,48 +257,35 @@ const ProjectList: React.FC = () => {
       dispatch(setRequestParams({ filter: newFilterIndex }));
       refetchProjects();
     },
-    [filters, setFilterIndex, refetchProjects]
+    [filters, setFilterIndex, dispatch, refetchProjects]
   );
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     trackMixpanelEvent(evt_projects_search);
     const value = e.target.value;
     dispatch(setRequestParams({ search: value }));
-  }, []);
+  }, [dispatch, trackMixpanelEvent]);
 
   const handleViewToggle = useCallback((value: 'list' | 'group') => {
     setViewMode(value);
   }, []);
 
-  const paginationConfig = useMemo(
-    () => ({
-      current: requestParams.index,
-      pageSize: requestParams.size,
-      showSizeChanger: true,
-      defaultPageSize: DEFAULT_PAGE_SIZE,
-      pageSizeOptions: PAGE_SIZE_OPTIONS,
-      size: 'small' as const,
-      total: projectsData?.body?.total,
-    }),
-    [requestParams.index, requestParams.size, projectsData?.body?.total]
-  );
+  const handleGroupByChange = useCallback((value: ProjectGroupBy) => {
+    setGroupBy(value);
+  }, []);
 
-  const handleDrawerClose = () => {
+  const handleDrawerClose = useCallback(() => {
     dispatch(setProject({} as IProjectViewModel));
     dispatch(setProjectId(null));
-  };
-  
-  const navigateToProject = (project_id: string | undefined, default_view: string | undefined) => {
-    if (project_id) {
-      navigate(`/worklenz/projects/${project_id}?tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}&pinned_tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}`); // Update the route as per your project structure
-    }
-  };
+  }, [dispatch]);
 
-  useEffect(() => {
-    if (projectStatuses.length === 0) dispatch(fetchProjectStatuses());
-    if (projectCategories.length === 0) dispatch(fetchProjectCategories());
-    if (projectHealths.length === 0) dispatch(fetchProjectHealth());
-  }, [requestParams]);
+  const navigateToProject = useCallback((project_id: string | undefined, default_view: string | undefined) => {
+    if (project_id) {
+      navigate(
+        `/worklenz/projects/${project_id}?tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}&pinned_tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}`
+      );
+    }
+  }, [navigate]);
 
   return (
     <div style={{ marginBlock: 65, minHeight: '90vh' }}>
@@ -262,6 +317,15 @@ const ProjectList: React.FC = () => {
                 border: 'none',
               }}
             />
+            {viewMode === 'group' && (
+              <Select
+                value={groupBy}
+                onChange={handleGroupByChange}
+                options={groupByOptions}
+                style={{ width: 120 }}
+                size="middle"
+              />
+            )}
             <Input
               placeholder={t('placeholder')}
               suffix={<SearchOutlined />}
@@ -275,25 +339,36 @@ const ProjectList: React.FC = () => {
         }
       />
       <Card className="project-card">
-        <Skeleton active loading={isLoading} className='mt-4 p-4'>
-          <Table<IProjectViewModel>
-            columns={TableColumns({
-              navigate,
-              filteredInfo,
-            })}
-            dataSource={projectsData?.body?.data || []}
-            rowKey={record => record.id || ''}
-            loading={loadingProjects}
-            size="small"
-            onChange={handleTableChange}
-            pagination={paginationConfig}
-            locale={{ emptyText: <Empty description={t('noProjects')} /> }}
-            onRow={record => ({
-              onClick: () => navigateToProject(record.id, record.team_member_default_view), // Navigate to project on row click
-            })}
-          />
+        <Skeleton active loading={isLoading} className="mt-4 p-4">
+          {viewMode === 'list' ? (
+            <Table<IProjectViewModel>
+              columns={TableColumns({
+                navigate,
+                filteredInfo,
+              })}
+              dataSource={projectsData?.body?.data || []}
+              rowKey={record => record.id || ''}
+              loading={loadingProjects}
+              size="small"
+              onChange={handleTableChange}
+              pagination={paginationConfig}
+              locale={{ emptyText: <Empty description={t('noProjects')} /> }}
+              onRow={record => ({
+                onClick: () => navigateToProject(record.id, record.team_member_default_view),
+              })}
+            />
+          ) : (
+            <ProjectGroupList
+              groups={groupedProjects}
+              navigate={navigate}
+              onProjectSelect={id => navigateToProject(id, undefined)}
+              onArchive={() => {}}
+              isOwnerOrAdmin={isOwnerOrAdmin}
+              loading={loadingProjects}
+              t={t}
+            />
+          )}
         </Skeleton>
-
       </Card>
 
       {createPortal(<ProjectDrawer onClose={handleDrawerClose} />, document.body, 'project-drawer')}
