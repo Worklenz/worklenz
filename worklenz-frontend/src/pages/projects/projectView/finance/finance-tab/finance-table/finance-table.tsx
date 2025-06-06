@@ -125,7 +125,13 @@ const FinanceTable = ({
       case FinanceTableColumnKeys.TOTAL_ACTUAL:
         return <Typography.Text>{formatNumber(formattedTotals.total_actual)}</Typography.Text>;
       case FinanceTableColumnKeys.VARIANCE:
-        return <Typography.Text style={{ color: formattedTotals.variance > 0 ? '#FF0000' : '#6DC376' }}>{formatNumber(formattedTotals.variance)}</Typography.Text>;
+        return (
+          <Typography.Text style={{ color: formattedTotals.variance > 0 ? '#FF0000' : '#6DC376' }}>
+            {formattedTotals.variance < 0 ? '+' + formatNumber(Math.abs(formattedTotals.variance)) : 
+             formattedTotals.variance > 0 ? '-' + formatNumber(formattedTotals.variance) : 
+             formatNumber(formattedTotals.variance)}
+          </Typography.Text>
+        );
       default:
         return null;
     }
@@ -325,7 +331,9 @@ const FinanceTable = ({
               color: task.variance > 0 ? '#FF0000' : '#6DC376' 
             }}
           >
-            {formatNumber(task.variance)}
+            {task.variance < 0 ? '+' + formatNumber(Math.abs(task.variance)) : 
+             task.variance > 0 ? '-' + formatNumber(task.variance) : 
+             formatNumber(task.variance)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.TOTAL_BUDGET:
