@@ -62,8 +62,8 @@ const FinanceDrawer = () => {
       }
       open={isDrawerOpen}
       onClose={handleClose}
-      destroyOnClose={true}
-      width={480}
+      destroyOnHidden={true}
+      width={640}
     >
       <div>
         {loading ? (
@@ -71,7 +71,71 @@ const FinanceDrawer = () => {
             <Spin size="large" />
           </div>
         ) : (
-          <table
+          <>
+            {/* Task Summary */}
+            {taskBreakdown?.task && (
+              <div style={{ marginBottom: 24, padding: 16, backgroundColor: themeWiseColor('#f9f9f9', '#1a1a1a', themeMode), borderRadius: 8 }}>
+                <Typography.Text strong style={{ fontSize: 16, display: 'block', marginBottom: 12 }}>
+                  Task Overview
+                </Typography.Text>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
+                  <div>
+                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                      Estimated Hours
+                    </Typography.Text>
+                    <Typography.Text strong style={{ fontSize: 16 }}>
+                      {taskBreakdown.task.estimated_hours?.toFixed(2) || '0.00'}
+                    </Typography.Text>
+                  </div>
+                  <div>
+                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                      Total Logged Hours
+                    </Typography.Text>
+                    <Typography.Text strong style={{ fontSize: 16 }}>
+                      {taskBreakdown.task.logged_hours?.toFixed(2) || '0.00'}
+                    </Typography.Text>
+                  </div>
+                  <div>
+                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                      Estimated Labor Cost ({currency})
+                    </Typography.Text>
+                    <Typography.Text strong style={{ fontSize: 16 }}>
+                      {taskBreakdown.task.estimated_labor_cost?.toFixed(2) || '0.00'}
+                    </Typography.Text>
+                  </div>
+                  <div>
+                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                      Actual Labor Cost ({currency})
+                    </Typography.Text>
+                    <Typography.Text strong style={{ fontSize: 16 }}>
+                      {taskBreakdown.task.actual_labor_cost?.toFixed(2) || '0.00'}
+                    </Typography.Text>
+                  </div>
+                  <div>
+                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                      Fixed Cost ({currency})
+                    </Typography.Text>
+                    <Typography.Text strong style={{ fontSize: 16 }}>
+                      {taskBreakdown.task.fixed_cost?.toFixed(2) || '0.00'}
+                    </Typography.Text>
+                  </div>
+                  <div>
+                    <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                      Total Actual Cost ({currency})
+                    </Typography.Text>
+                    <Typography.Text strong style={{ fontSize: 16 }}>
+                      {taskBreakdown.task.total_actual_cost?.toFixed(2) || '0.00'}
+                    </Typography.Text>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Member Breakdown Table */}
+            <Typography.Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
+              Member Time Logs & Costs
+            </Typography.Text>
+            <table
             style={{
               width: '100%',
               borderCollapse: 'collapse',
@@ -94,14 +158,8 @@ const FinanceDrawer = () => {
                     textAlign: 'left',
                     padding: 8,
                   }}
-                ></th>
-                <th
-                  style={{
-                    textAlign: 'right',
-                    padding: 8,
-                  }}
                 >
-                  {t('labourHoursColumn')}
+                  Role / Member
                 </th>
                 <th
                   style={{
@@ -109,7 +167,23 @@ const FinanceDrawer = () => {
                     padding: 8,
                   }}
                 >
-                  {t('costColumn')} ({currency})
+                  Logged Hours
+                </th>
+                <th
+                  style={{
+                    textAlign: 'right',
+                    padding: 8,
+                  }}
+                >
+                  Hourly Rate ({currency})
+                </th>
+                <th
+                  style={{
+                    textAlign: 'right',
+                    padding: 8,
+                  }}
+                >
+                  Actual Cost ({currency})
                 </th>
               </tr>
             </thead>
@@ -129,22 +203,34 @@ const FinanceDrawer = () => {
                     }}
                     className="border-b-[1px] font-semibold"
                   >
-                    <td style={{ padding: 8 }}>{group.jobRole}</td>
+                    <td style={{ padding: 8, fontWeight: 'bold' }}>{group.jobRole}</td>
                     <td
                       style={{
                         textAlign: 'right',
                         padding: 8,
+                        fontWeight: 'bold',
                       }}
                     >
-                      {group.estimated_hours?.toFixed(2) || '0.00'}
+                      {group.logged_hours?.toFixed(2) || '0.00'}
                     </td>
                     <td
                       style={{
                         textAlign: 'right',
                         padding: 8,
+                        fontWeight: 'bold',
+                        color: '#999',
                       }}
                     >
-                      {group.estimated_cost?.toFixed(2) || '0.00'}
+                      -
+                    </td>
+                    <td
+                      style={{
+                        textAlign: 'right',
+                        padding: 8,
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {group.actual_cost?.toFixed(2) || '0.00'}
                     </td>
                   </tr>
                   {/* Member Rows */}
@@ -168,7 +254,7 @@ const FinanceDrawer = () => {
                           padding: 8,
                         }}
                       >
-                        {member.estimated_hours?.toFixed(2) || '0.00'}
+                        {member.logged_hours?.toFixed(2) || '0.00'}
                       </td>
                       <td
                         style={{
@@ -176,7 +262,15 @@ const FinanceDrawer = () => {
                           padding: 8,
                         }}
                       >
-                        {member.estimated_cost?.toFixed(2) || '0.00'}
+                        {member.hourly_rate?.toFixed(2) || '0.00'}
+                      </td>
+                      <td
+                        style={{
+                          textAlign: 'right',
+                          padding: 8,
+                        }}
+                      >
+                        {member.actual_cost?.toFixed(2) || '0.00'}
                       </td>
                     </tr>
                   ))}
@@ -184,6 +278,7 @@ const FinanceDrawer = () => {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </Drawer>
