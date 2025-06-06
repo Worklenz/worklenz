@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
@@ -12,6 +13,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
+import { setRefreshTimestamp } from '@/features/project/project.slice';
 
 interface TimeLogFormProps {
   onCancel: () => void;
@@ -29,6 +31,7 @@ const TimeLogForm = ({
   const { t } = useTranslation('task-drawer/task-drawer');
   const currentSession = useAuthService().getCurrentSession();
   const { socket, connected } = useSocket();
+  const dispatch = useAppDispatch();
   const [form] = Form.useForm();
   const [formValues, setFormValues] = React.useState<{
     date: any;
@@ -169,6 +172,9 @@ const TimeLogForm = ({
         console.log('Creating new time log:', requestBody);
         await taskTimeLogsApiService.create(requestBody);
       }
+      
+      // Trigger refresh of finance data
+      dispatch(setRefreshTimestamp());
       
       // Call onSubmitSuccess if provided, otherwise just cancel
       if (onSubmitSuccess) {

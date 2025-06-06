@@ -38,6 +38,8 @@ const transformTasksToGanttData = (taskGroups: ITaskListGroup[]) => {
         parent: 0,
         progress: Math.round((group.done_progress || 0) * 100) / 100,
         details: `Status: ${group.name}`,
+        $custom_class: 'gantt-group-row',
+        $group_type: group.name.toLowerCase().replace(/\s+/g, '-'),
       });
 
       // Add individual tasks
@@ -141,82 +143,82 @@ const ProjectViewGantt = () => {
       return { tasks: [], links: [] };
     }
     
-    // Test with hardcoded data first to isolate the issue
-    const testData = {
-      tasks: [
-        {
-          id: 1,
-          text: "Test Project",
-          start: new Date(2024, 0, 1),
-          end: new Date(2024, 0, 15),
-          type: "summary",
-          open: true,
-          parent: 0,
-          progress: 0.5,
-        },
-        {
-          id: 2,
-          text: "Test Task 1",
-          start: new Date(2024, 0, 2),
-          end: new Date(2024, 0, 8),
-          type: "task",
-          parent: 1,
-          progress: 0.3,
-        },
-        {
-          id: 3,
-          text: "Test Task 2",
-          start: new Date(2024, 0, 9),
-          end: new Date(2024, 0, 14),
-          type: "task",
-          parent: 1,
-          progress: 0.7,
-        },
-      ],
-      links: [],
-    };
+    // // Test with hardcoded data first to isolate the issue
+    // const testData = {
+    //   tasks: [
+    //     {
+    //       id: 1,
+    //       text: "Test Project",
+    //       start: new Date(2024, 0, 1),
+    //       end: new Date(2024, 0, 15),
+    //       type: "summary",
+    //       open: true,
+    //       parent: 0,
+    //       progress: 0.5,
+    //     },
+    //     {
+    //       id: 2,
+    //       text: "Test Task 1",
+    //       start: new Date(2024, 0, 2),
+    //       end: new Date(2024, 0, 8),
+    //       type: "task",
+    //       parent: 1,
+    //       progress: 0.3,
+    //     },
+    //     {
+    //       id: 3,
+    //       text: "Test Task 2",
+    //       start: new Date(2024, 0, 9),
+    //       end: new Date(2024, 0, 14),
+    //       type: "task",
+    //       parent: 1,
+    //       progress: 0.7,
+    //     },
+    //   ],
+    //   links: [],
+    // };
     
-    console.log('Using test data for debugging:', testData);
-    return testData;
+    // console.log('Using test data for debugging:', testData);
+    // return testData;
     
     // Original transformation (commented out for testing)
-    // const result = transformTasksToGanttData(taskGroups);
-    // console.log('Gantt data - tasks count:', result.tasks.length);
-    // if (result.tasks.length > 0) {
-    //   console.log('First task:', result.tasks[0]);
-    //   console.log('Sample dates:', result.tasks[0]?.start, result.tasks[0]?.end);
-    // }
-    // return result;
+    const result = transformTasksToGanttData(taskGroups);
+    console.log('Gantt data - tasks count:', result.tasks.length);
+    if (result.tasks.length > 0) {
+      console.log('First task:', result.tasks[0]);
+      console.log('Sample dates:', result.tasks[0]?.start, result.tasks[0]?.end);
+    }
+    return result;
   }, [taskGroups]);
 
   // Calculate date range for the Gantt chart
   const dateRange = useMemo(() => {
     // Fixed range for testing
-    return {
-      start: new Date(2023, 11, 1), // December 1, 2023
-      end: new Date(2024, 1, 29),   // February 29, 2024
-    };
+    // return {
+    //   start: new Date(2023, 11, 1), // December 1, 2023
+    //   end: new Date(2024, 1, 29),   // February 29, 2024
+    // };
     
     // Original dynamic calculation (commented out for testing)
-    // if (ganttData.tasks.length === 0) {
-    //   const now = new Date();
-    //   return {
-    //     start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
-    //     end: new Date(now.getFullYear(), now.getMonth() + 2, 0),
-    //   };
-    // }
+    if (ganttData.tasks.length === 0) {
+      const now = new Date();
+      return {
+        start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+        end: new Date(now.getFullYear(), now.getMonth() + 2, 0),
+      };
+    }
 
-    // const dates = ganttData.tasks.map(task => [task.start, task.end]).flat();
-    // const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-    // const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+    const dates = ganttData.tasks.map(task => [task.start, task.end]).flat();
+    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
     
-    // // Add some padding
-    // const startDate = new Date(minDate);
-    // startDate.setDate(startDate.getDate() - 7);
-    // const endDate = new Date(maxDate);
-    // endDate.setDate(endDate.getDate() + 7);
+    // Add some padding
+    const startDate = new Date(minDate);
+    startDate.setDate(startDate.getDate() - 7);
+    const endDate = new Date(maxDate);
+    endDate.setDate(endDate.getDate() + 7);
     
-    // return { start: startDate, end: endDate };
+    return { start: startDate, end: endDate };
   }, [ganttData.tasks]);
 
   // Batch initial data fetching
@@ -313,10 +315,75 @@ const ProjectViewGantt = () => {
           background-color: #00ba94 !important;
           border: 1px solid #099f81 !important;
         }
+        
+        /* Highlight group names (summary tasks) */
+        .wx-gantt-summary {
+          background-color: #722ed1 !important;
+          border: 2px solid #531dab !important;
+          font-weight: 600 !important;
+        }
+        
+        /* Group name text styling */
+        .wx-gantt-row[data-task-type="summary"] .wx-gantt-cell-text {
+          font-weight: 700 !important;
+          font-size: 14px !important;
+          color: #722ed1 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.5px !important;
+        }
+        
+        /* Group row background highlighting */
+        .wx-gantt-row[data-task-type="summary"] {
+          background-color: ${isDarkMode ? 'rgba(114, 46, 209, 0.1)' : 'rgba(114, 46, 209, 0.05)'} !important;
+        }
+        
+        /* Different colors for different group types */
+        .gantt-group-row .wx-gantt-cell-text,
+        .wx-gantt-row[data-task-id*="group-"] .wx-gantt-cell-text {
+          position: relative;
+        }
+        
+        /* Todo/To Do groups - Red */
+        .wx-gantt-row[data-task-id*="group-"]:has(.wx-gantt-cell-text:contains("Todo")) .wx-gantt-cell-text,
+        .wx-gantt-row[data-task-id*="group-"]:has(.wx-gantt-cell-text:contains("TO DO")) .wx-gantt-cell-text,
+        .wx-gantt-row[data-task-id*="group-"]:has(.wx-gantt-cell-text:contains("To Do")) .wx-gantt-cell-text {
+          color: #f5222d !important;
+          background: linear-gradient(90deg, rgba(245, 34, 45, 0.1) 0%, transparent 100%) !important;
+          padding-left: 8px !important;
+          border-left: 4px solid #f5222d !important;
+        }
+        
+        /* Doing/In Progress groups - Orange */
+        .wx-gantt-row[data-task-id*="group-"]:has(.wx-gantt-cell-text:contains("Doing")) .wx-gantt-cell-text,
+        .wx-gantt-row[data-task-id*="group-"]:has(.wx-gantt-cell-text:contains("IN PROGRESS")) .wx-gantt-cell-text,
+        .wx-gantt-row[data-task-id*="group-"]:has(.wx-gantt-cell-text:contains("In Progress")) .wx-gantt-cell-text {
+          color: #fa8c16 !important;
+          background: linear-gradient(90deg, rgba(250, 140, 22, 0.1) 0%, transparent 100%) !important;
+          padding-left: 8px !important;
+          border-left: 4px solid #fa8c16 !important;
+        }
+        
+        /* Done/Completed groups - Green */
+        .wx-gantt-row[data-task-id*="group-"]:has(.wx-gantt-cell-text:contains("Done")) .wx-gantt-cell-text,
+        .wx-gantt-row[data-task-id*="group-"]:has(.wx-gantt-cell-text:contains("COMPLETED")) .wx-gantt-cell-text,
+        .wx-gantt-row[data-task-id*="group-"]:has(.wx-gantt-cell-text:contains("Completed")) .wx-gantt-cell-text {
+          color: #52c41a !important;
+          background: linear-gradient(90deg, rgba(82, 196, 26, 0.1) 0%, transparent 100%) !important;
+          padding-left: 8px !important;
+          border-left: 4px solid #52c41a !important;
+        }
+        
         ${isDarkMode ? `
           .wx-gantt-task {
             background-color: #37a9ef !important;
             border: 1px solid #098cdc !important;
+          }
+          .wx-gantt-summary {
+            background-color: #9254de !important;
+            border: 2px solid #722ed1 !important;
+          }
+          .wx-gantt-row[data-task-type="summary"] .wx-gantt-cell-text {
+            color: #b37feb !important;
           }
         ` : ''}
       `}</style>
@@ -338,13 +405,16 @@ const ProjectViewGantt = () => {
               <Gantt
                 tasks={ganttData.tasks}
                 links={ganttData.links}
-                start={new Date(2024, 0, 1)}
-                end={new Date(2024, 0, 31)}
+                start={dateRange.start}
+                end={dateRange.end}
                 scales={[
+                  { unit: 'month', step: 1, format: 'MMMM yyyy' },
                   { unit: 'day', step: 1, format: 'd' }
                 ]}
                 columns={[
-                  { id: 'text', header: 'Task Name', width: 200 }
+                  { id: 'text', header: 'Task Name', width: 200 },
+                  { id: 'start', header: 'Start Date', width: 100 },
+                  { id: 'end', header: 'End Date', width: 100 }
                 ]}
               />
             </WillowDark>
@@ -353,13 +423,16 @@ const ProjectViewGantt = () => {
               <Gantt
                 tasks={ganttData.tasks}
                 links={ganttData.links}
-                start={new Date(2024, 0, 1)}
-                end={new Date(2024, 0, 31)}
+                start={dateRange.start}
+                end={dateRange.end}
                 scales={[
+                  { unit: 'month', step: 1, format: 'MMMM yyyy' },
                   { unit: 'day', step: 1, format: 'd' }
                 ]}
                 columns={[
-                  { id: 'text', header: 'Task Name', width: 200 }
+                  { id: 'text', header: 'Task Name', width: 200 },
+                  { id: 'start', header: 'Start Date', width: 100 },
+                  { id: 'end', header: 'End Date', width: 100 }
                 ]}
               />
             </Willow>

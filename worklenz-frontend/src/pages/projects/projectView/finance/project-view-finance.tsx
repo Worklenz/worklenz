@@ -1,11 +1,11 @@
-import { Button, ConfigProvider, Flex, Select, Typography, message, Alert } from 'antd';
-import { useEffect, useState } from 'react';
+import { Button, ConfigProvider, Flex, Select, Typography, message, Alert, Card, Row, Col, Statistic } from 'antd';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CaretDownFilled, DownOutlined } from '@ant-design/icons';
+import { CaretDownFilled, DownOutlined, CalculatorOutlined } from '@ant-design/icons';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { fetchProjectFinances, setActiveTab, setActiveGroup, updateProjectFinanceCurrency } from '@/features/projects/finance/project-finance.slice';
+import { fetchProjectFinances, setActiveTab, setActiveGroup, updateProjectFinanceCurrency, fetchProjectFinancesSilent, setBillableFilter } from '@/features/projects/finance/project-finance.slice';
 import { changeCurrency, toggleImportRatecardsDrawer } from '@/features/finance/finance-slice';
 import { updateProjectCurrency } from '@/features/project/project.slice';
 import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
@@ -16,6 +16,8 @@ import ImportRatecardsDrawer from '@/features/finance/ratecard-drawer/import-rat
 import { useAuthService } from '@/hooks/useAuth';
 import { hasFinanceEditPermission } from '@/utils/finance-permissions';
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from '@/shared/constants/currencies';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 const ProjectViewFinance = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -23,8 +25,9 @@ const ProjectViewFinance = () => {
   const { t } = useTranslation('project-view-finance');
   const [exporting, setExporting] = useState(false);
   const [updatingCurrency, setUpdatingCurrency] = useState(false);
+  const { socket } = useSocket();
   
-  const { activeTab, activeGroup, loading, taskGroups, project: financeProject } = useAppSelector((state: RootState) => state.projectFinances);
+  const { activeTab, activeGroup, billableFilter, loading, taskGroups, project: financeProject } = useAppSelector((state: RootState) => state.projectFinances);
   const { refreshTimestamp, project } = useAppSelector((state: RootState) => state.projectReducer);
   const phaseList = useAppSelector((state) => state.phaseReducer.phaseList);
 
@@ -39,11 +42,99 @@ const ProjectViewFinance = () => {
   // Show loading state for currency selector until finance data is loaded
   const currencyLoading = loading || updatingCurrency || !financeProject;
 
+  // Calculate project budget statistics
+  const budgetStatistics = useMemo(() => {
+    if (!taskGroups || taskGroups.length === 0) {
+      return {
+        totalEstimatedCost: 0,
+        totalFixedCost: 0,
+        totalBudget: 0,
+        totalActualCost: 0,
+        totalVariance: 0,
+        budgetUtilization: 0
+      };
+    }
+
+    const totals = taskGroups.reduce((acc, group) => {
+      group.tasks.forEach(task => {
+        acc.totalEstimatedCost += task.estimated_cost || 0;
+        acc.totalFixedCost += task.fixed_cost || 0;
+        acc.totalBudget += task.total_budget || 0;
+        acc.totalActualCost += task.total_actual || 0;
+        acc.totalVariance += task.variance || 0;
+      });
+      return acc;
+    }, {
+      totalEstimatedCost: 0,
+      totalFixedCost: 0,
+      totalBudget: 0,
+      totalActualCost: 0,
+      totalVariance: 0
+    });
+
+    const budgetUtilization = totals.totalBudget > 0 
+      ? (totals.totalActualCost / totals.totalBudget) * 100 
+      : 0;
+
+    return {
+      ...totals,
+      budgetUtilization
+    };
+  }, [taskGroups]);
+
+  // Silent refresh function for socket events
+  const refreshFinanceData = useCallback(() => {
+    if (projectId) {
+      dispatch(fetchProjectFinancesSilent({ projectId, groupBy: activeGroup, billableFilter }));
+    }
+  }, [projectId, activeGroup, billableFilter, dispatch]);
+
+  // Socket event handlers
+  const handleTaskEstimationChange = useCallback(() => {
+    refreshFinanceData();
+  }, [refreshFinanceData]);
+
+  const handleTaskTimerStop = useCallback(() => {
+    refreshFinanceData();
+  }, [refreshFinanceData]);
+
+  const handleTaskProgressUpdate = useCallback(() => {
+    refreshFinanceData();
+  }, [refreshFinanceData]);
+
+  const handleTaskBillableChange = useCallback(() => {
+    refreshFinanceData();
+  }, [refreshFinanceData]);
+
   useEffect(() => {
     if (projectId) {
-      dispatch(fetchProjectFinances({ projectId, groupBy: activeGroup }));
+      dispatch(fetchProjectFinances({ projectId, groupBy: activeGroup, billableFilter }));
     }
-  }, [projectId, activeGroup, dispatch, refreshTimestamp]);
+  }, [projectId, activeGroup, billableFilter, dispatch, refreshTimestamp]);
+
+  // Socket event listeners for finance data refresh
+  useEffect(() => {
+    if (!socket) return;
+
+    const eventHandlers = [
+      { event: SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(), handler: handleTaskEstimationChange },
+      { event: SocketEvents.TASK_TIMER_STOP.toString(), handler: handleTaskTimerStop },
+      { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgressUpdate },
+      { event: SocketEvents.TASK_BILLABLE_CHANGE.toString(), handler: handleTaskBillableChange },
+    ];
+
+    // Register all event listeners
+    eventHandlers.forEach(({ event, handler }) => {
+      socket.on(event, handler);
+    });
+
+    // Cleanup function
+    return () => {
+      eventHandlers.forEach(({ event, handler }) => {
+        socket.off(event, handler);
+      });
+    };
+  }, [socket, handleTaskEstimationChange, handleTaskTimerStop, handleTaskProgressUpdate, handleTaskBillableChange]);
 
   const handleExport = async () => {
     if (!projectId) {
@@ -53,7 +144,7 @@ const ProjectViewFinance = () => {
 
     try {
       setExporting(true);
-      const blob = await projectFinanceApiService.exportFinanceData(projectId, activeGroup);
+      const blob = await projectFinanceApiService.exportFinanceData(projectId, activeGroup, billableFilter);
       
       const projectName = project?.name || 'Unknown_Project';
       const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
@@ -115,6 +206,12 @@ const ProjectViewFinance = () => {
     },
   ];
 
+  const billableFilterOptions = [
+    { key: 'billable', value: 'billable', label: t('billableOnlyText') },
+    { key: 'non-billable', value: 'non-billable', label: t('nonBillableOnlyText') },
+    { key: 'all', value: 'all', label: t('allTasksText') },
+  ];
+
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
       {/* Finance Header */}
@@ -137,14 +234,26 @@ const ProjectViewFinance = () => {
             </Flex>
 
             {activeTab === 'finance' && (
-              <Flex align="center" gap={4} style={{ marginInlineStart: 12 }}>
-                {t('groupByText')}:
-                <Select
-                  value={activeGroup}
-                  options={groupDropdownMenuItems}
-                  onChange={(value) => dispatch(setActiveGroup(value as 'status' | 'priority' | 'phases'))}
-                  suffixIcon={<CaretDownFilled />}
-                />
+              <Flex align="center" gap={16} style={{ marginInlineStart: 12 }}>
+                <Flex align="center" gap={4}>
+                  {t('groupByText')}:
+                  <Select
+                    value={activeGroup}
+                    options={groupDropdownMenuItems}
+                    onChange={(value) => dispatch(setActiveGroup(value as 'status' | 'priority' | 'phases'))}
+                    suffixIcon={<CaretDownFilled />}
+                  />
+                </Flex>
+                <Flex align="center" gap={4}>
+                  {t('filterText')}:
+                  <Select
+                    value={billableFilter}
+                    options={billableFilterOptions}
+                    onChange={(value) => dispatch(setBillableFilter(value as 'all' | 'billable' | 'non-billable'))}
+                    suffixIcon={<CaretDownFilled />}
+                    style={{ minWidth: 140 }}
+                  />
+                </Flex>
               </Flex>
             )}
           </Flex>
@@ -194,6 +303,106 @@ const ProjectViewFinance = () => {
               style={{ marginBottom: 16 }}
             />
           )}
+          
+          {/* Budget Statistics */}
+          <Card 
+            title={
+              <Flex align="center" gap={8}>
+                <CalculatorOutlined />
+                <Typography.Text strong>Project Budget Overview</Typography.Text>
+              </Flex>
+            }
+            style={{ marginBottom: 16 }}
+            loading={loading}
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Statistic
+                  title="Total Budget"
+                  value={budgetStatistics.totalBudget}
+                  precision={2}
+                  prefix={projectCurrency.toUpperCase()}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Statistic
+                  title="Actual Cost"
+                  value={budgetStatistics.totalActualCost}
+                  precision={2}
+                  prefix={projectCurrency.toUpperCase()}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Statistic
+                  title="Variance"
+                  value={budgetStatistics.totalVariance}
+                  precision={2}
+                  prefix={budgetStatistics.totalVariance >= 0 ? '+' : ''}
+                  suffix={projectCurrency.toUpperCase()}
+                  valueStyle={{ 
+                    color: budgetStatistics.totalVariance > 0 ? '#ff4d4f' : '#52c41a' 
+                  }}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Statistic
+                  title="Budget Utilization"
+                  value={budgetStatistics.budgetUtilization}
+                  precision={1}
+                  suffix="%"
+                  valueStyle={{ 
+                    color: budgetStatistics.budgetUtilization > 100 ? '#ff4d4f' : 
+                           budgetStatistics.budgetUtilization > 80 ? '#faad14' : '#52c41a'
+                  }}
+                />
+              </Col>
+            </Row>
+            
+            <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Statistic
+                  title="Estimated Cost"
+                  value={budgetStatistics.totalEstimatedCost}
+                  precision={2}
+                  prefix={projectCurrency.toUpperCase()}
+                  valueStyle={{ color: '#722ed1' }}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Statistic
+                  title="Fixed Cost"
+                  value={budgetStatistics.totalFixedCost}
+                  precision={2}
+                  prefix={projectCurrency.toUpperCase()}
+                  valueStyle={{ color: '#fa8c16' }}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Statistic
+                  title="Cost from Time Logs"
+                  value={budgetStatistics.totalActualCost - budgetStatistics.totalFixedCost}
+                  precision={2}
+                  prefix={projectCurrency.toUpperCase()}
+                  valueStyle={{ color: '#13c2c2' }}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <Statistic
+                  title="Budget Status"
+                  value={budgetStatistics.totalBudget - budgetStatistics.totalActualCost}
+                  precision={2}
+                  prefix={budgetStatistics.totalBudget - budgetStatistics.totalActualCost >= 0 ? '+' : ''}
+                  suffix={`${projectCurrency.toUpperCase()} remaining`}
+                  valueStyle={{ 
+                    color: budgetStatistics.totalBudget - budgetStatistics.totalActualCost >= 0 ? '#52c41a' : '#ff4d4f'
+                  }}
+                />
+              </Col>
+            </Row>
+          </Card>
+          
           <FinanceTableWrapper activeTablesList={taskGroups} loading={loading} />
         </div>
       ) : (

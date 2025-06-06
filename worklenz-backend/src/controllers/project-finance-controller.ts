@@ -50,6 +50,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const projectId = req.params.project_id;
     const groupBy = req.query.group_by || "status";
+    const billableFilter = req.query.billable_filter || "billable";
 
     // Get project information including currency
     const projectQuery = `
@@ -82,6 +83,14 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     const rateCardResult = await db.query(rateCardQuery, [projectId]);
     const projectRateCards = rateCardResult.rows;
 
+    // Build billable filter condition
+    let billableCondition = "";
+    if (billableFilter === "billable") {
+      billableCondition = "AND t.billable = true";
+    } else if (billableFilter === "non-billable") {
+      billableCondition = "AND t.billable = false";
+    }
+
     // Get tasks with their financial data - support hierarchical loading
     const q = `
       WITH RECURSIVE task_tree AS (
@@ -106,6 +115,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         WHERE t.project_id = $1 
           AND t.archived = false
           AND t.parent_task_id IS NULL  -- Only load parent tasks initially
+          ${billableCondition}
         
         UNION ALL
         
@@ -579,11 +589,20 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const projectId = req.params.project_id;
     const parentTaskId = req.params.parent_task_id;
+    const billableFilter = req.query.billable_filter || "billable";
 
     if (!parentTaskId) {
       return res
         .status(400)
         .send(new ServerResponse(false, null, "Parent task ID is required"));
+    }
+
+    // Build billable filter condition for subtasks
+    let billableCondition = "";
+    if (billableFilter === "billable") {
+      billableCondition = "AND t.billable = true";
+    } else if (billableFilter === "non-billable") {
+      billableCondition = "AND t.billable = false";
     }
 
     // Get subtasks with their financial data
@@ -607,6 +626,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         WHERE t.project_id = $1 
           AND t.archived = false
           AND t.parent_task_id = $2
+          ${billableCondition}
       ),
       task_estimated_costs AS (
         SELECT 
@@ -721,6 +741,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
   ): Promise<void> {
     const projectId = req.params.project_id;
     const groupBy = (req.query.groupBy as string) || "status";
+    const billableFilter = req.query.billable_filter || "billable";
 
     // Get project name and currency for filename and export
     const projectQuery = `SELECT name, currency FROM projects WHERE id = $1`;
@@ -746,6 +767,14 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     const rateCardResult = await db.query(rateCardQuery, [projectId]);
     const projectRateCards = rateCardResult.rows;
 
+    // Build billable filter condition for export
+    let billableCondition = "";
+    if (billableFilter === "billable") {
+      billableCondition = "AND t.billable = true";
+    } else if (billableFilter === "non-billable") {
+      billableCondition = "AND t.billable = false";
+    }
+
     // Get tasks with their financial data - support hierarchical loading
     const q = `
       WITH RECURSIVE task_tree AS (
@@ -770,6 +799,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         WHERE t.project_id = $1 
           AND t.archived = false
           AND t.parent_task_id IS NULL  -- Only load parent tasks initially
+          ${billableCondition}
         
         UNION ALL
         

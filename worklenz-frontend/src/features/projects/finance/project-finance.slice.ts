@@ -5,10 +5,12 @@ import { parseTimeToSeconds } from '@/utils/timeUtils';
 
 type FinanceTabType = 'finance' | 'ratecard';
 type GroupTypes = 'status' | 'priority' | 'phases';
+type BillableFilterType = 'all' | 'billable' | 'non-billable';
 
 interface ProjectFinanceState {
   activeTab: FinanceTabType;
   activeGroup: GroupTypes;
+  billableFilter: BillableFilterType;
   loading: boolean;
   taskGroups: IProjectFinanceGroup[];
   projectRateCards: IProjectRateCard[];
@@ -65,6 +67,7 @@ const calculateGroupTotals = (tasks: IProjectFinanceTask[]) => {
 const initialState: ProjectFinanceState = {
   activeTab: 'finance',
   activeGroup: 'status',
+  billableFilter: 'billable',
   loading: false,
   taskGroups: [],
   projectRateCards: [],
@@ -73,24 +76,24 @@ const initialState: ProjectFinanceState = {
 
 export const fetchProjectFinances = createAsyncThunk(
   'projectFinances/fetchProjectFinances',
-  async ({ projectId, groupBy }: { projectId: string; groupBy: GroupTypes }) => {
-    const response = await projectFinanceApiService.getProjectTasks(projectId, groupBy);
+  async ({ projectId, groupBy, billableFilter }: { projectId: string; groupBy: GroupTypes; billableFilter?: BillableFilterType }) => {
+    const response = await projectFinanceApiService.getProjectTasks(projectId, groupBy, billableFilter);
     return response.body;
   }
 );
 
 export const fetchProjectFinancesSilent = createAsyncThunk(
   'projectFinances/fetchProjectFinancesSilent',
-  async ({ projectId, groupBy }: { projectId: string; groupBy: GroupTypes }) => {
-    const response = await projectFinanceApiService.getProjectTasks(projectId, groupBy);
+  async ({ projectId, groupBy, billableFilter }: { projectId: string; groupBy: GroupTypes; billableFilter?: BillableFilterType }) => {
+    const response = await projectFinanceApiService.getProjectTasks(projectId, groupBy, billableFilter);
     return response.body;
   }
 );
 
 export const fetchSubTasks = createAsyncThunk(
   'projectFinances/fetchSubTasks',
-  async ({ projectId, parentTaskId }: { projectId: string; parentTaskId: string }) => {
-    const response = await projectFinanceApiService.getSubTasks(projectId, parentTaskId);
+  async ({ projectId, parentTaskId, billableFilter }: { projectId: string; parentTaskId: string; billableFilter?: BillableFilterType }) => {
+    const response = await projectFinanceApiService.getSubTasks(projectId, parentTaskId, billableFilter);
     return { parentTaskId, subTasks: response.body };
   }
 );
@@ -112,6 +115,9 @@ export const projectFinancesSlice = createSlice({
     },
     setActiveGroup: (state, action: PayloadAction<GroupTypes>) => {
       state.activeGroup = action.payload;
+    },
+    setBillableFilter: (state, action: PayloadAction<BillableFilterType>) => {
+      state.billableFilter = action.payload;
     },
     updateTaskFixedCost: (state, action: PayloadAction<{ taskId: string; groupId: string; fixedCost: number }>) => {
       const { taskId, groupId, fixedCost } = action.payload;
@@ -224,6 +230,7 @@ export const projectFinancesSlice = createSlice({
 export const { 
   setActiveTab, 
   setActiveGroup, 
+  setBillableFilter,
   updateTaskFixedCost,
   updateTaskEstimatedCost,
   updateTaskTimeLogged,

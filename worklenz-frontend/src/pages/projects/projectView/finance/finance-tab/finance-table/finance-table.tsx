@@ -1,4 +1,4 @@
-import { Checkbox, Flex, Input, InputNumber, Skeleton, Tooltip, Typography } from 'antd';
+import { Flex, InputNumber, Skeleton, Tooltip, Typography } from 'antd';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
@@ -13,7 +13,6 @@ import Avatars from '@/components/avatars/avatars';
 import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/project-finance.types';
 import { 
   updateTaskFixedCostAsync, 
-  updateTaskFixedCost, 
   fetchProjectFinancesSilent,
   toggleTaskExpansion,
   fetchSubTasks
@@ -21,7 +20,7 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSelectedTaskId, setShowTaskDrawer, fetchTask } from '@/features/task-drawer/task-drawer.slice';
 import { useParams } from 'react-router-dom';
-import { parseTimeToSeconds } from '@/utils/timeUtils';
+
 import { useAuthService } from '@/hooks/useAuth';
 import { canEditFixedCost } from '@/utils/finance-permissions';
 import './finance-table.css';
@@ -29,17 +28,16 @@ import './finance-table.css';
 type FinanceTableProps = {
   table: IProjectFinanceGroup;
   loading: boolean;
-  isScrolling: boolean;
   onTaskClick: (task: any) => void;
 };
 
 const FinanceTable = ({
   table,
   loading,
-  isScrolling,
   onTaskClick,
 }: FinanceTableProps) => {
   const [isCollapse, setIsCollapse] = useState<boolean>(false);
+  const [isScrolling, setIsScrolling] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<IProjectFinanceTask | null>(null);
   const [editingFixedCostValue, setEditingFixedCostValue] = useState<number | null>(null);
   const [tasks, setTasks] = useState<IProjectFinanceTask[]>(table.tasks);
@@ -357,44 +355,6 @@ const FinanceTable = ({
     return parts.join(' ');
   };
 
-  // Calculate totals for the current table
-  const totals = useMemo(() => {
-    return tasks.reduce(
-      (acc, task) => ({
-        hours: acc.hours + (task.estimated_seconds || 0),
-        total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
-        estimated_cost: acc.estimated_cost + (task.estimated_cost || 0),
-        actual_cost_from_logs: acc.actual_cost_from_logs + ((task.total_actual || 0) - (task.fixed_cost || 0)),
-        fixed_cost: acc.fixed_cost + (task.fixed_cost || 0),
-        total_budget: acc.total_budget + (task.total_budget || 0),
-        total_actual: acc.total_actual + (task.total_actual || 0),
-        variance: acc.variance + (task.variance || 0)
-      }),
-      {
-        hours: 0,
-        total_time_logged: 0,
-        estimated_cost: 0,
-        actual_cost_from_logs: 0,
-        fixed_cost: 0,
-        total_budget: 0,
-        total_actual: 0,
-        variance: 0
-      }
-    );
-  }, [tasks]);
-
-  // Format the totals for display
-  const formattedTotals = useMemo(() => ({
-    hours: formatSecondsToTimeString(totals.hours),
-    total_time_logged: formatSecondsToTimeString(totals.total_time_logged),
-    estimated_cost: totals.estimated_cost,
-    actual_cost_from_logs: totals.actual_cost_from_logs,
-    fixed_cost: totals.fixed_cost,
-    total_budget: totals.total_budget,
-    total_actual: totals.total_actual,
-    variance: totals.variance
-  }), [totals]);
-
   // Flatten tasks to include subtasks for rendering
   const flattenedTasks = useMemo(() => {
     const flattened: IProjectFinanceTask[] = [];
@@ -414,91 +374,142 @@ const FinanceTable = ({
     return flattened;
   }, [tasks]);
 
+  // Calculate totals for the current table (only count parent tasks to avoid double counting)
+  const totals = useMemo(() => {
+    return tasks.reduce(
+      (acc, task) => {
+        // Calculate actual cost from logs (total_actual - fixed_cost)
+        const actualCostFromLogs = (task.total_actual || 0) - (task.fixed_cost || 0);
+        
+        return {
+          hours: acc.hours + (task.estimated_seconds || 0),
+          total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
+          estimated_cost: acc.estimated_cost + (task.estimated_cost || 0),
+          actual_cost_from_logs: acc.actual_cost_from_logs + actualCostFromLogs,
+          fixed_cost: acc.fixed_cost + (task.fixed_cost || 0),
+          total_budget: acc.total_budget + (task.total_budget || 0),
+          total_actual: acc.total_actual + (task.total_actual || 0),
+          variance: acc.variance + (task.variance || 0)
+        };
+      },
+      {
+        hours: 0,
+        total_time_logged: 0,
+        estimated_cost: 0,
+        actual_cost_from_logs: 0,
+        fixed_cost: 0,
+        total_budget: 0,
+        total_actual: 0,
+        variance: 0
+      }
+    );
+  }, [tasks]);
+  
+  // Format the totals for display
+  const formattedTotals = useMemo(() => ({
+    hours: formatSecondsToTimeString(totals.hours),
+    total_time_logged: formatSecondsToTimeString(totals.total_time_logged),
+    estimated_cost: totals.estimated_cost,
+    actual_cost_from_logs: totals.actual_cost_from_logs,
+    fixed_cost: totals.fixed_cost,
+    total_budget: totals.total_budget,
+    total_actual: totals.total_actual,
+    variance: totals.variance
+  }), [totals]);
+
+  if (loading) {
+    return (
+      <tr>
+        <td colSpan={financeTableColumns.length}>
+          <Skeleton active />
+        </td>
+      </tr>
+    );
+  }
+
   return (
-    <Skeleton active loading={loading}>
-      <>
-        {/* header row */}
+    <>
+      {/* header row */}
+      <tr
+        style={{
+          height: 40,
+          backgroundColor: themeWiseColor(
+            table.color_code,
+            table.color_code_dark,
+            themeMode
+          ),
+          fontWeight: 600,
+        }}
+        className={`group ${themeMode === 'dark' ? 'dark' : ''}`}
+      >
+        {financeTableColumns.map(
+          (col, index) => (
+            <td
+              key={`header-${col.key}`}
+              style={{
+                width: col.width,
+                paddingInline: 16,
+                textAlign: col.key === FinanceTableColumnKeys.TASK || col.key === FinanceTableColumnKeys.MEMBERS ? 'left' : 'right',
+                backgroundColor: themeWiseColor(
+                  table.color_code,
+                  table.color_code_dark,
+                  themeMode
+                ),
+                cursor: col.key === FinanceTableColumnKeys.TASK ? 'pointer' : 'default',
+                textTransform: col.key === FinanceTableColumnKeys.TASK ? 'capitalize' : 'none',
+              }}
+              className={customHeaderColumnStyles(col.key)}
+              onClick={col.key === FinanceTableColumnKeys.TASK ? () => setIsCollapse((prev) => !prev) : undefined}
+            >
+              {col.key === FinanceTableColumnKeys.TASK ? (
+                <Flex gap={8} align="center" style={{ color: colors.darkGray }}>
+                  {isCollapse ? <RightOutlined /> : <DownOutlined />}
+                  {table.group_name} ({tasks.length})
+                </Flex>
+              ) : col.key === FinanceTableColumnKeys.MEMBERS ? null : renderFinancialTableHeaderContent(col.key)}
+            </td>
+          )
+        )}
+      </tr>
+
+      {/* task rows */}
+      {!isCollapse && flattenedTasks.map((task, idx) => (
         <tr
+          key={task.id}
           style={{
             height: 40,
-            backgroundColor: themeWiseColor(
-              table.color_code,
-              table.color_code_dark,
-              themeMode
-            ),
-            fontWeight: 600,
+            background: idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode),
+            transition: 'background 0.2s',
           }}
-          className={`group ${themeMode === 'dark' ? 'dark' : ''}`}
+          className={themeMode === 'dark' ? 'dark' : ''}
+          onMouseEnter={e => e.currentTarget.style.background = themeWiseColor('#f0f0f0', '#333', themeMode)}
+          onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode)}
         >
-          {financeTableColumns.map(
-            (col, index) => (
-              <td
-                key={`header-${col.key}`}
-                style={{
-                  width: col.width,
-                  paddingInline: 16,
-                  textAlign: col.key === FinanceTableColumnKeys.TASK || col.key === FinanceTableColumnKeys.MEMBERS ? 'left' : 'right',
-                  backgroundColor: themeWiseColor(
-                    table.color_code,
-                    table.color_code_dark,
-                    themeMode
-                  ),
-                  cursor: col.key === FinanceTableColumnKeys.TASK ? 'pointer' : 'default',
-                  textTransform: col.key === FinanceTableColumnKeys.TASK ? 'capitalize' : 'none',
-                }}
-                className={customHeaderColumnStyles(col.key)}
-                onClick={col.key === FinanceTableColumnKeys.TASK ? () => setIsCollapse((prev) => !prev) : undefined}
-              >
-                {col.key === FinanceTableColumnKeys.TASK ? (
-                  <Flex gap={8} align="center" style={{ color: colors.darkGray }}>
-                    {isCollapse ? <RightOutlined /> : <DownOutlined />}
-                    {table.group_name} ({tasks.length})
-                  </Flex>
-                ) : col.key === FinanceTableColumnKeys.MEMBERS ? null : renderFinancialTableHeaderContent(col.key)}
-              </td>
-            )
-          )}
+          {financeTableColumns.map((col) => (
+            <td
+              key={`${task.id}-${col.key}`}
+              style={{
+                width: col.width,
+                paddingInline: 16,
+                textAlign: col.type === 'string' ? 'left' : 'right',
+                backgroundColor: (col.key === FinanceTableColumnKeys.TASK || col.key === FinanceTableColumnKeys.MEMBERS) ? 
+                  (idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode)) : 
+                  'transparent',
+                cursor: 'default'
+              }}
+              className={customColumnStyles(col.key)}
+              onClick={
+                col.key === FinanceTableColumnKeys.FIXED_COST 
+                  ? (e) => e.stopPropagation() 
+                  : undefined
+              }
+            >
+              {renderFinancialTableColumnContent(col.key, task)}
+            </td>
+          ))}
         </tr>
-
-        {/* task rows */}
-        {!isCollapse && flattenedTasks.map((task, idx) => (
-          <tr
-            key={task.id}
-            style={{
-              height: 40,
-              background: idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode),
-              transition: 'background 0.2s',
-            }}
-            className={themeMode === 'dark' ? 'dark' : ''}
-            onMouseEnter={e => e.currentTarget.style.background = themeWiseColor('#f0f0f0', '#333', themeMode)}
-            onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode)}
-          >
-            {financeTableColumns.map((col) => (
-              <td
-                key={`${task.id}-${col.key}`}
-                style={{
-                  width: col.width,
-                  paddingInline: 16,
-                  textAlign: col.type === 'string' ? 'left' : 'right',
-                  backgroundColor: (col.key === FinanceTableColumnKeys.TASK || col.key === FinanceTableColumnKeys.MEMBERS) ? 
-                    (idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode)) : 
-                    'transparent',
-                  cursor: 'default'
-                }}
-                className={customColumnStyles(col.key)}
-                onClick={
-                  col.key === FinanceTableColumnKeys.FIXED_COST 
-                    ? (e) => e.stopPropagation() 
-                    : undefined
-                }
-              >
-                {renderFinancialTableColumnContent(col.key, task)}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </>
-    </Skeleton>
+      ))}
+    </>
   );
 };
 

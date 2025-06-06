@@ -8,27 +8,38 @@
   "exportButton": "Exportar",
   "currencyText": "Moneda",
   "importButton": "Importar",
+  "filterText": "Filtro",
+  "billableOnlyText": "Solo Facturable",
+  "nonBillableOnlyText": "Solo No Facturable",
+  "allTasksText": "Todas las Tareas",
   
   "taskColumn": "Tarea",
   "membersColumn": "Miembros",
   "hoursColumn": "Horas Estimadas",
   "totalTimeLoggedColumn": "Tiempo Total Registrado",
-  "costColumn": "Costo",
+  "costColumn": "Costo Real",
   "estimatedCostColumn": "Costo Estimado",
   "fixedCostColumn": "Costo Fijo",
   "totalBudgetedCostColumn": "Costo Total Presupuestado",
-  "totalActualCostColumn": "Costo Total Real",
-  "varianceColumn": "Diferencia",
+  "totalActualCostColumn": "Costo Real Total",
+  "varianceColumn": "Varianza",
   "totalText": "Total",
   "noTasksFound": "No se encontraron tareas",
   
   "addRoleButton": "+ Agregar Rol",
-  "ratecardImportantNotice": "* Esta tarifa se genera en función de los títulos de trabajo y tarifas estándar de la empresa. Sin embargo, tienes la flexibilidad de modificarla según el proyecto. Estos cambios no afectarán los títulos de trabajo y tarifas estándar de la organización.",
+  "ratecardImportantNotice": "* Esta tarifa se genera en base a los títulos de trabajo y tarifas estándar de la empresa. Sin embargo, tienes la flexibilidad de modificarla según el proyecto. Estos cambios no afectarán los títulos de trabajo y tarifas estándar de la organización.",
   "saveButton": "Guardar",
   
   "jobTitleColumn": "Título del Trabajo",
   "ratePerHourColumn": "Tarifa por hora",
   "ratecardPluralText": "Tarifas",
-  "labourHoursColumn": "Horas de Trabajo"
+  "labourHoursColumn": "Horas de Trabajo",
+  "actions": "Acciones",
+  "selectJobTitle": "Seleccionar Título del Trabajo",
+  "ratecardsPluralText": "Plantillas de Tarifas",
+  "deleteConfirm": "¿Estás seguro?",
+  "yes": "Sí",
+  "no": "No",
+  "alreadyImportedRateCardMessage": "Ya se ha importado una tarifa. Borra todas las tarifas importadas para agregar una nueva."
 }
   
