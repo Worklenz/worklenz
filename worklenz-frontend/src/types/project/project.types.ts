@@ -1,5 +1,10 @@
 import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { IProjectStatus } from '@/types/project/projectStatus.types';
+import { IProjectViewModel } from './projectViewModel.types';
+import { NavigateFunction } from 'react-router-dom';
+import { AppDispatch } from '@/app/store';
+import { TablePaginationConfig } from 'antd';
+import { FilterValue, SorterResult } from 'antd/es/table/interface';
 
 export interface IProject {
   id?: string;
@@ -44,4 +49,106 @@ export enum IProjectFilter {
   All = 'All',
   Favourites = 'Favorites',
   Archived = 'Archived',
+}
+
+export interface ProjectNameCellProps {
+  record: IProjectViewModel;
+  navigate: NavigateFunction;
+}
+
+export interface CategoryCellProps {
+  record: IProjectViewModel;
+}
+
+export interface ActionButtonsProps {
+  t: (key: string) => string;
+  record: IProjectViewModel;
+  setProjectId: (id: string) => void;
+  dispatch: AppDispatch;
+  isOwnerOrAdmin: boolean;
+}
+
+export interface TableColumnsProps {
+  navigate: NavigateFunction;
+  statuses: IProjectStatus[];
+  categories: IProjectCategory[];
+  setProjectId: (id: string) => void;
+}
+
+export interface ProjectListTableProps {
+  loading: boolean;
+  projects: IProjectViewModel[];
+  statuses: IProjectStatus[];
+  categories: IProjectCategory[];
+  pagination: TablePaginationConfig;
+  onTableChange: (
+    pagination: TablePaginationConfig,
+    filters: Record<string, FilterValue | null>,
+    sorter: SorterResult<IProjectViewModel> | SorterResult<IProjectViewModel>[]
+  ) => void;
+  onProjectSelect: (id: string) => void;
+  onArchive: (id: string) => void;
+}
+
+// New types for grouping functionality
+export enum ProjectViewType {
+  LIST = 'list',
+  GROUP = 'group'
+}
+
+export enum ProjectGroupBy {
+  CLIENT = 'client',
+  CATEGORY = 'category'
+}
+
+export interface GroupedProject {
+  groupKey: string;
+  groupName: string;
+  projects: IProjectViewModel[];
+  count: number;
+}
+
+export interface IProjectFilterConfig{
+  current_tab: string | null;
+  projects_group_by: number;
+  current_view: number;
+  is_group_view: boolean;                            
+}
+
+export interface ProjectViewControlsProps {
+  viewType: ProjectViewType;
+  groupBy: ProjectGroupBy;
+  onViewTypeChange: (type: ProjectViewType) => void;
+  onGroupByChange: (groupBy: ProjectGroupBy) => void;
+  t: (key: string) => string;
+}
+
+export interface ProjectGroupCardProps {
+  group: GroupedProject;
+  navigate: NavigateFunction;
+  onProjectSelect: (id: string) => void;
+  onArchive: (id: string) => void;
+  isOwnerOrAdmin: boolean;
+  t: (key: string) => string;
+}
+
+export interface ProjectGroupListProps {
+  groups: GroupedProject[];
+  navigate: NavigateFunction;
+  onProjectSelect: (id: string) => void;
+  onArchive: (id: string) => void;
+  isOwnerOrAdmin: boolean;
+  loading: boolean;
+  t: (key: string) => string;
+}
+
+export interface GroupedProject {
+  groupKey: string;
+  groupName: string;
+  groupColor?: string;
+  projects: IProjectViewModel[];
+  count: number;
+  totalProgress: number;
+  totalTasks: number;
+  averageProgress?: number;
 }
