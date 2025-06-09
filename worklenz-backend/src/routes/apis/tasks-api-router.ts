@@ -69,4 +69,7 @@ tasksApiRouter.put("/labels/:id", idParamValidator, safeControllerFunction(Tasks
 // Add custom column value update route
 tasksApiRouter.put("/:taskId/custom-column", TasksControllerV2.updateCustomColumnValue);
 
+// Add route to reset parent task estimations
+tasksApiRouter.post("/reset-parent-estimations", safeControllerFunction(TasksController.resetParentTaskEstimations));
+
 export default tasksApiRouter;

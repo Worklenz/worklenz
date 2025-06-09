@@ -122,53 +122,109 @@ export const projectFinancesSlice = createSlice({
     updateTaskFixedCost: (state, action: PayloadAction<{ taskId: string; groupId: string; fixedCost: number }>) => {
       const { taskId, groupId, fixedCost } = action.payload;
       const group = state.taskGroups.find(g => g.group_id === groupId);
+      
       if (group) {
-        const task = group.tasks.find(t => t.id === taskId);
-        if (task) {
-          task.fixed_cost = fixedCost;
-          // Don't recalculate here - let the backend handle it and we'll refresh
-        }
+        // Recursive function to find and update a task in the hierarchy
+        const findAndUpdateTask = (tasks: IProjectFinanceTask[], targetId: string): boolean => {
+          for (const task of tasks) {
+            if (task.id === targetId) {
+              task.fixed_cost = fixedCost;
+              // Don't recalculate here - let the backend handle it and we'll refresh
+              return true;
+            }
+            
+            // Search in subtasks recursively
+            if (task.sub_tasks && findAndUpdateTask(task.sub_tasks, targetId)) {
+              return true;
+            }
+          }
+          return false;
+        };
+        
+        findAndUpdateTask(group.tasks, taskId);
       }
     },
     updateTaskEstimatedCost: (state, action: PayloadAction<{ taskId: string; groupId: string; estimatedCost: number }>) => {
       const { taskId, groupId, estimatedCost } = action.payload;
       const group = state.taskGroups.find(g => g.group_id === groupId);
+      
       if (group) {
-        const task = group.tasks.find(t => t.id === taskId);
-        if (task) {
-          task.estimated_cost = estimatedCost;
-          // Recalculate task costs after updating estimated cost
-          const { totalBudget, totalActual, variance } = calculateTaskCosts(task);
-          task.total_budget = totalBudget;
-          task.total_actual = totalActual;
-          task.variance = variance;
-        }
+        // Recursive function to find and update a task in the hierarchy
+        const findAndUpdateTask = (tasks: IProjectFinanceTask[], targetId: string): boolean => {
+          for (const task of tasks) {
+            if (task.id === targetId) {
+              task.estimated_cost = estimatedCost;
+              // Recalculate task costs after updating estimated cost
+              const { totalBudget, totalActual, variance } = calculateTaskCosts(task);
+              task.total_budget = totalBudget;
+              task.total_actual = totalActual;
+              task.variance = variance;
+              return true;
+            }
+            
+            // Search in subtasks recursively
+            if (task.sub_tasks && findAndUpdateTask(task.sub_tasks, targetId)) {
+              return true;
+            }
+          }
+          return false;
+        };
+        
+        findAndUpdateTask(group.tasks, taskId);
       }
     },
     updateTaskTimeLogged: (state, action: PayloadAction<{ taskId: string; groupId: string; timeLoggedSeconds: number; timeLoggedString: string }>) => {
       const { taskId, groupId, timeLoggedSeconds, timeLoggedString } = action.payload;
       const group = state.taskGroups.find(g => g.group_id === groupId);
+      
       if (group) {
-        const task = group.tasks.find(t => t.id === taskId);
-        if (task) {
-          task.total_time_logged_seconds = timeLoggedSeconds;
-          task.total_time_logged = timeLoggedString;
-          // Recalculate task costs after updating time logged
-          const { totalBudget, totalActual, variance } = calculateTaskCosts(task);
-          task.total_budget = totalBudget;
-          task.total_actual = totalActual;
-          task.variance = variance;
-        }
+        // Recursive function to find and update a task in the hierarchy
+        const findAndUpdateTask = (tasks: IProjectFinanceTask[], targetId: string): boolean => {
+          for (const task of tasks) {
+            if (task.id === targetId) {
+              task.total_time_logged_seconds = timeLoggedSeconds;
+              task.total_time_logged = timeLoggedString;
+              // Recalculate task costs after updating time logged
+              const { totalBudget, totalActual, variance } = calculateTaskCosts(task);
+              task.total_budget = totalBudget;
+              task.total_actual = totalActual;
+              task.variance = variance;
+              return true;
+            }
+            
+            // Search in subtasks recursively
+            if (task.sub_tasks && findAndUpdateTask(task.sub_tasks, targetId)) {
+              return true;
+            }
+          }
+          return false;
+        };
+        
+        findAndUpdateTask(group.tasks, taskId);
       }
     },
     toggleTaskExpansion: (state, action: PayloadAction<{ taskId: string; groupId: string }>) => {
       const { taskId, groupId } = action.payload;
       const group = state.taskGroups.find(g => g.group_id === groupId);
+      
       if (group) {
-        const task = group.tasks.find(t => t.id === taskId);
-        if (task) {
-          task.show_sub_tasks = !task.show_sub_tasks;
-        }
+        // Recursive function to find and toggle a task in the hierarchy
+        const findAndToggleTask = (tasks: IProjectFinanceTask[], targetId: string): boolean => {
+          for (const task of tasks) {
+            if (task.id === targetId) {
+              task.show_sub_tasks = !task.show_sub_tasks;
+              return true;
+            }
+            
+            // Search in subtasks recursively
+            if (task.sub_tasks && findAndToggleTask(task.sub_tasks, targetId)) {
+              return true;
+            }
+          }
+          return false;
+        };
+        
+        findAndToggleTask(group.tasks, taskId);
       }
     },
     updateProjectFinanceCurrency: (state, action: PayloadAction<string>) => {
@@ -200,26 +256,56 @@ export const projectFinancesSlice = createSlice({
       .addCase(updateTaskFixedCostAsync.fulfilled, (state, action) => {
         const { taskId, groupId, fixedCost } = action.payload;
         const group = state.taskGroups.find(g => g.group_id === groupId);
+        
         if (group) {
-          const task = group.tasks.find(t => t.id === taskId);
-          if (task) {
-            task.fixed_cost = fixedCost;
-            // Don't recalculate here - trigger a refresh instead for accuracy
-          }
+          // Recursive function to find and update a task in the hierarchy
+          const findAndUpdateTask = (tasks: IProjectFinanceTask[], targetId: string): boolean => {
+            for (const task of tasks) {
+              if (task.id === targetId) {
+                task.fixed_cost = fixedCost;
+                // Don't recalculate here - trigger a refresh instead for accuracy
+                return true;
+              }
+              
+              // Search in subtasks recursively
+              if (task.sub_tasks && findAndUpdateTask(task.sub_tasks, targetId)) {
+                return true;
+              }
+            }
+            return false;
+          };
+          
+          findAndUpdateTask(group.tasks, taskId);
         }
       })
       .addCase(fetchSubTasks.fulfilled, (state, action) => {
         const { parentTaskId, subTasks } = action.payload;
+        
+        // Recursive function to find and update a task in the hierarchy
+        const findAndUpdateTask = (tasks: IProjectFinanceTask[], targetId: string): boolean => {
+          for (const task of tasks) {
+            if (task.id === targetId) {
+              // Found the parent task, add subtasks
+              task.sub_tasks = subTasks.map(subTask => ({
+                ...subTask,
+                is_sub_task: true,
+                parent_task_id: targetId
+              }));
+              task.show_sub_tasks = true;
+              return true;
+            }
+            
+            // Search in subtasks recursively
+            if (task.sub_tasks && findAndUpdateTask(task.sub_tasks, targetId)) {
+              return true;
+            }
+          }
+          return false;
+        };
+        
         // Find the parent task in any group and add the subtasks
         for (const group of state.taskGroups) {
-          const parentTask = group.tasks.find(t => t.id === parentTaskId);
-          if (parentTask) {
-            parentTask.sub_tasks = subTasks.map(subTask => ({
-              ...subTask,
-              is_sub_task: true,
-              parent_task_id: parentTaskId
-            }));
-            parentTask.show_sub_tasks = true;
+          if (findAndUpdateTask(group.tasks, parentTaskId)) {
             break;
           }
         }

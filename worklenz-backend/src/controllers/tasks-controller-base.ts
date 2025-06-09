@@ -50,14 +50,17 @@ export default class TasksControllerBase extends WorklenzControllerBase {
       task.progress = parseInt(task.progress_value);
       task.complete_ratio = parseInt(task.progress_value);
     }
-    // For tasks with no subtasks and no manual progress, calculate based on time
+    // For tasks with no subtasks and no manual progress
     else {
-      task.progress = task.total_minutes_spent && task.total_minutes
-        ? ~~(task.total_minutes_spent / task.total_minutes * 100)
-        : 0;
-
-      // Set complete_ratio to match progress
-      task.complete_ratio = task.progress;
+      // Only calculate time-based progress if time-based calculation is enabled for the project
+      if (task.project_use_time_progress && task.total_minutes_spent && task.total_minutes) {
+        task.progress = ~~(task.total_minutes_spent / task.total_minutes * 100);
+        task.complete_ratio = task.progress;
+      } else {
+        // Default to 0% progress for incomplete tasks when time-based calculation is not enabled
+        task.progress = 0;
+        task.complete_ratio = 0;
+      }
     }
 
     // Ensure numeric values
@@ -76,7 +79,31 @@ export default class TasksControllerBase extends WorklenzControllerBase {
     task.is_sub_task = !!task.parent_task_id;
 
     task.time_spent_string = `${task.time_spent.hours}h ${(task.time_spent.minutes)}m`;
-    task.total_time_string = `${~~(task.total_minutes / 60)}h ${(task.total_minutes % 60)}m`;
+    
+    // Use recursive estimation for parent tasks, own estimation for leaf tasks
+    const recursiveEstimation = task.recursive_estimation || {};
+    const hasSubtasks = (task.sub_tasks_count || 0) > 0;
+    
+    let displayMinutes;
+    if (hasSubtasks) {
+      // For parent tasks, use recursive estimation (sum of all subtasks)
+      displayMinutes = recursiveEstimation.recursive_total_minutes || 0;
+    } else {
+      // For leaf tasks, use their own estimation
+      displayMinutes = task.total_minutes || 0;
+    }
+    
+    // Format time string - show "0h" for zero time instead of "0h 0m"
+    const hours = ~~(displayMinutes / 60);
+    const minutes = displayMinutes % 60;
+    
+    if (displayMinutes === 0) {
+      task.total_time_string = "0h";
+    } else if (minutes === 0) {
+      task.total_time_string = `${hours}h`;
+    } else {
+      task.total_time_string = `${hours}h ${minutes}m`;
+    }
 
     task.name_color = getColor(task.name);
     task.priority_color = PriorityColorCodes[task.priority_value] || PriorityColorCodes["0"];

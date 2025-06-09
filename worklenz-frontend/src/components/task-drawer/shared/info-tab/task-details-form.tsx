@@ -82,14 +82,9 @@ const TaskDetailsForm = ({ taskFormViewModel = null, subTasks = [] }: TaskDetail
   const [form] = Form.useForm();
   const { project } = useAppSelector(state => state.projectReducer);
 
-  // Calculate sum of subtasks estimation
-  const subTasksEstimation = subTasks.reduce(
-    (acc, subTask) => ({
-      hours: acc.hours + (subTask.total_hours || 0),
-      minutes: acc.minutes + (subTask.total_minutes || 0)
-    }),
-    { hours: 0, minutes: 0 }
-  );
+  // No need to calculate subtask estimation on frontend anymore
+  // The backend now provides recursive estimation directly in the task data
+  const subTasksEstimation: { hours: number; minutes: number } | undefined = undefined;
 
   useEffect(() => {
     if (!taskFormViewModel) {
