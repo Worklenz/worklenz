@@ -605,9 +605,10 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
       billableCondition = "AND t.billable = false";
     }
 
-    // Get subtasks with their financial data
+    // Get subtasks with their financial data, including recursive aggregation for sub-subtasks
     const q = `
-      WITH task_costs AS (
+      WITH RECURSIVE task_tree AS (
+        -- Get the requested subtasks
         SELECT 
           t.id,
           t.name,
@@ -621,22 +622,47 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           COALESCE(t.fixed_cost, 0) as fixed_cost,
           COALESCE(t.total_minutes * 60, 0) as estimated_seconds,
           COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) as total_time_logged_seconds,
-          (SELECT COUNT(*) FROM tasks WHERE parent_task_id = t.id AND archived = false) as sub_tasks_count
+          (SELECT COUNT(*) FROM tasks WHERE parent_task_id = t.id AND archived = false) as sub_tasks_count,
+          0 as level,
+          t.id as root_id
         FROM tasks t
         WHERE t.project_id = $1 
           AND t.archived = false
           AND t.parent_task_id = $2
           ${billableCondition}
-      ),
-      task_estimated_costs AS (
+        
+        UNION ALL
+        
+        -- Get all descendant tasks for aggregation
         SELECT 
-          tc.*,
+          t.id,
+          t.name,
+          t.parent_task_id,
+          t.project_id,
+          t.status_id,
+          t.priority_id,
+          (SELECT phase_id FROM task_phase WHERE task_id = t.id) as phase_id,
+          (SELECT get_task_assignees(t.id)) as assignees,
+          t.billable,
+          COALESCE(t.fixed_cost, 0) as fixed_cost,
+          COALESCE(t.total_minutes * 60, 0) as estimated_seconds,
+          COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id), 0) as total_time_logged_seconds,
+          0 as sub_tasks_count,
+          tt.level + 1 as level,
+          tt.root_id
+        FROM tasks t
+        INNER JOIN task_tree tt ON t.parent_task_id = tt.id
+        WHERE t.archived = false
+      ),
+      task_costs AS (
+        SELECT 
+          tt.*,
           -- Calculate estimated cost based on estimated hours and assignee rates
           COALESCE((
-            SELECT SUM((tc.estimated_seconds / 3600.0) * COALESCE(fprr.rate, 0))
-            FROM json_array_elements(tc.assignees) AS assignee_json
+            SELECT SUM((tt.estimated_seconds / 3600.0) * COALESCE(fprr.rate, 0))
+            FROM json_array_elements(tt.assignees) AS assignee_json
             LEFT JOIN project_members pm ON pm.team_member_id = (assignee_json->>'team_member_id')::uuid 
-              AND pm.project_id = tc.project_id
+              AND pm.project_id = tt.project_id
             LEFT JOIN finance_project_rate_card_roles fprr ON fprr.id = pm.project_rate_card_role_id
             WHERE assignee_json->>'team_member_id' IS NOT NULL
           ), 0) as estimated_cost,
@@ -646,18 +672,66 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             FROM task_work_log twl 
             LEFT JOIN users u ON twl.user_id = u.id
             LEFT JOIN team_members tm ON u.id = tm.user_id
-            LEFT JOIN project_members pm ON pm.team_member_id = tm.id AND pm.project_id = tc.project_id
+            LEFT JOIN project_members pm ON pm.team_member_id = tm.id AND pm.project_id = tt.project_id
             LEFT JOIN finance_project_rate_card_roles fprr ON fprr.id = pm.project_rate_card_role_id
-            WHERE twl.task_id = tc.id
+            WHERE twl.task_id = tt.id
           ), 0) as actual_cost_from_logs
+        FROM task_tree tt
+      ),
+      aggregated_tasks AS (
+        SELECT 
+          tc.id,
+          tc.name,
+          tc.parent_task_id,
+          tc.status_id,
+          tc.priority_id,
+          tc.phase_id,
+          tc.assignees,
+          tc.billable,
+          tc.fixed_cost,
+          tc.sub_tasks_count,
+          -- For subtasks that have their own sub-subtasks, sum values from descendants only
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.estimated_seconds)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
+            )
+            ELSE tc.estimated_seconds
+          END as estimated_seconds,
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.total_time_logged_seconds)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
+            )
+            ELSE tc.total_time_logged_seconds
+          END as total_time_logged_seconds,
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.estimated_cost)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
+            )
+            ELSE tc.estimated_cost
+          END as estimated_cost,
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.actual_cost_from_logs)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
+            )
+            ELSE tc.actual_cost_from_logs
+          END as actual_cost_from_logs
         FROM task_costs tc
+        WHERE tc.level = 0  -- Only return the requested level (subtasks)
       )
       SELECT 
-        tec.*,
-        (tec.estimated_cost + tec.fixed_cost) as total_budget,
-        (tec.actual_cost_from_logs + tec.fixed_cost) as total_actual,
-        ((tec.actual_cost_from_logs + tec.fixed_cost) - (tec.estimated_cost + tec.fixed_cost)) as variance
-      FROM task_estimated_costs tec;
+        at.*,
+        (at.estimated_cost + at.fixed_cost) as total_budget,
+        (at.actual_cost_from_logs + at.fixed_cost) as total_actual,
+        ((at.actual_cost_from_logs + at.fixed_cost) - (at.estimated_cost + at.fixed_cost)) as variance
+      FROM aggregated_tasks at;
     `;
 
     const result = await db.query(q, [projectId, parentTaskId]);

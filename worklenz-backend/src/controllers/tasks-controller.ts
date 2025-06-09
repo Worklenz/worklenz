@@ -427,9 +427,24 @@ export default class TasksController extends TasksControllerBase {
 
       task.names = WorklenzControllerBase.createTagList(task.assignees);
 
-      const totalMinutes = task.total_minutes;
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
+      // Use recursive estimation if task has subtasks, otherwise use own estimation
+      const recursiveEstimation = task.recursive_estimation || {};
+      // Check both the recursive estimation count and the actual database count
+      const hasSubtasks = (task.sub_tasks_count || 0) > 0;
+      
+      let totalMinutes, hours, minutes;
+      
+      if (hasSubtasks) {
+        // For parent tasks, use the sum of all subtasks' estimation (excluding parent's own estimation)
+        totalMinutes = recursiveEstimation.recursive_total_minutes || 0;
+        hours = recursiveEstimation.recursive_total_hours || 0;
+        minutes = recursiveEstimation.recursive_remaining_minutes || 0;
+      } else {
+        // For tasks without subtasks, use their own estimation
+        totalMinutes = task.total_minutes || 0;
+        hours = Math.floor(totalMinutes / 60);
+        minutes = totalMinutes % 60;
+      }
 
       task.total_hours = hours;
       task.total_minutes = minutes;
@@ -606,6 +621,18 @@ export default class TasksController extends TasksControllerBase {
 
     TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
     return res.status(200).send(new ServerResponse(true, null));
+  }
+
+  @HandleExceptions()
+  public static async resetParentTaskEstimations(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = `SELECT reset_all_parent_task_estimations() AS updated_count;`;
+    const result = await db.query(q);
+    const [data] = result.rows;
+    
+    return res.status(200).send(new ServerResponse(true, { 
+      message: `Reset estimation for ${data.updated_count} parent tasks`,
+      updated_count: data.updated_count 
+    }));
   }
 
   @HandleExceptions()

@@ -603,7 +603,8 @@ BEGIN
                  schedule_id,
                  progress_value,
                  weight,
-                 (SELECT MAX(level) FROM task_hierarchy)                                         AS task_level
+                 (SELECT MAX(level) FROM task_hierarchy)                                         AS task_level,
+                 (SELECT get_task_recursive_estimation(tasks.id))                               AS recursive_estimation
           FROM tasks
           WHERE id = _task_id) rec;
 
@@ -662,6 +663,89 @@ ADD COLUMN IF NOT EXISTS use_manual_progress BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS use_weighted_progress BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS use_time_progress BOOLEAN DEFAULT FALSE;
 
+-- Function to calculate recursive task estimation (including all subtasks)
+CREATE OR REPLACE FUNCTION get_task_recursive_estimation(_task_id UUID) RETURNS JSON
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _result JSON;
+    _has_subtasks BOOLEAN;
+BEGIN
+    -- First check if this task has any subtasks
+    SELECT EXISTS(
+        SELECT 1 FROM tasks 
+        WHERE parent_task_id = _task_id 
+        AND archived = false
+    ) INTO _has_subtasks;
+
+    -- If task has subtasks, calculate recursive estimation excluding parent's own estimation
+    IF _has_subtasks THEN
+        WITH RECURSIVE task_tree AS (
+            -- Start with direct subtasks only (exclude the parent task itself)
+            SELECT 
+                id,
+                parent_task_id,
+                COALESCE(total_minutes, 0) as total_minutes,
+                1 as level  -- Start at level 1 (subtasks)
+            FROM tasks
+            WHERE parent_task_id = _task_id
+            AND archived = false
+
+            UNION ALL
+
+            -- Recursive case: Get all descendant tasks
+            SELECT 
+                t.id,
+                t.parent_task_id,
+                COALESCE(t.total_minutes, 0) as total_minutes,
+                tt.level + 1 as level
+            FROM tasks t
+            INNER JOIN task_tree tt ON t.parent_task_id = tt.id
+            WHERE t.archived = false
+        ),
+        task_counts AS (
+            SELECT 
+                COUNT(*) as sub_tasks_count,
+                SUM(total_minutes) as subtasks_total_minutes  -- Sum all subtask estimations
+            FROM task_tree
+        )
+        SELECT JSON_BUILD_OBJECT(
+            'sub_tasks_count', COALESCE(tc.sub_tasks_count, 0),
+            'own_total_minutes', 0,  -- Always 0 for parent tasks
+            'subtasks_total_minutes', COALESCE(tc.subtasks_total_minutes, 0),
+            'recursive_total_minutes', COALESCE(tc.subtasks_total_minutes, 0),  -- Only subtasks total
+            'recursive_total_hours', FLOOR(COALESCE(tc.subtasks_total_minutes, 0) / 60),
+            'recursive_remaining_minutes', COALESCE(tc.subtasks_total_minutes, 0) % 60
+        )
+        INTO _result
+        FROM task_counts tc;
+    ELSE
+        -- If task has no subtasks, use its own estimation
+        SELECT JSON_BUILD_OBJECT(
+            'sub_tasks_count', 0,
+            'own_total_minutes', COALESCE(total_minutes, 0),
+            'subtasks_total_minutes', 0,
+            'recursive_total_minutes', COALESCE(total_minutes, 0),  -- Use own estimation
+            'recursive_total_hours', FLOOR(COALESCE(total_minutes, 0) / 60),
+            'recursive_remaining_minutes', COALESCE(total_minutes, 0) % 60
+        )
+        INTO _result
+        FROM tasks
+        WHERE id = _task_id;
+    END IF;
+
+    RETURN COALESCE(_result, JSON_BUILD_OBJECT(
+        'sub_tasks_count', 0,
+        'own_total_minutes', 0,
+        'subtasks_total_minutes', 0,
+        'recursive_total_minutes', 0,
+        'recursive_total_hours', 0,
+        'recursive_remaining_minutes', 0
+    ));
+END;
+$$;
+
 -- Add a trigger to reset manual progress when a task gets a new subtask
 CREATE OR REPLACE FUNCTION reset_parent_task_manual_progress() RETURNS TRIGGER AS
 $$
@@ -677,11 +761,58 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Add a trigger to reset parent task estimation when it gets subtasks
+CREATE OR REPLACE FUNCTION reset_parent_task_estimation() RETURNS TRIGGER AS
+$$
+BEGIN
+    -- When a task gets a new subtask (parent_task_id is set), reset the parent's total_minutes to 0
+    -- This ensures parent tasks don't have their own estimation when they have subtasks
+    IF NEW.parent_task_id IS NOT NULL THEN
+        UPDATE tasks 
+        SET total_minutes = 0
+        WHERE id = NEW.parent_task_id 
+        AND total_minutes > 0;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create the trigger on the tasks table
 DROP TRIGGER IF EXISTS reset_parent_manual_progress_trigger ON tasks;
 CREATE TRIGGER reset_parent_manual_progress_trigger
 AFTER INSERT OR UPDATE OF parent_task_id ON tasks
 FOR EACH ROW
 EXECUTE FUNCTION reset_parent_task_manual_progress();
+
+-- Create the trigger to reset parent task estimation
+DROP TRIGGER IF EXISTS reset_parent_estimation_trigger ON tasks;
+CREATE TRIGGER reset_parent_estimation_trigger
+AFTER INSERT OR UPDATE OF parent_task_id ON tasks
+FOR EACH ROW
+EXECUTE FUNCTION reset_parent_task_estimation();
+
+-- Function to reset all existing parent tasks' estimations to 0
+CREATE OR REPLACE FUNCTION reset_all_parent_task_estimations() RETURNS INTEGER AS
+$$
+DECLARE
+    _updated_count INTEGER;
+BEGIN
+    -- Update all tasks that have subtasks to have 0 estimation
+    UPDATE tasks 
+    SET total_minutes = 0
+    WHERE id IN (
+        SELECT DISTINCT parent_task_id 
+        FROM tasks 
+        WHERE parent_task_id IS NOT NULL 
+        AND archived = false
+    )
+    AND total_minutes > 0
+    AND archived = false;
+    
+    GET DIAGNOSTICS _updated_count = ROW_COUNT;
+    
+    RETURN _updated_count;
+END;
+$$ LANGUAGE plpgsql;
 
 COMMIT; 

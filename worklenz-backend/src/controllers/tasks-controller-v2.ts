@@ -258,6 +258,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              (SELECT id FROM task_priorities WHERE id = t.priority_id) AS priority,
              (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
              total_minutes,
+             (SELECT get_task_recursive_estimation(t.id)) AS recursive_estimation,
              (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent,
              created_at,
              updated_at,

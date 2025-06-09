@@ -43,9 +43,11 @@ const FinanceDrawer = () => {
   const themeMode = useAppSelector((state) => state.themeReducer.mode);
 
   const dispatch = useAppDispatch();
-  const currency = useAppSelector(
-    (state) => state.financeReducer.currency
-  ).toUpperCase();
+  
+  // Get project currency from project finances, fallback to finance reducer currency
+  const projectCurrency = useAppSelector((state) => state.projectFinances.project?.currency);
+  const fallbackCurrency = useAppSelector((state) => state.financeReducer.currency);
+  const currency = (projectCurrency || fallbackCurrency || 'USD').toUpperCase();
 
   // function handle drawer close
   const handleClose = () => {
