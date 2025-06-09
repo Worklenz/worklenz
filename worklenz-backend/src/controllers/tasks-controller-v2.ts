@@ -610,6 +610,21 @@ export default class TasksControllerV2 extends TasksControllerBase {
     return this.createTagList(result.rows);
   }
 
+  public static async getProjectSubscribers(projectId: string) {
+    const q = `
+      SELECT u.name, u.avatar_url, ps.user_id, ps.team_member_id, ps.project_id
+      FROM project_subscribers ps
+             LEFT JOIN users u ON ps.user_id = u.id
+      WHERE ps.project_id = $1;
+    `;
+    const result = await db.query(q, [projectId]);
+
+    for (const member of result.rows)
+      member.color_code = getColor(member.name);
+
+    return this.createTagList(result.rows);
+  }
+
   public static async checkUserAssignedToTask(taskId: string, userId: string, teamId: string) {
     const q = `
     SELECT EXISTS(
