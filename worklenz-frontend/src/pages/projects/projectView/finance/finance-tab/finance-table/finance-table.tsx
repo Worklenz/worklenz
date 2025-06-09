@@ -1,5 +1,5 @@
 import { Flex, InputNumber, Skeleton, Tooltip, Typography } from 'antd';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   DollarCircleOutlined,
@@ -24,6 +24,8 @@ import { useParams } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
 import { canEditFixedCost } from '@/utils/finance-permissions';
 import './finance-table.css';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 
 type FinanceTableProps = {
   table: IProjectFinanceGroup;
@@ -41,6 +43,7 @@ const FinanceTable = ({
   const [selectedTask, setSelectedTask] = useState<IProjectFinanceTask | null>(null);
   const [editingFixedCostValue, setEditingFixedCostValue] = useState<number | null>(null);
   const [tasks, setTasks] = useState<IProjectFinanceTask[]>(table.tasks);
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dispatch = useAppDispatch();
   
@@ -159,8 +162,10 @@ const FinanceTable = ({
     if (!taskId || !projectId) return;
     
     dispatch(setSelectedTaskId(taskId));
-    dispatch(setShowTaskDrawer(true));
+    dispatch(fetchPhasesByProjectId(projectId));
+    dispatch(fetchPriorities());
     dispatch(fetchTask({ taskId, projectId }));
+    dispatch(setShowTaskDrawer(true));
   };
 
   // Handle task expansion/collapse
@@ -208,35 +213,112 @@ const FinanceTable = ({
     setEditingFixedCostValue(null);
   };
 
-  const renderFinancialTableColumnContent = (columnKey: FinanceTableColumnKeys, task: IProjectFinanceTask) => {
+  // Calculate indentation based on nesting level
+  const getTaskIndentation = (level: number) => level * 32; // 32px per level for better visibility
+
+  // Recursive function to render task hierarchy
+  const renderTaskHierarchy = (task: IProjectFinanceTask, level: number = 0): React.ReactElement[] => {
+    const elements: React.ReactElement[] = [];
+    
+    // Add the current task
+    const isHovered = hoveredTaskId === task.id;
+    const rowIndex = elements.length;
+    const defaultBg = rowIndex % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode);
+    const hoverBg = themeMode === 'dark' ? 'rgba(64, 169, 255, 0.08)' : 'rgba(24, 144, 255, 0.04)';
+    
+    elements.push(
+      <tr
+        key={task.id}
+        style={{
+          height: 40,
+          background: isHovered ? hoverBg : defaultBg,
+          transition: 'background 0.2s',
+        }}
+        className={`finance-table-task-row ${level > 0 ? 'finance-table-nested-task' : ''} ${themeMode === 'dark' ? 'dark' : ''}`}
+        onMouseEnter={() => setHoveredTaskId(task.id)}
+        onMouseLeave={() => setHoveredTaskId(null)}
+      >
+        {financeTableColumns.map((col) => (
+          <td
+            key={`${task.id}-${col.key}`}
+            style={{
+              width: col.width,
+              paddingInline: 16,
+              textAlign: col.type === 'string' ? 'left' : 'right',
+              backgroundColor: (col.key === FinanceTableColumnKeys.TASK || col.key === FinanceTableColumnKeys.MEMBERS) ? 
+                (isHovered ? hoverBg : defaultBg) : 
+                (isHovered ? hoverBg : 'transparent'),
+              cursor: 'default'
+            }}
+            className={customColumnStyles(col.key)}
+            onClick={
+              col.key === FinanceTableColumnKeys.FIXED_COST 
+                ? (e) => e.stopPropagation() 
+                : undefined
+            }
+          >
+            {renderFinancialTableColumnContent(col.key, task, level)}
+          </td>
+        ))}
+      </tr>
+    );
+    
+    // Add subtasks recursively if they are expanded and loaded
+    if (task.show_sub_tasks && task.sub_tasks) {
+      task.sub_tasks.forEach(subTask => {
+        elements.push(...renderTaskHierarchy(subTask, level + 1));
+      });
+    }
+    
+    return elements;
+  };
+
+  const renderFinancialTableColumnContent = (columnKey: FinanceTableColumnKeys, task: IProjectFinanceTask, level: number = 0) => {
     switch (columnKey) {
       case FinanceTableColumnKeys.TASK:
         return (
           <Tooltip title={task.name}>
-            <Flex gap={8} align="center">
-              {/* Indentation for subtasks */}
-              {task.is_sub_task && <div style={{ width: 20 }} />}
+            <Flex gap={8} align="center" style={{ paddingLeft: getTaskIndentation(level) }}>
               
               {/* Expand/collapse icon for parent tasks */}
               {task.sub_tasks_count > 0 && (
                 <div
-                  style={{ cursor: 'pointer', width: 16, display: 'flex', justifyContent: 'center' }}
+                  className="finance-table-expand-btn"
+                  style={{ 
+                    cursor: 'pointer', 
+                    width: 18, 
+                    height: 18,
+                    display: 'flex', 
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    flexShrink: 0,
+                    zIndex: 1
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleTaskExpansion(task);
                   }}
                 >
-                  {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
+                  {task.show_sub_tasks ? <DownOutlined style={{ fontSize: 12 }} /> : <RightOutlined style={{ fontSize: 12 }} />}
                 </div>
+              )}
+              
+              {/* Spacer for tasks without subtasks to align with those that have expand icons */}
+              {task.sub_tasks_count === 0 && level > 0 && (
+                <div style={{ width: 18, height: 18, flexShrink: 0 }} />
               )}
               
               {/* Task name */}
               <Typography.Text
+                className="finance-table-task-name"
                 ellipsis={{ expanded: false }}
                 style={{ 
-                  maxWidth: task.is_sub_task ? 140 : (task.sub_tasks_count > 0 ? 140 : 160),
+                  maxWidth: Math.max(100, 200 - getTaskIndentation(level) - (task.sub_tasks_count > 0 ? 26 : 18)),
                   cursor: 'pointer',
-                  color: '#1890ff'
+                  color: '#1890ff',
+                  fontSize: Math.max(12, 14 - level * 0.3), // Slightly smaller font for deeper levels
+                  opacity: Math.max(0.85, 1 - level * 0.03), // Slightly faded for deeper levels
+                  fontWeight: level > 0 ? 400 : 500 // Slightly lighter weight for nested tasks
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -251,7 +333,7 @@ const FinanceTable = ({
               >
                 {task.name}
               </Typography.Text>
-              {task.billable && <DollarCircleOutlined />}
+              {task.billable && <DollarCircleOutlined style={{ fontSize: 12, flexShrink: 0 }} />}
             </Flex>
           </Tooltip>
         );
@@ -277,11 +359,11 @@ const FinanceTable = ({
           </div>
         );
       case FinanceTableColumnKeys.HOURS:
-        return <Typography.Text>{task.estimated_hours}</Typography.Text>;
+        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{task.estimated_hours}</Typography.Text>;
       case FinanceTableColumnKeys.TOTAL_TIME_LOGGED:
-        return <Typography.Text>{task.total_time_logged}</Typography.Text>;
+        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{task.total_time_logged}</Typography.Text>;
       case FinanceTableColumnKeys.ESTIMATED_COST:
-        return <Typography.Text>{formatNumber(task.estimated_cost)}</Typography.Text>;
+        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(task.estimated_cost)}</Typography.Text>;
       case FinanceTableColumnKeys.FIXED_COST:
         return selectedTask?.id === task.id && hasEditPermission ? (
           <InputNumber
@@ -300,7 +382,7 @@ const FinanceTable = ({
               immediateSaveFixedCost(editingFixedCostValue, task.id);
             }}
             autoFocus
-            style={{ width: '100%', textAlign: 'right' }}
+            style={{ width: '100%', textAlign: 'right', fontSize: Math.max(12, 14 - level * 0.5) }}
             formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
             parser={(value) => Number(value!.replace(/\$\s?|(,*)/g, ''))}
             min={0}
@@ -313,7 +395,8 @@ const FinanceTable = ({
               cursor: hasEditPermission ? 'pointer' : 'default', 
               width: '100%', 
               display: 'block',
-              opacity: hasEditPermission ? 1 : 0.7
+              opacity: hasEditPermission ? 1 : 0.7,
+              fontSize: Math.max(12, 14 - level * 0.5)
             }}
             onClick={hasEditPermission ? (e) => {
               e.stopPropagation();
@@ -328,7 +411,8 @@ const FinanceTable = ({
         return (
           <Typography.Text 
             style={{ 
-              color: task.variance > 0 ? '#FF0000' : '#6DC376' 
+              color: task.variance > 0 ? '#FF0000' : '#6DC376',
+              fontSize: Math.max(12, 14 - level * 0.5)
             }}
           >
             {task.variance < 0 ? '+' + formatNumber(Math.abs(task.variance)) : 
@@ -337,11 +421,11 @@ const FinanceTable = ({
           </Typography.Text>
         );
       case FinanceTableColumnKeys.TOTAL_BUDGET:
-        return <Typography.Text>{formatNumber(task.total_budget)}</Typography.Text>;
+        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(task.total_budget)}</Typography.Text>;
       case FinanceTableColumnKeys.TOTAL_ACTUAL:
-        return <Typography.Text>{formatNumber(task.total_actual)}</Typography.Text>;
+        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(task.total_actual)}</Typography.Text>;
       case FinanceTableColumnKeys.COST:
-        return <Typography.Text>{formatNumber((task.total_actual || 0) - (task.fixed_cost || 0))}</Typography.Text>;
+        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber((task.total_actual || 0) - (task.fixed_cost || 0))}</Typography.Text>;
       default:
         return null;
     }
@@ -363,32 +447,29 @@ const FinanceTable = ({
     return parts.join(' ');
   };
 
-  // Flatten tasks to include subtasks for rendering
+  // Generate flattened task list with all nested levels
   const flattenedTasks = useMemo(() => {
-    const flattened: IProjectFinanceTask[] = [];
+    const flattened: React.ReactElement[] = [];
     
     tasks.forEach(task => {
-      // Add the parent task
-      flattened.push(task);
-      
-      // Add subtasks if they are expanded and loaded
-      if (task.show_sub_tasks && task.sub_tasks) {
-        task.sub_tasks.forEach(subTask => {
-          flattened.push(subTask);
-        });
-      }
+      flattened.push(...renderTaskHierarchy(task, 0));
     });
     
     return flattened;
-  }, [tasks]);
+  }, [tasks, selectedTask, editingFixedCostValue, hasEditPermission, themeMode, hoveredTaskId]);
 
-  // Calculate totals for the current table (only count parent tasks to avoid double counting)
+  // Calculate totals for the current table
+  // Since the backend already aggregates subtask values into parent tasks,
+  // we only need to sum the parent tasks (tasks without is_sub_task flag)
   const totals = useMemo(() => {
     return tasks.reduce(
       (acc, task) => {
         // Calculate actual cost from logs (total_actual - fixed_cost)
         const actualCostFromLogs = (task.total_actual || 0) - (task.fixed_cost || 0);
         
+        // The backend already handles aggregation for parent tasks with subtasks
+        // Parent tasks contain the sum of their subtasks' values
+        // So we can safely sum all parent tasks (which are the tasks in this array)
         return {
           hours: acc.hours + (task.estimated_seconds || 0),
           total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
@@ -480,43 +561,8 @@ const FinanceTable = ({
         )}
       </tr>
 
-      {/* task rows */}
-      {!isCollapse && flattenedTasks.map((task, idx) => (
-        <tr
-          key={task.id}
-          style={{
-            height: 40,
-            background: idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode),
-            transition: 'background 0.2s',
-          }}
-          className={themeMode === 'dark' ? 'dark' : ''}
-          onMouseEnter={e => e.currentTarget.style.background = themeWiseColor('#f0f0f0', '#333', themeMode)}
-          onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode)}
-        >
-          {financeTableColumns.map((col) => (
-            <td
-              key={`${task.id}-${col.key}`}
-              style={{
-                width: col.width,
-                paddingInline: 16,
-                textAlign: col.type === 'string' ? 'left' : 'right',
-                backgroundColor: (col.key === FinanceTableColumnKeys.TASK || col.key === FinanceTableColumnKeys.MEMBERS) ? 
-                  (idx % 2 === 0 ? themeWiseColor('#fafafa', '#232323', themeMode) : themeWiseColor('#ffffff', '#181818', themeMode)) : 
-                  'transparent',
-                cursor: 'default'
-              }}
-              className={customColumnStyles(col.key)}
-              onClick={
-                col.key === FinanceTableColumnKeys.FIXED_COST 
-                  ? (e) => e.stopPropagation() 
-                  : undefined
-              }
-            >
-              {renderFinancialTableColumnContent(col.key, task)}
-            </td>
-          ))}
-        </tr>
-      ))}
+      {/* task rows with recursive hierarchy */}
+      {!isCollapse && flattenedTasks}
     </>
   );
 };

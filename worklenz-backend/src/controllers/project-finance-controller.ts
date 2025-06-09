@@ -176,12 +176,12 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           tc.billable,
           tc.fixed_cost,
           tc.sub_tasks_count,
-          -- For parent tasks, sum values from all descendants including self
+          -- For parent tasks, sum values from descendants only (exclude parent task itself)
           CASE 
             WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
               SELECT SUM(sub_tc.estimated_seconds)
               FROM task_costs sub_tc 
-              WHERE sub_tc.root_id = tc.id
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
             )
             ELSE tc.estimated_seconds
           END as estimated_seconds,
@@ -189,7 +189,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
               SELECT SUM(sub_tc.total_time_logged_seconds)
               FROM task_costs sub_tc 
-              WHERE sub_tc.root_id = tc.id
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
             )
             ELSE tc.total_time_logged_seconds
           END as total_time_logged_seconds,
@@ -197,7 +197,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
               SELECT SUM(sub_tc.estimated_cost)
               FROM task_costs sub_tc 
-              WHERE sub_tc.root_id = tc.id
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
             )
             ELSE tc.estimated_cost
           END as estimated_cost,
@@ -205,7 +205,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
               SELECT SUM(sub_tc.actual_cost_from_logs)
               FROM task_costs sub_tc 
-              WHERE sub_tc.root_id = tc.id
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
             )
             ELSE tc.actual_cost_from_logs
           END as actual_cost_from_logs
@@ -860,12 +860,12 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           tc.billable,
           tc.fixed_cost,
           tc.sub_tasks_count,
-          -- For parent tasks, sum values from all descendants including self
+          -- For parent tasks, sum values from descendants only (exclude parent task itself)
           CASE 
             WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
               SELECT SUM(sub_tc.estimated_seconds)
               FROM task_costs sub_tc 
-              WHERE sub_tc.root_id = tc.id
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
             )
             ELSE tc.estimated_seconds
           END as estimated_seconds,
@@ -873,7 +873,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
               SELECT SUM(sub_tc.total_time_logged_seconds)
               FROM task_costs sub_tc 
-              WHERE sub_tc.root_id = tc.id
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
             )
             ELSE tc.total_time_logged_seconds
           END as total_time_logged_seconds,
@@ -881,7 +881,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
               SELECT SUM(sub_tc.estimated_cost)
               FROM task_costs sub_tc 
-              WHERE sub_tc.root_id = tc.id
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
             )
             ELSE tc.estimated_cost
           END as estimated_cost,
@@ -889,7 +889,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
               SELECT SUM(sub_tc.actual_cost_from_logs)
               FROM task_costs sub_tc 
-              WHERE sub_tc.root_id = tc.id
+              WHERE sub_tc.root_id = tc.id AND sub_tc.id != tc.id
             )
             ELSE tc.actual_cost_from_logs
           END as actual_cost_from_logs
