@@ -1,0 +1,96 @@
+.task-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.task-list-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 0;
+}
+
+.task-list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.task-group {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.task-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  color: white;
+}
+
+.task-group-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.task-list-table {
+  position: relative;
+  height: 600px;
+  overflow: auto;
+}
+
+.task-list-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.task-list-table th {
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+  padding: 12px;
+  text-align: left;
+  font-weight: 500;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.task-list-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.task-list-table tr:hover {
+  background-color: #fafafa;
+}
+
+.task-list-table .cursor-move {
+  cursor: move;
+  color: #bfbfbf;
+}
+
+.task-list-table .cursor-move:hover {
+  color: #8c8c8c;
+}
+
+/* Drag and drop styles */
+.task-list-table tr[data-dragging="true"] {
+  opacity: 0.5;
+  background-color: #f5f5f5;
+}
+
+/* Virtualization styles */
+.task-list-table tbody {
+  position: relative;
+}
+
+.task-list-table tr {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+} 

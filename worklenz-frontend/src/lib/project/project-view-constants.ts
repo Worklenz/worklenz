@@ -5,6 +5,7 @@ import ProjectViewMembers from '@/pages/projects/projectView/members/project-vie
 import ProjectViewUpdates from '@/pages/projects/project-view-1/updates/project-view-updates';
 import ProjectViewTaskList from '@/pages/projects/projectView/taskList/project-view-task-list';
 import ProjectViewBoard from '@/pages/projects/projectView/board/project-view-board';
+import ProjectViewTaskListV2 from '@/pages/projects/project-view-1/task-list/ProjectViewTaskListV2';
 
 // type of a tab items
 type TabItems = {
@@ -30,6 +31,13 @@ export const tabItems: TabItems[] = [
     label: 'Board',
     isPinned: true,
     element: React.createElement(ProjectViewBoard),
+  },
+  {
+    index: 2,
+    key: 'tasks-list-v2',
+    label: 'Task List V2',
+    isPinned: false,
+    element: React.createElement(ProjectViewTaskListV2),
   },
   // {
   //   index: 2,
