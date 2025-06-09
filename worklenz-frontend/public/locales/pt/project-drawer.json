@@ -47,5 +47,6 @@
   "weightedProgress": "Progresso Ponderado",
   "weightedProgressTooltip": "Calcular o progresso com base nos pesos das subtarefas",
   "timeProgress": "Progresso Baseado em Tempo",
-  "timeProgressTooltip": "Calcular o progresso com base no tempo estimado"
+  "timeProgressTooltip": "Calcular o progresso com base no tempo estimado",
+  "enterProjectKey": "Insira a chave do projeto"
 }
