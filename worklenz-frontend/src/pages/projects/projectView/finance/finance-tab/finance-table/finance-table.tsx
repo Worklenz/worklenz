@@ -13,6 +13,8 @@ import Avatars from '@/components/avatars/avatars';
 import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/project-finance.types';
 import { 
   updateTaskFixedCostAsync, 
+  updateTaskFixedCostWithRecalculation,
+  updateParentTaskCalculations,
   fetchProjectFinancesSilent,
   toggleTaskExpansion,
   fetchSubTasks
@@ -50,6 +52,7 @@ const FinanceTable = ({
   // Get the latest task groups from Redux store
   const taskGroups = useAppSelector((state) => state.projectFinances.taskGroups);
   const activeGroup = useAppSelector((state) => state.projectFinances.activeGroup);
+  const billableFilter = useAppSelector((state) => state.projectFinances.billableFilter);
   
   // Auth and permissions
   const auth = useAuthService();
@@ -144,12 +147,21 @@ const FinanceTable = ({
     const fixedCost = value || 0;
     
     try {
-      // Make the API call to persist the change
+      // First update the task fixed cost
       await dispatch(updateTaskFixedCostAsync({ taskId, groupId: table.group_id, fixedCost })).unwrap();
       
-      // Silent refresh the data to get accurate calculations from backend without loading animation
+      // Then update parent task calculations to reflect the change
+      dispatch(updateParentTaskCalculations({ taskId, groupId: table.group_id }));
+      
+      // Finally, trigger a silent refresh to ensure backend consistency
       if (projectId) {
-        dispatch(fetchProjectFinancesSilent({ projectId, groupBy: activeGroup }));
+        setTimeout(() => {
+          dispatch(fetchProjectFinancesSilent({ 
+            projectId, 
+            groupBy: activeGroup, 
+            billableFilter 
+          }));
+        }, 100); // Small delay to allow UI update to complete first
       }
     } catch (error) {
       console.error('Failed to update fixed cost:', error);
@@ -459,39 +471,57 @@ const FinanceTable = ({
   }, [tasks, selectedTask, editingFixedCostValue, hasEditPermission, themeMode, hoveredTaskId]);
 
   // Calculate totals for the current table
-  // Since the backend already aggregates subtask values into parent tasks,
-  // we only need to sum the parent tasks (tasks without is_sub_task flag)
+  // Recursively calculate totals including all subtasks
   const totals = useMemo(() => {
-    return tasks.reduce(
-      (acc, task) => {
-        // Calculate actual cost from logs (total_actual - fixed_cost)
-        const actualCostFromLogs = (task.total_actual || 0) - (task.fixed_cost || 0);
-        
-        // The backend already handles aggregation for parent tasks with subtasks
-        // Parent tasks contain the sum of their subtasks' values
-        // So we can safely sum all parent tasks (which are the tasks in this array)
-        return {
-          hours: acc.hours + (task.estimated_seconds || 0),
-          total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
-          estimated_cost: acc.estimated_cost + (task.estimated_cost || 0),
-          actual_cost_from_logs: acc.actual_cost_from_logs + actualCostFromLogs,
-          fixed_cost: acc.fixed_cost + (task.fixed_cost || 0),
-          total_budget: acc.total_budget + (task.total_budget || 0),
-          total_actual: acc.total_actual + (task.total_actual || 0),
-          variance: acc.variance + (task.variance || 0)
-        };
-      },
-      {
-        hours: 0,
-        total_time_logged: 0,
-        estimated_cost: 0,
-        actual_cost_from_logs: 0,
-        fixed_cost: 0,
-        total_budget: 0,
-        total_actual: 0,
-        variance: 0
-      }
-    );
+    const calculateTaskTotalsRecursively = (taskList: IProjectFinanceTask[]): any => {
+      return taskList.reduce(
+        (acc, task) => {
+          // Calculate actual cost from logs (total_actual - fixed_cost)
+          const actualCostFromLogs = (task.total_actual || 0) - (task.fixed_cost || 0);
+          
+          // Add current task values
+          const taskTotals = {
+            hours: acc.hours + (task.estimated_seconds || 0),
+            total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
+            estimated_cost: acc.estimated_cost + (task.estimated_cost || 0),
+            actual_cost_from_logs: acc.actual_cost_from_logs + actualCostFromLogs,
+            fixed_cost: acc.fixed_cost + (task.fixed_cost || 0),
+            total_budget: acc.total_budget + (task.total_budget || 0),
+            total_actual: acc.total_actual + (task.total_actual || 0),
+            variance: acc.variance + (task.variance || 0)
+          };
+          
+          // If task has subtasks, recursively add their totals
+          if (task.sub_tasks && task.sub_tasks.length > 0) {
+            const subTaskTotals = calculateTaskTotalsRecursively(task.sub_tasks);
+            return {
+              hours: taskTotals.hours + subTaskTotals.hours,
+              total_time_logged: taskTotals.total_time_logged + subTaskTotals.total_time_logged,
+              estimated_cost: taskTotals.estimated_cost + subTaskTotals.estimated_cost,
+              actual_cost_from_logs: taskTotals.actual_cost_from_logs + subTaskTotals.actual_cost_from_logs,
+              fixed_cost: taskTotals.fixed_cost + subTaskTotals.fixed_cost,
+              total_budget: taskTotals.total_budget + subTaskTotals.total_budget,
+              total_actual: taskTotals.total_actual + subTaskTotals.total_actual,
+              variance: taskTotals.variance + subTaskTotals.variance
+            };
+          }
+          
+          return taskTotals;
+        },
+        {
+          hours: 0,
+          total_time_logged: 0,
+          estimated_cost: 0,
+          actual_cost_from_logs: 0,
+          fixed_cost: 0,
+          total_budget: 0,
+          total_actual: 0,
+          variance: 0
+        }
+      );
+    };
+    
+    return calculateTaskTotalsRecursively(tasks);
   }, [tasks]);
   
   // Format the totals for display

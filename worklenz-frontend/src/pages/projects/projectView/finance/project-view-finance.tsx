@@ -55,15 +55,48 @@ const ProjectViewFinance = () => {
       };
     }
 
-    const totals = taskGroups.reduce((acc, group) => {
-      group.tasks.forEach(task => {
-        acc.totalEstimatedCost += task.estimated_cost || 0;
-        acc.totalFixedCost += task.fixed_cost || 0;
-        acc.totalBudget += task.total_budget || 0;
-        acc.totalActualCost += task.total_actual || 0;
-        acc.totalVariance += task.variance || 0;
+    const calculateTaskTotalsRecursively = (tasks: any[]): any => {
+      return tasks.reduce((acc, task) => {
+        // Add current task values
+        const taskTotals = {
+          totalEstimatedCost: acc.totalEstimatedCost + (task.estimated_cost || 0),
+          totalFixedCost: acc.totalFixedCost + (task.fixed_cost || 0),
+          totalBudget: acc.totalBudget + (task.total_budget || 0),
+          totalActualCost: acc.totalActualCost + (task.total_actual || 0),
+          totalVariance: acc.totalVariance + (task.variance || 0)
+        };
+        
+        // If task has subtasks, recursively add their totals
+        if (task.sub_tasks && task.sub_tasks.length > 0) {
+          const subTaskTotals = calculateTaskTotalsRecursively(task.sub_tasks);
+          return {
+            totalEstimatedCost: taskTotals.totalEstimatedCost + subTaskTotals.totalEstimatedCost,
+            totalFixedCost: taskTotals.totalFixedCost + subTaskTotals.totalFixedCost,
+            totalBudget: taskTotals.totalBudget + subTaskTotals.totalBudget,
+            totalActualCost: taskTotals.totalActualCost + subTaskTotals.totalActualCost,
+            totalVariance: taskTotals.totalVariance + subTaskTotals.totalVariance
+          };
+        }
+        
+        return taskTotals;
+      }, {
+        totalEstimatedCost: 0,
+        totalFixedCost: 0,
+        totalBudget: 0,
+        totalActualCost: 0,
+        totalVariance: 0
       });
-      return acc;
+    };
+
+    const totals = taskGroups.reduce((acc, group) => {
+      const groupTotals = calculateTaskTotalsRecursively(group.tasks);
+      return {
+        totalEstimatedCost: acc.totalEstimatedCost + groupTotals.totalEstimatedCost,
+        totalFixedCost: acc.totalFixedCost + groupTotals.totalFixedCost,
+        totalBudget: acc.totalBudget + groupTotals.totalBudget,
+        totalActualCost: acc.totalActualCost + groupTotals.totalActualCost,
+        totalVariance: acc.totalVariance + groupTotals.totalVariance
+      };
     }, {
       totalEstimatedCost: 0,
       totalFixedCost: 0,

@@ -174,7 +174,15 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           tc.phase_id,
           tc.assignees,
           tc.billable,
-          tc.fixed_cost,
+          -- Fixed cost aggregation: include current task + all descendants
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.fixed_cost)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.fixed_cost
+          END as fixed_cost,
           tc.sub_tasks_count,
           -- For parent tasks, sum values from descendants only (exclude parent task itself)
           CASE 
@@ -688,7 +696,15 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           tc.phase_id,
           tc.assignees,
           tc.billable,
-          tc.fixed_cost,
+          -- Fixed cost aggregation: include current task + all descendants
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.fixed_cost)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.fixed_cost
+          END as fixed_cost,
           tc.sub_tasks_count,
           -- For subtasks that have their own sub-subtasks, sum values from descendants only
           CASE 
@@ -932,7 +948,15 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           tc.phase_id,
           tc.assignees,
           tc.billable,
-          tc.fixed_cost,
+          -- Fixed cost aggregation: include current task + all descendants
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.fixed_cost)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.fixed_cost
+          END as fixed_cost,
           tc.sub_tasks_count,
           -- For parent tasks, sum values from descendants only (exclude parent task itself)
           CASE 

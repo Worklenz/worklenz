@@ -106,6 +106,26 @@ export const updateTaskFixedCostAsync = createAsyncThunk(
   }
 );
 
+export const updateTaskFixedCostWithRecalculation = createAsyncThunk(
+  'projectFinances/updateTaskFixedCostWithRecalculation',
+  async ({ taskId, groupId, fixedCost, projectId, groupBy, billableFilter }: { 
+    taskId: string; 
+    groupId: string; 
+    fixedCost: number; 
+    projectId: string; 
+    groupBy: GroupTypes; 
+    billableFilter?: BillableFilterType; 
+  }, { dispatch }) => {
+    // Update the fixed cost
+    await projectFinanceApiService.updateTaskFixedCost(taskId, fixedCost);
+    
+    // Trigger a silent refresh to get accurate calculations from backend
+    dispatch(fetchProjectFinancesSilent({ projectId, groupBy, billableFilter }));
+    
+    return { taskId, groupId, fixedCost };
+  }
+);
+
 export const projectFinancesSlice = createSlice({
   name: 'projectFinances',
   initialState,
@@ -231,6 +251,78 @@ export const projectFinancesSlice = createSlice({
       if (state.project) {
         state.project.currency = action.payload;
       }
+    },
+    updateParentTaskCalculations: (state, action: PayloadAction<{ taskId: string; groupId: string }>) => {
+      const { taskId, groupId } = action.payload;
+      const group = state.taskGroups.find(g => g.group_id === groupId);
+      
+      if (group) {
+        // Recursive function to recalculate parent task totals
+        const recalculateParentTotals = (tasks: IProjectFinanceTask[], targetId: string): boolean => {
+          for (const task of tasks) {
+            if (task.id === targetId) {
+              // If this task has subtasks, recalculate its totals from subtasks
+              if (task.sub_tasks && task.sub_tasks.length > 0) {
+                const subtaskTotals = task.sub_tasks.reduce((acc, subtask) => ({
+                  estimated_cost: acc.estimated_cost + (subtask.estimated_cost || 0),
+                  fixed_cost: acc.fixed_cost + (subtask.fixed_cost || 0),
+                  total_actual: acc.total_actual + (subtask.total_actual || 0),
+                  estimated_seconds: acc.estimated_seconds + (subtask.estimated_seconds || 0),
+                  total_time_logged_seconds: acc.total_time_logged_seconds + (subtask.total_time_logged_seconds || 0)
+                }), {
+                  estimated_cost: 0,
+                  fixed_cost: 0,
+                  total_actual: 0,
+                  estimated_seconds: 0,
+                  total_time_logged_seconds: 0
+                });
+                
+                // Update parent task with aggregated values
+                task.estimated_cost = subtaskTotals.estimated_cost;
+                task.fixed_cost = subtaskTotals.fixed_cost;
+                task.total_actual = subtaskTotals.total_actual;
+                task.estimated_seconds = subtaskTotals.estimated_seconds;
+                task.total_time_logged_seconds = subtaskTotals.total_time_logged_seconds;
+                task.total_budget = task.estimated_cost + task.fixed_cost;
+                task.variance = task.total_actual - task.total_budget;
+              }
+              return true;
+            }
+            
+            // Search in subtasks recursively and recalculate if found
+            if (task.sub_tasks && recalculateParentTotals(task.sub_tasks, targetId)) {
+              // After updating subtask, recalculate this parent's totals
+              if (task.sub_tasks && task.sub_tasks.length > 0) {
+                const subtaskTotals = task.sub_tasks.reduce((acc, subtask) => ({
+                  estimated_cost: acc.estimated_cost + (subtask.estimated_cost || 0),
+                  fixed_cost: acc.fixed_cost + (subtask.fixed_cost || 0),
+                  total_actual: acc.total_actual + (subtask.total_actual || 0),
+                  estimated_seconds: acc.estimated_seconds + (subtask.estimated_seconds || 0),
+                  total_time_logged_seconds: acc.total_time_logged_seconds + (subtask.total_time_logged_seconds || 0)
+                }), {
+                  estimated_cost: 0,
+                  fixed_cost: 0,
+                  total_actual: 0,
+                  estimated_seconds: 0,
+                  total_time_logged_seconds: 0
+                });
+                
+                task.estimated_cost = subtaskTotals.estimated_cost;
+                task.fixed_cost = subtaskTotals.fixed_cost;
+                task.total_actual = subtaskTotals.total_actual;
+                task.estimated_seconds = subtaskTotals.estimated_seconds;
+                task.total_time_logged_seconds = subtaskTotals.total_time_logged_seconds;
+                task.total_budget = task.estimated_cost + task.fixed_cost;
+                task.variance = task.total_actual - task.total_budget;
+              }
+              return true;
+            }
+          }
+          return false;
+        };
+        
+        recalculateParentTotals(group.tasks, taskId);
+      }
     }
   },
   extraReducers: (builder) => {
@@ -248,8 +340,39 @@ export const projectFinancesSlice = createSlice({
         state.loading = false;
       })
       .addCase(fetchProjectFinancesSilent.fulfilled, (state, action) => {
+        // Helper function to preserve expansion state and sub_tasks during updates
+        const preserveExpansionState = (existingTasks: IProjectFinanceTask[], newTasks: IProjectFinanceTask[]): IProjectFinanceTask[] => {
+          return newTasks.map(newTask => {
+            const existingTask = existingTasks.find(t => t.id === newTask.id);
+            if (existingTask) {
+              // Preserve expansion state and subtasks
+              const updatedTask = {
+                ...newTask,
+                show_sub_tasks: existingTask.show_sub_tasks,
+                sub_tasks: existingTask.sub_tasks ? 
+                  preserveExpansionState(existingTask.sub_tasks, newTask.sub_tasks || []) : 
+                  newTask.sub_tasks
+              };
+              return updatedTask;
+            }
+            return newTask;
+          });
+        };
+
+        // Update groups while preserving expansion state
+        const updatedTaskGroups = action.payload.groups.map(newGroup => {
+          const existingGroup = state.taskGroups.find(g => g.group_id === newGroup.group_id);
+          if (existingGroup) {
+            return {
+              ...newGroup,
+              tasks: preserveExpansionState(existingGroup.tasks, newGroup.tasks)
+            };
+          }
+          return newGroup;
+        });
+
         // Update data without changing loading state for silent refresh
-        state.taskGroups = action.payload.groups;
+        state.taskGroups = updatedTaskGroups;
         state.projectRateCards = action.payload.project_rate_cards;
         state.project = action.payload.project;
       })
@@ -263,7 +386,44 @@ export const projectFinancesSlice = createSlice({
             for (const task of tasks) {
               if (task.id === targetId) {
                 task.fixed_cost = fixedCost;
-                // Don't recalculate here - trigger a refresh instead for accuracy
+                // Recalculate financial values immediately for UI responsiveness
+                const totalBudget = (task.estimated_cost || 0) + fixedCost;
+                const totalActual = task.total_actual || 0;
+                const variance = totalActual - totalBudget;
+                
+                task.total_budget = totalBudget;
+                task.variance = variance;
+                return true;
+              }
+              
+              // Search in subtasks recursively
+              if (task.sub_tasks && findAndUpdateTask(task.sub_tasks, targetId)) {
+                return true;
+              }
+            }
+            return false;
+          };
+          
+          findAndUpdateTask(group.tasks, taskId);
+        }
+      })
+      .addCase(updateTaskFixedCostWithRecalculation.fulfilled, (state, action) => {
+        const { taskId, groupId, fixedCost } = action.payload;
+        const group = state.taskGroups.find(g => g.group_id === groupId);
+        
+        if (group) {
+          // Recursive function to find and update a task in the hierarchy
+          const findAndUpdateTask = (tasks: IProjectFinanceTask[], targetId: string): boolean => {
+            for (const task of tasks) {
+              if (task.id === targetId) {
+                task.fixed_cost = fixedCost;
+                // Immediate calculation for UI responsiveness
+                const totalBudget = (task.estimated_cost || 0) + fixedCost;
+                const totalActual = task.total_actual || 0;
+                const variance = totalActual - totalBudget;
+                
+                task.total_budget = totalBudget;
+                task.variance = variance;
                 return true;
               }
               
@@ -321,7 +481,8 @@ export const {
   updateTaskEstimatedCost,
   updateTaskTimeLogged,
   toggleTaskExpansion,
-  updateProjectFinanceCurrency
+  updateProjectFinanceCurrency,
+  updateParentTaskCalculations
 } = projectFinancesSlice.actions;
 
 export default projectFinancesSlice.reducer;
