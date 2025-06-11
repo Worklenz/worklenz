@@ -78,52 +78,65 @@ const hasTaskChanged = (oldTask: IProjectFinanceTask, newTask: IProjectFinanceTa
 // Optimized recursive calculation for task hierarchy with memoization
 const recalculateTaskHierarchy = (tasks: IProjectFinanceTask[]): IProjectFinanceTask[] => {
   return tasks.map(task => {
-    const cacheKey = generateTaskCacheKey(task);
-    const cached = taskCalculationCache.get(cacheKey);
-    
-    // If task has subtasks, first recalculate all subtasks recursively
+    // If task has loaded subtasks, recalculate from subtasks
     if (task.sub_tasks && task.sub_tasks.length > 0) {
       const updatedSubTasks = recalculateTaskHierarchy(task.sub_tasks);
       
-      // Calculate parent task totals from subtasks
+      // Calculate totals from subtasks only (for time and costs from logs)
       const subtaskTotals = updatedSubTasks.reduce((acc, subtask) => ({
         estimated_cost: acc.estimated_cost + (subtask.estimated_cost || 0),
         fixed_cost: acc.fixed_cost + (subtask.fixed_cost || 0),
-        total_actual: acc.total_actual + (subtask.total_actual || 0),
+        actual_cost_from_logs: acc.actual_cost_from_logs + (subtask.actual_cost_from_logs || 0),
         estimated_seconds: acc.estimated_seconds + (subtask.estimated_seconds || 0),
         total_time_logged_seconds: acc.total_time_logged_seconds + (subtask.total_time_logged_seconds || 0)
       }), {
         estimated_cost: 0,
         fixed_cost: 0,
-        total_actual: 0,
+        actual_cost_from_logs: 0,
         estimated_seconds: 0,
         total_time_logged_seconds: 0
       });
+      
+      // For parent tasks with loaded subtasks: use ONLY the subtask totals
+      // The parent's original values were backend-aggregated, now we use frontend subtask aggregation
+      const totalFixedCost = subtaskTotals.fixed_cost; // Only subtask fixed costs
+      const totalEstimatedCost = subtaskTotals.estimated_cost; // Only subtask estimated costs
+      const totalActualCostFromLogs = subtaskTotals.actual_cost_from_logs; // Only subtask logged costs
+      const totalActual = totalActualCostFromLogs + totalFixedCost;
       
       // Update parent task with aggregated values
       const updatedTask = {
         ...task,
         sub_tasks: updatedSubTasks,
-        estimated_cost: subtaskTotals.estimated_cost,
-        fixed_cost: subtaskTotals.fixed_cost,
-        total_actual: subtaskTotals.total_actual,
+        estimated_cost: totalEstimatedCost,
+        fixed_cost: totalFixedCost,
+        actual_cost_from_logs: totalActualCostFromLogs,
+        total_actual: totalActual,
         estimated_seconds: subtaskTotals.estimated_seconds,
         total_time_logged_seconds: subtaskTotals.total_time_logged_seconds,
-        total_budget: subtaskTotals.estimated_cost + subtaskTotals.fixed_cost,
-        variance: subtaskTotals.total_actual - (subtaskTotals.estimated_cost + subtaskTotals.fixed_cost)
+        total_budget: totalEstimatedCost + totalFixedCost,
+        variance: totalActual - (totalEstimatedCost + totalFixedCost)
       };
-      
-      // Cache the result
-      taskCalculationCache.set(cacheKey, {
-        task: { ...task },
-        result: updatedTask,
-        timestamp: Date.now()
-      });
       
       return updatedTask;
     }
     
+    // For parent tasks without loaded subtasks, trust backend-calculated values
+    if (task.sub_tasks_count > 0 && (!task.sub_tasks || task.sub_tasks.length === 0)) {
+      // Parent task with unloaded subtasks - backend has already calculated aggregated values
+      const { totalBudget, totalActual, variance } = calculateTaskCosts(task);
+      return {
+        ...task,
+        total_budget: totalBudget,
+        total_actual: totalActual,
+        variance: variance
+      };
+    }
+    
     // For leaf tasks, check cache first
+    const cacheKey = generateTaskCacheKey(task);
+    const cached = taskCalculationCache.get(cacheKey);
+    
     if (cached && !hasTaskChanged(cached.task, task)) {
       return { ...cached.result, ...task }; // Merge with current task to preserve other properties
     }
@@ -137,7 +150,7 @@ const recalculateTaskHierarchy = (tasks: IProjectFinanceTask[]): IProjectFinance
       variance: variance
     };
     
-    // Cache the result
+    // Cache the result only for leaf tasks
     taskCalculationCache.set(cacheKey, {
       task: { ...task },
       result: updatedTask,
@@ -340,7 +353,12 @@ export const projectFinancesSlice = createSlice({
       })
       .addCase(fetchProjectFinances.fulfilled, (state, action) => {
         state.loading = false;
-        state.taskGroups = action.payload.groups;
+        // Apply hierarchy recalculation to ensure parent tasks show correct aggregated values
+        const recalculatedGroups = action.payload.groups.map(group => ({
+          ...group,
+          tasks: recalculateTaskHierarchy(group.tasks)
+        }));
+        state.taskGroups = recalculatedGroups;
         state.projectRateCards = action.payload.project_rate_cards;
         state.project = action.payload.project;
         // Clear cache when fresh data is loaded
@@ -369,16 +387,20 @@ export const projectFinancesSlice = createSlice({
           });
         };
 
-        // Update groups while preserving expansion state
+        // Update groups while preserving expansion state and applying hierarchy recalculation
         const updatedTaskGroups = action.payload.groups.map(newGroup => {
           const existingGroup = state.taskGroups.find(g => g.group_id === newGroup.group_id);
           if (existingGroup) {
+            const tasksWithExpansion = preserveExpansionState(existingGroup.tasks, newGroup.tasks);
             return {
               ...newGroup,
-              tasks: preserveExpansionState(existingGroup.tasks, newGroup.tasks)
+              tasks: recalculateTaskHierarchy(tasksWithExpansion)
             };
           }
-          return newGroup;
+          return {
+            ...newGroup,
+            tasks: recalculateTaskHierarchy(newGroup.tasks)
+          };
         });
 
         // Update data without changing loading state for silent refresh
@@ -393,30 +415,20 @@ export const projectFinancesSlice = createSlice({
         const group = state.taskGroups.find(g => g.group_id === groupId);
         
         if (group) {
-          // Recursive function to find and update a task in the hierarchy
-          const findAndUpdateTask = (tasks: IProjectFinanceTask[], targetId: string): boolean => {
-            for (const task of tasks) {
-              if (task.id === targetId) {
-                task.fixed_cost = fixedCost;
-                // Recalculate financial values immediately for UI responsiveness
-                const totalBudget = (task.estimated_cost || 0) + fixedCost;
-                const totalActual = task.total_actual || 0;
-                const variance = totalActual - totalBudget;
-                
-                task.total_budget = totalBudget;
-                task.variance = variance;
-                return true;
-              }
-              
-              // Search in subtasks recursively
-              if (task.sub_tasks && findAndUpdateTask(task.sub_tasks, targetId)) {
-                return true;
-              }
-            }
-            return false;
-          };
+          // Update the specific task's fixed cost and recalculate the entire hierarchy
+          const result = updateTaskAndRecalculateHierarchy(
+            group.tasks, 
+            taskId, 
+            (task) => ({
+              ...task,
+              fixed_cost: fixedCost
+            })
+          );
           
-          findAndUpdateTask(group.tasks, taskId);
+          if (result.updated) {
+            group.tasks = result.tasks;
+            clearCalculationCache();
+          }
         }
       })
       .addCase(fetchSubTasks.fulfilled, (state, action) => {
@@ -447,6 +459,8 @@ export const projectFinancesSlice = createSlice({
         // Find the parent task in any group and add the subtasks
         for (const group of state.taskGroups) {
           if (findAndUpdateTask(group.tasks, parentTaskId)) {
+            // Recalculate the hierarchy after adding subtasks to ensure parent values are correct
+            group.tasks = recalculateTaskHierarchy(group.tasks);
             break;
           }
         }

@@ -73,7 +73,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
           // Parent task - use its aggregated values which already include subtask totals
           return {
             hours: acc.hours + (task.estimated_seconds || 0),
-            cost: acc.cost + ((task.total_actual || 0) - (task.fixed_cost || 0)),
+            cost: acc.cost + (task.actual_cost_from_logs || 0),
             fixedCost: acc.fixedCost + (task.fixed_cost || 0),
             totalBudget: acc.totalBudget + (task.total_budget || 0),
             totalActual: acc.totalActual + (task.total_actual || 0),
@@ -85,7 +85,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
           // Leaf task - use its individual values
           return {
             hours: acc.hours + (task.estimated_seconds || 0),
-            cost: acc.cost + ((task.total_actual || 0) - (task.fixed_cost || 0)),
+            cost: acc.cost + (task.actual_cost_from_logs || 0),
             fixedCost: acc.fixedCost + (task.fixed_cost || 0),
             totalBudget: acc.totalBudget + (task.total_budget || 0),
             totalActual: acc.totalActual + (task.total_actual || 0),

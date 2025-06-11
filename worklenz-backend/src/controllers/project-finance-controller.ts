@@ -360,6 +360,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             Number(task.total_time_logged_seconds) || 0
           ),
           estimated_cost: Number(task.estimated_cost) || 0,
+          actual_cost_from_logs: Number(task.actual_cost_from_logs) || 0,
           fixed_cost: Number(task.fixed_cost) || 0,
           total_budget: Number(task.total_budget) || 0,
           total_actual: Number(task.total_actual) || 0,
@@ -426,14 +427,15 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Cannot update fixed cost for parent tasks. Fixed cost is calculated from subtasks."));
     }
 
-    const q = `
+    // Update only the specific subtask's fixed cost
+    const updateQuery = `
       UPDATE tasks 
       SET fixed_cost = $1, updated_at = NOW()
       WHERE id = $2
       RETURNING id, name, fixed_cost;
     `;
 
-    const result = await db.query(q, [fixed_cost, taskId]);
+    const result = await db.query(updateQuery, [fixed_cost, taskId]);
 
     if (result.rows.length === 0) {
       return res
@@ -441,7 +443,10 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Task not found"));
     }
 
-    return res.status(200).send(new ServerResponse(true, result.rows[0]));
+    return res.status(200).send(new ServerResponse(true, {
+      updated_task: result.rows[0],
+      message: "Fixed cost updated successfully."
+    }));
   }
 
   @HandleExceptions()
@@ -839,6 +844,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         Number(task.total_time_logged_seconds) || 0
       ),
       estimated_cost: Number(task.estimated_cost) || 0,
+      actual_cost_from_logs: Number(task.actual_cost_from_logs) || 0,
       fixed_cost: Number(task.fixed_cost) || 0,
       total_budget: Number(task.total_budget) || 0,
       total_actual: Number(task.total_actual) || 0,
@@ -1161,6 +1167,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             Number(task.total_time_logged_seconds) || 0
           ),
           estimated_cost: Number(task.estimated_cost) || 0,
+          actual_cost_from_logs: Number(task.actual_cost_from_logs) || 0,
           fixed_cost: Number(task.fixed_cost) || 0,
           total_budget: Number(task.total_budget) || 0,
           total_actual: Number(task.total_actual) || 0,
