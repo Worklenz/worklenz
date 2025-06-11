@@ -67,6 +67,7 @@ const ProjectViewHeader = () => {
   const { loadingGroups, groupBy } = useAppSelector(state => state.taskReducer);
 
   const [creatingTask, setCreatingTask] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   const handleRefresh = () => {
     if (!projectId) return;
@@ -98,17 +99,51 @@ const ProjectViewHeader = () => {
   };
 
   const handleSubscribe = () => {
-    if (selectedProject?.id) {
+    if (!selectedProject?.id || !socket || subscriptionLoading) return;
+    
+    try {
+      setSubscriptionLoading(true);
       const newSubscriptionState = !selectedProject.subscribed;
 
-      dispatch(setProject({ ...selectedProject, subscribed: newSubscriptionState }));
-
-      socket?.emit(SocketEvents.PROJECT_SUBSCRIBERS_CHANGE.toString(), {
+      // Emit socket event first, then update state based on response
+      socket.emit(SocketEvents.PROJECT_SUBSCRIBERS_CHANGE.toString(), {
         project_id: selectedProject.id,
         user_id: currentSession?.id,
         team_member_id: currentSession?.team_member_id,
-        mode: newSubscriptionState ? 1 : 0,
+        mode: newSubscriptionState ? 0 : 1, // Fixed: 0 for subscribe, 1 for unsubscribe
       });
+
+      // Listen for the response to confirm the operation
+      socket.once(SocketEvents.PROJECT_SUBSCRIBERS_CHANGE.toString(), (response) => {
+        try {
+          // Update the project state with the confirmed subscription status
+          dispatch(setProject({ 
+            ...selectedProject, 
+            subscribed: newSubscriptionState 
+          }));
+        } catch (error) {
+          logger.error('Error handling project subscription response:', error);
+          // Revert optimistic update on error
+          dispatch(setProject({ 
+            ...selectedProject, 
+            subscribed: selectedProject.subscribed 
+          }));
+        } finally {
+          setSubscriptionLoading(false);
+        }
+      });
+
+      // Add timeout in case socket response never comes
+      setTimeout(() => {
+        if (subscriptionLoading) {
+          setSubscriptionLoading(false);
+          logger.error('Project subscription timeout - no response from server');
+        }
+      }, 5000);
+
+    } catch (error) {
+      logger.error('Error updating project subscription:', error);
+      setSubscriptionLoading(false);
     }
   };
 
@@ -239,6 +274,7 @@ const ProjectViewHeader = () => {
       <Tooltip title={t('subscribe')}>
         <Button
           shape="round"
+          loading={subscriptionLoading}
           icon={selectedProject?.subscribed ? <BellFilled /> : <BellOutlined />}
           onClick={handleSubscribe}
         >

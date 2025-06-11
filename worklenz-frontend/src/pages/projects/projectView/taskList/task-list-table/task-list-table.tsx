@@ -12,8 +12,8 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DraggableAttributes, UniqueIdentifier } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
-import { DragOverlay } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DragOverlay, DndContext, PointerSensor, useSensor, useSensors, KeyboardSensor, TouchSensor } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import { DragEndEvent } from '@dnd-kit/core';
 import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from 'antd';
@@ -50,19 +50,20 @@ import StatusDropdown from '@/components/task-list-common/status-dropdown/status
 import PriorityDropdown from '@/components/task-list-common/priorityDropdown/priority-dropdown';
 import AddCustomColumnButton from './custom-columns/custom-column-modal/add-custom-column-button';
 import { fetchSubTasks, reorderTasks, toggleTaskRowExpansion, updateCustomColumnValue } from '@/features/tasks/tasks.slice';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import ConfigPhaseButton from '@/features/projects/singleProject/phase/ConfigPhaseButton';
 import PhaseDropdown from '@/components/taskListCommon/phase-dropdown/phase-dropdown';
 import CustomColumnModal from './custom-columns/custom-column-modal/custom-column-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { useSocket } from '@/socket/socketContext';
-import { SocketEvents } from '@/shared/socket-events';
 
 interface TaskListTableProps {
   taskList: IProjectTask[] | null;
   tableId: string;
   activeId?: string | null;
+  groupBy?: string;
 }
 
 interface DraggableRowProps {
@@ -71,44 +72,50 @@ interface DraggableRowProps {
   groupId: string;
 }
 
-// Add a simplified EmptyRow component that doesn't use hooks
-const EmptyRow = () => null;
-
-// Simplify DraggableRow to eliminate conditional hook calls
+// Remove the EmptyRow component and fix the DraggableRow
 const DraggableRow = ({ task, children, groupId }: DraggableRowProps) => {
-  // Return the EmptyRow component without using any hooks
-  if (!task?.id) return <EmptyRow />;
-
+  // Always call hooks in the same order - never conditionally
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: task.id as UniqueIdentifier,
+    id: task?.id || 'empty-task', // Provide fallback ID
     data: {
       type: 'task',
       task,
       groupId,
     },
+    disabled: !task?.id, // Disable dragging for invalid tasks
+    transition: null, // Disable sortable transitions
   });
+
+  // If task is invalid, return null to not render anything
+  if (!task?.id) {
+    return null;
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? 'none' : transition, // Disable transition during drag
     opacity: isDragging ? 0.3 : 1,
     position: 'relative' as const,
     zIndex: isDragging ? 1 : 'auto',
     backgroundColor: isDragging ? 'var(--dragging-bg)' : undefined,
-  };
-
-  // Handle border styling separately to avoid conflicts
-  const borderStyle = {
-    borderStyle: isDragging ? 'solid' : undefined,
-    borderWidth: isDragging ? '1px' : undefined,
-    borderColor: isDragging ? 'var(--border-color)' : undefined,
-    borderBottomWidth: document.documentElement.getAttribute('data-theme') === 'light' && !isDragging ? '2px' : undefined
+    // Handle border styling to avoid conflicts between shorthand and individual properties
+    ...(isDragging ? {
+      borderTopWidth: '1px',
+      borderRightWidth: '1px',
+      borderBottomWidth: '1px',
+      borderLeftWidth: '1px',
+      borderStyle: 'solid',
+      borderColor: 'var(--border-color)',
+    } : {
+      // Only set borderBottomWidth when not dragging to avoid conflicts
+      borderBottomWidth: document.documentElement.getAttribute('data-theme') === 'light' ? '2px' : undefined
+    })
   };
 
   return (
     <tr
       ref={setNodeRef}
-      style={{ ...style, ...borderStyle }}
+      style={style}
       className={`task-row h-[42px] ${isDragging ? 'shadow-lg' : ''}`}
       data-is-dragging={isDragging ? 'true' : 'false'}
       data-group-id={groupId}
@@ -1208,11 +1215,32 @@ const renderCustomColumnContent = (
   return customComponents[fieldType] ? customComponents[fieldType]() : null;
 };
 
-const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, activeId }) => {
+const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, activeId, groupBy }) => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
+
+  // Add drag state
+  const [dragActiveId, setDragActiveId] = useState<string | null>(null);
+
+  // Configure sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const columnList = useAppSelector(state => state.taskReducer.columns);
@@ -1525,27 +1553,8 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   // Use the tasks from the current group if available, otherwise fall back to taskList prop
   const displayTasks = currentGroup?.tasks || taskList || [];
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const activeIndex = displayTasks.findIndex(task => task.id === active.id);
-    const overIndex = displayTasks.findIndex(task => task.id === over.id);
-
-    if (activeIndex !== -1 && overIndex !== -1) {
-      dispatch(
-        reorderTasks({
-          activeGroupId: tableId,
-          overGroupId: tableId,
-          fromIndex: activeIndex,
-          toIndex: overIndex,
-          task: displayTasks[activeIndex],
-          updatedSourceTasks: displayTasks,
-          updatedTargetTasks: displayTasks,
-        })
-      );
-    }
-  };
+  // Remove the local handleDragEnd as it conflicts with the main DndContext
+  // All drag handling is now done at the TaskGroupWrapperOptimized level
 
   const handleCustomColumnSettings = (columnKey: string) => {   
     if (!columnKey) return;
@@ -1554,12 +1563,169 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     dispatch(toggleCustomColumnModalOpen(true));
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (event: any) => {
+    setDragActiveId(event.active.id);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDragActiveId(null);
+
+    if (!over || !active || active.id === over.id) {
+      return;
+    }
+
+    const activeTask = displayTasks.find(task => task.id === active.id);
+    if (!activeTask) {
+      console.error('Active task not found:', { activeId: active.id, displayTasks: displayTasks.map(t => ({ id: t.id, name: t.name })) });
+      return;
+    }
+    
+    console.log('Found activeTask:', { 
+      id: activeTask.id, 
+      name: activeTask.name, 
+      status_id: activeTask.status_id,
+      status: activeTask.status,
+      priority: activeTask.priority,
+      project_id: project?.id,
+      team_id: project?.team_id,
+      fullProject: project
+    });
+
+    // Use the tableId directly as the group ID (it should be the group ID)
+    const currentGroupId = tableId;
+    
+    console.log('Drag operation:', {
+      activeId: active.id,
+      overId: over.id,
+      tableId,
+      currentGroupId,
+      displayTasksLength: displayTasks.length
+    });
+    
+    // Check if this is a reorder within the same group
+    const overTask = displayTasks.find(task => task.id === over.id);
+    if (overTask) {
+      // Reordering within the same group
+      const oldIndex = displayTasks.findIndex(task => task.id === active.id);
+      const newIndex = displayTasks.findIndex(task => task.id === over.id);
+      
+      console.log('Reorder details:', { oldIndex, newIndex, activeTask: activeTask.name });
+      
+      if (oldIndex !== newIndex && oldIndex !== -1 && newIndex !== -1) {
+        // Get the actual sort_order values from the tasks
+        const fromSortOrder = activeTask.sort_order || oldIndex;
+        const overTaskAtNewIndex = displayTasks[newIndex];
+        const toSortOrder = overTaskAtNewIndex?.sort_order || newIndex;
+
+        console.log('Sort order details:', {
+          oldIndex,
+          newIndex,
+          fromSortOrder,
+          toSortOrder,
+          activeTaskSortOrder: activeTask.sort_order,
+          overTaskSortOrder: overTaskAtNewIndex?.sort_order
+        });
+
+        // Create updated task list with reordered tasks
+        const updatedTasks = [...displayTasks];
+        const [movedTask] = updatedTasks.splice(oldIndex, 1);
+        updatedTasks.splice(newIndex, 0, movedTask);
+
+        console.log('Dispatching reorderTasks with:', {
+          activeGroupId: currentGroupId,
+          overGroupId: currentGroupId,
+          fromIndex: oldIndex,
+          toIndex: newIndex,
+          taskName: activeTask.name
+        });
+
+        // Update local state immediately for better UX
+        dispatch(reorderTasks({
+          activeGroupId: currentGroupId,
+          overGroupId: currentGroupId,
+          fromIndex: oldIndex,
+          toIndex: newIndex,
+          task: activeTask,
+          updatedSourceTasks: updatedTasks,
+          updatedTargetTasks: updatedTasks
+        }));
+
+        // Send socket event for backend sync
+        if (socket && project?.id && active.id && activeTask.id) {
+          // Helper function to validate UUID or return null
+          const validateUUID = (value: string | undefined | null): string | null => {
+            if (!value || value.trim() === '') return null;
+            // Basic UUID format check (8-4-4-4-12 characters)
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            return uuidRegex.test(value) ? value : null;
+          };
+
+          const body = {
+            from_index: fromSortOrder,
+            to_index: toSortOrder,
+            project_id: project.id,
+            from_group: currentGroupId,
+            to_group: currentGroupId,
+            group_by: groupBy || 'status', // Use the groupBy prop
+            to_last_index: false,
+            task: {
+              id: activeTask.id, // Use activeTask.id instead of active.id to ensure it's valid
+              project_id: project.id,
+              status: validateUUID(activeTask.status_id || activeTask.status),
+              priority: validateUUID(activeTask.priority)
+            },
+            team_id: project.team_id || currentSession?.team_id || ''
+          };
+          
+          // Validate required fields before sending
+          if (!body.task.id) {
+            console.error('Cannot send socket event: task.id is missing', { activeTask, active });
+            return;
+          }
+          
+          console.log('Validated values:', {
+            from_index: body.from_index,
+            to_index: body.to_index,
+            status: body.task.status,
+            priority: body.task.priority,
+            team_id: body.team_id,
+            originalStatus: activeTask.status_id || activeTask.status,
+            originalPriority: activeTask.priority,
+            originalTeamId: project.team_id,
+            sessionTeamId: currentSession?.team_id,
+            finalTeamId: body.team_id
+          });
+          
+          console.log('Sending socket event:', body);
+          socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), body);
+        } else {
+          console.error('Cannot send socket event: missing required data', {
+            hasSocket: !!socket,
+            hasProjectId: !!project?.id,
+            hasActiveId: !!active.id,
+            hasActiveTaskId: !!activeTask.id,
+            activeTask,
+            active
+          });
+        }
+      }
+    }
+  };
+
   return (
     <div className={`border-x border-b ${customBorderColor}`}>
-      <SortableContext
-        items={(displayTasks?.map(t => t.id).filter(Boolean) || []) as string[]}
-        strategy={verticalListSortingStrategy}
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        autoScroll={false} // Disable auto-scroll animations
       >
+        <SortableContext
+          items={(displayTasks?.filter(t => t?.id).map(t => t.id).filter(Boolean) || []) as string[]}
+          strategy={verticalListSortingStrategy}
+        >
         <div className={`tasklist-container-${tableId} min-h-0 max-w-full overflow-x-auto`}>
           <table className="rounded-2 w-full min-w-max border-collapse relative">
             <thead className="h-[42px]">
@@ -1611,25 +1777,29 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
             </thead>
             <tbody>
               {displayTasks && displayTasks.length > 0 ? (
-                displayTasks.map(task => {
-                  const updatedTask = findTaskInGroups(task.id || '') || task;
+                displayTasks
+                  .filter(task => task?.id) // Filter out tasks without valid IDs
+                  .map(task => {
+                    const updatedTask = findTaskInGroups(task.id || '') || task;
 
-                  return (
-                    <React.Fragment key={updatedTask.id}>
-                      {renderTaskRow(updatedTask)}
-                      {updatedTask.show_sub_tasks && (
-                        <>
-                          {updatedTask?.sub_tasks?.map(subtask => renderTaskRow(subtask, true))}
-                            <tr>
-                            <td colSpan={visibleColumns.length + 1}>
-                              <AddTaskListRow groupId={tableId} parentTask={updatedTask.id} />
-                            </td>
+                    return (
+                      <React.Fragment key={updatedTask.id}>
+                        {renderTaskRow(updatedTask)}
+                        {updatedTask.show_sub_tasks && (
+                          <>
+                            {updatedTask?.sub_tasks?.map(subtask => 
+                              subtask?.id ? renderTaskRow(subtask, true) : null
+                            )}
+                            <tr key={`add-subtask-${updatedTask.id}`}>
+                              <td colSpan={visibleColumns.length + 1}>
+                                <AddTaskListRow groupId={tableId} parentTask={updatedTask.id} />
+                              </td>
                             </tr>
-                        </>
-                      )}
-                    </React.Fragment>
-                  );
-                })
+                          </>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
               ) : (
                 <tr>
                   <td colSpan={visibleColumns.length + 1} className="ps-2 py-2">
@@ -1643,17 +1813,15 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
       </SortableContext>
 
       <DragOverlay
-        dropAnimation={{
-          duration: 200,
-          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-        }}
+        dropAnimation={null} // Disable drop animation
       >
-        {activeId && displayTasks?.length ? (
-          <table className="w-full">
-            <tbody>{renderTaskRow(displayTasks.find(t => t.id === activeId))}</tbody>
-          </table>
+        {dragActiveId ? (
+          <div className="bg-white dark:bg-gray-800 shadow-lg rounded border p-2 opacity-90">
+            <span className="text-sm font-medium">Moving task...</span>
+          </div>
         ) : null}
       </DragOverlay>
+    </DndContext>
 
       {/* Add task row is positioned outside of the scrollable area */}
       <div className={`border-t ${customBorderColor}`}>
