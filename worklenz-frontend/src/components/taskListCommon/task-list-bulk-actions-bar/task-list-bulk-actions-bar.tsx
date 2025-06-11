@@ -437,7 +437,7 @@ const TaskListBulkActionsBar = () => {
                 placement="top"
                 arrow
                 trigger={['click']}
-                destroyPopupOnHide
+                destroyOnHidden
                 onOpenChange={value => {
                   if (!value) {
                     setSelectedLabels([]);
