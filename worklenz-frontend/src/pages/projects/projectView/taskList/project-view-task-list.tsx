@@ -19,36 +19,19 @@ const ProjectViewTaskList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Combine related selectors to reduce subscriptions
-  const {
-    projectId,
-    taskGroups,
-    loadingGroups,
-    groupBy,
-    archived,
-    fields,
-    search,
-  } = useAppSelector(state => ({
-    projectId: state.projectReducer.projectId,
-    taskGroups: state.taskReducer.taskGroups,
-    loadingGroups: state.taskReducer.loadingGroups,
-    groupBy: state.taskReducer.groupBy,
-    archived: state.taskReducer.archived,
-    fields: state.taskReducer.fields,
-    search: state.taskReducer.search,
-  }));
+  // Split selectors to prevent unnecessary rerenders
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
+  const taskGroups = useAppSelector(state => state.taskReducer.taskGroups);
+  const loadingGroups = useAppSelector(state => state.taskReducer.loadingGroups);
+  const groupBy = useAppSelector(state => state.taskReducer.groupBy);
+  const archived = useAppSelector(state => state.taskReducer.archived);
+  const fields = useAppSelector(state => state.taskReducer.fields);
+  const search = useAppSelector(state => state.taskReducer.search);
 
-  const {
-    statusCategories,
-    loading: loadingStatusCategories,
-  } = useAppSelector(state => ({
-    statusCategories: state.taskStatusReducer.statusCategories,
-    loading: state.taskStatusReducer.loading,
-  }));
+  const statusCategories = useAppSelector(state => state.taskStatusReducer.statusCategories);
+  const loadingStatusCategories = useAppSelector(state => state.taskStatusReducer.loading);
 
-  const { loadingPhases } = useAppSelector(state => ({
-    loadingPhases: state.phaseReducer.loadingPhases,
-  }));
+  const loadingPhases = useAppSelector(state => state.phaseReducer.loadingPhases);
 
   // Single source of truth for loading state - EXCLUDE labels loading from skeleton
   // Labels loading should not block the main task list display

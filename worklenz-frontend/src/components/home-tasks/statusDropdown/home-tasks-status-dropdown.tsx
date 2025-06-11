@@ -21,10 +21,10 @@ const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps)
   const { socket, connected } = useSocket();
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
   const {
-      refetch
-    } = useGetMyTasksQuery(homeTasksConfig, {
-      skip: true // Skip automatic queries entirely
-    });
+    refetch
+  } = useGetMyTasksQuery(homeTasksConfig, {
+    skip: false, // Ensure this query runs
+  });
 
   const [selectedStatus, setSelectedStatus] = useState<ITaskStatus | undefined>(undefined);
 

@@ -23,14 +23,14 @@ const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
     const { t } = useTranslation('home');
     const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
     const { refetch } = useGetMyTasksQuery(homeTasksConfig, {
-        skip: true // Skip automatic queries entirely
+        skip: false
     });
-    
+
     // Use useMemo to avoid re-renders when record.end_date is the same
-    const initialDate = useMemo(() => 
+    const initialDate = useMemo(() =>
         record.end_date ? dayjs(record.end_date) : null
-    , [record.end_date]);
-    
+        , [record.end_date]);
+
     const [selectedDate, setSelectedDate] = useState<Dayjs | null>(initialDate);
 
     // Update selected date when record changes

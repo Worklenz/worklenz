@@ -3,13 +3,16 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { log_error } from "../../shared/utils";
 import db from "../../config/db";
 import { Request } from "express";
+import { ERROR_KEY, SUCCESS_KEY } from "./passport-constants";
 
 async function handleLogin(req: Request, email: string, password: string, done: any) {
-  console.log("Login attempt for:", email);
+  // Clear any existing flash messages
+  (req.session as any).flash = {};
 
   if (!email || !password) {
-    console.log("Missing credentials");
-    return done(null, false, { message: "Please enter both email and password" });
+    const errorMsg = "Please enter both email and password";
+    req.flash(ERROR_KEY, errorMsg);
+    return done(null, false);
   }
 
   try {
@@ -19,23 +22,27 @@ async function handleLogin(req: Request, email: string, password: string, done: 
                  AND google_id IS NULL
                  AND is_deleted IS FALSE;`;
     const result = await db.query(q, [email]);
-    console.log("User query result count:", result.rowCount);
     
     const [data] = result.rows;
 
     if (!data?.password) {
-      console.log("No account found");
-      return done(null, false, { message: "No account found with this email" });
+      const errorMsg = "No account found with this email";
+      req.flash(ERROR_KEY, errorMsg);
+      return done(null, false);
     }
 
     const passwordMatch = bcrypt.compareSync(password, data.password);
-    console.log("Password match:", passwordMatch);
     
     if (passwordMatch && email === data.email) {
       delete data.password;
-      return done(null, data, {message: "User successfully logged in"});
+      const successMsg = "User successfully logged in";
+      req.flash(SUCCESS_KEY, successMsg);
+      return done(null, data);
     }
-    return done(null, false, { message: "Incorrect email or password" });
+    
+    const errorMsg = "Incorrect email or password";
+    req.flash(ERROR_KEY, errorMsg);
+    return done(null, false);
   } catch (error) {
     console.error("Login error:", error);
     log_error(error, req.body);
