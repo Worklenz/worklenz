@@ -174,7 +174,15 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           tc.phase_id,
           tc.assignees,
           tc.billable,
-          tc.fixed_cost,
+          -- Fixed cost aggregation: include current task + all descendants
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.fixed_cost)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.fixed_cost
+          END as fixed_cost,
           tc.sub_tasks_count,
           -- For parent tasks, sum values from descendants only (exclude parent task itself)
           CASE 
@@ -352,6 +360,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             Number(task.total_time_logged_seconds) || 0
           ),
           estimated_cost: Number(task.estimated_cost) || 0,
+          actual_cost_from_logs: Number(task.actual_cost_from_logs) || 0,
           fixed_cost: Number(task.fixed_cost) || 0,
           total_budget: Number(task.total_budget) || 0,
           total_actual: Number(task.total_actual) || 0,
@@ -391,14 +400,42 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Invalid fixed cost value"));
     }
 
-    const q = `
+    // Check if the task has subtasks - parent tasks should not have editable fixed costs
+    const checkParentQuery = `
+      SELECT 
+        t.id,
+        t.name,
+        (SELECT COUNT(*) FROM tasks st WHERE st.parent_task_id = t.id AND st.archived = false) as sub_tasks_count
+      FROM tasks t 
+      WHERE t.id = $1 AND t.archived = false;
+    `;
+
+    const checkResult = await db.query(checkParentQuery, [taskId]);
+
+    if (checkResult.rows.length === 0) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Task not found"));
+    }
+
+    const task = checkResult.rows[0];
+    
+    // Prevent updating fixed cost for parent tasks
+    if (task.sub_tasks_count > 0) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Cannot update fixed cost for parent tasks. Fixed cost is calculated from subtasks."));
+    }
+
+    // Update only the specific subtask's fixed cost
+    const updateQuery = `
       UPDATE tasks 
       SET fixed_cost = $1, updated_at = NOW()
       WHERE id = $2
       RETURNING id, name, fixed_cost;
     `;
 
-    const result = await db.query(q, [fixed_cost, taskId]);
+    const result = await db.query(updateQuery, [fixed_cost, taskId]);
 
     if (result.rows.length === 0) {
       return res
@@ -406,7 +443,10 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Task not found"));
     }
 
-    return res.status(200).send(new ServerResponse(true, result.rows[0]));
+    return res.status(200).send(new ServerResponse(true, {
+      updated_task: result.rows[0],
+      message: "Fixed cost updated successfully."
+    }));
   }
 
   @HandleExceptions()
@@ -688,7 +728,15 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           tc.phase_id,
           tc.assignees,
           tc.billable,
-          tc.fixed_cost,
+          -- Fixed cost aggregation: include current task + all descendants
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.fixed_cost)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.fixed_cost
+          END as fixed_cost,
           tc.sub_tasks_count,
           -- For subtasks that have their own sub-subtasks, sum values from descendants only
           CASE 
@@ -796,6 +844,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         Number(task.total_time_logged_seconds) || 0
       ),
       estimated_cost: Number(task.estimated_cost) || 0,
+      actual_cost_from_logs: Number(task.actual_cost_from_logs) || 0,
       fixed_cost: Number(task.fixed_cost) || 0,
       total_budget: Number(task.total_budget) || 0,
       total_actual: Number(task.total_actual) || 0,
@@ -932,7 +981,15 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
           tc.phase_id,
           tc.assignees,
           tc.billable,
-          tc.fixed_cost,
+          -- Fixed cost aggregation: include current task + all descendants
+          CASE 
+            WHEN tc.level = 0 AND tc.sub_tasks_count > 0 THEN (
+              SELECT SUM(sub_tc.fixed_cost)
+              FROM task_costs sub_tc 
+              WHERE sub_tc.root_id = tc.id
+            )
+            ELSE tc.fixed_cost
+          END as fixed_cost,
           tc.sub_tasks_count,
           -- For parent tasks, sum values from descendants only (exclude parent task itself)
           CASE 
@@ -1110,6 +1167,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
             Number(task.total_time_logged_seconds) || 0
           ),
           estimated_cost: Number(task.estimated_cost) || 0,
+          actual_cost_from_logs: Number(task.actual_cost_from_logs) || 0,
           fixed_cost: Number(task.fixed_cost) || 0,
           total_budget: Number(task.total_budget) || 0,
           total_actual: Number(task.total_actual) || 0,

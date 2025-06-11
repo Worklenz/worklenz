@@ -55,15 +55,48 @@ const ProjectViewFinance = () => {
       };
     }
 
+    // Optimized calculation that avoids double counting in nested hierarchies
+    const calculateTaskTotalsFlat = (tasks: any[]): any => {
+      let totals = {
+        totalEstimatedCost: 0,
+        totalFixedCost: 0,
+        totalBudget: 0,
+        totalActualCost: 0,
+        totalVariance: 0
+      };
+
+      for (const task of tasks) {
+        // For parent tasks with subtasks, only count the aggregated values (no double counting)
+        // For leaf tasks, count their individual values
+        if (task.sub_tasks && task.sub_tasks.length > 0) {
+          // Parent task - use its aggregated values which already include subtask totals
+          totals.totalEstimatedCost += task.estimated_cost || 0;
+          totals.totalFixedCost += task.fixed_cost || 0;
+          totals.totalBudget += task.total_budget || 0;
+          totals.totalActualCost += task.total_actual || 0;
+          totals.totalVariance += task.variance || 0;
+        } else {
+          // Leaf task - use its individual values
+          totals.totalEstimatedCost += task.estimated_cost || 0;
+          totals.totalFixedCost += task.fixed_cost || 0;
+          totals.totalBudget += task.total_budget || 0;
+          totals.totalActualCost += task.total_actual || 0;
+          totals.totalVariance += task.variance || 0;
+        }
+      }
+
+      return totals;
+    };
+
     const totals = taskGroups.reduce((acc, group) => {
-      group.tasks.forEach(task => {
-        acc.totalEstimatedCost += task.estimated_cost || 0;
-        acc.totalFixedCost += task.fixed_cost || 0;
-        acc.totalBudget += task.total_budget || 0;
-        acc.totalActualCost += task.total_actual || 0;
-        acc.totalVariance += task.variance || 0;
-      });
-      return acc;
+      const groupTotals = calculateTaskTotalsFlat(group.tasks);
+      return {
+        totalEstimatedCost: acc.totalEstimatedCost + groupTotals.totalEstimatedCost,
+        totalFixedCost: acc.totalFixedCost + groupTotals.totalFixedCost,
+        totalBudget: acc.totalBudget + groupTotals.totalBudget,
+        totalActualCost: acc.totalActualCost + groupTotals.totalActualCost,
+        totalVariance: acc.totalVariance + groupTotals.totalVariance
+      };
     }, {
       totalEstimatedCost: 0,
       totalFixedCost: 0,

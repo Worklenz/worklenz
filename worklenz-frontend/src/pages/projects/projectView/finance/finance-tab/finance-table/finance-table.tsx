@@ -13,7 +13,6 @@ import Avatars from '@/components/avatars/avatars';
 import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/project-finance.types';
 import { 
   updateTaskFixedCostAsync, 
-  fetchProjectFinancesSilent,
   toggleTaskExpansion,
   fetchSubTasks
 } from '@/features/projects/finance/project-finance.slice';
@@ -49,7 +48,6 @@ const FinanceTable = ({
   
   // Get the latest task groups from Redux store
   const taskGroups = useAppSelector((state) => state.projectFinances.taskGroups);
-  const activeGroup = useAppSelector((state) => state.projectFinances.activeGroup);
   
   // Auth and permissions
   const auth = useAuthService();
@@ -71,7 +69,7 @@ const FinanceTable = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (selectedTask && !(event.target as Element)?.closest('.fixed-cost-input')) {
-        // Save current value before closing
+        // Save current value before closing if it has changed
         if (editingFixedCostValue !== null) {
           immediateSaveFixedCost(editingFixedCostValue, selectedTask.id);
         } else {
@@ -85,7 +83,7 @@ const FinanceTable = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [selectedTask, editingFixedCostValue]);
+  }, [selectedTask, editingFixedCostValue, tasks]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -143,14 +141,37 @@ const FinanceTable = ({
   const handleFixedCostChange = async (value: number | null, taskId: string) => {
     const fixedCost = value || 0;
     
+    // Find the task to check if it's a parent task
+    const findTask = (tasks: IProjectFinanceTask[], id: string): IProjectFinanceTask | null => {
+      for (const task of tasks) {
+        if (task.id === id) return task;
+        if (task.sub_tasks) {
+          const found = findTask(task.sub_tasks, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    const task = findTask(tasks, taskId);
+    if (!task) {
+      console.error('Task not found:', taskId);
+      return;
+    }
+    
+    // Prevent editing fixed cost for parent tasks
+    if (task.sub_tasks_count > 0) {
+      console.warn('Cannot edit fixed cost for parent tasks. Fixed cost is calculated from subtasks.');
+      return;
+    }
+    
     try {
-      // Make the API call to persist the change
+      // Update the task fixed cost - this will automatically trigger hierarchical recalculation
+      // The Redux slice handles parent task updates through recalculateTaskHierarchy
       await dispatch(updateTaskFixedCostAsync({ taskId, groupId: table.group_id, fixedCost })).unwrap();
       
-      // Silent refresh the data to get accurate calculations from backend without loading animation
-      if (projectId) {
-        dispatch(fetchProjectFinancesSilent({ projectId, groupBy: activeGroup }));
-      }
+      setSelectedTask(null);
+      setEditingFixedCostValue(null);
     } catch (error) {
       console.error('Failed to update fixed cost:', error);
     }
@@ -190,7 +211,24 @@ const FinanceTable = ({
     
     // Set new timeout
     saveTimeoutRef.current = setTimeout(() => {
-      if (value !== null) {
+      // Find the current task to check if value actually changed
+      const findTask = (tasks: IProjectFinanceTask[], id: string): IProjectFinanceTask | null => {
+        for (const task of tasks) {
+          if (task.id === id) return task;
+          if (task.sub_tasks) {
+            const found = findTask(task.sub_tasks, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      
+      const currentTask = findTask(tasks, taskId);
+      const currentFixedCost = currentTask?.fixed_cost || 0;
+      const newFixedCost = value || 0;
+      
+      // Only save if the value actually changed
+      if (newFixedCost !== currentFixedCost && value !== null) {
         handleFixedCostChange(value, taskId);
         setSelectedTask(null);
         setEditingFixedCostValue(null);
@@ -206,11 +244,30 @@ const FinanceTable = ({
       saveTimeoutRef.current = null;
     }
     
-    if (value !== null) {
+    // Find the current task to check if value actually changed
+    const findTask = (tasks: IProjectFinanceTask[], id: string): IProjectFinanceTask | null => {
+      for (const task of tasks) {
+        if (task.id === id) return task;
+        if (task.sub_tasks) {
+          const found = findTask(task.sub_tasks, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    const currentTask = findTask(tasks, taskId);
+    const currentFixedCost = currentTask?.fixed_cost || 0;
+    const newFixedCost = value || 0;
+    
+    // Only save if the value actually changed
+    if (newFixedCost !== currentFixedCost && value !== null) {
       handleFixedCostChange(value, taskId);
+    } else {
+      // Just close the editor without saving
+      setSelectedTask(null);
+      setEditingFixedCostValue(null);
     }
-    setSelectedTask(null);
-    setEditingFixedCostValue(null);
   };
 
   // Calculate indentation based on nesting level
@@ -365,7 +422,11 @@ const FinanceTable = ({
       case FinanceTableColumnKeys.ESTIMATED_COST:
         return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(task.estimated_cost)}</Typography.Text>;
       case FinanceTableColumnKeys.FIXED_COST:
-        return selectedTask?.id === task.id && hasEditPermission ? (
+        // Parent tasks with subtasks should not be editable - they aggregate from subtasks
+        const isParentTask = task.sub_tasks_count > 0;
+        const canEditThisTask = hasEditPermission && !isParentTask;
+        
+        return selectedTask?.id === task.id && canEditThisTask ? (
           <InputNumber
             value={editingFixedCostValue !== null ? editingFixedCostValue : task.fixed_cost}
             onChange={(value) => {
@@ -392,17 +453,20 @@ const FinanceTable = ({
         ) : (
           <Typography.Text 
             style={{ 
-              cursor: hasEditPermission ? 'pointer' : 'default', 
+              cursor: canEditThisTask ? 'pointer' : 'default', 
               width: '100%', 
               display: 'block',
-              opacity: hasEditPermission ? 1 : 0.7,
-              fontSize: Math.max(12, 14 - level * 0.5)
+              opacity: canEditThisTask ? 1 : 0.7,
+              fontSize: Math.max(12, 14 - level * 0.5),
+              fontStyle: isParentTask ? 'italic' : 'normal',
+              color: isParentTask ? (themeMode === 'dark' ? '#888' : '#666') : 'inherit'
             }}
-            onClick={hasEditPermission ? (e) => {
+            onClick={canEditThisTask ? (e) => {
               e.stopPropagation();
               setSelectedTask(task);
               setEditingFixedCostValue(task.fixed_cost);
             } : undefined}
+            title={isParentTask ? 'Fixed cost is calculated from subtasks' : undefined}
           >
             {formatNumber(task.fixed_cost)}
           </Typography.Text>
@@ -425,7 +489,7 @@ const FinanceTable = ({
       case FinanceTableColumnKeys.TOTAL_ACTUAL:
         return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(task.total_actual)}</Typography.Text>;
       case FinanceTableColumnKeys.COST:
-        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber((task.total_actual || 0) - (task.fixed_cost || 0))}</Typography.Text>;
+        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(task.actual_cost_from_logs || 0)}</Typography.Text>;
       default:
         return null;
     }
@@ -459,29 +523,10 @@ const FinanceTable = ({
   }, [tasks, selectedTask, editingFixedCostValue, hasEditPermission, themeMode, hoveredTaskId]);
 
   // Calculate totals for the current table
-  // Since the backend already aggregates subtask values into parent tasks,
-  // we only need to sum the parent tasks (tasks without is_sub_task flag)
+  // Optimized calculation that avoids double counting in nested hierarchies
   const totals = useMemo(() => {
-    return tasks.reduce(
-      (acc, task) => {
-        // Calculate actual cost from logs (total_actual - fixed_cost)
-        const actualCostFromLogs = (task.total_actual || 0) - (task.fixed_cost || 0);
-        
-        // The backend already handles aggregation for parent tasks with subtasks
-        // Parent tasks contain the sum of their subtasks' values
-        // So we can safely sum all parent tasks (which are the tasks in this array)
-        return {
-          hours: acc.hours + (task.estimated_seconds || 0),
-          total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
-          estimated_cost: acc.estimated_cost + (task.estimated_cost || 0),
-          actual_cost_from_logs: acc.actual_cost_from_logs + actualCostFromLogs,
-          fixed_cost: acc.fixed_cost + (task.fixed_cost || 0),
-          total_budget: acc.total_budget + (task.total_budget || 0),
-          total_actual: acc.total_actual + (task.total_actual || 0),
-          variance: acc.variance + (task.variance || 0)
-        };
-      },
-      {
+    const calculateTaskTotalsRecursive = (taskList: IProjectFinanceTask[]): any => {
+      let totals = {
         hours: 0,
         total_time_logged: 0,
         estimated_cost: 0,
@@ -490,8 +535,38 @@ const FinanceTable = ({
         total_budget: 0,
         total_actual: 0,
         variance: 0
+      };
+
+      for (const task of taskList) {
+        if (task.sub_tasks && task.sub_tasks.length > 0) {
+          // Parent task with loaded subtasks - only count the subtasks recursively
+          // This completely avoids the parent's aggregated values to prevent double counting
+          const subtaskTotals = calculateTaskTotalsRecursive(task.sub_tasks);
+          totals.hours += subtaskTotals.hours;
+          totals.total_time_logged += subtaskTotals.total_time_logged;
+          totals.estimated_cost += subtaskTotals.estimated_cost;
+          totals.actual_cost_from_logs += subtaskTotals.actual_cost_from_logs;
+          totals.fixed_cost += subtaskTotals.fixed_cost;
+          totals.total_budget += subtaskTotals.total_budget;
+          totals.total_actual += subtaskTotals.total_actual;
+          totals.variance += subtaskTotals.variance;
+        } else {
+          // Leaf task or parent task without loaded subtasks - use its values directly
+          totals.hours += task.estimated_seconds || 0;
+          totals.total_time_logged += task.total_time_logged_seconds || 0;
+          totals.estimated_cost += task.estimated_cost || 0;
+          totals.actual_cost_from_logs += task.actual_cost_from_logs || 0;
+          totals.fixed_cost += task.fixed_cost || 0;
+          totals.total_budget += task.total_budget || 0;
+          totals.total_actual += task.total_actual || 0;
+          totals.variance += task.variance || 0;
+        }
       }
-    );
+
+      return totals;
+    };
+    
+    return calculateTaskTotalsRecursive(tasks);
   }, [tasks]);
   
   // Format the totals for display

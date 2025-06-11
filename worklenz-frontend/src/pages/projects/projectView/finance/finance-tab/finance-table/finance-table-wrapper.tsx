@@ -8,7 +8,7 @@ import { openFinanceDrawer } from '@/features/finance/finance-slice';
 import { financeTableColumns, FinanceTableColumnKeys } from '@/lib/project/project-view-finance-table-columns';
 import FinanceTable from './finance-table';
 import FinanceDrawer from '@/features/finance/finance-drawer/finance-drawer';
-import { IProjectFinanceGroup } from '@/types/project/project-finance.types';
+import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/project-finance.types';
 import { createPortal } from 'react-dom';
 
 interface FinanceTableWrapperProps {
@@ -64,33 +64,37 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
 
   // Use Redux store data for totals calculation to ensure reactivity
   const totals = useMemo(() => {
-    return taskGroups.reduce(
-      (
-        acc: {
-          hours: number;
-          cost: number;
-          fixedCost: number;
-          totalBudget: number;
-          totalActual: number;
-          variance: number;
-          total_time_logged: number;
-          estimated_cost: number;
-        },
-        table: IProjectFinanceGroup
-      ) => {
-        table.tasks.forEach((task) => {
-          acc.hours += (task.estimated_seconds) || 0;
-          acc.cost += ((task.total_actual || 0) - (task.fixed_cost || 0));
-          acc.fixedCost += task.fixed_cost || 0;
-          acc.totalBudget += task.total_budget || 0;
-          acc.totalActual += task.total_actual || 0;
-          acc.variance += task.variance || 0;
-          acc.total_time_logged += (task.total_time_logged_seconds) || 0;
-          acc.estimated_cost += task.estimated_cost || 0;
-        });
-        return acc;
-      },
-      {
+    // Recursive function to calculate totals from task hierarchy without double counting
+    const calculateTaskTotalsRecursively = (tasks: IProjectFinanceTask[]): any => {
+      return tasks.reduce((acc, task) => {
+        // For parent tasks with subtasks, only count the aggregated values (no double counting)
+        // For leaf tasks, count their individual values
+        if (task.sub_tasks && task.sub_tasks.length > 0) {
+          // Parent task - use its aggregated values which already include subtask totals
+          return {
+            hours: acc.hours + (task.estimated_seconds || 0),
+            cost: acc.cost + (task.actual_cost_from_logs || 0),
+            fixedCost: acc.fixedCost + (task.fixed_cost || 0),
+            totalBudget: acc.totalBudget + (task.total_budget || 0),
+            totalActual: acc.totalActual + (task.total_actual || 0),
+            variance: acc.variance + (task.variance || 0),
+            total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
+            estimated_cost: acc.estimated_cost + (task.estimated_cost || 0)
+          };
+        } else {
+          // Leaf task - use its individual values
+          return {
+            hours: acc.hours + (task.estimated_seconds || 0),
+            cost: acc.cost + (task.actual_cost_from_logs || 0),
+            fixedCost: acc.fixedCost + (task.fixed_cost || 0),
+            totalBudget: acc.totalBudget + (task.total_budget || 0),
+            totalActual: acc.totalActual + (task.total_actual || 0),
+            variance: acc.variance + (task.variance || 0),
+            total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
+            estimated_cost: acc.estimated_cost + (task.estimated_cost || 0)
+          };
+        }
+      }, {
         hours: 0,
         cost: 0,
         fixedCost: 0,
@@ -98,9 +102,32 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
         totalActual: 0,
         variance: 0,
         total_time_logged: 0,
-        estimated_cost: 0,
-      }
-    );
+        estimated_cost: 0
+      });
+    };
+
+    return taskGroups.reduce((acc, table: IProjectFinanceGroup) => {
+      const groupTotals = calculateTaskTotalsRecursively(table.tasks);
+      return {
+        hours: acc.hours + groupTotals.hours,
+        cost: acc.cost + groupTotals.cost,
+        fixedCost: acc.fixedCost + groupTotals.fixedCost,
+        totalBudget: acc.totalBudget + groupTotals.totalBudget,
+        totalActual: acc.totalActual + groupTotals.totalActual,
+        variance: acc.variance + groupTotals.variance,
+        total_time_logged: acc.total_time_logged + groupTotals.total_time_logged,
+        estimated_cost: acc.estimated_cost + groupTotals.estimated_cost
+      };
+    }, {
+      hours: 0,
+      cost: 0,
+      fixedCost: 0,
+      totalBudget: 0,
+      totalActual: 0,
+      variance: 0,
+      total_time_logged: 0,
+      estimated_cost: 0
+    });
   }, [taskGroups]);
 
 

@@ -34,6 +34,7 @@ export interface IProjectFinanceTask {
   total_time_logged_seconds: number;
   total_time_logged: string; // Formatted time string like "4h 30m 12s"
   estimated_cost: number;
+  actual_cost_from_logs: number;
   members: IProjectFinanceMember[];
   billable: boolean;
   fixed_cost: number;
