@@ -539,8 +539,7 @@ const FinanceTable = ({
 
       for (const task of taskList) {
         if (task.sub_tasks && task.sub_tasks.length > 0) {
-          // Parent task with loaded subtasks - only count the subtasks recursively
-          // This completely avoids the parent's aggregated values to prevent double counting
+          // Parent task with loaded subtasks - only use subtasks values (no parent's own values)
           const subtaskTotals = calculateTaskTotalsRecursive(task.sub_tasks);
           totals.hours += subtaskTotals.hours;
           totals.total_time_logged += subtaskTotals.total_time_logged;
@@ -552,14 +551,15 @@ const FinanceTable = ({
           totals.variance += subtaskTotals.variance;
         } else {
           // Leaf task or parent task without loaded subtasks - use its values directly
+          const leafTotalActual = (task.actual_cost_from_logs || 0) + (task.fixed_cost || 0);
           totals.hours += task.estimated_seconds || 0;
           totals.total_time_logged += task.total_time_logged_seconds || 0;
           totals.estimated_cost += task.estimated_cost || 0;
           totals.actual_cost_from_logs += task.actual_cost_from_logs || 0;
           totals.fixed_cost += task.fixed_cost || 0;
-          totals.total_budget += task.total_budget || 0;
-          totals.total_actual += task.total_actual || 0;
-          totals.variance += task.variance || 0;
+          totals.total_budget += task.estimated_cost || 0;
+          totals.total_actual += leafTotalActual;
+          totals.variance += leafTotalActual - (task.estimated_cost || 0);
         }
       }
 

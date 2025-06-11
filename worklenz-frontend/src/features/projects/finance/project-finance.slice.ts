@@ -23,9 +23,9 @@ const secondsToHours = (seconds: number) => seconds / 3600;
 const calculateTaskCosts = (task: IProjectFinanceTask) => {
   const hours = secondsToHours(task.estimated_seconds || 0);
   const timeLoggedHours = secondsToHours(task.total_time_logged_seconds || 0);
-  const fixedCost = task.fixed_cost || 0;
   
-  const totalBudget = (task.estimated_cost || 0) + fixedCost;
+  const totalBudget = task.estimated_cost || 0;
+  // task.total_actual already includes actual_cost_from_logs + fixed_cost from backend
   const totalActual = task.total_actual || 0;
   const variance = totalActual - totalBudget;
 
@@ -114,8 +114,8 @@ const recalculateTaskHierarchy = (tasks: IProjectFinanceTask[]): IProjectFinance
         total_actual: totalActual,
         estimated_seconds: subtaskTotals.estimated_seconds,
         total_time_logged_seconds: subtaskTotals.total_time_logged_seconds,
-        total_budget: totalEstimatedCost + totalFixedCost,
-        variance: totalActual - (totalEstimatedCost + totalFixedCost)
+        total_budget: totalEstimatedCost,
+        variance: totalActual - totalEstimatedCost
       };
       
       return updatedTask;

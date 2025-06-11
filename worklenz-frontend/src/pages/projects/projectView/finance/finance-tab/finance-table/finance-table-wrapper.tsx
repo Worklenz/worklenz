@@ -67,29 +67,31 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
     // Recursive function to calculate totals from task hierarchy without double counting
     const calculateTaskTotalsRecursively = (tasks: IProjectFinanceTask[]): any => {
       return tasks.reduce((acc, task) => {
-        // For parent tasks with subtasks, only count the aggregated values (no double counting)
-        // For leaf tasks, count their individual values
+        // For parent tasks with subtasks, aggregate values from subtasks only
+        // For leaf tasks, use their individual values
         if (task.sub_tasks && task.sub_tasks.length > 0) {
-          // Parent task - use its aggregated values which already include subtask totals
+          // Parent task - only use aggregated values from subtasks (no parent's own values)
+          const subtaskTotals = calculateTaskTotalsRecursively(task.sub_tasks);
           return {
-            hours: acc.hours + (task.estimated_seconds || 0),
-            cost: acc.cost + (task.actual_cost_from_logs || 0),
-            fixedCost: acc.fixedCost + (task.fixed_cost || 0),
-            totalBudget: acc.totalBudget + (task.total_budget || 0),
-            totalActual: acc.totalActual + (task.total_actual || 0),
-            variance: acc.variance + (task.variance || 0),
-            total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
-            estimated_cost: acc.estimated_cost + (task.estimated_cost || 0)
+            hours: acc.hours + subtaskTotals.hours,
+            cost: acc.cost + subtaskTotals.cost,
+            fixedCost: acc.fixedCost + subtaskTotals.fixedCost,
+            totalBudget: acc.totalBudget + subtaskTotals.totalBudget,
+            totalActual: acc.totalActual + subtaskTotals.totalActual,
+            variance: acc.variance + subtaskTotals.variance,
+            total_time_logged: acc.total_time_logged + subtaskTotals.total_time_logged,
+            estimated_cost: acc.estimated_cost + subtaskTotals.estimated_cost
           };
         } else {
-          // Leaf task - use its individual values
+          // Leaf task - calculate values from individual task properties
+          const leafTotalActual = (task.actual_cost_from_logs || 0) + (task.fixed_cost || 0);
           return {
             hours: acc.hours + (task.estimated_seconds || 0),
             cost: acc.cost + (task.actual_cost_from_logs || 0),
             fixedCost: acc.fixedCost + (task.fixed_cost || 0),
-            totalBudget: acc.totalBudget + (task.total_budget || 0),
-            totalActual: acc.totalActual + (task.total_actual || 0),
-            variance: acc.variance + (task.variance || 0),
+            totalBudget: acc.totalBudget + (task.estimated_cost || 0),
+            totalActual: acc.totalActual + leafTotalActual,
+            variance: acc.variance + (leafTotalActual - (task.estimated_cost || 0)),
             total_time_logged: acc.total_time_logged + (task.total_time_logged_seconds || 0),
             estimated_cost: acc.estimated_cost + (task.estimated_cost || 0)
           };
