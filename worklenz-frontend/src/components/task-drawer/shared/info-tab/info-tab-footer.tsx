@@ -97,30 +97,28 @@ const InfoTabFooter = () => {
   // mentions options
   const mentionsOptions =
     members?.map(member => ({
-      value: member.id,
+      value: member.name,
       label: member.name,
+      key: member.id,
     })) ?? [];
 
   const memberSelectHandler = useCallback((member: IMentionMemberSelectOption) => {
     console.log('member', member);
     if (!member?.value || !member?.label) return;
+    
+    // Find the member ID from the members list using the name
+    const selectedMember = members.find(m => m.name === member.value);
+    if (!selectedMember) return;
+    
+    // Add to selected members if not already present
     setSelectedMembers(prev =>
-      prev.some(mention => mention.team_member_id === member.value)
+      prev.some(mention => mention.team_member_id === selectedMember.id)
         ? prev
-        : [...prev, { team_member_id: member.value, name: member.label }]
+        : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
     );
-
-    setCommentValue(prev => {
-      const parts = prev.split('@');
-      const lastPart = parts[parts.length - 1];
-      const mentionText = member.label;
-      // Keep only the part before the @ and add the new mention
-      return prev.slice(0, prev.length - lastPart.length) + mentionText;
-    });
-  }, []);
+  }, [members]);
 
   const handleCommentChange = useCallback((value: string) => {
-    // Only update the value without trying to replace mentions
     setCommentValue(value);
     setCharacterLength(value.trim().length);
   }, []);
@@ -275,6 +273,12 @@ const InfoTabFooter = () => {
             maxLength={5000}
             onClick={() => setIsCommentBoxExpand(true)}
             onChange={e => setCharacterLength(e.length)}
+            prefix="@"
+            filterOption={(input, option) => {
+              if (!input) return true;
+              const optionLabel = (option as any)?.label || '';
+              return optionLabel.toLowerCase().includes(input.toLowerCase());
+            }}
             style={{
               minHeight: 60,
               resize: 'none',
@@ -371,7 +375,11 @@ const InfoTabFooter = () => {
                 onSelect={option => memberSelectHandler(option as IMentionMemberSelectOption)}
                 onChange={handleCommentChange}
                 prefix="@"
-                split=""
+                filterOption={(input, option) => {
+                  if (!input) return true;
+                  const optionLabel = (option as any)?.label || '';
+                  return optionLabel.toLowerCase().includes(input.toLowerCase());
+                }}
                 style={{
                   minHeight: 100,
                   maxHeight: 200,
