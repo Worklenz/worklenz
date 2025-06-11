@@ -399,6 +399,33 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Invalid fixed cost value"));
     }
 
+    // Check if the task has subtasks - parent tasks should not have editable fixed costs
+    const checkParentQuery = `
+      SELECT 
+        t.id,
+        t.name,
+        (SELECT COUNT(*) FROM tasks st WHERE st.parent_task_id = t.id AND st.archived = false) as sub_tasks_count
+      FROM tasks t 
+      WHERE t.id = $1 AND t.archived = false;
+    `;
+
+    const checkResult = await db.query(checkParentQuery, [taskId]);
+
+    if (checkResult.rows.length === 0) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Task not found"));
+    }
+
+    const task = checkResult.rows[0];
+    
+    // Prevent updating fixed cost for parent tasks
+    if (task.sub_tasks_count > 0) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Cannot update fixed cost for parent tasks. Fixed cost is calculated from subtasks."));
+    }
+
     const q = `
       UPDATE tasks 
       SET fixed_cost = $1, updated_at = NOW()

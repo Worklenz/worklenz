@@ -55,41 +55,41 @@ const ProjectViewFinance = () => {
       };
     }
 
-    const calculateTaskTotalsRecursively = (tasks: any[]): any => {
-      return tasks.reduce((acc, task) => {
-        // Add current task values
-        const taskTotals = {
-          totalEstimatedCost: acc.totalEstimatedCost + (task.estimated_cost || 0),
-          totalFixedCost: acc.totalFixedCost + (task.fixed_cost || 0),
-          totalBudget: acc.totalBudget + (task.total_budget || 0),
-          totalActualCost: acc.totalActualCost + (task.total_actual || 0),
-          totalVariance: acc.totalVariance + (task.variance || 0)
-        };
-        
-        // If task has subtasks, recursively add their totals
-        if (task.sub_tasks && task.sub_tasks.length > 0) {
-          const subTaskTotals = calculateTaskTotalsRecursively(task.sub_tasks);
-          return {
-            totalEstimatedCost: taskTotals.totalEstimatedCost + subTaskTotals.totalEstimatedCost,
-            totalFixedCost: taskTotals.totalFixedCost + subTaskTotals.totalFixedCost,
-            totalBudget: taskTotals.totalBudget + subTaskTotals.totalBudget,
-            totalActualCost: taskTotals.totalActualCost + subTaskTotals.totalActualCost,
-            totalVariance: taskTotals.totalVariance + subTaskTotals.totalVariance
-          };
-        }
-        
-        return taskTotals;
-      }, {
+    // Optimized calculation that avoids double counting in nested hierarchies
+    const calculateTaskTotalsFlat = (tasks: any[]): any => {
+      let totals = {
         totalEstimatedCost: 0,
         totalFixedCost: 0,
         totalBudget: 0,
         totalActualCost: 0,
         totalVariance: 0
-      });
+      };
+
+      for (const task of tasks) {
+        // For parent tasks with subtasks, only count the aggregated values (no double counting)
+        // For leaf tasks, count their individual values
+        if (task.sub_tasks && task.sub_tasks.length > 0) {
+          // Parent task - use its aggregated values which already include subtask totals
+          totals.totalEstimatedCost += task.estimated_cost || 0;
+          totals.totalFixedCost += task.fixed_cost || 0;
+          totals.totalBudget += task.total_budget || 0;
+          totals.totalActualCost += task.total_actual || 0;
+          totals.totalVariance += task.variance || 0;
+        } else {
+          // Leaf task - use its individual values
+          totals.totalEstimatedCost += task.estimated_cost || 0;
+          totals.totalFixedCost += task.fixed_cost || 0;
+          totals.totalBudget += task.total_budget || 0;
+          totals.totalActualCost += task.total_actual || 0;
+          totals.totalVariance += task.variance || 0;
+        }
+      }
+
+      return totals;
     };
 
     const totals = taskGroups.reduce((acc, group) => {
-      const groupTotals = calculateTaskTotalsRecursively(group.tasks);
+      const groupTotals = calculateTaskTotalsFlat(group.tasks);
       return {
         totalEstimatedCost: acc.totalEstimatedCost + groupTotals.totalEstimatedCost,
         totalFixedCost: acc.totalFixedCost + groupTotals.totalFixedCost,
