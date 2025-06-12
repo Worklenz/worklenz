@@ -230,10 +230,9 @@ const FinanceTable = ({
       // Only save if the value actually changed
       if (newFixedCost !== currentFixedCost && value !== null) {
         handleFixedCostChange(value, taskId);
-        setSelectedTask(null);
-        setEditingFixedCostValue(null);
+        // Don't close the input automatically - let user explicitly close it
       }
-    }, 1000); // Save after 1 second of inactivity
+    }, 5000); // Save after 5 seconds of inactivity
   };
 
   // Immediate save function (for enter/blur)
@@ -442,6 +441,10 @@ const FinanceTable = ({
               // Immediate save on enter
               immediateSaveFixedCost(editingFixedCostValue, task.id);
             }}
+            onFocus={(e) => {
+              // Select all text when input is focused
+              e.target.select();
+            }}
             autoFocus
             style={{ width: '100%', textAlign: 'right', fontSize: Math.max(12, 14 - level * 0.5) }}
             formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
@@ -472,22 +475,27 @@ const FinanceTable = ({
           </Typography.Text>
         );
       case FinanceTableColumnKeys.VARIANCE:
+        const taskTotalBudgetForVariance = (task.estimated_cost || 0) + (task.fixed_cost || 0);
+        const taskTotalActualForVariance = (task.actual_cost_from_logs || 0) + (task.fixed_cost || 0);
+        const taskVariance = taskTotalActualForVariance - taskTotalBudgetForVariance;
         return (
           <Typography.Text 
             style={{ 
-              color: task.variance > 0 ? '#FF0000' : '#6DC376',
+              color: taskVariance > 0 ? '#FF0000' : '#6DC376',
               fontSize: Math.max(12, 14 - level * 0.5)
             }}
           >
-            {task.variance < 0 ? '+' + formatNumber(Math.abs(task.variance)) : 
-             task.variance > 0 ? '-' + formatNumber(task.variance) : 
-             formatNumber(task.variance)}
+            {taskVariance < 0 ? '+' + formatNumber(Math.abs(taskVariance)) : 
+             taskVariance > 0 ? '-' + formatNumber(taskVariance) : 
+             formatNumber(taskVariance)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.TOTAL_BUDGET:
-        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(task.total_budget)}</Typography.Text>;
+        const taskTotalBudget = (task.estimated_cost || 0) + (task.fixed_cost || 0);
+        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(taskTotalBudget)}</Typography.Text>;
       case FinanceTableColumnKeys.TOTAL_ACTUAL:
-        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(task.total_actual)}</Typography.Text>;
+        const taskTotalActual = (task.actual_cost_from_logs || 0) + (task.fixed_cost || 0);
+        return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(taskTotalActual)}</Typography.Text>;
       case FinanceTableColumnKeys.COST:
         return <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>{formatNumber(task.actual_cost_from_logs || 0)}</Typography.Text>;
       default:
