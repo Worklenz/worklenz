@@ -552,14 +552,15 @@ const FinanceTable = ({
         } else {
           // Leaf task or parent task without loaded subtasks - use its values directly
           const leafTotalActual = (task.actual_cost_from_logs || 0) + (task.fixed_cost || 0);
+          const leafTotalBudget = (task.estimated_cost || 0) + (task.fixed_cost || 0);
           totals.hours += task.estimated_seconds || 0;
           totals.total_time_logged += task.total_time_logged_seconds || 0;
           totals.estimated_cost += task.estimated_cost || 0;
           totals.actual_cost_from_logs += task.actual_cost_from_logs || 0;
           totals.fixed_cost += task.fixed_cost || 0;
-          totals.total_budget += task.estimated_cost || 0;
+          totals.total_budget += leafTotalBudget;
           totals.total_actual += leafTotalActual;
-          totals.variance += leafTotalActual - (task.estimated_cost || 0);
+          totals.variance += leafTotalActual - leafTotalBudget;
         }
       }
 
