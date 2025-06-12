@@ -14,6 +14,63 @@
     <title>Worklenz</title>
     <!-- Environment configuration -->
     <script src="/env-config.js"></script>
+    <!-- Google Analytics -->
+    <script>
+      // Function to initialize Google Analytics
+      function initGoogleAnalytics() {
+        // Load the Google Analytics script
+        const script = document.createElement('script');
+        script.async = true;
+        
+        // Determine which tracking ID to use based on the environment
+        const isProduction = window.location.hostname === 'worklenz.com' || 
+                           window.location.hostname === 'app.worklenz.com';
+        
+        const trackingId = isProduction 
+          ? 'G-XXXXXXXXXX'
+          : 'G-3LM2HGWEXG'; // Open source tracking ID
+        
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${trackingId}`;
+        document.head.appendChild(script);
+
+        // Initialize Google Analytics
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', trackingId);
+      }
+
+      // Initialize analytics
+      initGoogleAnalytics();
+
+      // Show privacy notice only for open source version
+      if (window.location.hostname !== 'worklenz.com' && 
+          window.location.hostname !== 'app.worklenz.com' && 
+          !localStorage.getItem('privacyNoticeShown')) {
+        const notice = document.createElement('div');
+        notice.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background: #fff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          z-index: 1000;
+          max-width: 400px;
+          font-family: Inter, sans-serif;
+        `;
+        notice.innerHTML = `
+          <h3 style="margin-top: 0;">Analytics Notice</h3>
+          <p>This open source project uses Google Analytics to understand usage patterns and improve the application.</p>
+          <p>We only collect anonymous usage data. No personal information is tracked.</p>
+          <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button onclick="this.parentElement.parentElement.remove(); localStorage.setItem('privacyNoticeShown', 'true');" style="padding: 8px 16px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer;">Got it</button>
+          </div>
+        `;
+        document.body.appendChild(notice);
+      }
+    </script>
   </head>
 
   <body>
