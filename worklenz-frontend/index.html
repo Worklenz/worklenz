@@ -64,9 +64,16 @@
         notice.innerHTML = `
           <div style="margin-bottom: 6px; font-weight: 600; color: #fff; font-size: 1rem;">Analytics Notice</div>
           <div style="margin-bottom: 8px; color: #f5f5f5;">This app uses Google Analytics for anonymous usage stats. No personal data is tracked.</div>
-          <button onclick="this.parentElement.parentElement.remove(); localStorage.setItem('privacyNoticeShown', 'true');" style="padding: 5px 14px; background: #1890ff; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.95rem;">Got it</button>
+          <button id="analytics-notice-btn" style="padding: 5px 14px; background: #1890ff; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.95rem;">Got it</button>
         `;
         document.body.appendChild(notice);
+        // Add event listener to button
+        const btn = notice.querySelector('#analytics-notice-btn');
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          localStorage.setItem('privacyNoticeShown', 'true');
+          notice.remove();
+        });
       }
 
       // Wait for DOM to be ready
