@@ -43,33 +43,44 @@
       // Initialize analytics
       initGoogleAnalytics();
 
-      // Show privacy notice only for open source version
-      if (window.location.hostname !== 'worklenz.com' && 
-          window.location.hostname !== 'app.worklenz.com' && 
-          !localStorage.getItem('privacyNoticeShown')) {
+      // Function to show privacy notice
+      function showPrivacyNotice() {
         const notice = document.createElement('div');
         notice.style.cssText = `
           position: fixed;
-          bottom: 20px;
-          right: 20px;
-          background: #fff;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          bottom: 16px;
+          right: 16px;
+          background: #222;
+          color: #f5f5f5;
+          padding: 12px 16px 10px 16px;
+          border-radius: 7px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.18);
           z-index: 1000;
-          max-width: 400px;
+          max-width: 320px;
           font-family: Inter, sans-serif;
+          border: 1px solid #333;
+          font-size: 0.95rem;
         `;
         notice.innerHTML = `
-          <h3 style="margin-top: 0;">Analytics Notice</h3>
-          <p>This open source project uses Google Analytics to understand usage patterns and improve the application.</p>
-          <p>We only collect anonymous usage data. No personal information is tracked.</p>
-          <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button onclick="this.parentElement.parentElement.remove(); localStorage.setItem('privacyNoticeShown', 'true');" style="padding: 8px 16px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer;">Got it</button>
-          </div>
+          <div style="margin-bottom: 6px; font-weight: 600; color: #fff; font-size: 1rem;">Analytics Notice</div>
+          <div style="margin-bottom: 8px; color: #f5f5f5;">This app uses Google Analytics for anonymous usage stats. No personal data is tracked.</div>
+          <button onclick="this.parentElement.parentElement.remove(); localStorage.setItem('privacyNoticeShown', 'true');" style="padding: 5px 14px; background: #1890ff; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.95rem;">Got it</button>
         `;
         document.body.appendChild(notice);
       }
+
+      // Wait for DOM to be ready
+      document.addEventListener('DOMContentLoaded', function() {
+        // Check if we should show the notice
+        const isProduction = window.location.hostname === 'worklenz.com' || 
+                           window.location.hostname === 'app.worklenz.com';
+        const noticeShown = localStorage.getItem('privacyNoticeShown') === 'true';
+        
+        // Show notice if not in production and not shown before
+        if (!isProduction && !noticeShown) {
+          showPrivacyNotice();
+        }
+      });
     </script>
   </head>
 
