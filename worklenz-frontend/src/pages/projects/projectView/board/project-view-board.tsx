@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskListFilters from '../taskList/task-list-filters/task-list-filters';
 import { Flex, Skeleton } from 'antd';
@@ -16,12 +16,20 @@ import {
   DragEndEvent,
   DragOverEvent,
   DragStartEvent,
-  closestCorners,
+  closestCenter,
   DragOverlay,
   MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
+  MeasuringStrategy,
+  getFirstCollision,
+  pointerWithin,
+  rectIntersection,
+  UniqueIdentifier,
+  DragOverlayProps,
+  DragOverlay as DragOverlayType,
+  closestCorners,
 } from '@dnd-kit/core';
 import BoardViewTaskCard from './board-section/board-task-card/board-view-task-card';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
@@ -36,6 +44,16 @@ import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-reque
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import logger from '@/utils/errorLogger';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
+import { debounce } from 'lodash';
+
+interface DroppableContainer {
+  id: UniqueIdentifier;
+  data: {
+    current?: {
+      type?: string;
+    };
+  };
+}
 
 const ProjectViewBoard = () => {
   const dispatch = useAppDispatch();
@@ -47,7 +65,7 @@ const ProjectViewBoard = () => {
   const [currentTaskIndex, setCurrentTaskIndex] = useState(-1);
   // Add local loading state to immediately show skeleton
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { taskGroups, groupBy, loadingGroups, search, archived } = useAppSelector(state => state.boardReducer);
   const { statusCategories, loading: loadingStatusCategories } = useAppSelector(
@@ -57,6 +75,10 @@ const ProjectViewBoard = () => {
 
   // Store the original source group ID when drag starts
   const originalSourceGroupIdRef = useRef<string | null>(null);
+  const lastOverId = useRef<UniqueIdentifier | null>(null);
+  const recentlyMovedToNewContainer = useRef(false);
+  const [clonedItems, setClonedItems] = useState<any>(null);
+  const isDraggingRef = useRef(false);
 
   // Update loading state based on all loading conditions
   useEffect(() => {
@@ -68,33 +90,33 @@ const ProjectViewBoard = () => {
     const loadData = async () => {
       if (projectId && groupBy && projectView === 'kanban') {
         const promises = [];
-        
+
         if (!loadingGroups) {
           promises.push(dispatch(fetchBoardTaskGroups(projectId)));
         }
-        
+
         if (!statusCategories.length) {
           promises.push(dispatch(fetchStatusesCategories()));
         }
-        
+
         // Wait for all data to load
         await Promise.all(promises);
       }
     };
-    
+
     loadData();
   }, [dispatch, projectId, groupBy, projectView, search, archived]);
 
   // Create sensors with memoization to prevent unnecessary re-renders
   const sensors = useSensors(
     useSensor(MouseSensor, {
-      // Require the mouse to move by 10 pixels before activating
       activationConstraint: {
         distance: 10,
+        delay: 100,
+        tolerance: 5,
       },
     }),
     useSensor(TouchSensor, {
-      // Press delay of 250ms, with tolerance of 5px of movement
       activationConstraint: {
         delay: 250,
         tolerance: 5,
@@ -102,90 +124,164 @@ const ProjectViewBoard = () => {
     })
   );
 
+  const collisionDetectionStrategy = useCallback(
+    (args: {
+      active: { id: UniqueIdentifier; data: { current?: { type?: string } } };
+      droppableContainers: DroppableContainer[];
+    }) => {
+      if (activeItem?.type === 'section') {
+        return closestCenter({
+          ...args,
+          droppableContainers: args.droppableContainers.filter(
+            (container: DroppableContainer) => container.data.current?.type === 'section'
+          ),
+        });
+      }
+
+      // Start by finding any intersecting droppable
+      const pointerIntersections = pointerWithin(args);
+      const intersections =
+        pointerIntersections.length > 0
+          ? pointerIntersections
+          : rectIntersection(args);
+      let overId = getFirstCollision(intersections, 'id');
+
+      if (overId !== null) {
+        const overContainer = args.droppableContainers.find(
+          (container: DroppableContainer) => container.id === overId
+        );
+
+        if (overContainer?.data.current?.type === 'section') {
+          const containerItems = taskGroups.find(
+            (group) => group.id === overId
+          )?.tasks || [];
+
+          if (containerItems.length > 0) {
+            overId = closestCenter({
+              ...args,
+              droppableContainers: args.droppableContainers.filter(
+                (container: DroppableContainer) =>
+                  container.id !== overId &&
+                  container.data.current?.type === 'task'
+              ),
+            })[0]?.id;
+          }
+        }
+
+        lastOverId.current = overId;
+        return [{ id: overId }];
+      }
+
+      if (recentlyMovedToNewContainer.current) {
+        lastOverId.current = activeItem?.id;
+      }
+
+      return lastOverId.current ? [{ id: lastOverId.current }] : [];
+    },
+    [activeItem, taskGroups]
+  );
+
   const handleTaskProgress = (data: {
     id: string;
     status: string;
     complete_ratio: number;
     completed_count: number;
-    total_tasks_count: number;  
+    total_tasks_count: number;
     parent_task: string;
   }) => {
     dispatch(updateTaskProgress(data));
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    setActiveItem(active.data.current);
-    setCurrentTaskIndex(active.data.current?.sortable.index);
-    // Store the original source group ID when drag starts
-    if (active.data.current?.type === 'task') {
-      originalSourceGroupIdRef.current = active.data.current.sectionId;
-    }
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeId = active.id;
-    const overId = over.id;
-
-    if (activeId === overId) return;
-
-    const isActiveTask = active.data.current?.type === 'task';
-    const isOverTask = over.data.current?.type === 'task';
-    const isOverSection = over.data.current?.type === 'section';
-
-    // Handle task movement between sections
-    if (isActiveTask && (isOverTask || isOverSection)) {
-      // If we're over a task, we want to insert at that position
-      // If we're over a section, we want to append to the end
-      const activeTaskId = active.data.current?.task.id;
-
-      // Use the original source group ID from ref instead of the potentially modified one
-      const sourceGroupId = originalSourceGroupIdRef.current || active.data.current?.sectionId;
-
-      // Fix: Ensure we correctly identify the target group ID
-      let targetGroupId;
-      if (isOverTask) {
-        // If over a task, get its section ID
-        targetGroupId = over.data.current?.sectionId;
-      } else if (isOverSection) {
-        // If over a section directly
-        targetGroupId = over.id;
-      } else {
-        // Fallback
-        targetGroupId = over.id;
-      }
-
-      // Find the target index
-      let targetIndex = -1;
-      if (isOverTask) {
-        const overTaskId = over.data.current?.task.id;
-        const targetGroup = taskGroups.find(group => group.id === targetGroupId);
-        if (targetGroup) {
-          targetIndex = targetGroup.tasks.findIndex(task => task.id === overTaskId);
-        }
-      }
-
-      // Dispatch the action to move the task
+  // Debounced move task function to prevent rapid updates
+  const debouncedMoveTask = useCallback(
+    debounce((taskId: string, sourceGroupId: string, targetGroupId: string, targetIndex: number) => {
       dispatch(
         moveTaskBetweenGroups({
-          taskId: activeTaskId,
+          taskId,
           sourceGroupId,
           targetGroupId,
           targetIndex,
         })
       );
+    }, 100),
+    [dispatch]
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    isDraggingRef.current = true;
+    setActiveItem(active.data.current);
+    setCurrentTaskIndex(active.data.current?.sortable.index);
+    if (active.data.current?.type === 'task') {
+      originalSourceGroupIdRef.current = active.data.current.sectionId;
+    }
+    setClonedItems(taskGroups);
+  };
+
+  const findGroupForId = (id: string) => {
+    // If id is a sectionId
+    if (taskGroups.some(group => group.id === id)) return id;
+    // If id is a taskId, find the group containing it
+    const group = taskGroups.find(g => g.tasks.some(t => t.id === id));
+    return group?.id;
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    try {
+      if (!isDraggingRef.current) return;
+
+      const { active, over } = event;
+      if (!over) return;
+
+      // Get the ids
+      const activeId = active.id;
+      const overId = over.id;
+
+      // Find the group (section) for each
+      const activeGroupId = findGroupForId(activeId as string);
+      const overGroupId = findGroupForId(overId as string);
+
+      // Only move if both groups exist and are different, and the active is a task
+      if (
+        activeGroupId &&
+        overGroupId &&
+        activeGroupId !== overGroupId &&
+        active.data.current?.type === 'task'
+      ) {
+        // Find the target index in the over group
+        const targetGroup = taskGroups.find(g => g.id === overGroupId);
+        let targetIndex = 0;
+        if (targetGroup) {
+          // If over is a task, insert before it; if over is a section, append to end
+          if (over.data.current?.type === 'task') {
+            targetIndex = targetGroup.tasks.findIndex(t => t.id === overId);
+            if (targetIndex === -1) targetIndex = targetGroup.tasks.length;
+          } else {
+            targetIndex = targetGroup.tasks.length;
+          }
+        }
+
+        // Use debounced move task to prevent rapid updates
+        debouncedMoveTask(
+          activeId as string,
+          activeGroupId,
+          overGroupId,
+          targetIndex
+        );
+      }
+    } catch (error) {
+      console.error('handleDragOver error:', error);
     }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    isDraggingRef.current = false;
     const { active, over } = event;
 
     if (!over || !projectId) {
       setActiveItem(null);
-      originalSourceGroupIdRef.current = null; // Reset the ref
+      originalSourceGroupIdRef.current = null;
+      setClonedItems(null);
       return;
     }
 
@@ -237,7 +333,7 @@ const ProjectViewBoard = () => {
               targetIndex: currentTaskIndex !== -1 ? currentTaskIndex : 0, // Original position or append to end
             })
           );
-  
+
           setActiveItem(null);
           originalSourceGroupIdRef.current = null;
           return;
@@ -282,7 +378,7 @@ const ProjectViewBoard = () => {
           team_id: currentSession?.team_id
         };
 
-        logger.error('Emitting socket event with payload (task not found in source):', body);
+        // logger.error('Emitting socket event with payload (task not found in source):', body);
 
         // Emit socket event
         if (socket) {
@@ -406,7 +502,24 @@ const ProjectViewBoard = () => {
     originalSourceGroupIdRef.current = null; // Reset the ref
   };
 
-  useEffect(() => {   
+  const handleDragCancel = () => {
+    isDraggingRef.current = false;
+    if (clonedItems) {
+      dispatch(reorderTaskGroups(clonedItems));
+    }
+    setActiveItem(null);
+    setClonedItems(null);
+    originalSourceGroupIdRef.current = null;
+  };
+
+  // Reset the recently moved flag after animation frame
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      recentlyMovedToNewContainer.current = false;
+    });
+  }, [taskGroups]);
+
+  useEffect(() => {
     if (socket) {
       socket.on(SocketEvents.GET_TASK_PROGRESS.toString(), handleTaskProgress);
     }
@@ -421,10 +534,16 @@ const ProjectViewBoard = () => {
     trackMixpanelEvent(evt_project_board_visit);
   }, []);
 
+  // Cleanup debounced function on unmount
+  useEffect(() => {
+    return () => {
+      debouncedMoveTask.cancel();
+    };
+  }, [debouncedMoveTask]);
+
   return (
     <Flex vertical gap={16}>
       <TaskListFilters position={'board'} />
-
       <Skeleton active loading={isLoading} className='mt-4 p-4'>
         <DndContext
           sensors={sensors}
@@ -432,6 +551,7 @@ const ProjectViewBoard = () => {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
         >
           <BoardSectionCardContainer
             datasource={taskGroups}
