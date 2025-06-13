@@ -4,12 +4,12 @@ import { TaskType } from '@/types/task.types';
 import { EditOutlined, EllipsisOutlined, RetweetOutlined, RightOutlined } from '@ant-design/icons';
 import { colors } from '@/styles/colors';
 import './task-list-table-wrapper.css';
-import TaskListTable from '../task-list-table-old/task-list-table-old';
+import TaskListTable from '../table-v2';
 import { MenuProps } from 'antd/lib';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
-import TaskListCustom from '../task-list-custom';
+import { columnList as defaultColumnList } from '@/pages/projects/project-view-1/taskList/taskListTable/columns/columnList';
 
 type TaskListTableWrapperProps = {
   taskList: ITaskListGroup;
@@ -36,6 +36,22 @@ const TaskListTableWrapper = ({
 
   // localization
   const { t } = useTranslation('task-list-table');
+
+  // Get column visibility from Redux
+  const columnVisibilityList = useAppSelector(
+    state => state.projectViewTaskListColumnsReducer.columnList
+  );
+
+  // Filter visible columns and format them for table-v2
+  const visibleColumns = defaultColumnList
+    .filter(column => {
+      const visibilityConfig = columnVisibilityList.find(col => col.key === column.key);
+      return visibilityConfig?.isVisible ?? false;
+    })
+    .map(column => ({
+      key: column.key,
+      width: column.width,
+    }));
 
   // function to handle toggle expand
   const handlToggleExpand = () => {
@@ -97,6 +113,14 @@ const TaskListTableWrapper = ({
       })),
     },
   ];
+
+  const handleTaskSelect = (taskId: string) => {
+    console.log('Task selected:', taskId);
+  };
+
+  const handleTaskExpand = (taskId: string) => {
+    console.log('Task expanded:', taskId);
+  };
 
   return (
     <ConfigProvider
@@ -172,11 +196,13 @@ const TaskListTableWrapper = ({
               key: groupId || '1',
               className: `custom-collapse-content-box relative after:content after:absolute after:h-full after:w-1 ${color} after:z-10 after:top-0 after:left-0`,
               children: (
-                <TaskListCustom
+                <TaskListTable
                   key={groupId}
-                  groupId={groupId}
-                  tasks={taskList.tasks}
-                  color={color || ''}
+                  taskListGroup={taskList}
+                  tableId={groupId || ''}
+                  visibleColumns={visibleColumns}
+                  onTaskSelect={handleTaskSelect}
+                  onTaskExpand={handleTaskExpand}
                 />
               ),
             },

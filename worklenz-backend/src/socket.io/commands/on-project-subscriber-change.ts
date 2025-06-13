@@ -19,7 +19,8 @@ export async function on_project_subscriber_change(_io: Server, socket: Socket, 
     const isSubscribe = data.mode == 0;
     const q = isSubscribe
       ? `INSERT INTO project_subscribers (user_id, project_id, team_member_id)
-         VALUES ($1, $2, $3);`
+         VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, project_id, team_member_id) DO NOTHING;`
       : `DELETE
          FROM project_subscribers
          WHERE user_id = $1
@@ -27,7 +28,7 @@ export async function on_project_subscriber_change(_io: Server, socket: Socket, 
            AND team_member_id = $3;`;
     await db.query(q, [data.user_id, data.project_id, data.team_member_id]);
 
-    const subscribers = await TasksControllerV2.getTaskSubscribers(data.project_id);
+    const subscribers = await TasksControllerV2.getProjectSubscribers(data.project_id);
     socket.emit(SocketEvents.PROJECT_SUBSCRIBERS_CHANGE.toString(), subscribers);
 
     return;

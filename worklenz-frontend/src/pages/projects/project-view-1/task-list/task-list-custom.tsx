@@ -10,7 +10,6 @@ import {
   Row,
   Column,
 } from '@tanstack/react-table';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import React from 'react';
@@ -78,19 +77,6 @@ const TaskListCustom: React.FC<TaskListCustomProps> = ({ tasks, color, groupId, 
 
   const { rows } = table.getRowModel();
 
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 50,
-    overscan: 20,
-  });
-
-  const virtualRows = rowVirtualizer.getVirtualItems();
-  const totalSize = rowVirtualizer.getTotalSize();
-  const paddingTop = virtualRows.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
-  const paddingBottom =
-    virtualRows.length > 0 ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0) : 0;
-
   const columnToggleItems = columns.map(column => ({
     key: column.id as string,
     label: (
@@ -125,6 +111,7 @@ const TaskListCustom: React.FC<TaskListCustomProps> = ({ tasks, color, groupId, 
           flex: 1,
           minHeight: 0,
           overflowX: 'auto',
+          overflowY: 'auto',
           maxHeight: '100%',
         }}
       >
@@ -161,80 +148,75 @@ const TaskListCustom: React.FC<TaskListCustomProps> = ({ tasks, color, groupId, 
             ))}
           </div>
           <div className="table-body">
-            {paddingTop > 0 && <div style={{ height: `${paddingTop}px` }} />}
-            {virtualRows.map(virtualRow => {
-              const row = rows[virtualRow.index];
-              return (
-                <React.Fragment key={row.id}>
-                  <div
-                    className="table-row"
-                    style={{
-                      '&:hover div': {
-                        background: `${token.colorFillAlter} !important`,
-                      },
-                    }}
-                  >
-                    {row.getVisibleCells().map((cell, index) => (
-                      <div
-                        key={cell.id}
-                        className={`${cell.column.getIsPinned() === 'left' ? 'sticky left-0 z-10' : ''}`}
-                        style={{
-                          width: cell.column.getSize(),
-                          position: index < 2 ? 'sticky' : 'relative',
-                          left: 'auto',
-                          background: token.colorBgContainer,
-                          color: token.colorText,
-                          height: '42px',
-                          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                          borderRight: `1px solid ${token.colorBorderSecondary}`,
-                          padding: '8px 0px 8px 8px',
-                        }}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </div>
-                    ))}
-                  </div>
-                  {expandedRows[row.id] &&
-                    row.original.sub_tasks?.map(subTask => (
-                      <div
-                        key={subTask.task_key}
-                        className="table-row"
-                        style={{
-                          '&:hover div': {
-                            background: `${token.colorFillAlter} !important`,
-                          },
-                        }}
-                      >
-                        {columns.map((col, index) => (
-                          <div
-                            key={`${subTask.task_key}-${col.id}`}
-                            style={{
-                              width: col.getSize(),
-                              position: index < 2 ? 'sticky' : 'relative',
-                              left: index < 2 ? `${index * col.getSize()}px` : 'auto',
-                              background: token.colorBgContainer,
-                              color: token.colorText,
-                              height: '42px',
-                              borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                              borderRight: `1px solid ${token.colorBorderSecondary}`,
-                              paddingLeft: index === 3 ? '32px' : '8px',
-                              paddingRight: '8px',
-                            }}
-                          >
-                            {flexRender(col.cell, {
-                              getValue: () => subTask[col.id as keyof typeof subTask] ?? null,
-                              row: { original: subTask } as Row<IProjectTask>,
-                              column: col as Column<IProjectTask>,
-                              table,
-                            })}
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                </React.Fragment>
-              );
-            })}
-            {paddingBottom > 0 && <div style={{ height: `${paddingBottom}px` }} />}
+            {rows.map(row => (
+              <React.Fragment key={row.id}>
+                <div
+                  className="table-row"
+                  style={{
+                    '&:hover div': {
+                      background: `${token.colorFillAlter} !important`,
+                    },
+                  }}
+                >
+                  {row.getVisibleCells().map((cell, index) => (
+                    <div
+                      key={cell.id}
+                      className={`${cell.column.getIsPinned() === 'left' ? 'sticky left-0 z-10' : ''}`}
+                      style={{
+                        width: cell.column.getSize(),
+                        position: index < 2 ? 'sticky' : 'relative',
+                        left: 'auto',
+                        background: token.colorBgContainer,
+                        color: token.colorText,
+                        height: '42px',
+                        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                        borderRight: `1px solid ${token.colorBorderSecondary}`,
+                        padding: '8px 0px 8px 8px',
+                      }}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
+                  ))}
+                </div>
+                {expandedRows[row.id] &&
+                  row.original.sub_tasks?.map(subTask => (
+                    <div
+                      key={subTask.task_key}
+                      className="table-row"
+                      style={{
+                        '&:hover div': {
+                          background: `${token.colorFillAlter} !important`,
+                        },
+                      }}
+                    >
+                      {columns.map((col, index) => (
+                        <div
+                          key={`${subTask.task_key}-${col.id}`}
+                          style={{
+                            width: col.getSize(),
+                            position: index < 2 ? 'sticky' : 'relative',
+                            left: index < 2 ? `${index * col.getSize()}px` : 'auto',
+                            background: token.colorBgContainer,
+                            color: token.colorText,
+                            height: '42px',
+                            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                            borderRight: `1px solid ${token.colorBorderSecondary}`,
+                            paddingLeft: index === 3 ? '32px' : '8px',
+                            paddingRight: '8px',
+                          }}
+                        >
+                          {flexRender(col.cell, {
+                            getValue: () => subTask[col.id as keyof typeof subTask] ?? null,
+                            row: { original: subTask } as Row<IProjectTask>,
+                            column: col as Column<IProjectTask>,
+                            table,
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+              </React.Fragment>
+            ))}
           </div>
         </div>
       </div>
