@@ -22,6 +22,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
 import TimerButton from './timers/timer-button';
+import HelpButton from './help/HelpButton';
 
 const Navbar = () => {
   const [current, setCurrent] = useState<string>('home');
@@ -145,7 +146,8 @@ const Navbar = () => {
                   <Flex align="center">
                     <SwitchTeamButton />
                     <NotificationButton />
-                    <TimerButton />
+                    {/* <TimerButton /> */}
+                    <HelpButton />
                     <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
                   </Flex>
                 </Flex>

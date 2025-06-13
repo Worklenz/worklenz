@@ -6,11 +6,11 @@ import { isProduction } from "../shared/utils";
 const pgSession = require("connect-pg-simple")(session);
 
 export default session({
-  name: process.env.SESSION_NAME || "worklenz.sid",
+  name: process.env.SESSION_NAME,
   secret: process.env.SESSION_SECRET || "development-secret-key",
-  proxy: true,
+  proxy: false,
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   rolling: true,
   store: new pgSession({
     pool: db.pool,
@@ -18,9 +18,10 @@ export default session({
   }),
   cookie: {
     path: "/",
-    secure: isProduction(), // Use secure cookies in production
-    httpOnly: true,
-    sameSite: "lax", // Standard setting for same-origin requests
+    // secure: isProduction(),
+    // httpOnly: isProduction(),
+    // sameSite: "none",
+    // domain: isProduction() ? ".worklenz.com" : undefined,
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   }
 });
