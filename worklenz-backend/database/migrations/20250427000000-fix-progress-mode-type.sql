@@ -145,7 +145,7 @@ BEGIN
         SET progress_value = NULL,
             progress_mode = NULL
         WHERE project_id = _project_id
-        AND progress_mode = _old_mode;
+        AND progress_mode::text::progress_mode_type = _old_mode;
     END IF;
     
     RETURN NEW;
