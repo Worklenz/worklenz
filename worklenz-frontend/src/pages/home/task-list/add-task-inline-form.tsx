@@ -57,20 +57,31 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
     },
   ];
 
-  const calculateEndDate = (dueDate: string): Date | undefined => {
+  const calculateEndDate = (dueDate: string): string | undefined => {
     const today = new Date();
+    let targetDate: Date;
+    
     switch (dueDate) {
       case 'Today':
-        return today;
+        targetDate = new Date(today);
+        break;
       case 'Tomorrow':
-        return new Date(today.setDate(today.getDate() + 1));
+        targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + 1);
+        break;
       case 'Next Week':
-        return new Date(today.setDate(today.getDate() + 7));
+        targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + 7);
+        break;
       case 'Next Month':
-        return new Date(today.setMonth(today.getMonth() + 1));
+        targetDate = new Date(today);
+        targetDate.setMonth(today.getMonth() + 1);
+        break;
       default:
         return undefined;
     }
+    
+    return targetDate.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
   };
 
   const projectOptions = [
@@ -82,12 +93,16 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
   ];
 
   const handleTaskSubmit = (values: { name: string; project: string; dueDate: string }) => {
-    const newTask: IHomeTaskCreateRequest = {
+    const endDate = calendarView 
+      ? homeTasksConfig.selected_date?.format('YYYY-MM-DD') 
+      : calculateEndDate(values.dueDate);
+      
+    const newTask = {
       name: values.name,
       project_id: values.project,
       reporter_id: currentSession?.id,
       team_id: currentSession?.team_id,
-      end_date: (calendarView ? homeTasksConfig.selected_date?.format('YYYY-MM-DD') : calculateEndDate(values.dueDate)),
+      end_date: endDate || new Date().toISOString().split('T')[0], // Fallback to today if undefined
     };
 
     socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(newTask));

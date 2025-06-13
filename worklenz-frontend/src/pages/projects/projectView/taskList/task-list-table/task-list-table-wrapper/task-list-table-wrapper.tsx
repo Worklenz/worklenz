@@ -249,7 +249,7 @@ const TaskListTableWrapper = ({
             className={`border-l-[3px] relative after:content after:absolute after:h-full after:w-1 after:z-10 after:top-0 after:left-0`}
             color={color}
           >
-            <TaskListTable taskList={taskList} tableId={tableId} activeId={activeId} />
+            <TaskListTable taskList={taskList} tableId={tableId} activeId={activeId} groupBy={groupBy} />
           </Collapsible>
         </Flex>
       </ConfigProvider>
