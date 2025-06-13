@@ -5,7 +5,6 @@ import { Col, ConfigProvider, Flex, Menu, MenuProps, Alert } from 'antd';
 import { createPortal } from 'react-dom';
 
 import InviteTeamMembers from '../../components/common/invite-team-members/invite-team-members';
-import HelpButton from './help/HelpButton';
 import InviteButton from './invite/InviteButton';
 import MobileMenuButton from './mobileMenu/MobileMenuButton';
 import NavbarLogo from './navbar-logo';
@@ -22,6 +21,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
+import TimerButton from './timers/timer-button';
 
 const Navbar = () => {
   const [current, setCurrent] = useState<string>('home');
@@ -90,6 +90,7 @@ const Navbar = () => {
   }, [location]);
 
   return (
+    
     <Col
       style={{
         width: '100%',
@@ -101,14 +102,6 @@ const Navbar = () => {
         justifyContent: 'space-between',
       }}
     >
-      {daysUntilExpiry !== null && ((daysUntilExpiry <= 3 && daysUntilExpiry > 0) || (daysUntilExpiry >= -7 && daysUntilExpiry < 0)) && (
-        <Alert
-          message={daysUntilExpiry > 0 ? `Your license will expire in ${daysUntilExpiry} days` : `Your license has expired ${Math.abs(daysUntilExpiry)} days ago`}
-          type="warning"
-          showIcon
-          style={{ width: '100%', marginTop: 12 }}
-        />
-      )}
       <Flex
         style={{
           width: '100%',
@@ -152,7 +145,7 @@ const Navbar = () => {
                   <Flex align="center">
                     <SwitchTeamButton />
                     <NotificationButton />
-                    <HelpButton />
+                    <TimerButton />
                     <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
                   </Flex>
                 </Flex>

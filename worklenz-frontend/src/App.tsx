@@ -13,6 +13,7 @@ import router from './app/routes';
 // Hooks & Utils
 import { useAppSelector } from './hooks/useAppSelector';
 import { initMixpanel } from './utils/mixpanelInit';
+import { initializeCsrfToken } from './api/api-client';
 
 // Types & Constants
 import { Language } from './features/i18n/localesSlice';
@@ -35,11 +36,17 @@ const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     });
   }, [language]);
 
+  // Initialize CSRF token on app startup
+  useEffect(() => {
+    initializeCsrfToken().catch(error => {
+      logger.error('Failed to initialize CSRF token:', error);
+    });
+  }, []);
+
   return (
     <Suspense fallback={<SuspenseFallback />}>
       <ThemeWrapper>
         <RouterProvider router={router} future={{ v7_startTransition: true }} />
-        <PreferenceSelector />
       </ThemeWrapper>
     </Suspense>
   );

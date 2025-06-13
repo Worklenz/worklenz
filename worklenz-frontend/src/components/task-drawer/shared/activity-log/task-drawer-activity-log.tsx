@@ -111,6 +111,32 @@ const TaskDrawerActivityLog = () => {
             </Tag>
           </Flex>
         );
+        
+      case IActivityLogAttributeTypes.PROGRESS:
+        return (
+          <Flex gap={4} align="center">
+            <Tag color="blue">
+              {activity.previous || '0'}%
+            </Tag>
+            <ArrowRightOutlined />&nbsp;
+            <Tag color="blue">
+              {activity.current || '0'}%
+            </Tag>
+          </Flex>
+        );
+        
+      case IActivityLogAttributeTypes.WEIGHT:
+        return (
+          <Flex gap={4} align="center">
+            <Tag color="purple">
+              Weight: {activity.previous || '100'}
+            </Tag>
+            <ArrowRightOutlined />&nbsp;
+            <Tag color="purple">
+              Weight: {activity.current || '100'}
+            </Tag>
+          </Flex>
+        );
 
       default:
         return (

@@ -5,7 +5,7 @@ import db from "../config/db";
 import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {calculateMonthDays, getColor, megabytesToBytes} from "../shared/utils";
+import {calculateMonthDays, getColor, log_error, megabytesToBytes} from "../shared/utils";
 import moment from "moment";
 import {calculateStorage} from "../shared/s3";
 import {checkTeamSubscriptionStatus, getActiveTeamMemberCount, getCurrentProjectsCount, getFreePlanSettings, getOwnerIdByTeam, getTeamMemberCount, getUsedStorage} from "../shared/paddle-utils";
@@ -232,7 +232,11 @@ export default class AdminCenterController extends WorklenzControllerBase {
                                      FROM team_member_info_view
                                      WHERE team_member_info_view.team_member_id = tm.id),
                                     role_id,
-                                    r.name AS role_name
+                                    r.name AS role_name,
+                                    EXISTS(SELECT email
+                                           FROM email_invitations
+                                           WHERE team_member_id = tm.id
+                                             AND email_invitations.team_id = tm.team_id) AS pending_invitation
                              FROM team_members tm
                                     LEFT JOIN users u on tm.user_id = u.id
                                     LEFT JOIN roles r on tm.role_id = r.id
@@ -255,22 +259,33 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const {id} = req.params;
     const {name, teamMembers} = req.body;
 
-    const updateNameQuery = `UPDATE teams
-                             SET name = $1
-                             WHERE id = $2;`;
-    await db.query(updateNameQuery, [name, id]);
+    try {
+      // Update team name
+      const updateNameQuery = `UPDATE teams SET name = $1 WHERE id = $2 RETURNING id;`;
+      const nameResult = await db.query(updateNameQuery, [name, id]);
+      
+      if (!nameResult.rows.length) {
+        return res.status(404).send(new ServerResponse(false, null, "Team not found"));
+      }
 
-    if (teamMembers.length) {
-      teamMembers.forEach(async (element: { role_name: string; user_id: string; }) => {
-        const q = `UPDATE team_members
-                   SET role_id = (SELECT id FROM roles WHERE roles.team_id = $1 AND name = $2)
-                   WHERE user_id = $3
-                     AND team_id = $1;`;
-        await db.query(q, [id, element.role_name, element.user_id]);
-      });
+      // Update team member roles if provided
+      if (teamMembers?.length) {
+        // Use Promise.all to handle all role updates concurrently
+        await Promise.all(teamMembers.map(async (member: { role_name: string; user_id: string; }) => {
+          const roleQuery = `
+            UPDATE team_members 
+            SET role_id = (SELECT id FROM roles WHERE roles.team_id = $1 AND name = $2)
+            WHERE user_id = $3 AND team_id = $1
+            RETURNING id;`;
+          await db.query(roleQuery, [id, member.role_name, member.user_id]);
+        }));
+      }
+
+      return res.status(200).send(new ServerResponse(true, null, "Team updated successfully"));
+    } catch (error) {
+      log_error("Error updating team:", error);
+      return res.status(500).send(new ServerResponse(false, null, "Failed to update team"));
     }
-
-    return res.status(200).send(new ServerResponse(true, [], "Team updated successfully"));
   }
 
   @HandleExceptions()

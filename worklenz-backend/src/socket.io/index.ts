@@ -52,6 +52,10 @@ import { on_task_recurring_change } from "./commands/on-task-recurring-change";
 import { on_task_assignees_change } from "./commands/on-task-assignees-change";
 import { on_task_custom_column_update } from "./commands/on_custom_column_update";
 import { on_custom_column_pinned_change } from "./commands/on_custom_column_pinned_change";
+import { on_update_task_progress } from "./commands/on-update-task-progress";
+import { on_update_task_weight } from "./commands/on-update-task-weight";
+import { on_get_task_subtasks_count } from "./commands/on-get-task-subtasks-count";
+import { on_get_done_statuses } from "./commands/on-get-done-statuses";
 
 export function register(io: any, socket: Socket) {
   log(socket.id, "client registered");
@@ -68,7 +72,6 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.TASK_END_DATE_CHANGE.toString(), data => on_task_end_date_change(io, socket, data));
   socket.on(SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(), data => on_time_estimation_change(io, socket, data));
   socket.on(SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), data => on_task_description_change(io, socket, data));
-  socket.on(SocketEvents.GET_TASK_PROGRESS.toString(), data => on_get_task_progress(io, socket, data));
   socket.on(SocketEvents.GET_TASK_PROGRESS.toString(), data => on_get_task_progress(io, socket, data));
   socket.on(SocketEvents.TASK_TIMER_START.toString(), data => on_task_timer_start(io, socket, data));
   socket.on(SocketEvents.TASK_TIMER_STOP.toString(), data => on_task_timer_stop(io, socket, data));
@@ -106,6 +109,10 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), data => on_task_assignees_change(io, socket, data));
   socket.on(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), data => on_task_custom_column_update(io, socket, data));
   socket.on(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), data => on_custom_column_pinned_change(io, socket, data));
+  socket.on(SocketEvents.UPDATE_TASK_PROGRESS.toString(), data => on_update_task_progress(io, socket, data));
+  socket.on(SocketEvents.UPDATE_TASK_WEIGHT.toString(), data => on_update_task_weight(io, socket, data));
+  socket.on(SocketEvents.GET_TASK_SUBTASKS_COUNT.toString(), (taskId) => on_get_task_subtasks_count(io, socket, taskId));
+  socket.on(SocketEvents.GET_DONE_STATUSES.toString(), (projectId, callback) => on_get_done_statuses(io, socket, projectId, callback));
   
   // socket.io built-in event
   socket.on("disconnect", (reason) => on_disconnect(io, socket, reason));

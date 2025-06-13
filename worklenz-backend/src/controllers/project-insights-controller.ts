@@ -322,7 +322,7 @@ export default class ProjectInsightsController extends WorklenzControllerBase {
              (SELECT get_task_assignees(tasks.id)) AS assignees
       FROM tasks
              JOIN work_log ON work_log.task_id = tasks.id
-      WHERE project_id = $1
+      WHERE project_id = $1 AND total_minutes <> 0 AND (total_minutes * 60) <> work_log.total_time_spent
         AND CASE
               WHEN ($2 IS TRUE) THEN project_id IS NOT NULL
               ELSE archived IS FALSE END

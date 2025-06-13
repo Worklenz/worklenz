@@ -16,6 +16,7 @@ export interface ITaskStatusCategory {
 }
 
 export interface IProjectTask {
+  manual_progress: any;
   due_time?: string;
   id?: string;
   name?: string;
@@ -89,6 +90,10 @@ export interface IProjectTask {
   isVisible?: boolean;
   estimated_string?: string;
   custom_column_values?: Record<string, any>;
+  progress_value?: number;
+  project_use_manual_progress?: boolean;
+  project_use_time_progress?: boolean;
+  project_use_weighted_progress?: boolean;
 }
 
 export interface IProjectTasksViewModel {

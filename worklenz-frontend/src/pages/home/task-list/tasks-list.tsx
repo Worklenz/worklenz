@@ -89,7 +89,7 @@ const TasksList: React.FC = React.memo(() => {
     dispatch(getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true }));
   }, [dispatch]);
 
-  const handleSelectTask = useCallback((task : IMyTask) => {
+  const handleSelectTask = useCallback((task: IMyTask) => {
     dispatch(setSelectedTaskId(task.id || ''));
     dispatch(fetchTask({ taskId: task.id || '', projectId: task.project_id || '' }));
     dispatch(setProjectId(task.project_id || ''));
@@ -155,7 +155,7 @@ const TasksList: React.FC = React.memo(() => {
         render: (_, record) => {
           return (
             <Tooltip title={record.project_name}>
-              <Typography.Paragraph style={{ margin: 0, paddingInlineEnd: 6, maxWidth:120 }} ellipsis={{ tooltip: true }}>
+              <Typography.Paragraph style={{ margin: 0, paddingInlineEnd: 6, maxWidth: 120 }} ellipsis={{ tooltip: true }}>
                 <Badge color={record.phase_color || 'blue'} style={{ marginInlineEnd: 4 }} />
                 {record.project_name}
               </Typography.Paragraph>
@@ -259,7 +259,7 @@ const TasksList: React.FC = React.memo(() => {
         <Skeleton active />
       ) : data?.body.total === 0 ? (
         <EmptyListPlaceholder
-          imageSrc="https://app.worklenz.com/assets/images/empty-box.webp"
+          imageSrc="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
           text=" No tasks to show."
         />
       ) : (
@@ -271,10 +271,10 @@ const TasksList: React.FC = React.memo(() => {
             columns={columns as TableProps<IMyTask>['columns']}
             size="middle"
             rowClassName={() => 'custom-row-height'}
-            loading={homeTasksFetching && !skipAutoRefetch}
+            loading={homeTasksFetching && skipAutoRefetch}
             pagination={false}
           />
-          
+
           <div style={{ marginTop: 16, textAlign: 'right', display: 'flex', justifyContent: 'flex-end' }}>
             <Pagination
               current={currentPage}
