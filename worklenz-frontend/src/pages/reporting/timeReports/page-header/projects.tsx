@@ -168,6 +168,61 @@ const Projects: React.FC = () => {
     [filteredProjects, allSelected]
   );
 
+  // Memoize group by options
+  const groupByOptions = useMemo(() => [
+    { value: 'none', label: t('groupByNone') },
+    { value: 'category', label: t('groupByCategory') },
+    { value: 'team', label: t('groupByTeam') },
+    { value: 'status', label: t('groupByStatus') },
+  ], [t]);
+
+  // Memoize dropdown styles to prevent recalculation on every render
+  const dropdownStyles = useMemo(() => ({
+    dropdown: {
+      background: token.colorBgContainer,
+      borderRadius: token.borderRadius,
+      boxShadow: token.boxShadowSecondary,
+      border: `1px solid ${token.colorBorder}`,
+    },
+    groupHeader: {
+      backgroundColor: getThemeAwareColor(token.colorFillTertiary, token.colorFillQuaternary),
+      borderRadius: token.borderRadiusSM,
+      padding: '8px 12px',
+      marginBottom: '4px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      border: `1px solid ${getThemeAwareColor(token.colorBorderSecondary, token.colorBorder)}`,
+    },
+    projectItem: {
+      padding: '8px 12px',
+      borderRadius: token.borderRadiusSM,
+      transition: 'all 0.2s ease',
+      cursor: 'pointer',
+      border: `1px solid transparent`,
+    },
+    toggleIcon: {
+      color: getThemeAwareColor(token.colorTextSecondary, token.colorTextTertiary),
+      fontSize: '12px',
+      transition: 'all 0.2s ease',
+    },
+    expandedToggleIcon: {
+      color: getThemeAwareColor(token.colorPrimary, token.colorPrimaryActive),
+      fontSize: '12px',
+      transition: 'all 0.2s ease',
+    }
+  }), [token, getThemeAwareColor]);
+
+  // Memoize search placeholder and clear tooltip
+  const searchPlaceholder = useMemo(() => t('searchByProject'), [t]);
+  const clearTooltip = useMemo(() => t('clearSearch'), [t]);
+  const showSelectedTooltip = useMemo(() => t('showSelected'), [t]);
+  const selectAllText = useMemo(() => t('selectAll'), [t]);
+  const projectsSelectedText = useMemo(() => t('projectsSelected'), [t]);
+  const noProjectsText = useMemo(() => t('noProjects'), [t]);
+  const noDataText = useMemo(() => t('noData'), [t]);
+  const expandAllText = useMemo(() => t('expandAll'), [t]);
+  const collapseAllText = useMemo(() => t('collapseAll'), [t]);
+
   // Handle checkbox change for individual items
   const handleCheckboxChange = useCallback((key: string, checked: boolean) => {
     dispatch(setSelectOrDeselectProject({ id: key, selected: checked }));
@@ -202,54 +257,7 @@ const Projects: React.FC = () => {
     }
   }, [groupedProjects]);
 
-  // Get theme-aware styles
-  const getThemeStyles = useCallback(() => {
-    const isDark = themeMode === 'dark';
-    return {
-      dropdown: {
-        background: token.colorBgContainer,
-        borderRadius: token.borderRadius,
-        boxShadow: token.boxShadowSecondary,
-        border: `1px solid ${token.colorBorder}`,
-      },
-      groupHeader: {
-        backgroundColor: getThemeAwareColor(token.colorFillTertiary, token.colorFillQuaternary),
-        borderRadius: token.borderRadiusSM,
-        padding: '8px 12px',
-        marginBottom: '4px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        border: `1px solid ${getThemeAwareColor(token.colorBorderSecondary, token.colorBorder)}`,
-        '&:hover': {
-          backgroundColor: getThemeAwareColor(token.colorFillSecondary, token.colorFillTertiary),
-          borderColor: getThemeAwareColor(token.colorBorder, token.colorBorderSecondary),
-        }
-      },
-      projectItem: {
-        padding: '8px 12px',
-        borderRadius: token.borderRadiusSM,
-        transition: 'all 0.2s ease',
-        cursor: 'pointer',
-        border: `1px solid transparent`,
-        '&:hover': {
-          backgroundColor: getThemeAwareColor(token.colorFillAlter, token.colorFillQuaternary),
-          borderColor: getThemeAwareColor(token.colorBorderSecondary, token.colorBorder),
-        }
-      },
-      toggleIcon: {
-        color: getThemeAwareColor(token.colorTextSecondary, token.colorTextTertiary),
-        fontSize: '12px',
-        transition: 'all 0.2s ease',
-      },
-      expandedToggleIcon: {
-        color: getThemeAwareColor(token.colorPrimary, token.colorPrimaryActive),
-        fontSize: '12px',
-        transition: 'all 0.2s ease',
-      }
-    };
-  }, [token, themeMode, getThemeAwareColor]);
 
-  const styles = getThemeStyles();
 
   // Render project group
   const renderProjectGroup = (group: ProjectGroup) => {
@@ -261,10 +269,10 @@ const Projects: React.FC = () => {
         {groupBy !== 'none' && (
           <div 
             style={{
-              ...styles.groupHeader,
+              ...dropdownStyles.groupHeader,
               backgroundColor: isExpanded 
                 ? getThemeAwareColor(token.colorFillSecondary, token.colorFillTertiary)
-                : styles.groupHeader.backgroundColor
+                : dropdownStyles.groupHeader.backgroundColor
             }}
             onClick={() => toggleGroupExpansion(group.key)}
             onMouseEnter={(e) => {
@@ -274,15 +282,15 @@ const Projects: React.FC = () => {
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = isExpanded 
                 ? getThemeAwareColor(token.colorFillSecondary, token.colorFillTertiary)
-                : styles.groupHeader.backgroundColor;
+                : dropdownStyles.groupHeader.backgroundColor;
               e.currentTarget.style.borderColor = getThemeAwareColor(token.colorBorderSecondary, token.colorBorder);
             }}
           >
             <Space>
               {isExpanded ? (
-                <DownOutlined style={styles.expandedToggleIcon} />
+                <DownOutlined style={dropdownStyles.expandedToggleIcon} />
               ) : (
-                <RightOutlined style={styles.toggleIcon} />
+                <RightOutlined style={dropdownStyles.toggleIcon} />
               )}
               <div style={{ 
                 width: '12px', 
@@ -314,7 +322,7 @@ const Projects: React.FC = () => {
             {group.projects.map(project => (
               <div 
                 key={project.id}
-                style={styles.projectItem}
+                style={dropdownStyles.projectItem}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = getThemeAwareColor(token.colorFillAlter, token.colorFillQuaternary);
                   e.currentTarget.style.borderColor = getThemeAwareColor(token.colorBorderSecondary, token.colorBorder);
@@ -362,7 +370,7 @@ const Projects: React.FC = () => {
         open={dropdownVisible}
         dropdownRender={() => (
           <div style={{ 
-            ...styles.dropdown,
+            ...dropdownStyles.dropdown,
             padding: '8px 0',
             maxHeight: '500px',
             width: '400px',
@@ -374,12 +382,12 @@ const Projects: React.FC = () => {
               <Space direction="vertical" style={{ width: '100%' }} size="small">
                 {/* Search input */}
                 <Input
-                  placeholder={t('searchByProject')}
+                  placeholder={searchPlaceholder}
                   value={searchText}
                   onChange={e => setSearchText(e.target.value)}
                   prefix={<SearchOutlined style={{ color: getThemeAwareColor(token.colorTextTertiary, token.colorTextQuaternary) }} />}
                   suffix={searchText && (
-                    <Tooltip title={t('clearSearch')}>
+                    <Tooltip title={clearTooltip}>
                       <ClearOutlined 
                         onClick={clearSearch}
                         style={{ 
@@ -407,12 +415,7 @@ const Projects: React.FC = () => {
                       onChange={setGroupBy}
                       size="small"
                       style={{ width: '120px' }}
-                      options={[
-                        { value: 'none', label: t('groupByNone') },
-                        { value: 'category', label: t('groupByCategory') },
-                        { value: 'team', label: t('groupByTeam') },
-                        { value: 'status', label: t('groupByStatus') },
-                      ]}
+                      options={groupByOptions}
                     />
                     
                     {groupBy !== 'none' && (
@@ -425,7 +428,7 @@ const Projects: React.FC = () => {
                             color: getThemeAwareColor(token.colorTextSecondary, token.colorTextTertiary)
                           }}
                         >
-                          {t('expandAll')}
+                          {expandAllText}
                         </Button>
                         <Button 
                           type="text" 
@@ -435,13 +438,13 @@ const Projects: React.FC = () => {
                             color: getThemeAwareColor(token.colorTextSecondary, token.colorTextTertiary)
                           }}
                         >
-                          {t('collapseAll')}
+                          {collapseAllText}
                         </Button>
                       </Space>
                     )}
                   </Space>
                   
-                  <Tooltip title={t('showSelected')}>
+                  <Tooltip title={showSelectedTooltip}>
                     <Button
                       type={showSelectedOnly ? 'primary' : 'text'}
                       size="small"
@@ -468,7 +471,7 @@ const Projects: React.FC = () => {
                   <Text style={{ 
                     color: getThemeAwareColor(token.colorText, token.colorTextBase)
                   }}>
-                    {t('selectAll')}
+                    {selectAllText}
                   </Text>
                   {selectedCount > 0 && (
                     <Badge 
@@ -499,7 +502,7 @@ const Projects: React.FC = () => {
                     <Text style={{ 
                       color: getThemeAwareColor(token.colorTextTertiary, token.colorTextQuaternary)
                     }}>
-                      {searchText ? t('noProjects') : t('noData')}
+                      {searchText ? noProjectsText : noDataText}
                     </Text>
                   }
                   style={{ margin: '20px 0' }}
@@ -524,7 +527,7 @@ const Projects: React.FC = () => {
                     fontSize: '12px',
                     color: getThemeAwareColor(token.colorTextTertiary, token.colorTextQuaternary)
                   }}>
-                    {selectedCount} {t('projectsSelected')}
+                    {selectedCount} {projectsSelectedText}
                   </Text>
                 </div>
               </>
