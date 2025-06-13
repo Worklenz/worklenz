@@ -246,7 +246,7 @@ const CurrentPlanDetails = () => {
 
   const renderFreePlan = () => (
     <Flex vertical>
-      <Typography.Text strong>Free Plan</Typography.Text>
+      <Typography.Text strong>{t('freePlan')}</Typography.Text>
       <Typography.Text>
         <br />-{' '}
         {freePlanSettings?.team_member_limit === 0
@@ -309,16 +309,16 @@ const CurrentPlanDetails = () => {
 
   const renderCreditSubscriptionInfo = () => {
     return <Flex vertical>
-      <Typography.Text strong>Credit Plan</Typography.Text>
+      <Typography.Text strong>{t('creditPlan','Credit Plan')}</Typography.Text>
     </Flex>
-  };  
+  };
 
   const renderCustomSubscriptionInfo = () => {
     return <Flex vertical>
-      <Typography.Text strong>Custom Plan</Typography.Text>
-      <Typography.Text>Your plan is valid till {billingInfo?.valid_till_date}</Typography.Text>
+      <Typography.Text strong>{t('customPlan','Custom Plan')}</Typography.Text>
+      <Typography.Text>{t('planValidTill','Your plan is valid till {{date}}',{date: billingInfo?.valid_till_date})}</Typography.Text>
     </Flex>
-  }; 
+  };
 
   return (
     <Card
@@ -381,15 +381,15 @@ const CurrentPlanDetails = () => {
         >
           <Flex vertical gap="middle" style={{ marginTop: '8px' }}>
             <Typography.Paragraph style={{ fontSize: '16px', margin: '0 0 16px 0', fontWeight: 500 }}>
-              To continue, you'll need to purchase additional seats.
+              {t('purchaseSeatsText','To continue, you\'ll need to purchase additional seats.')}
             </Typography.Paragraph>
             
             <Typography.Paragraph style={{ margin: '0 0 16px 0' }}>
-              You currently have {billingInfo?.total_seats} seats available.
+              {t('currentSeatsText','You currently have {{seats}} seats available.',{seats: billingInfo?.total_seats})}
             </Typography.Paragraph>
             
             <Typography.Paragraph style={{ margin: '0 0 24px 0' }}>
-              Please select the number of additional seats to purchase.
+              {t('selectSeatsText','Please select the number of additional seats to purchase.')}
             </Typography.Paragraph>
             
             <div style={{ marginBottom: '24px' }}>
@@ -416,14 +416,14 @@ const CurrentPlanDetails = () => {
                     borderRadius: '2px'
                   }}
                 >
-                  Purchase
+                  {t('purchase','Purchase')}
                 </Button>
               ) : (
                 <Button 
                   type="primary" 
                   size="middle"
                 >
-                  Contact sales
+                  {t('contactSales','Contact sales')}
                 </Button>
               )}
             </Flex>

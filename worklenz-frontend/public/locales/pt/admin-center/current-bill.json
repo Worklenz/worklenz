@@ -101,5 +101,13 @@
   
   "expirestoday": "hoje",
   "expirestomorrow": "amanhã",
-  "expiredDaysAgo": "há {{days}} dias"
+  "expiredDaysAgo": "há {{days}} dias",
+  "creditPlan": "Plano de Crédito",
+  "customPlan": "Plano Personalizado",
+  "planValidTill": "Seu plano é válido até {{date}}",
+  "purchaseSeatsText": "Para continuar, você precisará comprar assentos adicionais.",
+  "currentSeatsText": "Atualmente você tem {{seats}} assentos disponíveis.",
+  "selectSeatsText": "Selecione o número de assentos adicionais para comprar.",
+  "purchase": "Comprar",
+  "contactSales": "Fale com vendas"
 }

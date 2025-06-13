@@ -58,9 +58,9 @@ html.light body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Inter", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
-    "Noto Color Emoji" !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Inter", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
 }
 
 /* helper classes  */
@@ -145,3 +145,4 @@ Not supports in Firefox and IE */
 tr:hover .action-buttons {
   opacity: 1;
 }
+

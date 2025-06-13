@@ -21,6 +21,8 @@ import { ITaskLabel, ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
 import { ITaskPhaseChangeResponse } from '@/types/tasks/task-phase-change-response';
 import { produce } from 'immer';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
+import { SocketEvents } from '@/shared/socket-events';
+import { ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -190,6 +192,20 @@ export const fetchSubTasks = createAsyncThunk(
     if (task?.show_sub_tasks) {
       // If already expanded, just return without fetching
       return [];
+    }
+
+    // Request subtask progress data when expanding the task
+    // This will trigger the socket to emit TASK_PROGRESS_UPDATED events for all subtasks
+    try {
+      // Get access to the socket from the state
+      const socket = (getState() as any).socketReducer?.socket;
+      if (socket?.connected) {
+        // Request subtask count and progress information
+        socket.emit(SocketEvents.GET_TASK_SUBTASKS_COUNT.toString(), taskId);
+      }
+    } catch (error) {
+      console.error('Error requesting subtask progress:', error);
+      // Non-critical error, continue with fetching subtasks
     }
 
     const selectedMembers = taskReducer.taskAssignees
@@ -572,14 +588,30 @@ const taskSlice = createSlice({
     ) => {
       const { taskId, progress, totalTasksCount, completedCount } = action.payload;
 
-      for (const group of state.taskGroups) {
-        const task = group.tasks.find(task => task.id === taskId);
-        if (task) {
-          task.complete_ratio = progress;
-          task.total_tasks_count = totalTasksCount;
-          task.completed_count = completedCount;
-          break;
+      // Helper function to find and update a task at any nesting level
+      const findAndUpdateTask = (tasks: IProjectTask[]) => {
+        for (const task of tasks) {
+          if (task.id === taskId) {
+            task.complete_ratio = progress;
+            task.progress_value = progress;
+            task.total_tasks_count = totalTasksCount;
+            task.completed_count = completedCount;
+            return true;
+          }
+          
+          // Check subtasks if they exist
+          if (task.sub_tasks && task.sub_tasks.length > 0) {
+            const found = findAndUpdateTask(task.sub_tasks);
+            if (found) return true;
+          }
         }
+        return false;
+      };
+
+      // Try to find and update the task in any task group
+      for (const group of state.taskGroups) {
+        const found = findAndUpdateTask(group.tasks);
+        if (found) break;
       }
     },
 
@@ -975,6 +1007,15 @@ const taskSlice = createSlice({
         column.pinned = isVisible;
       }
     },
+
+    updateRecurringChange: (state, action: PayloadAction<ITaskRecurringScheduleData>) => {
+      const {id, schedule_type, task_id} = action.payload;
+      const taskInfo = findTaskInGroups(state.taskGroups, task_id as string); 
+      if (!taskInfo) return;
+
+      const { task } = taskInfo;
+      task.schedule_id = id;
+    } 
   },
 
   extraReducers: builder => {
@@ -1134,6 +1175,7 @@ export const {
   updateSubTasks,
   updateCustomColumnValue,
   updateCustomColumnPinned,
+  updateRecurringChange
 } = taskSlice.actions;
 
 export default taskSlice.reducer;

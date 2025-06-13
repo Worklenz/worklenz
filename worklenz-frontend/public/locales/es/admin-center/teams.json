@@ -29,5 +29,7 @@
   "role": "Rol",
   "owner": "Propietario",
   "admin": "Administrador",
-  "member": "Miembro"
+  "member": "Miembro",
+  "cannotChangeOwnerRole": "El rol de Propietario no puede ser cambiado",
+  "pendingInvitation": "Invitación pendiente"
 }

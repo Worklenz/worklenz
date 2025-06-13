@@ -22,7 +22,16 @@
       "hide-start-date": "Ocultar fecha de inicio",
       "show-start-date": "Mostrar fecha de inicio",
       "hours": "Horas",
-      "minutes": "Minutos"
+      "minutes": "Minutos",
+      "progressValue": "Valor de Progreso",
+      "progressValueTooltip": "Establecer el porcentaje de progreso (0-100%)",
+      "progressValueRequired": "Por favor, introduce un valor de progreso",
+      "progressValueRange": "El progreso debe estar entre 0 y 100",
+      "taskWeight": "Peso de la Tarea",
+      "taskWeightTooltip": "Establecer el peso de esta subtarea (porcentaje)",
+      "taskWeightRequired": "Por favor, introduce un peso para la tarea",
+      "taskWeightRange": "El peso debe estar entre 0 y 100",
+      "recurring": "Recurrente"
     },
     "labels": {
       "labelInputPlaceholder": "Buscar o crear",
@@ -74,5 +83,11 @@
   },
   "taskActivityLogTab": {
     "title": "Registro de actividad"
+  },
+  "taskProgress": {
+    "markAsDoneTitle": "¿Marcar Tarea como Completada?",
+    "confirmMarkAsDone": "Sí, marcar como completada",
+    "cancelMarkAsDone": "No, mantener estado actual",
+    "markAsDoneDescription": "Has establecido el progreso al 100%. ¿Quieres actualizar el estado de la tarea a \"Completada\"?"
   }
 } 

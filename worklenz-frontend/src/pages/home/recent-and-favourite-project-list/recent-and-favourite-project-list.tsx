@@ -132,7 +132,7 @@ const RecentAndFavouriteProjectList = () => {
       <div style={{ maxHeight: 420, overflow: 'auto' }}>
         {projectsData?.body?.length === 0 ? (
           <Empty
-            image="https://app.worklenz.com/assets/images/empty-box.webp"
+            image="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
             imageStyle={{ height: 60 }}
             style={{
               display: 'flex',

@@ -4,24 +4,33 @@ import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
 import config from '@/config/env';
 
-export const getCsrfToken = (): string | null => {
-  const match = document.cookie.split('; ').find(cookie => cookie.startsWith('XSRF-TOKEN='));
+// Store CSRF token in memory (since csrf-sync uses session-based tokens)
+let csrfToken: string | null = null;
 
-  if (!match) {
-    return null;
-  }
-  return decodeURIComponent(match.split('=')[1]);
+export const getCsrfToken = (): string | null => {
+  return csrfToken;
 };
 
-// Function to refresh CSRF token if needed
+// Function to refresh CSRF token from server
 export const refreshCsrfToken = async (): Promise<string | null> => {
   try {
     // Make a GET request to the server to get a fresh CSRF token
-    await axios.get(`${config.apiUrl}/csrf-token`, { withCredentials: true });
-    return getCsrfToken();
+    const response = await axios.get(`${config.apiUrl}/csrf-token`, { withCredentials: true });
+    if (response.data && response.data.token) {
+      csrfToken = response.data.token;
+      return csrfToken;
+    }
+    return null;
   } catch (error) {
     console.error('Failed to refresh CSRF token:', error);
     return null;
+  }
+};
+
+// Initialize CSRF token on app load
+export const initializeCsrfToken = async (): Promise<void> => {
+  if (!csrfToken) {
+    await refreshCsrfToken();
   }
 };
 
@@ -36,12 +45,16 @@ const apiClient = axios.create({
 
 // Request interceptor
 apiClient.interceptors.request.use(
-  config => {
-    const token = getCsrfToken();
-    if (token) {
-      config.headers['X-CSRF-Token'] = token;
+  async config => {
+    // Ensure we have a CSRF token before making requests
+    if (!csrfToken) {
+      await refreshCsrfToken();
+    }
+    
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
     } else {
-      console.warn('No CSRF token found');
+      console.warn('No CSRF token available');
     }
     return config;
   },
@@ -84,7 +97,7 @@ apiClient.interceptors.response.use(
         (typeof errorResponse.data === 'object' && 
          errorResponse.data !== null && 
          'message' in errorResponse.data && 
-         errorResponse.data.message === 'Invalid CSRF token' || 
+         (errorResponse.data.message === 'invalid csrf token' || errorResponse.data.message === 'Invalid CSRF token') || 
          (error as any).code === 'EBADCSRFTOKEN')) {
       alertService.error('Security Error', 'Invalid security token. Refreshing your session...');
       
@@ -94,7 +107,7 @@ apiClient.interceptors.response.use(
         // Update the token in the failed request
         error.config.headers['X-CSRF-Token'] = newToken;
         // Retry the original request with the new token
-        return axios(error.config);
+        return apiClient(error.config);
       } else {
         // If token refresh failed, redirect to login
         window.location.href = '/auth/login';

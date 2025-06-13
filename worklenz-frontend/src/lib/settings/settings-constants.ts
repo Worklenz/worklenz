@@ -11,6 +11,7 @@ import {
   TeamOutlined,
   UserOutlined,
   UserSwitchOutlined,
+  BulbOutlined,
 } from '@ant-design/icons';
 import React, { ReactNode } from 'react';
 import ProfileSettings from '../../pages/settings/profile/profile-settings';
@@ -25,6 +26,7 @@ import TeamMembersSettings from '@/pages/settings/team-members/team-members-sett
 import TeamsSettings from '../../pages/settings/teams/teams-settings';
 import ChangePassword from '@/pages/settings/change-password/change-password';
 import LanguageAndRegionSettings from '@/pages/settings/language-and-region/language-and-region-settings';
+import AppearanceSettings from '@/pages/settings/appearance/appearance-settings';
 
 // type of menu item in settings sidebar
 type SettingMenuItems = {
@@ -51,6 +53,13 @@ export const settingsItems: SettingMenuItems[] = [
     endpoint: 'notifications',
     icon: React.createElement(NotificationOutlined),
     element: React.createElement(NotificationsSettings),
+  },
+  {
+    key: 'appearance',
+    name: 'appearance',
+    endpoint: 'appearance',
+    icon: React.createElement(BulbOutlined),
+    element: React.createElement(AppearanceSettings),
   },
   {
     key: 'change-password',
@@ -99,14 +108,14 @@ export const settingsItems: SettingMenuItems[] = [
     element: React.createElement(CategoriesSettings),
     adminOnly: true,
   },
-  // {
-  //   key: 'project-templates',
-  //   name: 'project-templates',
-  //   endpoint: 'project-templates',
-  //   icon: React.createElement(FileZipOutlined),
-  //   element: React.createElement(ProjectTemplatesSettings),
-  //   adminOnly: true,
-  // },
+  {
+    key: 'project-templates',
+    name: 'project-templates',
+    endpoint: 'project-templates',
+    icon: React.createElement(FileZipOutlined),
+    element: React.createElement(ProjectTemplatesSettings),
+    adminOnly: true,
+  },
   {
     key: 'task-templates',
     name: 'task-templates',

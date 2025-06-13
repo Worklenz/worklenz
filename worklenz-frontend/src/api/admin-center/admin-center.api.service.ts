@@ -112,11 +112,11 @@ export const adminCenterApiService = {
 
   async updateTeam(
     team_id: string,
-    team_members: IOrganizationUser[]
+    body: {name: string, teamMembers: IOrganizationUser[]}
   ): Promise<IServerResponse<IOrganization>> {
     const response = await apiClient.put<IServerResponse<IOrganization>>(
       `${rootUrl}/organization/team/${team_id}`,
-      team_members
+      body
     );
     return response.data;
   },

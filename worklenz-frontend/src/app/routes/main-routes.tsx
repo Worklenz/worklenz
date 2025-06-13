@@ -34,6 +34,7 @@ const mainRoutes: RouteObject[] = [
     path: '/worklenz',
     element: <MainLayout />,
     children: [
+      { index: true, element: <Navigate to="home" replace /> },
       { path: 'home', element: <HomePage /> },
       { path: 'projects', element: <ProjectList /> },
       {
