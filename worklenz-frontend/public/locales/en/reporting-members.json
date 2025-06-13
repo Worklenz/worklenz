@@ -31,5 +31,10 @@
 
   "todoText": "To Do",
   "doingText": "Doing",
-  "doneText": "Done"
+  "doneText": "Done",
+
+  "timeLogsColumn": "Time Logs",
+  "timeLogsColumnTooltip": "Shows the proportion of billable vs non-billable time",
+  "billable": "Billable",
+  "nonBillable": "Non-Billable"
 }

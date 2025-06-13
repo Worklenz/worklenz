@@ -31,5 +31,10 @@
 
   "todoText": "To Do",
   "doingText": "Doing",
-  "doneText": "Done"
+  "doneText": "Done",
+
+  "timeLogsColumn": "Registros de Tempo",
+  "timeLogsColumnTooltip": "Mostra a proporção de tempo faturável vs não faturável",
+  "billable": "Faturável",
+  "nonBillable": "Não Faturável"
 }

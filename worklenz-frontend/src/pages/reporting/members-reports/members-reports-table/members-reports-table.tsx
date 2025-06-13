@@ -6,6 +6,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import TasksProgressCell from './tablesCells/tasksProgressCell/TasksProgressCell';
 import MemberCell from './tablesCells/memberCell/MemberCell';
+import TimeLogsCell from './tablesCells/timeLogsCell/TimeLogsCell';
 import {
   fetchMembersData,
   setPagination,
@@ -52,6 +53,15 @@ const MembersReportsTable = () => {
       render: record => {
         const { todo, doing, done } = record.tasks_stat;
         return todo || doing || done ? <TasksProgressCell tasksStat={record.tasks_stat} /> : '-';
+      },
+    },
+    {
+      key: 'timeLogs',
+      title: <CustomTableTitle title={t('timeLogsColumn')} tooltip={t('timeLogsColumnTooltip')} />,
+      render: record => {
+        const billableTime = record.billable_time || 0;
+        const nonBillableTime = record.non_billable_time || 0;
+        return <TimeLogsCell billableTime={billableTime} nonBillableTime={nonBillableTime} />;
       },
     },
     {

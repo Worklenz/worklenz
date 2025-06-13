@@ -136,6 +136,8 @@ export interface IRPTMember {
   ongoing: number;
   todo: number;
   member_teams: any;
+  billable_time?: number;
+  non_billable_time?: number;
 }
 
 export interface ISingleMemberLogs {

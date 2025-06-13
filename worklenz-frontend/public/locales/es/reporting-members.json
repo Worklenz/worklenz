@@ -31,5 +31,10 @@
 
   "todoText": "Por Hacer",
   "doingText": "Haciendo",
-  "doneText": "Hecho"
+  "doneText": "Hecho",
+
+  "timeLogsColumn": "Registros de Tiempo",
+  "timeLogsColumnTooltip": "Muestra la proporción de tiempo facturable vs no facturable",
+  "billable": "Facturable",
+  "nonBillable": "No Facturable"
 }

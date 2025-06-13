@@ -31,6 +31,7 @@ export default class ReportingMembersController extends ReportingControllerBase 
     const completedDurationClasue = this.completedDurationFilter(key, dateRange);
     const overdueActivityLogsClause = this.getActivityLogsOverdue(key, dateRange);
     const activityLogCreationFilter = this.getActivityLogsCreationClause(key, dateRange);
+    const timeLogDateRangeClause = this.getTimeLogDateRangeClause(key, dateRange);
 
     const q = `SELECT COUNT(DISTINCT email) AS total,
               (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
@@ -100,7 +101,25 @@ export default class ReportingMembersController extends ReportingControllerBase 
                                   FROM tasks t
                                           LEFT JOIN tasks_assignees ta ON t.id = ta.task_id
                                   WHERE team_member_id = tmiv.team_member_id
-                                      AND is_doing((SELECT new_value FROM task_activity_logs tl WHERE tl.task_id = t.id AND tl.attribute_type = 'status' ${activityLogCreationFilter} ORDER BY tl.created_at DESC LIMIT 1)::UUID, t.project_id) ${archivedClause}) AS ongoing_by_activity_logs
+                                      AND is_doing((SELECT new_value FROM task_activity_logs tl WHERE tl.task_id = t.id AND tl.attribute_type = 'status' ${activityLogCreationFilter} ORDER BY tl.created_at DESC LIMIT 1)::UUID, t.project_id) ${archivedClause}) AS ongoing_by_activity_logs,
+
+                              (SELECT COALESCE(SUM(twl.time_spent), 0)
+                                  FROM task_work_log twl
+                                  LEFT JOIN tasks t ON twl.task_id = t.id
+                                  WHERE twl.user_id = (SELECT user_id FROM team_members WHERE id = tmiv.team_member_id)
+                                      AND t.billable IS TRUE
+                                      AND t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                      ${timeLogDateRangeClause}
+                                      ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS billable_time,
+
+                              (SELECT COALESCE(SUM(twl.time_spent), 0)
+                                  FROM task_work_log twl
+                                  LEFT JOIN tasks t ON twl.task_id = t.id
+                                  WHERE twl.user_id = (SELECT user_id FROM team_members WHERE id = tmiv.team_member_id)
+                                      AND t.billable IS FALSE
+                                      AND t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                      ${timeLogDateRangeClause}
+                                      ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS non_billable_time
                       FROM team_member_info_view tmiv
                       WHERE tmiv.team_id = $1 ${teamsClause}
                           AND tmiv.team_member_id IN (SELECT team_member_id
@@ -311,6 +330,30 @@ export default class ReportingMembersController extends ReportingControllerBase 
     return "";
   }
 
+  protected static getTimeLogDateRangeClause(key: string, dateRange: string[]) {
+    if (dateRange.length === 2) {
+      const start = moment(dateRange[0]).format("YYYY-MM-DD");
+      const end = moment(dateRange[1]).format("YYYY-MM-DD");
+
+      if (start === end) {
+        return `AND twl.created_at::DATE = '${start}'::DATE`;
+      }
+
+      return `AND twl.created_at::DATE >= '${start}'::DATE AND twl.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+    }
+
+    if (key === DATE_RANGES.YESTERDAY)
+      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND twl.created_at < CURRENT_DATE::DATE`;
+    if (key === DATE_RANGES.LAST_WEEK)
+      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+    if (key === DATE_RANGES.LAST_MONTH)
+      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+    if (key === DATE_RANGES.LAST_QUARTER)
+      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+
+    return "";
+  }
+
   private static formatDuration(duration: moment.Duration) {
     const empty = "0h 0m";
     let format = "";
@@ -423,6 +466,8 @@ export default class ReportingMembersController extends ReportingControllerBase 
       { header: "Overdue Tasks", key: "overdue_tasks", width: 20 },
       { header: "Completed Tasks", key: "completed_tasks", width: 20 },
       { header: "Ongoing Tasks", key: "ongoing_tasks", width: 20 },
+      { header: "Billable Time (seconds)", key: "billable_time", width: 25 },
+      { header: "Non-Billable Time (seconds)", key: "non_billable_time", width: 25 },
       { header: "Done Tasks(%)", key: "done_tasks", width: 20 },
       { header: "Doing Tasks(%)", key: "doing_tasks", width: 20 },
       { header: "Todo Tasks(%)", key: "todo_tasks", width: 20 }
@@ -430,14 +475,14 @@ export default class ReportingMembersController extends ReportingControllerBase 
 
     // set title
     sheet.getCell("A1").value = `Members from ${teamName}`;
-    sheet.mergeCells("A1:K1");
+    sheet.mergeCells("A1:M1");
     sheet.getCell("A1").alignment = { horizontal: "center" };
     sheet.getCell("A1").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9D9D9" } };
     sheet.getCell("A1").font = { size: 16 };
 
     // set export date
     sheet.getCell("A2").value = `Exported on : ${exportDate}`;
-    sheet.mergeCells("A2:K2");
+    sheet.mergeCells("A2:M2");
     sheet.getCell("A2").alignment = { horizontal: "center" };
     sheet.getCell("A2").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F2F2F2" } };
     sheet.getCell("A2").font = { size: 12 };
@@ -447,7 +492,7 @@ export default class ReportingMembersController extends ReportingControllerBase 
     sheet.mergeCells("A3:D3");
 
     // set table headers
-    sheet.getRow(5).values = ["Member", "Email", "Tasks Assigned", "Overdue Tasks", "Completed Tasks", "Ongoing Tasks", "Done Tasks(%)", "Doing Tasks(%)", "Todo Tasks(%)"];
+    sheet.getRow(5).values = ["Member", "Email", "Tasks Assigned", "Overdue Tasks", "Completed Tasks", "Ongoing Tasks", "Billable Time (seconds)", "Non-Billable Time (seconds)", "Done Tasks(%)", "Doing Tasks(%)", "Todo Tasks(%)"];
     sheet.getRow(5).font = { bold: true };
 
     for (const member of result.members) {
@@ -458,6 +503,8 @@ export default class ReportingMembersController extends ReportingControllerBase 
         overdue_tasks: member.overdue,
         completed_tasks: member.completed,
         ongoing_tasks: member.ongoing,
+        billable_time: member.billable_time || 0,
+        non_billable_time: member.non_billable_time || 0,
         done_tasks: member.completed,
         doing_tasks: member.ongoing_by_activity_logs,
         todo_tasks: member.todo_by_activity_logs
