@@ -7,7 +7,7 @@
   "selectAll": "Seleccionar Todo",
   "teams": "Equipos",
 
-  "searchByProject": "Buscar por nombre de proyecto",
+  "searchByProject": "Buscar por nombre del proyecto",
   "projects": "Proyectos",
 
   "searchByCategory": "Buscar por nombre de categoría",
@@ -37,8 +37,21 @@
   "actualDays": "Días Reales",
 
   "noCategories": "No se encontraron categorías",
-  "noCategory": "No Categoría",
+  "noCategory": "Sin Categoría",
   "noProjects": "No se encontraron proyectos",
   "noTeams": "No se encontraron equipos",
-  "noData": "No se encontraron datos"
+  "noData": "No se encontraron datos",
+
+  "groupBy": "Agrupar por",
+  "groupByCategory": "Categoría",
+  "groupByTeam": "Equipo",
+  "groupByStatus": "Estado",
+  "groupByNone": "Ninguno",
+  "clearSearch": "Limpiar búsqueda",
+  "selectedProjects": "Proyectos Seleccionados",
+  "projectsSelected": "proyectos seleccionados",
+  "showSelected": "Mostrar Solo Seleccionados",
+  "expandAll": "Expandir Todo",
+  "collapseAll": "Contraer Todo",
+  "ungrouped": "Sin Agrupar"
 }

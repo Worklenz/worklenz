@@ -35,8 +35,18 @@ export default class AuthController extends WorklenzControllerBase {
     const auth_error = errors.length > 0 ? errors[0] : null;
     const message = messages.length > 0 ? messages[0] : null;
 
-    const midTitle = req.query.strategy === "login" ? "Login Failed!" : "Signup Failed!";
-    const title = req.query.strategy ? midTitle : null;
+    // Determine title based on authentication status and strategy
+    let title = null;
+    if (req.query.strategy) {
+      if (auth_error) {
+        // Show failure title only when there's an actual error
+        title = req.query.strategy === "login" ? "Login Failed!" : "Signup Failed!";
+      } else if (req.isAuthenticated() && message) {
+        // Show success title when authenticated and there's a success message
+        title = req.query.strategy === "login" ? "Login Successful!" : "Signup Successful!";
+      }
+      // If no error and not authenticated, don't show any title (this might be a redirect without completion)
+    }
 
     if (req.user)
       req.user.build_v = FileConstants.getRelease();

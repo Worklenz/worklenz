@@ -28,5 +28,8 @@
 	"homepage": "https://www.tiny.cloud/",
 	"bugs": {
 		"url": "https://github.com/tinymce/tinymce/issues"
+	},
+	"dependencies": {
+		"tinymce": "file:"
 	}
 }

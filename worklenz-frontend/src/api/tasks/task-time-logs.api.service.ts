@@ -5,6 +5,16 @@ import { ITaskLogViewModel } from "@/types/tasks/task-log-view.types";
 
 const rootUrl = `${API_BASE_URL}/task-time-log`;
 
+export interface IRunningTimer {
+  task_id: string;
+  start_time: string;
+  task_name: string;
+  project_id: string;
+  project_name: string;
+  parent_task_id?: string;
+  parent_task_name?: string;
+}
+
 export const taskTimeLogsApiService = {
   getByTask: async (id: string) : Promise<IServerResponse<ITaskLogViewModel[]>> => {
     const response = await apiClient.get(`${rootUrl}/task/${id}`);
@@ -23,6 +33,11 @@ export const taskTimeLogsApiService = {
 
   update: async (id: string, body: {}): Promise<IServerResponse<ITaskLogViewModel>> => {
     const response = await apiClient.put(`${rootUrl}/${id}`, body);
+    return response.data;
+  },
+
+  getRunningTimers: async (): Promise<IServerResponse<IRunningTimer[]>> => {
+    const response = await apiClient.get(`${rootUrl}/running-timers`);
     return response.data;
   },
 

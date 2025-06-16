@@ -76,6 +76,8 @@ import groupByFilterDropdownReducer from '../features/group-by-filter-dropdown/g
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 
+import projectViewReducer from '@features/project/project-view-slice';
+
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -113,6 +115,8 @@ export const store = configureStore({
     taskListCustomColumnsReducer: taskListCustomColumnsReducer,
     boardReducer: boardReducer,
     projectDrawerReducer: projectDrawerReducer,
+    
+    projectViewReducer: projectViewReducer,
 
     // Project Lookups
     projectCategoriesReducer: projectCategoriesReducer,

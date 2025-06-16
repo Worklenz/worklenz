@@ -25,3 +25,84 @@
 :where(.css-dev-only-do-not-override-17sis5b).ant-tabs-bottom > div > .ant-tabs-nav::before {
   border: none;
 }
+
+.project-group-container {
+  margin-top: 16px;
+}
+
+.project-group {
+  margin-bottom: 32px;
+}
+
+.project-group-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+
+.group-color-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.group-stats {
+  margin-left: 8px;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.project-card {
+  height: 100%;
+  overflow: hidden;
+}
+
+.project-card .ant-card-cover {
+  height: 4px;
+}
+
+.project-status-bar {
+  width: 100%;
+  height: 100%;
+}
+
+.project-card-content {
+  padding: 8px;
+}
+
+.project-title {
+  margin-bottom: 8px !important;
+  min-height: 44px;
+}
+
+.project-client {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.project-progress {
+  margin-bottom: 12px;
+}
+
+.project-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.project-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.project-status-tag {
+  margin-top: 8px;
+  width: 100%;
+  text-align: center;
+}

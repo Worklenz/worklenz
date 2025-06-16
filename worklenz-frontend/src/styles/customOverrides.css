@@ -79,6 +79,83 @@
   border: 1px solid #d3d3d3;
 }
 
+/* Enhanced overview stat card styles */
+.overview-stat-card {
+  border-radius: 0 !important;
+}
+
+.overview-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Light mode stat cards */
+.overview-stat-card.light-mode {
+  background-color: #ffffff !important;
+  border: 1px solid #f0f0f0 !important;
+}
+
+.overview-stat-card.light-mode:hover {
+  border-color: #1890ff !important;
+  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.15) !important;
+}
+
+.overview-stat-card.light-mode .ant-card {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.overview-stat-card.light-mode .ant-card-body {
+  background-color: transparent !important;
+}
+
+/* Dark mode stat cards */
+.overview-stat-card.dark-mode {
+  background-color: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.overview-stat-card.dark-mode:hover {
+  border-color: #1890ff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.overview-stat-card.dark-mode .ant-card {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.overview-stat-card.dark-mode .ant-card-body {
+  background-color: transparent !important;
+}
+
+/* Force dark mode styles when body has dark class or data attribute */
+body.dark .overview-stat-card,
+[data-theme="dark"] .overview-stat-card,
+.ant-theme-dark .overview-stat-card {
+  background-color: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+body.dark .overview-stat-card .ant-card,
+[data-theme="dark"] .overview-stat-card .ant-card,
+.ant-theme-dark .overview-stat-card .ant-card {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+body.dark .overview-stat-card .ant-card-body,
+[data-theme="dark"] .overview-stat-card .ant-card-body,
+.ant-theme-dark .overview-stat-card .ant-card-body {
+  background-color: transparent !important;
+}
+
+/* Ensure no border radius on card components */
+.overview-stat-card .ant-card,
+.overview-stat-card .ant-card-body {
+  border-radius: 0 !important;
+}
+
 /* reporting sidebar  */
 .custom-reporting-sider .ant-menu-item-selected {
   border-inline-end: 3px solid #1890ff !important;

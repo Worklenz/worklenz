@@ -47,5 +47,6 @@
   "weightedProgress": "Weighted Progress",
   "weightedProgressTooltip": "Calculate progress based on subtask weights",
   "timeProgress": "Time-based Progress",
-  "timeProgressTooltip": "Calculate progress based on estimated time"
+  "timeProgressTooltip": "Calculate progress based on estimated time",
+  "enterProjectKey": "Enter project key"
 }

@@ -19,5 +19,13 @@
   "unarchiveConfirm": "¿Estás seguro de que deseas desarchivar este proyecto?",
   "clickToFilter": "Clique para filtrar por",
   "noProjects": "No se encontraron proyectos",
-  "addToFavourites": "Añadir a favoritos"
+  "addToFavourites": "Añadir a favoritos",
+  "list": "Lista",
+  "group": "Grupo",
+  "listView": "Vista de Lista",
+  "groupView": "Vista de Grupo",
+  "groupBy": {
+    "category": "Categoría",
+    "client": "Cliente"
+  }
 }
