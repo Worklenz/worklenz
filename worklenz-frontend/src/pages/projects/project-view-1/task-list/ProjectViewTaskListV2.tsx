@@ -1,19 +1,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { fetchTaskGroups, fetchTaskListColumns, toggleColumnVisibility } from '@/features/tasks/tasks.slice';
+import {
+  fetchTaskGroups,
+  fetchTaskListColumns,
+  toggleColumnVisibility,
+} from '@/features/tasks/tasks.slice';
 import TaskListTableV2 from './TaskListTableV2';
 import { Button, Dropdown, Menu, Checkbox } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { ITaskListColumn, ITaskListGroup } from '@/types/tasks/taskList.types';
-import { RootState } from '@/store';
 
 const ProjectViewTaskListV2: React.FC = () => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { taskGroups, columns, loadingGroups } = useAppSelector((state: RootState) => state.taskReducer);
-  const projectId = useAppSelector((state: RootState) => state.projectReducer.projectId);
+  const { taskGroups, columns, loadingGroups } = useAppSelector(state => state.taskReducer);
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -23,13 +26,16 @@ const ProjectViewTaskListV2: React.FC = () => {
     }
   }, [dispatch, projectId]);
 
-  const handleColumnVisibilityChange = useCallback((columnId: string, isVisible: boolean) => {
-    setColumnVisibility(prev => ({
-      ...prev,
-      [columnId]: isVisible,
-    }));
-    dispatch(toggleColumnVisibility(columnId));
-  }, [dispatch]);
+  const handleColumnVisibilityChange = useCallback(
+    (columnId: string, isVisible: boolean) => {
+      setColumnVisibility(prev => ({
+        ...prev,
+        [columnId]: isVisible,
+      }));
+      dispatch(toggleColumnVisibility(columnId));
+    },
+    [dispatch]
+  );
 
   const columnMenu = (
     <Menu>
@@ -37,7 +43,7 @@ const ProjectViewTaskListV2: React.FC = () => {
         <Menu.Item key={column.key}>
           <Checkbox
             checked={columnVisibility[column.key] ?? column.pinned}
-            onChange={(e) => handleColumnVisibilityChange(column.key, e.target.checked)}
+            onChange={e => handleColumnVisibilityChange(column.key, e.target.checked)}
           >
             {column.name}
           </Checkbox>
@@ -54,28 +60,19 @@ const ProjectViewTaskListV2: React.FC = () => {
     <div className="task-list-wrapper">
       <div className="task-list-header">
         <Dropdown overlay={columnMenu} trigger={['click']}>
-          <Button icon={<SettingOutlined />}>
-            {t('Columns')}
-          </Button>
+          <Button icon={<SettingOutlined />}>{t('Columns')}</Button>
         </Dropdown>
       </div>
-      
+
       <div className="task-list-content">
         {taskGroups.map((group: ITaskListGroup) => (
           <div key={group.id} className="task-group">
-            <div 
-              className="task-group-header"
-              style={{ backgroundColor: group.color_code }}
-            >
+            <div className="task-group-header" style={{ backgroundColor: group.color_code }}>
               <h3>{group.name}</h3>
               <span>{group.tasks.length} tasks</span>
             </div>
-            
-            <TaskListTableV2
-              tasks={group.tasks}
-              groupId={group.id}
-              color={group.color_code}
-            />
+
+            <TaskListTableV2 tasks={group.tasks} groupId={group.id} color={group.color_code} />
           </div>
         ))}
       </div>
@@ -83,4 +80,4 @@ const ProjectViewTaskListV2: React.FC = () => {
   );
 };
 
-export default ProjectViewTaskListV2; 
+export default ProjectViewTaskListV2;
