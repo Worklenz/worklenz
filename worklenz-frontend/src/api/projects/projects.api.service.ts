@@ -7,6 +7,7 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberOverviewGetResponse } from '@/types/project/project-insights.types';
 import { IProjectMembersViewModel } from '@/types/projectMember.types';
 import { IProjectManager } from '@/types/project/projectManager.types';
+import { IGroupedProjectsViewModel } from '@/types/project/groupedProjectsViewModel.types';
 
 const rootUrl = `${API_BASE_URL}/projects`;
 
@@ -29,6 +30,23 @@ export const projectsApiService = {
     const s = encodeURIComponent(search || '');
     const url = `${rootUrl}${toQueryString({ index, size, field, order, search: s, filter, statuses, categories })}`;
     const response = await apiClient.get<IServerResponse<IProjectsViewModel>>(`${url}`);
+    return response.data;
+  },
+
+  getGroupedProjects: async (
+    index: number,
+    size: number,
+    field: string | null,
+    order: string | null,
+    search: string | null,
+    groupBy: string,
+    filter: number | null = null,
+    statuses: string | null = null,
+    categories: string | null = null
+  ): Promise<IServerResponse<IGroupedProjectsViewModel>> => {
+    const s = encodeURIComponent(search || '');
+    const url = `${rootUrl}/grouped${toQueryString({ index, size, field, order, search: s, groupBy, filter, statuses, categories })}`;
+    const response = await apiClient.get<IServerResponse<IGroupedProjectsViewModel>>(`${url}`);
     return response.data;
   },
 
