@@ -42,10 +42,6 @@ const ReportingSider = () => {
       theme={{
         components: {
           Menu: {
-            itemHoverBg: colors.transparent,
-            itemHoverColor: colors.skyBlue,
-            borderRadius: 12,
-            itemMarginBlock: 4,
             subMenuItemBg: colors.transparent,
           },
         },

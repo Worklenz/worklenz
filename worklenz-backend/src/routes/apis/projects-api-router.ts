@@ -18,6 +18,7 @@ projectsApiRouter.get("/update-exist-sort-order", safeControllerFunction(Project
 
 projectsApiRouter.post("/", teamOwnerOrAdminValidator, projectsBodyValidator, safeControllerFunction(ProjectsController.create));
 projectsApiRouter.get("/", safeControllerFunction(ProjectsController.get));
+projectsApiRouter.get("/grouped", safeControllerFunction(ProjectsController.getGrouped));
 projectsApiRouter.get("/my-task-projects", safeControllerFunction(ProjectsController.getMyProjectsToTasks));
 projectsApiRouter.get("/my-projects", safeControllerFunction(ProjectsController.getMyProjects));
 projectsApiRouter.get("/all", safeControllerFunction(ProjectsController.getAllProjects));

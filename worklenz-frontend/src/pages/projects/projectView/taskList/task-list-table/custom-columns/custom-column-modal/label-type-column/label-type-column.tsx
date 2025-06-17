@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
 import { Button, Flex, Input, Select, Tag, Typography } from 'antd';
 import { CloseCircleOutlined, HolderOutlined } from '@ant-design/icons';
