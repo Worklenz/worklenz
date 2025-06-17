@@ -245,7 +245,6 @@ const ProjectViewBoard = () => {
       if (
         activeGroupId &&
         overGroupId &&
-        activeGroupId !== overGroupId &&
         active.data.current?.type === 'task'
       ) {
         // Find the target index in the over group
@@ -260,7 +259,6 @@ const ProjectViewBoard = () => {
             targetIndex = targetGroup.tasks.length;
           }
         }
-
         // Use debounced move task to prevent rapid updates
         debouncedMoveTask(
           activeId as string,
@@ -342,7 +340,6 @@ const ProjectViewBoard = () => {
 
       // Find indices
       let fromIndex = sourceGroup.tasks.findIndex(t => t.id === task.id);
-
       // Handle case where task is not found in source group (might have been moved already in UI)
       if (fromIndex === -1) {
         logger.info('Task not found in source group. Using task sort_order from task object.');
@@ -379,7 +376,7 @@ const ProjectViewBoard = () => {
         };
 
         // logger.error('Emitting socket event with payload (task not found in source):', body);
-
+        
         // Emit socket event
         if (socket) {
           socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), body);
@@ -416,7 +413,6 @@ const ProjectViewBoard = () => {
       const toPos = targetGroup.tasks[toIndex]?.sort_order ||
         targetGroup.tasks[targetGroup.tasks.length - 1]?.sort_order ||
         -1;
-
       // Prepare socket event payload
       const body = {
         project_id: projectId,
@@ -429,7 +425,6 @@ const ProjectViewBoard = () => {
         task,
         team_id: currentSession?.team_id
       };
-
       // Emit socket event
       if (socket) {
         socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), body);
@@ -443,7 +438,6 @@ const ProjectViewBoard = () => {
           }
         });
       }
-
       // Track analytics event
       trackMixpanelEvent(evt_project_task_list_drag_and_move);
     }
