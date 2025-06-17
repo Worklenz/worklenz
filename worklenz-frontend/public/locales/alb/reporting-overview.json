@@ -1,0 +1,25 @@
+{
+  "overviewTitle": "Përmbledhje",
+  "includeArchivedButton": "Përfshij Projektet e Arkivuara",
+
+  "teamCount": "Ekip",
+  "teamCountPlural": "Ekipe",
+  "projectCount": "Projekt",
+  "projectCountPlural": "Projekte",
+  "memberCount": "Anëtar",
+  "memberCountPlural": "Anëtarë",
+  "activeProjectCount": "Projekt Aktiv",
+  "activeProjectCountPlural": "Projekte Aktive",
+  "overdueProjectCount": "Projekt i Vonuar",
+  "overdueProjectCountPlural": "Projekte të Vonuara",
+  "unassignedMemberCount": "Anëtar i Pacaktuar",
+  "unassignedMemberCountPlural": "Anëtarë të Pacaktuar",
+  "memberWithOverdueTaskCount": "Anëtar me Detyrë të Vonuar",
+  "memberWithOverdueTaskCountPlural": "Anëtarë me Detyra të Vonuara",
+
+  "teamsText": "Ekipet",
+
+  "nameColumn": "Emri",
+  "projectsColumn": "Projektet",
+  "membersColumn": "Anëtarët"
+}

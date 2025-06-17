@@ -1,0 +1,11 @@
+{
+  "createTaskTemplate": "Krijo Shabllon Detyre",
+  "editTaskTemplate": "Modifiko Shabllon Detyre",
+  "cancelText": "Anulo",
+  "saveText": "Ruaj",
+  "templateNameText": "Emri i Shabllonit",
+  "selectedTasks": "Detyrat e Përzgjedhura",
+  "removeTask": "Hiq",
+  "cancelButton": "Anulo",
+  "saveButton": "Ruaj"
+}

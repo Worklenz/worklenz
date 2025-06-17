@@ -1,0 +1,35 @@
+{
+  "yesterdayText": "Dje",
+  "lastSevenDaysText": "7 Ditët e Fundit",
+  "lastWeekText": "Javën e Kaluar",
+  "lastThirtyDaysText": "30 Ditët e Fundit",
+  "lastMonthText": "Muajin e Kaluar",
+  "lastThreeMonthsText": "3 Muajt e Fundit",
+  "allTimeText": "Të Gjitha",
+  "customRangeText": "Interval i Përshtatur",
+  "startDateInputPlaceholder": "Data e fillimit",
+  "EndDateInputPlaceholder": "Data e përfundimit",
+  "filterButton": "Filtro",
+
+  "membersTitle": "Anëtarët",
+  "includeArchivedButton": "Përfshij Projektet e Arkivuara",
+  "exportButton": "Eksporto",
+  "excelButton": "Excel",
+  "searchByNameInputPlaceholder": "Kërko sipas emrit",
+
+  "memberColumn": "Anëtari",
+  "tasksProgressColumn": "Progresi i Detyrave",
+  "tasksAssignedColumn": "Detyrat e Caktuara",
+  "completedTasksColumn": "Detyrat e Përfunduara",
+  "overdueTasksColumn": "Detyrat e Vonuara",
+  "ongoingTasksColumn": "Detyrat në Vazhdim",
+
+  "tasksAssignedColumnTooltip": "Detyrat e caktuara në intervalin e zgjedhur",
+  "overdueTasksColumnTooltip": "Detyrat e vonuara deri në fund të intervalit të zgjedhur",
+  "completedTasksColumnTooltip": "Detyrat e përfunduara në intervalin e zgjedhur",
+  "ongoingTasksColumnTooltip": "Detyrat e filluara por jo të përfunduara ende",
+
+  "todoText": "Për Të Bërë",
+  "doingText": "Duke bërë",
+  "doneText": "E Përfunduar"
+}

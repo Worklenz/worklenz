@@ -1,0 +1,10 @@
+{
+  "categoryColumn": "Kategoria",
+  "deleteConfirmationTitle": "Jeni të sigurt?",
+  "deleteConfirmationOk": "Po",
+  "deleteConfirmationCancel": "Anulo",
+  "associatedTaskColumn": "Projektet e Lidhura",
+  "searchPlaceholder": "Kërko sipas emrit",
+  "emptyText": "Kategoritë mund të krijohen gjatë përditësimit ose krijimit të projekteve.",
+  "colorChangeTooltip": "Klikoni për të ndryshuar ngjyrën"
+}

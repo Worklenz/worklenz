@@ -1,0 +1,20 @@
+{
+  "nameColumn": "Emri",
+  "deleteConfirmationTitle": "Jeni i sigurt?",
+  "deleteConfirmationOk": "Po",
+  "deleteConfirmationCancel": "Anulo",
+  "searchPlaceholder": "Kërko sipas emrit",
+  "createJobTitleButton": "Krijo Titull Pune",
+  "pinTooltip": "Klikoni për ta fiksuar në menynë kryesore",
+  "createJobTitleDrawerTitle": "Krijo Titull Pune",
+  "updateJobTitleDrawerTitle": "Përditëso Titullin e Punës",
+  "nameLabel": "Emri",
+  "namePlaceholder": "Emri",
+  "nameRequiredError": "Ju lutemi shkruani një Emër",
+  "createButton": "Krijo",
+  "updateButton": "Përditëso",
+  "createJobTitleSuccessMessage": "Titulli i punës u krijua me sukses!",
+  "createJobTitleErrorMessage": "Krijimi i titullit të punës dështoi!",
+  "updateJobTitleSuccessMessage": "Titulli i punës u përditësua me sukses!",
+  "updateJobTitleErrorMessage": "Përditësimi i titullit të punës dështoi!"
+}

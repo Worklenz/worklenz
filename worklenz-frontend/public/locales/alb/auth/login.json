@@ -1,0 +1,27 @@
+{
+  "headerDescription": "Hyni në llogarinë tuaj",
+  "emailLabel": "Email",
+  "emailPlaceholder": "Vendosni email-in tuaj",
+  "emailRequired": "Ju lutemi vendosni Email-in tuaj!",
+  "passwordLabel": "Fjalëkalimi",
+  "passwordPlaceholder": "Vendosni fjalëkalimin",
+  "passwordRequired": "Ju lutemi vendosni Fjalëkalimin!",
+  "rememberMe": "Më mbaj mend",
+  "loginButton": "Hyr",
+  "signupButton": "Regjistrohu",
+  "forgotPasswordButton": "Keni harruar fjalëkalimin?",
+  "signInWithGoogleButton": "Hyr me Google",
+  "dontHaveAccountText": "Nuk keni llogari?",
+  "orText": "OSE",
+  "successMessage": "Jeni futur me sukses!",
+  "loginError": "Hyrja dështoi",
+  "googleLoginError": "Hyrja përmes Google dështoi",
+  "validationMessages": {
+    "email": "Ju lutemi vendosni një adresë email të vlefshme",
+    "password": "Fjalëkalimi duhet të jetë së paku 8 karaktere"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "Hyrja dështoi",
+    "loginErrorMessage": "Ju lutemi kontrolloni email-in dhe fjalëkalimin dhe provoni përsëri"
+  }
+}
