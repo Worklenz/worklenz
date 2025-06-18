@@ -76,7 +76,6 @@ const MembersFilterDropdown = () => {
 
   const handleSelectedFiltersCount = useCallback(async (memberId: string | undefined, checked: boolean) => {
     if (!memberId || !projectId) return;
-    if (!memberId || !projectId) return;
 
     const updateMembers = async (members: Member[], setAction: any, fetchAction: any) => {
       const updatedMembers = members.map(member => 
@@ -142,11 +141,12 @@ const MembersFilterDropdown = () => {
   const handleMembersDropdownOpen = useCallback((open: boolean) => {
     if (open) {
       setTimeout(() => membersInputRef.current?.focus(), 0);
-      if (taskAssignees.length) {
+      // Only sync the members if board members are empty
+      if (projectView === 'kanban' && boardTaskAssignees.length === 0 && taskAssignees.length > 0) {
         dispatch(setBoardMembers(taskAssignees));
       }
     }
-  }, [dispatch, taskAssignees]);
+  }, [dispatch, taskAssignees, boardTaskAssignees, projectView]);
 
   const buttonStyle = {
     backgroundColor: selectedCount > 0
