@@ -55,6 +55,8 @@ import {
   evt_project_task_list_context_menu_delete,
 } from '@/shared/worklenz-analytics-events';
 import logger from '@/utils/errorLogger';
+import { useAuthService } from '@/hooks/useAuth';
+import PrioritySection from '@/components/board/taskCard/priority-section/priority-section';
 
 interface IBoardViewTaskCardProps {
   task: IProjectTask;
@@ -65,7 +67,7 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('kanban-board');
   const { trackMixpanelEvent } = useMixpanelTracking();
-
+  const currentSession = useAuthService().getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const [isSubTaskShow, setIsSubTaskShow] = useState(false);
@@ -234,42 +236,11 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
     },
   ], [t, handleAssignToMe, handleArchive, handleDelete, updatingAssignToMe]);
 
-  const priorityIcon = useMemo(() => {
-    if (task.priority_value === 0) {
-      return (
-        <MinusOutlined
-          style={{
-            color: '#52c41a',
-            marginRight: '0.25rem',
-          }}
-        />
-      );
-    } else if (task.priority_value === 1) {
-      return (
-        <PauseOutlined
-          style={{
-            color: '#faad14',
-            transform: 'rotate(90deg)',
-            marginRight: '0.25rem',
-          }}
-        />
-      );
-    } else {
-      return (
-        <DoubleRightOutlined
-          style={{
-            color: '#f5222d',
-            transform: 'rotate(-90deg)',
-            marginRight: '0.25rem',
-          }}
-        />
-      );
-    }
-  }, [task.priority_value]);
+
 
   const renderLabels = useMemo(() => {
     if (!task?.labels?.length) return null;
-    
+
     return (
       <>
         {task.labels.slice(0, 2).map((label: any) => (
@@ -313,20 +284,12 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
           </Flex>
 
           <Tooltip title={` ${task?.completed_count} / ${task?.total_tasks_count}`}>
-            <Progress type="circle" percent={task?.complete_ratio } size={26} strokeWidth={(task.complete_ratio || 0) >= 100 ? 9 : 7} />
+            <Progress type="circle" percent={task?.complete_ratio} size={26} strokeWidth={(task.complete_ratio || 0) >= 100 ? 9 : 7} />
           </Tooltip>
         </Flex>
 
         {/* Action Icons */}
-        <Flex gap={4}>
-          {priorityIcon}
-          <Typography.Text 
-            style={{ fontWeight: 500 }}
-            ellipsis={{ tooltip: task.name }}
-          >
-            {task.name}
-          </Typography.Text>
-        </Flex>
+        <PrioritySection task={task} />
 
         <Flex vertical gap={8}>
           <Flex
@@ -376,7 +339,7 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
                     <Skeleton active paragraph={{ rows: 2 }} title={false} style={{ marginTop: 8 }} />
                   </List.Item>
                 )}
-                
+
                 {!task.sub_tasks_loading && task?.sub_tasks &&
                   task?.sub_tasks.map((subtask: any) => (
                     <BoardSubTaskCard key={subtask.id} subtask={subtask} sectionId={sectionId} />
