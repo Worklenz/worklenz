@@ -287,9 +287,17 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
             <Progress type="circle" percent={task?.complete_ratio} size={26} strokeWidth={(task.complete_ratio || 0) >= 100 ? 9 : 7} />
           </Tooltip>
         </Flex>
+        <Flex gap={4} align="center">
+          {/* Action Icons */}
+          <PrioritySection task={task} />
+          <Typography.Text
+            style={{ fontWeight: 500 }}
+            ellipsis={{ tooltip: task.name }}
+          >
+            {task.name}
+          </Typography.Text>
+        </Flex>
 
-        {/* Action Icons */}
-        <PrioritySection task={task} />
 
         <Flex vertical gap={8}>
           <Flex
