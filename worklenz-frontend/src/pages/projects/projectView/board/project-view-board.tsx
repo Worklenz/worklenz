@@ -541,7 +541,7 @@ const ProjectViewBoard = () => {
       <Skeleton active loading={isLoading} className='mt-4 p-4'>
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionDetectionStrategy}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
