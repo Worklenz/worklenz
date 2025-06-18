@@ -15,12 +15,14 @@ const LanguageSelector = () => {
     { key: 'en', label: 'English' },
     { key: 'es', label: 'Español' },
     { key: 'pt', label: 'Português' },
+    { key: 'alb', label: 'Shqip' },
   ];
 
   const languageLabels = {
     en: 'En',
     es: 'Es',
     pt: 'Pt',
+    alb: 'Sq',
   };
 
   return (
