@@ -5,6 +5,7 @@ import ProjectViewMembers from '@/pages/projects/projectView/members/project-vie
 import ProjectViewUpdates from '@/pages/projects/project-view-1/updates/project-view-updates';
 import ProjectViewTaskList from '@/pages/projects/projectView/taskList/project-view-task-list';
 import ProjectViewBoard from '@/pages/projects/projectView/board/project-view-board';
+import ProjectViewEnhancedTasks from '@/pages/projects/projectView/enhancedTasks/project-view-enhanced-tasks';
 
 // type of a tab items
 type TabItems = {
@@ -26,43 +27,50 @@ export const tabItems: TabItems[] = [
   },
   {
     index: 1,
+    key: 'enhanced-tasks',
+    label: 'Enhanced Tasks',
+    isPinned: true,
+    element: React.createElement(ProjectViewEnhancedTasks),
+  },
+  {
+    index: 2,
     key: 'board',
     label: 'Board',
     isPinned: true,
     element: React.createElement(ProjectViewBoard),
   },
   // {
-  //   index: 2,
+  //   index: 3,
   //   key: 'workload',
   //   label: 'Workload',
   //   element: React.createElement(ProjectViewWorkload),
   // },
   // {
-  //   index: 3,
+  //   index: 4,
   //   key: 'roadmap',
   //   label: 'Roadmap',
   //   element: React.createElement(ProjectViewRoadmap),
   // },
   {
-    index: 4,
+    index: 5,
     key: 'project-insights-member-overview',
     label: 'Insights',
     element: React.createElement(ProjectViewInsights),
   },
   {
-    index: 5,
+    index: 6,
     key: 'all-attachments',
     label: 'Files',
     element: React.createElement(ProjectViewFiles),
   },
   {
-    index: 6,
+    index: 7,
     key: 'members',
     label: 'Members',
     element: React.createElement(ProjectViewMembers),
   },
   {
-    index: 7,
+    index: 8,
     key: 'updates',
     label: 'Updates',
     element: React.createElement(ProjectViewUpdates),
