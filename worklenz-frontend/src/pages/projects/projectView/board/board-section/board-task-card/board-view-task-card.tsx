@@ -256,50 +256,49 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
   }, [task.labels, themeMode]);
 
   return (
-    <Dropdown menu={{ items }} trigger={['contextMenu']}>
-      <Flex
-        ref={setNodeRef}
-        {...attributes}
-        {...listeners}
-        vertical
-        gap={12}
-        style={{
-          ...style,
-          width: '100%',
-          padding: 12,
-          backgroundColor: themeMode === 'dark' ? '#292929' : '#fafafa',
-          borderRadius: 6,
-          cursor: 'grab',
-          overflow: 'hidden',
-        }}
-        className={`group outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline board-task-card`}
-        onClick={e => handleCardClick(e, task.id || '')}
-        data-id={task.id}
-        data-dragging={isDragging ? "true" : "false"}
-      >
-        {/* Labels and Progress */}
-        <Flex align="center" justify="space-between">
-          <Flex>
-            {renderLabels}
+    <Flex
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      vertical
+      gap={12}
+      style={{
+        ...style,
+        width: '100%',
+        padding: 12,
+        backgroundColor: themeMode === 'dark' ? '#292929' : '#fafafa',
+        borderRadius: 6,
+        cursor: 'grab',
+        overflow: 'hidden',
+      }}
+      className={`group outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline board-task-card`}
+      data-id={task.id}
+      data-dragging={isDragging ? "true" : "false"}
+    >
+      <Dropdown menu={{ items }} trigger={['contextMenu']}>
+        {/* Task Card */}
+        <Flex vertical gap={8}
+          onClick={e => handleCardClick(e, task.id || '')}>
+          {/* Labels and Progress */}
+          <Flex align="center" justify="space-between">
+            <Flex>
+              {renderLabels}
+            </Flex>
+
+            <Tooltip title={` ${task?.completed_count} / ${task?.total_tasks_count}`}>
+              <Progress type="circle" percent={task?.complete_ratio} size={26} strokeWidth={(task.complete_ratio || 0) >= 100 ? 9 : 7} />
+            </Tooltip>
           </Flex>
-
-          <Tooltip title={` ${task?.completed_count} / ${task?.total_tasks_count}`}>
-            <Progress type="circle" percent={task?.complete_ratio} size={26} strokeWidth={(task.complete_ratio || 0) >= 100 ? 9 : 7} />
-          </Tooltip>
-        </Flex>
-        <Flex gap={4} align="center">
-          {/* Action Icons */}
-          <PrioritySection task={task} />
-          <Typography.Text
-            style={{ fontWeight: 500 }}
-            ellipsis={{ tooltip: task.name }}
-          >
-            {task.name}
-          </Typography.Text>
-        </Flex>
-
-
-        <Flex vertical gap={8}>
+          <Flex gap={4} align="center">
+            {/* Action Icons */}
+            <PrioritySection task={task} />
+            <Typography.Text
+              style={{ fontWeight: 500 }}
+              ellipsis={{ tooltip: task.name }}
+            >
+              {task.name}
+            </Typography.Text>
+          </Flex>
           <Flex
             align="center"
             justify="space-between"
@@ -337,47 +336,50 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
               </Button>
             </Flex>
           </Flex>
-
-          {isSubTaskShow && (
-            <Flex vertical>
-              <Divider style={{ marginBlock: 0 }} />
-              <List>
-                {task.sub_tasks_loading && (
-                  <List.Item>
-                    <Skeleton active paragraph={{ rows: 2 }} title={false} style={{ marginTop: 8 }} />
-                  </List.Item>
-                )}
-
-                {!task.sub_tasks_loading && task?.sub_tasks &&
-                  task?.sub_tasks.map((subtask: any) => (
-                    <BoardSubTaskCard key={subtask.id} subtask={subtask} sectionId={sectionId} />
-                  ))}
-
-                {showNewSubtaskCard && (
-                  <BoardCreateSubtaskCard
-                    sectionId={sectionId}
-                    parentTaskId={task.id || ''}
-                    setShowNewSubtaskCard={setShowNewSubtaskCard}
-                  />
-                )}
-              </List>
-              <Button
-                type="text"
-                style={{
-                  width: 'fit-content',
-                  borderRadius: 6,
-                  boxShadow: 'none',
-                }}
-                icon={<PlusOutlined />}
-                onClick={handleAddSubtaskClick}
-              >
-                {t('addSubtask', 'Add Subtask')}
-              </Button>
-            </Flex>
-          )}
         </Flex>
+      </Dropdown>
+      {/* Subtask Section */}
+      <Flex vertical gap={8}>
+        {isSubTaskShow && (
+          <Flex vertical>
+            <Divider style={{ marginBlock: 0 }} />
+            <List>
+              {task.sub_tasks_loading && (
+                <List.Item>
+                  <Skeleton active paragraph={{ rows: 2 }} title={false} style={{ marginTop: 8 }} />
+                </List.Item>
+              )}
+
+              {!task.sub_tasks_loading && task?.sub_tasks &&
+                task?.sub_tasks.map((subtask: any) => (
+                  <BoardSubTaskCard key={subtask.id} subtask={subtask} sectionId={sectionId} />
+                ))}
+
+              {showNewSubtaskCard && (
+                <BoardCreateSubtaskCard
+                  sectionId={sectionId}
+                  parentTaskId={task.id || ''}
+                  setShowNewSubtaskCard={setShowNewSubtaskCard}
+                />
+              )}
+            </List>
+            <Button
+              type="text"
+              style={{
+                width: 'fit-content',
+                borderRadius: 6,
+                boxShadow: 'none',
+              }}
+              icon={<PlusOutlined />}
+              onClick={handleAddSubtaskClick}
+            >
+              {t('addSubtask', 'Add Subtask')}
+            </Button>
+          </Flex>
+        )}
       </Flex>
-    </Dropdown>
+    </Flex>
+
   );
 };
 
