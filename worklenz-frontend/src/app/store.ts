@@ -73,6 +73,11 @@ import timeReportsOverviewReducer from '@features/reporting/time-reports/time-re
 import roadmapReducer from '../features/roadmap/roadmap-slice';
 import teamMembersReducer from '@features/team-members/team-members.slice';
 import groupByFilterDropdownReducer from '../features/group-by-filter-dropdown/group-by-filter-dropdown-slice';
+
+// Task Management System
+import taskManagementReducer from '@features/task-management/task-management.slice';
+import groupingReducer from '@features/task-management/grouping.slice';
+import selectionReducer from '@features/task-management/selection.slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 
@@ -159,6 +164,11 @@ export const store = configureStore({
     roadmapReducer: roadmapReducer,
     groupByFilterDropdownReducer: groupByFilterDropdownReducer,
     timeReportsOverviewReducer: timeReportsOverviewReducer,
+
+    // Task Management System
+    taskManagement: taskManagementReducer,
+    grouping: groupingReducer,
+    taskManagementSelection: selectionReducer,
   },
 });
 

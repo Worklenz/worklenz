@@ -1,0 +1,231 @@
+/* Task Management System Styles */
+
+.task-list-board {
+  width: 100%;
+}
+
+.task-group {
+  transition: all 0.2s ease;
+}
+
+.task-group.drag-over {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.task-group .group-header {
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.task-group .group-header:hover {
+  background: #f5f5f5;
+}
+
+.task-row {
+  border-left: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.task-row:hover {
+  background-color: #f9f9f9 !important;
+  border-left-color: #d9d9d9;
+}
+
+.task-row.selected {
+  background-color: #e6f7ff !important;
+  border-left-color: #1890ff;
+}
+
+.task-row .drag-handle {
+  cursor: grab;
+  transition: opacity 0.2s ease;
+}
+
+.task-row .drag-handle:active {
+  cursor: grabbing;
+}
+
+.task-row:not(:hover) .drag-handle {
+  opacity: 0.3;
+}
+
+/* Progress bars */
+.ant-progress-line {
+  margin: 0;
+}
+
+.ant-progress-bg {
+  border-radius: 2px;
+}
+
+/* Avatar groups */
+.ant-avatar-group .ant-avatar {
+  border: 1px solid #fff;
+}
+
+/* Tags */
+.task-row .ant-tag {
+  margin: 0;
+  padding: 0 4px;
+  height: 16px;
+  line-height: 14px;
+  font-size: 10px;
+  border-radius: 2px;
+}
+
+/* Checkboxes */
+.task-row .ant-checkbox-wrapper {
+  margin-right: 0;
+}
+
+/* Bulk action bar */
+.bulk-action-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+/* Collapsible animations */
+.task-group .ant-collapse-content > .ant-collapse-content-box {
+  padding: 0;
+}
+
+/* Drag overlay */
+.task-row.drag-overlay {
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: rotate(5deg);
+  cursor: grabbing;
+  z-index: 1000;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .task-row {
+    padding: 12px;
+  }
+  
+  .task-row .flex {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .task-row .task-metadata {
+    margin-top: 8px;
+    margin-left: 0 !important;
+  }
+}
+
+/* Subtask indentation */
+.task-subtasks {
+  margin-left: 32px;
+  padding-left: 16px;
+  border-left: 2px solid #f0f0f0;
+}
+
+.task-subtasks .task-row {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+/* Status indicators */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.priority-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Animation classes */
+.task-row-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.task-row-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.task-row-exit {
+  opacity: 1;
+}
+
+.task-row-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Custom scrollbar */
+.task-groups-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.task-groups-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.task-groups-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.task-groups-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading states */
+.task-row.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.task-group.loading {
+  opacity: 0.8;
+}
+
+/* Focus styles for accessibility */
+.task-row:focus-within {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+.drag-handle:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .task-row {
+    background-color: #141414;
+    color: #ffffff;
+  }
+  
+  .task-row:hover {
+    background-color: #1f1f1f;
+  }
+  
+  .task-group .group-header {
+    background: #1f1f1f;
+    border-bottom-color: #303030;
+  }
+} 
