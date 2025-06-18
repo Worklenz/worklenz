@@ -53,12 +53,6 @@ const PrioritySection = ({ task }: PrioritySectionProps) => {
   return (
     <Flex gap={4}>
       {priorityIcon}
-      <Typography.Text
-        style={{ fontWeight: 500 }}
-        ellipsis={{ tooltip: task.name }}
-      >
-        {task.name}
-      </Typography.Text>
     </Flex>
   );
 };
