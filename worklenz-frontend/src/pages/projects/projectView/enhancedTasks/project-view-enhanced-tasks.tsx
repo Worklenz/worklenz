@@ -1,21 +1,21 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskListBoard from '@/components/task-management/TaskListBoard';
 
 const ProjectViewEnhancedTasks: React.FC = () => {
-  const { id: projectId } = useParams<{ id: string }>();
+  const { project } = useAppSelector(state => state.projectReducer);
 
-  if (!projectId) {
+  if (!project?.id) {
     return (
       <div className="p-4 text-center text-gray-500">
-        Project ID not found
+        Project not found
       </div>
     );
   }
 
   return (
     <div className="project-view-enhanced-tasks">
-      <TaskListBoard projectId={projectId} />
+      <TaskListBoard projectId={project.id} />
     </div>
   );
 };
