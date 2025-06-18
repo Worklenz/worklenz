@@ -29,7 +29,8 @@ import { useTranslation } from 'react-i18next';
 import { HolderOutlined } from '@ant-design/icons';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import OptimizedDropdown from './components/optimized-dropdown';
+import StatusDropdown from './components/status-dropdown';
+import PriorityDropdown from './components/priority-dropdown';
 
 interface Option {
   id: string;
@@ -40,7 +41,6 @@ interface Option {
 interface TaskListTableV2Props {
   tasks: IProjectTask[];
   groupId: string;
-  color: string;
   statusOptions: Option[];
   priorityOptions: Option[];
   onStatusChange: (taskId: string, statusId: string) => void;
@@ -79,7 +79,7 @@ const SortableRow: React.FC<SortableRowProps> = ({ id, children }) => {
   );
 };
 
-const TaskListTableV2: React.FC<TaskListTableV2Props> = ({ tasks, groupId, color, statusOptions, priorityOptions, onStatusChange, onPriorityChange, onTaskSelect }) => {
+const TaskListTableV2: React.FC<TaskListTableV2Props> = ({ tasks, groupId, statusOptions, priorityOptions, onStatusChange, onPriorityChange, onTaskSelect }) => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [rowSelection, setRowSelection] = useState({});
@@ -128,6 +128,28 @@ const TaskListTableV2: React.FC<TaskListTableV2Props> = ({ tasks, groupId, color
     estimateSize: () => 50, // Estimated row height
     overscan: 5,
   });
+
+  // Helper function to get status value
+  const getStatusValue = (task: IProjectTask): string => {
+    if (typeof task.status === 'string') {
+      return task.status;
+    }
+    if (task.status && typeof task.status === 'object' && 'id' in task.status) {
+      return (task.status as any).id;
+    }
+    return task.status_id || '';
+  };
+
+  // Helper function to get priority value
+  const getPriorityValue = (task: IProjectTask): string => {
+    if (typeof task.priority === 'string') {
+      return task.priority;
+    }
+    if (task.priority && typeof task.priority === 'object' && 'id' in task.priority) {
+      return (task.priority as any).id;
+    }
+    return '';
+  };
 
   // Column definitions
   const columns = useMemo<ColumnDef<IProjectTask>[]>(() => [
@@ -178,11 +200,12 @@ const TaskListTableV2: React.FC<TaskListTableV2Props> = ({ tasks, groupId, color
       accessorKey: 'status',
       cell: ({ row }) => {
         const task = row.original;
+        const statusValue = getStatusValue(task);
         return (
-          <OptimizedDropdown
+          <StatusDropdown
             options={statusOptions}
-            value={task.status?.id || task.status}
-            onChange={value => onStatusChange(task.id, value)}
+            value={statusValue}
+            onChange={value => onStatusChange(task.id || '', value)}
             placeholder={t('Select Status')}
             style={{ width: '100%' }}
           />
@@ -195,11 +218,12 @@ const TaskListTableV2: React.FC<TaskListTableV2Props> = ({ tasks, groupId, color
       accessorKey: 'priority',
       cell: ({ row }) => {
         const task = row.original;
+        const priorityValue = getPriorityValue(task);
         return (
-          <OptimizedDropdown
+          <PriorityDropdown
             options={priorityOptions}
-            value={task.priority?.id || task.priority}
-            onChange={value => onPriorityChange(task.id, value)}
+            value={priorityValue}
+            onChange={value => onPriorityChange(task.id || '', value)}
             placeholder={t('Select Priority')}
             style={{ width: '100%' }}
           />

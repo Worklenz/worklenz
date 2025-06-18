@@ -1,18 +1,17 @@
 import React, { useMemo, useState, useRef } from 'react';
-import { Select, Spin, Tag } from 'antd';
+import { Select, Spin } from 'antd';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { debounce } from 'lodash';
 
-interface StatusOption {
+interface Option {
   id: string;
   name: string;
   color?: string;
-  category?: string;
 }
 
 interface StatusDropdownProps {
-  options?: StatusOption[];
+  options?: Option[];
   value?: string;
   onChange: (value: string) => void;
   loading?: boolean;
@@ -77,12 +76,12 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
       }}
     >
       {loading ? (
-        <div style={{ padding: '12px', textAlign: 'center' }}>
+        <div style={{ padding: '8px', textAlign: 'center' }}>
           <Spin size="small" />
         </div>
       ) : filteredOptions.length === 0 ? (
-        <div style={{ padding: '12px', textAlign: 'center', color: '#999' }}>
-          {searchValue ? 'No matching statuses' : 'No statuses available'}
+        <div style={{ padding: '8px', textAlign: 'center', color: '#999' }}>
+          {searchValue ? 'No matching options' : 'No options available'}
         </div>
       ) : (
         <div
@@ -92,7 +91,7 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
             position: 'relative'
           }}
         >
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          {rowVirtualizer.getVirtualItems().map(virtualRow => {
             const option = filteredOptions[virtualRow.index];
             if (!option) return null;
             
@@ -110,37 +109,31 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
               >
                 <div
                   style={{
-                    padding: '8px 12px',
+                    padding: '4px 8px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
                     cursor: 'pointer',
                     backgroundColor: value === option.id ? '#e6f7ff' : 'transparent',
                     height: '100%',
-                    boxSizing: 'border-box',
-                    borderRadius: '4px',
-                    margin: '2px 4px'
+                    boxSizing: 'border-box'
                   }}
                   onClick={() => onChange(option.id)}
                 >
-                  <Tag
-                    color={option.color}
-                    style={{
-                      margin: 0,
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      minWidth: '60px',
-                      textAlign: 'center'
-                    }}
-                  >
-                    {option.name}
-                  </Tag>
-                  {option.category && (
-                    <span style={{ fontSize: '11px', color: '#666', marginLeft: 'auto' }}>
-                      {option.category}
-                    </span>
+                  {option.color && (
+                    <div
+                      style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        backgroundColor: option.color,
+                        flexShrink: 0
+                      }}
+                    />
                   )}
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {option.name}
+                  </span>
                 </div>
               </div>
             );
@@ -154,44 +147,36 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
     <Select
       value={value}
       onChange={onChange}
-      onSearch={handleSearch}
-      showSearch
       loading={loading}
-      placeholder={placeholder || t('Select Status')}
-      style={{
-        width: '100%',
-        minWidth: '120px',
-        ...style
-      }}
-      dropdownStyle={{
-        ...dropdownStyle,
-        padding: 0,
-        borderRadius: '8px'
-      }}
+      placeholder={placeholder}
+      style={style}
       disabled={disabled}
-      dropdownRender={dropdownRender}
+      onSearch={handleSearch}
       filterOption={false}
+      showSearch
+      dropdownRender={dropdownRender}
       notFoundContent={loading ? <Spin size="small" /> : null}
       getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
       listHeight={WINDOW_HEIGHT}
     >
-      {filteredOptions.map((option) => (
-        <Select.Option key={option.id} value={option.id}>
+      {selectedStatus && (
+        <Select.Option value={selectedStatus.id} key={selectedStatus.id}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Tag
-              color={option.color}
-              style={{
-                margin: 0,
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: 500
-              }}
-            >
-              {option.name}
-            </Tag>
+            {selectedStatus.color && (
+              <div
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: selectedStatus.color,
+                  flexShrink: 0
+                }}
+              />
+            )}
+            <span>{selectedStatus.name}</span>
           </div>
         </Select.Option>
-      ))}
+      )}
     </Select>
   );
 };

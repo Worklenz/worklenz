@@ -72,7 +72,15 @@ const ProjectViewTaskListV2: React.FC = () => {
               <span>{group.tasks.length} tasks</span>
             </div>
 
-            <TaskListTableV2 tasks={group.tasks} groupId={group.id} color={group.color_code} />
+            <TaskListTableV2
+              tasks={group.tasks}
+              groupId={group.id}
+              statusOptions={[]}
+              priorityOptions={[]}
+              onStatusChange={() => {}}
+              onPriorityChange={() => {}}
+              onTaskSelect={() => {}}
+            />
           </div>
         ))}
       </div>

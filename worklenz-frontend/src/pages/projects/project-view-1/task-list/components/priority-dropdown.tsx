@@ -1,19 +1,17 @@
 import React, { useMemo, useState, useRef } from 'react';
-import { Select, Spin, Badge } from 'antd';
+import { Select, Spin } from 'antd';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { debounce } from 'lodash';
-import { FlagOutlined } from '@ant-design/icons';
 
-interface PriorityOption {
+interface Option {
   id: string;
   name: string;
   color?: string;
-  value?: number;
 }
 
 interface PriorityDropdownProps {
-  options?: PriorityOption[];
+  options?: Option[];
   value?: string;
   onChange: (value: string) => void;
   loading?: boolean;
@@ -23,8 +21,8 @@ interface PriorityDropdownProps {
   disabled?: boolean;
 }
 
-const ITEM_HEIGHT = 40;
-const WINDOW_HEIGHT = 260;
+const ITEM_HEIGHT = 36;
+const WINDOW_HEIGHT = 280;
 
 const PriorityDropdown: React.FC<PriorityDropdownProps> = ({
   options = [],
@@ -45,19 +43,14 @@ const PriorityDropdown: React.FC<PriorityDropdownProps> = ({
     return options.find(option => option.id === value);
   }, [options, value]);
 
-  // Sort priorities by value (higher value = higher priority)
-  const sortedOptions = useMemo(() => {
-    if (!options || !Array.isArray(options)) return [];
-    return [...options].sort((a, b) => (b.value || 0) - (a.value || 0));
-  }, [options]);
-
   // Memoize filtered options with null check
   const filteredOptions = useMemo(() => {
-    if (!searchValue) return sortedOptions;
-    return sortedOptions.filter(option => 
+    if (!options || !Array.isArray(options)) return [];
+    if (!searchValue) return options;
+    return options.filter(option => 
       option?.name?.toLowerCase().includes(searchValue.toLowerCase())
     );
-  }, [sortedOptions, searchValue]);
+  }, [options, searchValue]);
 
   // Create virtualizer for the dropdown list
   const rowVirtualizer = useVirtualizer({
@@ -72,14 +65,6 @@ const PriorityDropdown: React.FC<PriorityDropdownProps> = ({
     setSearchValue(value);
   }, 250);
 
-  // Get priority icon based on value
-  const getPriorityIcon = (priorityValue?: number) => {
-    if (!priorityValue) return null;
-    if (priorityValue >= 3) return '🔥'; // High priority
-    if (priorityValue >= 2) return '⚡'; // Medium priority
-    return '📌'; // Low priority
-  };
-
   // Custom dropdown renderer with virtualization
   const dropdownRender = (menu: React.ReactNode) => (
     <div 
@@ -91,12 +76,12 @@ const PriorityDropdown: React.FC<PriorityDropdownProps> = ({
       }}
     >
       {loading ? (
-        <div style={{ padding: '12px', textAlign: 'center' }}>
+        <div style={{ padding: '8px', textAlign: 'center' }}>
           <Spin size="small" />
         </div>
       ) : filteredOptions.length === 0 ? (
-        <div style={{ padding: '12px', textAlign: 'center', color: '#999' }}>
-          {searchValue ? 'No matching priorities' : 'No priorities available'}
+        <div style={{ padding: '8px', textAlign: 'center', color: '#999' }}>
+          {searchValue ? 'No matching options' : 'No options available'}
         </div>
       ) : (
         <div
@@ -106,7 +91,7 @@ const PriorityDropdown: React.FC<PriorityDropdownProps> = ({
             position: 'relative'
           }}
         >
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          {rowVirtualizer.getVirtualItems().map(virtualRow => {
             const option = filteredOptions[virtualRow.index];
             if (!option) return null;
             
@@ -124,64 +109,31 @@ const PriorityDropdown: React.FC<PriorityDropdownProps> = ({
               >
                 <div
                   style={{
-                    padding: '10px 12px',
+                    padding: '4px 8px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
+                    gap: '8px',
                     cursor: 'pointer',
-                    backgroundColor: value === option.id ? '#fff2e8' : 'transparent',
+                    backgroundColor: value === option.id ? '#e6f7ff' : 'transparent',
                     height: '100%',
-                    boxSizing: 'border-box',
-                    borderRadius: '6px',
-                    margin: '2px 4px',
-                    border: value === option.id ? '1px solid #ff7a00' : '1px solid transparent'
+                    boxSizing: 'border-box'
                   }}
                   onClick={() => onChange(option.id)}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      flex: 1
-                    }}
-                  >
-                    <Badge
-                      color={option.color}
+                  {option.color && (
+                    <div
                       style={{
-                        boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
                         width: '12px',
-                        height: '12px'
+                        height: '12px',
+                        borderRadius: '50%',
+                        backgroundColor: option.color,
+                        flexShrink: 0
                       }}
                     />
-                    <FlagOutlined 
-                      style={{ 
-                        color: option.color,
-                        fontSize: '14px'
-                      }} 
-                    />
-                    <span style={{
-                      fontWeight: 500,
-                      fontSize: '13px',
-                      color: '#262626'
-                    }}>
-                      {option.name}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ fontSize: '14px' }}>
-                      {getPriorityIcon(option.value)}
-                    </span>
-                    {option.value && (
-                      <span style={{ 
-                        fontSize: '11px', 
-                        color: '#8c8c8c',
-                        fontWeight: 500
-                      }}>
-                        P{option.value}
-                      </span>
-                    )}
-                  </div>
+                  )}
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {option.name}
+                  </span>
                 </div>
               </div>
             );
@@ -195,45 +147,36 @@ const PriorityDropdown: React.FC<PriorityDropdownProps> = ({
     <Select
       value={value}
       onChange={onChange}
-      onSearch={handleSearch}
-      showSearch
       loading={loading}
-      placeholder={placeholder || t('Select Priority')}
-      style={{
-        width: '100%',
-        minWidth: '140px',
-        ...style
-      }}
-      dropdownStyle={{
-        ...dropdownStyle,
-        padding: 0,
-        borderRadius: '8px'
-      }}
+      placeholder={placeholder}
+      style={style}
       disabled={disabled}
-      dropdownRender={dropdownRender}
+      onSearch={handleSearch}
       filterOption={false}
+      showSearch
+      dropdownRender={dropdownRender}
       notFoundContent={loading ? <Spin size="small" /> : null}
       getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
       listHeight={WINDOW_HEIGHT}
     >
-      {filteredOptions.map((option) => (
-        <Select.Option key={option.id} value={option.id}>
+      {selectedPriority && (
+        <Select.Option value={selectedPriority.id} key={selectedPriority.id}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Badge
-              color={option.color}
-              style={{
-                boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
-                width: '10px',
-                height: '10px'
-              }}
-            />
-            <FlagOutlined style={{ color: option.color, fontSize: '12px' }} />
-            <span style={{ fontWeight: 500, fontSize: '13px' }}>
-              {option.name}
-            </span>
+            {selectedPriority.color && (
+              <div
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: selectedPriority.color,
+                  flexShrink: 0
+                }}
+              />
+            )}
+            <span>{selectedPriority.name}</span>
           </div>
         </Select.Option>
-      ))}
+      )}
     </Select>
   );
 };
