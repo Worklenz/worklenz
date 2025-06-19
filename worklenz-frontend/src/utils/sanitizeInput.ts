@@ -29,7 +29,7 @@ export const sanitizeHtml = (input: string): string => {
   if (!input) return '';
   
   return DOMPurify.sanitize(input, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'span'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
   });
 }; 
