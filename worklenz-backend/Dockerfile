@@ -1,26 +1,39 @@
-# Use the official Node.js 20 image as a base
-FROM node:20
+# --- Stage 1: Build ---
+FROM node:20-slim AS builder
 
-# Create and set the working directory
+ARG RELEASE_VERSION
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    curl \
+    postgresql-server-dev-all \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /usr/src/app
 
-# Install global dependencies
-RUN npm install -g ts-node typescript grunt grunt-cli
-
-# Copy package.json and package-lock.json (if available)
 COPY package*.json ./
-
-# Install app dependencies
 RUN npm ci
 
-# Copy the rest of the application code
 COPY . .
-
-# Run the build script to compile TypeScript to JavaScript
 RUN npm run build
 
-# Expose the port the app runs on
-EXPOSE 3000
+RUN echo "$RELEASE_VERSION" > release
 
-# Start the application
-CMD ["npm", "start"]
+# --- Stage 2: Production Image ---
+FROM node:20-slim
+
+RUN apt-get update && apt-get install -y libpq5 && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /usr/src/app/package*.json ./
+COPY --from=builder /usr/src/app/build ./build
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/release ./release
+COPY --from=builder /usr/src/app/worklenz-email-templates ./worklenz-email-templates
+
+
+EXPOSE 3000
+CMD ["node", "build/bin/www"]
+
