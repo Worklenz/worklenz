@@ -1,5 +1,5 @@
 import { Button, ConfigProvider, Flex, Form, Mentions, Skeleton, Space, Tooltip, Typography } from 'antd';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
 import { useParams } from 'react-router-dom';
@@ -68,7 +68,7 @@ const ProjectViewUpdates = () => {
     }
   }, [projectId]);
 
-  const handleAddComment = async () => {
+  const handleAddComment = useCallback(async () => {
     if (!projectId || characterLength === 0) return;
 
     try {
@@ -96,15 +96,13 @@ const ProjectViewUpdates = () => {
     } finally {
       setIsSubmitting(false);
       setCommentValue('');
-
-
     }
-  };
+  }, [projectId, characterLength, commentValue, selectedMembers, getComments]);
 
   useEffect(() => {
     void getMembers();
     void getComments();
-  }, [getMembers, getComments,refreshTimestamp]);
+  }, [getMembers, getComments, refreshTimestamp]);
 
   const handleCancel = useCallback(() => {
     form.resetFields(['comment']);
@@ -113,14 +111,16 @@ const ProjectViewUpdates = () => {
     setSelectedMembers([]);
   }, [form]);
 
-  const mentionsOptions =
+  const mentionsOptions = useMemo(() => 
     members?.map(member => ({
       value: member.id,
       label: member.name,
-    })) ?? [];
+    })) ?? [], [members]
+  );
 
   const memberSelectHandler = useCallback((member: IMentionMemberSelectOption) => {
     if (!member?.value || !member?.label) return;
+    
     setSelectedMembers(prev =>
       prev.some(mention => mention.id === member.value)
         ? prev
@@ -131,13 +131,11 @@ const ProjectViewUpdates = () => {
       const parts = prev.split('@');
       const lastPart = parts[parts.length - 1];
       const mentionText = member.label;
-      // Keep only the part before the @ and add the new mention
       return prev.slice(0, prev.length - lastPart.length) + mentionText;
     });
   }, []);
 
   const handleCommentChange = useCallback((value: string) => {
-    // Only update the value without trying to replace mentions    
     setCommentValue(value);
     setCharacterLength(value.trim().length);
   }, []);
@@ -157,56 +155,69 @@ const ProjectViewUpdates = () => {
     [getComments]
   );
 
+  const configProviderTheme = useMemo(() => ({
+    components: {
+      Button: {
+        defaultColor: colors.lightGray,
+        defaultHoverColor: colors.darkGray,
+      },
+    },
+  }), []);
+
+  const renderComment = useCallback((comment: IProjectUpdateCommentViewModel) => {
+    const sanitizedContent = DOMPurify.sanitize(comment.content || '');
+    const timeDifference = calculateTimeDifference(comment.created_at || '');
+    const themeClass = theme === 'dark' ? 'dark' : 'light';
+    
+    return (
+      <Flex key={comment.id} gap={8}>
+        <CustomAvatar avatarName={comment.created_by || ''} />
+        <Flex vertical flex={1}>
+          <Space>
+            <Typography.Text strong style={{ fontSize: 13, color: colors.lightGray }}>
+              {comment.created_by || ''}
+            </Typography.Text>
+            <Tooltip title={comment.created_at}>
+              <Typography.Text style={{ fontSize: 13, color: colors.deepLightGray }}>
+                {timeDifference}
+              </Typography.Text>
+            </Tooltip>
+          </Space>
+          <Typography.Paragraph 
+            style={{ margin: '8px 0' }}
+            ellipsis={{ rows: 3, expandable: true }}
+          >
+            <div className={`mentions-${themeClass}`} dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
+          </Typography.Paragraph>
+          <ConfigProvider
+            wave={{ disabled: true }}
+            theme={configProviderTheme}
+          >
+            <Button
+              icon={<DeleteOutlined />}
+              shape="circle"
+              type="text"
+              size='small'
+              onClick={() => handleDeleteComment(comment.id)}
+            />
+          </ConfigProvider>
+        </Flex>
+      </Flex>
+    );
+  }, [theme, configProviderTheme, handleDeleteComment]);
+
+  const commentsList = useMemo(() => 
+    comments.map(renderComment), [comments, renderComment]
+  );
+
   return (
     <Flex gap={24} vertical>
       <Flex vertical gap={16}>
-        {
-          isLoadingComments ? (
-            <Skeleton active />
-          ):
-          comments.map(comment => (
-          <Flex key={comment.id} gap={8}>
-            <CustomAvatar avatarName={comment.created_by || ''} />
-            <Flex vertical flex={1}>
-              <Space>
-                <Typography.Text strong style={{ fontSize: 13, color: colors.lightGray }}>
-                  {comment.created_by || ''}
-                </Typography.Text>
-                <Tooltip title={comment.created_at}>
-                  <Typography.Text style={{ fontSize: 13, color: colors.deepLightGray }}>
-                    {calculateTimeDifference(comment.created_at || '')}
-                  </Typography.Text>
-                </Tooltip>
-              </Space>
-              <Typography.Paragraph 
-                style={{ margin: '8px 0' }}
-                ellipsis={{ rows: 3, expandable: true }}
-              >
-                <div className={`mentions-${theme === 'dark' ? 'dark' : 'light'}`} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content || '') }} />
-              </Typography.Paragraph>
-              <ConfigProvider
-                wave={{ disabled: true }}
-
-                theme={{
-                  components: {
-                    Button: {
-                      defaultColor: colors.lightGray,
-                      defaultHoverColor: colors.darkGray,
-                    },
-                  },
-                }}
-              >
-                <Button
-                  icon={<DeleteOutlined />}
-                  shape="circle"
-                  type="text"
-                  size='small'
-                  onClick={() => handleDeleteComment(comment.id)}
-                />
-              </ConfigProvider>
-            </Flex>
-          </Flex>
-        ))}
+        {isLoadingComments ? (
+          <Skeleton active />
+        ) : (
+          commentsList
+        )}
       </Flex>
 
       <Form onFinish={handleAddComment}>
@@ -218,11 +229,16 @@ const ProjectViewUpdates = () => {
             options={mentionsOptions}
             autoSize
             maxLength={MAX_COMMENT_LENGTH}
-            onSelect={option => memberSelectHandler(option as IMentionMemberSelectOption)}
+            onSelect={(option, prefix) => memberSelectHandler(option as IMentionMemberSelectOption)}
             onClick={() => setIsCommentBoxExpand(true)}
             onChange={handleCommentChange}
             prefix="@"
             split=""
+            filterOption={(input, option) => {
+              if (!input) return true;
+              const optionLabel = (option as any)?.label || '';
+              return optionLabel.toLowerCase().includes(input.toLowerCase());
+            }}
             style={{
               minHeight: isCommentBoxExpand ? 180 : 60,
               paddingBlockEnd: 24,
