@@ -26,10 +26,9 @@ import {
   setGroup,
   fetchTaskGroups,
   reorderTasks,
-  collapseAllGroups,
-  expandAllGroups,
 } from '@/features/tasks/tasks.slice';
-import { IProjectTask, ITaskListGroup } from '@/types/tasks/taskList.types';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import TaskGroup from './TaskGroup';
 import TaskRow from './TaskRow';
 import BulkActionBar from './BulkActionBar';
@@ -66,9 +65,8 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     archived,
   } = useSelector((state: RootState) => state.taskReducer);
 
-  // Selection state (assuming you have a selection slice)
-  // const selectedTaskIds = useSelector((state: RootState) => state.selection?.selectedTaskIds || []);
-  const selectedTaskIds: string[] = []; // Temporary placeholder
+  // Selection state
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
   // Drag and Drop sensors
   const sensors = useSensors(
@@ -204,18 +202,33 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   const handleCollapseAll = () => {
     // This would need to be implemented in the tasks slice
-    // dispatch(collapseAllGroups());
+    console.log('Collapse all groups');
   };
 
   const handleExpandAll = () => {
     // This would need to be implemented in the tasks slice
-    // dispatch(expandAllGroups());
+    console.log('Expand all groups');
   };
 
   const handleRefresh = () => {
     if (projectId) {
       dispatch(fetchTaskGroups(projectId));
     }
+  };
+
+  const handleSelectTask = (taskId: string, selected: boolean) => {
+    setSelectedTaskIds(prev => {
+      if (selected) {
+        return [...prev, taskId];
+      } else {
+        return prev.filter(id => id !== taskId);
+      }
+    });
+  };
+
+  const handleToggleSubtasks = (taskId: string) => {
+    // Implementation for toggling subtasks
+    console.log('Toggle subtasks for task:', taskId);
   };
 
   if (error) {
@@ -285,7 +298,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         />
       )}
 
-      {/* Task Groups */}
+      {/* Task Groups Container */}
       <div className="task-groups-container">
         {loadingGroups ? (
           <Card>
@@ -308,7 +321,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
           >
-            <div className="space-y-4">
+            <div className="task-groups">
               {taskGroups.map((group) => (
                 <TaskGroup
                   key={group.id}
@@ -316,6 +329,8 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
                   projectId={projectId}
                   currentGrouping={groupBy}
                   selectedTaskIds={selectedTaskIds}
+                  onSelectTask={handleSelectTask}
+                  onToggleSubtasks={handleToggleSubtasks}
                 />
               ))}
             </div>
@@ -335,6 +350,60 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           </DndContext>
         )}
       </div>
+
+      <style>{`
+        .task-groups-container {
+          overflow-x: auto;
+          max-height: calc(100vh - 300px);
+          overflow-y: auto;
+          background: var(--task-bg-secondary, #f5f5f5);
+          padding: 16px;
+          border-radius: 8px;
+          transition: background-color 0.3s ease;
+        }
+
+        .task-groups {
+          min-width: fit-content;
+        }
+
+        /* Dark mode support */
+        :root {
+          --task-bg-primary: #ffffff;
+          --task-bg-secondary: #f5f5f5;
+          --task-bg-tertiary: #f8f9fa;
+          --task-border-primary: #e8e8e8;
+          --task-border-secondary: #f0f0f0;
+          --task-border-tertiary: #d9d9d9;
+          --task-text-primary: #262626;
+          --task-text-secondary: #595959;
+          --task-text-tertiary: #8c8c8c;
+          --task-shadow: rgba(0, 0, 0, 0.1);
+          --task-hover-bg: #fafafa;
+          --task-selected-bg: #e6f7ff;
+          --task-selected-border: #1890ff;
+          --task-drag-over-bg: #f0f8ff;
+          --task-drag-over-border: #40a9ff;
+        }
+
+        .dark .task-groups-container,
+        [data-theme="dark"] .task-groups-container {
+          --task-bg-primary: #1f1f1f;
+          --task-bg-secondary: #141414;
+          --task-bg-tertiary: #262626;
+          --task-border-primary: #303030;
+          --task-border-secondary: #404040;
+          --task-border-tertiary: #505050;
+          --task-text-primary: #ffffff;
+          --task-text-secondary: #d9d9d9;
+          --task-text-tertiary: #8c8c8c;
+          --task-shadow: rgba(0, 0, 0, 0.3);
+          --task-hover-bg: #2a2a2a;
+          --task-selected-bg: #1a2332;
+          --task-selected-border: #1890ff;
+          --task-drag-over-bg: #1a2332;
+          --task-drag-over-border: #40a9ff;
+        }
+      `}</style>
     </div>
   );
 };
