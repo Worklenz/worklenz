@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import TaskListBoard from '@/components/task-management/TaskListBoard';
+import TaskListBoard from '@/components/task-management/task-list-board';
 
 const ProjectViewEnhancedTasks: React.FC = () => {
   const { project } = useAppSelector(state => state.projectReducer);
