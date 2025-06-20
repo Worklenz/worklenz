@@ -83,10 +83,10 @@ services:
       POSTGRES_DB: ${DB_NAME:-worklenz_db}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -d ${DB_NAME:-worklenz_db} -U ${DB_USER:-postgres}" ]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
     restart: unless-stopped
     networks:
       - worklenz
