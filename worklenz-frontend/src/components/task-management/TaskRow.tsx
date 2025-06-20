@@ -140,7 +140,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
             </div>
 
             {/* Task Name */}
-            <div className="task-table-cell task-table-cell-task" style={{ width: '220px' }}>
+            <div className="task-table-cell task-table-cell-task" style={{ width: '475px' }}>
               <div className="task-content">
                 <div className="task-header">
                   <Text
@@ -340,22 +340,26 @@ const TaskRow: React.FC<TaskRowProps> = ({
           display: flex;
           height: 40px;
           max-height: 40px;
-          overflow: hidden;
+          overflow: visible;
+          position: relative;
+          min-width: 1200px; /* Ensure minimum width for all columns */
         }
 
         .task-table-fixed-columns {
           display: flex;
-          background: inherit;
+          background: var(--task-bg-primary, white);
           position: sticky;
           left: 0;
-          z-index: 8;
-          border-right: 1px solid var(--task-border-secondary, #f0f0f0);
-          transition: border-color 0.3s ease;
+          z-index: 10;
+          border-right: 2px solid var(--task-border-primary, #e8e8e8);
+          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease;
         }
 
         .task-table-scrollable-columns {
           display: flex;
-          overflow-x: auto;
+          flex: 1;
+          min-width: 0;
         }
 
         .task-table-cell {

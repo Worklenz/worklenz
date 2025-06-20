@@ -106,15 +106,18 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
       {/* Group Header Row */}
       <div className="task-group-header">
         <div className="task-group-header-row">
-          <div className="flex items-center p-3">
+          <div 
+            className="task-group-header-content"
+            style={{ backgroundColor: getGroupColor() }}
+          >
             <Button
               type="text"
               size="small"
               icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
               onClick={handleToggleCollapse}
-              className="p-0 w-6 h-6 flex items-center justify-center mr-2"
+              className="task-group-header-button"
             />
-            <Text strong className="text-sm">
+            <Text strong className="task-group-header-text">
               {group.name} ({totalTasks})
             </Text>
           </div>
@@ -137,7 +140,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
               <div className="task-table-cell task-table-header-cell" style={{ width: '80px' }}>
                 <Text className="column-header-text">Key</Text>
               </div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '220px' }}>
+              <div className="task-table-cell task-table-header-cell" style={{ width: '475px' }}>
                 <Text className="column-header-text">Task</Text>
               </div>
             </div>
@@ -233,8 +236,10 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
           margin-bottom: 16px;
           background: var(--task-bg-primary, white);
           box-shadow: 0 1px 3px var(--task-shadow, rgba(0, 0, 0, 0.1));
-          overflow: hidden;
+          overflow-x: auto;
+          overflow-y: visible;
           transition: all 0.3s ease;
+          position: relative;
         }
 
         .task-group:last-child {
@@ -242,16 +247,52 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         }
 
         .task-group-header {
-          background: var(--task-bg-tertiary, #f8f9fa);
-          border-bottom: 1px solid var(--task-border-primary, #e8e8e8);
+          background: var(--task-bg-primary, white);
           transition: background-color 0.3s ease;
         }
 
         .task-group-header-row {
-          display: flex;
-          height: 40px;
-          max-height: 40px;
+          display: inline-flex;
+          height: auto;
+          max-height: none;
           overflow: hidden;
+        }
+
+        .task-group-header-content {
+          display: inline-flex;
+          align-items: center;
+          padding: 8px 12px;
+          border-radius: 6px;
+          background-color: #f0f0f0;
+          color: white;
+          font-weight: 500;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        .task-group-header-button {
+          color: white !important;
+          padding: 0 !important;
+          width: 16px !important;
+          height: 16px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          margin-right: 8px !important;
+          border: none !important;
+          background: transparent !important;
+        }
+
+        .task-group-header-button:hover {
+          background: rgba(255, 255, 255, 0.2) !important;
+          border-radius: 2px !important;
+        }
+
+        .task-group-header-text {
+          color: white !important;
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          margin: 0 !important;
         }
 
         .task-group-progress {
@@ -273,7 +314,9 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
           display: flex;
           height: 40px;
           max-height: 40px;
-          overflow: hidden;
+          overflow: visible;
+          position: relative;
+          min-width: 1200px; /* Ensure minimum width for all columns */
         }
 
         .task-table-header-cell {
@@ -301,6 +344,8 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         .task-group-body {
           background: var(--task-bg-primary, white);
           transition: background-color 0.3s ease;
+          overflow: visible;
+          position: relative;
         }
 
         .task-group-empty {
@@ -314,6 +359,8 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         .task-group-tasks {
           background: var(--task-bg-primary, white);
           transition: background-color 0.3s ease;
+          overflow: visible;
+          position: relative;
         }
 
         .task-group-add-task {
@@ -333,17 +380,19 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
 
         .task-table-fixed-columns {
           display: flex;
-          background: inherit;
+          background: var(--task-bg-secondary, #f5f5f5);
           position: sticky;
           left: 0;
-          z-index: 9;
-          border-right: 1px solid var(--task-border-secondary, #f0f0f0);
-          transition: border-color 0.3s ease;
+          z-index: 11;
+          border-right: 2px solid var(--task-border-primary, #e8e8e8);
+          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease;
         }
 
         .task-table-scrollable-columns {
           display: flex;
-          overflow-x: auto;
+          flex: 1;
+          min-width: 0;
         }
 
         .task-table-cell {
