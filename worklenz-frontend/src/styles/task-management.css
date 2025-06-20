@@ -1,0 +1,601 @@
+/* Task Management System Styles */
+
+.task-list-board {
+  width: 100%;
+}
+
+.task-group {
+  transition: all 0.2s ease;
+}
+
+.task-group.drag-over {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.task-group .group-header {
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.task-group .group-header:hover {
+  background: #f5f5f5;
+}
+
+.task-row {
+  border-left: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.task-row:hover {
+  background-color: #f9f9f9 !important;
+  border-left-color: #d9d9d9;
+}
+
+.task-row.selected {
+  background-color: #e6f7ff !important;
+  border-left-color: #1890ff;
+}
+
+.task-row .drag-handle {
+  cursor: grab;
+  transition: opacity 0.2s ease;
+}
+
+.task-row .drag-handle:active {
+  cursor: grabbing;
+}
+
+.task-row:not(:hover) .drag-handle {
+  opacity: 0.3;
+}
+
+/* Progress bars */
+.ant-progress-line {
+  margin: 0;
+}
+
+.ant-progress-bg {
+  border-radius: 2px;
+}
+
+/* Avatar groups */
+.ant-avatar-group .ant-avatar {
+  border: 1px solid #fff;
+}
+
+/* Tags */
+.task-row .ant-tag {
+  margin: 0;
+  padding: 0 4px;
+  height: 16px;
+  line-height: 14px;
+  font-size: 10px;
+  border-radius: 2px;
+}
+
+/* Checkboxes */
+.task-row .ant-checkbox-wrapper {
+  margin-right: 0;
+}
+
+/* Bulk action bar */
+.bulk-action-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+/* Collapsible animations */
+.task-group .ant-collapse-content > .ant-collapse-content-box {
+  padding: 0;
+}
+
+/* Drag overlay */
+.task-row.drag-overlay {
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: rotate(5deg);
+  cursor: grabbing;
+  z-index: 1000;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .task-row {
+    padding: 12px;
+  }
+  
+  .task-row .flex {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .task-row .task-metadata {
+    margin-top: 8px;
+    margin-left: 0 !important;
+  }
+}
+
+/* Subtask indentation */
+.task-subtasks {
+  margin-left: 32px;
+  padding-left: 16px;
+  border-left: 2px solid #f0f0f0;
+}
+
+.task-subtasks .task-row {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+/* Status indicators */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.priority-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Animation classes */
+.task-row-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.task-row-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.task-row-exit {
+  opacity: 1;
+}
+
+.task-row-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Custom scrollbar */
+.task-groups-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.task-groups-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.task-groups-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.task-groups-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading states */
+.task-row.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.task-group.loading {
+  opacity: 0.8;
+}
+
+/* Focus styles for accessibility */
+.task-row:focus-within {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+.drag-handle:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .task-list-board {
+  background-color: #141414;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+@media (prefers-color-scheme: dark) {
+  .task-list-board {
+    background-color: #141414;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Task Groups */
+  .task-group {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+
+  .task-group.drag-over {
+    border-color: #1890ff !important;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3);
+    background-color: rgba(24, 144, 255, 0.1);
+  }
+
+  .task-group .group-header {
+    background: #262626;
+    border-bottom-color: #303030;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .task-group .group-header:hover {
+    background: #2f2f2f;
+  }
+
+  /* Task Rows */
+  .task-row {
+    background-color: #1f1f1f;
+    color: rgba(255, 255, 255, 0.85);
+    border-color: #303030;
+  }
+
+  .task-row:hover {
+    background-color: #262626 !important;
+    border-left-color: #595959;
+  }
+
+  .task-row.selected {
+    background-color: rgba(24, 144, 255, 0.15) !important;
+    border-left-color: #1890ff;
+  }
+
+  .task-row .drag-handle {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .task-row .drag-handle:hover {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Progress bars */
+  .ant-progress-bg {
+    background-color: #303030;
+  }
+
+  /* Text colors */
+  .task-row .ant-typography {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .task-row .text-gray-500 {
+    color: rgba(255, 255, 255, 0.45) !important;
+  }
+
+  .task-row .text-gray-600 {
+    color: rgba(255, 255, 255, 0.65) !important;
+  }
+
+  .task-row .text-gray-400 {
+    color: rgba(255, 255, 255, 0.45) !important;
+  }
+
+  /* Completed task styling */
+  .task-row .line-through {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  /* Bulk Action Bar */
+  .bulk-action-bar {
+    background: rgba(24, 144, 255, 0.15);
+    border-color: rgba(24, 144, 255, 0.3);
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Cards and containers */
+  .ant-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-card-head {
+    background-color: #262626;
+    border-bottom-color: #303030;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-card-body {
+    background-color: #1f1f1f;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Buttons */
+  .ant-btn {
+    border-color: #303030;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-btn:hover {
+    border-color: #595959;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-btn-primary {
+    background-color: #1890ff;
+    border-color: #1890ff;
+  }
+
+  .ant-btn-primary:hover {
+    background-color: #40a9ff;
+    border-color: #40a9ff;
+  }
+
+  /* Dropdowns and menus */
+  .ant-dropdown-menu {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+
+  .ant-dropdown-menu-item {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-dropdown-menu-item:hover {
+    background-color: #262626;
+  }
+
+  /* Select components */
+  .ant-select-selector {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+
+  .ant-select-arrow {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  /* Checkboxes */
+  .ant-checkbox-wrapper {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-checkbox-inner {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #1890ff;
+    border-color: #1890ff;
+  }
+
+  /* Tags and labels */
+  .ant-tag {
+    background-color: #262626;
+    border-color: #303030;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Avatars */
+  .ant-avatar {
+    background-color: #595959;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Tooltips */
+  .ant-tooltip-inner {
+    background-color: #262626;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-tooltip-arrow-content {
+    background-color: #262626;
+  }
+
+  /* Popconfirm */
+  .ant-popover-inner {
+    background-color: #1f1f1f;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-popover-arrow-content {
+    background-color: #1f1f1f;
+  }
+
+  /* Subtasks */
+  .task-subtasks {
+    border-left-color: #303030;
+  }
+
+  .task-subtasks .task-row {
+    background-color: #141414;
+  }
+
+  .task-subtasks .task-row:hover {
+    background-color: #1f1f1f !important;
+  }
+
+  /* Scrollbars */
+  .task-groups-container::-webkit-scrollbar-track {
+    background: #141414;
+  }
+
+  .task-groups-container::-webkit-scrollbar-thumb {
+    background: #595959;
+  }
+
+  .task-groups-container::-webkit-scrollbar-thumb:hover {
+    background: #777777;
+  }
+
+  /* Loading states */
+  .ant-spin-dot-item {
+    background-color: #1890ff;
+  }
+
+  /* Empty states */
+  .ant-empty {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .ant-empty-description {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  /* Focus styles for dark mode */
+  .task-row:focus-within {
+    outline-color: #40a9ff;
+  }
+
+  .drag-handle:focus {
+    outline-color: #40a9ff;
+  }
+
+  /* Border colors */
+  .border-gray-100 {
+    border-color: #303030 !important;
+  }
+
+  .border-gray-200 {
+    border-color: #404040 !important;
+  }
+
+  .border-gray-300 {
+    border-color: #595959 !important;
+  }
+
+  /* Background utilities */
+  .bg-gray-50 {
+    background-color: #141414 !important;
+  }
+
+  .bg-gray-100 {
+    background-color: #1f1f1f !important;
+  }
+
+  .bg-white {
+    background-color: #1f1f1f !important;
+  }
+
+  /* Due date colors in dark mode */
+  .text-red-500 {
+    color: #ff7875 !important;
+  }
+
+  .text-orange-500 {
+    color: #ffa940 !important;
+  }
+
+  /* Group progress bar in dark mode */
+  .task-group .group-header .bg-gray-200 {
+    background-color: #303030 !important;
+  }
+}
+
+/* Specific dark mode styles using data-theme attribute */
+[data-theme="dark"] .task-group {
+  background-color: #1f1f1f;
+  border-color: #303030;
+}
+
+[data-theme="dark"] .task-group.drag-over {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3);
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+[data-theme="dark"] .task-group .group-header {
+  background: #262626;
+  border-bottom-color: #303030;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="dark"] .task-group .group-header:hover {
+  background: #2f2f2f;
+}
+
+[data-theme="dark"] .task-row {
+  background-color: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+  border-color: #303030;
+}
+
+[data-theme="dark"] .task-row:hover {
+  background-color: #262626 !important;
+  border-left-color: #595959;
+}
+
+[data-theme="dark"] .task-row.selected {
+  background-color: rgba(24, 144, 255, 0.15) !important;
+  border-left-color: #1890ff;
+}
+
+[data-theme="dark"] .task-row .drag-handle {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+[data-theme="dark"] .task-row .drag-handle:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="dark"] .bulk-action-bar {
+  background: rgba(24, 144, 255, 0.15);
+  border-color: rgba(24, 144, 255, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="dark"] .task-row .ant-typography {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="dark"] .task-row .text-gray-500 {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+[data-theme="dark"] .task-row .text-gray-600 {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+[data-theme="dark"] .task-row .text-gray-400 {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+[data-theme="dark"] .task-row .line-through {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+[data-theme="dark"] .task-subtasks {
+  border-left-color: #303030;
+}
+
+[data-theme="dark"] .task-subtasks .task-row {
+  background-color: #141414;
+}
+
+[data-theme="dark"] .task-subtasks .task-row:hover {
+  background-color: #1f1f1f !important;
+}
+
+[data-theme="dark"] .text-red-500 {
+  color: #ff7875 !important;
+}
+
+[data-theme="dark"] .text-orange-500 {
+  color: #ffa940 !important;
+} 
