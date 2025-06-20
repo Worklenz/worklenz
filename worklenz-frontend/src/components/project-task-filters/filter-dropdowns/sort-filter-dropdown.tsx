@@ -10,9 +10,9 @@ import Space from 'antd/es/space';
 
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { ITaskListSortableColumn } from '@/types/tasks/taskListFilters.types';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setFields } from '@/features/tasks/tasks.slice';
 
 enum SORT_ORDER {

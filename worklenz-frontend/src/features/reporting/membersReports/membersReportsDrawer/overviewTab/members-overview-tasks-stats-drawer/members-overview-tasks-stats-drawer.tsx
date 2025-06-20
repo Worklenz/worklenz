@@ -1,7 +1,7 @@
-import { Drawer, Typography } from 'antd';
+import { Drawer, Typography } from '@/components/ui';
 import React, { useMemo, useState } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
 import { toggleMembersOverviewTasksStatsDrawer } from '../../../membersReportsSlice';
 import { fetchData } from '@/utils/fetchData';

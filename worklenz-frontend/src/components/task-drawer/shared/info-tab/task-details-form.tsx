@@ -1,15 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Form,
-  InputNumber,
-  Select,
-  DatePicker,
-  Switch,
-  Typography,
-  Button,
-  ConfigProvider,
-  Flex,
-} from 'antd';
+import { Form, InputNumber, Select, DatePicker, Switch, Typography, Button, ConfigProvider, Flex } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';
 import { ITaskFormViewModel, ITaskViewModel } from '@/types/tasks/task.types';
@@ -27,10 +17,10 @@ import TaskDrawerEstimation from './details/task-drawer-estimation/task-drawer-e
 import TaskDrawerPrioritySelector from './details/task-drawer-priority-selector/task-drawer-priority-selector';
 import TaskDrawerBillable from './details/task-drawer-billable/task-drawer-billable';
 import TaskDrawerProgress from './details/task-drawer-progress/task-drawer-progress';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import logger from '@/utils/errorLogger';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import logger from '@/utils/error-logger';
 import TaskDrawerRecurringConfig from './details/task-drawer-recurring-config/task-drawer-recurring-config';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { InlineMember } from '@/types/teamMembers/inline-member.types';
 
 interface TaskDetailsFormProps {
   taskFormViewModel?: ITaskFormViewModel | null;

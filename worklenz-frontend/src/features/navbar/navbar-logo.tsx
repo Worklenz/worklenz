@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import logo from '@/assets/images/worklenz-light-mode.png';
 import logoDark from '@/assets/images/worklenz-dark-mode.png';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store';
 

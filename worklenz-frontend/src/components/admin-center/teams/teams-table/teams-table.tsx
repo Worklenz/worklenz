@@ -2,11 +2,11 @@ import { adminCenterApiService } from '@/api/admin-center/admin-center.api.servi
 import Avatars from '@/components/avatars/avatars';
 import SettingTeamDrawer from '@/components/admin-center/teams/settings-drawer/settings-drawer';
 import { toggleSettingDrawer, deleteTeam, fetchTeams } from '@/features/teams/teamSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { IOrganizationTeam } from '@/types/admin-center/admin-center.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { SettingOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Badge, Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from 'antd';
+import { Badge, Button, Card, Popconfirm, Table, Tooltip, Typography } from '@/components/ui';
 import { TFunction } from 'i18next';
 import { useState } from 'react';
 import { useMediaQuery } from 'react-responsive';

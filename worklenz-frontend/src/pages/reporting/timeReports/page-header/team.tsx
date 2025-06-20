@@ -1,13 +1,13 @@
 import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Checkbox, Divider, Dropdown, Input, theme } from 'antd';
+import { Button, Checkbox, Divider, Dropdown, Input } from '@/components/ui';
 import React, { useEffect, useState } from 'react';
 import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { useTranslation } from 'react-i18next';
 import { ISelectableTeam } from '@/types/reporting/reporting-filters.types';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
-import logger from '@/utils/errorLogger';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import logger from '@/utils/error-logger';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { fetchReportingCategories, fetchReportingProjects, fetchReportingTeams, setSelectOrDeselectAllTeams, setSelectOrDeselectTeam } from '@/features/reporting/time-reports/time-reports-overview.slice';
 
 const Team: React.FC = () => {

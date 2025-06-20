@@ -1,11 +1,11 @@
-import { Button, Card, Col, Divider, Form, Input, notification, Row, Select } from 'antd';
+import { Button, Card, Col, Divider, Form, Input, notification, Row, Select } from '@/components/ui';
 import React, { useEffect, useState } from 'react';
 import { RootState } from '../../../app/store';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { IBillingConfigurationCountry } from '@/types/admin-center/country.types';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { IBillingConfiguration } from '@/types/admin-center/admin-center.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 const Configuration: React.FC = () => {
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);

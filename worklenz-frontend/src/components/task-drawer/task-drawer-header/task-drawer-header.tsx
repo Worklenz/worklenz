@@ -1,17 +1,17 @@
-import { Button, Dropdown, Flex, Input, InputRef, MenuProps } from 'antd';
+import { Button, Dropdown, Flex, Input } from '@/components/ui';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { EllipsisOutlined } from '@ant-design/icons';
 import { TFunction } from 'i18next';
 
 import './task-drawer-header.css';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAuthService } from '@/hooks/use-auth';
 import TaskDrawerStatusDropdown from '../task-drawer-status-dropdown/task-drawer-status-dropdown';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import { deleteTask } from '@/features/tasks/tasks.slice';

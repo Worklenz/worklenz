@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { Button, Tooltip } from '@/components/ui';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   setCustomColumnModalAttributes,
   toggleCustomColumnModalOpen,

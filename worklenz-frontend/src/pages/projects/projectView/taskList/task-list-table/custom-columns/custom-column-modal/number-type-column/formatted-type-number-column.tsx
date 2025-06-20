@@ -1,6 +1,6 @@
-import { Form, Select, Typography } from 'antd';
+import { Form, Select, Typography } from '@/components/ui';
 import React from 'react';
-import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../../../../../@/hooks/use-app-selector';
 import { themeWiseColor } from '../../../../../../../../utils/themeWiseColor';
 import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
 import { setDecimals } from '../../../../../../../../features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';

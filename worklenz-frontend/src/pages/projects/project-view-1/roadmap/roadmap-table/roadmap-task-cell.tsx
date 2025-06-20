@@ -1,4 +1,4 @@
-import { Flex, Typography, Button, Tooltip } from 'antd';
+import { Flex, Typography, Button, Tooltip } from '@/components/ui';
 import {
   DoubleRightOutlined,
   DownOutlined,
@@ -6,7 +6,7 @@ import {
   ExpandAltOutlined,
 } from '@ant-design/icons';
 import { NewTaskType, toggleTaskExpansion } from '@features/roadmap/roadmap-slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { toggleTaskDrawer } from '@features/tasks/taskSlice';
 import { colors } from '@/styles/colors';
 

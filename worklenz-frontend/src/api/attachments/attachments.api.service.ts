@@ -2,7 +2,7 @@ import { IServerResponse } from "@/types/common.types";
 import { IProjectAttachmentsViewModel } from "@/types/tasks/task-attachment-view-model";
 import apiClient from "../api-client";
 import { API_BASE_URL } from "@/shared/constants";
-import { toQueryString } from "@/utils/toQueryString";
+import { toQueryString } from "@/utils/to-query-string";
 
 const rootUrl = `${API_BASE_URL}/attachments`;
 
@@ -29,5 +29,4 @@ export const attachmentsApiService = {
   },
 
 };
-
 

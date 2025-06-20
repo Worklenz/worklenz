@@ -4,21 +4,20 @@ import { RouterProvider } from 'react-router-dom';
 import i18next from 'i18next';
 
 // Components
-import ThemeWrapper from './features/theme/ThemeWrapper';
-import PreferenceSelector from './components/PreferenceSelector';
+import ThemeWrapper from './features/theme/theme-wrapper';
 
 // Routes
 import router from './app/routes';
 
 // Hooks & Utils
-import { useAppSelector } from './hooks/useAppSelector';
-import { initMixpanel } from './utils/mixpanelInit';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { initMixpanel } from '@/utils/mixpanel-init';
 import { initializeCsrfToken } from './api/api-client';
 
 // Types & Constants
-import { Language } from './features/i18n/localesSlice';
-import logger from './utils/errorLogger';
-import { SuspenseFallback } from './components/suspense-fallback/suspense-fallback';
+import { Language } from '@/features/i18n/locales-slice';
+import logger from '@/utils/error-logger';
+import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
 const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);

@@ -1,8 +1,8 @@
 import axios, { AxiosError } from 'axios';
 
-import alertService from '@/services/alerts/alertService';
-import logger from '@/utils/errorLogger';
 import config from '@/config/env';
+import alertService from '@/services/alerts/alert-service';
+import logger from '@/utils/error-logger';
 
 // Store CSRF token in memory (since csrf-sync uses session-based tokens)
 let csrfToken: string | null = null;

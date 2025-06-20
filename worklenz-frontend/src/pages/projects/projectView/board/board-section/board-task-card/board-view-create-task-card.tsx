@@ -1,25 +1,18 @@
-import { Button, Flex, Input, InputRef } from 'antd';
+import { Button, Flex, Input } from '@/components/ui';
 import React, { useRef, useState, useEffect } from 'react';
 import { Dayjs } from 'dayjs';
 import { nanoid } from '@reduxjs/toolkit';
 import { useTranslation } from 'react-i18next';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import {
-  addTaskCardToTheBottom,
-  addTaskCardToTheTop,
-  getCurrentGroupBoard,
-  GROUP_BY_STATUS_VALUE,
-  GROUP_BY_PRIORITY_VALUE,
-  GROUP_BY_PHASE_VALUE,
-} from '@features/board/board-slice';
-import { themeWiseColor } from '@/utils/themeWiseColor';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { addTaskCardToTheBottom, addTaskCardToTheTop, getCurrentGroupBoard } from '@features/board/board-slice';
+import { themeWiseColor } from '@/utils/theme-wise-color';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import CustomDueDatePicker from '@/components/board/custom-due-date-picker';
 import AddMembersDropdown from '@/components/add-members-dropdown-v2/add-members-dropdown';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
 

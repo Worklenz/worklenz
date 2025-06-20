@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Avatar, Checkbox, DatePicker, Flex, Tag, Tooltip, Typography } from 'antd';
+import { Avatar, Checkbox, DatePicker, Flex, Tag, Tooltip, Typography } from '@/components/ui';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { columnList } from '@/pages/projects/project-view-1/taskList/taskListTable/columns/columnList';
 import AddTaskListRow from '@/pages/projects/project-view-1/taskList/taskListTable/taskListTableRows/AddTaskListRow';
 
@@ -22,7 +22,7 @@ import { colors } from '@/styles/colors';
 import TimeTracker from '@/pages/projects/project-view-1/taskList/taskListTable/taskListTableCells/TimeTracker';
 import TaskContextMenu from '@/pages/projects/project-view-1/taskList/taskListTable/contextMenu/TaskContextMenu';
 import TaskProgress from '@/pages/projects/project-view-1/taskList/taskListTable/taskListTableCells/TaskProgress';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

@@ -1,5 +1,5 @@
 import { ILocalSession } from '@/types/auth/local-session.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { deleteSession, getUserSession, hasSession, setSession } from '@/utils/session-helper';
 import { NavigateFunction } from 'react-router-dom';
 

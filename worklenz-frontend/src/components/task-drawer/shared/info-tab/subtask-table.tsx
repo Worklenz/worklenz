@@ -1,11 +1,11 @@
-import { Button, Flex, Input, Popconfirm, Progress, Table, Tag, Tooltip } from 'antd';
+import { Button, Flex, Input, Popconfirm, Progress, Table, Tag, Tooltip } from '@/components/ui';
 import { useState, useMemo, useEffect } from 'react';
 import { DeleteOutlined, EditOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { nanoid } from '@reduxjs/toolkit';
 import { TFunction } from 'i18next';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { colors } from '@/styles/colors';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ISubTask } from '@/types/tasks/subTask.types';
@@ -15,15 +15,10 @@ import './subtask-table.css';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
 import { getUserSession } from '@/utils/session-helper';
 import { SocketEvents } from '@/shared/socket-events';
-import { useSocket } from '@/socket/socketContext';
-import {
-  getCurrentGroup,
-  GROUP_BY_STATUS_VALUE,
-  GROUP_BY_PRIORITY_VALUE,
-  GROUP_BY_PHASE_VALUE,
-} from '@/features/tasks/tasks.slice';
+import { useSocket } from '@/socket/socket-context';
+import { getCurrentGroup } from '@/features/tasks/tasks.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { 
   setShowTaskDrawer, 
   setSelectedTaskId, 

@@ -1,14 +1,14 @@
-import { Button, Card, Flex, Table, TableProps, Tooltip, Typography } from 'antd';
+import { Button, Card, Flex, Table, TableProps, Tooltip, Typography } from '@/components/ui';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { durationDateFormat } from '@utils/durationDateFormat';
 import { EditOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import EditTeamModal from '@/components/settings/edit-team-name-modal';
 
 import { fetchTeams } from '@features/teams/teamSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { ITeamGetResponse } from '@/types/teams/team.type';
 
 const TeamsSettings = () => {

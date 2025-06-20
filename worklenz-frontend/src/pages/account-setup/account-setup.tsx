@@ -4,23 +4,19 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Space, Steps, Button, Typography } from 'antd/es';
 
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { setCurrentStep } from '@/features/account-setup/account-setup.slice';
 import { OrganizationStep } from '@/components/account-setup/organization-step';
 import { ProjectStep } from '@/components/account-setup/project-step';
 import { TasksStep } from '@/components/account-setup/tasks-step';
 import MembersStep from '@/components/account-setup/members-step';
-import {
-  evt_account_setup_complete,
-  evt_account_setup_skip_invite,
-  evt_account_setup_visit,
-} from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { verifyAuthentication } from '@/features/auth/authSlice';
-import { setUser } from '@/features/user/userSlice';
+;
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+import { verifyAuthentication } from '@/features/auth/auth-slice';
+import { setUser } from '@/features/user/user-slice';
 import { IAuthorizeResponse } from '@/types/auth/login.types';
 import { RootState } from '@/app/store';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { getUserSession, setSession } from '@/utils/session-helper';
 import { validateEmail } from '@/utils/validateEmail';
 import { sanitizeInput } from '@/utils/sanitizeInput';

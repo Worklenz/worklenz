@@ -1,9 +1,9 @@
-import { createClient, fetchClients } from '@/features/settings/client/clientSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { createClient, fetchClients } from '@/features/settings/client/client.slice';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { IClientsViewModel } from '@/types/client.types';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { AutoComplete, Flex, Form, FormInstance, Spin, Tooltip, Typography } from 'antd';
+import { AutoComplete, Flex, Form, FormInstance, Spin, Tooltip, Typography } from '@/components/ui';
 import { TFunction } from 'i18next';
 import { useState } from 'react';
 

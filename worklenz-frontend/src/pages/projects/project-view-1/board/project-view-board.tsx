@@ -8,9 +8,9 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import TaskListFilters from '../taskList/taskListFilters/TaskListFilters';
-import { Button, Skeleton } from 'antd';
+import { Button, Skeleton } from '@/components/ui';
 import { PlusOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { toggleDrawer } from '@/features/projects/status/StatusSlice';

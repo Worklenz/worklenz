@@ -1,7 +1,7 @@
 import { SettingOutlined } from '@ant-design/icons';
 import Tooltip from 'antd/es/tooltip';
 import Button from 'antd/es/button';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { toggleDrawer } from '../../../features/projects/status/StatusSlice';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';

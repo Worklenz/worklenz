@@ -2,7 +2,7 @@ import apiClient from '@/api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 
 const rootUrl = `${API_BASE_URL}/task-phases`;
 

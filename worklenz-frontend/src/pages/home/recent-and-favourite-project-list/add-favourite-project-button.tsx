@@ -1,8 +1,8 @@
 import { StarFilled } from '@ant-design/icons';
-import { Button, ConfigProvider, Tooltip } from 'antd';
+import { Button, ConfigProvider, Tooltip } from '@/components/ui';
 import { useMemo } from 'react';
 import { colors } from '@/styles/colors';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 
 type AddFavouriteProjectButtonProps = {

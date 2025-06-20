@@ -1,4 +1,4 @@
-import { Flex } from 'antd';
+import { Flex } from '@/components/ui';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import BoardSectionCard from './board-section-card/board-section-card';
 import BoardCreateSectionCard from './board-section-card/board-create-section-card';
@@ -8,10 +8,10 @@ import { setTaskAssignee, setTaskEndDate } from '@/features/task-drawer/task-dra
 import { fetchTaskAssignees } from '@/features/taskAttributes/taskMemberSlice';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
-import { useSocket } from '@/socket/socketContext';
-import { useAuthService } from '@/hooks/useAuth';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useSocket } from '@/socket/socket-context';
+import { useAuthService } from '@/hooks/use-auth';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { updateTaskAssignees, updateTaskEndDate } from '@/features/board/board-slice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 

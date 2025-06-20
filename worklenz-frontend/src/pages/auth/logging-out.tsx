@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Card, Flex, Spin, Typography } from 'antd/es';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { useMediaQuery } from 'react-responsive';
 import { authApiService } from '@/api/auth/auth.api.service';
 

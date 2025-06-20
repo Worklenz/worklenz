@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { Flex, Popover, Typography } from 'antd';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { Flex, Popover, Typography } from '@/components/ui';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { getWorking, toggleScheduleDrawer } from '../../../features/schedule/scheduleSlice';
-import ProjectTimelineModal from '../../../features/schedule/ProjectTimelineModal';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { getWorking, toggleScheduleDrawer } from '@/features/schedule/schedule-slice';
+import ProjectTimelineModal from '@/features/schedule/project-timeline-modal';
 import { Resizable } from 're-resizable';
-import { themeWiseColor } from '../../../utils/themeWiseColor';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import { MoreOutlined } from '@ant-design/icons';
-import { CELL_WIDTH } from '../../../shared/constants';
 import { ScheduleData } from '@/types/schedule/schedule-v2.types';
 
 type ProjectTimelineBarProps = {
@@ -68,7 +67,13 @@ const ProjectTimelineBar = ({
 
   return (
     <Popover
-      content={<ProjectTimelineModal defaultData={defaultData} projectId={project?.id} setIsModalOpen={setIsModalOpen} />}
+      content={
+        <ProjectTimelineModal
+          defaultData={defaultData}
+          projectId={project?.id}
+          setIsModalOpen={setIsModalOpen}
+        />
+      }
       trigger={'click'}
       open={isModalOpen}
     >
@@ -127,7 +132,10 @@ const ProjectTimelineBar = ({
           align="center"
           justify="center"
           style={{ width: '100%' }}
-          onClick={() => {setIsModalOpen(true);dispatch(getWorking());}}
+          onClick={() => {
+            setIsModalOpen(true);
+            dispatch(getWorking());
+          }}
         >
           <Typography.Text
             style={{

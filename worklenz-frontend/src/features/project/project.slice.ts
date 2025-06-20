@@ -6,7 +6,7 @@ import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { ITaskPrioritiesGetResponse } from '@/types/apiModels/taskPrioritiesGetResponse.types';
 import { ITaskStatusViewModel } from '@/types/tasks/taskStatusGetResponse.types';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 
 interface TaskListState {

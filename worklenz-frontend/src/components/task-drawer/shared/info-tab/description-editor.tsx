@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 import DOMPurify from 'dompurify';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useSocket } from '@/socket/socketContext';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 
 interface DescriptionEditorProps {

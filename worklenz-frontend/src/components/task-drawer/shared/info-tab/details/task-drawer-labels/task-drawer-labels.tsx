@@ -1,30 +1,17 @@
 import { PlusOutlined } from '@ant-design/icons';
-import {
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  Dropdown,
-  Flex,
-  Form,
-  Input,
-  InputRef,
-  List,
-  Tag,
-  Typography,
-} from 'antd';
+import { Badge, Button, Card, Checkbox, Dropdown, Flex, Form, Input, List, Tag, Typography } from '@/components/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
 import { ITaskLabel } from '@/types/label.type';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { SocketEvents } from '@/shared/socket-events';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { ITaskViewModel } from '@/types/tasks/task.types';
-import { ALPHA_CHANNEL } from '@/shared/constants';
+;
 import { TFunction } from 'i18next';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setTaskLabels } from '@/features/task-drawer/task-drawer.slice';
 import { setLabels, updateTaskLabel } from '@/features/tasks/tasks.slice';
 import { setBoardLabels, updateBoardTaskLabel } from '@/features/board/board-slice';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Divider, Flex, Popconfirm, Typography, Space } from 'antd';
+import { Button, Divider, Flex, Popconfirm, Typography, Space } from '@/components/ui';
 import { colors } from '@/styles/colors';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
@@ -7,11 +7,11 @@ import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import './time-log-item.css';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setTimeLogEditing } from '@/features/task-drawer/task-drawer.slice';
 import TimeLogForm from './time-log-form';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 
 type TimeLogItemProps = {
   log: ITaskLogViewModel;

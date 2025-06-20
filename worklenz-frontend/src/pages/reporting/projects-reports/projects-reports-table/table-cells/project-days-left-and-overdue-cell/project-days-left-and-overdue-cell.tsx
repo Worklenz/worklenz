@@ -1,4 +1,4 @@
-import { Typography } from 'antd';
+import { Typography } from '@/components/ui';
 import React from 'react';
 import { colors } from '../../../../../../styles/colors';
 import { useTranslation } from 'react-i18next';

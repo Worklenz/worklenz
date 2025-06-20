@@ -1,15 +1,5 @@
 import { DeleteOutlined, ExclamationCircleFilled, SearchOutlined } from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Flex,
-  Input,
-  Popconfirm,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Card, Flex, Input, Popconfirm, Table, Tooltip, Typography } from '@/components/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';
@@ -18,8 +8,8 @@ import CustomColorsCategoryTag from '@features/settings/categories/CustomColorsC
 import { deleteCategory } from '@features/settings/categories/categoriesSlice';
 import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
 import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 
 const CategoriesSettings = () => {
   // localization

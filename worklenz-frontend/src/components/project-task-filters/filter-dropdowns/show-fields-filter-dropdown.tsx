@@ -5,14 +5,14 @@ import Checkbox from 'antd/es/checkbox';
 import Dropdown from 'antd/es/dropdown';
 import Space from 'antd/es/space';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   updateColumnVisibility,
   updateCustomColumnPinned,
 } from '@/features/tasks/tasks.slice';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 
 const ShowFieldsFilterDropdown = () => {

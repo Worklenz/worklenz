@@ -2,13 +2,13 @@ import { CaretDownFilled } from '@ant-design/icons';
 import { useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Badge, Button, Card, Checkbox, Dropdown, List, Space } from 'antd';
+import { Badge, Button, Card, Checkbox, Dropdown, List, Space } from '@/components/ui';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';   
 import { setPriorities } from '@/features/tasks/tasks.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 
 import { fetchBoardTaskGroups, setBoardPriorities } from '@/features/board/board-slice';

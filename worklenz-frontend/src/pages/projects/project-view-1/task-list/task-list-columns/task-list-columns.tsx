@@ -1,4 +1,4 @@
-import { Avatar, Checkbox, DatePicker, Flex, Select, Tag } from 'antd';
+import { Avatar, Checkbox, DatePicker, Flex, Select, Tag } from '@/components/ui';
 import { createColumnHelper, ColumnDef } from '@tanstack/react-table';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { HolderOutlined, PlusOutlined } from '@ant-design/icons';
@@ -10,7 +10,7 @@ import TaskRowName from '@/components/task-list-common/task-row/task-row-name/ta
 import TaskRowDescription from '@/components/task-list-common/task-row/task-row-description/task-row-description';
 import TaskRowProgress from '@/components/task-list-common/task-row/task-row-progress/task-row-progress';
 import TaskRowDueTime from '@/components/task-list-common/task-row/task-list-due-time-cell/task-row-due-time';
-import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
+;
 
 interface CreateColumnsProps {
   expandedRows: Record<string, boolean>;

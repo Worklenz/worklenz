@@ -11,7 +11,7 @@ import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
 import Alert from 'antd/es/alert';
 
-import EmptyListPlaceholder from '@components/EmptyListPlaceholder';
+import EmptyListPlaceholder from '@components/empty-list-placeholder';
 import { IMyTask } from '@/types/home/my-tasks.types';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';

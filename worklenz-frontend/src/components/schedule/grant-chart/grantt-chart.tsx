@@ -1,14 +1,15 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { fetchDateList, fetchTeamData } from '../../../features/schedule/scheduleSlice';
-import { themeWiseColor } from '../../../utils/themeWiseColor';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { fetchDateList, fetchTeamData } from '@/features/schedule/schedule-slice';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import GranttMembersTable from './grantt-members-table';
-import { CELL_WIDTH } from '../../../shared/constants';
-import { Flex, Popover } from 'antd';
+;
+import { Flex, Popover } from '@/components/ui';
 import DayAllocationCell from './day-allocation-cell';
 import ProjectTimelineBar from './project-timeline-bar';
-import ProjectTimelineModal from '@/features/schedule/ProjectTimelineModal';
+import ProjectTimelineModal from '@/features/schedule/project-timeline-modal';
+import { CELL_WIDTH } from '@/shared/constants';
 
 const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date }, ref) => {
   const [expandedProject, setExpandedProject] = useState<string | null>(null);

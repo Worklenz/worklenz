@@ -1,15 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Badge,
-  Button,
-  Dropdown,
-  Flex,
-  Input,
-  InputRef,
-  Popconfirm,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Badge, Button, Dropdown, Flex, Input, Popconfirm, Tooltip, Typography } from '@/components/ui';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -23,32 +13,32 @@ import { MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 
 import ChangeCategoryDropdown from '@/components/board/changeCategoryDropdown/ChangeCategoryDropdown';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   deleteSection,
   IGroupBy,
   setBoardGroupName,
   setEditableSection,
 } from '@features/board/board-slice';
-import { themeWiseColor } from '@/utils/themeWiseColor';
-import { useAuthService } from '@/hooks/useAuth';
+import { themeWiseColor } from '@/utils/theme-wise-color';
+import { useAuthService } from '@/hooks/use-auth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
-import { evt_project_board_column_setting_click } from '@/shared/worklenz-analytics-events';
+;
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
-import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import { fetchStatuses } from '@/features/task-attributes/task-status.slice';
 import { updateTaskGroupColor } from '@/features/tasks/tasks.slice';
-import { ALPHA_CHANNEL } from '@/shared/constants';
+;
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
 import { update } from 'lodash';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { toggleDrawer } from '@/features/projects/status/StatusSlice';
 import { deleteStatusToggleDrawer, seletedStatusCategory } from '@/features/projects/status/DeleteStatusSlice';
 
@@ -373,5 +363,4 @@ const BoardSectionCardHeader: React.FC<BoardSectionCardHeaderProps> = ({
 };
 
 export default BoardSectionCardHeader;
-
 

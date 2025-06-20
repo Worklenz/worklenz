@@ -1,4 +1,4 @@
-import { Select, Tag, Tooltip } from 'antd';
+import { Select, Tag, Tooltip } from '@/components/ui';
 import { PhaseColorCodes } from '../../../shared/constants';
 import { useTranslation } from 'react-i18next';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';

@@ -2,7 +2,7 @@ import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import React, { useRef, useState } from 'react';
 import { TFunction } from 'i18next';
 import './attachments-upload.css'; 
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 interface AttachmentsUploadProps {
   t: TFunction;

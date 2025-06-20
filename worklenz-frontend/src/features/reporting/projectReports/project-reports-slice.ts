@@ -1,11 +1,11 @@
 import { reportingProjectsApiService } from '@/api/reporting/reporting-projects.api.service';
-import { DEFAULT_PAGE_SIZE, FILTER_INDEX_KEY } from '@/shared/constants';
-import { IProjectCategory } from '@/types/project/projectCategory.types';
-import { IProjectHealth } from '@/types/project/projectHealth.types';
-import { IProjectManager } from '@/types/project/projectManager.types';
-import { IProjectStatus } from '@/types/project/projectStatus.types';
+import { FILTER_INDEX_KEY } from '@/shared/constants';
+import { IProjectCategory } from '@/types/project/project-category.types';
+import { IProjectHealth } from '@/types/project/project-health.types';
+import { IProjectManager } from '@/types/project/project-manager.types';
+import { IProjectStatus } from '@/types/project/project-status.types';
 import { IGetProjectsRequestBody, IRPTOverviewProject, IRPTOverviewProjectMember, IRPTProject } from '@/types/reporting/reporting.types';
-import { getFromLocalStorage } from '@/utils/localStorageFunctions';
+import { getFromLocalStorage } from '@/utils/local-storage-functions';
 import { createAsyncThunk, createSlice, createAction } from '@reduxjs/toolkit';
 
 const filterIndex = () => {

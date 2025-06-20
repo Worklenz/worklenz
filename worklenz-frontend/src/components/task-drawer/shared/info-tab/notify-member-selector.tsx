@@ -1,36 +1,25 @@
 import { PlusOutlined } from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Checkbox,
-  Dropdown,
-  Empty,
-  Flex,
-  Input,
-  InputRef,
-  List,
-  Typography,
-} from 'antd';
+import { Button, Card, Checkbox, Dropdown, Empty, Flex, Input, List, Typography } from '@/components/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TFunction } from 'i18next';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sortTeamMembers } from '@/utils/sort-team-members';
 import { SocketEvents } from '@/shared/socket-events';
-import { useSocket } from '@/socket/socketContext';
-import { useAuthService } from '@/hooks/useAuth';
+import { useSocket } from '@/socket/socket-context';
+import { useAuthService } from '@/hooks/use-auth';
 import Avatars from '@/components/avatars/avatars';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { setTaskSubscribers } from '@/features/task-drawer/task-drawer.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { InlineMember } from '@/types/teamMembers/inline-member.types';
 
 interface NotifyMemberSelectorProps {
   task: ITaskViewModel;

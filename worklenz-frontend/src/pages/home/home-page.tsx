@@ -10,13 +10,13 @@ import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
 import RecentAndFavouriteProjectList from '@/pages/home/recent-and-favourite-project-list/recent-and-favourite-project-list';
 
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAuthService } from '@/hooks/useAuth';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAuthService } from '@/hooks/use-auth';
 
-import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
-import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
-import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
+import { fetchProjectStatuses } from '@/features/projects/lookups/project-statuses/project-statuses.slice';
+import { fetchProjectCategories } from '@/features/projects/lookups/project-categories/project-categories.slice';
+import { fetchProjectHealth } from '@/features/projects/lookups/project-health/project-health.slice';
 import { fetchProjects } from '@/features/home-page/home-page.slice';
 import { createPortal } from 'react-dom';
 import React from 'react';

@@ -2,14 +2,14 @@ import {
   ITaskListColumn,
   ITaskListGroup,
   ITaskListMemberFilter,
-} from '@/types/tasks/taskList.types';
+} from '@/types/tasks/task-list.types';
 import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { toQueryString } from '@/utils/toQueryString';
-import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
-import { ITaskFormViewModel, ITaskViewModel } from '@/types/tasks/task.types';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { toQueryString } from '@/utils/to-query-string';
+import { ITeamMemberViewModel } from '@/types/teamMembers/team-members-get-response.types';
+import { ITaskFormViewModel } from '@/types/tasks/task.types';
+import { InlineMember } from '@/types/teamMembers/inline-member.types';
 
 const rootUrl = `${API_BASE_URL}/tasks`;
 

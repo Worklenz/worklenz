@@ -1,7 +1,7 @@
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useSocket } from '@/socket/socketContext';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useSocket } from '@/socket/socket-context';
+import { useAuthService } from '@/hooks/use-auth';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Flex from 'antd/es/flex';
@@ -18,7 +18,7 @@ import {
 } from '@dnd-kit/core';
 
 import { SocketEvents } from '@/shared/socket-events';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import alertService from '@/services/alerts/alertService';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 
@@ -28,7 +28,7 @@ import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import { ITaskPhaseChangeResponse } from '@/types/tasks/task-phase-change-response';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { InlineMember } from '@/types/teamMembers/inline-member.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
 import {
@@ -48,7 +48,7 @@ import {
   updateSubTasks,
   updateTaskProgress,
 } from '@/features/tasks/tasks.slice';
-import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
+import { fetchLabels } from '@/features/task-attributes/task-label.slice';
 import {
   setStartDate,
   setTaskAssignee,
@@ -64,9 +64,9 @@ import TaskListTableWrapper from '@/pages/projects/projectView/taskList/task-lis
 import TaskListBulkActionsBar from '@/components/taskListCommon/task-list-bulk-actions-bar/task-list-bulk-actions-bar';
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { evt_project_task_list_drag_and_move } from '@/shared/worklenz-analytics-events';
-import { ALPHA_CHANNEL } from '@/shared/constants';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+;
+;
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 
 interface TaskGroupWrapperProps {

@@ -1,27 +1,14 @@
 import { ExpandAltOutlined, SyncOutlined } from '@ant-design/icons';
-import {
-  Badge,
-  Button,
-  Card,
-  Flex,
-  Segmented,
-  Select,
-  Skeleton,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-  Pagination,
-} from 'antd';
+import { Badge, Button, Card, Flex, Segmented, Select, Skeleton, Table, Tooltip, Typography, Pagination, TableProps } from '@/components/ui';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 
 import ListView from './list-view';
 import CalendarView from './calendar-view';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import EmptyListPlaceholder from '@components/EmptyListPlaceholder';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import EmptyListPlaceholder from '@/components/empty-list-placeholder';
 import { colors } from '@/styles/colors';
 import { setHomeTasksConfig } from '@/features/home-page/home-page.slice';
 import { IMyTask } from '@/types/home/my-tasks.types';
@@ -31,8 +18,8 @@ import { IHomeTasksModel } from '@/types/home/home-page.types';
 import './tasks-list.css';
 import HomeTasksStatusDropdown from '@/components/home-tasks/statusDropdown/home-tasks-status-dropdown';
 import HomeTasksDatePicker from '@/components/home-tasks/taskDatePicker/home-tasks-date-picker';
-import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
-import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
+import { fetchLabels } from '@/features/task-attributes/task-label.slice';
+import { fetchPriorities } from '@/features/task-attributes/task-priority.slice';
 import { setProjectId } from '@/features/project/project.slice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 

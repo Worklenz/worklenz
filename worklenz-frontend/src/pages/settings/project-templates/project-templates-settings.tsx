@@ -1,12 +1,12 @@
-import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from 'antd';
+import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from '@/components/ui';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { ICustomTemplate } from '@/types/project-templates/project-templates.types';
 
 const ProjectTemplatesSettings = () => {

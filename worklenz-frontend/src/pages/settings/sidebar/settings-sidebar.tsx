@@ -1,10 +1,10 @@
 import { RightOutlined } from '@ant-design/icons';
-import { ConfigProvider, Flex, Menu, MenuProps } from 'antd';
+import { ConfigProvider, Flex, Menu, MenuProps, ItemType } from '@/components/ui';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { settingsItems, getAccessibleSettings } from '@/lib/settings/settings-constants';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 
 const SettingSidebar: React.FC = () => {
   const location = useLocation();
@@ -21,7 +21,7 @@ const SettingSidebar: React.FC = () => {
   // Get accessible settings based on user role
   const accessibleSettings = getAccessibleSettings(isOwnerOrAdmin);
 
-  const items: Required<MenuProps>['items'] = accessibleSettings
+  const items: ItemType[] = accessibleSettings
     .map(item => {
       if (currentSession?.is_google && item.key === 'change-password') {
         return undefined;
@@ -39,7 +39,7 @@ const SettingSidebar: React.FC = () => {
         ),
       };
     })
-    .filter(Boolean);
+    .filter(Boolean) as ItemType[];
 
   return (
     <ConfigProvider

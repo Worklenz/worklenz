@@ -1,7 +1,7 @@
-import { Button, Result } from 'antd';
+import { Button, Result } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 
 // Simple license expired page that doesn't trigger verification
 const LicenseExpired = () => {

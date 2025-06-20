@@ -1,27 +1,16 @@
 import { useState } from 'react';
-import {
-  Button,
-  Divider,
-  Drawer,
-  Flex,
-  Form,
-  Input,
-  List,
-  Select,
-  Skeleton,
-  Typography,
-} from 'antd/es';
+import { Button, Divider, Drawer, Flex, Form, List, Select, Typography } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { ITaskTemplatesGetResponse } from '@/types/settings/task-templates.types';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import { IProjectTask } from '@/types/project/project-tasks-view-model.types';
 import { taskTemplatesApiService } from '@/api/task-templates/task-templates.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { setImportTaskTemplateDrawerOpen } from '@/features/project/project.slice';
-import useTabSearchParam from '@/hooks/useTabSearchParam';
+import useTabSearchParam from '@/hooks/use-tab-search-param';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 
 const ImportTaskTemplate = () => {
@@ -117,7 +106,12 @@ const ImportTaskTemplate = () => {
       footer={
         <Flex justify="end" gap={10}>
           <Button onClick={handleClose}>{t('cancel')}</Button>
-          <Button type="primary" onClick={handleImport} loading={importing} disabled={tasks.length === 0}>
+          <Button
+            type="primary"
+            onClick={handleImport}
+            loading={importing}
+            disabled={tasks.length === 0}
+          >
             {t('import')}
           </Button>
         </Flex>

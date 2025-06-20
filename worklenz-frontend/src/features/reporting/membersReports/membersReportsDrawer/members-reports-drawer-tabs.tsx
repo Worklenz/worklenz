@@ -1,4 +1,4 @@
-import { Tabs } from 'antd';
+import { Tabs } from '@/components/ui';
 import { TabsProps } from 'antd/lib';
 import React from 'react';
 import MembersReportsOverviewTab from './overviewTab/MembersReportsOverviewTab';
@@ -6,7 +6,7 @@ import MembersReportsTimeLogsTab from './time-log-tab/members-reports-time-logs-
 import MembersReportsActivityLogsTab from './activity-log-tab/members-reports-activity-logs-tab';
 import MembersReportsTasksTab from './taskTab/MembersReportsTasksTab';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../@/hooks/use-app-selector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { setMemberReportingDrawerActiveTab } from '../membersReportsSlice';
 

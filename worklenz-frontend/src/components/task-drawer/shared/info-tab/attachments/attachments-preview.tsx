@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { ITaskAttachmentViewModel } from "@/types/tasks/task-attachment-view-model";
-import { Button, Modal, Spin, Tooltip, Typography, Popconfirm, message } from "antd";
+import { Button, Modal, Spin, Tooltip, Typography, Popconfirm, message } from '@/components/ui';
 import { EyeOutlined, DownloadOutlined, DeleteOutlined, QuestionCircleOutlined, LoadingOutlined } from "@ant-design/icons";
 import { attachmentsApiService } from "@/api/attachments/attachments.api.service";
 import { IconsMap } from "@/shared/constants";
 import './attachments-preview.css';
 import taskAttachmentsApiService from "@/api/tasks/task-attachments.api.service";
-import logger from "@/utils/errorLogger";
+import logger from "@/utils/error-logger";
 import taskCommentsApiService from "@/api/tasks/task-comments.api.service";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppSelector } from "@/hooks/use-app-selector";
 
 interface AttachmentsPreviewProps {
   attachment: ITaskAttachmentViewModel;

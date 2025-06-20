@@ -1,27 +1,27 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { PushpinFilled, PushpinOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { Badge, Button, ConfigProvider, Flex, Tabs, TabsProps, Tooltip } from 'antd';
+import { Badge, Button, ConfigProvider, Flex, Tabs, Tooltip } from '@/components/ui';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { getProject, setProjectId, setProjectView } from '@/features/project/project.slice';
-import { fetchStatuses, resetStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import { fetchStatuses, resetStatuses } from '@/features/task-attributes/task-status.slice';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { colors } from '@/styles/colors';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import ProjectViewHeader from './project-view-header';
 import './project-view.css';
 import { resetTaskListData } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
-import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
-import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
+import { fetchLabels } from '@/features/task-attributes/task-label.slice';
+import { deselectAll } from '@/features/projects/bulk-actions/bulk-action.slice';
 import { tabItems } from '@/lib/project/project-view-constants';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 
 const DeleteStatusDrawer = React.lazy(() => import('@/components/project-task-filters/delete-status-drawer/delete-status-drawer'));
-const PhaseDrawer = React.lazy(() => import('@features/projects/singleProject/phase/PhaseDrawer'));
+const PhaseDrawer = React.lazy(() => import('@features/projects/singleProject/phase/phase-drawer'));
 const StatusDrawer = React.lazy(
   () => import('@/components/project-task-filters/create-status-drawer/create-status-drawer')
 );

@@ -1,24 +1,18 @@
 import Input, { InputRef } from 'antd/es/input';
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { Spin } from 'antd';
+import Spin from 'antd/es/spin';
 import { LoadingOutlined } from '@ant-design/icons';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { DRAWER_ANIMATION_INTERVAL } from '@/shared/constants';
-import {
-  getCurrentGroup,
-  GROUP_BY_STATUS_VALUE,
-  GROUP_BY_PRIORITY_VALUE,
-  GROUP_BY_PHASE_VALUE,
-  addTask,
-} from '@/features/tasks/tasks.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useSocket } from '@/socket/socketContext';
+;
+import { getCurrentGroup, addTask } from '@/features/tasks/tasks.slice';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useSocket } from '@/socket/socket-context';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 
 interface IAddTaskListRowProps {
   groupId?: string | null;

@@ -1,6 +1,6 @@
-import { Input } from 'antd';
+import Input from 'antd/es/input';
 import React, { useState } from 'react';
-import { useAppSelector } from '../../../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../../../@/hooks/use-app-selector';
 import { colors } from '../../../../../../styles/colors';
 import { useTranslation } from 'react-i18next';
 

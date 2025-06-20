@@ -2,8 +2,8 @@ import { Drawer, Flex, Form, Select, Typography, List, Button } from 'antd/es';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   addProjectMember,
   createByEmail,
@@ -14,7 +14,7 @@ import {
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { DeleteOutlined, MailOutlined } from '@ant-design/icons';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { validateEmail } from '@/utils/validateEmail';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';

@@ -1,4 +1,4 @@
-import { Tag } from 'antd';
+import { Tag } from '@/components/ui';
 import React from 'react';
 import { colors } from '../../../../../../styles/colors';
 

@@ -1,10 +1,10 @@
-import { Button, Divider, Flex, Form, Input, message, Modal, Select, Typography, Popconfirm } from 'antd';
+import { Button, Divider, Flex, Form, Input, message, Modal, Select, Typography, Popconfirm } from '@/components/ui';
 import SelectionTypeColumn from './selection-type-column/selection-type-column';
 import NumberTypeColumn from './number-type-column/number-type-column';
 import LabelTypeColumn from './label-type-column/label-type-column';
 import FormulaTypeColumn from './formula-type-column/formula-type-column';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   CustomFieldNumberTypes,
   CustomFieldsTypes,
@@ -27,9 +27,9 @@ import {
   CustomTableColumnsType,
   deleteCustomColumn as deleteCustomColumnFromColumns,
 } from '@features/projects/singleProject/taskListColumns/taskColumnsSlice';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import KeyTypeColumn from './key-type-column/key-type-column';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { addCustomColumn, deleteCustomColumn as deleteCustomColumnFromTasks } from '@/features/tasks/tasks.slice';
 import { useParams } from 'react-router-dom';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';

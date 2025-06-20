@@ -5,12 +5,12 @@ import { useSearchParams } from 'react-router-dom';
 
 import TaskListFilters from './task-list-filters/task-list-filters';
 import TaskGroupWrapperOptimized from './task-group-wrapper-optimized';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { fetchTaskGroups, fetchTaskListColumns } from '@/features/tasks/tasks.slice';
-import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
+import { fetchStatusesCategories } from '@/features/task-attributes/task-status.slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
-import { Empty } from 'antd';
+import { Empty } from '@/components/ui';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 
 const ProjectViewTaskList = () => {

@@ -5,16 +5,16 @@ import { LockOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
 
-import PageHeader from '@components/AuthPageHeader';
+import PageHeader from '@/components/auth-page-header';
 
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 
-import { updatePassword } from '@/features/auth/authSlice';
+import { updatePassword } from '@/features/auth/auth-slice';
 import { evt_verify_reset_email_page_visit } from '@/shared/worklenz-analytics-events';
 
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { IUpdatePasswordRequest } from '@/types/auth/verify-reset-email.types';
 
 const VerifyResetEmailPage = () => {

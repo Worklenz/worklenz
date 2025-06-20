@@ -2,7 +2,7 @@ import { IProjectMemberViewModel } from '@/types/projectMember.types';
 import apiClient from '../api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 
 const rootUrl = `${API_BASE_URL}/project-members`;
 

@@ -1,27 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useMediaQuery } from 'react-responsive';
 import { useTranslation } from 'react-i18next';
 import { RootState } from '@/app/store';
 import { IOrganizationProject } from '@/types/admin-center/admin-center.types';
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
+;
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { deleteProject } from '@features/projects/projectsSlice';
 import './projects.css';
-import {
-  Button,
-  Card,
-  Flex,
-  Input,
-  Popconfirm,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Card, Flex, Input, Popconfirm, Table, Tooltip, Typography } from '@/components/ui';
 import { DeleteOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-components';
 import { projectsApiService } from '@/api/projects/projects.api.service';

@@ -1,10 +1,10 @@
-import { fetchProjectManagers } from '@/features/projects/projectsSlice';
+import { fetchProjectManagers } from '@/features/projects/projects-slice';
 import { setSelectedProjectManagers } from '@/features/reporting/projectReports/project-reports-slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { IProjectManager } from '@/types/project/projectManager.types';
 import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Card, Checkbox, Dropdown, Empty, Flex, Input, InputRef, List } from 'antd';
+import { Button, Card, Checkbox, Dropdown, Empty, Flex, Input, List } from '@/components/ui';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

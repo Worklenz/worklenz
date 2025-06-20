@@ -1,26 +1,19 @@
-import { Flex, Input, InputRef } from 'antd';
+import { Flex, Input } from '@/components/ui';
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import {
-  addSubtask,
-  GROUP_BY_PHASE_VALUE,
-  GROUP_BY_PRIORITY_VALUE,
-  GROUP_BY_STATUS_VALUE,
-  updateSubtask,
-  updateTaskProgress,
-} from '@features/board/board-slice';
-import { themeWiseColor } from '@/utils/themeWiseColor';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { addSubtask, updateSubtask, updateTaskProgress } from '@features/board/board-slice';
+import { themeWiseColor } from '@/utils/theme-wise-color';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { getCurrentGroup } from '@/features/tasks/tasks.slice';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
 import { useParams } from 'react-router-dom';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 type BoardCreateSubtaskCardProps = {
   sectionId: string;

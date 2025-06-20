@@ -5,8 +5,8 @@ import Typography from 'antd/es/typography';
 
 import { useTranslation } from 'react-i18next';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
 import {
   fetchLabelsByProject,

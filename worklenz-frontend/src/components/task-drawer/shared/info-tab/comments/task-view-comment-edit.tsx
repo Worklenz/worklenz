@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Button, Form, Input, Space } from 'antd';
+import { Button, Form, Input, Space } from '@/components/ui';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
-import logger from '@/utils/errorLogger';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import logger from '@/utils/error-logger';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import { colors } from '@/styles/colors';
 
 interface TaskViewCommentEditProps {

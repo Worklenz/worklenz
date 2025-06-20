@@ -1,9 +1,9 @@
-import { Form, FormInstance, Select, Typography } from 'antd';
+import { Form, FormInstance, Select, Typography } from '@/components/ui';
 import { TFunction } from 'i18next';
 
-import { IProjectStatus } from '@/types/project/projectStatus.types';
+import { IProjectStatus } from '@/types/project/project-status.types';
 
-import { getStatusIcon } from '@/utils/projectUtils';
+import { getStatusIcon } from '@/utils/project-utils';
 
 interface ProjectStatusSectionProps {
   statuses: IProjectStatus[];

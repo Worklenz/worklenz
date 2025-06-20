@@ -1,7 +1,7 @@
-import HomeCalendar from '../../../components/calendars/homeCalendar/HomeCalendar';
-import { Tag, Typography } from 'antd';
+import HomeCalendar from '@/components/calendars/home-calendar/home-calendar';
+import { Tag, Typography } from '@/components/ui';
 import { ClockCircleOutlined } from '@ant-design/icons';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import AddTaskInlineForm from './add-task-inline-form';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';

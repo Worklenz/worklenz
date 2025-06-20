@@ -3,12 +3,12 @@ import {
   useGetProjectsQuery,
   useToggleFavoriteProjectMutation,
 } from '@/api/projects/projects.v1.api.service';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { StarFilled } from '@ant-design/icons';
-import { Button, ConfigProvider, Tooltip } from 'antd';
+import { Button, ConfigProvider, Tooltip } from '@/components/ui';
 import { TFunction } from 'i18next';
 import { useCallback, useMemo } from 'react';
 

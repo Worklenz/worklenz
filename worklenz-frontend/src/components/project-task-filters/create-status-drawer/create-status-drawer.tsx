@@ -8,17 +8,17 @@ import Input from 'antd/es/input';
 import Select from 'antd/es/select';
 import Button from 'antd/es/button/button';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { toggleDrawer } from '@/features/projects/status/StatusSlice';
 
 import './create-status-drawer.css';
 
-import { createStatus, fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
+import { createStatus, fetchStatusesCategories } from '@/features/task-attributes/task-status.slice';
 import { ITaskStatusCategory } from '@/types/status.types';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
-import { evt_project_board_create_status } from '@/shared/worklenz-analytics-events';
+;
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
 

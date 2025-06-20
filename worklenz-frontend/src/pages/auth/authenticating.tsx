@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
-import { Card, Flex, Spin, Typography } from 'antd/es';
+import { Card, Flex, Spin, Typography } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { verifyAuthentication } from '@/features/auth/authSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { verifyAuthentication } from '@/features/auth/auth-slice';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setSession } from '@/utils/session-helper';
-import { setUser } from '@/features/user/userSlice';
-import logger from '@/utils/errorLogger';
+import { setUser } from '@/features/user/user-slice';
+import logger from '@/utils/error-logger';
 import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
 
 const REDIRECT_DELAY = 500; // Delay in milliseconds before redirecting

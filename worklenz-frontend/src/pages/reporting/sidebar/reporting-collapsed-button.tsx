@@ -1,13 +1,13 @@
 import { GlobalOutlined, LeftCircleOutlined, RightCircleOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
 import { colors } from '@/styles/colors';
-import { Button, Flex, Tooltip, Typography } from 'antd';
+import { Button, Flex, Tooltip, Typography } from '@/components/ui';
 import { themeWiseColor } from '@utils/themeWiseColor';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 import { IOrganization } from '@/types/admin-center/admin-center.types';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 const ReportingCollapsedButton = ({
   isCollapsed,

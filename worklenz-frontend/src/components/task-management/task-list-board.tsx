@@ -15,7 +15,10 @@ import {
 import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { Card, Spin, Empty } from 'antd';
+import Card from 'antd/es/card';
+import Spin from 'antd/es/spin';
+import Empty from 'antd/es/empty';
+import { createPortal } from 'react-dom';
 import { RootState } from '@/app/store';
 import {
   IGroupBy,
@@ -194,8 +197,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     }));
   };
 
-
-
   const handleSelectTask = (taskId: string, selected: boolean) => {
     setSelectedTaskIds(prev => {
       if (selected) {
@@ -236,14 +237,16 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       </Card>
 
       {/* Bulk Action Bar */}
-      {hasSelection && (
+      {hasSelection && createPortal(
         <BulkActionBar
           selectedTaskIds={selectedTaskIds}
           totalSelected={selectedTaskIds.length}
           currentGrouping={groupBy}
           projectId={projectId}
           onClearSelection={() => setSelectedTaskIds([])}
-        />
+        />,
+        document.body,
+        'bulk-action-bar'
       )}
 
       {/* Task Groups Container */}

@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo, useCallback, memo } from 'react';
-import { Button, ConfigProvider, Flex, PaginationProps, Table, TableColumnsType } from 'antd';
+import { Button, ConfigProvider, Flex, Table } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { ExpandAltOutlined } from '@ant-design/icons';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import ProjectCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-cell/project-cell';
 import EstimatedVsActualCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/estimated-vs-actual-cell/estimated-vs-actual-cell';
 import TasksProgressCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/tasks-progress-cell/tasks-progress-cell';
@@ -32,9 +32,9 @@ import { colors } from '@/styles/colors';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import { IRPTProject } from '@/types/reporting/reporting.types';
 import ProjectReportsDrawer from '@/features/reporting/projectReports/projectReportsDrawer/ProjectReportsDrawer';
-import { PAGE_SIZE_OPTIONS } from '@/shared/constants';
+;
 import './projects-reports-table.css';
-import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
+import { fetchProjectStatuses } from '@/features/projects/lookups/project-statuses/project-statuses.slice';
 
 const ProjectsReportsTable = () => {
   const dispatch = useAppDispatch();

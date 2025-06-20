@@ -6,7 +6,7 @@ import {
   updateTaskDate,
   updateTaskProgress,
 } from '../../../../features/roadmap/roadmap-slice';
-import { useAppSelector } from '../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../@/hooks/use-app-selector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { toggleTaskDrawer } from '../../../../features/tasks/tasks.slice';
 

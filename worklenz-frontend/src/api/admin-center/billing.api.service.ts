@@ -1,10 +1,11 @@
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
 import apiClient from '../api-client';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 import { IUpgradeSubscriptionPlanResponse } from '@/types/admin-center/admin-center.types';
 
 const rootUrl = `${API_BASE_URL}/billing`;
+
 export const billingApiService = {
   async upgradeToPaidPlan(plan: string, seatCount: number): Promise<IServerResponse<IUpgradeSubscriptionPlanResponse>> {
     const q = toQueryString({ plan, seatCount });
@@ -28,8 +29,5 @@ export const billingApiService = {
     );
     return response.data;
   }
-
-
-
 
 };

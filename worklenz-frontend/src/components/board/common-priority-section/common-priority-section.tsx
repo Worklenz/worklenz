@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Dropdown, Input, InputRef, MenuProps, Typography } from 'antd';
+import { Button, Dropdown, Input, Typography } from '@/components/ui';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -11,12 +11,12 @@ import { setTaskCardDisabled, initializeStatus } from '../../../features/board/c
 import { TaskType } from '../../../types/task.types';
 import TaskCreateCard from '../taskCreateCard/TaskCreateCard';
 import TaskCard from '../taskCard/TaskCard';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 import '../commonStatusSection/CommonStatusSection';
 
 import { deleteStatus } from '../../../features/projects/status/StatusSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import ChangeCategoryDropdown from '../changeCategoryDropdown/ChangeCategoryDropdown';
 import { useTranslation } from 'react-i18next';
 

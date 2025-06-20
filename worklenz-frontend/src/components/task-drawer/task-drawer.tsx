@@ -1,12 +1,12 @@
-import { TabsProps, Tabs, Button } from 'antd';
+import { Tabs, Button, Flex } from '@/components/ui';
 import Drawer from 'antd/es/drawer';
 import { InputRef } from 'antd/es/input';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   setSelectedTaskId,
   setShowTaskDrawer,
@@ -24,7 +24,6 @@ import TimeLogForm from './shared/time-log/time-log-form';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import InfoTabFooter from './shared/info-tab/info-tab-footer';
-import { Flex } from 'antd';
 
 const TaskDrawer = () => {
   const { t } = useTranslation('task-drawer/task-drawer');

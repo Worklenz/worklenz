@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MemberLoggedTimeType } from '@/types/timeSheet/project.types';
-import { Empty, Progress, Spin } from 'antd';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { Empty, Progress, Spin } from '@/components/ui';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
 import { IAllocationProject } from '@/types/reporting/reporting-allocation.types';

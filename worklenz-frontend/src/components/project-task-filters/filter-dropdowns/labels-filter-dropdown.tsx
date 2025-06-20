@@ -12,11 +12,11 @@ import Space from 'antd/es/space';
 import { useSearchParams } from 'react-router-dom';
 
 import { useMemo, useRef, useState } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { fetchLabelsByProject, fetchTaskGroups, setLabels } from '@/features/tasks/tasks.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setBoardLabels } from '@/features/board/board-slice';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
 

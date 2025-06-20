@@ -1,17 +1,5 @@
 // Ant Design Components
-import {
-  Avatar,
-  Button,
-  Card,
-  Flex,
-  Popconfirm,
-  Progress,
-  Skeleton,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Avatar, Button, Card, Flex, Popconfirm, Progress, Skeleton, Table, Tooltip, Typography } from '@/components/ui';
 
 // Icons
 import { DeleteOutlined, ExclamationCircleFilled, SyncOutlined } from '@ant-design/icons';
@@ -24,21 +12,21 @@ import { useTranslation } from 'react-i18next';
 // Services & API
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 
 // Types
 import { IProjectMembersViewModel, IProjectMemberViewModel } from '@/types/projectMember.types';
 
 // Constants & Utils
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
+;
 import { colors } from '../../../../styles/colors';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 // Components
 import EmptyListPlaceholder from '../../../../components/EmptyListPlaceholder';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { evt_project_members_visit } from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppSelector } from '@/hooks/use-app-selector';
+;
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 
 interface PaginationType {
   current: number;

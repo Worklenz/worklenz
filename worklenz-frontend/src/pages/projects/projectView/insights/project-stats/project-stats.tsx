@@ -1,5 +1,5 @@
 import ProjectStatsCard from '@/components/projects/project-stats-card';
-import { Flex, Tooltip } from 'antd';
+import { Flex, Tooltip } from '@/components/ui';
 import checkIcon from '@assets/icons/insightsIcons/insights-check.png';
 import clipboardIcon from '@assets/icons/insightsIcons/clipboard.png';
 import clockIcon from '@assets/icons/insightsIcons/clock-green.png';
@@ -7,10 +7,10 @@ import warningIcon from '@assets/icons/insightsIcons/warning.png';
 import { useEffect, useState } from 'react';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { IProjectInsightsGetRequest } from '@/types/project/projectInsights.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { TFunction } from 'i18next';
 import { useParams } from 'react-router-dom';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const ProjectStats = ({ t }: { t: TFunction }) => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);

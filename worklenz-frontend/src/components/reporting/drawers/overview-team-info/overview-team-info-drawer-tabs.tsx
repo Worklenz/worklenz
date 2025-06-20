@@ -1,4 +1,4 @@
-import { Tabs } from 'antd';
+import { Tabs } from '@/components/ui';
 import { TabsProps } from 'antd/lib';
 import { useTranslation } from 'react-i18next';
 import OverviewReportsOverviewTab from './overview-tab/reports-overview-tab';

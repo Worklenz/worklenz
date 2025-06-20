@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { Button, Drawer, Form, Input, InputRef, Typography } from 'antd';
+import { Button, Drawer, Form, Input, Typography } from '@/components/ui';
 import { fetchTeams } from '@features/teams/teamSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 
 interface AddTeamDrawerProps {

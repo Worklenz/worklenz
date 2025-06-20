@@ -1,8 +1,9 @@
 import React from 'react';
-import { Progress, Tooltip } from 'antd';
+import Progress from 'antd/es/progress';
+import Tooltip from 'antd/es/tooltip';
 import './task-list-progress-cell.css';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 type TaskListProgressCellProps = {
   task: IProjectTask;

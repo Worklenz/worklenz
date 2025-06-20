@@ -1,4 +1,4 @@
-import { Badge, Button, Collapse, ConfigProvider, Dropdown, Flex, Input, Typography } from 'antd';
+import { Badge, Button, Collapse, ConfigProvider, Dropdown, Flex, Input, Typography } from '@/components/ui';
 import { useState } from 'react';
 import { TaskType } from '@/types/task.types';
 import { EditOutlined, EllipsisOutlined, RetweetOutlined, RightOutlined } from '@ant-design/icons';
@@ -6,7 +6,7 @@ import { colors } from '@/styles/colors';
 import './task-list-table-wrapper.css';
 import TaskListTable from '../table-v2';
 import { MenuProps } from 'antd/lib';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { columnList as defaultColumnList } from '@/pages/projects/project-view-1/taskList/taskListTable/columns/columnList';

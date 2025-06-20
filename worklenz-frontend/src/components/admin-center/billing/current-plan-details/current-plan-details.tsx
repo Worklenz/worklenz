@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
-import {
-  evt_billing_pause_plan,
-  evt_billing_resume_plan,
-  evt_billing_add_more_seats,
-} from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import logger from '@/utils/errorLogger';
+;
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+import logger from '@/utils/error-logger';
 import { Button, Card, Flex, Modal, Space, Tooltip, Typography, Statistic, Select, Form, Row, Col } from 'antd/es';
 import RedeemCodeDrawer from '../drawers/redeem-code-drawer/redeem-code-drawer';
 import {
@@ -14,15 +10,15 @@ import {
   toggleRedeemCodeDrawer,
   toggleUpgradeModal,
 } from '@/features/admin-center/admin-center.slice';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
 import { WarningTwoTone, PlusOutlined } from '@ant-design/icons';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDate } from '@/utils/timeUtils';
 import UpgradePlansLKR from '../drawers/upgrade-plans-lkr/upgrade-plans-lkr';
 import UpgradePlans from '../drawers/upgrade-plans/upgrade-plans';
-import { ISUBSCRIPTION_TYPE, SUBSCRIPTION_STATUS } from '@/shared/constants';
+;
 import { billingApiService } from '@/api/admin-center/billing.api.service';
 
 const CurrentPlanDetails = () => {

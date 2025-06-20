@@ -1,11 +1,11 @@
-import { Flex, Select } from 'antd';
+import { Flex, Select } from '@/components/ui';
 import './status-dropdown.css';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useMemo } from 'react';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { getCurrentGroup, GROUP_BY_STATUS_VALUE } from '@/features/tasks/tasks.slice';
+import { getCurrentGroup } from '@/features/tasks/tasks.slice';
 
 type StatusDropdownProps = {
   task: IProjectTask;

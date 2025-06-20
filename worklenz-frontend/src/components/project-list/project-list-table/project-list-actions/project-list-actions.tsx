@@ -1,19 +1,26 @@
 import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 import { AppDispatch } from '@/app/store';
-import { fetchProjectData, setProjectId, toggleProjectDrawer } from '@/features/project/project-drawer.slice';
+import {
+  fetchProjectData,
+  setProjectId,
+  toggleProjectDrawer,
+} from '@/features/project/project-drawer.slice';
 import {
   toggleArchiveProjectForAll,
   toggleArchiveProject,
-} from '@/features/projects/projectsSlice';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import useIsProjectManager from '@/hooks/useIsProjectManager';
-import { useAuthService } from '@/hooks/useAuth';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import logger from '@/utils/errorLogger';
+} from '@/features/projects/projects-slice';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import useIsProjectManager from '@/hooks/use-is-project-manager';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
+import logger from '@/utils/error-logger';
 import { SettingOutlined, InboxOutlined } from '@ant-design/icons';
-import { Tooltip, Button, Popconfirm, Space } from 'antd';
-import { evt_projects_archive, evt_projects_archive_all, evt_projects_settings_click } from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { Tooltip, Button, Popconfirm, Space } from '@/components/ui';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+import {
+  evt_projects_settings_click,
+  evt_projects_archive_all,
+  evt_projects_archive,
+} from '@/shared/worklenz-analytics-events';
 
 interface ActionButtonsProps {
   t: (key: string) => string;
@@ -71,7 +78,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           icon={<SettingOutlined />}
         />
       </Tooltip>
-      <Tooltip title={isEditable ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}>
+      <Tooltip
+        title={isEditable ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
+      >
         <Popconfirm
           title={record.archived ? t('unarchive') : t('archive')}
           description={record.archived ? t('unarchiveConfirm') : t('archiveConfirm')}

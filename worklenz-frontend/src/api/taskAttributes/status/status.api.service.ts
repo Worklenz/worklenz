@@ -3,7 +3,7 @@ import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { ITaskStatus, ITaskStatusCategory } from '@/types/status.types';
 import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-request';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
 
 const rootUrl = `${API_BASE_URL}/statuses`;

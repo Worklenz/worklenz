@@ -6,8 +6,8 @@ import {
   IMentionMemberSelectOption,
   IMentionMemberViewModel,
   IProjectCommentsCreateRequest,
-} from '@/types/project/projectComments.types';
-import { toQueryString } from '@/utils/toQueryString';
+} from '@/types/project/project-comments.types';
+import { toQueryString } from '@/utils/to-query-string';
 import { IProjectUpdateCommentViewModel } from '@/types/project/project.types';
 
 const rootUrl = `${API_BASE_URL}/project-comments`;

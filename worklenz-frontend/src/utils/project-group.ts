@@ -1,5 +1,5 @@
 import { GroupedProject, ProjectGroupBy } from "@/types/project/project.types";
-import { IProjectViewModel } from "@/types/project/projectViewModel.types";
+import { IProjectViewModel } from "@/types/project/project-view-model.types";
 
 export const groupProjects = (
   projects: IProjectViewModel[],

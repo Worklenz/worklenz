@@ -1,0 +1,1 @@
+import { ConfigProvider, Table, TableColumnsType } from '@/components/ui'; 

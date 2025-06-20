@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { Button, Drawer, Form, Input, InputRef, Select, Typography } from 'antd';
+import { Button, Drawer, Form, Input, Select, Typography } from '@/components/ui';
 import TemplateDrawer from '../common/template-drawer/template-drawer';
 
 import { RootState } from '@/app/store';
@@ -11,12 +11,12 @@ import { setProjectName, setTemplateId } from '@/features/account-setup/account-
 import { sanitizeInput } from '@/utils/sanitizeInput';
 
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 import { IAccountSetupRequest } from '@/types/project-templates/project-templates.types';
 
-import { evt_account_setup_template_complete } from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+;
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import { createPortal } from 'react-dom';
 
 const { Title } = Typography;

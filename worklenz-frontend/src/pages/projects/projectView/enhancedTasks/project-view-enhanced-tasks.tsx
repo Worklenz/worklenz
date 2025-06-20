@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import TaskListBoard from '@/components/task-management/task-list-board';
 
 const ProjectViewEnhancedTasks: React.FC = () => {

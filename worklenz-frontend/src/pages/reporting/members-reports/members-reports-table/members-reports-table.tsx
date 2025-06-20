@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ConfigProvider, Table, TableColumnsType } from 'antd';
+import { ConfigProvider, Table } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import TasksProgressCell from './tablesCells/tasksProgressCell/TasksProgressCell';
 import MemberCell from './tablesCells/memberCell/MemberCell';
@@ -11,7 +11,7 @@ import {
   setPagination,
   toggleMembersReportsDrawer,
 } from '@/features/reporting/membersReports/membersReportsSlice';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import MembersReportsDrawer from '@/features/reporting/membersReports/membersReportsDrawer/members-reports-drawer';
 import { PaginationConfig } from 'antd/es/pagination';
 

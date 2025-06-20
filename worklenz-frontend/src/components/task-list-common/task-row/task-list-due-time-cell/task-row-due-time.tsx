@@ -1,4 +1,4 @@
-import { TimePicker, TimePickerProps } from 'antd';
+import { TimePicker } from '@/components/ui';
 
 type TaskRowDueTimeProps = {
   dueTime: string;

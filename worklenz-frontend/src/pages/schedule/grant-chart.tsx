@@ -1,27 +1,17 @@
 // import React, { useEffect, useState } from 'react';
-// import { Member } from '../../../types/schedule/schedule.types';
-// import {
-//   Avatar,
-//   Badge,
-//   Button,
-//   Col,
-//   Flex,
-//   Popover,
-//   Row,
-//   Tooltip,
-//   Typography,
-// } from 'antd';
-// import { avatarNamesMap } from '../../../shared/constants';
-// import { CaretDownOutlined, CaretRightFilled } from '@ant-design/icons';
-// import { useAppSelector } from '@/hooks/useAppSelector';
+// ;
+// ;
+// ;
+// ;
+// ;
 // import './Team.css';
-// import { useDispatch } from 'react-redux';
-// import { toggleScheduleDrawer } from '../../../features/schedule/scheduleSlice';
+// ;
+// ;
 // import ProjectTimelineModal from '../../../features/schedule/ProjectTimelineModal';
 // import ScheduleDrawer from '../../../features/schedule/ScheduleDrawer';
-// import { useTranslation } from 'react-i18next';
+// ;
 // import CustomAvatar from '../../CustomAvatar';
-// import { themeWiseColor } from '../../../utils/themeWiseColor';
+// ;
 
 // interface GanttChartProps {
 //   members: Member[];
@@ -562,18 +552,18 @@ export default Grant;
 //   useRef,
 //   useState,
 // } from 'react';
-// import { Member } from '../../../../types/schedule/schedule.types';
-// import { Col, Flex, Row, Typography } from 'antd';
-// import { useAppSelector } from '../../../../hooks/useAppSelector';
-// import { useDispatch } from 'react-redux';
-// import { toggleScheduleDrawer } from '../../../../features/schedule/scheduleSlice';
-// import { useTranslation } from 'react-i18next';
+// ;
+// ;
+// ;
+// ;
+// ;
+// ;
 // import DayAllocationCell from './day-allocation-cell';
 // import ProjectTimelineBar from './project-timeline-bar';
 // import dayjs from 'dayjs';
 // import ScheduleDrawer from '../../../../features/schedule/ScheduleDrawer';
 // import GranttMembersTable from './grantt-members-table';
-// import { themeWiseColor } from '../../../../utils/themeWiseColor';
+// ;
 
 // type GanttChartProps = {
 //   members: Member[];

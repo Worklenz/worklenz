@@ -1,7 +1,7 @@
-import { Flex, Form, Select, Typography } from 'antd';
+import { Flex, Form, Select, Typography } from '@/components/ui';
 import React from 'react';
 import { themeWiseColor } from '../../../../../../../../utils/themeWiseColor';
-import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../../../../../@/hooks/use-app-selector';
 import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
 import {
   setExpression,

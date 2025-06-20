@@ -1,10 +1,10 @@
-import { toggleSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { toggleSaveAsTemplateDrawer } from '@/features/projects/projects-slice';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { Button, Checkbox, Drawer, Flex, Form, Input } from 'antd/es';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { ICustomProjectTemplateCreateRequest } from '@/types/project/projectTemplate.types';
+import { ICustomProjectTemplateCreateRequest } from '@/types/project/project-template.types';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 
 const SaveProjectAsTemplate = () => {

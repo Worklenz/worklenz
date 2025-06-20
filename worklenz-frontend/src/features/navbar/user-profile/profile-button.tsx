@@ -1,10 +1,10 @@
 import { UserOutlined } from '@ant-design/icons';
-import { Button, Card, Dropdown, Flex, MenuProps, Tooltip, Typography } from 'antd';
+import { Button, Card, Dropdown, Flex, Tooltip, Typography } from '@/components/ui';
 
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { RootState } from '@/app/store';
 
 import { getRole } from '@/utils/session-helper';
@@ -12,7 +12,7 @@ import { getRole } from '@/utils/session-helper';
 import './profile-dropdown.css';
 import './profile-button.css';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { useEffect, useState } from 'react';
 
 interface ProfileButtonProps {

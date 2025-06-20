@@ -1,17 +1,17 @@
 import { updateBoardTaskStatus } from '@/features/board/board-slice';
 import { setTaskStatus } from '@/features/task-drawer/task-drawer.slice';
 import { updateTaskStatus } from '@/features/tasks/tasks.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import alertService from '@/services/alerts/alertService';
 import { SocketEvents } from '@/shared/socket-events';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
-import { Select } from 'antd';
+import { Select } from '@/components/ui';
 import { useMemo } from 'react';
 
 interface TaskDrawerStatusDropdownProps {

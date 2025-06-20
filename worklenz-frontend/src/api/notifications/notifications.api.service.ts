@@ -1,7 +1,7 @@
 import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 
 import { IMyTask } from '@/types/home/my-tasks.types';
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';

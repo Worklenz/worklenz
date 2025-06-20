@@ -1,12 +1,12 @@
-import { Avatar, Button, DatePicker, Input, InputRef } from 'antd';
+import { Avatar, Button, DatePicker, Input } from '@/components/ui';
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import AddMembersDropdown from '../../add-members-dropdown/add-members-dropdown';
 import dayjs, { Dayjs } from 'dayjs';
 import './TaskCreateCard.css';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { addTask, addTaskToTop } from '../../../features/tasks/tasks.slice';
 import { setTaskCardDisabled } from '../../../features/board/create-card.slice';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 interface PriorityProps {
   status: string;

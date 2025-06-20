@@ -1,9 +1,9 @@
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
 import { BankOutlined } from '@ant-design/icons';
-import { Button, Tag, Typography, theme } from 'antd';
+import { Button, Tag, Typography } from '@/components/ui';
 import DOMPurify from 'dompurify';
 import React, { useState } from 'react';
-import { fromNow } from '@/utils/dateUtils';
+import { fromNow } from '@/utils/date-utils';
 import './notification-item.css';
 
 const { Text } = Typography;

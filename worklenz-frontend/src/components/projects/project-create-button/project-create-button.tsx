@@ -1,6 +1,6 @@
-import { Button, Drawer, Dropdown } from 'antd';
+import { Button, Drawer, Dropdown } from '@/components/ui';
 import { useEffect, useState } from 'react';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { DownOutlined, EditOutlined, ImportOutlined } from '@ant-design/icons';
 import TemplateDrawer from '@/components/common/template-drawer/template-drawer';
 import { useTranslation } from 'react-i18next';
@@ -10,10 +10,10 @@ import {
   setProjectId,
   toggleProjectDrawer,
 } from '@/features/project/project-drawer.slice';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import { evt_projects_create_click } from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 interface CreateProjectButtonProps {
   className?: string;
 }
@@ -82,14 +82,18 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
           template_id: currentTemplateId,
         });
         if (res.done) {
-          navigate(`/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`);
+          navigate(
+            `/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`
+          );
         }
       } else {
         const res = await projectTemplatesApiService.createFromCustomTemplate({
           template_id: currentTemplateId,
         });
         if (res.done) {
-          navigate(`/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`);
+          navigate(
+            `/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`
+          );
         }
       }
     } catch (e) {

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Tooltip } from 'antd';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleScheduleDrawer } from '../../../features/schedule/scheduleSlice';
+import { Tooltip } from '@/components/ui';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { toggleScheduleDrawer } from '@/features/schedule/schedule-slice';
 
 type DayAllocationCellProps = {
   totalPerDayHours: number;

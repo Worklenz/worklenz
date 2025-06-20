@@ -1,13 +1,13 @@
 import { setSelectOrDeselectAllProjects, setSelectOrDeselectProject } from '@/features/reporting/time-reports/time-reports-overview.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { CaretDownFilled, SearchOutlined, ClearOutlined, DownOutlined, RightOutlined, FilterOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Divider, Dropdown, Input, theme, Typography, Badge, Collapse, Select, Space, Tooltip, Empty } from 'antd';
+import { Button, Checkbox, Divider, Dropdown, Input, Typography, Badge, Collapse, Select, Space, Tooltip, Empty } from '@/components/ui';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ISelectableProject } from '@/types/reporting/reporting-filters.types';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 
 const { Panel } = Collapse;
 const { Text } = Typography;

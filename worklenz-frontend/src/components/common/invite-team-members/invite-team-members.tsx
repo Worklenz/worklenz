@@ -1,12 +1,12 @@
-import { AutoComplete, Button, Drawer, Flex, Form, message, Select, Spin, Typography } from 'antd';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleInviteMemberDrawer, triggerTeamMembersRefresh } from '../../../features/settings/member/memberSlice';
+import { AutoComplete, Button, Drawer, Flex, Form, message, Select, Spin, Typography } from '@/components/ui';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { toggleInviteMemberDrawer, triggerTeamMembersRefresh } from '@/features/settings/member/member.slice';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useCallback } from 'react';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
 import { IJobTitle } from '@/types/job.types';
-import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
+import { teamMembersApiService } from '@/api/team-members/team-members.api.service';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
 
 interface FormValues {

@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { IProjectsViewModel } from '@/types/project/projectsViewModel.types';
 import { IServerResponse } from '@/types/common.types';

@@ -1,13 +1,13 @@
 import React from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart, ArcElement, Tooltip, ChartOptions } from 'chart.js';
-import { Badge, Card, Flex, Typography } from 'antd';
+import { Badge, Card, Flex, Typography } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import {
   IRPTOverviewTeamByHealth,
   IRPTOverviewTeamChartData,
 } from '@/types/reporting/reporting.types';
-import { ALPHA_CHANNEL } from '@/shared/constants';
+;
 
 Chart.register(ArcElement, Tooltip);
 

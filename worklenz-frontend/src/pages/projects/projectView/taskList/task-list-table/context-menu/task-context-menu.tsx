@@ -6,21 +6,21 @@ import {
   RetweetOutlined,
   UserAddOutlined,
 } from '@ant-design/icons';
-import { Badge, Dropdown, Flex, Typography, Modal } from 'antd';
+import Badge from 'antd/es/badge';
+import Dropdown from 'antd/es/dropdown';
+import Flex from 'antd/es/flex';
+import Typography from 'antd/es/typography';
+import Modal from 'antd/es/modal';
 import { MenuProps } from 'antd/lib';
 import { useState } from 'react';
 import { TFunction } from 'i18next';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
 import { IBulkAssignRequest } from '@/types/tasks/bulk-action-bar.types';
-import {
-  evt_project_task_list_context_menu_archive,
-  evt_project_task_list_context_menu_assign_me,
-  evt_project_task_list_context_menu_delete,
-} from '@/shared/worklenz-analytics-events';
+;
 import {
   deleteTask,
   fetchTaskAssignees,
@@ -30,10 +30,10 @@ import {
   updateTaskAssignees,
 } from '@/features/tasks/tasks.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
-import { useAuthService } from '@/hooks/useAuth';
-import { useSocket } from '@/socket/socketContext';
+import { useAuthService } from '@/hooks/use-auth';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 

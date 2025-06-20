@@ -1,10 +1,10 @@
 import { ClockCircleOutlined, StopOutlined } from '@ant-design/icons';
-import { Badge, Button, Dropdown, List, Tooltip, Typography, Space, Divider, theme } from 'antd';
+import { Badge, Button, Dropdown, List, Tooltip, Typography, Space, Divider } from '@/components/ui';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { taskTimeLogsApiService, IRunningTimer } from '@/api/tasks/task-time-logs.api.service';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useSocket } from '@/socket/socketContext';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
 import moment from 'moment';

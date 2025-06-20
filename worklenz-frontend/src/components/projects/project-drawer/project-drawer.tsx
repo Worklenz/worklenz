@@ -1,39 +1,23 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import {
-  Alert,
-  Button,
-  DatePicker,
-  Divider,
-  Drawer,
-  Flex,
-  Form,
-  Input,
-  notification,
-  Popconfirm,
-  Skeleton,
-  Space,
-  Switch,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Alert, Button, DatePicker, Divider, Drawer, Flex, Form, Input, notification, Popconfirm, Skeleton, Space, Switch, Tooltip, Typography } from '@/components/ui';
 import dayjs from 'dayjs';
 
-import { fetchClients } from '@/features/settings/client/clientSlice';
+import { fetchClients } from '@features/settings/client/client.slice';
 import {
   useCreateProjectMutation,
   useDeleteProjectMutation,
   useGetProjectsQuery,
   useUpdateProjectMutation,
 } from '@/api/projects/projects.v1.api.service';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { projectColors } from '@/lib/project/project-constants';
 import { setProject, setProjectId } from '@/features/project/project.slice';
-import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
-import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
-import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
+import { fetchProjectCategories } from '@features/projects/lookups/project-categories/project-categories.slice';
+import { fetchProjectHealth } from '@features/projects/lookups/project-health/project-health.slice';
+import { fetchProjectStatuses } from '@features/projects/lookups/project-statuses/project-statuses.slice';
 
 import ProjectManagerDropdown from '../project-manager-dropdown/project-manager-dropdown';
 import ProjectBasicInfo from './project-basic-info/project-basic-info';
@@ -42,20 +26,20 @@ import ProjectStatusSection from './project-status-section/project-status-sectio
 import ProjectCategorySection from './project-category-section/project-category-section';
 import ProjectClientSection from './project-client-section/project-client-section';
 
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
+import { ITeamMemberViewModel } from '@/types/teamMembers/team-members-get-response.types';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import {
   setProjectData,
   toggleProjectDrawer,
   setProjectId as setDrawerProjectId,
 } from '@/features/project/project-drawer.slice';
-import useIsProjectManager from '@/hooks/useIsProjectManager';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';;
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useAppDispatch();

@@ -1,15 +1,15 @@
-import { Badge, Card, Dropdown, Flex, Menu, MenuProps, Typography } from 'antd';
+import { Badge, Card, Dropdown, Flex, Menu, Typography } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { DownOutlined } from '@ant-design/icons';
 import { colors } from '@/styles/colors';
 import './project-health-cell.css';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { IProjectHealth } from '@/types/project/projectHealth.types';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { setProjectHealth } from '@/features/reporting/projectReports/project-reports-slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 
 interface HealthStatusDataType {
   value: string;

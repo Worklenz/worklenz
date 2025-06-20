@@ -3,7 +3,7 @@ import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { colors } from '@/styles/colors';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { formatDate } from '@/utils/timeUtils';
 import { PlayCircleFilled } from '@ant-design/icons';

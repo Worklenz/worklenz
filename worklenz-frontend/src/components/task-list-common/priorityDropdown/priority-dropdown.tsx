@@ -1,9 +1,9 @@
-import { Flex, Select, Typography } from 'antd';
+import { Flex, Select, Typography } from '@/components/ui';
 import './priority-dropdown.css';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useState, useEffect, useMemo } from 'react';
-import { ALPHA_CHANNEL } from '@/shared/constants';
-import { useSocket } from '@/socket/socketContext';
+;
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';

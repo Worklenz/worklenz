@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { DatePicker, Button, Flex } from 'antd';
+import { DatePicker, Button, Flex } from '@/components/ui';
 import { CalendarOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import logger from '@/utils/errorLogger';
-import { useAuthService } from '@/hooks/useAuth';
+import { IProjectTask } from '@/types/project/project-tasks-view-model.types';
+import logger from '@/utils/error-logger';
+import { useAuthService } from '@/hooks/use-auth';
 import { getUserSession } from '@/utils/session-helper';
 
 const CustomDueDatePicker = ({

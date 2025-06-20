@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { ConfigProvider, Flex, Skeleton, Spin, Table, TableColumnsType, Typography } from 'antd';
+import { ConfigProvider, Flex, Skeleton, Spin, Table, Typography } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import CustomTableTitle from '@components/CustomTableTitle';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';

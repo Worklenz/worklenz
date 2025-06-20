@@ -1,4 +1,4 @@
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 import { API_BASE_URL } from '@/shared/constants';
 import { ITimeLogBreakdownReq } from '@/types/reporting/reporting.types';
 

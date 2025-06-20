@@ -1,13 +1,13 @@
 import ProjectStatsCard from '@/components/projects/project-stats-card';
-import { Flex } from 'antd';
+import { Flex } from '@/components/ui';
 import groupIcon from '@/assets/icons/insightsIcons/group.png';
 import warningIcon from '@/assets/icons/insightsIcons/warning.png';
 import unassignedIcon from '@/assets/icons/insightsIcons/block-user.png';
 import { useEffect, useState } from 'react';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { IProjectMemberStats } from '@/types/project/project-insights.types';
-import logger from '@/utils/errorLogger';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import logger from '@/utils/error-logger';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const MemberStats = () => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);

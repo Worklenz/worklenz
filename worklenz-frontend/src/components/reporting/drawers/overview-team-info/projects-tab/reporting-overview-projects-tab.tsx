@@ -1,4 +1,4 @@
-import { Flex } from 'antd';
+import { Flex } from '@/components/ui';
 import { useState } from 'react';
 import CustomSearchbar from '@components/CustomSearchbar';
 import { useTranslation } from 'react-i18next';

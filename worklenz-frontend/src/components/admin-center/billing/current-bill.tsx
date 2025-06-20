@@ -1,12 +1,12 @@
-import { Card, Col, Row, Tooltip, Typography } from 'antd';
+import { Card, Col, Row, Tooltip, Typography } from '@/components/ui';
 import React, { useEffect } from 'react';
 import './current-bill.css';
 import { InfoCircleTwoTone } from '@ant-design/icons';
 import ChargesTable from './billing-tables/charges-table';
 import InvoicesTable from './billing-tables/invoices-table';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useMediaQuery } from 'react-responsive';
 import { useTranslation } from 'react-i18next';
 
@@ -14,8 +14,8 @@ import { fetchBillingInfo, fetchFreePlanSettings } from '@/features/admin-center
 
 import CurrentPlanDetails from './current-plan-details/current-plan-details';
 import AccountStorage from './account-storage/account-storage';
-import { useAuthService } from '@/hooks/useAuth';
-import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+import { useAuthService } from '@/hooks/use-auth';
+;
 
 const CurrentBill: React.FC = () => {
   const dispatch = useAppDispatch();

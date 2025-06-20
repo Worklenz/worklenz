@@ -6,7 +6,7 @@ import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.ty
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { InlineMember } from '@/types/teamMembers/inline-member.types';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 
 interface ITaskDrawerState {

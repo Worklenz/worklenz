@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Checkbox, Flex, Tag, Tooltip } from 'antd';
+import { Checkbox, Flex, Tag, Tooltip } from '@/components/ui';
 import { HolderOutlined } from '@ant-design/icons';
 import {
   DndContext,
@@ -20,16 +20,16 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useSocket } from '@/socket/socketContext';
-import { useAuthService } from '@/hooks/useAuth';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useSocket } from '@/socket/socket-context';
+import { useAuthService } from '@/hooks/use-auth';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { SocketEvents } from '@/shared/socket-events';
 import { reorderTasks } from '@/features/tasks/tasks.slice';
-import { evt_project_task_list_drag_and_move } from '@/shared/worklenz-analytics-events';
+;
 
 // Draggable Row Component
 interface DraggableRowProps {

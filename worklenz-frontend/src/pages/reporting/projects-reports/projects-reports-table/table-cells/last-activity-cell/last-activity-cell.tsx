@@ -1,4 +1,4 @@
-import { Tooltip, Typography } from 'antd';
+import { Tooltip, Typography } from '@/components/ui';
 import React from 'react';
 
 const LastActivityCell = ({ activity }: { activity: string }) => {

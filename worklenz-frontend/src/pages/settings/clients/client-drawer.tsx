@@ -1,7 +1,7 @@
-import { Button, Drawer, Form, Input, message, Typography } from 'antd';
+import { Button, Drawer, Form, Input, message, Typography } from '@/components/ui';
 import { useEffect } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   createClient,
   toggleClientDrawer,

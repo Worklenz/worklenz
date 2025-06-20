@@ -1,21 +1,10 @@
 import { SyncOutlined } from '@ant-design/icons';
-import {
-  Badge,
-  Button,
-  Card,
-  Empty,
-  Flex,
-  Segmented,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Badge, Button, Card, Empty, Flex, Segmented, Table, Tooltip, Typography } from '@/components/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AddFavouriteProjectButton from './add-favourite-project-button';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { useGetProjectsQuery } from '@/api/home-page/home-page.api.service';
 import { useNavigate } from 'react-router-dom';
 const MY_PROJECTS_FILTER_KEY = 'my-dashboard-active-projects-filter';

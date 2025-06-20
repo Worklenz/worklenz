@@ -1,5 +1,5 @@
 import { PROJECT_LIST_COLUMNS } from '@/shared/constants';
-import { getJSONFromLocalStorage, saveJSONToLocalStorage, saveToLocalStorage } from '@/utils/localStorageFunctions';
+import { getJSONFromLocalStorage, saveJSONToLocalStorage } from '@/utils/local-storage-functions';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 type ColumnsVisibilityState = {

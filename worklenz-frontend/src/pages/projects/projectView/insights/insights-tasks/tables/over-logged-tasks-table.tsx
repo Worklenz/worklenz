@@ -1,12 +1,12 @@
-import { Avatar, Button, Flex, Table, Typography } from 'antd';
+import { Avatar, Button, Flex, Table, Typography } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import { colors } from '@/styles/colors';
 import { TableProps } from 'antd/lib';
 import { PlusOutlined } from '@ant-design/icons';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const OverLoggedTasksTable = () => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);

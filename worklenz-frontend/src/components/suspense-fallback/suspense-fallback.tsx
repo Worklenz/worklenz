@@ -1,6 +1,6 @@
 import { colors } from '@/styles/colors';
 import { getInitialTheme } from '@/utils/get-initial-theme';
-import { ConfigProvider, theme, Layout, Spin } from 'antd';
+import { ConfigProvider, theme, Layout, Spin } from '@/components/ui';
 
 // Loading component with theme awareness
 export const SuspenseFallback = () => {

@@ -1,14 +1,18 @@
-import { Badge, Flex, Select, Tooltip, Typography } from 'antd';
+import Badge from 'antd/es/badge';
+import Flex from 'antd/es/flex';
+import Select from 'antd/es/select';
+import Tooltip from 'antd/es/tooltip';
+import Typography from 'antd/es/typography';
 
 import './phase-dropdown.css';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { ALPHA_CHANNEL } from '@/shared/constants';
-import { useSocket } from '@/socket/socketContext';
+;
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { useState } from 'react';
 
 interface PhaseDropdownProps {

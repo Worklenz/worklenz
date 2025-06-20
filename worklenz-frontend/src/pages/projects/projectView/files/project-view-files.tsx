@@ -1,14 +1,4 @@
-import {
-  Button,
-  Card,
-  Flex,
-  Popconfirm,
-  Segmented,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Card, Flex, Popconfirm, Segmented, Table, Tooltip, Typography } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { colors } from '@/styles/colors';
 import {
@@ -21,16 +11,16 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { durationDateFormat } from '@utils/durationDateFormat';
-import { DEFAULT_PAGE_SIZE, IconsMap } from '@/shared/constants';
+import { IconsMap } from '@/shared/constants';
 import {
   IProjectAttachmentsViewModel,
   ITaskAttachmentViewModel,
 } from '@/types/tasks/task-attachment-view-model';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { attachmentsApiService } from '@/api/attachments/attachments.api.service';
-import logger from '@/utils/errorLogger';
-import { evt_project_files_visit } from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import logger from '@/utils/error-logger';
+;
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 
 const ProjectViewFiles = () => {
   const { t } = useTranslation('project-view-files');
@@ -47,7 +37,6 @@ const ProjectViewFiles = () => {
     defaultPageSize: DEFAULT_PAGE_SIZE,
   });
 
-  
   const fetchAttachments = async () => {
     if (!projectId) return;
     try {

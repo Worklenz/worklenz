@@ -1,8 +1,8 @@
-import { Card, Flex, Segmented } from 'antd';
+import { Card, Flex, Segmented } from '@/components/ui';
 import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time-report-page-header';
 import EstimatedVsActualTimeSheet, { EstimatedVsActualTimeSheetRef } from '@/pages/reporting/time-reports/estimated-vs-actual-time-sheet/estimated-vs-actual-time-sheet';
 import { useTranslation } from 'react-i18next';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import TimeReportingRightHeader from './timeReportingRightHeader/TimeReportingRightHeader';
 import { useState, useRef } from 'react';
 

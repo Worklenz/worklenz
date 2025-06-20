@@ -1,5 +1,3 @@
-import { ITeamMember } from '@/features/taskAttributes/taskMemberSlice';
-
 export interface IProjectInsightsGetRequest {
   total_tasks_count?: number;
   archived_tasks_count?: number;
@@ -39,9 +37,11 @@ export interface IInsightTasks {
   status?: string;
   status_id?: string;
   status_color?: string;
+  status_name?: string;
   updated_at?: string;
   total_minutes?: string;
   overlogged_time?: string;
+  overlogged_time_string?: string;
   days_overdue?: number;
   is_overdue?: boolean;
   parent_task_id?: string;
@@ -52,30 +52,5 @@ export interface IDeadlineTaskStats {
   deadline_logged_hours?: number;
   deadline_logged_hours_string?: string;
   project_end_date?: string;
-  tasks?: IInsightTasks[];
-}
-
-export interface ITaskStatusCounts {
-  name?: string;
-  color?: string;
-  y?: number;
-}
-
-export interface ITaskPriorityCounts {
-  name?: string;
-  color?: string;
-  data?: number[];
-}
-
-export interface ITeamMemberOverviewGetResponse extends ITeamMember {
-  task_count?: number;
-  done_task_count?: number;
-  pending_task_count?: number;
-  overdue_task_count?: number;
-  progress?: number;
-  contribution?: number;
-  job_title?: string;
-  id: string;
-  name?: string;
   tasks?: IInsightTasks[];
 }

@@ -6,19 +6,18 @@ import {
   ITaskListConfigV2,
   ITaskListGroup,
   ITaskListSortableColumn,
-} from '@/types/tasks/taskList.types';
+} from '@/types/tasks/task-list.types';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
-import logger from '@/utils/errorLogger';
-import { ITaskListMemberFilter } from '@/types/tasks/taskListFilters.types';
-import { IProjectTask, ITaskAssignee } from '@/types/project/projectTasksViewModel.types';
-import { ITaskStatusViewModel } from '@/types/tasks/taskStatusGetResponse.types';
+import logger from '@/utils/error-logger';
+import { ITaskListMemberFilter } from '@/types/tasks/task-list-filters.types';
+import { IProjectTask, ITaskAssignee } from '@/types/project/project-tasks-view-model.types';
+import { ITaskStatusViewModel } from '@/types/tasks/task-status-get-response.types';
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
-import { ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
-import { ITaskLabel } from '@/types/label.type';
-import { ITeamMemberViewModel } from '../taskAttributes/taskMemberSlice';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { ITaskLabelFilter } from '@/types/tasks/task-label.types';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
+import { ITeamMemberViewModel } from '../task-attributes/task-member.slice';
+import { InlineMember } from '@/types/teamMembers/inline-member.types';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -112,7 +111,7 @@ const deleteTaskFromGroup = (
   if (task.is_sub_task) {
     const parentTask = group.tasks.find(t => t.id === task.parent_task_id);
     if (parentTask) {
-      const subTaskIndex = parentTask.sub_tasks?.findIndex(t => t.id === task.id);
+      const subTaskIndex = parentTask.sub_tasks?.findIndex((t: IProjectTask) => t.id === task.id);
       if (typeof subTaskIndex !== 'undefined' && subTaskIndex !== -1) {
         parentTask.sub_tasks_count = Math.max((parentTask.sub_tasks_count || 0) - 1, 0);
         parentTask.sub_tasks?.splice(subTaskIndex, 1);
@@ -266,7 +265,7 @@ const findTaskInAllGroups = (
     // Check in subtasks
     for (const parentTask of group.tasks) {
       if (!parentTask.sub_tasks) continue;
-      const subtask = parentTask.sub_tasks.find(st => st.id === taskId);
+      const subtask = parentTask.sub_tasks.find((st: IProjectTask) => st.id === taskId);
       if (subtask) return { task: subtask, group, groupId: group.id };
     }
   }
@@ -376,7 +375,7 @@ const boardSlice = createSlice({
     ) => {
       const section = state.taskGroups.find(sec => sec.id === action.payload.sectionId);
       if (section) {
-        const task = section.tasks.find(task => task.id === action.payload.taskId);
+        const task = section.tasks.find((task: IProjectTask) => task.id === action.payload.taskId);
 
         if (task) {
           if (!task.sub_tasks) {
@@ -395,7 +394,7 @@ const boardSlice = createSlice({
         const section = state.taskGroups.find(sec => sec.id === sectionId);
         if (section) {
           // Check if task is in the main task list
-          const taskIndex = section.tasks.findIndex(task => task.id === taskId);
+          const taskIndex = section.tasks.findIndex((task: IProjectTask) => task.id === taskId);
           if (taskIndex !== -1) {
             section.tasks.splice(taskIndex, 1);
             return;
@@ -405,7 +404,7 @@ const boardSlice = createSlice({
           for (const parentTask of section.tasks) {
             if (!parentTask.sub_tasks) continue;
             
-            const subtaskIndex = parentTask.sub_tasks.findIndex(st => st.id === taskId);
+            const subtaskIndex = parentTask.sub_tasks.findIndex((st: IProjectTask) => st.id === taskId);
             if (subtaskIndex !== -1) {
               parentTask.sub_tasks.splice(subtaskIndex, 1);
               parentTask.sub_tasks_count = Math.max(0, (parentTask.sub_tasks_count || 1) - 1);
@@ -418,7 +417,7 @@ const boardSlice = createSlice({
       // If section not found or task not in section, search all groups
       for (const group of state.taskGroups) {
         // Check main tasks
-        const taskIndex = group.tasks.findIndex(task => task.id === taskId);
+        const taskIndex = group.tasks.findIndex((task: IProjectTask) => task.id === taskId);
         if (taskIndex !== -1) {
           group.tasks.splice(taskIndex, 1);
           return;
@@ -428,7 +427,7 @@ const boardSlice = createSlice({
         for (const parentTask of group.tasks) {
           if (!parentTask.sub_tasks) continue;
           
-          const subtaskIndex = parentTask.sub_tasks.findIndex(st => st.id === taskId);
+          const subtaskIndex = parentTask.sub_tasks.findIndex((st: IProjectTask) => st.id === taskId);
           if (subtaskIndex !== -1) {
             parentTask.sub_tasks.splice(subtaskIndex, 1);
             parentTask.sub_tasks_count = Math.max(0, (parentTask.sub_tasks_count || 1) - 1);
@@ -459,7 +458,7 @@ const boardSlice = createSlice({
       const { body, sectionId, taskId } = action.payload;
       const section = state.taskGroups.find(sec => sec.id === sectionId);
       if (section) {
-        const task = section.tasks.find(task => task.id === taskId);
+        const task = section.tasks.find((task: IProjectTask) => task.id === taskId);
         if (task) {
           task.assignees = body.assignees;
           task.names = body.names;
@@ -489,7 +488,7 @@ const boardSlice = createSlice({
       if (!sourceGroup || !targetGroup) return;
 
       // Find the task to move
-      const taskIndex = sourceGroup.tasks.findIndex(task => task.id === taskId);
+      const taskIndex = sourceGroup.tasks.findIndex((task: IProjectTask) => task.id === taskId);
       if (taskIndex === -1) return;
 
       // Get the task and remove it from source
@@ -573,7 +572,7 @@ const boardSlice = createSlice({
       if (!group) return;
 
       // Try to find the task directly in the group
-      const task = group.tasks.find(task => task.id === taskId);
+      const task = group.tasks.find((task: IProjectTask) => task.id === taskId);
       if (task) {
         task.assignees = assignees as ITaskAssignee[];
         task.names = names as InlineMember[];
@@ -584,7 +583,7 @@ const boardSlice = createSlice({
       for (const parentTask of group.tasks) {
         if (!parentTask.sub_tasks) continue;
 
-        const subtask = parentTask.sub_tasks.find(subtask => subtask.id === taskId);
+        const subtask = parentTask.sub_tasks.find((subtask: IProjectTask) => subtask.id === taskId);
         if (subtask) {
           subtask.assignees = assignees as ITaskAssignee[];
           subtask.names = names as InlineMember[];
@@ -663,7 +662,7 @@ const boardSlice = createSlice({
       if (sectionId) {
         const section = state.taskGroups.find(sec => sec.id === sectionId);
         if (section) {
-          const task = section.tasks.find(task => task.id === parentTaskId);
+          const task = section.tasks.find((task: IProjectTask) => task.id === parentTaskId);
           if (task && updateTaskWithSubtask(task)) {
             return;
           }
@@ -743,10 +742,10 @@ const boardSlice = createSlice({
       for (const group of state.taskGroups) {
         // Find the task or its subtask
         const task =
-          group.tasks.find(task => task.id === label.id) ||
+          group.tasks.find((task: IProjectTask) => task.id === label.id) ||
           group.tasks
-            .flatMap(task => task.sub_tasks || [])
-            .find(subtask => subtask.id === label.id);
+            .flatMap((task: IProjectTask) => task.sub_tasks || [])
+            .find((subtask: IProjectTask) => subtask.id === label.id);
         if (task) {
           task.labels = label.labels || [];
           task.all_labels = label.all_labels || [];

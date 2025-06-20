@@ -2,7 +2,7 @@ import { IClient, IClientsViewModel } from '@/types/client.types';
 import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 
 const rootUrl = `${API_BASE_URL}/clients`;
 

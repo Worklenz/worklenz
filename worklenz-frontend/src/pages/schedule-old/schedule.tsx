@@ -1,4 +1,4 @@
-import { Button, DatePicker, DatePickerProps, Select, Space } from 'antd';
+import { Button, DatePicker, DatePickerProps, Select, Space } from '@/components/ui';
 import React, { Suspense, useState } from 'react';
 import Team from '../../components/schedule-old/team/Team';
 import { SettingOutlined } from '@ant-design/icons';
@@ -7,7 +7,7 @@ import { toggleSettingsDrawer } from '@/features/schedule-old/scheduleSlice';
 import ScheduleSettingsDrawer from '@/features/schedule-old/ScheduleSettingsDrawer';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
 const { Option } = Select;

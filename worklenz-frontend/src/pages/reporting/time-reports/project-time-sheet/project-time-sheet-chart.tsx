@@ -15,12 +15,12 @@ import {
   setLabelAndToggleDrawer,
 } from '../../../../features/timeReport/projects/timeLogSlice';
 import ProjectTimeLogDrawer from '../../../../features/timeReport/projects/ProjectTimeLogDrawer';
-import { useAppSelector } from '../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
 import { IRPTTimeProject } from '@/types/reporting/reporting.types';
-import { Empty, Spin } from 'antd';
-import logger from '@/utils/errorLogger';
+import { Empty, Spin } from '@/components/ui';
+import logger from '@/utils/error-logger';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 

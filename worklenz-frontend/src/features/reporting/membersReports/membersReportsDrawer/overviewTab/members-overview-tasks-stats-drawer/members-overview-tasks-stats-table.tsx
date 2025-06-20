@@ -1,8 +1,8 @@
-import { Badge, Collapse, Flex, Table, TableColumnsType, Tag, Typography } from 'antd';
+import { Badge, Collapse, Flex, Table, Tag, Typography } from '@/components/ui';
 import CustomTableTitle from '@components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import dayjs from 'dayjs';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { DoubleRightOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';

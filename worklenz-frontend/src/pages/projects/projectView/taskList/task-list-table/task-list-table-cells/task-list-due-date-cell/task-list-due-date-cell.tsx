@@ -1,11 +1,11 @@
-import { DatePicker } from 'antd';
+import DatePicker from 'antd/es/date-picker';
 import { colors } from '@/styles/colors';
 import dayjs, { Dayjs } from 'dayjs';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { getUserSession } from '@/utils/session-helper';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 const TaskListDueDateCell = ({ task }: { task: IProjectTask }) => {
   const { socket } = useSocket();

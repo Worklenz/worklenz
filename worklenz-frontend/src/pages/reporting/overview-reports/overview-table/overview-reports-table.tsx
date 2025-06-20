@@ -1,12 +1,12 @@
 import { memo, useEffect, useState, useCallback, useMemo } from 'react';
-import { ConfigProvider, Table, TableColumnsType } from 'antd';
+import { ConfigProvider, Table } from '@/components/ui';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import CustomTableTitle from '../../../../components/CustomTableTitle';
 import { useTranslation } from 'react-i18next';
 import { IRPTTeam } from '@/types/reporting/reporting.types';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import logger from '@/utils/errorLogger';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import logger from '@/utils/error-logger';
 import Avatars from '@/components/avatars/avatars';
 import OverviewTeamInfoDrawer from '@/components/reporting/drawers/overview-team-info/overview-team-info-drawer';
 import { toggleOverViewTeamDrawer } from '@/features/reporting/reporting.slice';

@@ -4,33 +4,23 @@ import {
   ExclamationCircleFilled,
   SearchOutlined,
 } from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Flex,
-  Input,
-  Popconfirm,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Card, Flex, Input, Popconfirm, Table, Tooltip, Typography } from '@/components/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { colors } from '@/styles/colors';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   deleteClient,
   fetchClients,
   toggleClientDrawer,
 } from '@features/settings/client/clientSlice';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { IClientViewModel } from '@/types/client.types';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import { useTranslation } from 'react-i18next';
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
+;
 import ClientDrawer from './client-drawer';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import logger from '@/utils/errorLogger';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import logger from '@/utils/error-logger';
 
 const ClientsSettings: React.FC = () => {
   const { t } = useTranslation('settings/clients');

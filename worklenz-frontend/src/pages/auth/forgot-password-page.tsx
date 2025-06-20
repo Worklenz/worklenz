@@ -3,18 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserOutlined } from '@ant-design/icons';
-import { Form, Card, Input, Flex, Button, Typography, Result } from 'antd/es';
+import { Form, Card, Input, Flex, Button, Typography, Result } from '@/components/ui';
 
-import PageHeader from '@components/AuthPageHeader';
+import PageHeader from '@/components/auth-page-header';
 
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { evt_forgot_password_page_visit, evt_reset_password_click } from '@/shared/worklenz-analytics-events';
-import { resetPassword, verifyAuthentication } from '@features/auth/authSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+import { resetPassword, verifyAuthentication } from '@/features/auth/auth-slice';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setSession } from '@/utils/session-helper';
-import { setUser } from '@features/user/userSlice';
-import logger from '@/utils/errorLogger';
+import { setUser } from '@/features/user/user-slice';
+import logger from '@/utils/error-logger';
+import {
+  evt_forgot_password_page_visit,
+  evt_reset_password_click,
+} from '@/shared/worklenz-analytics-events';
 
 const ForgotPasswordPage = () => {
   const [form] = Form.useForm();

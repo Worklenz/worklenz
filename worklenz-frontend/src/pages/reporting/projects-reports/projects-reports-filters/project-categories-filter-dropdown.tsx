@@ -1,11 +1,11 @@
 import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
-import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
+import { fetchProjectCategories } from '@/features/projects/lookups/project-categories/project-categories.slice';
 import { setSelectedProjectCategories } from '@/features/reporting/projectReports/project-reports-slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
 import { CaretDownFilled } from '@ant-design/icons';
-import { Badge, Button, Card, Checkbox, Dropdown, Empty, Flex, Input, InputRef, List } from 'antd';
+import { Badge, Button, Card, Checkbox, Dropdown, Empty, Flex, Input, List } from '@/components/ui';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

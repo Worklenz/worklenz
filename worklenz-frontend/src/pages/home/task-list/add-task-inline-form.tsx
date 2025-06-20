@@ -1,17 +1,16 @@
-import { Alert, DatePicker, Flex, Form, Input, InputRef, Select, Typography } from 'antd';
+import { Alert, DatePicker, Flex, Form, Input, Select, Typography } from '@/components/ui';
 import { useEffect, useRef, useState } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { TFunction } from 'i18next';
 import {
   useGetMyTasksQuery,
   useGetProjectsByTeamQuery,
 } from '@/api/home-page/home-page.api.service';
 import { IProject } from '@/types/project/project.types';
-import { IHomeTaskCreateRequest } from '@/types/tasks/task-create-request.types';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { SocketEvents } from '@/shared/socket-events';
 import { IMyTask } from '@/types/home/my-tasks.types';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
 import dayjs from 'dayjs';
 
@@ -60,7 +59,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
   const calculateEndDate = (dueDate: string): string | undefined => {
     const today = new Date();
     let targetDate: Date;
-    
+
     switch (dueDate) {
       case 'Today':
         targetDate = new Date(today);
@@ -80,7 +79,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
       default:
         return undefined;
     }
-    
+
     return targetDate.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
   };
 
@@ -93,10 +92,10 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
   ];
 
   const handleTaskSubmit = (values: { name: string; project: string; dueDate: string }) => {
-    const endDate = calendarView 
-      ? homeTasksConfig.selected_date?.format('YYYY-MM-DD') 
+    const endDate = calendarView
+      ? homeTasksConfig.selected_date?.format('YYYY-MM-DD')
       : calculateEndDate(values.dueDate);
-      
+
     const newTask = {
       name: values.name,
       project_id: values.project,

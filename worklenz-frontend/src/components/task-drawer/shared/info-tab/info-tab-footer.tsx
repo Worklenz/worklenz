@@ -1,9 +1,9 @@
-import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } from 'antd';
+import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } from '@/components/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import {
@@ -13,7 +13,7 @@ import {
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { ITaskCommentsCreateRequest } from '@/types/tasks/task-comments.types';
 import { ITaskAttachment } from '@/types/tasks/task-attachment-view-model';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';

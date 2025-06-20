@@ -12,23 +12,14 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import { colors } from '@/styles/colors';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
-import {
-  evt_project_task_list_bulk_archive,
-  evt_project_task_list_bulk_assign_me,
-  evt_project_task_list_bulk_assign_members,
-  evt_project_task_list_bulk_change_phase,
-  evt_project_task_list_bulk_change_priority,
-  evt_project_task_list_bulk_change_status,
-  evt_project_task_list_bulk_delete,
-  evt_project_task_list_bulk_update_labels,
-} from '@/shared/worklenz-analytics-events';
+;
 import {
   IBulkTasksLabelsRequest,
   IBulkTasksPhaseChangeRequest,
@@ -48,10 +39,10 @@ import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse
 import AssigneesDropdown from './components/AssigneesDropdown';
 import LabelsDropdown from './components/LabelsDropdown';
 import { sortTeamMembers } from '@/utils/sort-team-members';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
-import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
-import { useAuthService } from '@/hooks/useAuth';
+import { fetchLabels } from '@/features/task-attributes/task-label.slice';
+import { useAuthService } from '@/hooks/use-auth';
 import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import alertService from '@/services/alerts/alertService';

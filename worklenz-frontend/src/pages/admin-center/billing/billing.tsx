@@ -1,5 +1,5 @@
 import { PageHeader } from '@ant-design/pro-components';
-import { Tabs, TabsProps } from 'antd';
+import { Tabs } from '@/components/ui';
 import React from 'react';
 import CurrentBill from '@/components/admin-center/billing/current-bill';
 import Configuration from '@/components/admin-center/configuration/configuration';

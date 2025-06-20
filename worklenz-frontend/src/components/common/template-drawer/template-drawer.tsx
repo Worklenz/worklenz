@@ -1,17 +1,5 @@
 import type { MenuProps } from 'antd';
-import {
-  Empty,
-  List,
-  Menu,
-  Skeleton,
-  Tabs,
-  Tag,
-  Typography,
-  Image,
-  Input,
-  Flex,
-  Button,
-} from 'antd';
+import { Empty, List, Menu, Skeleton, Tabs, Tag, Typography, Image, Input, Flex, Button } from '@/components/ui';
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +12,7 @@ import {
 } from '@/types/project-templates/project-templates.types';
 import './template-drawer.css';
 import { SearchOutlined } from '@ant-design/icons';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 const { Title, Text } = Typography;
 

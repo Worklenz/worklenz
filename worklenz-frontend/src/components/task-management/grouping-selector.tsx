@@ -1,5 +1,6 @@
 import React from 'react';
-import { Select, Typography } from 'antd';
+import Select from 'antd/es/select';
+import Typography from 'antd/es/typography';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
 import { IGroupByOption } from '@/types/tasks/taskList.types';
 

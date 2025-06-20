@@ -1,9 +1,9 @@
 import { BellOutlined } from '@ant-design/icons';
-import { Badge, Button, Tooltip } from 'antd';
+import { Badge, Button, Tooltip } from '@/components/ui';
 import { toggleDrawer } from '@features/navbar/notificationSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const NotificationButton = () => {
   const dispatch = useAppDispatch();

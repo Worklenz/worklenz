@@ -1,22 +1,16 @@
-import { Input, InputRef, theme } from 'antd';
+import { Input } from '@/components/ui';
 import React, { useState, useMemo, useRef } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { ILocalSession } from '@/types/auth/local-session.types';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
-import {
-  addTask,
-  getCurrentGroup,
-  GROUP_BY_PHASE_VALUE,
-  GROUP_BY_PRIORITY_VALUE,
-  GROUP_BY_STATUS_VALUE,
-} from '@/features/tasks/tasks.slice';
-import { useSocket } from '@/socket/socketContext';
+import { addTask, getCurrentGroup } from '@/features/tasks/tasks.slice';
+import { useSocket } from '@/socket/socket-context';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { SocketEvents } from '@/shared/socket-events';
-import { DRAWER_ANIMATION_INTERVAL } from '@/shared/constants';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+;
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 
 interface ITaskListInstantTaskInputProps {
   session: ILocalSession | null;

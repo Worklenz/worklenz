@@ -3,26 +3,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
 import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
-import { Form, Card, Input, Flex, Button, Typography, Space, message } from 'antd/es';
+import { Form, Card, Input, Flex, Button, Typography, Space, message } from '@/components/ui';
 import { Rule } from 'antd/es/form';
 
 import googleIcon from '@/assets/images/google-icon.png';
-import PageHeader from '@components/AuthPageHeader';
+import PageHeader from '@/components/auth-page-header';
 
 import { authApiService } from '@/api/auth/auth.api.service';
 import { IUserSignUpRequest } from '@/types/auth/signup.types';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { signUp } from '@/features/auth/authSlice';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { signUp } from '@/features/auth/auth-slice';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import logger from '@/utils/error-logger';
+import alertService from '@/services/alerts/alert-service';
+import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
 import {
   evt_signup_page_visit,
   evt_signup_with_email_click,
   evt_signup_with_google_click,
 } from '@/shared/worklenz-analytics-events';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import logger from '@/utils/errorLogger';
-import alertService from '@/services/alerts/alertService';
-import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
 
 // Define the global grecaptcha type
 declare global {
@@ -68,7 +68,10 @@ const SignupPage = () => {
   };
 
   const enableGoogleLogin = import.meta.env.VITE_ENABLE_GOOGLE_LOGIN === 'true' || false;
-  const enableRecaptcha = import.meta.env.VITE_ENABLE_RECAPTCHA === 'true' && import.meta.env.VITE_RECAPTCHA_SITE_KEY && import.meta.env.VITE_RECAPTCHA_SITE_KEY !== 'recaptcha-site-key';
+  const enableRecaptcha =
+    import.meta.env.VITE_ENABLE_RECAPTCHA === 'true' &&
+    import.meta.env.VITE_RECAPTCHA_SITE_KEY &&
+    import.meta.env.VITE_RECAPTCHA_SITE_KEY !== 'recaptcha-site-key';
 
   useEffect(() => {
     trackMixpanelEvent(evt_signup_page_visit);
@@ -94,10 +97,12 @@ const SignupPage = () => {
     if (enableRecaptcha && import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
       // Check if site key is not the placeholder value
       if (import.meta.env.VITE_RECAPTCHA_SITE_KEY === 'recaptcha-site-key') {
-        console.warn('Using placeholder reCAPTCHA site key. Please set a valid key in your environment variables.');
+        console.warn(
+          'Using placeholder reCAPTCHA site key. Please set a valid key in your environment variables.'
+        );
         return;
       }
-      
+
       const script = document.createElement('script');
       script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
       script.async = true;
@@ -108,7 +113,7 @@ const SignupPage = () => {
         if (script && script.parentNode) {
           script.parentNode.removeChild(script);
         }
-        
+
         const recaptchaElements = document.getElementsByClassName('grecaptcha-badge');
         while (recaptchaElements.length > 0) {
           const element = recaptchaElements[0];
@@ -130,23 +135,26 @@ const SignupPage = () => {
 
   const getRecaptchaToken = async () => {
     if (!enableRecaptcha) return '';
-    
+
     // Check if site key is valid
-    if (!import.meta.env.VITE_RECAPTCHA_SITE_KEY || import.meta.env.VITE_RECAPTCHA_SITE_KEY === 'recaptcha-site-key') {
+    if (
+      !import.meta.env.VITE_RECAPTCHA_SITE_KEY ||
+      import.meta.env.VITE_RECAPTCHA_SITE_KEY === 'recaptcha-site-key'
+    ) {
       console.warn('Invalid reCAPTCHA site key. Skipping reCAPTCHA verification.');
       return 'skip-verification';
     }
-    
+
     try {
       return new Promise<string>((resolve, reject) => {
         if (!window.grecaptcha) {
           reject('reCAPTCHA not loaded');
           return;
         }
-        
+
         window.grecaptcha.ready(() => {
-          window.grecaptcha!
-            .execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'signup' })
+          window
+            .grecaptcha!.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'signup' })
             .then((token: string) => {
               resolve(token);
             })
@@ -165,17 +173,20 @@ const SignupPage = () => {
   const onFinish = async (values: IUserSignUpRequest) => {
     try {
       setValidating(true);
-      
+
       if (enableRecaptcha) {
         try {
           const token = await getRecaptchaToken();
 
           if (!token) {
             logger.error('Failed to get reCAPTCHA token');
-            alertService.error(t('reCAPTCHAVerificationError'), t('reCAPTCHAVerificationErrorMessage'));
+            alertService.error(
+              t('reCAPTCHAVerificationError'),
+              t('reCAPTCHAVerificationErrorMessage')
+            );
             return;
           }
-          
+
           // Skip verification if we're using the special token due to invalid site key
           if (token !== 'skip-verification') {
             const verifyToken = await authApiService.verifyRecaptchaToken(token);
@@ -191,7 +202,10 @@ const SignupPage = () => {
           if (import.meta.env.DEV) {
             console.warn('Continuing signup despite reCAPTCHA error in development mode');
           } else {
-            alertService.error(t('reCAPTCHAVerificationError'), t('reCAPTCHAVerificationErrorMessage'));
+            alertService.error(
+              t('reCAPTCHAVerificationError'),
+              t('reCAPTCHAVerificationErrorMessage')
+            );
             return;
           }
         }
@@ -352,17 +366,14 @@ const SignupPage = () => {
         <Form.Item>
           <Typography.Paragraph style={{ fontSize: 14 }}>
             {t('bySigningUpText')}{' '}
-            <a 
-              href="https://worklenz.com/privacy/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >{t('privacyPolicyLink')}</a>{' '}
+            <a href="https://worklenz.com/privacy/" target="_blank" rel="noopener noreferrer">
+              {t('privacyPolicyLink')}
+            </a>{' '}
             {t('andText')}{' '}
-            <a 
-              href="https://worklenz.com/terms/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >{t('termsOfUseLink')}</a>.
+            <a href="https://worklenz.com/terms/" target="_blank" rel="noopener noreferrer">
+              {t('termsOfUseLink')}
+            </a>
+            .
           </Typography.Paragraph>
         </Form.Item>
 

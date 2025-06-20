@@ -1,4 +1,4 @@
-import { Flex } from 'antd';
+import { Flex } from '@/components/ui';
 import { useMemo, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import ProjectStatusFilterDropdown from './project-status-filter-dropdown';
@@ -7,8 +7,8 @@ import ProjectCategoriesFilterDropdown from './project-categories-filter-dropdow
 import ProjectManagersFilterDropdown from './project-managers-filter-dropdown';
 import ProjectTableShowFieldsDropdown from './project-table-show-fields-dropdown';
 import CustomSearchbar from '@/components/CustomSearchbar';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setSearchQuery } from '@/features/reporting/projectReports/project-reports-slice';
 
 const ProjectsReportsFilters = () => {

@@ -1,5 +1,9 @@
-import { Flex, Typography, Button, Input, Tooltip } from 'antd';
-import type { InputRef } from 'antd';
+import Flex from 'antd/es/flex';
+import Typography from 'antd/es/typography';
+import Button from 'antd/es/button';
+import Input from 'antd/es/input';
+import Tooltip from 'antd/es/tooltip';
+import type { InputRef } from 'antd/es/input';
 import {
   DoubleRightOutlined,
   DownOutlined,
@@ -12,13 +16,13 @@ import {
   RetweetOutlined,
 } from '@ant-design/icons';
 import { colors } from '@/styles/colors';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import './task-list-task-cell.css';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import { useState, useRef, useEffect } from 'react';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { fetchSubTasks } from '@/features/tasks/tasks.slice';
 

@@ -1,6 +1,6 @@
-import { Flex, Typography } from 'antd';
+import { Flex, Typography } from '@/components/ui';
 import './priority-section.css';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useState, useEffect, useMemo } from 'react';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';

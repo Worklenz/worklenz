@@ -1,23 +1,20 @@
-import { Button, Card, Flex, Form, Select, Skeleton, Typography } from 'antd';
+import { Button, Card, Flex, Form, Select, Skeleton, Typography } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import { ILanguageType, Language, setLanguage } from '@/features/i18n/localesSlice';
-import {
-  evt_settings_language_and_region_visit,
-  evt_settings_language_changed,
-} from '@/shared/worklenz-analytics-events';
+;
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import { timezonesApiService } from '@/api/settings/language-timezones/language-timezones-api.service';
 import { ITimezone } from '@/types/settings/timezone.types';
-import logger from '@/utils/errorLogger';
-import { useAuthService } from '@/hooks/useAuth';
+import logger from '@/utils/error-logger';
+import { useAuthService } from '@/hooks/use-auth';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
-import { setUser } from '@/features/user/userSlice';
+import { setUser } from '@/features/user/user-slice';
 
 const LanguageAndRegionSettings = () => {
   const dispatch = useAppDispatch();

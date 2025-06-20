@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
-import { Col, Flex, Typography, List } from 'antd';
+import { Col, Flex, Typography, List } from '@/components/ui';
 import CustomAvatarGroup from '@/components/board/custom-avatar-group';
 import CustomDueDatePicker from '@/components/board/custom-due-date-picker';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 
 interface IBoardSubTaskCardProps {

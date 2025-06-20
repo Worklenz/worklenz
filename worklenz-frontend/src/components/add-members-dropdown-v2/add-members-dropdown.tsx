@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Avatar, Button, Checkbox, Dropdown, Input, Menu, Typography } from 'antd';
+import { Avatar, Button, Checkbox, Dropdown, Input, Menu, Typography } from '@/components/ui';
 import { UserAddOutlined, UsergroupAddOutlined } from '@ant-design/icons';
 import './add-members-dropdown.css';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { AvatarNamesMap } from '@/shared/constants';
 
 const AddMembersDropdown: React.FC = () => {

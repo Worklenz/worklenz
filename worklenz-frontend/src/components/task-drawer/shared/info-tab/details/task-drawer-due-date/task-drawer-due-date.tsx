@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import { Flex, DatePicker, Typography, Button, Form, FormInstance } from 'antd';
+import { Flex, DatePicker, Typography, Button, Form } from '@/components/ui';
 import { t, TFunction } from 'i18next';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 
 import { SocketEvents } from '@/shared/socket-events';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { colors } from '@/styles/colors';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 import { getUserSession } from '@/utils/session-helper';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setStartDate, setTaskEndDate } from '@/features/task-drawer/task-drawer.slice';
 interface TaskDrawerDueDateProps {
   task: ITaskViewModel;

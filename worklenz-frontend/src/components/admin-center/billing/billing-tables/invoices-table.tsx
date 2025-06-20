@@ -1,9 +1,9 @@
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { IBillingTransaction } from '@/types/admin-center/admin-center.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { formatDate } from '@/utils/timeUtils';
 import { ContainerOutlined } from '@ant-design/icons';
-import { Button, Table, TableProps, Tag, Tooltip } from 'antd';
+import { Button, Table, Tag, Tooltip } from '@/components/ui';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

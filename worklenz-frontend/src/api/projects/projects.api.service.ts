@@ -1,13 +1,13 @@
 import { IServerResponse } from '@/types/common.types';
 import apiClient from '../api-client';
 import { API_BASE_URL } from '@/shared/constants';
-import { IProjectOverviewStats, IProjectsViewModel } from '@/types/project/projectsViewModel.types';
-import { toQueryString } from '@/utils/toQueryString';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import { ITeamMemberOverviewGetResponse } from '@/types/project/project-insights.types';
-import { IProjectMembersViewModel } from '@/types/projectMember.types';
-import { IProjectManager } from '@/types/project/projectManager.types';
-import { IGroupedProjectsViewModel } from '@/types/project/groupedProjectsViewModel.types';
+import { IProjectOverviewStats, IProjectsViewModel } from '@/types/project/projects-view-model.types';
+import { toQueryString } from '@/utils/to-query-string';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
+import { IProjectMembersViewModel } from '@/types/project-member.types';
+import { IProjectManager } from '@/types/project/project-manager.types';
+import { IGroupedProjectsViewModel } from '@/types/project/grouped-projects-view-model.types';
+import { ITeamMemberOverviewGetResponse } from '@/types/teamMembers/team-members-get-response.types';
 
 const rootUrl = `${API_BASE_URL}/projects`;
 

@@ -1,4 +1,4 @@
-import { Card, Flex, Typography, theme } from 'antd';
+import { Card, Flex, Typography } from '@/components/ui';
 import React, { useMemo } from 'react';
 
 interface InsightCardProps {

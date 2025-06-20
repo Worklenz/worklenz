@@ -1,6 +1,6 @@
-import { Form, Input, Select, Typography } from 'antd';
+import { Form, Input, Select, Typography } from '@/components/ui';
 import React from 'react';
-import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../../../../../@/hooks/use-app-selector';
 import { themeWiseColor } from '../../../../../../../../utils/themeWiseColor';
 import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
 import {

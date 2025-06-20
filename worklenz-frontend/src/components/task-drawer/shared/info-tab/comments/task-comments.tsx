@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Skeleton, Avatar, Tooltip, Popconfirm } from 'antd';
+import { Skeleton, Avatar, Tooltip, Popconfirm } from '@/components/ui';
 import { Comment } from '@ant-design/compatible';
 import dayjs from 'dayjs';
 
 import { LikeOutlined, LikeTwoTone } from '@ant-design/icons';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { fromNow } from '@/utils/dateUtils';
 import { AvatarNamesMap } from '@/shared/constants';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import TaskViewCommentEdit from './task-view-comment-edit';
 import './task-comments.css';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import { colors } from '@/styles/colors';
 import AttachmentsGrid from '../attachments/attachments-grid';
 import { TFunction } from 'i18next';

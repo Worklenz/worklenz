@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
-import authReducer from '@/features/auth/authSlice';
-import userReducer from '@/features/user/userSlice';
+import authReducer from '@/features/auth/auth-slice';
+import userReducer from '@/features/user/user-slice';
 export const mockStore = (preloadedState = {}) => {
   return configureStore({
     reducer: {

@@ -1,14 +1,14 @@
-import { Card, Flex, Skeleton, Table, Typography } from 'antd';
+import { Card, Flex, Skeleton, Table, Typography } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { colors } from '@/styles/colors';
 import { TableProps } from 'antd/lib';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { IDeadlineTaskStats, IInsightTasks } from '@/types/project/project-insights.types';
 import ProjectStatsCard from '@/components/projects/project-stats-card';
 import warningIcon from '@assets/icons/insightsIcons/warning.png';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const ProjectDeadline = () => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);

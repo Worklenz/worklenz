@@ -1,7 +1,7 @@
-import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex } from 'antd';
+import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex } from '@/components/ui';
 import { useEffect, useState } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   fetchInvitations,
   fetchNotifications,
@@ -12,20 +12,20 @@ import { NOTIFICATION_OPTION_READ, NOTIFICATION_OPTION_UNREAD } from '@/shared/c
 import { useTranslation } from 'react-i18next';
 import { SocketEvents } from '@/shared/socket-events';
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { ITeamInvitationViewModel } from '@/types/notifications/notifications.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import NotificationItem from './notification-item';
 import InvitationItem from './invitation-item';
 import { notificationsApiService } from '@/api/notifications/notifications.api.service';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import { INotificationSettings } from '@/types/settings/notifications.types';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 import { showNotification } from './push-notification-template';
 import { teamsApiService } from '@/api/teams/teams.api.service';
-import { verifyAuthentication } from '@/features/auth/authSlice';
+import { verifyAuthentication } from '@/features/auth/auth-slice';
 import { getUserSession } from '@/utils/session-helper';
-import { setUser } from '@/features/user/userSlice';
+import { setUser } from '@/features/user/user-slice';
 import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
 const HTML_TAG_REGEXP = /<[^>]*>/g;

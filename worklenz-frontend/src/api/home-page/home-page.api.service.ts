@@ -1,7 +1,7 @@
-import { BaseQueryFn, createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 import { IHomeTasksModel, IHomeTasksConfig } from '@/types/home/home-page.types';
 import { IMyTask } from '@/types/home/my-tasks.types';
 import { IProject } from '@/types/project/project.types';

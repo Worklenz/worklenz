@@ -1,8 +1,8 @@
 import React from 'react';
-import { DatePicker, Typography } from 'antd';
+import { DatePicker, Typography } from '@/components/ui';
 import dayjs, { Dayjs } from 'dayjs';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { NewTaskType, updateTaskDate } from '@features/roadmap/roadmap-slice';
 import { colors } from '@/styles/colors';
 import RoadmapTaskCell from './roadmap-task-cell';

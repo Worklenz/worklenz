@@ -1,14 +1,4 @@
-import {
-  Button,
-  Card,
-  Flex,
-  Input,
-  Popconfirm,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Card, Flex, Input, Popconfirm, Table, Tooltip, Typography } from '@/components/ui';
 import { useEffect, useMemo, useState } from 'react';
 
 import PinRouteToNavbarButton from '../../../components/PinRouteToNavbarButton';
@@ -17,8 +7,8 @@ import { DeleteOutlined, ExclamationCircleFilled, SearchOutlined } from '@ant-de
 import { ITaskLabel } from '@/types/label.type';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
 import CustomColorLabel from '@components/task-list-common/labelsSelector/custom-color-label';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import logger from '@/utils/errorLogger';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import logger from '@/utils/error-logger';
 
 const LabelsSettings = () => {
   const { t } = useTranslation('settings/labels');

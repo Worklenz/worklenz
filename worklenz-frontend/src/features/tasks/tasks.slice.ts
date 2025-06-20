@@ -6,18 +6,18 @@ import {
   ITaskListConfigV2,
   ITaskListGroup,
   ITaskListSortableColumn,
-} from '@/types/tasks/taskList.types';
+} from '@/types/tasks/task-list.types';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
-import logger from '@/utils/errorLogger';
-import { ITaskListMemberFilter } from '@/types/tasks/taskListFilters.types';
+import logger from '@/utils/error-logger';
+import { ITaskListMemberFilter } from '@/types/tasks/task-list-filters.types';
 import { ITaskAssignee, ITaskFormViewModel } from '@/types/tasks/task.types';
-import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { ITaskStatusViewModel } from '@/types/tasks/taskStatusGetResponse.types';
+import { ITeamMemberViewModel } from '@/types/teamMembers/team-members-get-response.types';
+import { IProjectTask } from '@/types/project/project-tasks-view-model.types';
+import { ITaskStatusViewModel } from '@/types/tasks/task-status-get-response.types';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
-import { ITaskLabel, ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
+import { ITaskLabel, ITaskLabelFilter } from '@/types/tasks/task-label.types';
 import { ITaskPhaseChangeResponse } from '@/types/tasks/task-phase-change-response';
 import { produce } from 'immer';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
@@ -255,12 +255,12 @@ export const fetchTaskListColumns = createAsyncThunk(
   async (projectId: string, { dispatch }) => {
     const [standardColumns, customColumns] = await Promise.all([
       tasksApiService.fetchTaskListColumns(projectId),
-      dispatch(fetchCustomColumns(projectId))
+      dispatch(fetchCustomColumns(projectId)),
     ]);
 
     return {
       standard: standardColumns.body,
-      custom: customColumns.payload
+      custom: customColumns.payload,
     };
   }
 );
@@ -358,7 +358,7 @@ const deleteTaskFromGroup = (
   if (task.is_sub_task) {
     const parentTask = group.tasks.find(t => t.id === task.parent_task_id);
     if (parentTask) {
-      const subTaskIndex = parentTask.sub_tasks?.findIndex(t => t.id === task.id);
+      const subTaskIndex = parentTask.sub_tasks?.findIndex((t: IProjectTask) => t.id === task.id);
       if (typeof subTaskIndex !== 'undefined' && subTaskIndex !== -1) {
         parentTask.sub_tasks_count = Math.max((parentTask.sub_tasks_count || 0) - 1, 0);
         parentTask.sub_tasks?.splice(subTaskIndex, 1);
@@ -417,7 +417,9 @@ const findTaskInGroups = (
     // Check subtasks
     for (const task of group.tasks) {
       if (task.sub_tasks) {
-        const subTaskIndex = task.sub_tasks.findIndex(subtask => subtask.id === taskId);
+        const subTaskIndex = task.sub_tasks.findIndex(
+          (subtask: IProjectTask) => subtask.id === taskId
+        );
         if (subTaskIndex !== -1) {
           return { task: task.sub_tasks[subTaskIndex], groupId: group.id, index: subTaskIndex };
         }
@@ -498,13 +500,13 @@ const taskSlice = createSlice({
 
       // Handle subtask addition
       if (task.parent_task_id) {
-        const parentTask = group.tasks.find(t => t.id === task.parent_task_id);
+        const parentTask = group.tasks.find((t: IProjectTask) => t.id === task.parent_task_id);
         // if (parentTask) {
-          // if (!parentTask.sub_tasks) parentTask.sub_tasks = [];
-          // parentTask.sub_tasks.push({ ...task });
-          // parentTask.sub_tasks_count = parentTask.sub_tasks.length; // Update the sub_tasks_count based on the actual length
-          // Ensure sub-tasks are visible when adding a new one
-          // parentTask.show_sub_tasks = true;
+        // if (!parentTask.sub_tasks) parentTask.sub_tasks = [];
+        // parentTask.sub_tasks.push({ ...task });
+        // parentTask.sub_tasks_count = parentTask.sub_tasks.length; // Update the sub_tasks_count based on the actual length
+        // Ensure sub-tasks are visible when adding a new one
+        // parentTask.show_sub_tasks = true;
         // }
       } else {
         // Handle main task addition
@@ -530,7 +532,9 @@ const taskSlice = createSlice({
         let found = false;
         for (const parentTask of group.tasks) {
           if (parentTask.sub_tasks) {
-            const subTaskIndex = parentTask.sub_tasks.findIndex(st => st.id === taskId);
+            const subTaskIndex = parentTask.sub_tasks.findIndex(
+              (st: IProjectTask) => st.id === taskId
+            );
             if (subTaskIndex !== -1) {
               parentTask.sub_tasks.splice(subTaskIndex, 1);
               parentTask.sub_tasks_count = Math.max((parentTask.sub_tasks_count || 0) - 1, 0);
@@ -542,7 +546,7 @@ const taskSlice = createSlice({
         if (found) break;
 
         // If not found in subtasks, try main tasks
-        const taskIndex = index ?? group.tasks.findIndex(t => t.id === taskId);
+        const taskIndex = index ?? group.tasks.findIndex((t: IProjectTask) => t.id === taskId);
         if (taskIndex !== -1) {
           group.tasks.splice(taskIndex, 1);
           break;
@@ -558,7 +562,7 @@ const taskSlice = createSlice({
 
       for (const group of state.taskGroups) {
         // Check main tasks
-        const task = group.tasks.find(task => task.id === id);
+        const task = group.tasks.find((task: IProjectTask) => task.id === id);
         if (task) {
           task.name = name;
           break;
@@ -567,7 +571,7 @@ const taskSlice = createSlice({
         // Check subtasks
         for (const task of group.tasks) {
           if (task.sub_tasks) {
-            const subTask = task.sub_tasks.find(subtask => subtask.id === id);
+            const subTask = task.sub_tasks.find((subtask: IProjectTask) => subtask.id === id);
             if (subTask) {
               subTask.name = name;
               break;
@@ -598,7 +602,7 @@ const taskSlice = createSlice({
             task.completed_count = completedCount;
             return true;
           }
-          
+
           // Check subtasks if they exist
           if (task.sub_tasks && task.sub_tasks.length > 0) {
             const found = findAndUpdateTask(task.sub_tasks);
@@ -628,7 +632,7 @@ const taskSlice = createSlice({
       if (!group) return;
 
       // Try to find the task in main tasks first
-      const mainTask = group.tasks.find(task => task.id === taskId);
+      const mainTask = group.tasks.find((task: IProjectTask) => task.id === taskId);
       if (mainTask) {
         mainTask.assignees = assignees as ITaskAssignee[];
         return;
@@ -637,7 +641,7 @@ const taskSlice = createSlice({
       // If not found in main tasks, look for it in subtasks
       for (const parentTask of group.tasks) {
         if (parentTask.sub_tasks) {
-          const subTask = parentTask.sub_tasks.find(st => st.id === taskId);
+          const subTask = parentTask.sub_tasks.find((st: IProjectTask) => st.id === taskId);
           if (subTask) {
             subTask.assignees = assignees as ITaskAssignee[];
             return;
@@ -651,10 +655,10 @@ const taskSlice = createSlice({
       for (const group of state.taskGroups) {
         // Find the task or its subtask
         const task =
-          group.tasks.find(task => task.id === label.id) ||
+          group.tasks.find((task: IProjectTask) => task.id === label.id) ||
           group.tasks
-            .flatMap(task => task.sub_tasks || [])
-            .find(subtask => subtask.id === label.id);
+            .flatMap((task: IProjectTask) => task.sub_tasks || [])
+            .find((subtask: IProjectTask) => subtask.id === label.id);
         if (task) {
           task.labels = label.labels || [];
           task.all_labels = label.all_labels || [];
@@ -664,7 +668,8 @@ const taskSlice = createSlice({
     },
 
     updateTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
-      const { id, status_id, color_code, color_code_dark, complete_ratio, statusCategory } =        action.payload;
+      const { id, status_id, color_code, color_code_dark, complete_ratio, statusCategory } =
+        action.payload;
 
       // Find the task in any group
       const taskInfo = findTaskInGroups(state.taskGroups, id);
@@ -699,8 +704,10 @@ const taskSlice = createSlice({
 
       for (const group of state.taskGroups) {
         const existingTask =
-          group.tasks.find(t => t.id === task.id) ||
-          group.tasks.flatMap(t => t.sub_tasks || []).find(subtask => subtask.id === task.id);
+          group.tasks.find((t: IProjectTask) => t.id === task.id) ||
+          group.tasks.flatMap((t: IProjectTask) => t.sub_tasks || []).find(
+            (subtask: IProjectTask) => subtask.id === task.id
+          );
         if (existingTask) {
           existingTask.end_date = task.end_date;
           break;
@@ -718,8 +725,10 @@ const taskSlice = createSlice({
 
       for (const group of state.taskGroups) {
         const existingTask =
-          group.tasks.find(t => t.id === task.id) ||
-          group.tasks.flatMap(t => t.sub_tasks || []).find(subtask => subtask.id === task.id);
+          group.tasks.find((t: IProjectTask) => t.id === task.id) ||
+          group.tasks.flatMap((t: IProjectTask) => t.sub_tasks || []).find(
+            (subtask: IProjectTask) => subtask.id === task.id
+          );
         if (existingTask) {
           existingTask.start_date = task.start_date;
           break;
@@ -737,8 +746,10 @@ const taskSlice = createSlice({
 
       for (const group of state.taskGroups) {
         const existingTask =
-          group.tasks.find(t => t.id === task.id) ||
-          group.tasks.flatMap(t => t.sub_tasks || []).find(subtask => subtask.id === task.id);
+          group.tasks.find((t: IProjectTask) => t.id === task.id) ||
+          group.tasks.flatMap((t: IProjectTask) => t.sub_tasks || []).find(
+            (subtask: IProjectTask) => subtask.id === task.id
+          );
         if (existingTask) {
           existingTask.total_time_string = task.total_time_string;
           break;
@@ -847,8 +858,10 @@ const taskSlice = createSlice({
       const { id: taskId, description, parent_task } = action.payload;
       for (const group of state.taskGroups) {
         const existingTask =
-          group.tasks.find(t => t.id === taskId) ||
-          group.tasks.flatMap(t => t.sub_tasks || []).find(subtask => subtask.id === taskId);
+          group.tasks.find((t: IProjectTask) => t.id === taskId) ||
+          group.tasks.flatMap((t: IProjectTask) => t.sub_tasks || []).find(
+            (subtask: IProjectTask) => subtask.id === taskId
+          );
         if (existingTask) {
           existingTask.description = description;
           break;
@@ -859,7 +872,7 @@ const taskSlice = createSlice({
     toggleTaskRowExpansion: (state, action: PayloadAction<string>) => {
       const taskId = action.payload;
       for (const group of state.taskGroups) {
-        const task = group.tasks.find(t => t.id === taskId);
+        const task = group.tasks.find((t: IProjectTask) => t.id === taskId);
         if (task) {
           task.show_sub_tasks = !task.show_sub_tasks;
           break;
@@ -910,11 +923,14 @@ const taskSlice = createSlice({
       // Also add to columns array to maintain visibility
       state.columns.push({
         ...action.payload,
-        pinned: true // New columns are visible by default
+        pinned: true, // New columns are visible by default
       });
     },
 
-    updateCustomColumn: (state, action: PayloadAction<{ key: string; column: ITaskListColumn }>) => {
+    updateCustomColumn: (
+      state,
+      action: PayloadAction<{ key: string; column: ITaskListColumn }>
+    ) => {
       const { key, column } = action.payload;
       const index = state.customColumns.findIndex(col => col.key === key);
       if (index !== -1) {
@@ -937,7 +953,7 @@ const taskSlice = createSlice({
     updateSubTasks: (state, action: PayloadAction<IProjectTask>) => {
       const { parent_task_id } = action.payload;
       for (const group of state.taskGroups) {
-        const parentTask = group.tasks.find(t => t.id === parent_task_id);
+        const parentTask = group.tasks.find((t: IProjectTask) => t.id === parent_task_id);
         if (parentTask) {
           if (!parentTask.sub_tasks) {
             parentTask.sub_tasks = [];
@@ -959,7 +975,7 @@ const taskSlice = createSlice({
       }>
     ) => {
       const { taskId, columnKey, value } = action.payload;
-      
+
       // Update in task groups
       for (const group of state.taskGroups) {
         // Check in main tasks
@@ -971,11 +987,11 @@ const taskSlice = createSlice({
           group.tasks[taskIndex].custom_column_values[columnKey] = value;
           break;
         }
-        
+
         // Check in subtasks
         for (const parentTask of group.tasks) {
           if (parentTask.sub_tasks) {
-            const subtaskIndex = parentTask.sub_tasks.findIndex(st => st.id === taskId);
+            const subtaskIndex = parentTask.sub_tasks.findIndex((st: IProjectTask) => st.id === taskId);
             if (subtaskIndex !== -1) {
               if (!parentTask.sub_tasks[subtaskIndex].custom_column_values) {
                 parentTask.sub_tasks[subtaskIndex].custom_column_values = {};
@@ -986,7 +1002,7 @@ const taskSlice = createSlice({
           }
         }
       }
-      
+
       // Also update in the customColumnValues state if needed
       if (!state.customColumnValues[taskId]) {
         state.customColumnValues[taskId] = {};
@@ -994,7 +1010,10 @@ const taskSlice = createSlice({
       state.customColumnValues[taskId][columnKey] = value;
     },
 
-    updateCustomColumnPinned: (state, action: PayloadAction<{ columnId: string; isVisible: boolean }>) => {
+    updateCustomColumnPinned: (
+      state,
+      action: PayloadAction<{ columnId: string; isVisible: boolean }>
+    ) => {
       const { columnId, isVisible } = action.payload;
       const customColumn = state.customColumns.find(col => col.id === columnId);
       const column = state.columns.find(col => col.id === columnId);
@@ -1009,13 +1028,13 @@ const taskSlice = createSlice({
     },
 
     updateRecurringChange: (state, action: PayloadAction<ITaskRecurringScheduleData>) => {
-      const {id, schedule_type, task_id} = action.payload;
-      const taskInfo = findTaskInGroups(state.taskGroups, task_id as string); 
+      const { id, schedule_type, task_id } = action.payload;
+      const taskInfo = findTaskInGroups(state.taskGroups, task_id as string);
       if (!taskInfo) return;
 
       const { task } = taskInfo;
       task.schedule_id = id;
-    } 
+    },
   },
 
   extraReducers: builder => {
@@ -1175,7 +1194,7 @@ export const {
   updateSubTasks,
   updateCustomColumnValue,
   updateCustomColumnPinned,
-  updateRecurringChange
+  updateRecurringChange,
 } = taskSlice.actions;
 
 export default taskSlice.reducer;

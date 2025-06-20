@@ -4,7 +4,7 @@ import OverviewReportsProjectCategoryGraph from './reports-overview-category-gra
 import OverviewReportsProjectHealthGraph from './reports-overview-project-health-graph';
 import { IRPTOverviewTeamInfo } from '@/types/reporting/reporting.types';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 type OverviewReportsOverviewTabProps = {
   teamId?: string | null;

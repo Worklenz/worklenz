@@ -1,14 +1,14 @@
-import { ConfigProvider, Select, Typography } from 'antd';
+import { ConfigProvider, Select, Typography } from '@/components/ui';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { getStatusIcon } from '@/utils/projectUtils';
 import { useEffect, useState } from 'react';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setProjectStatus } from '@/features/reporting/projectReports/project-reports-slice';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 interface ProjectStatusCellProps {
   currentStatus: string;

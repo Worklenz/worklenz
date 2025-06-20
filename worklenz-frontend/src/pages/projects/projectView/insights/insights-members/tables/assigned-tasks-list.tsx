@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Flex, Tooltip, Typography } from 'antd';
+import { Flex, Tooltip, Typography } from '@/components/ui';
 
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
 import { colors } from '@/styles/colors';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 
 interface AssignedTasksListTableProps {
   memberId: string;

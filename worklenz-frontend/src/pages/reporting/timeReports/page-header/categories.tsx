@@ -1,8 +1,8 @@
 import { fetchReportingProjects, setNoCategory, setSelectOrDeselectAllCategories, setSelectOrDeselectCategory } from '@/features/reporting/time-reports/time-reports-overview.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Card, Checkbox, Divider, Dropdown, Input, theme } from 'antd';
+import { Button, Card, Checkbox, Divider, Dropdown, Input } from '@/components/ui';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';

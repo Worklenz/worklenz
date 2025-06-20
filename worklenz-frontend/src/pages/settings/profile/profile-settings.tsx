@@ -1,36 +1,19 @@
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Flex,
-  Form,
-  GetProp,
-  Input,
-  Tooltip,
-  Typography,
-  UploadProps,
-  Spin,
-  Skeleton,
-} from 'antd';
+import { Button, Card, Flex, Form, Input, Tooltip, Typography, Spin, Skeleton } from '@/components/ui';
 import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { changeUserName, setUser } from '@features/user/userSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import {
-  evt_settings_profile_visit,
-  evt_settings_profile_avatar_upload,
-  evt_settings_profile_name_change,
-  evt_settings_profile_picture_update,
-} from '@/shared/worklenz-analytics-events';
-import { useAuthService } from '@/hooks/useAuth';
+import { changeUserName, setUser } from '@/features/user/user-slice';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+;
+import { useAuthService } from '@/hooks/use-auth';
 import { getBase64 } from '@/utils/file-utils';
 
 import './profile-settings.css';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { setSession } from '@/utils/session-helper';
 import { authApiService } from '@/api/auth/auth.api.service';
 

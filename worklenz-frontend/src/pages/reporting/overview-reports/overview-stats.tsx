@@ -1,4 +1,4 @@
-import { Flex, Typography, theme } from 'antd';
+import { Flex, Typography } from '@/components/ui';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import OverviewStatCard from './overview-stat-card';
 import { BankOutlined, FileOutlined, UsergroupAddOutlined } from '@ant-design/icons';
@@ -6,7 +6,7 @@ import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { IRPTOverviewStatistics } from '@/types/reporting/reporting.types';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const OverviewStats = () => {
   const [stats, setStats] = useState<IRPTOverviewStatistics>({});

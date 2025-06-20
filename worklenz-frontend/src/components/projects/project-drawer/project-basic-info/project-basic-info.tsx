@@ -1,7 +1,7 @@
-import { ColorPicker, Form, FormInstance, Input } from 'antd';
+import { ColorPicker, Form, Input } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 
 interface ProjectBasicInfoProps {
   editMode: boolean;

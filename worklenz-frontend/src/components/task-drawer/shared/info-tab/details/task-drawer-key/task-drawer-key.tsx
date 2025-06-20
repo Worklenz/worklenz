@@ -1,7 +1,7 @@
 import { ITaskFormViewModel } from '@/types/tasks/task.types';
-import { Tag } from 'antd';
+import { Tag } from '@/components/ui';
 
-import { Form } from 'antd';
+import { Form } from '@/components/ui';
 
 interface TaskDrawerKeyProps {
   taskKey: string;

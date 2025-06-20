@@ -1,4 +1,4 @@
-import { Tooltip, Typography } from 'antd';
+import { Tooltip, Typography } from '@/components/ui';
 import React from 'react';
 import { durationDateFormat } from '@/utils/durationDateFormat';
 import { formatDate } from '@/utils/timeUtils';

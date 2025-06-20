@@ -1,7 +1,7 @@
-import { Tag, Typography } from 'antd';
+import { Tag, Typography } from '@/components/ui';
 import { colors } from '@/styles/colors';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
-import { ALPHA_CHANNEL } from '@/shared/constants';
+;
 
 const CustomColorLabel = ({ label }: { label: ITaskLabel | null }) => {
   return (

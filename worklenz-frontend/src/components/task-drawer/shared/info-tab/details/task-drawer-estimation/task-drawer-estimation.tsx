@@ -1,8 +1,8 @@
 import { SocketEvents } from '@/shared/socket-events';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { colors } from '@/styles/colors';
 import { ITaskViewModel } from '@/types/tasks/task.types';
-import { Flex, Form, FormInstance, InputNumber, Typography } from 'antd';
+import { Flex, Form, InputNumber, Typography } from '@/components/ui';
 import { TFunction } from 'i18next';
 import { useState } from 'react';
 

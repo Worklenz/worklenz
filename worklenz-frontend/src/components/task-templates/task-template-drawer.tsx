@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Button, Drawer, Form, Input, List, Typography } from 'antd';
+import { Button, Drawer, Form, Input, List, Typography } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { taskTemplatesApiService } from '@/api/task-templates/task-templates.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { ITaskTemplateGetResponse } from '@/types/settings/task-templates.types';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { setSelectedTasks } from '@/features/project/project.slice';
 
 interface TaskTemplateDrawerProps {

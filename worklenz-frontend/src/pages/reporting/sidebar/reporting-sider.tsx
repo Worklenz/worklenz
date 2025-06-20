@@ -1,4 +1,4 @@
-import { ConfigProvider, Flex, Menu, MenuProps } from 'antd';
+import { ConfigProvider, Flex, Menu } from '@/components/ui';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';

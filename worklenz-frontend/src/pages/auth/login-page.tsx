@@ -7,25 +7,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import PageHeader from '@components/AuthPageHeader';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import PageHeader from '@/components/auth-page-header';
 import googleIcon from '@assets/images/google-icon.png';
-import { login, verifyAuthentication } from '@/features/auth/authSlice';
-import logger from '@/utils/errorLogger';
-import { setUser } from '@/features/user/userSlice';
+import { login, verifyAuthentication } from '@/features/auth/auth-slice';
+import logger from '@/utils/error-logger';
+import { setUser } from '@/features/user/user-slice';
 import { setSession } from '@/utils/session-helper';
-import {
-  evt_login_page_visit,
-  evt_login_with_email_click,
-  evt_login_with_google_click,
-  evt_login_remember_me_click,
-} from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import alertService from '@/services/alerts/alertService';
-import { useAuthService } from '@/hooks/useAuth';
-import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
+;
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import alertService from '@/services/alerts/alert-service';
+import { useAuthService } from '@/hooks/use-auth';
+;
 
 interface LoginFormValues {
   email: string;

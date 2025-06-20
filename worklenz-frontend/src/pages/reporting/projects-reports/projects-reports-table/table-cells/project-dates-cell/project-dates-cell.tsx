@@ -1,12 +1,12 @@
-import { DatePicker, Flex, Typography } from 'antd';
+import { DatePicker, Flex, Typography } from '@/components/ui';
 import { useEffect } from 'react';
 import { colors } from '@/styles/colors';
 import dayjs, { Dayjs } from 'dayjs';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setProjectEndDate, setProjectStartDate } from '@/features/reporting/projectReports/project-reports-slice';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 type ProjectDatesCellProps = {
   projectId: string;

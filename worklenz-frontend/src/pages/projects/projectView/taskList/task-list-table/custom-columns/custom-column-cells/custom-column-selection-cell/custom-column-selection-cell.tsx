@@ -1,4 +1,4 @@
-import { Badge, Card, Dropdown, Empty, Flex, Menu, MenuProps, Typography } from 'antd';
+import { Badge, Card, Dropdown, Empty, Flex, Menu, Typography } from '@/components/ui';
 import React, { useState, useEffect } from 'react';
 import { DownOutlined } from '@ant-design/icons';
 // custom css file
@@ -6,7 +6,7 @@ import './custom-column-selection-cell.css';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../../../../../../styles/colors';
 import { SelectionType } from '../../custom-column-modal/selection-type-column/selection-type-column';
-import { ALPHA_CHANNEL } from '@/shared/constants';
+;
 
 const CustomColumnSelectionCell = ({ 
   selectionsList,

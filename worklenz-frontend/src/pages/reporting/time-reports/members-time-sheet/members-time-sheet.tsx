@@ -10,12 +10,12 @@ import {
   Legend,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { useAppSelector } from '../../../../hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
 import { IRPTTimeMember } from '@/types/reporting/reporting.types';
-import logger from '@/utils/errorLogger';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import logger from '@/utils/error-logger';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 

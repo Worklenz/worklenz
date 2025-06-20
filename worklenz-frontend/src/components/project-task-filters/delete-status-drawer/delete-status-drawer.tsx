@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Form from 'antd/es/form';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { fetchStatuses, fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { fetchStatuses, fetchStatusesCategories } from '@/features/task-attributes/task-status.slice';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { deleteStatusToggleDrawer } from '@/features/projects/status/DeleteStatusSlice';
-import { Drawer, Alert, Card, Select, Button, Typography, Badge } from 'antd';
+import { Drawer, Alert, Card, Select, Button, Typography, Badge } from '@/components/ui';
 import { DownOutlined } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import {
@@ -18,7 +18,7 @@ import {
 } from '@features/board/board-slice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 const { Title, Text } = Typography;
 const { Option } = Select;
 

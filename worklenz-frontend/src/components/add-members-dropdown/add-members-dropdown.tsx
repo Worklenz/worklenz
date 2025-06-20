@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Avatar, Button, Checkbox, Dropdown, Input, Menu, Typography } from 'antd';
+import { Avatar, Button, Checkbox, Dropdown, Input, Menu, Typography } from '@/components/ui';
 import { PlusOutlined, UsergroupAddOutlined } from '@ant-design/icons';
 import './add-members-dropdown.css';
 import { AvatarNamesMap } from '../../shared/constants';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const AddMembersDropdown: React.FC = () => {
   const [checkedMembers, setCheckedMembers] = useState<string[]>([]);

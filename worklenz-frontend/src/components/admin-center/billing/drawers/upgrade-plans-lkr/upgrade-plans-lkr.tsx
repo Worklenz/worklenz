@@ -1,19 +1,19 @@
-import { Button, Card, Col, Form, Input, notification, Row, Tag, Typography } from 'antd';
+import { Button, Card, Col, Form, Input, notification, Row, Tag, Typography } from '@/components/ui';
 import React, { useState } from 'react';
 import './upgrade-plans-lkr.css';
 import { CheckCircleFilled } from '@ant-design/icons';
 import { RootState } from '@/app/store';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 import { timeZoneCurrencyMap } from '@/utils/timeZoneCurrencyMap';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { toggleUpgradeModal, fetchBillingInfo } from '@features/admin-center/admin-center.slice';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { setSession } from '@/utils/session-helper';
 import { authApiService } from '@/api/auth/auth.api.service';
-import { setUser } from '@/features/user/userSlice';
+import { setUser } from '@/features/user/user-slice';
 
 const UpgradePlansLKR: React.FC = () => {
   const dispatch = useAppDispatch();

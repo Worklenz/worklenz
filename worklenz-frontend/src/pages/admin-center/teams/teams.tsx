@@ -1,11 +1,11 @@
 import { SearchOutlined, SyncOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-components';
-import { Button, Flex, Input, Tooltip } from 'antd';
+import { Button, Flex, Input, Tooltip } from '@/components/ui';
 
 import React, { useEffect, useState } from 'react';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import {
   adminCenterApiService,
   IOrganizationTeamRequestParams,
@@ -15,8 +15,8 @@ import { IOrganizationTeam } from '@/types/admin-center/admin-center.types';
 import './teams.css';
 import TeamsTable from '@/components/admin-center/teams/teams-table/teams-table';
 
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
-import logger from '@/utils/errorLogger';
+;
+import logger from '@/utils/error-logger';
 import { RootState } from '@/app/store';
 import { useTranslation } from 'react-i18next';
 import AddTeamDrawer from '@/components/admin-center/teams/add-team-drawer/add-team-drawer';

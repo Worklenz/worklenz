@@ -1,10 +1,10 @@
 import { DownloadOutlined } from '@ant-design/icons';
-import { Badge, Button, Checkbox, Flex, Segmented } from 'antd';
+import { Badge, Button, Checkbox, Flex, Segmented } from '@/components/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { colors } from '@/styles/colors';
 import InsightsMembers from './insights-members/insights-members';
 import InsightsOverview from './insights-overview/insights-overview';
@@ -18,8 +18,8 @@ import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import logo from '@/assets/images/worklenz-light-mode.png';
-import { evt_project_insights_members_visit, evt_project_insights_overview_visit, evt_project_insights_tasks_visit } from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+;
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 
 type SegmentType = 'Overview' | 'Members' | 'Tasks';
 

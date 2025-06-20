@@ -1,8 +1,8 @@
 import { RouteObject } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
-import SettingsLayout from '@/layouts/SettingsLayout';
+import SettingsLayout from '@/layouts/settings-layout';
 import { settingsItems } from '@/lib/settings/settings-constants';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 
 const SettingsGuard = ({ children, adminRequired }: { children: React.ReactNode; adminRequired: boolean }) => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();

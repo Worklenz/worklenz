@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '@/shared/constants';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 import apiClient from '../api-client';
 import { IServerResponse } from '@/types/common.types';
 import { IAllocationViewModel } from '@/types/reporting/reporting-allocation.types';

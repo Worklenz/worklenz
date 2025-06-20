@@ -2,12 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import reportWebVitals from './reportWebVitals';
+import reportWebVitals from './report-web-vitals';
 import './i18n';
 import { Provider } from 'react-redux';
 import { store } from './app/store';
 import { applyCssVariables } from './styles/colors';
-import { ConfigProvider, theme } from 'antd';
+import { ConfigProvider, theme } from '@/components/ui';
 import { colors } from './styles/colors';
 import { getInitialTheme } from './utils/get-initial-theme';
 
@@ -37,7 +37,7 @@ root.render(
   >
     <Provider store={store}>
       <React.StrictMode>
-        <App />
+        <App children={undefined} />
       </React.StrictMode>
     </Provider>
   </ConfigProvider>

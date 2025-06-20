@@ -16,11 +16,17 @@ import { DragOverlay, DndContext, PointerSensor, useSensor, useSensors, Keyboard
 import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import { DragEndEvent } from '@dnd-kit/core';
-import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from 'antd';
+import List from 'antd/es/list';
+import Card from 'antd/es/card';
+import Avatar from 'antd/es/avatar';
+import Dropdown from 'antd/es/dropdown';
+import Empty from 'antd/es/empty';
+import Divider from 'antd/es/divider';
+import Button from 'antd/es/button';
 import dayjs from 'dayjs';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 
 import { colors } from '@/styles/colors';
 import TaskContextMenu from './context-menu/task-context-menu';
@@ -50,9 +56,9 @@ import StatusDropdown from '@/components/task-list-common/status-dropdown/status
 import PriorityDropdown from '@/components/task-list-common/priorityDropdown/priority-dropdown';
 import AddCustomColumnButton from './custom-columns/custom-column-modal/add-custom-column-button';
 import { fetchSubTasks, reorderTasks, toggleTaskRowExpansion, updateCustomColumnValue } from '@/features/tasks/tasks.slice';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import ConfigPhaseButton from '@/features/projects/singleProject/phase/ConfigPhaseButton';
 import PhaseDropdown from '@/components/taskListCommon/phase-dropdown/phase-dropdown';
 import CustomColumnModal from './custom-columns/custom-column-modal/custom-column-modal';

@@ -1,19 +1,19 @@
-import { Button, Collapse, CollapseProps, Flex, Skeleton, Tooltip, Typography, Upload } from 'antd';
+import { Button, Collapse, Flex, Skeleton, Tooltip, Typography, Upload } from '@/components/ui';
 import React, { useEffect, useState, useRef } from 'react';
 import { ReloadOutlined } from '@ant-design/icons';
 import DescriptionEditor from './description-editor';
 import SubTaskTable from './subtask-table';
 import DependenciesTable from './dependencies-table';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import TaskDetailsForm from './task-details-form';
 import { fetchTask } from '@/features/tasks/tasks.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { TFunction } from 'i18next';
 import { subTasksApiService } from '@/api/tasks/subtasks.api.service';
 import { ISubTask } from '@/types/tasks/subTask.types';
 import { ITaskDependency } from '@/types/tasks/task-dependency.types';
 import { taskDependenciesApiService } from '@/api/tasks/task-dependencies.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { getBase64 } from '@/utils/file-utils';
 import {
   ITaskAttachment,

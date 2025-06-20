@@ -1,8 +1,7 @@
 import { IServerResponse } from '@/types/common.types';
 import apiClient from '@/api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
-import { toQueryString } from '@/utils/toQueryString';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { IDeadlineTaskStats } from '@/types/project/projectInsights.types';
 import {
   IInsightTasks,

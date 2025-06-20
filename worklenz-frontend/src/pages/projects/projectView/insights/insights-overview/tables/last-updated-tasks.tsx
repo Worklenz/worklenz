@@ -1,12 +1,12 @@
-import { Flex, Table, Tooltip, Typography } from 'antd';
+import { Flex, Table, Tooltip, Typography } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { colors } from '@/styles/colors';
 import { TableProps } from 'antd/lib';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 

@@ -1,5 +1,5 @@
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { Button, Result } from 'antd';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { Button, Result } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 

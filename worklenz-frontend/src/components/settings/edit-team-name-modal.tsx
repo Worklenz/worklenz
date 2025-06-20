@@ -1,6 +1,6 @@
-import { Divider, Form, Input, message, Modal, Typography } from 'antd';
+import { Divider, Form, Input, message, Modal, Typography } from '@/components/ui';
 import { useEffect, useState } from 'react';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { editTeamName, fetchTeams } from '@/features/teams/teamSlice';
 import { ITeamGetResponse } from '@/types/teams/team.type';
 

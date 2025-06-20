@@ -2,12 +2,12 @@ import {
   useGetProjectsQuery,
   useToggleFavoriteProjectMutation,
 } from '@/api/projects/projects.v1.api.service';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { formatDateRange } from '@/utils/project-list-utils';
 import { CalendarOutlined } from '@ant-design/icons';
-import { Badge, Tooltip } from 'antd';
+import { Badge, Tooltip } from '@/components/ui';
 import { TFunction } from 'i18next';
 import { NavigateFunction } from 'react-router-dom';
 

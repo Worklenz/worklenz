@@ -1,6 +1,6 @@
 // TaskNameCell.tsx
 import React, { useCallback } from 'react';
-import { Flex, Typography, Button } from 'antd';
+import { Flex, Typography, Button } from '@/components/ui';
 import {
   DoubleRightOutlined,
   DownOutlined,
@@ -8,7 +8,7 @@ import {
   ExpandAltOutlined,
 } from '@ant-design/icons';
 import { colors } from '@/styles/colors';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

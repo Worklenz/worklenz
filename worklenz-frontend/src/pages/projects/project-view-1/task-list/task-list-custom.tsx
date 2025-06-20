@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Checkbox, theme } from 'antd';
+import { Checkbox } from '@/components/ui';
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,11 +11,11 @@ import {
   Column,
 } from '@tanstack/react-table';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import React from 'react';
 import './task-list-custom.css';
 import TaskListInstantTaskInput from './task-list-instant-task-input/task-list-instant-task-input';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { createColumns } from './task-list-columns/task-list-columns';
 
 interface TaskListCustomProps {

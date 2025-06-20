@@ -1,19 +1,7 @@
-import {
-  Button,
-  Col,
-  Flex,
-  Form,
-  Popconfirm,
-  Row,
-  Select,
-  Table,
-  TableProps,
-  Tag,
-  Typography,
-} from 'antd';
+import { Button, Col, Flex, Form, Popconfirm, Row, Select, Table, Tag, Typography } from '@/components/ui';
 import React, { useState, useEffect } from 'react';
 import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
 import { TFunction } from 'i18next';
 import { IDependencyType, ITaskDependency } from '@/types/tasks/task-dependency.types';

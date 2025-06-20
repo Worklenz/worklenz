@@ -1,6 +1,6 @@
-import { Avatar, Tooltip } from 'antd';
+import { Avatar, Tooltip } from '@/components/ui';
 import React, { useCallback, useMemo } from 'react';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { InlineMember } from '@/types/teamMembers/inline-member.types';
 
 interface AvatarsProps {
   members: InlineMember[];

@@ -1,7 +1,7 @@
-import { notification } from 'antd';
+import { notification } from '@/components/ui';
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
 import { teamsApiService } from '@/api/teams/teams.api.service';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 import { BankOutlined } from '@ant-design/icons';
 import './push-notification-template.css';
 

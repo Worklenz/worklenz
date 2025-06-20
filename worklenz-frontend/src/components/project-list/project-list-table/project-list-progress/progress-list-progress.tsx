@@ -1,6 +1,6 @@
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { getTaskProgressTitle } from '@/utils/project-list-utils';
-import { Tooltip, Progress } from 'antd';
+import { Tooltip, Progress } from '@/components/ui';
 
 export const ProgressListProgress: React.FC<{ record: IProjectViewModel }> = ({ record }) => {
   return (

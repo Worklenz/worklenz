@@ -3,16 +3,16 @@ import {
   ExclamationCircleOutlined,
   FileExcelOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Flex } from 'antd';
+import { Button, Card, Flex } from '@/components/ui';
 import React, { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   setMemberReportingDrawerActiveTab,
   toggleMembersOverviewTasksStatsDrawer,
   toggleMembersOverviewProjectsStatsDrawer,
 } from '../../membersReportsSlice';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { IRPTOverviewMemberStats } from '@/types/reporting/reporting.types';
 
 interface StatCardProps {

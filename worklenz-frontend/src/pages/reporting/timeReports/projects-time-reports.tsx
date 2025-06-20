@@ -1,8 +1,8 @@
-import { Card, Flex } from 'antd';
+import { Card, Flex } from '@/components/ui';
 import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time-report-page-header';
 import ProjectTimeSheetChart, { ProjectTimeSheetChartRef } from '@/pages/reporting/time-reports/project-time-sheet/project-time-sheet-chart';
 import { useTranslation } from 'react-i18next';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import TimeReportingRightHeader from './timeReportingRightHeader/TimeReportingRightHeader';
 import { useRef } from 'react';
 

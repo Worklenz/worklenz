@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Flex, Progress } from 'antd';
+import { Flex, Progress } from '@/components/ui';
 import { colors } from '@/styles/colors';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import { DownOutlined, ExclamationCircleOutlined, RightOutlined } from '@ant-design/icons';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { useTranslation } from 'react-i18next';
 import { IProjectOverviewStats } from '@/types/project/projectsViewModel.types';

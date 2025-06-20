@@ -1,11 +1,11 @@
-import { Badge, Button, Flex, Tooltip } from 'antd';
+import { Badge, Button, Flex, Tooltip } from '@/components/ui';
 import React, { useCallback } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import CustomAvatar from '../../CustomAvatar';
-import { fetchMemberProjects, toggleScheduleDrawer } from '../../../features/schedule/scheduleSlice';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import CustomAvatar from '../../custom-avatar';
+import { fetchMemberProjects, toggleScheduleDrawer } from '@/features/schedule/schedule-slice';
 import { CaretDownOutlined, CaretRightFilled } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 
 type GranttChartMembersTabelProps = {
   members: any[];

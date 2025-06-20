@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Flex, Form, Mentions, Skeleton, Space, Tooltip, Typography } from 'antd';
+import { Button, ConfigProvider, Flex, Form, Mentions, Skeleton, Space, Tooltip, Typography } from '@/components/ui';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
@@ -16,7 +16,7 @@ import { IProjectUpdateCommentViewModel } from '@/types/project/project.types';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { getUserSession } from '@/utils/session-helper';
 import './project-view-updates.css';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { DeleteOutlined } from '@ant-design/icons';
 
 const MAX_COMMENT_LENGTH = 2000;

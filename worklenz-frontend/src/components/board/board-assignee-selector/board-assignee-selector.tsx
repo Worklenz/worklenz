@@ -11,8 +11,8 @@ import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
 
 import { useMemo, useRef, useState } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { toggleProjectMemberDrawer } from '../../../features/projects/singleProject/members/projectMembersSlice';
 import { colors } from '../../../styles/colors';
 import { PlusOutlined, UsergroupAddOutlined } from '@ant-design/icons';
@@ -22,8 +22,8 @@ import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { sortByBooleanField, sortBySelection, sortTeamMembers } from '@/utils/sort-team-members';
-import { useAuthService } from '@/hooks/useAuth';
-import { useSocket } from '@/socket/socketContext';
+import { useAuthService } from '@/hooks/use-auth';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 

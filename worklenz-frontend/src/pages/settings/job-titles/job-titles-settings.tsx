@@ -4,29 +4,19 @@ import {
   ExclamationCircleFilled,
   SearchOutlined,
 } from '@ant-design/icons';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
+;
 import { colors } from '@/styles/colors';
 import { IJobTitle, IJobTitlesViewModel } from '@/types/job.types';
 import { deleteJobTitle } from '@features/settings/job/jobSlice';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
-import {
-  Button,
-  Card,
-  Flex,
-  Input,
-  Popconfirm,
-  Table,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Card, Flex, Input, Popconfirm, Table, Tooltip, Typography } from '@/components/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import JobTitleDrawer from './job-titles-drawer';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 interface PaginationType {
   current: number;

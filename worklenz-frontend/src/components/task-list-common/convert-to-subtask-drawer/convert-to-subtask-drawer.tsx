@@ -1,8 +1,8 @@
 import { Drawer, Tag, Typography, Flex, Table, Button, Tooltip, Skeleton } from 'antd/es';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useState } from 'react';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import {
   fetchTaskGroups,
   IGroupBy,
@@ -13,9 +13,9 @@ import { RightOutlined } from '@ant-design/icons';
 import CustomSearchbar from '@/components/CustomSearchbar';
 import { ITaskListConfigV2, tasksApiService } from '@/api/tasks/tasks.api.service';
 import { SocketEvents } from '@/shared/socket-events';
-import { useSocket } from '@/socket/socketContext';
-import { useAuthService } from '@/hooks/useAuth';
-import logger from '@/utils/errorLogger';
+import { useSocket } from '@/socket/socket-context';
+import { useAuthService } from '@/hooks/use-auth';
+import logger from '@/utils/error-logger';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 

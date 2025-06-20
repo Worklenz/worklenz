@@ -1,20 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Avatar,
-  Button,
-  Drawer,
-  Flex,
-  Form,
-  message,
-  Select,
-  Spin,
-  Tooltip,
-  Typography,
-} from 'antd';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAuthService } from '@/hooks/useAuth';
+import { Avatar, Button, Drawer, Flex, Form, message, Select, Spin, Tooltip, Typography } from '@/components/ui';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAuthService } from '@/hooks/use-auth';
 import { colors } from '@/styles/colors';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
@@ -24,10 +13,10 @@ import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { IJobTitle } from '@/types/job.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
-import { setUser } from '@/features/user/userSlice';
+import { setUser } from '@/features/user/user-slice';
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;

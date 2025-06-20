@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useMemo, useState } from 'react';
-import { ConfigProvider, Table, TableColumnsType } from 'antd';
+import { ConfigProvider, Table } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import CustomTableTitle from '../../../../CustomTableTitle';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { IRPTMember } from '@/types/reporting/reporting.types';

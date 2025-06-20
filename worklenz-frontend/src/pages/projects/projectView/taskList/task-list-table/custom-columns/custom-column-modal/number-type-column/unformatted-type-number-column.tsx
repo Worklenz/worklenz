@@ -1,6 +1,6 @@
-import { Form, Typography } from 'antd';
+import { Form, Typography } from '@/components/ui';
 import React from 'react';
-import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../../../../../@/hooks/use-app-selector';
 
 const UnformattedTypeNumberColumn = () => {
   // get initial data from task list custom column slice

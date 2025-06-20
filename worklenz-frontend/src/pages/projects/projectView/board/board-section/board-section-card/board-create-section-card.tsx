@@ -1,17 +1,17 @@
-import { Button, Flex } from 'antd';
+import { Button, Flex } from '@/components/ui';
 import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { nanoid } from '@reduxjs/toolkit';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { themeWiseColor } from '@/utils/themeWiseColor';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { themeWiseColor } from '@/utils/theme-wise-color';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { addBoardSectionCard, fetchBoardTaskGroups, IGroupBy } from '@features/board/board-slice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-request';
-import { createStatus, fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
-import { ALPHA_CHANNEL } from '@/shared/constants';
-import logger from '@/utils/errorLogger';
+import { createStatus, fetchStatuses } from '@/features/task-attributes/task-status.slice';
+;
+import logger from '@/utils/error-logger';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 
 const BoardCreateSectionCard = () => {

@@ -1,5 +1,5 @@
 import { projectsApiService } from '@/api/projects/projects.api.service';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 interface IProjectDrawerState {

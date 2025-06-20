@@ -1,6 +1,6 @@
-import { Drawer, Typography, Flex, Button, Space, Dropdown } from 'antd';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { Drawer, Typography, Flex, Button, Space, Dropdown } from '@/components/ui';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { toggleMembersReportsDrawer } from '../membersReportsSlice';
 import { DownOutlined } from '@ant-design/icons';
 import MembersReportsDrawerTabs from './members-reports-drawer-tabs';
@@ -9,9 +9,9 @@ import MembersOverviewTasksStatsDrawer from './overviewTab/members-overview-task
 import MembersOverviewProjectsStatsDrawer from './overviewTab/members-overview-projects-stats-drawer/members-overview-projects-stats-drawer';
 import TimeWiseFilter from '@/components/reporting/time-wise-filter';
 import { useState } from 'react';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 type MembersReportsDrawerProps = {
   memberId: string | null;

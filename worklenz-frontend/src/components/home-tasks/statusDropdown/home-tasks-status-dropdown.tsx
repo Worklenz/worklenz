@@ -1,11 +1,11 @@
-import { Badge, Flex, Select } from 'antd';
+import { Badge, Flex, Select } from '@/components/ui';
 import './home-tasks-status-dropdown.css';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 import { ITaskStatus } from '@/types/status.types';
 import { useState, useEffect, useMemo } from 'react';
-import { ALPHA_CHANNEL } from '@/shared/constants';
-import { useSocket } from '@/socket/socketContext';
+;
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

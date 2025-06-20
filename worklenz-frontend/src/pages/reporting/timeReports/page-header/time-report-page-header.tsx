@@ -3,7 +3,7 @@ import Team from './team';
 import Categories from './categories';
 import Projects from './projects';
 import Billable from './billable';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   fetchReportingTeams,
   fetchReportingProjects,

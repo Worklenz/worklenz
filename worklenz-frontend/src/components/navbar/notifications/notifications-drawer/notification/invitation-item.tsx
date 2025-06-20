@@ -1,12 +1,12 @@
 import { teamsApiService } from '@/api/teams/teams.api.service';
-import { verifyAuthentication } from '@/features/auth/authSlice';
-import { setActiveTeam } from '@/features/teams/teamSlice';
-import { setUser } from '@/features/user/userSlice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { verifyAuthentication } from '@/features/auth/auth-slice';
+import { setActiveTeam } from '@/features/teams/team-slice';
+import { setUser } from '@/features/user/user-slice';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { createAuthService } from '@/services/auth/auth.service';
 import { ITeamInvitationViewModel } from '@/types/notifications/notifications.types';
 import { IAcceptTeamInvite } from '@/types/teams/team.type';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { TFunction } from 'i18next';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';

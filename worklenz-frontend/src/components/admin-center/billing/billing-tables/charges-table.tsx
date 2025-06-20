@@ -1,8 +1,8 @@
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { IBillingCharge, IBillingChargesResponse } from '@/types/admin-center/admin-center.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { formatDate } from '@/utils/timeUtils';
-import { Table, TableProps, Tag } from 'antd';
+import { Table, Tag } from '@/components/ui';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

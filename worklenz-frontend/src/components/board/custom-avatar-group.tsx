@@ -1,4 +1,4 @@
-import { Button, Flex } from 'antd';
+import { Button, Flex } from '@/components/ui';
 import AddMembersDropdown from '@/components/add-members-dropdown/add-members-dropdown';
 import Avatars from '../avatars/avatars';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

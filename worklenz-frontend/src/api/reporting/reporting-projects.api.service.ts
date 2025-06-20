@@ -2,8 +2,8 @@ import { IServerResponse } from '@/types/common.types';
 import { IGetProjectsRequestBody, IRPTOverviewProjectInfo, IRPTOverviewProjectMember, IRPTProjectsViewModel } from '@/types/reporting/reporting.types';
 import apiClient from '../api-client';
 import { API_BASE_URL } from '@/shared/constants';
-import { toQueryString } from '@/utils/toQueryString';
-import { ITaskListGroup } from '@/types/tasks/taskList.types';
+import { toQueryString } from '@/utils/to-query-string';
+import { ITaskListGroup } from '@/types/tasks/task-list.types';
 
 const rootUrl = `${API_BASE_URL}/reporting/projects`;
 

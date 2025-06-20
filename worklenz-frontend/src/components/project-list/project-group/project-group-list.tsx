@@ -1,19 +1,5 @@
 import React, { useMemo } from 'react';
-import { 
-  Card, 
-  Col, 
-  Empty, 
-  Row, 
-  Skeleton, 
-  Typography, 
-  Progress, 
-  Tooltip, 
-  Badge, 
-  Space,
-  Avatar,
-  theme,
-  Divider
-} from 'antd';
+import { Card, Col, Empty, Row, Skeleton, Typography, Progress, Tooltip, Badge, Space, Avatar, Divider } from '@/components/ui';
 import { 
   ClockCircleOutlined, 
   TeamOutlined, 
@@ -25,9 +11,9 @@ import {
   MoreOutlined
 } from '@ant-design/icons';
 import { ProjectGroupListProps } from '@/types/project/project.types';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import { 
   fetchProjectData, 
   setProjectId, 
@@ -36,15 +22,11 @@ import {
 import { 
   toggleArchiveProject, 
   toggleArchiveProjectForAll 
-} from '@/features/projects/projectsSlice';
-import { useAuthService } from '@/hooks/useAuth';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { 
-  evt_projects_settings_click, 
-  evt_projects_archive, 
-  evt_projects_archive_all 
-} from '@/shared/worklenz-analytics-events';
-import logger from '@/utils/errorLogger';
+} from '@/features/projects/projects-slice';
+import { useAuthService } from '@/hooks/use-auth';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+;
+import logger from '@/utils/error-logger';
 
 const { Title, Text } = Typography;
 

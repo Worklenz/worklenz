@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Dropdown, Input, InputRef, MenuProps, Typography } from 'antd';
+import { Button, Dropdown, Input, Typography } from '@/components/ui';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -14,8 +14,8 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { setTaskCardDisabled, initializeGroup } from '@/features/board/create-card.slice';
 import TaskCreateCard from '../taskCreateCard/TaskCreateCard';
 import TaskCard from '../taskCard/TaskCard';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { deleteStatus } from '@features/projects/status/StatusSlice';
 import ChangeCategoryDropdown from '../changeCategoryDropdown/ChangeCategoryDropdown';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

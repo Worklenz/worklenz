@@ -1,16 +1,16 @@
 import { EditOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-components';
-import { Button, Card, Input, Space, Tooltip, Typography } from 'antd';
+import { Button, Card, Input, Space, Tooltip, Typography } from '@/components/ui';
 import React, { useEffect, useState } from 'react';
 import OrganizationAdminsTable from '@/components/admin-center/overview/organization-admins-table/organization-admins-table';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { RootState } from '@/app/store';
 import { useTranslation } from 'react-i18next';
 import OrganizationName from '@/components/admin-center/overview/organization-name/organization-name';
 import OrganizationOwner from '@/components/admin-center/overview/organization-owner/organization-owner';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { IOrganization, IOrganizationAdmin } from '@/types/admin-center/admin-center.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { tr } from 'date-fns/locale';
 
 const { Text } = Typography;

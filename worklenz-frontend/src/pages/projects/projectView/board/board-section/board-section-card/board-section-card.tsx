@@ -1,4 +1,4 @@
-import { Button, Flex } from 'antd';
+import { Button, Flex } from '@/components/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
@@ -6,19 +6,19 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import BoardSectionCardHeader from './board-section-card-header';
 import { PlusOutlined } from '@ant-design/icons';
 import BoardViewTaskCard from '../board-task-card/board-view-task-card';
 import BoardViewCreateTaskCard from '../board-task-card/board-view-create-task-card';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
-import { DEFAULT_TASK_NAME } from '@/shared/constants';
+;
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 interface IBoardSectionCardProps {
   taskGroup: ITaskListGroup;

@@ -1,5 +1,5 @@
 import { Message, User } from '@/types/socket.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { Socket } from 'socket.io-client';
 
 export class SocketService {

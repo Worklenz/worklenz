@@ -1,6 +1,6 @@
-import { Drawer, Typography, Flex, Button, Dropdown } from 'antd';
+import { Drawer, Typography, Flex, Button, Dropdown } from '@/components/ui';
 import React, { useState } from 'react';
-import { useAppSelector } from '../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../@/hooks/use-app-selector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { BankOutlined, DownOutlined } from '@ant-design/icons';
 import { colors } from '../../../../styles/colors';

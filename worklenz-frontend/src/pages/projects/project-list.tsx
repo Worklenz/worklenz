@@ -4,20 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ProjectViewType, ProjectGroupBy } from '@/types/project/project.types';
 import { setViewMode, setGroupBy } from '@features/project/project-view-slice';
 import debounce from 'lodash/debounce';
-import {
-  Button,
-  Card,
-  Empty,
-  Flex,
-  Input,
-  Pagination,
-  Segmented,
-  Select,
-  Skeleton,
-  Table,
-  TablePaginationConfig,
-  Tooltip,
-} from 'antd';
+import { Button, Card, Empty, Flex, Input, Pagination, Segmented, Select, Skeleton, Table, Tooltip } from '@/components/ui';
 import { PageHeader } from '@ant-design/pro-components';
 import {
   SearchOutlined,
@@ -25,7 +12,7 @@ import {
   UnorderedListOutlined,
   AppstoreOutlined,
 } from '@ant-design/icons';
-import type { FilterValue, SorterResult } from 'antd/es/table/interface';
+import type { FilterValue, SorterResult, TablePaginationConfig } from 'antd/es/table/interface';
 
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
@@ -38,46 +25,37 @@ import { ProgressListProgress } from '@/components/project-list/project-list-tab
 import { ProjectListUpdatedAt } from '@/components/project-list/project-list-table/project-list-updated-at/project-list-updated';
 import { ProjectNameCell } from '@/components/project-list/project-list-table/project-name/project-name-cell';
 import { ProjectRateCell } from '@/components/project-list/project-list-table/project-list-favorite/project-rate-cell';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { InlineMember } from '@/types/teamMembers/inline-member.types';
 
 import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 
-import {
-  DEFAULT_PAGE_SIZE,
-  FILTER_INDEX_KEY,
-  PAGE_SIZE_OPTIONS,
-  PROJECT_SORT_FIELD,
-  PROJECT_SORT_ORDER,
-} from '@/shared/constants';
+;
 import { IProjectFilter } from '@/types/project/project.types';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { IProjectViewModel } from '@/types/project/project-view-model.types';
 
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import './project-list.css';
-import { useAuthService } from '@/hooks/useAuth';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAuthService } from '@/hooks/use-auth';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   setFilteredCategories,
   setFilteredStatuses,
   setRequestParams,
   setGroupedRequestParams,
   fetchGroupedProjects,
-} from '@/features/projects/projectsSlice';
-import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
-import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
-import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
+} from '@/features/projects/projects-slice';
+import { fetchProjectStatuses } from '@/features/projects/lookups/project-statuses/project-statuses.slice';
+import { fetchProjectCategories } from '@/features/projects/lookups/project-categories/project-categories.slice';
+import { fetchProjectHealth } from '@/features/projects/lookups/project-health/project-health.slice';
 import { setProjectId, setStatuses } from '@/features/project/project.slice';
 import { setProject } from '@/features/project/project.slice';
 import { createPortal } from 'react-dom';
-import {
-  evt_projects_page_visit,
-  evt_projects_refresh_click,
-  evt_projects_search,
-} from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+;
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
 import ProjectGroupList from '@/components/project-list/project-group/project-group-list';
-import { groupProjects } from '@/utils/project-group';
+import { FILTER_INDEX_KEY, PROJECT_SORT_FIELD, PROJECT_SORT_ORDER, DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
+import { evt_projects_refresh_click, evt_projects_search, evt_projects_page_visit } from '@/shared/worklenz-analytics-events';
 
 const createFilters = (items: { id: string; name: string }[]) =>
   items.map(item => ({ text: item.name, value: item.id })) as ColumnFilterItem[];

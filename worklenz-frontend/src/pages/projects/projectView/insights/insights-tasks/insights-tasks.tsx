@@ -1,4 +1,4 @@
-import { Button, Card, Flex, Tooltip, Typography } from 'antd';
+import { Button, Card, Flex, Tooltip, Typography } from '@/components/ui';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { colors } from '@/styles/colors';
 import OverdueTasksTable from './tables/overdue-tasks-table';
@@ -7,7 +7,7 @@ import TaskCompletedEarlyTable from './tables/task-completed-early-table';
 import TaskCompletedLateTable from './tables/task-completed-late-table';
 import ProjectStats from '../project-stats/project-stats';
 import { TFunction } from 'i18next';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const InsightsTasks = ({ t }: { t: TFunction }) => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);

@@ -12,21 +12,21 @@ import {
   UsergroupAddOutlined,
 } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-components';
-import { Button, Dropdown, Flex, Tag, Tooltip, Typography } from 'antd';
+import { Button, Dropdown, Flex, Tag, Tooltip, Typography } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { colors } from '@/styles/colors';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { SocketEvents } from '@/shared/socket-events';
-import { useAuthService } from '@/hooks/useAuth';
-import { useSocket } from '@/socket/socketContext';
+import { useAuthService } from '@/hooks/use-auth';
+import { useSocket } from '@/socket/socket-context';
 import { setProject, setImportTaskTemplateDrawerOpen, setRefreshTimestamp, getProject } from '@features/project/project.slice';
 import { addTask, fetchTaskGroups, fetchTaskListColumns, IGroupBy } from '@features/tasks/tasks.slice';
 import ProjectStatusIcon from '@/components/common/project-status-icon/project-status-icon';
-import { formatDate } from '@/utils/timeUtils';
-import { toggleSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
+import { formatDate } from '@/utils/time-utils';
+import { toggleSaveAsTemplateDrawer } from '@/features/projects/projects-slice';
 import SaveProjectAsTemplate from '@/components/save-project-as-template/save-project-as-template';
 import {
   fetchProjectData,
@@ -37,15 +37,15 @@ import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/tas
 import { useState } from 'react';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
 import { DEFAULT_TASK_NAME, UNMAPPED } from '@/shared/constants';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service';
-import logger from '@/utils/errorLogger';
+import { IProjectTask } from '@/types/project/project-tasks-view-model.types';
+import { getGroupIdByGroupedColumn } from '@/services/task-list/task-list.service';
+import logger from '@/utils/error-logger';
 import { createPortal } from 'react-dom';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
-import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
-import useIsProjectManager from '@/hooks/useIsProjectManager';
-import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { toggleProjectMemberDrawer } from '@features/projects/singleProject/members/project-members-slice';
+import useIsProjectManager from '@/hooks/use-is-project-manager';
+import useTabSearchParam from '@/hooks/use-tab-search-param';
 import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 

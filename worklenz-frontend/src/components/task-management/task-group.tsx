@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSelector } from 'react-redux';
-import { Button, Typography } from 'antd';
+import { Button, Typography } from '@/components/ui';
 import { PlusOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

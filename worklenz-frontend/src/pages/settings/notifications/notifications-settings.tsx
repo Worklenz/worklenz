@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Card, Checkbox, Divider, Flex, Form, Typography } from 'antd/es';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { INotificationSettings } from '@/types/settings/notifications.types';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 const NotificationsSettings = () => {
   const { t } = useTranslation('settings/notifications');

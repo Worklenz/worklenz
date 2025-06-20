@@ -1,10 +1,10 @@
 import type { NavigateFunction } from 'react-router-dom';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { AppDispatch } from '@/app/store';
-import type { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import type { IProjectViewModel } from '@/types/project/project-view-model.types';
 import type { IProjectStatus } from '@/types/project/projectStatus.types';
 import type { IProjectCategory } from '@/types/project/projectCategory.types';
-import type { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import type { InlineMember } from '@/types/teamMembers/inline-member.types';
 import { FilterValue } from 'antd/es/table/interface';
 import { SorterResult } from 'antd/es/table/interface';
 

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import TaskListFilters from '../taskList/task-list-filters/task-list-filters';
-import { Flex, Skeleton } from 'antd';
+import { Flex, Skeleton } from '@/components/ui';
 import BoardSectionCardContainer from './board-section/board-section-container';
 import {
   fetchBoardTaskGroups,
@@ -10,7 +10,7 @@ import {
   IGroupBy,
   updateTaskProgress,
 } from '@features/board/board-slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   DndContext,
   DragEndEvent,
@@ -32,17 +32,17 @@ import {
   closestCorners,
 } from '@dnd-kit/core';
 import BoardViewTaskCard from './board-section/board-task-card/board-view-task-card';
-import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
+import { fetchStatusesCategories } from '@/features/task-attributes/task-status.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
-import { useSocket } from '@/socket/socketContext';
-import { useAuthService } from '@/hooks/useAuth';
+import { useSocket } from '@/socket/socket-context';
+import { useAuthService } from '@/hooks/use-auth';
 import { SocketEvents } from '@/shared/socket-events';
 import alertService from '@/services/alerts/alertService';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { evt_project_board_visit, evt_project_task_list_drag_and_move } from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+;
 import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-request';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { debounce } from 'lodash';
 

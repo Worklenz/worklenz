@@ -1,4 +1,4 @@
-import { Flex, Table, Typography } from 'antd';
+import { Flex, Table, Typography } from '@/components/ui';
 import { TableProps } from 'antd/lib';
 import { useEffect, useState } from 'react';
 
@@ -6,8 +6,8 @@ import { projectInsightsApiService } from '@/api/projects/insights/project-insig
 import { IInsightTasks } from '@/types/project/projectInsights.types';
 import { colors } from '@/styles/colors';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
-import logger from '@/utils/errorLogger';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import logger from '@/utils/error-logger';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const TaskCompletedEarlyTable = ({
   projectId,

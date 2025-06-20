@@ -1,18 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import {
-  Tooltip,
-  Tag,
-  Progress,
-  Typography,
-  Dropdown,
-  MenuProps,
-  Button,
-  Flex,
-  List,
-  Divider,
-  Popconfirm,
-  Skeleton,
-} from 'antd';
+import { Tooltip, Tag, Progress, Typography, Dropdown, Button, Flex, List, Divider, Popconfirm, Skeleton } from '@/components/ui';
 import {
   DoubleRightOutlined,
   PauseOutlined,
@@ -31,9 +18,9 @@ import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import BoardSubTaskCard from '../board-sub-task-card/board-sub-task-card';
 import CustomAvatarGroup from '@/components/board/custom-avatar-group';
 import CustomDueDatePicker from '@/components/board/custom-due-date-picker';
@@ -48,14 +35,10 @@ import { setShowTaskDrawer, setSelectedTaskId } from '@/features/task-drawer/tas
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { IBulkAssignRequest } from '@/types/tasks/bulk-action-bar.types';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import {
-  evt_project_task_list_context_menu_archive,
-  evt_project_task_list_context_menu_assign_me,
-  evt_project_task_list_context_menu_delete,
-} from '@/shared/worklenz-analytics-events';
-import logger from '@/utils/errorLogger';
-import { useAuthService } from '@/hooks/useAuth';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+;
+import logger from '@/utils/error-logger';
+import { useAuthService } from '@/hooks/use-auth';
 import PrioritySection from '@/components/board/taskCard/priority-section/priority-section';
 
 interface IBoardViewTaskCardProps {
@@ -235,8 +218,6 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
       key: '3',
     },
   ], [t, handleAssignToMe, handleArchive, handleDelete, updatingAssignToMe]);
-
-
 
   const renderLabels = useMemo(() => {
     if (!task?.labels?.length) return null;

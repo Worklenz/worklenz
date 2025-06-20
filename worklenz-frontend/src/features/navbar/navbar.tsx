@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Col, ConfigProvider, Flex, Menu, MenuProps, Alert } from 'antd';
+import { Col, ConfigProvider, Flex, Menu, Alert } from '@/components/ui';
 import { createPortal } from 'react-dom';
 
 import InviteTeamMembers from '../../components/common/invite-team-members/invite-team-members';
@@ -17,10 +17,10 @@ import NotificationDrawer from '../../components/navbar/notifications/notificati
 import { useResponsive } from '@/hooks/useResponsive';
 import { getJSONFromLocalStorage } from '@/utils/localStorageFunctions';
 import { navRoutes, NavRoutesType } from './navRoutes';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import TimerButton from './timers/timer-button';
 import HelpButton from './help/HelpButton';
 

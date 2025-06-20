@@ -1,6 +1,6 @@
-import { Card, ConfigProvider, Tag, Timeline, Typography } from 'antd';
+import { Card, ConfigProvider, Tag, Timeline, Typography } from '@/components/ui';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { colors } from '../../../../../styles/colors';
 import { useTranslation } from 'react-i18next';
 import { fetchTask, setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';

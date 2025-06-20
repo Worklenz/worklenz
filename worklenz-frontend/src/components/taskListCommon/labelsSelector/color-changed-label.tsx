@@ -1,10 +1,12 @@
 import React from 'react';
-import { LabelType } from '../../../types/label.type';
-import { Select, Tag, Tooltip } from 'antd';
+import { ITaskLabel } from '@/types/label.type';
+import Select from 'antd/es/select';
+import Tag from 'antd/es/tag';
+import Tooltip from 'antd/es/tooltip';
 import { PhaseColorCodes } from '../../../shared/constants';
 import { useTranslation } from 'react-i18next';
 
-const ColorChangedLabel = ({ label }: { label: LabelType | null }) => {
+const ColorChangedLabel = ({ label }: { label: ITaskLabel | null }) => {
   // localization
   const { t } = useTranslation('labelsSettings');
 
@@ -23,7 +25,7 @@ const ColorChangedLabel = ({ label }: { label: LabelType | null }) => {
           width: 'fit-content',
         }}
       >
-        {label?.labelName}
+        {label?.name}
       </Tag>
     ),
   }));
@@ -31,7 +33,7 @@ const ColorChangedLabel = ({ label }: { label: LabelType | null }) => {
   return (
     <Tooltip title={t('colorChangeTooltip')}>
       <Select
-        key={label?.labelId}
+        key={label?.id}
         options={colorsOptions}
         variant="borderless"
         style={{
@@ -41,7 +43,7 @@ const ColorChangedLabel = ({ label }: { label: LabelType | null }) => {
           height: 22,
           maxWidth: 160,
         }}
-        defaultValue={label?.labelColor}
+        defaultValue={label?.color_code}
         suffixIcon={null}
       />
     </Tooltip>

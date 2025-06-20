@@ -1,27 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  Form,
-  Switch,
-  Button,
-  Popover,
-  Select,
-  Checkbox,
-  Radio,
-  InputNumber,
-  Skeleton,
-  Row,
-  Col,
-} from 'antd';
+import { Form, Switch, Button, Popover, Select, Checkbox, Radio, InputNumber, Skeleton, Row, Col } from '@/components/ui';
 import { SettingOutlined } from '@ant-design/icons';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { IRepeatOption, ITaskRecurring, ITaskRecurringSchedule, ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useTranslation } from 'react-i18next';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { updateRecurringChange } from '@/features/tasks/tasks.slice';
 import { taskRecurringApiService } from '@/api/tasks/task-recurring.api.service';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { setTaskRecurringSchedule } from '@/features/task-drawer/task-drawer.slice';
 
 const monthlyDateOptions = Array.from({ length: 28 }, (_, i) => i + 1);

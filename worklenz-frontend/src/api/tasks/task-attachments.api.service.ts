@@ -2,8 +2,8 @@ import { IServerResponse } from '@/types/common.types';
 import { IProjectAttachmentsViewModel, ITaskAttachment, ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
 import apiClient from '../api-client';
 import { API_BASE_URL } from '@/shared/constants';
-import { IAvatarAttachment } from '@/types/avatarAttachment.types';
-import { toQueryString } from '@/utils/toQueryString';
+import { IAvatarAttachment } from '@/types/avatar-attachment.types';
+import { toQueryString } from '@/utils/to-query-string';
 
 const rootUrl = `${API_BASE_URL}/attachments`;
 

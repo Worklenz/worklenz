@@ -1,5 +1,5 @@
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { Typography } from 'antd';
+import { Typography } from '@/components/ui';
 import React from 'react';
 
 interface ITaskListEstimationCellProps {

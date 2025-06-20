@@ -1,4 +1,4 @@
-import { Timeline, Typography, Flex, ConfigProvider, Tag, Tooltip, Skeleton } from 'antd';
+import { Timeline, Typography, Flex, ConfigProvider, Tag, Tooltip, Skeleton } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRightOutlined } from '@ant-design/icons';
@@ -10,10 +10,10 @@ import {
 } from '@/types/tasks/task-activity-logs-get-request';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { taskActivityLogsApiService } from '@/api/tasks/task-activity-logs.api.service';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 const TaskDrawerActivityLog = () => {
   const [activityLogs, setActivityLogs] = useState<IActivityLogsResponse>({});

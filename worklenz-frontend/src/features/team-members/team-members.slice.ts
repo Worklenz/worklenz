@@ -1,10 +1,9 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
-import { ITeamMember } from '@/types/teamMembers/teamMember.types';
-import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
-import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
-import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
+import { teamMembersApiService } from '@/api/team-members/team-members.api.service';
+import { ITeamMembersViewModel } from '@/types/teamMembers/team-members-view-model.types';
+import { ITeamMemberViewModel } from '@/types/teamMembers/team-members-get-response.types';
 import { IServerResponse } from '@/types/common.types';
+import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
 
 interface TeamMembersState {
   teamMembers: ITeamMembersViewModel | null;

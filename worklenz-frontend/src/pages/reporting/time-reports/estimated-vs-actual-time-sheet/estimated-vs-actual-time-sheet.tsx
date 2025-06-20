@@ -12,9 +12,9 @@ import {
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { IRPTTimeProject } from '@/types/reporting/reporting.types';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import logger from '@/utils/errorLogger';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import logger from '@/utils/error-logger';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
 
 // Project color palette

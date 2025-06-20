@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { nanoid } from "nanoid";
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
-import { Button, Flex, Input, Select, Tag, Typography } from 'antd';
+import { Button, Flex, Input, Select, Tag, Typography } from '@/components/ui';
 import { CloseCircleOutlined, HolderOutlined } from '@ant-design/icons';
 
 import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
-import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
+import { useAppSelector } from '../../../../../../../../@/hooks/use-app-selector';
 import { setSelectionsList } from '../../../../../../../../features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 
 export type SelectionType = {

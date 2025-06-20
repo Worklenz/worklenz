@@ -11,24 +11,24 @@ import { MenuProps } from 'antd/es/menu';
 import { EditOutlined, EllipsisOutlined, RetweetOutlined, RightOutlined } from '@ant-design/icons';
 
 import { colors } from '@/styles/colors';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import Collapsible from '@/components/collapsible/collapsible';
 import TaskListTable from '../../task-list-table/task-list-table';
 import { IGroupBy, updateTaskGroupColor } from '@/features/tasks/tasks.slice';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
-import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { evt_project_board_column_setting_click } from '@/shared/worklenz-analytics-events';
-import { ALPHA_CHANNEL } from '@/shared/constants';
+import { fetchStatuses } from '@/features/task-attributes/task-status.slice';
+import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
+;
+;
 import useIsProjectManager from '@/hooks/useIsProjectManager';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 
 interface TaskGroupProps {
   taskGroup: ITaskListGroup;

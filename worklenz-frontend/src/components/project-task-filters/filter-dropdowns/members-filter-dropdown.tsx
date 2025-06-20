@@ -1,23 +1,11 @@
 import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CaretDownFilled } from '@ant-design/icons';
-import { 
-  Badge, 
-  Button, 
-  Card, 
-  Checkbox, 
-  Dropdown, 
-  Empty, 
-  Flex, 
-  Input, 
-  List, 
-  Space, 
-  Typography 
-} from 'antd';
+import { Badge, Button, Card, Checkbox, Dropdown, Empty, Flex, Input, List, Space, Typography } from '@/components/ui';
 import type { InputRef } from 'antd';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 import { colors } from '@/styles/colors';
 import SingleAvatar from '@components/common/single-avatar/single-avatar';

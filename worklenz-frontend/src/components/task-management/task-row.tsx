@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useSelector } from 'react-redux';
-import { Checkbox, Avatar, Tag, Progress, Typography, Space, Button, Tooltip } from 'antd';
+import { Checkbox, Avatar, Tag, Progress, Typography, Space, Button, Tooltip } from '@/components/ui';
 import {
   HolderOutlined,
   EyeOutlined,

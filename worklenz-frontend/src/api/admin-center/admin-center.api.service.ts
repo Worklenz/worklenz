@@ -20,7 +20,7 @@ import {
   IBillingAccountStorage,
 } from '@/types/admin-center/admin-center.types';
 import { IClient } from '@/types/client.types';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 
 const rootUrl = `${API_BASE_URL}/admin-center`;
 
@@ -152,7 +152,6 @@ export const adminCenterApiService = {
     return response.data;
   },
 
-  
   // Billing - Configuration
   async getCountries(): Promise<IServerResponse<IBillingConfigurationCountry[]>> {
     const response = await apiClient.get<IServerResponse<IBillingConfigurationCountry[]>>(

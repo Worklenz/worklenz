@@ -1,7 +1,7 @@
 import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { toQueryString } from '@/utils/toQueryString';
+import { toQueryString } from '@/utils/to-query-string';
 import { ITaskComment, ITaskCommentsCreateRequest, ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 
 const taskCommentsApiService = {

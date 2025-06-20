@@ -1,25 +1,14 @@
 import { useRef, useState } from 'react';
 import { TFunction } from 'i18next';
-import {
-  Button,
-  Divider,
-  Flex,
-  Form,
-  FormInstance,
-  Input,
-  InputRef,
-  Select,
-  Typography,
-} from 'antd';
+import { Button, Divider, Flex, Form, FormInstance, Input, Select, Typography } from '@/components/ui';
 import { PlusOutlined } from '@ant-design/icons';
 
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
-  addCategory,
   createProjectCategory,
-} from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
+} from '@/features/projects/lookups/project-categories/project-categories.slice';
 import { colors } from '@/styles/colors';
-import { IProjectCategory } from '@/types/project/projectCategory.types';
+import { IProjectCategory } from '@/types/project/project-category.types';
 
 interface ProjectCategorySectionProps {
   categories: IProjectCategory[];

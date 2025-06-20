@@ -1,4 +1,4 @@
-import { Flex, Skeleton } from 'antd';
+import { Flex, Skeleton } from '@/components/ui';
 import React, { useEffect, useMemo, useState } from 'react';
 import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
 import ActivityLogCard from './activity-log-card';
@@ -6,9 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { ISingleMemberActivityLogs } from '@/types/reporting/reporting.types';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
-import { useAuthService } from '@/hooks/useAuth';
-import logger from '@/utils/errorLogger';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAuthService } from '@/hooks/use-auth';
+import logger from '@/utils/error-logger';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
 

@@ -29,12 +29,10 @@ export const teamsApiService = {
     return response.data;
   },
 
-
   createTeam: async (team: IOrganizationTeam): Promise<IServerResponse<ITeam>> => {
     const response = await apiClient.post<IServerResponse<ITeam>>(`${rootUrl}`, team);
     return response.data;
   },
-
 
   getInvitations: async (): Promise<IServerResponse<ITeamInvites[]>> => {
     const response = await apiClient.get<IServerResponse<ITeamInvites[]>>(

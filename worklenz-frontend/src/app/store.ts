@@ -1,8 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 
 // Auth & User
-import authReducer from '@features/auth/authSlice';
-import userReducer from '@features/user/userSlice';
+import authReducer from '@features/auth/auth-slice';
+import userReducer from '@features/user/user-slice';
 
 // Home Page
 import homePageReducer from '@features/home-page/home-page.slice';
@@ -11,63 +11,63 @@ import homePageReducer from '@features/home-page/home-page.slice';
 import accountSetupReducer from '@features/account-setup/account-setup.slice';
 
 // Core UI
-import themeReducer from '@features/theme/themeSlice';
-import localesReducer from '@features/i18n/localesSlice';
-import alertsReducer from '@/services/alerts/alertSlice';
+import themeReducer from '@features/theme/theme.slice';
+import localesReducer from '@features/i18n/locales-slice';
+import alertsReducer from '@services/alerts/alert-slice';
 
 // Projects
 import projectReducer from '@features/project/project.slice';
-import projectsReducer from '@features/projects/projectsSlice';
-import projectMemberReducer from '@features/projects/singleProject/members/projectMembersSlice';
-import projectViewTaskListColumnsReducer from '@features/projects/singleProject/taskListColumns/taskColumnsSlice';
-import phaseReducer from '@/features/projects/singleProject/phase/phases.slice';
-import updatesReducer from '../features/projects/singleProject/updates/updatesSlice';
-import statusReducer from '@features/projects/status/StatusSlice';
-import deleteStatusReducer from '@features/projects/status/DeleteStatusSlice';
-import bulkActionReducer from '@features/projects/bulkActions/bulkActionSlice';
+import projectsReducer from '@features/projects/projects-slice';
+import projectMemberReducer from '@features/projects/singleProject/members/project-members-slice';
+import projectViewTaskListColumnsReducer from '@features/projects/singleProject/taskListColumns/task-columns-slice';
+import phaseReducer from '@features/projects/singleProject/phase/phases.slice';
+import updatesReducer from '@features/projects/singleProject/updates/updates-slice';
+import statusReducer from '@features/projects/status/status-slice';
+import deleteStatusReducer from '@features/projects/status/delete-status.slice';
+import bulkActionReducer from '@features/projects/bulk-actions/bulk-action.slice';
 import projectInsightsReducer from '@features/projects/insights/project-insights.slice';
 import taskListCustomColumnsReducer from '@features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import boardReducer from '@features/board/board-slice';
 import projectDrawerReducer from '@features/project/project-drawer.slice';
 
 // Project Lookups
-import projectCategoriesReducer from '@features/projects/lookups/projectCategories/projectCategoriesSlice';
-import projectStatusesReducer from '@features/projects/lookups/projectStatuses/projectStatusesSlice';
-import projectHealthReducer from '@features/projects/lookups/projectHealth/projectHealthSlice';
+import projectCategoriesReducer from '@features/projects/lookups/project-categories/project-categories.slice';
+import projectStatusesReducer from '@features/projects/lookups/project-statuses/project-statuses.slice';
+import projectHealthReducer from '@features/projects/lookups/project-health/project-health.slice';
 
 // Tasks
 import taskReducer from '@features/tasks/tasks.slice';
-import createCardReducer from '@/features/board/create-card.slice';
-import priorityReducer from '@features/taskAttributes/taskPrioritySlice';
-import taskLabelsReducer from '@features/taskAttributes/taskLabelSlice';
-import taskStatusReducer, { deleteStatus } from '@features/taskAttributes/taskStatusSlice';
+import createCardReducer from '@features/board/create-card.slice';
+import priorityReducer from '@features/task-attributes/task-priority.slice';
+import taskLabelsReducer from '@features/task-attributes/task-label.slice';
+import taskStatusReducer, { deleteStatus } from '@features/task-attributes/task-status.slice';
 import taskDrawerReducer from '@features/task-drawer/task-drawer.slice';
 
 // Settings & Management
-import memberReducer from '@features/settings/member/memberSlice';
-import clientReducer from '@features/settings/client/clientSlice';
-import jobReducer from '@features/settings/job/jobSlice';
-import teamReducer from '@features/teams/teamSlice';
+import memberReducer from '@features/settings/member/member.slice';
+import clientReducer from '@features/settings/client/client.slice';
+import jobReducer from '@features/settings/job/job-slice';
+import teamReducer from '@features/teams/team-slice';
 import billingReducer from '@/features/admin-center/billing/billing.slice';
-import categoriesReducer from '@features/settings/categories/categoriesSlice';
-import labelReducer from '@features/settings/label/labelSlice';
+import categoriesReducer from '@features/settings/categories/categories-slice';
+import labelReducer from '@features/settings/label/label-slice';
 
 // Admin Center
 import adminCenterReducer from '@features/admin-center/admin-center.slice';
 
 // Features
-import dateReducer from '@features/date/dateSlice';
-import notificationReducer from '@/features/navbar/notificationSlice';
-import buttonReducer from '@features/actionSetup/buttonSlice';
-import scheduleReducer from '../features/schedule/scheduleSlice';
+import dateReducer from '@features/date/date-slice';
+import notificationReducer from '@/features/navbar/notification-slice';
+import buttonReducer from '@features/action-setup/button-slice';
+import scheduleReducer from '@features/schedule/schedule-slice';
 
 // Reports
 import reportingReducer from '@features/reporting/reporting.slice';
-import timeLogReducer from '../features/timeReport/projects/timeLogSlice';
-import taskTemplateReducer from '../features/settings/taskTemplates/taskTemplateSlice';
-import projectReportsTableColumnsReducer from '../features/reporting/projectReports/project-reports-table-column-slice/project-reports-table-column-slice';
-import projectReportsReducer from '../features/reporting/projectReports/project-reports-slice';
-import membersReportsReducer from '../features/reporting/membersReports/membersReportsSlice';
+import timeLogReducer from '@features/timeReport/projects/time-log.slice';
+import taskTemplateReducer from '@/features/settings/task-templates/task-template-slice';
+import projectReportsTableColumnsReducer from '@features/reporting/projectReports/project-reports-table-column-slice/project-reports-table-column-slice';
+import projectReportsReducer from '@features/reporting/projectReports/project-reports-slice';
+import membersReportsReducer from '@features/reporting/membersReports/members-reports-slice';
 import timeReportsOverviewReducer from '@features/reporting/time-reports/time-reports-overview.slice';
 
 import roadmapReducer from '../features/roadmap/roadmap-slice';

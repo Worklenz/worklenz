@@ -1,22 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { PlusOutlined } from '@ant-design/icons';
-import {
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  Divider,
-  Dropdown,
-  Flex,
-  Input,
-  InputRef,
-  List,
-  Typography,
-} from 'antd';
+import { Badge, Button, Card, Checkbox, Divider, Dropdown, Flex, Input, List, Typography } from '@/components/ui';
 import React, { useMemo, useRef, useState } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { nanoid } from '@reduxjs/toolkit';
 import { addLabel } from '@features/settings/label/labelSlice';
 import { useTranslation } from 'react-i18next';

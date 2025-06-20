@@ -1,4 +1,4 @@
-import { Table, TableProps, Typography } from 'antd';
+import { Table, Typography } from '@/components/ui';
 import React, { useMemo } from 'react';
 import { IOrganizationAdmin } from '@/types/admin-center/admin-center.types';
 

@@ -1,17 +1,17 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { DownOutlined } from '@ant-design/icons';
-import { Badge, Card, Dropdown, Flex, Input, InputRef, Menu, MenuProps, Typography } from 'antd';
+import { Badge, Card, Dropdown, Flex, Input, Menu, Typography } from '@/components/ui';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { colors } from '@/styles/colors';
 import './project-category-cell.css';
 import { nanoid } from '@reduxjs/toolkit';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { addCategory } from '@features/settings/categories/categoriesSlice';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
 import { useTranslation } from 'react-i18next';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { setSelectedProjectCategory } from '@/features/reporting/projectReports/project-reports-slice';
 

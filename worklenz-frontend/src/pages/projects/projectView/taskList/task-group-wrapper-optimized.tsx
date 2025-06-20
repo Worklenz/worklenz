@@ -4,7 +4,7 @@ import Flex from 'antd/es/flex';
 import useIsomorphicLayoutEffect from '@/hooks/useIsomorphicLayoutEffect';
 
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 
 import TaskListTableWrapper from './task-list-table/task-list-table-wrapper/task-list-table-wrapper';
 import TaskListBulkActionsBar from '@/components/taskListCommon/task-list-bulk-actions-bar/task-list-bulk-actions-bar';

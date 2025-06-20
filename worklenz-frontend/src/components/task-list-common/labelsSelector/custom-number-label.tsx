@@ -1,4 +1,4 @@
-import { Tag, Tooltip } from 'antd';
+import { Tag, Tooltip } from '@/components/ui';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 
 const CustomNumberLabel = ({ labelList }: { labelList: ITaskLabel[] | null }) => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Dropdown, Input, Menu, Badge, Tooltip } from 'antd';
+import { Button, Dropdown, Input, Menu, Badge, Tooltip } from '@/components/ui';
 import {
   RightOutlined,
   LoadingOutlined,
@@ -9,7 +9,7 @@ import {
 } from '@ant-design/icons';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { ITaskStatusCategory } from '@/types/status.types';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 // import WorklenzTaskListPhaseDuration from "./WorklenzTaskListPhaseDuration";
 // import WorklenzTasksProgressBar from "./WorklenzTasksProgressBar";
 

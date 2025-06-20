@@ -1,13 +1,13 @@
-import { useSocket } from "@/socket/socketContext";
-import { IProjectTask } from "@/types/project/projectTasksViewModel.types";
-import { DatePicker } from "antd";
+import { useSocket } from "@/socket/socket-context";
+import { IProjectTask } from "@/types/project/project-tasks-view-model.types";
+import { DatePicker } from '@/components/ui';
 import dayjs from 'dayjs';
 import calendar from 'dayjs/plugin/calendar';
 import { SocketEvents } from '@/shared/socket-events';
 import type { Dayjs } from 'dayjs';
 import { useTranslation } from "react-i18next";
 import { useEffect, useState, useMemo } from "react";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppSelector } from "@/hooks/use-app-selector";
 import { useGetMyTasksQuery } from "@/api/home-page/home-page.api.service";
 import { getUserSession } from "@/utils/session-helper";
 

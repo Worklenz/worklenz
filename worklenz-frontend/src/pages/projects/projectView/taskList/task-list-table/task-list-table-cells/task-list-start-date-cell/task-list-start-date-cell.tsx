@@ -1,7 +1,7 @@
-import { DatePicker } from 'antd';
+import DatePicker from 'antd/es/date-picker';
 import { colors } from '@/styles/colors';
 import dayjs, { Dayjs } from 'dayjs';
-import { useSocket } from '@/socket/socketContext';
+import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

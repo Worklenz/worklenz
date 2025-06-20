@@ -5,12 +5,12 @@ import { ConfigProvider, Flex, Dropdown, Button } from 'antd/es';
 import { useSearchParams } from 'react-router-dom';
 
 import ConfigPhaseButton from '@features/projects/singleProject/phase/ConfigPhaseButton';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import CreateStatusButton from '@/components/project-task-filters/create-status-button/create-status-button';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { IGroupBy, setCurrentGroup, setGroup } from '@features/tasks/tasks.slice';
 import { setBoardGroupBy, setCurrentBoardGroup } from '@/features/board/board-slice';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 
 const GroupByFilterDropdown = () => {

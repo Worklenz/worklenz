@@ -1,8 +1,8 @@
-import { Button, Typography, Tag } from 'antd';
+import { Button, Typography, Tag } from '@/components/ui';
 import { BankOutlined } from '@ant-design/icons';
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { toggleDrawer } from '../../../../../features/navbar/notificationSlice';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { formatDistanceToNow } from 'date-fns';

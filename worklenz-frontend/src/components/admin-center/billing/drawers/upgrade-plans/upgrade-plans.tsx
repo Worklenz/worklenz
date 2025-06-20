@@ -7,16 +7,16 @@ import {
   IPricingPlans,
   IUpgradeSubscriptionPlanResponse,
 } from '@/types/admin-center/admin-center.types';
-import logger from '@/utils/errorLogger';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { IPaddlePlans, SUBSCRIPTION_STATUS } from '@/shared/constants';
+import logger from '@/utils/error-logger';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { IPaddlePlans } from '@/shared/constants';
 import { CheckCircleFilled, InfoCircleOutlined } from '@ant-design/icons';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/use-auth';
 import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
 import { authApiService } from '@/api/auth/auth.api.service';
-import { setUser } from '@/features/user/userSlice';
+import { setUser } from '@/features/user/user-slice';
 import { setSession } from '@/utils/session-helper';
 
 // Extend Window interface to include Paddle
@@ -263,7 +263,6 @@ const UpgradePlans = () => {
 
   const isSelected = (cardIndex: IPaddlePlans) =>
     selectedPlan === cardIndex ? { border: '2px solid #1890ff' } : {};
-
 
   const cardStyles = {
     title: {

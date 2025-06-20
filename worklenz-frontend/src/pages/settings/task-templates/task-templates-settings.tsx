@@ -1,14 +1,14 @@
-import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from 'antd';
+import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './task-templates-settings.css';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { ITaskTemplatesGetResponse } from '@/types/settings/task-templates.types';
-import logger from '@/utils/errorLogger';
+import logger from '@/utils/error-logger';
 import { taskTemplatesApiService } from '@/api/task-templates/task-templates.api.service';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 

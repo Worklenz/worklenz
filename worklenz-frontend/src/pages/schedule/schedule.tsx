@@ -1,15 +1,15 @@
-import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from 'antd';
+import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from '@/components/ui';
 import React, { useRef, useState } from 'react';
 import { SettingOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
-import { setDate, setType, toggleSettingsDrawer } from '@/features/schedule/scheduleSlice';
-import ScheduleSettingsDrawer from '@/features/schedule/ScheduleSettingsDrawer';
+import { setDate, setType, toggleSettingsDrawer } from '@/features/schedule/schedule-slice';
+import ScheduleSettingsDrawer from '@/features/schedule/schedule-settings-drawer';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import ScheduleDrawer from '@/features/schedule/ScheduleDrawer';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import ScheduleDrawer from '@/features/schedule/schedule-drawer';
 import GranttChart from '@/components/schedule/grant-chart/grantt-chart';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
 
 const { Option } = Select;
