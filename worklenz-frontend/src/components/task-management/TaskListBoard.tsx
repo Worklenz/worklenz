@@ -300,16 +300,18 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
       <style>{`
         .task-groups-container {
-          overflow-x: auto;
           max-height: calc(100vh - 300px);
           overflow-y: auto;
+          overflow-x: visible;
           padding: 8px 8px 8px 0;
           border-radius: 8px;
           transition: background-color 0.3s ease;
+          position: relative;
         }
 
         .task-groups {
           min-width: fit-content;
+          position: relative;
         }
 
         /* Dark mode support */
