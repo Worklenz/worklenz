@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useSelector } from 'react-redux';
 import { Checkbox, Avatar, Tag, Progress, Typography, Space, Button, Tooltip } from 'antd';
 import {
   HolderOutlined,
@@ -10,7 +11,8 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { IGroupBy } from '@/features/tasks/tasks.slice';
+import { IGroupBy, COLUMN_KEYS } from '@/features/tasks/tasks.slice';
+import { RootState } from '@/app/store';
 
 const { Text } = Typography;
 
@@ -53,6 +55,15 @@ const TaskRow: React.FC<TaskRowProps> = ({
     },
     disabled: isDragOverlay,
   });
+
+  // Get column visibility from Redux store
+  const columns = useSelector((state: RootState) => state.taskReducer.columns);
+  
+  // Helper function to check if a column is visible
+  const isColumnVisible = (columnKey: string) => {
+    const column = columns.find(col => col.key === columnKey);
+    return column ? column.pinned : true; // Default to visible if column not found
+  };
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -156,117 +167,131 @@ const TaskRow: React.FC<TaskRowProps> = ({
           {/* Scrollable Columns */}
           <div className="task-table-scrollable-columns">
             {/* Progress */}
-            <div className="task-table-cell" style={{ width: '120px' }}>
-              {task.complete_ratio !== undefined && task.complete_ratio >= 0 && (
-                <div className="task-progress">
-                  <Progress
-                    percent={task.complete_ratio}
-                    size="small"
-                    showInfo={false}
-                    strokeColor={task.complete_ratio === 100 ? '#52c41a' : '#1890ff'}
-                  />
-                  <Text className="task-progress-text">{task.complete_ratio}%</Text>
-                </div>
-              )}
-            </div>
-
-            {/* Members */}
-            <div className="task-table-cell" style={{ width: '150px' }}>
-              {task.assignees && task.assignees.length > 0 && (
-                <Avatar.Group size="small" maxCount={3}>
-                  {task.assignees.map((assignee) => (
-                    <Tooltip key={assignee.id} title={assignee.name}>
-                      <Avatar
-                        size="small"
-                      >
-                        {assignee.name?.charAt(0)?.toUpperCase()}
-                      </Avatar>
-                    </Tooltip>
-                  ))}
-                </Avatar.Group>
-              )}
-            </div>
-
-            {/* Labels */}
-            <div className="task-table-cell" style={{ width: '150px' }}>
-              {task.labels && task.labels.length > 0 && (
-                <div className="task-labels-column">
-                  {task.labels.slice(0, 3).map((label) => (
-                    <Tag
-                      key={label.id}
-                      className="task-label"
-                      style={{ 
-                        backgroundColor: label.color_code,
-                        border: 'none',
-                        color: 'white',
-                      }}
-                    >
-                      {label.name}
-                    </Tag>
-                  ))}
-                  {task.labels.length > 3 && (
-                    <Text type="secondary" className="task-labels-more">
-                      +{task.labels.length - 3}
-                    </Text>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Status */}
-            <div className="task-table-cell" style={{ width: '100px' }}>
-              {task.status_name && (
-                <div 
-                  className="task-status"
-                  style={{ 
-                    backgroundColor: task.status_color,
-                    color: 'white',
-                  }}
-                >
-                  {task.status_name}
-                </div>
-              )}
-            </div>
-
-            {/* Priority */}
-            <div className="task-table-cell" style={{ width: '100px' }}>
-              {task.priority_name && (
-                <div className="task-priority">
-                  <div
-                    className="task-priority-indicator"
-                    style={{ backgroundColor: task.priority_color }}
-                  />
-                  <Text className="task-priority-text">{task.priority_name}</Text>
-                </div>
-              )}
-            </div>
-
-            {/* Time Tracking */}
-            <div className="task-table-cell" style={{ width: '120px' }}>
-              <div className="task-time-tracking">
-                {task.time_spent_string && (
-                  <div className="task-time-spent">
-                    <ClockCircleOutlined className="task-time-icon" />
-                    <Text className="task-time-text">{task.time_spent_string}</Text>
+            {isColumnVisible(COLUMN_KEYS.PROGRESS) && (
+              <div className="task-table-cell" style={{ width: '90px' }}>
+                {task.complete_ratio !== undefined && task.complete_ratio >= 0 && (
+                  <div className="task-progress">
+                    <Progress
+                      type="circle"
+                      percent={task.complete_ratio}
+                      size={32}
+                      strokeColor={task.complete_ratio === 100 ? '#52c41a' : '#1890ff'}
+                      strokeWidth={4}
+                      showInfo={true}
+                      format={(percent) => <span style={{ fontSize: '10px', fontWeight: '500' }}>{percent}%</span>}
+                    />
                   </div>
                 )}
-                {/* Task Indicators */}
-                <div className="task-indicators">
-                  {task.comments_count && task.comments_count > 0 && (
-                    <div className="task-indicator">
-                      <MessageOutlined />
-                      <span>{task.comments_count}</span>
+              </div>
+            )}
+
+            {/* Members */}
+            {isColumnVisible(COLUMN_KEYS.ASSIGNEES) && (
+              <div className="task-table-cell" style={{ width: '150px' }}>
+                {task.assignees && task.assignees.length > 0 && (
+                  <Avatar.Group size="small" maxCount={3}>
+                    {task.assignees.map((assignee) => (
+                      <Tooltip key={assignee.id} title={assignee.name}>
+                        <Avatar
+                          size="small"
+                        >
+                          {assignee.name?.charAt(0)?.toUpperCase()}
+                        </Avatar>
+                      </Tooltip>
+                    ))}
+                  </Avatar.Group>
+                )}
+              </div>
+            )}
+
+            {/* Labels */}
+            {isColumnVisible(COLUMN_KEYS.LABELS) && (
+              <div className="task-table-cell" style={{ width: '150px' }}>
+                {task.labels && task.labels.length > 0 && (
+                  <div className="task-labels-column">
+                    {task.labels.slice(0, 3).map((label) => (
+                      <Tag
+                        key={label.id}
+                        className="task-label"
+                        style={{ 
+                          backgroundColor: label.color_code,
+                          border: 'none',
+                          color: 'white',
+                        }}
+                      >
+                        {label.name}
+                      </Tag>
+                    ))}
+                    {task.labels.length > 3 && (
+                      <Text type="secondary" className="task-labels-more">
+                        +{task.labels.length - 3}
+                      </Text>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Status */}
+            {isColumnVisible(COLUMN_KEYS.STATUS) && (
+              <div className="task-table-cell" style={{ width: '100px' }}>
+                {task.status_name && (
+                  <div 
+                    className="task-status"
+                    style={{ 
+                      backgroundColor: task.status_color,
+                      color: 'white',
+                    }}
+                  >
+                    {task.status_name}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Priority */}
+            {isColumnVisible(COLUMN_KEYS.PRIORITY) && (
+              <div className="task-table-cell" style={{ width: '100px' }}>
+                {task.priority_name && (
+                  <div className="task-priority">
+                    <div
+                      className="task-priority-indicator"
+                      style={{ backgroundColor: task.priority_color }}
+                    />
+                    <Text className="task-priority-text">{task.priority_name}</Text>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Time Tracking */}
+            {isColumnVisible(COLUMN_KEYS.TIME_TRACKING) && (
+              <div className="task-table-cell" style={{ width: '120px' }}>
+                <div className="task-time-tracking">
+                  {task.time_spent_string && (
+                    <div className="task-time-spent">
+                      <ClockCircleOutlined className="task-time-icon" />
+                      <Text className="task-time-text">{task.time_spent_string}</Text>
                     </div>
                   )}
-                  {task.attachments_count && task.attachments_count > 0 && (
-                    <div className="task-indicator">
-                      <PaperClipOutlined />
-                      <span>{task.attachments_count}</span>
-                    </div>
-                  )}
+                  {/* Task Indicators */}
+                  <div className="task-indicators">
+                    {task.comments_count && task.comments_count > 0 && (
+                      <div className="task-indicator">
+                        <MessageOutlined />
+                        <span>{task.comments_count}</span>
+                      </div>
+                    )}
+                    {task.attachments_count && task.attachments_count > 0 && (
+                      <div className="task-indicator">
+                        <PaperClipOutlined />
+                        <span>{task.attachments_count}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -313,8 +338,8 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
         .task-row-content {
           display: flex;
-          height: 42px;
-          max-height: 42px;
+          height: 40px;
+          max-height: 40px;
           overflow: hidden;
         }
 
@@ -340,9 +365,9 @@ const TaskRow: React.FC<TaskRowProps> = ({
           border-right: 1px solid var(--task-border-secondary, #f0f0f0);
           font-size: 12px;
           white-space: nowrap;
-          height: 42px;
-          max-height: 42px;
-          min-height: 42px;
+          height: 40px;
+          max-height: 40px;
+          min-height: 40px;
           overflow: hidden;
           color: var(--task-text-primary, #262626);
           transition: all 0.3s ease;
@@ -441,13 +466,13 @@ const TaskRow: React.FC<TaskRowProps> = ({
         .task-progress {
           display: flex;
           align-items: center;
-          gap: 6px;
+          justify-content: center;
           width: 100%;
           height: 100%;
         }
 
         .task-progress .ant-progress {
-          flex: 1;
+          flex: 0 0 auto;
         }
 
         .task-progress-text {
