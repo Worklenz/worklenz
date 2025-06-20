@@ -8,7 +8,7 @@ import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { IGroupBy, COLUMN_KEYS } from '@/features/tasks/tasks.slice';
 import { RootState } from '@/app/store';
-import TaskRow from './TaskRow';
+import TaskRow from './task-row';
 import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-rows/add-task-list-row';
 
 const { Text } = Typography;
@@ -126,7 +126,10 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
 
       {/* Column Headers */}
       {!isCollapsed && totalTasks > 0 && (
-        <div className="task-group-column-headers">
+        <div 
+          className="task-group-column-headers"
+          style={{ borderLeft: `4px solid ${getGroupColor()}` }}
+        >
           <div className="task-group-column-headers-row">
             <div className="task-table-fixed-columns">
               <div
@@ -182,7 +185,10 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
 
       {/* Tasks List */}
       {!isCollapsed && (
-        <div className="task-group-body">
+        <div 
+          className="task-group-body"
+          style={{ borderLeft: `4px solid ${getGroupColor()}` }}
+        >
           {group.tasks.length === 0 ? (
             <div className="task-group-empty">
               <div className="task-table-fixed-columns">
@@ -262,7 +268,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
           display: inline-flex;
           align-items: center;
           padding: 8px 12px;
-          border-radius: 6px;
+          border-radius: 6px 6px 0 0;
           background-color: #f0f0f0;
           color: white;
           font-weight: 500;

@@ -24,9 +24,9 @@ import {
   reorderTasks,
 } from '@/features/tasks/tasks.slice';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import TaskGroup from './TaskGroup';
-import TaskRow from './TaskRow';
-import BulkActionBar from './BulkActionBar';
+import TaskGroup from './task-group';
+import TaskRow from './task-row';
+import BulkActionBar from './bulk-action-bar';
 import { AppDispatch } from '@/app/store';
 
 // Import the TaskListFilters component
@@ -242,6 +242,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           totalSelected={selectedTaskIds.length}
           currentGrouping={groupBy}
           projectId={projectId}
+          onClearSelection={() => setSelectedTaskIds([])}
         />
       )}
 
