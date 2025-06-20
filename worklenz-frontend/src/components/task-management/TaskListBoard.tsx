@@ -13,30 +13,24 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import {
-  SortableContext,
-  verticalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { Card, Button, Select, Space, Typography, Spin, Empty } from 'antd';
-import { ExpandOutlined, CompressOutlined, PlusOutlined } from '@ant-design/icons';
+import { Card, Spin, Empty } from 'antd';
 import { RootState } from '@/app/store';
 import {
   IGroupBy,
-  GROUP_BY_OPTIONS,
   setGroup,
   fetchTaskGroups,
   reorderTasks,
 } from '@/features/tasks/tasks.slice';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import TaskGroup from './TaskGroup';
 import TaskRow from './TaskRow';
 import BulkActionBar from './BulkActionBar';
-import GroupingSelector from './GroupingSelector';
 import { AppDispatch } from '@/app/store';
 
-const { Title } = Typography;
-const { Option } = Select;
+// Import the TaskListFilters component
+const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
 
 interface TaskListBoardProps {
   projectId: string;
@@ -200,21 +194,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     }));
   };
 
-  const handleCollapseAll = () => {
-    // This would need to be implemented in the tasks slice
-    console.log('Collapse all groups');
-  };
 
-  const handleExpandAll = () => {
-    // This would need to be implemented in the tasks slice
-    console.log('Expand all groups');
-  };
-
-  const handleRefresh = () => {
-    if (projectId) {
-      dispatch(fetchTaskGroups(projectId));
-    }
-  };
 
   const handleSelectTask = (taskId: string, selected: boolean) => {
     setSelectedTaskIds(prev => {
@@ -244,48 +224,15 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   return (
     <div className={`task-list-board ${className}`}>
-      {/* Header Controls */}
+      {/* Task Filters */}
       <Card 
         size="small" 
         className="mb-4"
         styles={{ body: { padding: '12px 16px' } }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Title level={4} className="mb-0">
-              Tasks ({totalTasksCount})
-            </Title>
-            
-            <GroupingSelector
-              currentGrouping={groupBy}
-              onChange={handleGroupingChange}
-              options={GROUP_BY_OPTIONS}
-            />
-          </div>
-
-          <Space>
-            <Button
-              size="small"
-              icon={<CompressOutlined />}
-              onClick={handleCollapseAll}
-              title="Collapse All Groups"
-            />
-            <Button
-              size="small"
-              icon={<ExpandOutlined />}
-              onClick={handleExpandAll}
-              title="Expand All Groups"
-            />
-            <Button
-              size="small"
-              onClick={handleRefresh}
-              loading={loadingGroups}
-              title="Refresh"
-            >
-              Refresh
-            </Button>
-          </Space>
-        </div>
+        <React.Suspense fallback={<div>Loading filters...</div>}>
+          <TaskListFilters position="list" />
+        </React.Suspense>
       </Card>
 
       {/* Bulk Action Bar */}
@@ -356,8 +303,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           overflow-x: auto;
           max-height: calc(100vh - 300px);
           overflow-y: auto;
-          background: var(--task-bg-secondary, #f5f5f5);
-          padding: 16px;
+          padding: 8px 8px 8px 0;
           border-radius: 8px;
           transition: background-color 0.3s ease;
         }
