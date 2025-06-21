@@ -23,6 +23,8 @@ export default defineConfig(({ command, mode }) => {
         { find: '@services', replacement: path.resolve(__dirname, './src/services') },
         { find: '@api', replacement: path.resolve(__dirname, './src/api') },
       ],
+      // **Ensure single React instance**
+      dedupe: ['react', 'react-dom'],
     },
 
     // **Development Server**
@@ -67,36 +69,20 @@ export default defineConfig(({ command, mode }) => {
       // **Chunk Size Warnings**
       chunkSizeWarningLimit: 1000,
 
-      // **Rollup Options**
-      rollupOptions: {
-        output: {
-          // **Optimized Chunking Strategy**
-          manualChunks(id) {
-            // Core React libraries - keep together to avoid dependency issues
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
-            
-            // Router
-            if (id.includes('react-router')) {
-              return 'react-router';
-            }
-            
-            // Ant Design and Icons together to share React context
-            if (id.includes('antd') || id.includes('@ant-design/icons')) {
-              return 'antd';
-            }
-            
-            // Internationalization
-            if (id.includes('i18next')) {
-              return 'i18n';
-            }
-            
-            // Node modules vendor chunk for other libraries
-            if (id.includes('node_modules')) {
-              return 'vendor';
-            }
-          },
+              // **Rollup Options**
+        rollupOptions: {
+          output: {
+            // **Simplified Chunking Strategy to avoid React context issues**
+            manualChunks: {
+              // Keep React and all React-dependent libraries together
+              'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
+              
+              // Separate chunk for router
+              'react-router': ['react-router-dom'],
+              
+              // Keep Ant Design separate but ensure React is available
+              'antd': ['antd', '@ant-design/icons'],
+            },
           
           // **File Naming Strategies**
           chunkFileNames: (chunkInfo) => {
@@ -122,6 +108,9 @@ export default defineConfig(({ command, mode }) => {
         
         // **Preserve modules to avoid context issues**
         preserveEntrySignatures: 'strict',
+        
+        // **Ensure proper module interop**
+        interop: 'auto',
       },
 
       // **Experimental features for better performance**
