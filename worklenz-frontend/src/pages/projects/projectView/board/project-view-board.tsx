@@ -23,14 +23,10 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  MeasuringStrategy,
   getFirstCollision,
   pointerWithin,
   rectIntersection,
   UniqueIdentifier,
-  DragOverlayProps,
-  DragOverlay as DragOverlayType,
-  closestCorners,
 } from '@dnd-kit/core';
 import BoardViewTaskCard from './board-section/board-task-card/board-view-task-card';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
@@ -46,7 +42,8 @@ import { statusApiService } from '@/api/taskAttributes/status/status.api.service
 import logger from '@/utils/errorLogger';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { debounce } from 'lodash';
-
+import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
+import { updateTaskPriority as updateBoardTaskPriority } from '@/features/board/board-slice';
 interface DroppableContainer {
   id: UniqueIdentifier;
   data: {
@@ -273,6 +270,21 @@ const ProjectViewBoard = () => {
     }
   };
 
+  const handlePriorityChange = (taskId: string, priorityId: string) => {
+    if (!taskId || !priorityId || !socket) return;
+
+    const payload = {
+      task_id: taskId,
+      priority_id: priorityId,
+      team_id: currentSession?.team_id,
+    };
+
+    socket.emit(SocketEvents.TASK_PRIORITY_CHANGE.toString(), JSON.stringify(payload));
+    socket.once(SocketEvents.TASK_PRIORITY_CHANGE.toString(), (data: ITaskListPriorityChangeResponse) => {
+      dispatch(updateBoardTaskPriority(data));
+    });
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     isDraggingRef.current = false;
     const { active, over } = event;
@@ -317,6 +329,7 @@ const ProjectViewBoard = () => {
         originalSourceGroupIdRef.current = null; // Reset the ref
         return;
       }
+
       if (targetGroupId !== sourceGroupId) {
         const canContinue = await checkTaskDependencyStatus(task.id, targetGroupId);
         if (!canContinue) {
@@ -376,8 +389,6 @@ const ProjectViewBoard = () => {
           team_id: currentSession?.team_id
         };
 
-        // logger.error('Emitting socket event with payload (task not found in source):', body);
-        
         // Emit socket event
         if (socket) {
           socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), body);
@@ -390,6 +401,11 @@ const ProjectViewBoard = () => {
               socket.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
             }
           });
+
+          // Handle priority change if groupBy is priority
+          if (groupBy === IGroupBy.PRIORITY) {
+            handlePriorityChange(task.id, targetGroupId);
+          }
         }
 
         // Track analytics event
@@ -544,7 +560,7 @@ const ProjectViewBoard = () => {
       <Skeleton active loading={isLoading} className='mt-4 p-4'>
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionDetectionStrategy}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
