@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { UserConfig } from 'vite'; // Import type for better auto-completion
+import tsconfigPaths from 'vite-tsconfig-paths';
 
-export default defineConfig(async ({ command }: { command: 'build' | 'serve' }) => {
-  const tsconfigPaths = (await import('vite-tsconfig-paths')).default;
+export default defineConfig(({ command, mode }) => {
+  const isProduction = command === 'build';
 
   return {
     // **Plugins**
@@ -30,6 +30,15 @@ export default defineConfig(async ({ command }: { command: 'build' | 'serve' }) 
       ],
     },
 
+    // **Development Server**
+    server: {
+      port: 3000,
+      open: true,
+      hmr: {
+        overlay: false,
+      },
+    },
+
     // **Build**
     build: {
       // **Target**
@@ -37,41 +46,112 @@ export default defineConfig(async ({ command }: { command: 'build' | 'serve' }) 
 
       // **Output**
       outDir: 'build',
-      assetsDir: 'assets', // Consider a more specific directory for better organization, e.g., 'build/assets'
+      assetsDir: 'assets',
       cssCodeSplit: true,
 
       // **Sourcemaps**
-      sourcemap: command === 'serve' ? 'inline' : true, // Adjust sourcemap strategy based on command
+      sourcemap: !isProduction ? 'inline' : false, // Disable sourcemaps in production for smaller bundles
 
       // **Minification**
-      minify: 'terser',
-      terserOptions: {
+      minify: isProduction ? 'terser' : false,
+      terserOptions: isProduction ? {
         compress: {
-          drop_console: command === 'build',
-          drop_debugger: command === 'build',
+          drop_console: true,
+          drop_debugger: true,
+          pure_funcs: ['console.log', 'console.info', 'console.debug'],
+          passes: 2, // Multiple passes for better compression
         },
-        // **Additional Optimization**
+        mangle: {
+          safari10: true,
+        },
         format: {
-          comments: command === 'serve', // Preserve comments during development
+          comments: false,
         },
-      },
+      } : undefined,
+
+      // **Chunk Size Warnings**
+      chunkSizeWarningLimit: 1000,
 
       // **Rollup Options**
       rollupOptions: {
         output: {
-          // **Chunking Strategy**
+          // **Optimized Chunking Strategy**
           manualChunks(id) {
-            if (['react', 'react-dom', 'react-router-dom'].includes(id)) return 'vendor';
-            if (id.includes('antd')) return 'antd';
-            if (id.includes('i18next')) return 'i18n';
-            // Add more conditions as needed
+            // Core React libraries
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            
+            // Router
+            if (id.includes('react-router')) {
+              return 'react-router';
+            }
+            
+            // Ant Design (keep separate for better caching)
+            if (id.includes('antd') && !id.includes('@ant-design/icons')) {
+              return 'antd';
+            }
+            
+            // Icons (if using ant design icons)
+            if (id.includes('@ant-design/icons')) {
+              return 'antd-icons';
+            }
+            
+            // Internationalization
+            if (id.includes('i18next')) {
+              return 'i18n';
+            }
+            
+            // Node modules vendor chunk for other libraries
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
           },
+          
           // **File Naming Strategies**
-          chunkFileNames: 'assets/js/[name]-[hash].js',
+          chunkFileNames: (chunkInfo) => {
+            const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
+            return `assets/js/[name]-[hash].js`;
+          },
           entryFileNames: 'assets/js/[name]-[hash].js',
-          assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+          assetFileNames: (assetInfo) => {
+            if (!assetInfo.name) return 'assets/[name]-[hash].[ext]';
+            const info = assetInfo.name.split('.');
+            let extType = info[info.length - 1];
+            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
+              extType = 'img';
+            } else if (/woff2?|eot|ttf|otf/i.test(extType)) {
+              extType = 'fonts';
+            }
+            return `assets/${extType}/[name]-[hash].[ext]`;
+          },
         },
+        
+        // **External dependencies (if any should be externalized)**
+        external: [],
       },
+
+      // **Experimental features for better performance**
+      reportCompressedSize: false, // Disable to speed up build
+      
+      // **CSS optimization**
+      cssMinify: isProduction,
+    },
+
+    // **Optimization**
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+      ],
+      exclude: [
+        // Add any packages that should not be pre-bundled
+      ],
+    },
+
+    // **Define global constants**
+    define: {
+      __DEV__: !isProduction,
     },
   };
 });
