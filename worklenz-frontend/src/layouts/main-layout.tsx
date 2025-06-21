@@ -6,11 +6,10 @@ import Layout from 'antd/es/layout';
 import { useMediaQuery } from 'react-responsive';
 
 import Navbar from '../features/navbar/navbar';
-import { useAppSelector } from '../@/hooks/use-app-selector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
-import { colors } from '../styles/colors';
+import { colors } from '@/styles/colors';
 import { verifyAuthentication } from '@/features/auth/auth-slice';
-import HubSpot from '@/components/HubSpot';
 
 interface MainLayoutProps {}
 

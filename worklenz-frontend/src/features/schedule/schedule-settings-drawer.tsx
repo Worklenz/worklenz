@@ -1,11 +1,15 @@
 import { Button, Checkbox, Col, Drawer, Form, Input, Row } from '@/components/ui';
-import React, { ReactHTMLElement, useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useAppSelector } from '@/hooks/use-app-selector';
-import { fetchDateList, fetchTeamData, getWorking, toggleSettingsDrawer, updateSettings, updateWorking } from './scheduleSlice';
-import { useDispatch } from 'react-redux';
+import {
+  fetchDateList,
+  fetchTeamData,
+  getWorking,
+  toggleSettingsDrawer,
+  updateWorking,
+} from '@/features/schedule/schedule-slice';
 import { useTranslation } from 'react-i18next';
-import { scheduleAPIService } from '@/api/schedule/schedule.api.service';
-import Skeleton from 'antd/es/skeleton/Skeleton';
+import { Skeleton } from '@/components/ui';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
 
 const ScheduleSettingsDrawer: React.FC = () => {
@@ -16,7 +20,6 @@ const ScheduleSettingsDrawer: React.FC = () => {
 
   const { workingDays, workingHours, loading } = useAppSelector(state => state.scheduleReducer);
   const { date, type } = useAppSelector(state => state.scheduleReducer);
-
 
   const handleFormSubmit = async (values: any) => {
     await dispatch(updateWorking(values));

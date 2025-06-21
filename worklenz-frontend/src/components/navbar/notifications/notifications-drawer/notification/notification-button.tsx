@@ -1,6 +1,6 @@
 import { BellOutlined } from '@ant-design/icons';
 import { Badge, Button, Tooltip } from '@/components/ui';
-import { toggleDrawer } from '@features/navbar/notificationSlice';
+import { toggleDrawer } from '@/features/navbar/notification-slice';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/use-app-selector';

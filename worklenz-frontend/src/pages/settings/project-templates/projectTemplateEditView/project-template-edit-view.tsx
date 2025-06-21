@@ -1,17 +1,17 @@
 import { Button, Flex, Select, Typography } from '@/components/ui';
 import { useState } from 'react';
-import StatusGroupTables from '../../../projects/project-view-1/taskList/statusTables/StatusGroupTables';
-import { TaskType } from '../../../../types/task.types';
-import { useAppSelector } from '../../../../@/hooks/use-app-selector';
+import StatusGroupTables from '@/pages/projects/project-view-1/taskList/statusTables/status-group-tables';
+import { TaskType } from '@/types/task.types';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { PageHeader } from '@ant-design/pro-components';
 import { ArrowLeftOutlined, CaretDownFilled } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import SearchDropdown from '../../../projects/project-view-1/taskList/taskListFilters/SearchDropdown';
-import { useSelectedProject } from '../../../../hooks/useSelectedProject';
+import SearchDropdown from '../../../projects/project-view-1/taskList/taskListFilters/search-dropdown';
+import { useSelectedProject } from '../../../../hooks/use-selected-project';
 import { useTranslation } from 'react-i18next';
-import { toggleDrawer as togglePhaseDrawer } from '../../../../features/projects/singleProject/phase/phases.slice';
-import { toggleDrawer } from '../../../../features/projects/status/StatusSlice';
-import { useAppDispatch } from '../../../../hooks/useAppDispatch';
+import { toggleDrawer as togglePhaseDrawer } from '@/features/projects/singleProject/phase/phases.slice';
+import { toggleDrawer } from '@/features/projects/status/status-slice';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import React from 'react';
 
 const PhaseDrawer = React.lazy(() => import('@features/projects/singleProject/phase/phase-drawer'));

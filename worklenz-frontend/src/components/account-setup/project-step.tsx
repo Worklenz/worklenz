@@ -8,7 +8,7 @@ import TemplateDrawer from '../common/template-drawer/template-drawer';
 
 import { RootState } from '@/app/store';
 import { setProjectName, setTemplateId } from '@/features/account-setup/account-setup.slice';
-import { sanitizeInput } from '@/utils/sanitizeInput';
+import { sanitizeInput } from '@/utils/sanitize-input';
 
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 import logger from '@/utils/error-logger';

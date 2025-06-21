@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { nanoid } from "nanoid";
-import { PhaseColorCodes } from '../../../../../../../../shared/constants';
+import { PhaseColorCodes } from '@/shared/constants';
 import { Button, Flex, Input, Select, Tag, Typography } from '@/components/ui';
 import { CloseCircleOutlined, HolderOutlined } from '@ant-design/icons';
-import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
-import { useAppSelector } from '../../../../../../../../@/hooks/use-app-selector';
-import { setLabelsList } from '../../../../../../../../features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { setLabelsList } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 
 export type LabelType = {
   label_id: string;

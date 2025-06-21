@@ -1,10 +1,10 @@
 import { memo } from 'react';
 import { ConfigProvider, Flex, Skeleton, Spin, Table, Typography } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
-import CustomTableTitle from '@components/CustomTableTitle';
-import { simpleDateFormat } from '@/utils/simpleDateFormat';
+import CustomTableTitle from '@/components/custom-table-title';
+import { simpleDateFormat } from '@/utils/simple-date-format';
 import { colors } from '@/styles/colors';
-import { toCamelCase } from '@/utils/toCamelCase';
+import { toCamelCase } from '@/utils/to-camel-case';
 import ProjectCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-cell/project-cell';
 import ProjectDaysLeftAndOverdueCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-days-left-and-overdue-cell/project-days-left-and-overdue-cell';
 import ProjectManagerCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-manager-cell/project-manager-cell';

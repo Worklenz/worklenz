@@ -1,5 +1,5 @@
 import { Avatar, Flex, Typography } from '@/components/ui';
-import CustomAvatar from '@components/CustomAvatar';
+import CustomAvatar from '@/components/custom-avatar';
 
 type ProjectMangerCellProps = {
   member: { avatar_url: string; name: string } | null;

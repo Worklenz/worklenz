@@ -11,7 +11,7 @@ import {
   setMemberReportingDrawerActiveTab,
   toggleMembersOverviewTasksStatsDrawer,
   toggleMembersOverviewProjectsStatsDrawer,
-} from '../../membersReportsSlice';
+} from '@/features/reporting/membersReports/members-reports-slice';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { IRPTOverviewMemberStats } from '@/types/reporting/reporting.types';
 

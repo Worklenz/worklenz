@@ -1,13 +1,12 @@
 import { Flex, Form, Select, Typography } from '@/components/ui';
-import React from 'react';
-import { themeWiseColor } from '../../../../../../../../utils/themeWiseColor';
-import { useAppSelector } from '../../../../../../../../@/hooks/use-app-selector';
-import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
+import { themeWiseColor } from '@/utils/theme-wise-color';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import {
   setExpression,
   setFirstNumericColumn,
   setSecondNumericColumn,
-} from '../../../../../../../../features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+} from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 
 const FormulaTypeColumn = () => {
   // get theme details from the theme reducer

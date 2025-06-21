@@ -1,9 +1,9 @@
 import { Drawer, Typography, Flex, Button, Dropdown } from '@/components/ui';
 import React, { useState } from 'react';
-import { useAppSelector } from '../../../../@/hooks/use-app-selector';
-import { useAppDispatch } from '../../../../hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { BankOutlined, DownOutlined } from '@ant-design/icons';
-import { colors } from '../../../../styles/colors';
+import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 
 import OverviewTeamInfoDrawerTabs from './overview-team-info-drawer-tabs';

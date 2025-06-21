@@ -7,7 +7,7 @@ import {
   fetchNotifications,
   setNotificationType,
   toggleDrawer,
-} from '../../../../../features/navbar/notificationSlice';
+} from '@/features/navbar/notification-slice';
 import { NOTIFICATION_OPTION_READ, NOTIFICATION_OPTION_UNREAD } from '@/shared/constants';
 import { useTranslation } from 'react-i18next';
 import { SocketEvents } from '@/shared/socket-events';

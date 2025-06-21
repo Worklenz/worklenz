@@ -3,7 +3,7 @@ import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time
 import EstimatedVsActualTimeSheet, { EstimatedVsActualTimeSheetRef } from '@/pages/reporting/time-reports/estimated-vs-actual-time-sheet/estimated-vs-actual-time-sheet';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/use-document-title';
-import TimeReportingRightHeader from './timeReportingRightHeader/TimeReportingRightHeader';
+import TimeReportingRightHeader from './timeReportingRightHeader/time-reporting-right-header';
 import { useState, useRef } from 'react';
 
 const EstimatedVsActualTimeReports = () => {

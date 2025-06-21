@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
-import { toggleMembersOverviewProjectsStatsDrawer } from '../../../membersReportsSlice';
+import { toggleMembersOverviewProjectsStatsDrawer } from '@/features/reporting/membersReports/members-reports-slice';
 import MembersOverviewProjectsStatsTable from './members-overview-projects-stats-table';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 

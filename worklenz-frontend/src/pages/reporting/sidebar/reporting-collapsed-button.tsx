@@ -2,7 +2,7 @@ import { GlobalOutlined, LeftCircleOutlined, RightCircleOutlined } from '@ant-de
 import React, { useEffect, useState } from 'react';
 import { colors } from '@/styles/colors';
 import { Button, Flex, Tooltip, Typography } from '@/components/ui';
-import { themeWiseColor } from '@utils/themeWiseColor';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 import { IOrganization } from '@/types/admin-center/admin-center.types';

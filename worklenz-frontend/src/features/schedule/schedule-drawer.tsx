@@ -1,11 +1,10 @@
-import { Avatar, Drawer, Tabs } from '@/components/ui';
-import React from 'react';
+import { Avatar, Drawer, Tabs, TabsProps } from '@/components/ui';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
-import { toggleScheduleDrawer } from './scheduleSlice';
-import { avatarNamesMap } from '../../shared/constants';
-import WithStartAndEndDates from '../../components/schedule-old/tabs/withStartAndEndDates/WithStartAndEndDates';
+import { toggleScheduleDrawer } from '@/features/schedule/schedule-slice';
+import { avatarNamesMap } from '@/shared/constants';
 import { useTranslation } from 'react-i18next';
+import WithStartAndEndDates from '@/components/schedule-old/tabs/withStartAndEndDates/with-start-and-end-dates';
 
 const ScheduleDrawer = () => {
   const isScheduleDrawerOpen = useAppSelector(state => state.scheduleReducer.isScheduleDrawerOpen);

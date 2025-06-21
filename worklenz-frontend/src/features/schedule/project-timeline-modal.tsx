@@ -3,7 +3,7 @@ import { ScheduleData } from '@/types/schedule/schedule-v2.types';
 import { Button, Col, DatePicker, Flex, Form, Input, Row } from '@/components/ui';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createSchedule, fetchTeamData } from './scheduleSlice';
+import { createSchedule, fetchTeamData } from '@/features/schedule/schedule-slice';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { getDayName } from '@/utils/schedule';
 import dayjs from 'dayjs';

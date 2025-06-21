@@ -1,9 +1,8 @@
 import { Flex, Skeleton } from '@/components/ui';
 import React, { useEffect, useState } from 'react';
 import BillableFilter from './billable-filter';
-import { fetchData } from '@/utils/fetchData';
 import TimeLogCard from './time-log-card';
-import EmptyListPlaceholder from '../../../../../components/EmptyListPlaceholder';
+import EmptyListPlaceholder from '@/components/empty-list-placeholder';
 import { useTranslation } from 'react-i18next';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import logger from '@/utils/error-logger';
@@ -11,7 +10,6 @@ import { ISingleMemberLogs } from '@/types/reporting/reporting.types';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { useAuthService } from '@/hooks/use-auth';
 import { createPortal } from 'react-dom';
-import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
 
 const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
 

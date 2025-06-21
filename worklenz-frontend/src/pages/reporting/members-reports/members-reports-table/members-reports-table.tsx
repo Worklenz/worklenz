@@ -3,17 +3,16 @@ import { ConfigProvider, Table } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
-import CustomTableTitle from '@/components/CustomTableTitle';
-import TasksProgressCell from './tablesCells/tasksProgressCell/TasksProgressCell';
-import MemberCell from './tablesCells/memberCell/MemberCell';
+import CustomTableTitle from '@/components/custom-table-title';
+import TasksProgressCell from './tablesCells/tasksProgressCell/tasks-progress-cell';
+import MemberCell from './tablesCells/memberCell/member-cell';
 import {
   fetchMembersData,
   setPagination,
   toggleMembersReportsDrawer,
-} from '@/features/reporting/membersReports/membersReportsSlice';
+} from '@/features/reporting/membersReports/members-reports-slice';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import MembersReportsDrawer from '@/features/reporting/membersReports/membersReportsDrawer/members-reports-drawer';
-import { PaginationConfig } from 'antd/es/pagination';
 
 const MembersReportsTable = () => {
   const { t } = useTranslation('reporting-members');
@@ -124,7 +123,9 @@ const MembersReportsTable = () => {
         dataSource={membersList}
         rowKey={record => record.id}
         pagination={{ showSizeChanger: true, defaultPageSize: 10, total: total }}
-        onChange={(pagination, filters, sorter, extra) => handleOnChange(pagination, filters, sorter, extra)}
+        onChange={(pagination, filters, sorter, extra) =>
+          handleOnChange(pagination, filters, sorter, extra)
+        }
         scroll={{ x: 'max-content' }}
         loading={isLoading}
         onRow={record => {

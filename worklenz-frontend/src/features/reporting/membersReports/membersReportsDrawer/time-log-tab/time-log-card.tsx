@@ -1,5 +1,5 @@
 import { Card, ConfigProvider, Tag, Timeline, Typography } from '@/components/ui';
-import { simpleDateFormat } from '@/utils/simpleDateFormat';
+import { simpleDateFormat } from '@/utils/simple-date-format';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
 import { fetchTask, setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';

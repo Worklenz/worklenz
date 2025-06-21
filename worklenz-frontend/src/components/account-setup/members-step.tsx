@@ -6,8 +6,8 @@ import { Typography } from '@/components/ui';
 import { setTeamMembers, setTasks } from '@/features/account-setup/account-setup.slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/app/store';
-import { validateEmail } from '@/utils/validateEmail';
-import { sanitizeInput } from '@/utils/sanitizeInput';
+import { validateEmail } from '@/utils/validate-email';
+import { sanitizeInput } from '@/utils/sanitize-input';
 import { Rule } from 'antd/es/form';
 
 const { Title } = Typography;

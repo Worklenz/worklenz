@@ -3,7 +3,7 @@ import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time
 import ProjectTimeSheetChart, { ProjectTimeSheetChartRef } from '@/pages/reporting/time-reports/project-time-sheet/project-time-sheet-chart';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/use-document-title';
-import TimeReportingRightHeader from './timeReportingRightHeader/TimeReportingRightHeader';
+import TimeReportingRightHeader from './timeReportingRightHeader/time-reporting-right-header';
 import { useRef } from 'react';
 
 const ProjectsTimeReports = () => {

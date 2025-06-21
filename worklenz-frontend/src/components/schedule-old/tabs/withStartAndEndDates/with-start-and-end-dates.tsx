@@ -1,7 +1,7 @@
-import StatusGroupTables from '@/pages/projects/project-view-1/taskList/statusTables/StatusGroupTables';
+import StatusGroupTables from '@/pages/projects/project-view-1/taskList/statusTables/status-group-tables';
 import { TaskType } from '@/types/task.types';
 import { useAppSelector } from '@/hooks/use-app-selector';
-import GroupByFilterDropdown from '@/pages/projects/project-view-1/taskList/taskListFilters/GroupByFilterDropdown';
+import GroupByFilterDropdown from '@/pages/projects/project-view-1/taskList/taskListFilters/group-by-filter-dropdown';
 import { useTranslation } from 'react-i18next';
 
 const WithStartAndEndDates = () => {

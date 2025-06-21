@@ -1,7 +1,7 @@
 import { Drawer, Typography, Flex, Button, Space, Dropdown } from '@/components/ui';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
-import { toggleMembersReportsDrawer } from '../membersReportsSlice';
+import { toggleMembersReportsDrawer } from '@/features/reporting/membersReports/members-reports-slice';
 import { DownOutlined } from '@ant-design/icons';
 import MembersReportsDrawerTabs from './members-reports-drawer-tabs';
 import { useTranslation } from 'react-i18next';

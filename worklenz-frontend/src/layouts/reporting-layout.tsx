@@ -5,10 +5,10 @@ import ConfigProvider from 'antd/es/config-provider';
 import Layout from 'antd/es/layout';
 
 import Navbar from '../features/navbar/navbar';
-import { useAppSelector } from '../@/hooks/use-app-selector';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
-import { colors } from '../styles/colors';
-import { themeWiseColor } from '../utils/themeWiseColor';
+import { colors } from '@/styles/colors';
+import { themeWiseColor } from '@/utils/theme-wise-color';
 import ReportingSider from '../pages/reporting/sidebar/reporting-sider';
 import ReportingCollapsedButton from '../pages/reporting/sidebar/reporting-collapsed-button';
 import { useAuthService } from '@/hooks/use-auth';

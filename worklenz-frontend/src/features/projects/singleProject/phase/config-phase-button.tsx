@@ -1,10 +1,9 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from '@/components/ui';
-import React from 'react';
-import { useAppDispatch } from '../../../../hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { toggleDrawer } from './phases.slice';
-import { useAppSelector } from '../../../../@/hooks/use-app-selector';
-import { colors } from '../../../../styles/colors';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 
 const ConfigPhaseButton = () => {

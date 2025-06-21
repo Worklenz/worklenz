@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { setOrganizationName } from '@/features/account-setup/account-setup.slice';
 import { RootState } from '@/app/store';
-import { sanitizeInput } from '@/utils/sanitizeInput';
+import { sanitizeInput } from '@/utils/sanitize-input';
 import './admin-center-common.css';
 
 const { Title } = Typography;

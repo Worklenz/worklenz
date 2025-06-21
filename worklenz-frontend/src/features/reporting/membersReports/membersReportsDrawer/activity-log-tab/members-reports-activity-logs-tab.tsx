@@ -1,6 +1,6 @@
 import { Flex, Skeleton } from '@/components/ui';
 import React, { useEffect, useMemo, useState } from 'react';
-import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
+import EmptyListPlaceholder from '@/components/empty-list-placeholder';
 import ActivityLogCard from './activity-log-card';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';

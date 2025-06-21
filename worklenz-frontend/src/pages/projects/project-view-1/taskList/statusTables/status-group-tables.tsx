@@ -1,12 +1,12 @@
 import { TaskType } from '@/types/task.types';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { Flex } from '@/components/ui';
-import TaskListTableWrapper from '@/pages/projects/project-view-1/taskList/taskListTable/TaskListTableWrapper';
+import TaskListTableWrapper from '@/pages/projects/project-view-1/taskList/taskListTable/task-list-table-wrapper';
 import { createPortal } from 'react-dom';
-import BulkTasksActionContainer from '@/features/projects/bulkActions/BulkTasksActionContainer';
+import BulkTasksActionContainer from '@/features/projects/bulk-actions/bulk-tasks-action-container';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
-import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
-import { ITaskListGroup } from '@/types/tasks/taskList.types';
+import { deselectAll } from '@/features/projects/bulk-actions/bulk-action.slice';
+import { ITaskListGroup } from '@/types/tasks/task-list.types';
 
 const StatusGroupTables = ({ group }: { group: ITaskListGroup }) => {
   const dispatch = useAppDispatch();

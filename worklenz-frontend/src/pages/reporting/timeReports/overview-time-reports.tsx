@@ -2,7 +2,7 @@ import React from 'react';
 import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time-report-page-header';
 import { Flex } from '@/components/ui';
 import TimeSheetTable from '@/pages/reporting/time-reports/time-sheet-table/time-sheet-table';
-import TimeReportingRightHeader from './timeReportingRightHeader/TimeReportingRightHeader';
+import TimeReportingRightHeader from './timeReportingRightHeader/time-reporting-right-header';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useAppSelector } from '@/hooks/use-app-selector';

@@ -1,14 +1,14 @@
 import { Tabs } from '@/components/ui';
 import { TabsProps } from 'antd/lib';
 import React from 'react';
-import MembersReportsOverviewTab from './overviewTab/MembersReportsOverviewTab';
+import MembersReportsOverviewTab from './overviewTab/members-reports-overview-tab';
 import MembersReportsTimeLogsTab from './time-log-tab/members-reports-time-logs-tab';
 import MembersReportsActivityLogsTab from './activity-log-tab/members-reports-activity-logs-tab';
-import MembersReportsTasksTab from './taskTab/MembersReportsTasksTab';
+import MembersReportsTasksTab from './taskTab/members-reports-tasks-tab';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '../../../../@/hooks/use-app-selector';
-import { useAppDispatch } from '../../../../hooks/useAppDispatch';
-import { setMemberReportingDrawerActiveTab } from '../membersReportsSlice';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { setMemberReportingDrawerActiveTab } from '@/features/reporting/membersReports/members-reports-slice';
 
 type MembersReportsDrawerProps = {
   memberId?: string | null;

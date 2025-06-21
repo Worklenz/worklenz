@@ -3,8 +3,8 @@ import React, { useMemo, useState } from 'react';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useTranslation } from 'react-i18next';
-import { toggleMembersOverviewTasksStatsDrawer } from '../../../membersReportsSlice';
-import { fetchData } from '@/utils/fetchData';
+import { toggleMembersOverviewTasksStatsDrawer } from '@/features/reporting/membersReports/members-reports-slice';
+import { fetchData } from '@/utils/fetch-data';
 import MembersOverviewTasksStatsTable from './members-overview-tasks-stats-table';
 
 const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));

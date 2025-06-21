@@ -22,14 +22,12 @@ import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
-import { ITaskPhase } from '@/types/tasks/taskPhase.types';
+import { ITaskPhase } from '@/types/tasks/task-phase.types';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import logger from '@/utils/error-logger';
 import { fetchStatuses } from '@/features/task-attributes/task-status.slice';
 import { useMixpanelTracking } from '@/hooks/use-mixpanel-tracking';
-;
-;
-import useIsProjectManager from '@/hooks/useIsProjectManager';
+import useIsProjectManager from '@/hooks/use-is-project-manager';
 
 interface TaskListTableWrapperProps {
   taskList: IProjectTask[];

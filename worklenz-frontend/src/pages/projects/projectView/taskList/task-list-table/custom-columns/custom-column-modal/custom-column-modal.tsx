@@ -26,7 +26,7 @@ import { nanoid } from '@reduxjs/toolkit';
 import {
   CustomTableColumnsType,
   deleteCustomColumn as deleteCustomColumnFromColumns,
-} from '@features/projects/singleProject/taskListColumns/taskColumnsSlice';
+} from '@/features/projects/singleProject/taskListColumns/task-columns-slice';
 import { themeWiseColor } from '@/utils/theme-wise-color';
 import KeyTypeColumn from './key-type-column/key-type-column';
 import logger from '@/utils/error-logger';

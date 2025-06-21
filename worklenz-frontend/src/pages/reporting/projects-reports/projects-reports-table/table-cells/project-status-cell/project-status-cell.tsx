@@ -2,7 +2,7 @@ import { ConfigProvider, Select, Typography } from '@/components/ui';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/use-app-selector';
-import { getStatusIcon } from '@/utils/projectUtils';
+import { getStatusIcon } from '@/utils/project-utils';
 import { useEffect, useState } from 'react';
 import { useSocket } from '@/socket/socket-context';
 import { SocketEvents } from '@/shared/socket-events';

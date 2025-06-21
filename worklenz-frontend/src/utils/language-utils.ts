@@ -1,4 +1,4 @@
-import { ILanguageType, Language } from '@/features/i18n/localesSlice';
+import { ILanguageType, Language } from '@/features/i18n/locales-slice';
 
 const STORAGE_KEY = 'i18nextLng';
 

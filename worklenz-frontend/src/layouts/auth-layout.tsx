@@ -4,8 +4,8 @@ import ConfigProvider from 'antd/es/config-provider';
 import Flex from 'antd/es/flex';
 import Layout from 'antd/es/layout';
 
-import { useAppSelector } from '../@/hooks/use-app-selector';
-import { colors } from '../styles/colors';
+import { useAppSelector } from '@/hooks/use-app-selector';
+import { colors } from '@/styles/colors';
 
 interface AuthLayoutProps {}
 

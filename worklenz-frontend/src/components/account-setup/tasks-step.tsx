@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { RootState } from '@/app/store';
 import { setTasks } from '@/features/account-setup/account-setup.slice';
-import { sanitizeInput } from '@/utils/sanitizeInput';
+import { sanitizeInput } from '@/utils/sanitize-input';
 
 const { Title } = Typography;
 

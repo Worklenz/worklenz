@@ -1,5 +1,5 @@
 import { Badge, Collapse, Flex, Table, Tag, Typography } from '@/components/ui';
-import CustomTableTitle from '@components/CustomTableTitle';
+import CustomTableTitle from '@/components/custom-table-title';
 import { colors } from '@/styles/colors';
 import dayjs from 'dayjs';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';

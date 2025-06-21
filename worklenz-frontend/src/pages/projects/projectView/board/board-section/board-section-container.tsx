@@ -2,10 +2,10 @@ import { Flex } from '@/components/ui';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import BoardSectionCard from './board-section-card/board-section-card';
 import BoardCreateSectionCard from './board-section-card/board-create-section-card';
-import { ITaskListGroup } from '@/types/tasks/taskList.types';
+import { ITaskListGroup } from '@/types/tasks/task-list.types';
 import React, { useEffect } from 'react';
 import { setTaskAssignee, setTaskEndDate } from '@/features/task-drawer/task-drawer.slice';
-import { fetchTaskAssignees } from '@/features/taskAttributes/taskMemberSlice';
+import { fetchTaskAssignees } from '@/features/task-attributes/task-member.slice';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
 import { useSocket } from '@/socket/socket-context';
@@ -13,7 +13,8 @@ import { useAuthService } from '@/hooks/use-auth';
 import { useAppDispatch } from '@/hooks/use-app-dispatch';
 import { useAppSelector } from '@/hooks/use-app-selector';
 import { updateTaskAssignees, updateTaskEndDate } from '@/features/board/board-slice';
-import useIsProjectManager from '@/hooks/useIsProjectManager';
+import useIsProjectManager from '@/hooks/use-is-project-manager';
+import { IProjectTask } from '@/types/project/project-tasks-view-model.types';
 
 const BoardSectionCardContainer = ({
   datasource,
@@ -47,7 +48,7 @@ const BoardSectionCardContainer = ({
         group.tasks.some(
           task =>
             task.id === data.id ||
-            (task.sub_tasks && task.sub_tasks.some(subtask => subtask.id === data.id))
+            (task.sub_tasks && task.sub_tasks.some((subtask: IProjectTask) => subtask.id === data.id))
         )
       )?.id;
 

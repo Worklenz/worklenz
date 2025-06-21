@@ -18,8 +18,8 @@ import { IAuthorizeResponse } from '@/types/auth/login.types';
 import { RootState } from '@/app/store';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { getUserSession, setSession } from '@/utils/session-helper';
-import { validateEmail } from '@/utils/validateEmail';
-import { sanitizeInput } from '@/utils/sanitizeInput';
+import { validateEmail } from '@/utils/validate-email';
+import { sanitizeInput } from '@/utils/sanitize-input';
 import logo from '@/assets/images/worklenz-light-mode.png';
 import logoDark from '@/assets/images/worklenz-dark-mode.png';
 

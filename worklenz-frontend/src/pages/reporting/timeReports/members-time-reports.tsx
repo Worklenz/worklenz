@@ -1,7 +1,7 @@
 import { Card, Flex } from '@/components/ui';
 import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time-report-page-header';
 import MembersTimeSheet, { MembersTimeSheetRef } from '@/pages/reporting/time-reports/members-time-sheet/members-time-sheet';
-import TimeReportingRightHeader from './timeReportingRightHeader/TimeReportingRightHeader';
+import TimeReportingRightHeader from './timeReportingRightHeader/time-reporting-right-header';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useRef } from 'react';

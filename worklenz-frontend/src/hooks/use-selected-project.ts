@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { useAppSelector } from './useAppSelector';
+import { useAppSelector } from './use-app-selector';
 
 // this custom hook return currently selected project
 export const useSelectedProject = () => {

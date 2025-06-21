@@ -10,16 +10,13 @@ import {
   Legend,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { useAppDispatch } from '../../../../hooks/useAppDispatch';
-import {
-  setLabelAndToggleDrawer,
-} from '../../../../features/timeReport/projects/timeLogSlice';
-import ProjectTimeLogDrawer from '../../../../features/timeReport/projects/ProjectTimeLogDrawer';
-import { useAppSelector } from '../../../../@/hooks/use-app-selector';
+import { useAppDispatch } from '@/hooks/use-app-dispatch';
+import { setLabelAndToggleDrawer } from '@/features/timeReport/projects/time-log.slice';
+import ProjectTimeLogDrawer from '@/features/timeReport/projects/project-time-log-drawer';
+import { useAppSelector } from '@/hooks/use-app-selector';
 import { useTranslation } from 'react-i18next';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
 import { IRPTTimeProject } from '@/types/reporting/reporting.types';
-import { Empty, Spin } from '@/components/ui';
 import logger from '@/utils/error-logger';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
@@ -65,16 +62,22 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
 
   const data = {
     labels: Array.isArray(jsonData) ? jsonData.map(item => item?.name || '') : [],
-    datasets: [{
-      label: t('loggedTime'),
-      data: Array.isArray(jsonData) ? jsonData.map(item => {
-        const loggedTime = item?.logged_time || '0';
-        const loggedTimeInHours = parseFloat(loggedTime) / 3600;
-        return loggedTimeInHours.toFixed(2);
-      }) : [],
-      backgroundColor: Array.isArray(jsonData) ? jsonData.map(item => item?.color_code || '#000000') : [],
-      barThickness: BAR_THICKNESS,
-    }],
+    datasets: [
+      {
+        label: t('loggedTime'),
+        data: Array.isArray(jsonData)
+          ? jsonData.map(item => {
+              const loggedTime = item?.logged_time || '0';
+              const loggedTimeInHours = parseFloat(loggedTime) / 3600;
+              return loggedTimeInHours.toFixed(2);
+            })
+          : [],
+        backgroundColor: Array.isArray(jsonData)
+          ? jsonData.map(item => item?.color_code || '#000000')
+          : [],
+        barThickness: BAR_THICKNESS,
+      },
+    ],
   };
 
   const options = {
@@ -170,14 +173,14 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
     archived,
     loadingTeams,
     loadingProjects,
-    loadingCategories
+    loadingCategories,
   ]);
 
   const exportChart = () => {
     if (chartRef.current) {
       // Get the canvas element
       const canvas = chartRef.current.canvas;
-      
+
       // Create a temporary canvas to draw with background
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
@@ -203,7 +206,7 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
   };
 
   useImperativeHandle(ref, () => ({
-    exportChart
+    exportChart,
   }));
 
   // if (loading) {
@@ -224,11 +227,7 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
           height: `${60 * data.labels.length}px`,
         }}
       >
-        <Bar 
-          data={data} 
-          options={options} 
-          ref={chartRef}
-        />
+        <Bar data={data} options={options} ref={chartRef} />
       </div>
       <ProjectTimeLogDrawer />
     </div>
