@@ -1,9 +1,9 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
 import Flex from 'antd/es/flex';
 import Skeleton from 'antd/es/skeleton';
 import { useSearchParams } from 'react-router-dom';
 
-import TaskListFilters from './task-list-filters/task-list-filters';
+const TaskListFilters = lazy(() => import('./task-list-filters/task-list-filters'));
 import TaskGroupWrapperOptimized from './task-group-wrapper-optimized';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -100,7 +100,9 @@ const ProjectViewTaskList = () => {
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
       {/* Filters load independently and don't block the main content */}
-      <TaskListFilters position="list" />
+      <Suspense fallback={<div>Loading filters...</div>}>
+        <TaskListFilters position="list" />
+      </Suspense>
 
       {isEmptyState ? (
         <Empty description="No tasks group found" />
