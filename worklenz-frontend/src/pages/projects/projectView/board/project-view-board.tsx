@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import TaskListFilters from '../taskList/task-list-filters/task-list-filters';
+
+const TaskListFilters = lazy(() => import('../taskList/task-list-filters/task-list-filters'));
 import { Flex, Skeleton } from 'antd';
 import BoardSectionCardContainer from './board-section/board-section-container';
 import {
@@ -553,7 +554,9 @@ const ProjectViewBoard = () => {
 
   return (
     <Flex vertical gap={16}>
-      <TaskListFilters position={'board'} />
+      <Suspense fallback={<div>Loading filters...</div>}>
+        <TaskListFilters position={'board'} />
+      </Suspense>
       <Skeleton active loading={isLoading} className='mt-4 p-4'>
         <DndContext
           sensors={sensors}
