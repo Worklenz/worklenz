@@ -5,7 +5,6 @@ import i18next from 'i18next';
 
 // Components
 import ThemeWrapper from './features/theme/ThemeWrapper';
-import PreferenceSelector from './components/PreferenceSelector';
 
 // Routes
 import router from './app/routes';
@@ -14,7 +13,6 @@ import router from './app/routes';
 import { useAppSelector } from './hooks/useAppSelector';
 import { initMixpanel } from './utils/mixpanelInit';
 import { initializeCsrfToken } from './api/api-client';
-import { useRoutePreloader } from './utils/routePreloader';
 
 // Types & Constants
 import { Language } from './features/i18n/localesSlice';
@@ -28,9 +26,9 @@ import { SuspenseFallback } from './components/suspense-fallback/suspense-fallba
  * 1. React.memo() - Prevents unnecessary re-renders
  * 2. useMemo() - Memoizes expensive computations
  * 3. useCallback() - Memoizes event handlers
- * 4. Route preloading - Preloads critical routes
- * 5. Lazy loading - Components loaded on demand
- * 6. Suspense boundaries - Better loading states
+ * 4. Lazy loading - All route components loaded on demand
+ * 5. Suspense boundaries - Better loading states
+ * 6. Optimized guard components with memoization
  */
 const App: React.FC = memo(() => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -38,25 +36,6 @@ const App: React.FC = memo(() => {
 
   // Memoize mixpanel initialization to prevent re-initialization
   const mixpanelToken = useMemo(() => import.meta.env.VITE_MIXPANEL_TOKEN as string, []);
-  
-  // Preload critical routes for better navigation performance
-  useRoutePreloader([
-    {
-      path: '/worklenz/home',
-      loader: () => import('./pages/home/home-page'),
-      priority: 'high'
-    },
-    {
-      path: '/worklenz/projects',
-      loader: () => import('./pages/projects/project-list'),
-      priority: 'high'
-    },
-    {
-      path: '/worklenz/schedule',
-      loader: () => import('./pages/schedule/schedule'),
-      priority: 'medium'
-    }
-  ]);
   
   useEffect(() => {
     initMixpanel(mixpanelToken);
@@ -95,7 +74,12 @@ const App: React.FC = memo(() => {
   return (
     <Suspense fallback={<SuspenseFallback />}>
       <ThemeWrapper>
-        <RouterProvider router={router} future={{ v7_startTransition: true }} />
+        <RouterProvider 
+          router={router} 
+          future={{ 
+            v7_startTransition: true 
+          }} 
+        />
       </ThemeWrapper>
     </Suspense>
   );
