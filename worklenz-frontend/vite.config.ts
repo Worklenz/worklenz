@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig(({ command, mode }) => {
   const isProduction = command === 'build';
@@ -10,10 +9,6 @@ export default defineConfig(({ command, mode }) => {
     // **Plugins**
     plugins: [
       react(),
-      tsconfigPaths({
-        // Optionally, you can specify a custom tsconfig file
-        // loose: true, // If you're using a non-standard tsconfig setup
-      }),
     ],
 
     // **Resolve**
