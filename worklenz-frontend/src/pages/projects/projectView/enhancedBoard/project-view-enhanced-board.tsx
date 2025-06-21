@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import TaskListBoard from '@/components/task-management/TaskListBoard';
-import KanbanTaskListBoard from '@/components/kanban-board-management-v2/kanbanTaskListBoard';
+import EnhancedKanbanBoard from '@/components/enhanced-kanban/EnhancedKanbanBoard';
 
 const ProjectViewEnhancedBoard: React.FC = () => {
   const { project } = useAppSelector(state => state.projectReducer);
@@ -15,8 +14,8 @@ const ProjectViewEnhancedBoard: React.FC = () => {
   }
 
   return (
-    <div className="project-view-enhanced-tasks">
-      <KanbanTaskListBoard projectId={project.id} />
+    <div className="project-view-enhanced-board">
+      <EnhancedKanbanBoard projectId={project.id} />
     </div>
   );
 };
