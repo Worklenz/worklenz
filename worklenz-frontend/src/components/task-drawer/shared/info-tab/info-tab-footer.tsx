@@ -103,7 +103,6 @@ const InfoTabFooter = () => {
     })) ?? [];
 
   const memberSelectHandler = useCallback((member: IMentionMemberSelectOption) => {
-    console.log('member', member);
     if (!member?.value || !member?.label) return;
     
     // Find the member ID from the members list using the name

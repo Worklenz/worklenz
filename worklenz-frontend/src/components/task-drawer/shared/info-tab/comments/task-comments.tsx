@@ -18,6 +18,7 @@ import { colors } from '@/styles/colors';
 import AttachmentsGrid from '../attachments/attachments-grid';
 import { TFunction } from 'i18next';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
+import { sanitizeHtml } from '@/utils/sanitizeInput';
 
 // Helper function to format date for time separators
 const formatDateForSeparator = (date: string) => {
@@ -56,6 +57,32 @@ const processMentions = (content: string) => {
   return content.replace(/@(\w+)/g, '<span class="mentions">@$1</span>');
 };
 
+// Utility to linkify URLs in text
+const linkify = (text: string) => {
+  if (!text) return '';
+  // Regex to match URLs (http, https, www)
+  return text.replace(/(https?:\/\/[^\s]+|www\.[^\s]+)/g, (url) => {
+    let href = url;
+    if (!href.startsWith('http')) {
+      href = 'http://' + href;
+    }
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+  });
+};
+
+// Helper function to process mentions and links in content
+const processContent = (content: string) => {
+  if (!content) return '';
+  // First, linkify URLs
+  let processed = linkify(content);
+  // Then, process mentions (if not already processed)
+  if (!hasProcessedMentions(processed)) {
+    processed = processMentions(processed);
+  }
+  // Sanitize the final HTML (allowing <a> and <span class="mentions">)
+  return sanitizeHtml(processed);
+};
+
 const TaskComments = ({ taskId, t }: { taskId?: string, t: TFunction }) => {
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<ITaskCommentViewModel[]>([]);
@@ -80,10 +107,10 @@ const TaskComments = ({ taskId, t }: { taskId?: string, t: TFunction }) => {
             return dayjs(a.created_at).isBefore(dayjs(b.created_at)) ? -1 : 1;
           });
 
-          // Process mentions in content
+          // Process content (mentions and links)
           sortedComments.forEach(comment => {
-            if (comment.content && !hasProcessedMentions(comment.content)) {
-              comment.content = processMentions(comment.content);
+            if (comment.content) {
+              comment.content = processContent(comment.content);
             }
           });
 
@@ -184,9 +211,9 @@ const TaskComments = ({ taskId, t }: { taskId?: string, t: TFunction }) => {
 
   const commentUpdated = (comment: ITaskCommentViewModel) => {
     comment.edit = false;
-    // Process mentions in updated content
-    if (comment.content && !hasProcessedMentions(comment.content)) {
-      comment.content = processMentions(comment.content);
+    // Process content (mentions and links) in updated comment
+    if (comment.content) {
+      comment.content = processContent(comment.content);
     }
     setComments([...comments]); // Force re-render
   };

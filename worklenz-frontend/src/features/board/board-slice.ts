@@ -459,10 +459,24 @@ const boardSlice = createSlice({
       const { body, sectionId, taskId } = action.payload;
       const section = state.taskGroups.find(sec => sec.id === sectionId);
       if (section) {
-        const task = section.tasks.find(task => task.id === taskId);
-        if (task) {
-          task.assignees = body.assignees;
-          task.names = body.names;
+        // First try to find the task in main tasks
+        const mainTask = section.tasks.find(task => task.id === taskId);
+        if (mainTask) {
+          mainTask.assignees = body.assignees;
+          mainTask.names = body.names;
+          return;
+        }
+
+        // If not found in main tasks, look in subtasks
+        for (const parentTask of section.tasks) {
+          if (!parentTask.sub_tasks) continue;
+          
+          const subtask = parentTask.sub_tasks.find(st => st.id === taskId);
+          if (subtask) {
+            subtask.assignees = body.assignees;
+            subtask.names = body.names;
+            return;
+          }
         }
       }
     },
