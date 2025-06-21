@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Layout, Typography, Card, Space, Alert } from 'antd';
 import { useDispatch } from 'react-redux';
-import TaskListBoard from '@/components/task-management/TaskListBoard';
+import TaskListBoard from '@/components/task-management/task-list-board';
 import { AppDispatch } from '@/app/store';
 
 const { Header, Content } = Layout;
