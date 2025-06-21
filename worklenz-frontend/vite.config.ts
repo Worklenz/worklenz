@@ -72,7 +72,7 @@ export default defineConfig(({ command, mode }) => {
         output: {
           // **Optimized Chunking Strategy**
           manualChunks(id) {
-            // Core React libraries
+            // Core React libraries - keep together to avoid dependency issues
             if (id.includes('react') || id.includes('react-dom')) {
               return 'react-vendor';
             }
@@ -82,14 +82,9 @@ export default defineConfig(({ command, mode }) => {
               return 'react-router';
             }
             
-            // Ant Design (keep separate for better caching)
-            if (id.includes('antd') && !id.includes('@ant-design/icons')) {
+            // Ant Design and Icons together to share React context
+            if (id.includes('antd') || id.includes('@ant-design/icons')) {
               return 'antd';
-            }
-            
-            // Icons (if using ant design icons)
-            if (id.includes('@ant-design/icons')) {
-              return 'antd-icons';
             }
             
             // Internationalization
@@ -124,6 +119,9 @@ export default defineConfig(({ command, mode }) => {
         
         // **External dependencies (if any should be externalized)**
         external: [],
+        
+        // **Preserve modules to avoid context issues**
+        preserveEntrySignatures: 'strict',
       },
 
       // **Experimental features for better performance**
@@ -138,10 +136,15 @@ export default defineConfig(({ command, mode }) => {
       include: [
         'react',
         'react-dom',
+        'react/jsx-runtime',
+        'antd',
+        '@ant-design/icons',
       ],
       exclude: [
         // Add any packages that should not be pre-bundled
       ],
+      // Force pre-bundling to avoid runtime issues
+      force: true,
     },
 
     // **Define global constants**
