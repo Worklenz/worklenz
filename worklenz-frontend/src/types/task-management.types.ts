@@ -1,5 +1,6 @@
 export interface Task {
   id: string;
+  task_key: string;
   title: string;
   description?: string;
   status: 'todo' | 'doing' | 'done';
@@ -7,7 +8,7 @@ export interface Task {
   phase: string; // Custom phases like 'planning', 'development', 'testing', 'deployment'
   progress: number; // 0-100
   assignees: string[];
-  labels: string[];
+  labels: Label[];
   dueDate?: string;
   timeTracking: {
     estimated?: number;
@@ -56,6 +57,8 @@ export interface Label {
   id: string;
   name: string;
   color: string;
+  end?: boolean;
+  names?: string[];
 }
 
 // Redux State Interfaces

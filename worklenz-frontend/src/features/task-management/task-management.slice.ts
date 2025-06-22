@@ -1,10 +1,11 @@
-import { createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createEntityAdapter, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { Task, TaskManagementState } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
+import { tasksApiService, ITaskListConfigV2 } from '@/api/tasks/tasks.api.service';
+import logger from '@/utils/errorLogger';
 
 // Entity adapter for normalized state
 const tasksAdapter = createEntityAdapter<Task>({
-  selectId: (task) => task.id,
   sortComparer: (a, b) => a.order - b.order,
 });
 
@@ -14,6 +15,91 @@ const initialState: TaskManagementState = {
   loading: false,
   error: null,
 };
+
+// Async thunk to fetch tasks from API
+export const fetchTasks = createAsyncThunk(
+  'taskManagement/fetchTasks',
+  async (projectId: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const currentGrouping = state.grouping.currentGrouping;
+      
+      const config: ITaskListConfigV2 = {
+        id: projectId,
+        archived: false,
+        group: currentGrouping,
+        field: '',
+        order: '',
+        search: '',
+        statuses: '',
+        members: '',
+        projects: '',
+        isSubtasksInclude: false,
+        labels: '',
+        priorities: '',
+      };
+
+      const response = await tasksApiService.getTaskList(config);
+      
+      // Helper function to safely convert time values
+      const convertTimeValue = (value: any): number => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          const parsed = parseFloat(value);
+          return isNaN(parsed) ? 0 : parsed;
+        }
+        if (typeof value === 'object' && value !== null) {
+          // Handle time objects like {hours: 2, minutes: 30}
+          if ('hours' in value || 'minutes' in value) {
+            const hours = Number(value.hours || 0);
+            const minutes = Number(value.minutes || 0);
+            return hours + (minutes / 60);
+          }
+        }
+        return 0;
+      };
+
+      // Transform the API response to our Task type
+      const tasks: Task[] = response.body.flatMap((group: any) => 
+        group.tasks.map((task: any) => ({
+          id: task.id,
+          task_key: task.task_key || '',
+          title: task.name || '',
+          description: task.description || '',
+          status: task.status_name?.toLowerCase() || 'todo',
+          priority: task.priority_name?.toLowerCase() || 'medium',
+          phase: task.phase_name || 'Development',
+          progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
+          assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
+          labels: task.labels?.map((l: any) => ({
+            id: l.id || l.label_id,
+            name: l.name,
+            color: l.color_code || '#1890ff',
+            end: l.end,
+            names: l.names
+          })) || [],
+          dueDate: task.end_date,
+          timeTracking: {
+            estimated: convertTimeValue(task.total_time),
+            logged: convertTimeValue(task.time_spent),
+          },
+          customFields: {},
+          createdAt: task.created_at || new Date().toISOString(),
+          updatedAt: task.updated_at || new Date().toISOString(),
+          order: typeof task.sort_order === 'number' ? task.sort_order : 0,
+        }))
+      );
+
+      return tasks;
+    } catch (error) {
+      logger.error('Fetch Tasks', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch tasks');
+    }
+  }
+);
 
 const taskManagementSlice = createSlice({
   name: 'taskManagement',
@@ -98,6 +184,22 @@ const taskManagementSlice = createSlice({
       state.error = action.payload;
       state.loading = false;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchTasks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTasks.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        tasksAdapter.setAll(state, action.payload);
+      })
+      .addCase(fetchTasks.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
   },
 });
 

@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSelector } from 'react-redux';
 import { Button, Typography } from 'antd';
 import { PlusOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
-import { ITaskListGroup } from '@/types/tasks/taskList.types';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { IGroupBy, COLUMN_KEYS } from '@/features/tasks/tasks.slice';
+import { TaskGroup as TaskGroupType, Task } from '@/types/task-management.types';
+import { taskManagementSelectors } from '@/features/task-management/task-management.slice';
 import { RootState } from '@/app/store';
 import TaskRow from './task-row';
 import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-rows/add-task-list-row';
@@ -14,9 +13,9 @@ import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-tabl
 const { Text } = Typography;
 
 interface TaskGroupProps {
-  group: ITaskListGroup;
+  group: TaskGroupType;
   projectId: string;
-  currentGrouping: IGroupBy;
+  currentGrouping: 'status' | 'priority' | 'phase';
   selectedTaskIds: string[];
   onAddTask?: (groupId: string) => void;
   onToggleCollapse?: (groupId: string) => void;
@@ -34,7 +33,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
   onSelectTask,
   onToggleSubtasks,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(group.collapsed || false);
 
   const { setNodeRef, isOver } = useDroppable({
     id: group.id,
@@ -44,41 +43,37 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
     },
   });
 
-  // Get column visibility from Redux store
-  const columns = useSelector((state: RootState) => state.taskReducer.columns);
-
-  // Helper function to check if a column is visible
-  const isColumnVisible = (columnKey: string) => {
-    const column = columns.find(col => col.key === columnKey);
-    return column ? column.pinned : true; // Default to visible if column not found
-  };
-
-  // Get task IDs for sortable context
-  const taskIds = group.tasks.map(task => task.id!);
+  // Get all tasks from the store
+  const allTasks = useSelector(taskManagementSelectors.selectAll);
+  
+  // Get tasks for this group using memoization for performance
+  const groupTasks = useMemo(() => {
+    return group.taskIds
+      .map(taskId => allTasks.find(task => task.id === taskId))
+      .filter((task): task is Task => task !== undefined);
+  }, [group.taskIds, allTasks]);
 
   // Calculate group statistics
-  const completedTasks = group.tasks.filter(
-    task => task.status_category?.is_done || task.complete_ratio === 100
-  ).length;
-  const totalTasks = group.tasks.length;
+  const completedTasks = useMemo(() => {
+    return groupTasks.filter(task => task.progress === 100).length;
+  }, [groupTasks]);
+  
+  const totalTasks = groupTasks.length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // Get group color based on grouping type
   const getGroupColor = () => {
-    if (group.color_code) return group.color_code;
+    if (group.color) return group.color;
 
     // Fallback colors based on group value
     switch (currentGrouping) {
       case 'status':
-        return group.id === 'todo' ? '#faad14' : group.id === 'doing' ? '#1890ff' : '#52c41a';
+        return group.groupValue === 'todo' ? '#faad14' : 
+               group.groupValue === 'doing' ? '#1890ff' : '#52c41a';
       case 'priority':
-        return group.id === 'critical'
-          ? '#ff4d4f'
-          : group.id === 'high'
-            ? '#fa8c16'
-            : group.id === 'medium'
-              ? '#faad14'
-              : '#52c41a';
+        return group.groupValue === 'critical' ? '#ff4d4f' :
+               group.groupValue === 'high' ? '#fa8c16' :
+               group.groupValue === 'medium' ? '#faad14' : '#52c41a';
       case 'phase':
         return '#722ed1';
       default:
@@ -118,7 +113,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
               className="task-group-header-button"
             />
             <Text strong className="task-group-header-text">
-              {group.name} ({totalTasks})
+              {group.title} ({totalTasks})
             </Text>
           </div>
         </div>
@@ -148,36 +143,24 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
               </div>
             </div>
             <div className="task-table-scrollable-columns">
-              {isColumnVisible(COLUMN_KEYS.PROGRESS) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '90px' }}>
-                  <Text className="column-header-text">Progress</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.ASSIGNEES) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '150px' }}>
-                  <Text className="column-header-text">Members</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.LABELS) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '150px' }}>
-                  <Text className="column-header-text">Labels</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.STATUS) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
-                  <Text className="column-header-text">Status</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.PRIORITY) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
-                  <Text className="column-header-text">Priority</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.TIME_TRACKING) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '120px' }}>
-                  <Text className="column-header-text">Time Tracking</Text>
-                </div>
-              )}
+              <div className="task-table-cell task-table-header-cell" style={{ width: '90px' }}>
+                <Text className="column-header-text">Progress</Text>
+              </div>
+              <div className="task-table-cell task-table-header-cell" style={{ width: '150px' }}>
+                <Text className="column-header-text">Members</Text>
+              </div>
+              <div className="task-table-cell task-table-header-cell" style={{ width: '200px' }}>
+                <Text className="column-header-text">Labels</Text>
+              </div>
+              <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
+                <Text className="column-header-text">Status</Text>
+              </div>
+              <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
+                <Text className="column-header-text">Priority</Text>
+              </div>
+              <div className="task-table-cell task-table-header-cell" style={{ width: '120px' }}>
+                <Text className="column-header-text">Time Tracking</Text>
+              </div>
             </div>
           </div>
         </div>
@@ -189,7 +172,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
           className="task-group-body"
           style={{ borderLeft: `4px solid ${getGroupColor()}` }}
         >
-          {group.tasks.length === 0 ? (
+          {groupTasks.length === 0 ? (
             <div className="task-group-empty">
               <div className="task-table-fixed-columns">
                 <div style={{ width: '380px', padding: '20px 12px' }}>
@@ -209,16 +192,16 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
               </div>
             </div>
           ) : (
-            <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+            <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
               <div className="task-group-tasks">
-                {group.tasks.map((task, index) => (
+                {groupTasks.map((task, index) => (
                   <TaskRow
                     key={task.id}
                     task={task}
                     projectId={projectId}
                     groupId={group.id}
                     currentGrouping={currentGrouping}
-                    isSelected={selectedTaskIds.includes(task.id!)}
+                    isSelected={selectedTaskIds.includes(task.id)}
                     index={index}
                     onSelect={onSelectTask}
                     onToggleSubtasks={onToggleSubtasks}
