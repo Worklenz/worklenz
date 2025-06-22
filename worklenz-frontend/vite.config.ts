@@ -29,7 +29,7 @@ export default defineConfig(({ command, mode }) => {
 
     // **Development Server**
     server: {
-      port: 3000,
+      port: 5173,
       open: true,
       hmr: {
         overlay: false,
@@ -108,9 +108,6 @@ export default defineConfig(({ command, mode }) => {
         
         // **Preserve modules to avoid context issues**
         preserveEntrySignatures: 'strict',
-        
-        // **Ensure proper module interop**
-        interop: 'auto',
       },
 
       // **Experimental features for better performance**
