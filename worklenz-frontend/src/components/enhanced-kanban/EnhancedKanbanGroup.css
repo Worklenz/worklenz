@@ -152,7 +152,6 @@
 
 .enhanced-kanban-group.drag-over .drop-preview-empty {
   border-color: var(--ant-color-primary);
-  background: var(--ant-color-primary-bg);
 }
 
 .drop-indicator {
