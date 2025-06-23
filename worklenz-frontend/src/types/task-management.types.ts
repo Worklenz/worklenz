@@ -1,3 +1,5 @@
+import { InlineMember } from './teamMembers/inlineMember.types';
+
 export interface Task {
   id: string;
   task_key: string;
@@ -8,6 +10,7 @@ export interface Task {
   phase: string; // Custom phases like 'planning', 'development', 'testing', 'deployment'
   progress: number; // 0-100
   assignees: string[];
+  assignee_names?: InlineMember[];
   labels: Label[];
   dueDate?: string;
   timeTracking: {

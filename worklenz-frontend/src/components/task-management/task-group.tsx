@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSelector } from 'react-redux';
@@ -23,7 +23,24 @@ interface TaskGroupProps {
   onToggleSubtasks?: (taskId: string) => void;
 }
 
-const TaskGroup: React.FC<TaskGroupProps> = ({
+// Group color mapping - moved outside component for better performance
+const GROUP_COLORS = {
+  status: {
+    todo: '#faad14',
+    doing: '#1890ff',
+    done: '#52c41a',
+  },
+  priority: {
+    critical: '#ff4d4f',
+    high: '#fa8c16',
+    medium: '#faad14',
+    low: '#52c41a',
+  },
+  phase: '#722ed1',
+  default: '#d9d9d9',
+} as const;
+
+const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
   group,
   projectId,
   currentGrouping,
@@ -53,57 +70,63 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
       .filter((task): task is Task => task !== undefined);
   }, [group.taskIds, allTasks]);
 
-  // Calculate group statistics
-  const completedTasks = useMemo(() => {
-    return groupTasks.filter(task => task.progress === 100).length;
+  // Calculate group statistics - memoized
+  const { completedTasks, totalTasks, completionRate } = useMemo(() => {
+    const completed = groupTasks.filter(task => task.progress === 100).length;
+    const total = groupTasks.length;
+    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    return {
+      completedTasks: completed,
+      totalTasks: total,
+      completionRate: rate,
+    };
   }, [groupTasks]);
-  
-  const totalTasks = groupTasks.length;
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // Get group color based on grouping type
-  const getGroupColor = () => {
+  // Get group color based on grouping type - memoized
+  const groupColor = useMemo(() => {
     if (group.color) return group.color;
 
     // Fallback colors based on group value
     switch (currentGrouping) {
       case 'status':
-        return group.groupValue === 'todo' ? '#faad14' : 
-               group.groupValue === 'doing' ? '#1890ff' : '#52c41a';
+        return GROUP_COLORS.status[group.groupValue as keyof typeof GROUP_COLORS.status] || GROUP_COLORS.default;
       case 'priority':
-        return group.groupValue === 'critical' ? '#ff4d4f' :
-               group.groupValue === 'high' ? '#fa8c16' :
-               group.groupValue === 'medium' ? '#faad14' : '#52c41a';
+        return GROUP_COLORS.priority[group.groupValue as keyof typeof GROUP_COLORS.priority] || GROUP_COLORS.default;
       case 'phase':
-        return '#722ed1';
+        return GROUP_COLORS.phase;
       default:
-        return '#d9d9d9';
+        return GROUP_COLORS.default;
     }
-  };
+  }, [group.color, group.groupValue, currentGrouping]);
 
-  const handleToggleCollapse = () => {
+  // Memoized event handlers
+  const handleToggleCollapse = useCallback(() => {
     setIsCollapsed(!isCollapsed);
     onToggleCollapse?.(group.id);
-  };
+  }, [isCollapsed, onToggleCollapse, group.id]);
 
-  const handleAddTask = () => {
+  const handleAddTask = useCallback(() => {
     onAddTask?.(group.id);
-  };
+  }, [onAddTask, group.id]);
+
+  // Memoized style object
+  const containerStyle = useMemo(() => ({
+    backgroundColor: isOver ? '#f0f8ff' : undefined,
+  }), [isOver]);
 
   return (
     <div
       ref={setNodeRef}
       className={`task-group ${isOver ? 'drag-over' : ''}`}
-      style={{
-        backgroundColor: isOver ? '#f0f8ff' : undefined,
-      }}
+      style={containerStyle}
     >
       {/* Group Header Row */}
       <div className="task-group-header">
         <div className="task-group-header-row">
           <div 
             className="task-group-header-content"
-            style={{ backgroundColor: getGroupColor() }}
+            style={{ backgroundColor: groupColor }}
           >
             <Button
               type="text"
@@ -123,7 +146,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
       {!isCollapsed && totalTasks > 0 && (
         <div 
           className="task-group-column-headers"
-          style={{ borderLeft: `4px solid ${getGroupColor()}` }}
+          style={{ borderLeft: `4px solid ${groupColor}` }}
         >
           <div className="task-group-column-headers-row">
             <div className="task-table-fixed-columns">
@@ -170,7 +193,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
       {!isCollapsed && (
         <div 
           className="task-group-body"
-          style={{ borderLeft: `4px solid ${getGroupColor()}` }}
+          style={{ borderLeft: `4px solid ${groupColor}` }}
         >
           {groupTasks.length === 0 ? (
             <div className="task-group-empty">
@@ -428,6 +451,17 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
       `}</style>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Simplified comparison for better performance
+  return (
+    prevProps.group.id === nextProps.group.id &&
+    prevProps.group.taskIds.length === nextProps.group.taskIds.length &&
+    prevProps.group.collapsed === nextProps.group.collapsed &&
+    prevProps.selectedTaskIds.length === nextProps.selectedTaskIds.length &&
+    prevProps.currentGrouping === nextProps.currentGrouping
+  );
+});
+
+TaskGroup.displayName = 'TaskGroup';
 
 export default TaskGroup;
