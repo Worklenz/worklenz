@@ -26,6 +26,9 @@ interface TaskRowProps {
   index?: number;
   onSelect?: (taskId: string, selected: boolean) => void;
   onToggleSubtasks?: (taskId: string) => void;
+  columns?: Array<{ key: string; label: string; width: number; fixed?: boolean }>;
+  fixedColumns?: Array<{ key: string; label: string; width: number; fixed?: boolean }>;
+  scrollableColumns?: Array<{ key: string; label: string; width: number; fixed?: boolean }>;
 }
 
 // Priority and status colors - moved outside component to avoid recreation
@@ -52,6 +55,9 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   index,
   onSelect,
   onToggleSubtasks,
+  columns,
+  fixedColumns,
+  scrollableColumns,
 }) => {
   const { socket, connected } = useSocket();
   
@@ -217,189 +223,222 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     >
       <div className="flex h-10 max-h-10 overflow-visible relative min-w-[1200px]">
         {/* Fixed Columns */}
-        <div className={fixedColumnsClasses}>
-          {/* Drag Handle */}
-          <div className={`w-10 flex items-center justify-center px-2 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <Button
-              variant="text"
-              size="small"
-              icon={<HolderOutlined />}
-              className="opacity-40 hover:opacity-100 cursor-grab active:cursor-grabbing"
-              isDarkMode={isDarkMode}
-              {...attributes}
-              {...listeners}
-            />
-          </div>
-
-          {/* Selection Checkbox */}
-          <div className={`w-10 flex items-center justify-center px-2 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <Checkbox
-              checked={isSelected}
-              onChange={handleSelectChange}
-              isDarkMode={isDarkMode}
-            />
-          </div>
-
-          {/* Task Key */}
-          <div className={`w-20 flex items-center px-2 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <Tag 
-              backgroundColor={isDarkMode ? "#374151" : "#f0f0f0"} 
-              color={isDarkMode ? "#d1d5db" : "#666"}
-              className="truncate whitespace-nowrap max-w-full"
-            >
-              {task.task_key}
-            </Tag>
-          </div>
-
-          {/* Task Name */}
-          <div className={`w-[475px] flex items-center px-2 ${editTaskName ? (isDarkMode ? 'bg-blue-900/10 border border-blue-500' : 'bg-blue-50/20 border border-blue-500') : ''}`}>
-            <div className="flex-1 min-w-0 flex flex-col justify-center h-full overflow-hidden">
-              <div className="flex items-center gap-2 h-5 overflow-hidden">
-                <div ref={wrapperRef} className="flex-1 min-w-0">
-                  {!editTaskName ? (
-                    <Typography.Text
-                      ellipsis={{ tooltip: task.title }}
-                      onClick={() => setEditTaskName(true)}
-                      className={taskNameClasses}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {task.title}
-                    </Typography.Text>
-                  ) : (
-                    <Input
-                      ref={inputRef}
-                      variant="borderless"
-                      value={taskName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTaskName(e.target.value)}
-                      onPressEnter={handleTaskNameSave}
-                      className={`${isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
-                      style={{
-                        width: '100%',
-                        padding: '2px 4px',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                      }}
+        <div
+          className="fixed-columns-row"
+          style={{
+            display: 'flex',
+            position: 'sticky',
+            left: 0,
+            zIndex: 2,
+            background: isDarkMode ? '#1a1a1a' : '#fff',
+            width: fixedColumns?.reduce((sum, col) => sum + col.width, 0) || 0,
+          }}
+        >
+          {fixedColumns?.map(col => {
+            switch (col.key) {
+              case 'drag':
+                return (
+                  <div key={col.key} className="w-10 flex items-center justify-center px-2 border-r" style={{ width: col.width }}>
+                    <Button
+                      variant="text"
+                      size="small"
+                      icon={<HolderOutlined />}
+                      className="opacity-40 hover:opacity-100 cursor-grab active:cursor-grabbing"
+                      isDarkMode={isDarkMode}
+                      {...attributes}
+                      {...listeners}
                     />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+                  </div>
+                );
+              case 'select':
+                return (
+                  <div key={col.key} className="w-10 flex items-center justify-center px-2 border-r" style={{ width: col.width }}>
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={handleSelectChange}
+                      isDarkMode={isDarkMode}
+                    />
+                  </div>
+                );
+              case 'key':
+                return (
+                  <div key={col.key} className="w-20 flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <Tag 
+                      backgroundColor={isDarkMode ? "#374151" : "#f0f0f0"} 
+                      color={isDarkMode ? "#d1d5db" : "#666"}
+                      className="truncate whitespace-nowrap max-w-full"
+                    >
+                      {task.task_key}
+                    </Tag>
+                  </div>
+                );
+              case 'task':
+                return (
+                  <div key={col.key} className="flex items-center px-2" style={{ width: col.width }}>
+                    <div className="flex-1 min-w-0 flex flex-col justify-center h-full overflow-hidden">
+                      <div className="flex items-center gap-2 h-5 overflow-hidden">
+                        <div ref={wrapperRef} className="flex-1 min-w-0">
+                          {!editTaskName ? (
+                            <Typography.Text
+                              ellipsis={{ tooltip: task.title }}
+                              onClick={() => setEditTaskName(true)}
+                              className={taskNameClasses}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {task.title}
+                            </Typography.Text>
+                          ) : (
+                            <Input
+                              ref={inputRef}
+                              variant="borderless"
+                              value={taskName}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTaskName(e.target.value)}
+                              onPressEnter={handleTaskNameSave}
+                              className={`${isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
+                              style={{
+                                width: '100%',
+                                padding: '2px 4px',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              default:
+                return null;
+            }
+          })}
         </div>
-
         {/* Scrollable Columns */}
-        <div className="flex flex-1 min-w-0">
-          {/* Progress */}
-          <div className={`w-[90px] flex items-center justify-center px-2 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            {task.progress !== undefined && task.progress >= 0 && (
-              <Progress
-                type="circle"
-                percent={task.progress}
-                size={24}
-                strokeColor={task.progress === 100 ? '#52c41a' : '#1890ff'}
-                strokeWidth={2}
-                showInfo={true}
-                isDarkMode={isDarkMode}
-              />
-            )}
-          </div>
-
-          {/* Members */}
-          <div className={`w-[150px] flex items-center px-2 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <div className="flex items-center gap-2">
-              {avatarGroupMembers.length > 0 && (
-                <AvatarGroup
-                  members={avatarGroupMembers}
-                  size={24}
-                  maxCount={3}
-                  isDarkMode={isDarkMode}
-                />
-              )}
-              <button
-                className={`
-                  w-6 h-6 rounded-full border border-dashed flex items-center justify-center
-                  transition-colors duration-200
-                  ${isDarkMode 
-                    ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
-                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
-                  }
-                `}
-                onClick={() => {
-                  // TODO: Implement assignee selector functionality
-                  console.log('Add assignee clicked for task:', task.id);
-                }}
-              >
-                <span className="text-xs">+</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Labels */}
-          <div className={`w-[200px] max-w-[200px] flex items-center px-2 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <div className="flex items-center gap-1 flex-wrap h-full w-full overflow-visible relative">
-              {task.labels?.map((label, index) => (
-                label.end && label.names && label.name ? (
-                  <CustomNumberLabel 
-                    key={`${label.id}-${index}`} 
-                    labelList={label.names} 
-                    namesString={label.name}
-                    isDarkMode={isDarkMode}
-                  />
-                ) : (
-                  <CustomColordLabel 
-                    key={`${label.id}-${index}`} 
-                    label={label}
-                    isDarkMode={isDarkMode}
-                  />
-                )
-              ))}
-              <LabelsSelector
-                task={taskAdapter}
-                isDarkMode={isDarkMode}
-              />
-            </div>
-          </div>
-
-          {/* Status */}
-          <div className={`w-[100px] flex items-center px-2 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <Tag
-              backgroundColor={getStatusColor(task.status)}
-              color="white"
-              className="text-xs font-medium uppercase"
-            >
-              {task.status}
-            </Tag>
-          </div>
-
-          {/* Priority */}
-          <div className={`w-[100px] flex items-center px-2 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <div className="flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: getPriorityColor(task.priority) }}
-              />
-              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                {task.priority}
-              </span>
-            </div>
-          </div>
-
-          {/* Time Tracking */}
-          <div className={`w-[120px] flex items-center px-2 border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <div className="flex items-center gap-2 h-full overflow-hidden">
-              {task.timeTracking?.logged && task.timeTracking.logged > 0 && (
-                <div className="flex items-center gap-1">
-                  <ClockCircleOutlined className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                  <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {typeof task.timeTracking.logged === 'number' 
-                      ? `${task.timeTracking.logged}h`
-                      : task.timeTracking.logged
-                    }
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="scrollable-columns-row" style={{ display: 'flex', minWidth: scrollableColumns?.reduce((sum, col) => sum + col.width, 0) || 0 }}>
+          {scrollableColumns?.map(col => {
+            switch (col.key) {
+              case 'progress':
+                return (
+                  <div key={col.key} className="flex items-center justify-center px-2 border-r" style={{ width: col.width }}>
+                    {task.progress !== undefined && task.progress >= 0 && (
+                      <Progress
+                        type="circle"
+                        percent={task.progress}
+                        size={24}
+                        strokeColor={task.progress === 100 ? '#52c41a' : '#1890ff'}
+                        strokeWidth={2}
+                        showInfo={true}
+                        isDarkMode={isDarkMode}
+                      />
+                    )}
+                  </div>
+                );
+              case 'members':
+                return (
+                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <div className="flex items-center gap-2">
+                      {avatarGroupMembers.length > 0 && (
+                        <AvatarGroup
+                          members={avatarGroupMembers}
+                          size={24}
+                          maxCount={3}
+                          isDarkMode={isDarkMode}
+                        />
+                      )}
+                      <button
+                        className={`
+                          w-6 h-6 rounded-full border border-dashed flex items-center justify-center
+                          transition-colors duration-200
+                          ${isDarkMode 
+                            ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
+                          }
+                        `}
+                        onClick={() => {
+                          // TODO: Implement assignee selector functionality
+                          console.log('Add assignee clicked for task:', task.id);
+                        }}
+                      >
+                        <span className="text-xs">+</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              case 'labels':
+                return (
+                  <div key={col.key} className="max-w-[200px] flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <div className="flex items-center gap-1 flex-wrap h-full w-full overflow-visible relative">
+                      {task.labels?.map((label, index) => (
+                        label.end && label.names && label.name ? (
+                          <CustomNumberLabel 
+                            key={`${label.id}-${index}`} 
+                            labelList={label.names} 
+                            namesString={label.name}
+                            isDarkMode={isDarkMode}
+                          />
+                        ) : (
+                          <CustomColordLabel 
+                            key={`${label.id}-${index}`} 
+                            label={label}
+                            isDarkMode={isDarkMode}
+                          />
+                        )
+                      ))}
+                      <LabelsSelector
+                        task={taskAdapter}
+                        isDarkMode={isDarkMode}
+                      />
+                    </div>
+                  </div>
+                );
+              case 'status':
+                return (
+                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <Tag
+                      backgroundColor={getStatusColor(task.status)}
+                      color="white"
+                      className="text-xs font-medium uppercase"
+                    >
+                      {task.status}
+                    </Tag>
+                  </div>
+                );
+              case 'priority':
+                return (
+                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getPriorityColor(task.priority) }}
+                      />
+                      <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {task.priority}
+                      </span>
+                    </div>
+                  </div>
+                );
+              case 'timeTracking':
+                return (
+                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <div className="flex items-center gap-2 h-full overflow-hidden">
+                      {task.timeTracking?.logged && task.timeTracking.logged > 0 && (
+                        <div className="flex items-center gap-1">
+                          <ClockCircleOutlined className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                          <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {typeof task.timeTracking.logged === 'number' 
+                              ? `${task.timeTracking.logged}h`
+                              : task.timeTracking.logged
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              default:
+                return null;
+            }
+          })}
         </div>
       </div>
     </div>
