@@ -1,9 +1,11 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import EnhancedKanbanTaskCard from './EnhancedKanbanTaskCard';
 import VirtualizedTaskList from './VirtualizedTaskList';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import './EnhancedKanbanGroup.css';
 
 interface EnhancedKanbanGroupProps {
@@ -20,7 +22,25 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
   activeTaskId,
   overId
 }) => {
-  const { setNodeRef, isOver } = useDroppable({
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: group.id,
+    data: {
+      type: 'group',
+      group,
+    },
+  });
+
+  // Add sortable functionality for group header
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging: isGroupDragging,
+  } = useSortable({
     id: group.id,
     data: {
       type: 'group',
@@ -67,13 +87,41 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
   // Performance optimization: Only render drop indicators when needed
   const shouldShowDropIndicators = isDraggingOver && !shouldVirtualize;
 
+  // Combine refs for the main container
+  const setRefs = (el: HTMLElement | null) => {
+    setDroppableRef(el);
+    setSortableRef(el);
+  };
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isGroupDragging ? 0.5 : 1,
+  };
+
+  // Get the appropriate background color based on theme
+  const headerBackgroundColor = useMemo(() => {
+    if (themeMode === 'dark') {
+      return group.color_code_dark || group.color_code || '#1e1e1e';
+    }
+    return group.color_code || '#f5f5f5';
+  }, [themeMode, group.color_code, group.color_code_dark]);
+
   return (
     <div
-      ref={setNodeRef}
-      className={`enhanced-kanban-group ${isDraggingOver ? 'drag-over' : ''}`}
+      ref={setRefs}
+      style={style}
+      className={`enhanced-kanban-group ${isDraggingOver ? 'drag-over' : ''} ${isGroupDragging ? 'group-dragging' : ''}`}
     >
-      <div className="enhanced-kanban-group-header">
-        <h3>{group.name}</h3>
+      <div
+        className="enhanced-kanban-group-header"
+        style={{
+          backgroundColor: headerBackgroundColor,
+        }}
+        {...attributes}
+        {...listeners}
+      >
+        <h3 title={group.name}>{group.name}</h3>
         <span className="task-count">({group.tasks.length})</span>
         {shouldVirtualize && (
           <span className="virtualization-indicator" title="Virtualized for performance">

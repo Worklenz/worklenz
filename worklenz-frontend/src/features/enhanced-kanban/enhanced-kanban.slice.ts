@@ -49,12 +49,12 @@ interface EnhancedKanbanState {
   groupBy: IGroupBy;
   isSubtasksInclude: boolean;
   fields: ITaskListSortableColumn[];
-  
+
   // Task data
   taskGroups: ITaskListGroup[];
   loadingGroups: boolean;
   error: string | null;
-  
+
   // Filters
   taskAssignees: ITaskListMemberFilter[];
   loadingAssignees: boolean;
@@ -63,12 +63,12 @@ interface EnhancedKanbanState {
   loadingLabels: boolean;
   priorities: string[];
   members: string[];
-  
+
   // Performance optimizations
   virtualizedRendering: boolean;
   taskCache: Record<string, IProjectTask>;
   groupCache: Record<string, ITaskListGroup>;
-  
+
   // Performance monitoring
   performanceMetrics: {
     totalTasks: number;
@@ -78,7 +78,7 @@ interface EnhancedKanbanState {
     lastUpdateTime: number;
     virtualizationEnabled: boolean;
   };
-  
+
   // Drag and drop state
   dragState: {
     activeTaskId: string | null;
@@ -86,7 +86,7 @@ interface EnhancedKanbanState {
     overId: string | null;
     isDragging: boolean;
   };
-  
+
   // UI state
   selectedTaskIds: string[];
   expandedSubtasks: Record<string, boolean>;
@@ -137,7 +137,7 @@ const calculatePerformanceMetrics = (taskGroups: ITaskListGroup[]) => {
   const groupSizes = taskGroups.map(group => group.tasks.length);
   const largestGroupSize = Math.max(...groupSizes, 0);
   const averageGroupSize = groupSizes.length > 0 ? totalTasks / groupSizes.length : 0;
-  
+
   return {
     totalTasks,
     largestGroupSize,
@@ -230,6 +230,35 @@ export const reorderEnhancedKanbanTasks = createAsyncThunk(
     } catch (error) {
       logger.error('Reorder Enhanced Kanban Tasks', error);
       return rejectWithValue('Failed to reorder tasks');
+    }
+  }
+);
+
+// Group reordering
+export const reorderEnhancedKanbanGroups = createAsyncThunk(
+  'enhancedKanban/reorderGroups',
+  async (
+    {
+      fromIndex,
+      toIndex,
+      reorderedGroups,
+    }: {
+      fromIndex: number;
+      toIndex: number;
+      reorderedGroups: ITaskListGroup[];
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      // Optimistic update - return immediately for UI responsiveness
+      return {
+        fromIndex,
+        toIndex,
+        reorderedGroups,
+      };
+    } catch (error) {
+      logger.error('Reorder Enhanced Kanban Groups', error);
+      return rejectWithValue('Failed to reorder groups');
     }
   }
 );
@@ -327,7 +356,7 @@ const enhancedKanbanSlice = createSlice({
     // Status updates
     updateTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
       const { id: task_id, status_id } = action.payload;
-      
+
       // Update in all groups
       state.taskGroups.forEach(group => {
         group.tasks.forEach(task => {
@@ -342,7 +371,7 @@ const enhancedKanbanSlice = createSlice({
 
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
       const { id: task_id, priority_id } = action.payload;
-      
+
       // Update in all groups
       state.taskGroups.forEach(group => {
         group.tasks.forEach(task => {
@@ -358,12 +387,12 @@ const enhancedKanbanSlice = createSlice({
     // Task deletion
     deleteTask: (state, action: PayloadAction<string>) => {
       const taskId = action.payload;
-      
+
       // Remove from all groups
       state.taskGroups.forEach(group => {
         group.tasks = group.tasks.filter(task => task.id !== taskId);
       });
-      
+
       // Remove from caches
       delete state.taskCache[taskId];
       state.selectedTaskIds = state.selectedTaskIds.filter(id => id !== taskId);
@@ -383,10 +412,10 @@ const enhancedKanbanSlice = createSlice({
       .addCase(fetchEnhancedKanbanGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
         state.taskGroups = action.payload;
-        
+
         // Update performance metrics
         state.performanceMetrics = calculatePerformanceMetrics(action.payload);
-        
+
         // Update caches
         action.payload.forEach(group => {
           state.groupCache[group.id] = group;
@@ -394,7 +423,7 @@ const enhancedKanbanSlice = createSlice({
             state.taskCache[task.id!] = task;
           });
         });
-        
+
         // Initialize column order if not set
         if (state.columnOrder.length === 0) {
           state.columnOrder = action.payload.map(group => group.id);
@@ -406,20 +435,33 @@ const enhancedKanbanSlice = createSlice({
       })
       .addCase(reorderEnhancedKanbanTasks.fulfilled, (state, action) => {
         const { activeGroupId, overGroupId, updatedSourceTasks, updatedTargetTasks } = action.payload;
-        
+
         // Update groups
         const sourceGroupIndex = state.taskGroups.findIndex(group => group.id === activeGroupId);
         const targetGroupIndex = state.taskGroups.findIndex(group => group.id === overGroupId);
-        
+
         if (sourceGroupIndex !== -1) {
           state.taskGroups[sourceGroupIndex].tasks = updatedSourceTasks;
           state.groupCache[activeGroupId] = state.taskGroups[sourceGroupIndex];
         }
-        
+
         if (targetGroupIndex !== -1 && activeGroupId !== overGroupId) {
           state.taskGroups[targetGroupIndex].tasks = updatedTargetTasks;
           state.groupCache[overGroupId] = state.taskGroups[targetGroupIndex];
         }
+      })
+      .addCase(reorderEnhancedKanbanGroups.fulfilled, (state, action) => {
+        const { fromIndex, toIndex, reorderedGroups } = action.payload;
+
+        // Update groups
+        state.taskGroups = reorderedGroups;
+        state.groupCache = reorderedGroups.reduce((cache, group) => {
+          cache[group.id] = group;
+          return cache;
+        }, {} as Record<string, ITaskListGroup>);
+
+        // Update column order
+        state.columnOrder = reorderedGroups.map(group => group.id);
       });
   },
 });
