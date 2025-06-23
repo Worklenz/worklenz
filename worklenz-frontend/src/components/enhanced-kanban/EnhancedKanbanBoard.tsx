@@ -26,6 +26,7 @@ import { RootState } from '@/app/store';
 import {
   fetchEnhancedKanbanGroups,
   reorderEnhancedKanbanTasks,
+  reorderEnhancedKanbanGroups,
   setDragState
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import EnhancedKanbanGroup from './EnhancedKanbanGroup';
@@ -119,29 +120,43 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const activeId = active.id as string;
+    const activeData = active.data.current;
 
-    // Find the active task and group
-    let foundTask = null;
-    let foundGroup = null;
+    // Check if dragging a group or a task
+    if (activeData?.type === 'group') {
+      // Dragging a group
+      const foundGroup = taskGroups.find(g => g.id === activeId);
+      setActiveGroup(foundGroup);
+      setActiveTask(null);
 
-    for (const group of taskGroups) {
-      const task = group.tasks.find(t => t.id === activeId);
-      if (task) {
-        foundTask = task;
-        foundGroup = group;
-        break;
+      dispatch(setDragState({
+        activeTaskId: null,
+        activeGroupId: activeId,
+        isDragging: true,
+      }));
+    } else {
+      // Dragging a task
+      let foundTask = null;
+      let foundGroup = null;
+
+      for (const group of taskGroups) {
+        const task = group.tasks.find(t => t.id === activeId);
+        if (task) {
+          foundTask = task;
+          foundGroup = group;
+          break;
+        }
       }
+
+      setActiveTask(foundTask);
+      setActiveGroup(null);
+
+      dispatch(setDragState({
+        activeTaskId: activeId,
+        activeGroupId: foundGroup?.id || null,
+        isDragging: true,
+      }));
     }
-
-    setActiveTask(foundTask);
-    setActiveGroup(foundGroup);
-
-    // Update Redux drag state
-    dispatch(setDragState({
-      activeTaskId: activeId,
-      activeGroupId: foundGroup?.id || null,
-      isDragging: true,
-    }));
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -164,6 +179,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    const activeData = active.data.current;
 
     // Reset local state
     setActiveTask(null);
@@ -183,7 +199,28 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Find source and target groups
+    // Handle group reordering
+    if (activeData?.type === 'group') {
+      const fromIndex = taskGroups.findIndex(g => g.id === activeId);
+      const toIndex = taskGroups.findIndex(g => g.id === overId);
+
+      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+        // Create new array with reordered groups
+        const reorderedGroups = [...taskGroups];
+        const [movedGroup] = reorderedGroups.splice(fromIndex, 1);
+        reorderedGroups.splice(toIndex, 0, movedGroup);
+
+        // Dispatch group reorder action
+        dispatch(reorderEnhancedKanbanGroups({
+          fromIndex,
+          toIndex,
+          reorderedGroups,
+        }) as any);
+      }
+      return;
+    }
+
+    // Handle task reordering (existing logic)
     let sourceGroup = null;
     let targetGroup = null;
     let sourceIndex = -1;
@@ -308,6 +345,14 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
                 task={activeTask}
                 isDragOverlay={true}
               />
+            )}
+            {activeGroup && (
+              <div className="group-drag-overlay">
+                <div className="group-header-content">
+                  <h3>{activeGroup.name}</h3>
+                  <span className="task-count">({activeGroup.tasks.length})</span>
+                </div>
+              </div>
             )}
           </DragOverlay>
         </DndContext>
