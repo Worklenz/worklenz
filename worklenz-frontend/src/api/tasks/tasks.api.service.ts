@@ -30,6 +30,22 @@ export interface ITaskListConfigV2 {
   isSubtasksInclude: boolean;
 }
 
+export interface ITaskListV3Response {
+  groups: Array<{
+    id: string;
+    title: string;
+    groupType: 'status' | 'priority' | 'phase';
+    groupValue: string;
+    collapsed: boolean;
+    tasks: any[];
+    taskIds: string[];
+    color: string;
+  }>;
+  allTasks: any[];
+  grouping: string;
+  totalTasks: number;
+}
+
 export const tasksApiService = {
   getTaskList: async (config: ITaskListConfigV2): Promise<IServerResponse<ITaskListGroup[]>> => {
     const q = toQueryString(config);
@@ -117,6 +133,17 @@ export const tasksApiService = {
   getTaskDependencyStatus: async (taskId: string, statusId: string): Promise<IServerResponse<{ can_continue: boolean }>> => {
     const q = toQueryString({taskId, statusId});
     const response = await apiClient.get(`${rootUrl}/dependency-status${q}`);
+    return response.data;
+  },
+
+  getTaskListV3: async (config: ITaskListConfigV2): Promise<IServerResponse<ITaskListV3Response>> => {
+    const q = toQueryString(config);
+    const response = await apiClient.get(`${rootUrl}/list/v3/${config.id}${q}`);
+    return response.data;
+  },
+
+  refreshTaskProgress: async (projectId: string): Promise<IServerResponse<{ message: string }>> => {
+    const response = await apiClient.post(`${rootUrl}/refresh-progress/${projectId}`);
     return response.data;
   },
 };
