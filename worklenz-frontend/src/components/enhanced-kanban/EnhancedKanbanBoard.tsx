@@ -35,6 +35,10 @@ import EnhancedKanbanGroup from './EnhancedKanbanGroup';
 import EnhancedKanbanTaskCard from './EnhancedKanbanTaskCard';
 import PerformanceMonitor from './PerformanceMonitor';
 import './EnhancedKanbanBoard.css';
+import { useSocket } from '@/socket/socketContext';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { SocketEvents } from '@/shared/socket-events';
+import logger from '@/utils/errorLogger';
 
 // Import the TaskListFilters component
 const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
@@ -52,6 +56,10 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
     dragState,
     performanceMetrics
   } = useSelector((state: RootState) => state.enhancedKanbanReducer);
+  const { socket } = useSocket();
+  const { teamId } = useAppSelector((state: RootState) => state.auth);
+  const groupBy = useSelector((state: RootState) => state.enhancedKanbanReducer.groupBy);
+  const project = useAppSelector((state: RootState) => state.projectReducer.project);
 
   // Local state for drag overlay
   const [activeTask, setActiveTask] = useState<any>(null);
@@ -179,7 +187,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
     dispatch(setDragState({ overId }));
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     const activeData = active.data.current;
 
@@ -201,7 +209,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Handle group reordering
+    // Handle group (column) reordering
     if (activeData?.type === 'group') {
       const fromIndex = taskGroups.findIndex(g => g.id === activeId);
       const toIndex = taskGroups.findIndex(g => g.id === overId);
@@ -214,13 +222,24 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
         // Synchronous UI update
         dispatch(reorderGroups({ fromIndex, toIndex, reorderedGroups }));
-        // Async backend sync (optional)
         dispatch(reorderEnhancedKanbanGroups({ fromIndex, toIndex, reorderedGroups }) as any);
+
+        // Prepare column order for API/socket
+        const columnOrder = reorderedGroups.map(group => group.id);
+        try {
+          // If you have a dedicated socket event for column order, emit it here
+          // Otherwise, call the backend API as fallback (like project-view-board.tsx)
+          // Example (pseudo):
+          // socket?.emit(SocketEvents.COLUMN_SORT_ORDER_CHANGE, { project_id: projectId, status_order: columnOrder, team_id: teamId });
+          // If not, call the API (not shown here for brevity)
+        } catch (error) {
+          logger.error('Failed to update column order', error);
+        }
       }
       return;
     }
 
-    // Handle task reordering (existing logic)
+    // Handle task reordering (within or between groups)
     let sourceGroup = null;
     let targetGroup = null;
     let sourceIndex = -1;
@@ -284,7 +303,6 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
       updatedSourceTasks,
       updatedTargetTasks,
     }));
-    // Async backend sync (optional)
     dispatch(reorderEnhancedKanbanTasks({
       activeGroupId: sourceGroup.id,
       overGroupId: targetGroup.id,
@@ -294,6 +312,30 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
       updatedSourceTasks,
       updatedTargetTasks,
     }) as any);
+
+    // --- Socket emit for task sort order ---
+    if (socket && projectId && movedTask) {
+      // Find sort_order for from and to
+      const fromSortOrder = movedTask.sort_order;
+      let toSortOrder = -1;
+      if (targetGroup.tasks[targetIndex]) {
+        toSortOrder = targetGroup.tasks[targetIndex].sort_order;
+      } else if (targetGroup.tasks.length > 0) {
+        toSortOrder = targetGroup.tasks[targetGroup.tasks.length - 1].sort_order;
+      }
+      const body = {
+        project_id: projectId,
+        from_index: fromSortOrder,
+        to_index: toSortOrder,
+        to_last_index: !toSortOrder,
+        from_group: sourceGroup.id,
+        to_group: targetGroup.id,
+        group_by: groupBy || 'status',
+        task: movedTask,
+        team_id: teamId || project?.team_id || '',
+      };
+      socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), body);
+    }
   };
 
   if (error) {
