@@ -71,6 +71,7 @@ export const fetchTasks = createAsyncThunk(
           phase: task.phase_name || 'Development',
           progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
           assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
+          assignee_names: task.assignee_names || task.names || [],
           labels: task.labels?.map((l: any) => ({
             id: l.id || l.label_id,
             name: l.name,
@@ -147,13 +148,19 @@ const taskManagementSlice = createSlice({
       tasksAdapter.removeMany(state, action.payload);
     },
     
-    // Drag and drop operations
+    // Optimized drag and drop operations
     reorderTasks: (state, action: PayloadAction<{ taskIds: string[]; newOrder: number[] }>) => {
       const { taskIds, newOrder } = action.payload;
+      
+      // Batch update for better performance
       const updates = taskIds.map((id, index) => ({
         id,
-        changes: { order: newOrder[index] },
+        changes: { 
+          order: newOrder[index],
+          updatedAt: new Date().toISOString(),
+        },
       }));
+      
       tasksAdapter.updateMany(state, updates);
     },
     
@@ -173,6 +180,34 @@ const taskManagementSlice = createSlice({
       }
       
       tasksAdapter.updateOne(state, { id: taskId, changes });
+    },
+    
+    // Optimistic update for drag operations - reduces perceived lag
+    optimisticTaskMove: (state, action: PayloadAction<{ taskId: string; newGroupId: string; newIndex: number }>) => {
+      const { taskId, newGroupId, newIndex } = action.payload;
+      const task = state.entities[taskId];
+      
+      if (task) {
+        // Parse group ID to determine new values
+        const [groupType, ...groupValueParts] = newGroupId.split('-');
+        const groupValue = groupValueParts.join('-');
+        
+        const changes: Partial<Task> = {
+          order: newIndex,
+          updatedAt: new Date().toISOString(),
+        };
+        
+        // Update group-specific field
+        if (groupType === 'status') {
+          changes.status = groupValue as Task['status'];
+        } else if (groupType === 'priority') {
+          changes.priority = groupValue as Task['priority'];
+        } else if (groupType === 'phase') {
+          changes.phase = groupValue;
+        }
+        
+        tasksAdapter.updateOne(state, { id: taskId, changes });
+      }
     },
     
     // Loading states
@@ -198,7 +233,7 @@ const taskManagementSlice = createSlice({
       })
       .addCase(fetchTasks.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.payload as string || 'Failed to fetch tasks';
       });
   },
 });
@@ -212,16 +247,19 @@ export const {
   bulkDeleteTasks,
   reorderTasks,
   moveTaskToGroup,
+  optimisticTaskMove,
   setLoading,
   setError,
 } = taskManagementSlice.actions;
+
+export default taskManagementSlice.reducer;
 
 // Selectors
 export const taskManagementSelectors = tasksAdapter.getSelectors<RootState>(
   (state) => state.taskManagement
 );
 
-// Additional selectors
+// Enhanced selectors for better performance
 export const selectTasksByStatus = (state: RootState, status: string) =>
   taskManagementSelectors.selectAll(state).filter(task => task.status === status);
 
@@ -232,6 +270,4 @@ export const selectTasksByPhase = (state: RootState, phase: string) =>
   taskManagementSelectors.selectAll(state).filter(task => task.phase === phase);
 
 export const selectTasksLoading = (state: RootState) => state.taskManagement.loading;
-export const selectTasksError = (state: RootState) => state.taskManagement.error;
-
-export default taskManagementSlice.reducer; 
+export const selectTasksError = (state: RootState) => state.taskManagement.error; 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   DndContext,
@@ -21,6 +21,7 @@ import {
   taskManagementSelectors,
   reorderTasks,
   moveTaskToGroup,
+  optimisticTaskMove,
   setLoading,
   fetchTasks
 } from '@/features/task-management/task-management.slice';
@@ -54,12 +55,36 @@ interface DragState {
   activeGroupId: string | null;
 }
 
+// Throttle utility for performance optimization
+const throttle = <T extends (...args: any[]) => void>(func: T, delay: number): T => {
+  let timeoutId: NodeJS.Timeout | null = null;
+  let lastExecTime = 0;
+  
+  return ((...args: any[]) => {
+    const currentTime = Date.now();
+    
+    if (currentTime - lastExecTime > delay) {
+      func(...args);
+      lastExecTime = currentTime;
+    } else {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        func(...args);
+        lastExecTime = Date.now();
+      }, delay - (currentTime - lastExecTime));
+    }
+  }) as T;
+};
+
 const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = '' }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [dragState, setDragState] = useState<DragState>({
     activeTask: null,
     activeGroupId: null,
   });
+
+  // Refs for performance optimization
+  const dragOverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Enable real-time socket updates for task changes
   useTaskSocketHandlers();
@@ -72,11 +97,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const loading = useSelector((state: RootState) => state.taskManagement.loading);
   const error = useSelector((state: RootState) => state.taskManagement.error);
 
-  // Drag and Drop sensors
+  // Drag and Drop sensors - optimized for better performance
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 3, // Reduced from 8 for more responsive dragging
       },
     }),
     useSensor(KeyboardSensor, {
@@ -92,23 +117,17 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     }
   }, [dispatch, projectId, currentGrouping]);
 
-  // Memoized calculations
-  const allTaskIds = useMemo(() => {
-    return tasks.map(task => task.id);
-  }, [tasks]);
-
-  const totalTasksCount = useMemo(() => {
-    return tasks.length;
-  }, [tasks]);
-
+  // Memoized calculations - optimized
+  const allTaskIds = useMemo(() => tasks.map(task => task.id), [tasks]);
+  const totalTasksCount = useMemo(() => tasks.length, [tasks]);
   const hasSelection = selectedTaskIds.length > 0;
 
-  // Handlers
-  const handleGroupingChange = (newGroupBy: typeof currentGrouping) => {
+  // Memoized handlers for better performance
+  const handleGroupingChange = useCallback((newGroupBy: typeof currentGrouping) => {
     dispatch(setCurrentGrouping(newGroupBy));
-  };
+  }, [dispatch]);
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     const taskId = active.id as string;
     
@@ -131,28 +150,76 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       activeTask,
       activeGroupId,
     });
-  };
+  }, [tasks, currentGrouping]);
 
-  const handleDragOver = (event: DragOverEvent) => {
-    // Handle drag over logic if needed for visual feedback
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
+  // Throttled drag over handler for better performance
+  const handleDragOver = useCallback(throttle((event: DragOverEvent) => {
     const { active, over } = event;
     
+    if (!over || !dragState.activeTask) return;
+    
+    const activeTaskId = active.id as string;
+    const overContainer = over.id as string;
+    
+    // Clear any existing timeout
+    if (dragOverTimeoutRef.current) {
+      clearTimeout(dragOverTimeoutRef.current);
+    }
+    
+    // Optimistic update with throttling
+    dragOverTimeoutRef.current = setTimeout(() => {
+      // Only update if we're hovering over a different container
+      const targetTask = tasks.find(t => t.id === overContainer);
+      let targetGroupId = overContainer;
+      
+      if (targetTask) {
+        if (currentGrouping === 'status') {
+          targetGroupId = `status-${targetTask.status}`;
+        } else if (currentGrouping === 'priority') {
+          targetGroupId = `priority-${targetTask.priority}`;
+        } else if (currentGrouping === 'phase') {
+          targetGroupId = `phase-${targetTask.phase}`;
+        }
+      }
+      
+      if (targetGroupId !== dragState.activeGroupId) {
+        // Perform optimistic update for visual feedback
+        const targetGroup = taskGroups.find(g => g.id === targetGroupId);
+        if (targetGroup) {
+          dispatch(optimisticTaskMove({
+            taskId: activeTaskId,
+            newGroupId: targetGroupId,
+            newIndex: targetGroup.taskIds.length,
+          }));
+        }
+      }
+    }, 50); // 50ms throttle for drag over events
+  }, 50), [dragState, tasks, taskGroups, currentGrouping, dispatch]);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    // Clear any pending drag over timeouts
+    if (dragOverTimeoutRef.current) {
+      clearTimeout(dragOverTimeoutRef.current);
+      dragOverTimeoutRef.current = null;
+    }
+    
+    // Reset drag state immediately for better UX
+    const currentDragState = dragState;
     setDragState({
       activeTask: null,
       activeGroupId: null,
     });
 
-    if (!over || !dragState.activeTask || !dragState.activeGroupId) {
+    if (!over || !currentDragState.activeTask || !currentDragState.activeGroupId) {
       return;
     }
 
     const activeTaskId = active.id as string;
     const overContainer = over.id as string;
     
-    // Parse the group ID to get group type and value
+    // Parse the group ID to get group type and value - optimized
     const parseGroupId = (groupId: string) => {
       const [groupType, ...groupValueParts] = groupId.split('-');
       return {
@@ -184,11 +251,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       }
     }
 
-    const sourceGroupInfo = parseGroupId(dragState.activeGroupId);
+    const sourceGroupInfo = parseGroupId(currentDragState.activeGroupId);
     const targetGroupInfo = parseGroupId(targetGroupId);
 
     // If moving between different groups, update the task's group property
-    if (dragState.activeGroupId !== targetGroupId) {
+    if (currentDragState.activeGroupId !== targetGroupId) {
       dispatch(moveTaskToGroup({
         taskId: activeTaskId,
         groupType: targetGroupInfo.groupType,
@@ -197,37 +264,65 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     }
 
     // Handle reordering within the same group or between groups
-    const sourceGroup = taskGroups.find(g => g.id === dragState.activeGroupId);
+    const sourceGroup = taskGroups.find(g => g.id === currentDragState.activeGroupId);
     const targetGroup = taskGroups.find(g => g.id === targetGroupId);
 
-    if (sourceGroup && targetGroup) {
+    if (sourceGroup && targetGroup && targetIndex !== -1) {
       const sourceIndex = sourceGroup.taskIds.indexOf(activeTaskId);
       const finalTargetIndex = targetIndex === -1 ? targetGroup.taskIds.length : targetIndex;
 
-      // Calculate new order values
-      const allTasksInTargetGroup = targetGroup.taskIds.map(id => tasks.find(t => t.id === id)!);
-      const newOrder = allTasksInTargetGroup.map((task, index) => {
-        if (index < finalTargetIndex) return task.order;
-        if (index === finalTargetIndex) return dragState.activeTask!.order;
-        return task.order + 1;
-      });
+      // Only reorder if actually moving to a different position
+      if (sourceGroup.id !== targetGroup.id || sourceIndex !== finalTargetIndex) {
+        // Calculate new order values - simplified
+        const allTasksInTargetGroup = targetGroup.taskIds.map(id => tasks.find(t => t.id === id)!);
+        const newOrder = allTasksInTargetGroup.map((task, index) => {
+          if (index < finalTargetIndex) return task.order;
+          if (index === finalTargetIndex) return currentDragState.activeTask!.order;
+          return task.order + 1;
+        });
 
-      // Dispatch reorder action
-      dispatch(reorderTasks({
-        taskIds: [activeTaskId, ...allTasksInTargetGroup.map(t => t.id)],
-        newOrder: [dragState.activeTask!.order, ...newOrder]
-      }));
+        // Dispatch reorder action
+        dispatch(reorderTasks({
+          taskIds: [activeTaskId, ...allTasksInTargetGroup.map(t => t.id)],
+          newOrder: [currentDragState.activeTask!.order, ...newOrder]
+        }));
+      }
     }
-  };
+  }, [dragState, tasks, taskGroups, currentGrouping, dispatch]);
 
-  const handleSelectTask = (taskId: string, selected: boolean) => {
+  const handleSelectTask = useCallback((taskId: string, selected: boolean) => {
     dispatch(toggleTaskSelection(taskId));
-  };
+  }, [dispatch]);
 
-  const handleToggleSubtasks = (taskId: string) => {
+  const handleToggleSubtasks = useCallback((taskId: string) => {
     // Implementation for toggling subtasks
     console.log('Toggle subtasks for task:', taskId);
-  };
+  }, []);
+
+  // Memoized DragOverlay content for better performance
+  const dragOverlayContent = useMemo(() => {
+    if (!dragState.activeTask || !dragState.activeGroupId) return null;
+    
+    return (
+      <TaskRow
+        task={dragState.activeTask}
+        projectId={projectId}
+        groupId={dragState.activeGroupId}
+        currentGrouping={currentGrouping}
+        isSelected={false}
+        isDragOverlay
+      />
+    );
+  }, [dragState.activeTask, dragState.activeGroupId, projectId, currentGrouping]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (dragOverTimeoutRef.current) {
+        clearTimeout(dragOverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (error) {
     return (
@@ -242,51 +337,51 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   return (
     <div className={`task-list-board ${className}`}>
-      {/* Task Filters */}
-      <Card 
-        size="small" 
-        className="mb-4"
-        styles={{ body: { padding: '12px 16px' } }}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
       >
-        <React.Suspense fallback={<div>Loading filters...</div>}>
-          <TaskListFilters position="list" />
-        </React.Suspense>
-      </Card>
+        {/* Task Filters */}
+        <Card 
+          size="small" 
+          className="mb-4"
+          styles={{ body: { padding: '12px 16px' } }}
+        >
+          <React.Suspense fallback={<div>Loading filters...</div>}>
+            <TaskListFilters position="list" />
+          </React.Suspense>
+        </Card>
 
-      {/* Bulk Action Bar */}
-      {hasSelection && (
-        <BulkActionBar
-          selectedTaskIds={selectedTaskIds}
-          totalSelected={selectedTaskIds.length}
-          currentGrouping={currentGrouping as any}
-          projectId={projectId}
-          onClearSelection={() => dispatch(clearSelection())}
-        />
-      )}
+        {/* Bulk Action Bar */}
+        {hasSelection && (
+          <BulkActionBar
+            selectedTaskIds={selectedTaskIds}
+            totalSelected={selectedTaskIds.length}
+            currentGrouping={currentGrouping as any}
+            projectId={projectId}
+            onClearSelection={() => dispatch(clearSelection())}
+          />
+        )}
 
-      {/* Task Groups Container */}
-      <div className="task-groups-container">
-        {loading ? (
-          <Card>
-            <div className="flex justify-center items-center py-8">
-              <Spin size="large" />
-            </div>
-          </Card>
-        ) : taskGroups.length === 0 ? (
-          <Card>
-            <Empty 
-              description="No tasks found"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            />
-          </Card>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-          >
+        {/* Task Groups Container */}
+        <div className="task-groups-container">
+          {loading ? (
+            <Card>
+              <div className="flex justify-center items-center py-8">
+                <Spin size="large" />
+              </div>
+            </Card>
+          ) : taskGroups.length === 0 ? (
+            <Card>
+              <Empty 
+                description="No tasks found"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            </Card>
+          ) : (
             <div className="task-groups">
               {taskGroups.map((group) => (
                 <TaskGroup
@@ -300,22 +395,19 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
                 />
               ))}
             </div>
+          )}
+        </div>
 
-            <DragOverlay>
-              {dragState.activeTask ? (
-                <TaskRow
-                  task={dragState.activeTask}
-                  projectId={projectId}
-                  groupId={dragState.activeGroupId!}
-                  currentGrouping={currentGrouping}
-                  isSelected={false}
-                  isDragOverlay
-                />
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        )}
-      </div>
+        <DragOverlay
+          adjustScale={false}
+          dropAnimation={null}
+          style={{
+            cursor: 'grabbing',
+          }}
+        >
+          {dragOverlayContent}
+        </DragOverlay>
+      </DndContext>
 
       <style>{`
         .task-groups-container {
@@ -324,13 +416,52 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           overflow-x: visible;
           padding: 8px 8px 8px 0;
           border-radius: 8px;
-          transition: background-color 0.3s ease;
           position: relative;
+          /* GPU acceleration for smooth scrolling */
+          transform: translateZ(0);
+          will-change: scroll-position;
         }
 
         .task-groups {
           min-width: fit-content;
           position: relative;
+          /* GPU acceleration for drag operations */
+          transform: translateZ(0);
+        }
+
+        /* Optimized drag overlay styles */
+        [data-dnd-overlay] {
+          /* GPU acceleration for smooth dragging */
+          transform: translateZ(0);
+          will-change: transform;
+          pointer-events: none;
+        }
+
+        /* Fix drag overlay positioning */
+        [data-rbd-drag-handle-dragging-id] {
+          transform: none !important;
+        }
+
+        /* DndKit drag overlay specific styles */
+        .dndkit-drag-overlay {
+          z-index: 9999;
+          pointer-events: none;
+          transform: translateZ(0);
+          will-change: transform;
+        }
+
+        /* Ensure drag overlay follows cursor properly */
+        [data-dnd-context] {
+          position: relative;
+        }
+
+        /* Fix for scrollable containers affecting drag overlay */
+        .task-groups-container [data-dnd-overlay] {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          transform: translateZ(0);
+          z-index: 9999;
         }
 
         /* Dark mode support */
@@ -369,6 +500,20 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           --task-selected-border: #1890ff;
           --task-drag-over-bg: #1a2332;
           --task-drag-over-border: #40a9ff;
+        }
+
+        /* Performance optimizations */
+        .task-group {
+          contain: layout style paint;
+        }
+
+        .task-row {
+          contain: layout style;
+        }
+
+        /* Reduce layout thrashing */
+        .task-table-cell {
+          contain: layout;
         }
       `}</style>
     </div>
