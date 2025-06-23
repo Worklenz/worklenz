@@ -23,16 +23,18 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { RootState } from '@/app/store';
-import { 
-  fetchEnhancedKanbanGroups, 
+import {
+  fetchEnhancedKanbanGroups,
   reorderEnhancedKanbanTasks,
-  setDragState 
+  setDragState
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import EnhancedKanbanGroup from './EnhancedKanbanGroup';
 import EnhancedKanbanTaskCard from './EnhancedKanbanTaskCard';
 import PerformanceMonitor from './PerformanceMonitor';
 import './EnhancedKanbanBoard.css';
 
+// Import the TaskListFilters component
+const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
 interface EnhancedKanbanBoardProps {
   projectId: string;
   className?: string;
@@ -40,14 +42,14 @@ interface EnhancedKanbanBoardProps {
 
 const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, className = '' }) => {
   const dispatch = useDispatch();
-  const { 
-    taskGroups, 
-    loadingGroups, 
-    error, 
+  const {
+    taskGroups,
+    loadingGroups,
+    error,
     dragState,
-    performanceMetrics 
+    performanceMetrics
   } = useSelector((state: RootState) => state.enhancedKanbanReducer);
-  
+
   // Local state for drag overlay
   const [activeTask, setActiveTask] = useState<any>(null);
   const [activeGroup, setActiveGroup] = useState<any>(null);
@@ -70,12 +72,12 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   }, [dispatch, projectId]);
 
   // Get all task IDs for sortable context
-  const allTaskIds = useMemo(() => 
-    taskGroups.flatMap(group => group.tasks.map(task => task.id!)), 
+  const allTaskIds = useMemo(() =>
+    taskGroups.flatMap(group => group.tasks.map(task => task.id!)),
     [taskGroups]
   );
-  const allGroupIds = useMemo(() => 
-    taskGroups.map(group => group.id), 
+  const allGroupIds = useMemo(() =>
+    taskGroups.map(group => group.id),
     [taskGroups]
   );
 
@@ -86,13 +88,13 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
     const intersections = pointerIntersections.length > 0
       ? pointerIntersections
       : rectIntersection(args);
-    
+
     let overId = getFirstCollision(intersections, 'id');
 
     if (overId) {
       // Check if we're over a task or a group
       const overGroup = taskGroups.find(g => g.id === overId);
-      
+
       if (overGroup) {
         // We're over a group, check if there are tasks in it
         if (overGroup.tasks.length > 0) {
@@ -103,7 +105,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
               (container: any) => container.data.current?.type === 'task'
             ),
           });
-          
+
           if (taskIntersections.length > 0) {
             overId = taskIntersections[0].id;
           }
@@ -117,11 +119,11 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const activeId = active.id as string;
-    
+
     // Find the active task and group
     let foundTask = null;
     let foundGroup = null;
-    
+
     for (const group of taskGroups) {
       const task = group.tasks.find(t => t.id === activeId);
       if (task) {
@@ -133,7 +135,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
     setActiveTask(foundTask);
     setActiveGroup(foundGroup);
-    
+
     // Update Redux drag state
     dispatch(setDragState({
       activeTaskId: activeId,
@@ -144,7 +146,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    
+
     if (!over) {
       setOverId(null);
       dispatch(setDragState({ overId: null }));
@@ -153,21 +155,21 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
     const activeId = active.id as string;
     const overId = over.id as string;
-    
+
     setOverId(overId);
-    
+
     // Update over ID in Redux
     dispatch(setDragState({ overId }));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
+
     // Reset local state
     setActiveTask(null);
     setActiveGroup(null);
     setOverId(null);
-    
+
     // Reset Redux drag state
     dispatch(setDragState({
       activeTaskId: null,
@@ -258,8 +260,17 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   return (
     <div className={`enhanced-kanban-board ${className}`}>
       {/* Performance Monitor - only show for large datasets */}
-      {performanceMetrics.totalTasks > 100 && <PerformanceMonitor />}
-      
+      {/* {performanceMetrics.totalTasks > 100 && <PerformanceMonitor />} */}
+      <Card
+        size="small"
+        className="mb-4"
+        styles={{ body: { padding: '12px 16px' } }}
+      >
+        <React.Suspense fallback={<div>Loading filters...</div>}>
+          <TaskListFilters position="board" />
+        </React.Suspense>
+      </Card>
+
       {loadingGroups ? (
         <Card>
           <div className="flex justify-center items-center py-8">
@@ -281,11 +292,11 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
           <SortableContext items={allGroupIds} strategy={horizontalListSortingStrategy}>
             <div className="kanban-groups-container">
               {taskGroups.map(group => (
-                <EnhancedKanbanGroup 
-                  key={group.id} 
+                <EnhancedKanbanGroup
+                  key={group.id}
                   group={group}
                   activeTaskId={dragState.activeTaskId}
-                  overId={overId}
+                  overId={overId as string | null}
                 />
               ))}
             </div>
@@ -293,8 +304,8 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
           <DragOverlay>
             {activeTask && (
-              <EnhancedKanbanTaskCard 
-                task={activeTask} 
+              <EnhancedKanbanTaskCard
+                task={activeTask}
                 isDragOverlay={true}
               />
             )}

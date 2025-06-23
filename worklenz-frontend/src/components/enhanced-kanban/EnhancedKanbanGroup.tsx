@@ -15,10 +15,10 @@ interface EnhancedKanbanGroupProps {
 // Performance threshold for virtualization
 const VIRTUALIZATION_THRESHOLD = 50;
 
-const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({ 
-  group, 
+const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
+  group,
   activeTaskId,
-  overId 
+  overId
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: group.id,
@@ -33,7 +33,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
 
   // Get task IDs for sortable context
   const taskIds = group.tasks.map(task => task.id!);
-  
+
   // Check if this group is the target for dropping
   const isTargetGroup = overId === group.id;
   const isDraggingOver = isOver || isTargetGroup;
@@ -56,7 +56,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
 
   // Memoize task rendering to prevent unnecessary re-renders
   const renderTask = useMemo(() => (task: any, index: number) => (
-    <EnhancedKanbanTaskCard 
+    <EnhancedKanbanTaskCard
       key={task.id}
       task={task}
       isActive={task.id === activeTaskId}
@@ -68,7 +68,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
   const shouldShowDropIndicators = isDraggingOver && !shouldVirtualize;
 
   return (
-    <div 
+    <div
       ref={setNodeRef}
       className={`enhanced-kanban-group ${isDraggingOver ? 'drag-over' : ''}`}
     >
@@ -81,14 +81,14 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
           </span>
         )}
       </div>
-      
+
       <div className="enhanced-kanban-group-tasks" ref={groupRef}>
         {group.tasks.length === 0 && isDraggingOver && (
           <div className="drop-preview-empty">
             <div className="drop-indicator">Drop here</div>
           </div>
         )}
-        
+
         {shouldVirtualize ? (
           // Use virtualization for large task lists
           <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
@@ -112,21 +112,21 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
                     <div className="drop-line"></div>
                   </div>
                 )}
-                
-                <EnhancedKanbanTaskCard 
+
+                <EnhancedKanbanTaskCard
                   task={task}
                   isActive={task.id === activeTaskId}
                   isDropTarget={overId === task.id}
                 />
-                
+
                 {/* Show drop indicator after last task if dropping at the end */}
-                {shouldShowDropIndicators && 
-                 index === group.tasks.length - 1 && 
-                 overId === group.id && (
-                  <div className="drop-preview-indicator">
-                    <div className="drop-line"></div>
-                  </div>
-                )}
+                {shouldShowDropIndicators &&
+                  index === group.tasks.length - 1 &&
+                  overId === group.id && (
+                    <div className="drop-preview-indicator">
+                      <div className="drop-line"></div>
+                    </div>
+                  )}
               </React.Fragment>
             ))}
           </SortableContext>
