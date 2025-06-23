@@ -5,6 +5,7 @@ export enum Language {
   EN = 'en',
   ES = 'es',
   PT = 'pt',
+  ALB = 'alb'
 }
 
 export type ILanguageType = `${Language}`;

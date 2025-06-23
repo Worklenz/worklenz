@@ -29,6 +29,12 @@ export const greetingString = (name: string): string => {
     morning = 'manhã';
     afternoon = 'tarde';
     evening = 'noite';
+  } else if (language === 'alb') {
+    greetingPrefix = 'Përshëndetje';
+    greetingSuffix = 'të mbarë';
+    morning = 'mëngjesi';
+    afternoon = 'pasdite';
+    evening = 'mbrëmja';
   }
 
   return `${greetingPrefix} ${name}, ${greetingSuffix} ${greet}!`;

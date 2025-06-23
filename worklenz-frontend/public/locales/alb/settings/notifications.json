@@ -1,0 +1,11 @@
+{
+  "title": "Cilësimet e Njoftimeve",
+  "emailTitle": "Më dërgo njoftime me email",
+  "emailDescription": "Kjo përfshin caktimet e reja të detyrave",
+  "dailyDigestTitle": "Më dërgo një përmbledhje ditore",
+  "dailyDigestDescription": "Çdo mbrëmje, do të merrni një përmbledhje të aktivitetit të fundit në detyra.",
+  "popupTitle": "Shfaq njoftimet në kompjuterin tim kur Worklenz është i hapur",
+  "popupDescription": "Njoftimet e shfaqura mund të çaktivizohen nga shfletuesi juaj. Ndryshoni cilësimet e shfletuesit për t'i lejuar ato.",
+  "unreadItemsTitle": "Shfaq numrin e artikujve të palexuar",
+  "unreadItemsDescription": "Do të shihni numërimin për çdo njoftim."
+}

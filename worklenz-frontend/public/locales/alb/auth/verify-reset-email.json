@@ -1,0 +1,14 @@
+{
+  "title": "Verifikoni Email-in për Rivendosje",
+  "description": "Vendosni fjalëkalimin tuaj të ri",
+  "placeholder": "Vendosni fjalëkalimin tuaj të ri",
+  "confirmPasswordPlaceholder": "Konfirmoni fjalëkalimin e ri",
+  "passwordHint": "Të paktën 8 karaktere, me shkronja të mëdha dhe të vogla, një numër dhe një simbol.",
+  "resetPasswordButton": "Rivendos fjalëkalimin",
+  "orText": "Ose",
+  "resendResetEmail": "Dërgo përsëri email-in e rivendosjes",
+  "passwordRequired": "Ju lutemi vendosni fjalëkalimin e ri",
+  "returnToLoginButton": "Kthehu te Hyrja",
+  "confirmPasswordRequired": "Ju lutemi konfirmoni fjalëkalimin e ri",
+  "passwordMismatch": "Fjalëkalimet nuk përputhen"
+}

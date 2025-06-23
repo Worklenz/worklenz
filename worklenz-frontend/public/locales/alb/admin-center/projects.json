@@ -1,0 +1,12 @@
+{
+  "membersCount": "Numri i Anëtarëve",
+  "createdAt": "Krijuar më",
+  "projectName": "Emri i Projektit",
+  "teamName": "Emri i Ekipit",
+  "refreshProjects": "Rifresko Projektet",
+  "searchPlaceholder": "Kërkoni sipas emrit të projektit",
+  "deleteProject": "Jeni i sigurt që dëshironi të fshini këtë projekt?",
+  "confirm": "Konfirmo",
+  "cancel": "Anulo",
+  "delete": "Fshi Projektin"
+}
