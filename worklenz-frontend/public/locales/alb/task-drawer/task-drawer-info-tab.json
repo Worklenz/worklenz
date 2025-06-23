@@ -1,0 +1,29 @@
+{
+  "details": {
+    "task-key": "Çelësi i Detyrës",
+    "phase": "Faza",
+    "assignees": "Përgjegjësit",
+    "due-date": "Data e Përfundimit",
+    "time-estimation": "Vlerësimi i Kohës",
+    "priority": "Prioriteti",
+    "labels": "Etiketa",
+    "billable": "Fakturueshme",
+    "notify": "Njofto",
+    "when-done-notify": "Kur të përfundojë, njofto",
+    "start-date": "Data e Fillimit",
+    "end-date": "Data e Përfundimit",
+    "hide-start-date": "Fshih Datën e Fillimit",
+    "show-start-date": "Shfaq Datën e Fillimit",
+    "hours": "Orë",
+    "minutes": "Minuta"
+  },
+  "description": {
+    "title": "Përshkrimi",
+    "placeholder": "Shtoni një përshkrim më të detajuar..."
+  },
+  "subTasks": {
+    "title": "Nën-Detyrat",
+    "add-sub-task": "+ Shto Nën-Detyrë",
+    "refresh-sub-tasks": "Rifresko Nën-Detyrat"
+  }
+}

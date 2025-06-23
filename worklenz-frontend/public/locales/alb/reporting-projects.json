@@ -1,0 +1,52 @@
+{
+  "projectCount": "Projekt",
+  "projectCountPlural": "Projekte",
+  "includeArchivedButton": "Përfshij Projektet e Arkivuara",
+  "exportButton": "Eksporto",
+  "excelButton": "Excel",
+
+  "projectColumn": "Projekti",
+  "estimatedVsActualColumn": "Vlerësuar vs Aktual",
+  "tasksProgressColumn": "Progresi i Detyrave",
+  "lastActivityColumn": "Aktiviteti i Fundit",
+  "statusColumn": "Statusi",
+  "datesColumn": "Data e Fillimit/Përfundimit",
+  "daysLeftColumn": "Ditë të Mbetura/Vonuar",
+  "projectHealthColumn": "Gjendja e Projektit",
+  "categoryColumn": "Kategoria",
+  "projectUpdateColumn": "Përditësimi i Projektit",
+  "clientColumn": "Klienti",
+  "teamColumn": "Ekipi",
+  "projectManagerColumn": "Menaxheri i Projektit",
+
+  "openButton": "Hap",
+
+  "estimatedText": "Vlerësuar",
+  "actualText": "Aktual",
+
+  "todoText": "Për të Bërë",
+  "doingText": "duke bërë",
+  "doneText": "E Përfunduar",
+
+  "cancelledText": "Anuluar",
+  "blockedText": "E Bllokuar",
+  "onHoldText": "Në Pritje",
+  "proposedText": "E Propozuar",
+  "inPlanningText": "Në Planifikim",
+  "inProgressText": "Në Progres",
+  "completedText": "E Përfunduar",
+  "continuousText": "E Vazhdueshme",
+
+  "daysLeftText": "ditë të mbetura",
+  "dayLeftText": "ditë e mbetur",
+  "daysOverdueText": "ditë vonuar",
+
+  "notSetText": "Pa Caktuar",
+  "needsAttentionText": "Kërkon Vëmendje",
+  "atRiskText": "Në Rrezik",
+  "goodText": "Në Rregull",
+
+  "setCategoryText": "Cakto Kategorinë",
+  "searchByNameInputPlaceholder": "Kërko sipas emrit",
+  "todayText": "Sot"
+}

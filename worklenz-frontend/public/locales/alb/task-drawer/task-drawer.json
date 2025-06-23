@@ -1,0 +1,78 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "Shkruani detyrën tuaj",
+    "deleteTask": "Fshi Detyrën"
+  },
+  "taskInfoTab": {
+    "title": "Info",
+    "details": {
+      "title": "Detajet",
+      "task-key": "Çelësi i Detyrës",
+      "phase": "Faza",
+      "assignees": "Përgjegjësit",
+      "due-date": "Afati i Përfundimit",
+      "time-estimation": "Vlerësimi i Kohës",
+      "priority": "Prioriteti",
+      "labels": "Etiketa",
+      "billable": "Fakturueshme",
+      "notify": "Njofto",
+      "when-done-notify": "Kur të përfundojë, njofto",
+      "start-date": "Data e Fillimit",
+      "end-date": "Data e Përfundimit",
+      "hide-start-date": "Fshih Datën e Fillimit",
+      "show-start-date": "Shfaq Datën e Fillimit",
+      "hours": "Orë",
+      "minutes": "Minuta"
+    },
+    "labels": {
+      "labelInputPlaceholder": "Kërko ose krijo",
+      "labelsSelectorInputTip": "Shtyp Enter për të krijuar"
+    },
+    "description": {
+      "title": "Përshkrimi",
+      "placeholder": "Shtoni një përshkrim më të detajuar..."
+    },
+    "subTasks": {
+      "title": "Nën-Detyrat",
+      "addSubTask": "+ Shto Nën-Detyrë",
+      "addSubTaskInputPlaceholder": "Shkruani detyrën dhe shtypni Enter",
+      "refreshSubTasks": "Rifresko Nën-Detyrat",
+      "edit": "Modifiko",
+      "delete": "Fshi",
+      "confirmDeleteSubTask": "Jeni i sigurt që doni të fshini këtë nën-detyrë?",
+      "deleteSubTask": "Fshi Nën-Detyrën"
+    },
+    "dependencies": {
+      "title": "Varësitë",
+      "addDependency": "+ Shto varësi të re",
+      "blockedBy": "I bllokuar nga",
+      "searchTask": "Shkruani për të kërkuar detyra",
+      "noTasksFound": "Asnjë detyrë nuk u gjet",
+      "confirmDeleteDependency": "Jeni i sigurt që doni të fshini?"
+    },
+    "attachments": {
+      "title": "Bashkëngjitjet",
+      "chooseOrDropFileToUpload": "Zgjidhni ose lëshoni skedar për ngarkim",
+      "uploading": "Po ngarkohet..."
+    },
+    "comments": {
+      "title": "Komentet",
+      "addComment": "+ Shto koment të ri",
+      "noComments": "Asnjë koment ende. Bëhu i pari që komenton!",
+      "delete": "Fshi",
+      "confirmDeleteComment": "Jeni i sigurt që doni të fshini këtë koment?"
+    },
+    "searchInputPlaceholder": "Kërko sipas emrit",
+    "pendingInvitation": "Ftesë në Pritje"
+  },
+  "taskTimeLogTab": {
+    "title": "Regjistri i Kohës",
+    "addTimeLog": "Shto regjistrim të ri kohe",
+    "totalLogged": "Koha totale e regjistruar",
+    "exportToExcel": "Eksporto në Excel",
+    "noTimeLogsFound": "Asnjë regjistrim kohe nuk u gjet"
+  },
+  "taskActivityLogTab": {
+    "title": "Regjistri i Aktivitetit"
+  }
+}
