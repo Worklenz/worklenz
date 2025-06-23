@@ -1,5 +1,9 @@
 node_modules
 npm-debug.log
-build
 .scannerwork
 coverage
+.dockerignore
+.git
+*.md
+tests
+
