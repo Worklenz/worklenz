@@ -23,7 +23,10 @@ import {
   moveTaskToGroup,
   optimisticTaskMove,
   setLoading,
-  fetchTasks
+  fetchTasks,
+  fetchTasksV3,
+  selectTaskGroupsV3,
+  selectCurrentGroupingV3
 } from '@/features/task-management/task-management.slice';
 import { 
   selectTaskGroups,
@@ -37,9 +40,9 @@ import {
 } from '@/features/task-management/selection.slice';
 import { Task } from '@/types/task-management.types';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
-import TaskGroup from './task-group';
 import TaskRow from './task-row';
 import BulkActionBar from './bulk-action-bar';
+import VirtualizedTaskList from './virtualized-task-list';
 import { AppDispatch } from '@/app/store';
 
 // Import the TaskListFilters component
@@ -85,17 +88,21 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Refs for performance optimization
   const dragOverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Enable real-time socket updates for task changes
   useTaskSocketHandlers();
 
-  // Redux selectors using new task management slices
+  // Redux selectors using V3 API (pre-processed data, minimal loops)
   const tasks = useSelector(taskManagementSelectors.selectAll);
-  const taskGroups = useSelector(selectTaskGroups);
-  const currentGrouping = useSelector(selectCurrentGrouping);
+  const taskGroups = useSelector(selectTaskGroupsV3); // Pre-processed groups from backend
+  const currentGrouping = useSelector(selectCurrentGroupingV3); // Current grouping from backend
   const selectedTaskIds = useSelector(selectSelectedTaskIds);
   const loading = useSelector((state: RootState) => state.taskManagement.loading);
   const error = useSelector((state: RootState) => state.taskManagement.error);
+  
+  // Get theme from Redux store
+  const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
   // Drag and Drop sensors - optimized for better performance
   const sensors = useSensors(
@@ -112,8 +119,8 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   // Fetch task groups when component mounts or dependencies change
   useEffect(() => {
     if (projectId) {
-      // Fetch real tasks from API
-      dispatch(fetchTasks(projectId));
+      // Fetch real tasks from V3 API (minimal processing needed)
+      dispatch(fetchTasksV3(projectId));
     }
   }, [dispatch, projectId, currentGrouping]);
 
@@ -123,7 +130,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const hasSelection = selectedTaskIds.length > 0;
 
   // Memoized handlers for better performance
-  const handleGroupingChange = useCallback((newGroupBy: typeof currentGrouping) => {
+  const handleGroupingChange = useCallback((newGroupBy: 'status' | 'priority' | 'phase') => {
     dispatch(setCurrentGrouping(newGroupBy));
   }, [dispatch]);
 
@@ -308,7 +315,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         task={dragState.activeTask}
         projectId={projectId}
         groupId={dragState.activeGroupId}
-        currentGrouping={currentGrouping}
+        currentGrouping={(currentGrouping as 'status' | 'priority' | 'phase') || 'status'}
         isSelected={false}
         isDragOverlay
       />
@@ -336,7 +343,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   }
 
   return (
-    <div className={`task-list-board ${className}`}>
+    <div className={`task-list-board ${className}`} ref={containerRef}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -366,7 +373,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           />
         )}
 
-        {/* Task Groups Container */}
+        {/* Virtualized Task Groups Container */}
         <div className="task-groups-container">
           {loading ? (
             <Card>
@@ -382,18 +389,31 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
               />
             </Card>
           ) : (
-            <div className="task-groups">
-              {taskGroups.map((group) => (
-                <TaskGroup
-                  key={group.id}
-                  group={group}
-                  projectId={projectId}
-                  currentGrouping={currentGrouping}
-                  selectedTaskIds={selectedTaskIds}
-                  onSelectTask={handleSelectTask}
-                  onToggleSubtasks={handleToggleSubtasks}
-                />
-              ))}
+            <div className="virtualized-task-groups">
+              {taskGroups.map((group, index) => {
+                // Calculate dynamic height for each group
+                const groupTasks = group.taskIds.length;
+                const baseHeight = 120; // Header + column headers + add task row
+                const taskRowsHeight = groupTasks * 40; // 40px per task row
+                const minGroupHeight = 300; // Minimum height for better visual appearance
+                const maxGroupHeight = 600; // Increased maximum height per group
+                const calculatedHeight = baseHeight + taskRowsHeight;
+                const groupHeight = Math.max(minGroupHeight, Math.min(calculatedHeight, maxGroupHeight));
+                
+                return (
+                  <VirtualizedTaskList
+                    key={group.id}
+                    group={group}
+                    projectId={projectId}
+                    currentGrouping={(currentGrouping as 'status' | 'priority' | 'phase') || 'status'}
+                    selectedTaskIds={selectedTaskIds}
+                    onSelectTask={handleSelectTask}
+                    onToggleSubtasks={handleToggleSubtasks}
+                    height={groupHeight}
+                    width={1200}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
@@ -422,11 +442,148 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           will-change: scroll-position;
         }
 
-        .task-groups {
+        .virtualized-task-groups {
           min-width: fit-content;
           position: relative;
           /* GPU acceleration for drag operations */
           transform: translateZ(0);
+        }
+
+        .virtualized-task-group {
+          border: 1px solid var(--task-border-primary, #e8e8e8);
+          border-radius: 8px;
+          margin-bottom: 16px;
+          background: var(--task-bg-primary, white);
+          box-shadow: 0 1px 3px var(--task-shadow, rgba(0, 0, 0, 0.1));
+          overflow: hidden;
+          transition: all 0.3s ease;
+          position: relative;
+        }
+
+        .virtualized-task-group:last-child {
+          margin-bottom: 0;
+        }
+
+        /* Task group header styles */
+        .task-group-header {
+          background: var(--task-bg-primary, white);
+          transition: background-color 0.3s ease;
+        }
+
+        .task-group-header-row {
+          display: inline-flex;
+          height: auto;
+          max-height: none;
+          overflow: hidden;
+        }
+
+        .task-group-header-content {
+          display: inline-flex;
+          align-items: center;
+          padding: 8px 12px;
+          border-radius: 6px 6px 0 0;
+          background-color: #f0f0f0;
+          color: white;
+          font-weight: 500;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        .task-group-header-text {
+          color: white !important;
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          margin: 0 !important;
+        }
+
+        /* Column headers styles */
+        .task-group-column-headers {
+          background: var(--task-bg-secondary, #f5f5f5);
+          border-bottom: 1px solid var(--task-border-tertiary, #d9d9d9);
+          transition: background-color 0.3s ease;
+        }
+
+        .task-group-column-headers-row {
+          display: flex;
+          height: 40px;
+          max-height: 40px;
+          overflow: visible;
+          position: relative;
+          min-width: 1200px;
+        }
+
+        .task-table-header-cell {
+          background: var(--task-bg-secondary, #f5f5f5);
+          font-weight: 600;
+          color: var(--task-text-secondary, #595959);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border-bottom: 1px solid var(--task-border-tertiary, #d9d9d9);
+          height: 32px;
+          max-height: 32px;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+
+        .column-header-text {
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--task-text-secondary, #595959);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          transition: color 0.3s ease;
+        }
+
+        /* Add task row styles */
+        .task-group-add-task {
+          background: var(--task-bg-primary, white);
+          border-top: 1px solid var(--task-border-secondary, #f0f0f0);
+          transition: all 0.3s ease;
+          padding: 0 12px;
+          width: 100%;
+          min-height: 40px;
+          display: flex;
+          align-items: center;
+        }
+
+        .task-group-add-task:hover {
+          background: var(--task-hover-bg, #fafafa);
+        }
+
+        .task-table-fixed-columns {
+          display: flex;
+          background: var(--task-bg-secondary, #f5f5f5);
+          position: sticky;
+          left: 0;
+          z-index: 11;
+          border-right: 2px solid var(--task-border-primary, #e8e8e8);
+          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        .task-table-scrollable-columns {
+          display: flex;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .task-table-cell {
+          display: flex;
+          align-items: center;
+          padding: 0 12px;
+          border-right: 1px solid var(--task-border-secondary, #f0f0f0);
+          font-size: 12px;
+          white-space: nowrap;
+          height: 40px;
+          max-height: 40px;
+          min-height: 40px;
+          overflow: hidden;
+          color: var(--task-text-primary, #262626);
+          transition: all 0.3s ease;
+        }
+
+        .task-table-cell:last-child {
+          border-right: none;
         }
 
         /* Optimized drag overlay styles */
@@ -503,7 +660,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         }
 
         /* Performance optimizations */
-        .task-group {
+        .virtualized-task-group {
           contain: layout style paint;
         }
 
@@ -514,6 +671,15 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         /* Reduce layout thrashing */
         .task-table-cell {
           contain: layout;
+        }
+
+        /* React Window specific optimizations */
+        .react-window-list {
+          outline: none;
+        }
+
+        .react-window-list-item {
+          contain: layout style;
         }
       `}</style>
     </div>

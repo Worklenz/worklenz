@@ -967,4 +967,212 @@ export default class TasksControllerV2 extends TasksControllerBase {
       log_error(`Error updating task weight: ${error}`);
     }
   }
+
+  @HandleExceptions()
+  public static async getTasksV3(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const isSubTasks = !!req.query.parent_task;
+    const groupBy = (req.query.group || GroupBy.STATUS) as string;
+    const archived = req.query.archived === "true";
+
+    // Skip heavy progress calculation for initial load to improve performance
+    // Progress values are already calculated and stored in the database
+    // Only refresh if explicitly requested
+    if (req.query.refresh_progress === "true" && req.params.id) {
+      await this.refreshProjectTaskProgressValues(req.params.id);
+    }
+
+    const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
+    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+
+    const result = await db.query(q, params);
+    const tasks = [...result.rows];
+
+    // Get groups metadata dynamically from database
+    const groups = await this.getGroups(groupBy, req.params.id);
+
+    // Create priority value to name mapping
+    const priorityMap: Record<string, string> = {
+      "0": "low",
+      "1": "medium", 
+      "2": "high"
+    };
+
+    // Create status category mapping based on actual status names from database
+    const statusCategoryMap: Record<string, string> = {};
+    for (const group of groups) {
+      if (groupBy === GroupBy.STATUS && group.id) {
+        // Use the actual status name from database, convert to lowercase for consistency
+        statusCategoryMap[group.id] = group.name.toLowerCase().replace(/\s+/g, "_");
+      }
+    }
+
+    // Transform tasks with all necessary data preprocessing
+    const transformedTasks = tasks.map((task, index) => {
+      // Update task with calculated values (lightweight version)
+      TasksControllerV2.updateTaskViewModel(task);
+      task.index = index;
+
+      // Convert time values
+      const convertTimeValue = (value: any): number => {
+        if (typeof value === "number") return value;
+        if (typeof value === "string") {
+          const parsed = parseFloat(value);
+          return isNaN(parsed) ? 0 : parsed;
+        }
+        if (value && typeof value === "object") {
+          if ("hours" in value || "minutes" in value) {
+            const hours = Number(value.hours || 0);
+            const minutes = Number(value.minutes || 0);
+            return hours + (minutes / 60);
+          }
+        }
+        return 0;
+      };
+
+      return {
+        id: task.id,
+        task_key: task.task_key || "",
+        title: task.name || "",
+        description: task.description || "",
+        // Use dynamic status mapping from database
+        status: statusCategoryMap[task.status] || task.status,
+        // Pre-processed priority using mapping  
+        priority: priorityMap[task.priority_value?.toString()] || "medium",
+        // Use actual phase name from database
+        phase: task.phase_name || "Development",
+        progress: typeof task.complete_ratio === "number" ? task.complete_ratio : 0,
+        assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
+        assignee_names: task.assignee_names || task.names || [],
+        labels: task.labels?.map((l: any) => ({
+          id: l.id || l.label_id,
+          name: l.name,
+          color: l.color_code || "#1890ff",
+          end: l.end,
+          names: l.names
+        })) || [],
+        dueDate: task.end_date,
+        timeTracking: {
+          estimated: convertTimeValue(task.total_time),
+          logged: convertTimeValue(task.time_spent),
+        },
+        customFields: {},
+        createdAt: task.created_at || new Date().toISOString(),
+        updatedAt: task.updated_at || new Date().toISOString(),
+        order: typeof task.sort_order === "number" ? task.sort_order : 0,
+        // Additional metadata for frontend
+        originalStatusId: task.status,
+        originalPriorityId: task.priority,
+        statusColor: task.status_color,
+        priorityColor: task.priority_color,
+      };
+    });
+
+    // Create groups based on dynamic data from database
+    const groupedResponse: Record<string, any> = {};
+    
+    // Initialize groups from database data
+    groups.forEach(group => {
+      const groupKey = groupBy === GroupBy.STATUS 
+        ? group.name.toLowerCase().replace(/\s+/g, "_")
+        : groupBy === GroupBy.PRIORITY
+        ? priorityMap[(group as any).value?.toString()] || group.name.toLowerCase()
+        : group.name.toLowerCase().replace(/\s+/g, "_");
+      
+      groupedResponse[groupKey] = {
+        id: group.id,
+        title: group.name,
+        groupType: groupBy,
+        groupValue: groupKey,
+        collapsed: false,
+        tasks: [],
+        taskIds: [],
+        color: group.color_code || this.getDefaultGroupColor(groupBy, groupKey),
+        // Include additional metadata from database
+        category_id: group.category_id,
+        start_date: group.start_date,
+        end_date: group.end_date,
+        sort_index: (group as any).sort_index,
+      };
+    });
+
+    // Distribute tasks into groups
+    transformedTasks.forEach(task => {
+      let groupKey: string;
+      if (groupBy === GroupBy.STATUS) {
+        groupKey = task.status;
+      } else if (groupBy === GroupBy.PRIORITY) {
+        groupKey = task.priority;
+      } else {
+        groupKey = task.phase.toLowerCase().replace(/\s+/g, "_");
+      }
+
+      if (groupedResponse[groupKey]) {
+        groupedResponse[groupKey].tasks.push(task);
+        groupedResponse[groupKey].taskIds.push(task.id);
+      }
+    });
+
+    // Sort tasks within each group by order
+    Object.values(groupedResponse).forEach((group: any) => {
+      group.tasks.sort((a: any, b: any) => a.order - b.order);
+    });
+
+    // Convert to array format expected by frontend, maintaining database order
+    const responseGroups = groups
+      .map(group => {
+        const groupKey = groupBy === GroupBy.STATUS 
+          ? group.name.toLowerCase().replace(/\s+/g, "_")
+          : groupBy === GroupBy.PRIORITY
+          ? priorityMap[(group as any).value?.toString()] || group.name.toLowerCase()
+          : group.name.toLowerCase().replace(/\s+/g, "_");
+        
+        return groupedResponse[groupKey];
+      })
+      .filter(group => group && (group.tasks.length > 0 || req.query.include_empty === "true"));
+
+    return res.status(200).send(new ServerResponse(true, {
+      groups: responseGroups,
+      allTasks: transformedTasks,
+      grouping: groupBy,
+      totalTasks: transformedTasks.length
+    }));
+  }
+
+  private static getDefaultGroupColor(groupBy: string, groupValue: string): string {
+    const colorMaps: Record<string, Record<string, string>> = {
+      [GroupBy.STATUS]: {
+        todo: "#f0f0f0",
+        doing: "#1890ff", 
+        done: "#52c41a",
+      },
+      [GroupBy.PRIORITY]: {
+        critical: "#ff4d4f",
+        high: "#ff7a45",
+        medium: "#faad14",
+        low: "#52c41a",
+      },
+      [GroupBy.PHASE]: {
+        planning: "#722ed1",
+        development: "#1890ff",
+        testing: "#faad14",
+        deployment: "#52c41a",
+      },
+    };
+    
+    return colorMaps[groupBy]?.[groupValue] || "#d9d9d9";
+  }
+
+  @HandleExceptions()
+  public static async refreshTaskProgress(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    try {
+      if (req.params.id) {
+        await this.refreshProjectTaskProgressValues(req.params.id);
+        return res.status(200).send(new ServerResponse(true, { message: "Task progress refreshed successfully" }));
+      }
+      return res.status(400).send(new ServerResponse(false, "Project ID is required"));
+    } catch (error) {
+      log_error(`Error refreshing task progress: ${error}`);
+      return res.status(500).send(new ServerResponse(false, "Failed to refresh task progress"));
+    }
+  }
 }

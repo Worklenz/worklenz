@@ -1,7 +1,9 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useSelector } from 'react-redux';
+import { Input, Typography } from 'antd';
+import type { InputRef } from 'antd';
 import {
   HolderOutlined,
   MessageOutlined,
@@ -11,6 +13,8 @@ import {
 import { Task } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
 import { AssigneeSelector, Avatar, AvatarGroup, Button, Checkbox, CustomColordLabel, CustomNumberLabel, LabelsSelector, Progress, Tag, Tooltip } from '@/components';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 interface TaskRowProps {
   task: Task;
@@ -49,6 +53,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   onSelect,
   onToggleSubtasks,
 }) => {
+  const { socket, connected } = useSocket();
+  
+  // Edit task name state
+  const [editTaskName, setEditTaskName] = useState(false);
+  const [taskName, setTaskName] = useState(task.title || '');
+  const inputRef = useRef<InputRef>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   const {
     attributes,
     listeners,
@@ -68,6 +80,40 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
 
   // Get theme from Redux store
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
+
+  // Click outside detection for edit mode
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        handleTaskNameSave();
+      }
+    };
+
+    if (editTaskName) {
+      document.addEventListener('mousedown', handleClickOutside);
+      inputRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editTaskName]);
+
+  // Handle task name save
+  const handleTaskNameSave = useCallback(() => {
+    const newTaskName = inputRef.current?.input?.value;
+    if (newTaskName?.trim() !== '' && connected && newTaskName !== task.title) {
+      socket?.emit(
+        SocketEvents.TASK_NAME_CHANGE.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          name: newTaskName,
+          parent_task: null, // Assuming top-level tasks for now
+        })
+      );
+    }
+    setEditTaskName(false);
+  }, [connected, socket, task.id, task.title]);
 
   // Memoize style calculations - simplified
   const style = useMemo(() => ({
@@ -97,12 +143,11 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       ? 'border-gray-700 bg-gray-900 hover:bg-gray-800' 
       : 'border-gray-200 bg-white hover:bg-gray-50';
     const selectedClasses = isSelected 
-      ? (isDarkMode ? 'bg-blue-900/20 border-l-4 border-l-blue-500' : 'bg-blue-50 border-l-4 border-l-blue-500')
+      ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50')
       : '';
     const overlayClasses = isDragOverlay 
       ? `rounded shadow-lg border-2 ${isDarkMode ? 'bg-gray-900 border-gray-600 shadow-2xl' : 'bg-white border-gray-300 shadow-2xl'}`
       : '';
-    
     return `${baseClasses} ${themeClasses} ${selectedClasses} ${overlayClasses}`;
   }, [isDarkMode, isSelected, isDragOverlay]);
 
@@ -112,8 +157,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   );
 
   const taskNameClasses = useMemo(() => {
-    const baseClasses = 'text-sm font-medium flex-1 overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-300';
-    const themeClasses = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+    const baseClasses = 'text-sm font-medium flex-1 overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-300 cursor-pointer';
+    const themeClasses = isDarkMode ? 'text-gray-100 hover:text-blue-400' : 'text-gray-900 hover:text-blue-600';
     const completedClasses = task.progress === 100 
       ? `line-through ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}` 
       : '';
@@ -207,12 +252,36 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           </div>
 
           {/* Task Name */}
-          <div className="w-[475px] flex items-center px-2">
+          <div className={`w-[475px] flex items-center px-2 ${editTaskName ? (isDarkMode ? 'bg-blue-900/10 border border-blue-500' : 'bg-blue-50/20 border border-blue-500') : ''}`}>
             <div className="flex-1 min-w-0 flex flex-col justify-center h-full overflow-hidden">
               <div className="flex items-center gap-2 h-5 overflow-hidden">
-                <span className={taskNameClasses}>
-                  {task.title}
-                </span>
+                <div ref={wrapperRef} className="flex-1 min-w-0">
+                  {!editTaskName ? (
+                    <Typography.Text
+                      ellipsis={{ tooltip: task.title }}
+                      onClick={() => setEditTaskName(true)}
+                      className={taskNameClasses}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {task.title}
+                    </Typography.Text>
+                  ) : (
+                    <Input
+                      ref={inputRef}
+                      variant="borderless"
+                      value={taskName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTaskName(e.target.value)}
+                      onPressEnter={handleTaskNameSave}
+                      className={`${isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
+                      style={{
+                        width: '100%',
+                        padding: '2px 4px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { createSlice, createEntityAdapter, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { Task, TaskManagementState } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
-import { tasksApiService, ITaskListConfigV2 } from '@/api/tasks/tasks.api.service';
+import { tasksApiService, ITaskListConfigV2, ITaskListV3Response } from '@/api/tasks/tasks.api.service';
 import logger from '@/utils/errorLogger';
 
 // Entity adapter for normalized state
@@ -14,6 +14,8 @@ const initialState: TaskManagementState = {
   ids: [],
   loading: false,
   error: null,
+  groups: [],
+  grouping: null,
 };
 
 // Async thunk to fetch tasks from API
@@ -59,6 +61,31 @@ export const fetchTasks = createAsyncThunk(
         return 0;
       };
 
+      // Create a mapping from status IDs to group names
+      const statusIdToNameMap: Record<string, string> = {};
+      const priorityIdToNameMap: Record<string, string> = {};
+      
+      response.body.forEach((group: any) => {
+        statusIdToNameMap[group.id] = group.name.toLowerCase();
+      });
+
+      // For priority mapping, we need to get priority names from the tasks themselves
+      // Since the API doesn't provide priority names in the group structure
+      response.body.forEach((group: any) => {
+        group.tasks.forEach((task: any) => {
+          // Map priority value to name (this is an assumption based on common patterns)
+          if (task.priority_value !== undefined) {
+            switch (task.priority_value) {
+              case 0: priorityIdToNameMap[task.priority] = 'low'; break;
+              case 1: priorityIdToNameMap[task.priority] = 'medium'; break;
+              case 2: priorityIdToNameMap[task.priority] = 'high'; break;
+              case 3: priorityIdToNameMap[task.priority] = 'critical'; break;
+              default: priorityIdToNameMap[task.priority] = 'medium';
+            }
+          }
+        });
+      });
+
       // Transform the API response to our Task type
       const tasks: Task[] = response.body.flatMap((group: any) => 
         group.tasks.map((task: any) => ({
@@ -66,8 +93,8 @@ export const fetchTasks = createAsyncThunk(
           task_key: task.task_key || '',
           title: task.name || '',
           description: task.description || '',
-          status: task.status_name?.toLowerCase() || 'todo',
-          priority: task.priority_name?.toLowerCase() || 'medium',
+          status: statusIdToNameMap[task.status] || 'todo',
+          priority: priorityIdToNameMap[task.priority] || 'medium',
           phase: task.phase_name || 'Development',
           progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
           assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
@@ -98,6 +125,65 @@ export const fetchTasks = createAsyncThunk(
         return rejectWithValue(error.message);
       }
       return rejectWithValue('Failed to fetch tasks');
+    }
+  }
+);
+
+// New V3 fetch that minimizes frontend processing
+export const fetchTasksV3 = createAsyncThunk(
+  'taskManagement/fetchTasksV3',
+  async (projectId: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const currentGrouping = state.grouping.currentGrouping;
+      
+      const config: ITaskListConfigV2 = {
+        id: projectId,
+        archived: false,
+        group: currentGrouping,
+        field: '',
+        order: '',
+        search: '',
+        statuses: '',
+        members: '',
+        projects: '',
+        isSubtasksInclude: false,
+        labels: '',
+        priorities: '',
+      };
+
+      const response = await tasksApiService.getTaskListV3(config);
+      
+      // Minimal processing - tasks are already processed by backend
+      return {
+        tasks: response.body.allTasks,
+        groups: response.body.groups,
+        grouping: response.body.grouping,
+        totalTasks: response.body.totalTasks
+      };
+    } catch (error) {
+      logger.error('Fetch Tasks V3', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch tasks');
+    }
+  }
+);
+
+// Refresh task progress separately to avoid slowing down initial load
+export const refreshTaskProgress = createAsyncThunk(
+  'taskManagement/refreshTaskProgress',
+  async (projectId: string, { rejectWithValue }) => {
+    try {
+      const response = await tasksApiService.refreshTaskProgress(projectId);
+      return response.body;
+    } catch (error) {
+      logger.error('Refresh Task Progress', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to refresh task progress');
     }
   }
 );
@@ -234,6 +320,33 @@ const taskManagementSlice = createSlice({
       .addCase(fetchTasks.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string || 'Failed to fetch tasks';
+      })
+      .addCase(fetchTasksV3.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTasksV3.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        // Tasks are already processed by backend, minimal setup needed
+        tasksAdapter.setAll(state, action.payload.tasks);
+        state.groups = action.payload.groups;
+        state.grouping = action.payload.grouping;
+      })
+      .addCase(fetchTasksV3.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to fetch tasks';
+      })
+      .addCase(refreshTaskProgress.pending, (state) => {
+        // Don't set loading to true for refresh to avoid UI blocking
+        state.error = null;
+      })
+      .addCase(refreshTaskProgress.fulfilled, (state) => {
+        state.error = null;
+        // Progress refresh completed successfully
+      })
+      .addCase(refreshTaskProgress.rejected, (state, action) => {
+        state.error = action.payload as string || 'Failed to refresh task progress';
       });
   },
 });
@@ -270,4 +383,8 @@ export const selectTasksByPhase = (state: RootState, phase: string) =>
   taskManagementSelectors.selectAll(state).filter(task => task.phase === phase);
 
 export const selectTasksLoading = (state: RootState) => state.taskManagement.loading;
-export const selectTasksError = (state: RootState) => state.taskManagement.error; 
+export const selectTasksError = (state: RootState) => state.taskManagement.error;
+
+// V3 API selectors - no processing needed, data is pre-processed by backend
+export const selectTaskGroupsV3 = (state: RootState) => state.taskManagement.groups;
+export const selectCurrentGroupingV3 = (state: RootState) => state.taskManagement.grouping; 

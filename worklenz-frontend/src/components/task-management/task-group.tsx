@@ -31,7 +31,6 @@ const GROUP_COLORS = {
     done: '#52c41a',
   },
   priority: {
-    critical: '#ff4d4f',
     high: '#fa8c16',
     medium: '#faad14',
     low: '#52c41a',
@@ -62,6 +61,9 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
 
   // Get all tasks from the store
   const allTasks = useSelector(taskManagementSelectors.selectAll);
+  
+  // Get theme from Redux store
+  const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
   
   // Get tasks for this group using memoization for performance
   const groupTasks = useMemo(() => {
@@ -112,8 +114,10 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
 
   // Memoized style object
   const containerStyle = useMemo(() => ({
-    backgroundColor: isOver ? '#f0f8ff' : undefined,
-  }), [isOver]);
+    backgroundColor: isOver 
+      ? (isDarkMode ? '#1a2332' : '#f0f8ff') 
+      : undefined,
+  }), [isOver, isDarkMode]);
 
   return (
     <div

@@ -70,6 +70,8 @@ export interface TaskManagementState {
   ids: string[];
   loading: boolean;
   error: string | null;
+  groups: TaskGroup[]; // Pre-processed groups from V3 API
+  grouping: string | null; // Current grouping from V3 API
 }
 
 export interface TaskGroupsState {
