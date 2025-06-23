@@ -318,16 +318,24 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
       // Find sort_order for from and to
       const fromSortOrder = movedTask.sort_order;
       let toSortOrder = -1;
-      if (targetGroup.tasks[targetIndex]) {
-        toSortOrder = targetGroup.tasks[targetIndex].sort_order;
+      let toLastIndex = false;
+      if (targetIndex === targetGroup.tasks.length) {
+        // Dropping at the end
+        toSortOrder = -1;
+        toLastIndex = true;
+      } else if (targetGroup.tasks[targetIndex]) {
+        toSortOrder = typeof targetGroup.tasks[targetIndex].sort_order === 'number' ? targetGroup.tasks[targetIndex].sort_order! : -1;
+        toLastIndex = false;
       } else if (targetGroup.tasks.length > 0) {
-        toSortOrder = targetGroup.tasks[targetGroup.tasks.length - 1].sort_order;
+        const lastSortOrder = targetGroup.tasks[targetGroup.tasks.length - 1].sort_order;
+        toSortOrder = typeof lastSortOrder === 'number' ? lastSortOrder! : -1;
+        toLastIndex = false;
       }
       const body = {
         project_id: projectId,
         from_index: fromSortOrder,
         to_index: toSortOrder,
-        to_last_index: !toSortOrder,
+        to_last_index: toLastIndex,
         from_group: sourceGroup.id,
         to_group: targetGroup.id,
         group_by: groupBy || 'status',
