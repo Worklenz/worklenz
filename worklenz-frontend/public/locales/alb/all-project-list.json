@@ -1,0 +1,23 @@
+{
+  "name": "Emri",
+  "client": "Klienti",
+  "category": "Kategoria",
+  "status": "Statusi",
+  "tasksProgress": "Progresi i Detyrave",
+  "updated_at": "Përditësuar Së Fundi",
+  "members": "Anëtarët",
+  "setting": "Cilësimet",
+  "projects": "Projektet",
+  "refreshProjects": "Rifresko projektet",
+  "all": "Të Gjitha",
+  "favorites": "Të Preferuarat",
+  "archived": "Të Arkivuara",
+  "placeholder": "Kërko sipas emrit",
+  "archive": "Arkivo",
+  "unarchive": "Ç'arkivo",
+  "archiveConfirm": "Jeni i sigurt që doni ta arkivoni këtë projekt?",
+  "unarchiveConfirm": "Jeni i sigurt që doni ta çarkivoni këtë projekt?",
+  "clickToFilter": "Klikoni për të filtruar sipas",
+  "noProjects": "Nuk u gjetën projekte",
+  "addToFavourites": "Shto në të preferuarat"
+}
