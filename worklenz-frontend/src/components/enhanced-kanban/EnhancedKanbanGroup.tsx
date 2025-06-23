@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, useSortable, defaultAnimateLayoutChanges } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import EnhancedKanbanTaskCard from './EnhancedKanbanTaskCard';
@@ -46,6 +46,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
       type: 'group',
       group,
     },
+    animateLayoutChanges: defaultAnimateLayoutChanges,
   });
 
   const groupRef = useRef<HTMLDivElement>(null);

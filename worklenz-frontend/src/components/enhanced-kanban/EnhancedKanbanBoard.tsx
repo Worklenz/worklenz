@@ -27,7 +27,9 @@ import {
   fetchEnhancedKanbanGroups,
   reorderEnhancedKanbanTasks,
   reorderEnhancedKanbanGroups,
-  setDragState
+  setDragState,
+  reorderTasks,
+  reorderGroups,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import EnhancedKanbanGroup from './EnhancedKanbanGroup';
 import EnhancedKanbanTaskCard from './EnhancedKanbanTaskCard';
@@ -210,12 +212,10 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
         const [movedGroup] = reorderedGroups.splice(fromIndex, 1);
         reorderedGroups.splice(toIndex, 0, movedGroup);
 
-        // Dispatch group reorder action
-        dispatch(reorderEnhancedKanbanGroups({
-          fromIndex,
-          toIndex,
-          reorderedGroups,
-        }) as any);
+        // Synchronous UI update
+        dispatch(reorderGroups({ fromIndex, toIndex, reorderedGroups }));
+        // Async backend sync (optional)
+        dispatch(reorderEnhancedKanbanGroups({ fromIndex, toIndex, reorderedGroups }) as any);
       }
       return;
     }
@@ -274,7 +274,17 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
       updatedTargetTasks.splice(targetIndex, 0, movedTask);
     }
 
-    // Dispatch the reorder action
+    // Synchronous UI update
+    dispatch(reorderTasks({
+      activeGroupId: sourceGroup.id,
+      overGroupId: targetGroup.id,
+      fromIndex: sourceIndex,
+      toIndex: targetIndex,
+      task: movedTask,
+      updatedSourceTasks,
+      updatedTargetTasks,
+    }));
+    // Async backend sync (optional)
     dispatch(reorderEnhancedKanbanTasks({
       activeGroupId: sourceGroup.id,
       overGroupId: targetGroup.id,

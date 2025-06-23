@@ -402,6 +402,44 @@ const enhancedKanbanSlice = createSlice({
     resetState: (state) => {
       return { ...initialState, groupBy: state.groupBy };
     },
+
+    // Synchronous reorder for tasks
+    reorderTasks: (state, action: PayloadAction<{
+      activeGroupId: string;
+      overGroupId: string;
+      fromIndex: number;
+      toIndex: number;
+      task: IProjectTask;
+      updatedSourceTasks: IProjectTask[];
+      updatedTargetTasks: IProjectTask[];
+    }>) => {
+      const { activeGroupId, overGroupId, updatedSourceTasks, updatedTargetTasks } = action.payload;
+      const sourceGroupIndex = state.taskGroups.findIndex(group => group.id === activeGroupId);
+      const targetGroupIndex = state.taskGroups.findIndex(group => group.id === overGroupId);
+      if (sourceGroupIndex !== -1) {
+        state.taskGroups[sourceGroupIndex].tasks = updatedSourceTasks;
+        state.groupCache[activeGroupId] = state.taskGroups[sourceGroupIndex];
+      }
+      if (targetGroupIndex !== -1 && activeGroupId !== overGroupId) {
+        state.taskGroups[targetGroupIndex].tasks = updatedTargetTasks;
+        state.groupCache[overGroupId] = state.taskGroups[targetGroupIndex];
+      }
+    },
+
+    // Synchronous reorder for groups
+    reorderGroups: (state, action: PayloadAction<{
+      fromIndex: number;
+      toIndex: number;
+      reorderedGroups: ITaskListGroup[];
+    }>) => {
+      const { reorderedGroups } = action.payload;
+      state.taskGroups = reorderedGroups;
+      state.groupCache = reorderedGroups.reduce((cache, group) => {
+        cache[group.id] = group;
+        return cache;
+      }, {} as Record<string, ITaskListGroup>);
+      state.columnOrder = reorderedGroups.map(group => group.id);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -488,6 +526,8 @@ export const {
   updateTaskPriority,
   deleteTask,
   resetState,
+  reorderTasks,
+  reorderGroups,
 } = enhancedKanbanSlice.actions;
 
 export default enhancedKanbanSlice.reducer; 

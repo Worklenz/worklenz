@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSortable } from '@dnd-kit/sortable';
+import { useSortable, defaultAnimateLayoutChanges } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -34,6 +34,7 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
       task,
     },
     disabled: isDragOverlay,
+    animateLayoutChanges: defaultAnimateLayoutChanges,
   });
 
   const style = {
