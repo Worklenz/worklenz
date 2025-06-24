@@ -101,8 +101,13 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
         borderRadius: 6,
         cursor: 'pointer',
         overflow: 'hidden',
+        minHeight: 100,
+        zIndex: 1,
+        boxShadow: themeMode === 'dark' ? '0 2px 8px #1118' : '0 2px 8px #ccc8',
+        marginBottom: 8,
+        marginTop: 8,
       }}
-      className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)}`}
+      className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline`}
     >
       <Input
         ref={inputRef}
