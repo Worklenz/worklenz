@@ -1,0 +1,13 @@
+{
+  "importTasks": "Aufgaben importieren",
+  "createTask": "Aufgabe erstellen",
+  "settings": "Einstellungen",
+  "subscribe": "Abonnieren",
+  "unsubscribe": "Abbestellen",
+  "deleteProject": "Projekt löschen",
+  "startDate": "Startdatum",
+  "endDate": "Enddatum",
+  "projectSettings": "Projekteinstellungen",
+  "projectSummary": "Projektzusammenfassung",
+  "receiveProjectSummary": "Erhalten Sie jeden Abend eine Projektzusammenfassung."
+}

@@ -1,0 +1,11 @@
+{
+  "importTaskTemplate": "Aufgabenvorlage importieren",
+  "templateName": "Vorlagenname",
+  "templateDescription": "Vorlagenbeschreibung",
+  "selectedTasks": "Ausgewählte Aufgaben",
+  "tasks": "Aufgaben",
+  "templates": "Vorlagen",
+  "remove": "Entfernen",
+  "cancel": "Abbrechen",
+  "import": "Importieren"
+}
