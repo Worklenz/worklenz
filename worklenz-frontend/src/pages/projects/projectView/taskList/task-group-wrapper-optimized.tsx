@@ -7,7 +7,7 @@ import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 import TaskListTableWrapper from './task-list-table/task-list-table-wrapper/task-list-table-wrapper';
-import TaskListBulkActionsBar from '@/components/taskListCommon/task-list-bulk-actions-bar/task-list-bulk-actions-bar';
+
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
@@ -69,7 +69,7 @@ const TaskGroupWrapperOptimized = ({ taskGroups, groupBy }: TaskGroupWrapperOpti
         />
       ))}
 
-      {createPortal(<TaskListBulkActionsBar />, document.body, 'bulk-action-container')}
+
 
       {createPortal(
         <TaskTemplateDrawer showDrawer={false} selectedTemplateId="" onClose={() => {}} />,

@@ -152,11 +152,11 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
           transition-colors duration-200
           ${isOpen 
             ? isDarkMode 
-              ? 'border-blue-500 bg-blue-900/20' 
-              : 'border-blue-500 bg-blue-50'
+              ? 'border-blue-500 bg-blue-900/20 text-blue-400' 
+              : 'border-blue-500 bg-blue-50 text-blue-600'
             : isDarkMode 
-              ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800' 
-              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100'
+              ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
+              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
           }
         `}
       >

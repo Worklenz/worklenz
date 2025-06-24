@@ -196,6 +196,19 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     })) || [],
   } as any), [task.id, task.title, task.labels]);
 
+  // Create adapter for AssigneeSelector - memoized
+  const taskAdapterForAssignee = useMemo(() => ({
+    id: task.id,
+    name: task.title,
+    parent_task_id: null,
+    assignees: task.assignee_names?.map(member => ({
+      team_member_id: member.team_member_id,
+      id: member.team_member_id,
+      project_member_id: member.team_member_id,
+      name: member.name,
+    })) || [],
+  } as any), [task.id, task.title, task.assignee_names]);
+
   // Memoize due date calculation
   const dueDate = useMemo(() => {
     if (!task.dueDate) return null;
@@ -221,15 +234,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       style={style}
       className={containerClasses}
     >
-      <div className="flex h-10 max-h-10 overflow-visible relative min-w-[1200px]">
+      <div className="flex h-10 max-h-10 overflow-visible relative">
         {/* Fixed Columns */}
         <div
           className="fixed-columns-row"
           style={{
             display: 'flex',
-            position: 'sticky',
-            left: 0,
-            zIndex: 2,
             background: isDarkMode ? '#1a1a1a' : '#fff',
             width: fixedColumns?.reduce((sum, col) => sum + col.width, 0) || 0,
           }}
@@ -345,22 +355,11 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                           isDarkMode={isDarkMode}
                         />
                       )}
-                      <button
-                        className={`
-                          w-6 h-6 rounded-full border border-dashed flex items-center justify-center
-                          transition-colors duration-200
-                          ${isDarkMode 
-                            ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
-                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
-                          }
-                        `}
-                        onClick={() => {
-                          // TODO: Implement assignee selector functionality
-                          console.log('Add assignee clicked for task:', task.id);
-                        }}
-                      >
-                        <span className="text-xs">+</span>
-                      </button>
+                      <AssigneeSelector
+                        task={taskAdapterForAssignee}
+                        groupId={groupId}
+                        isDarkMode={isDarkMode}
+                      />
                     </div>
                   </div>
                 );

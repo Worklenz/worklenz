@@ -12,12 +12,10 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Card, Spin, Empty } from 'antd';
 import { RootState } from '@/app/store';
-import { 
+import {
   taskManagementSelectors,
   reorderTasks,
   moveTaskToGroup,
@@ -26,27 +24,29 @@ import {
   fetchTasks,
   fetchTasksV3,
   selectTaskGroupsV3,
-  selectCurrentGroupingV3
+  selectCurrentGroupingV3,
 } from '@/features/task-management/task-management.slice';
-import { 
+import {
   selectTaskGroups,
   selectCurrentGrouping,
-  setCurrentGrouping
+  setCurrentGrouping,
 } from '@/features/task-management/grouping.slice';
 import {
   selectSelectedTaskIds,
   toggleTaskSelection,
-  clearSelection
+  clearSelection,
 } from '@/features/task-management/selection.slice';
 import { Task } from '@/types/task-management.types';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import TaskRow from './task-row';
-import BulkActionBar from './bulk-action-bar';
+// import BulkActionBar from './bulk-action-bar';
 import VirtualizedTaskList from './virtualized-task-list';
 import { AppDispatch } from '@/app/store';
 
-// Import the TaskListFilters component
-const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
+// Import the improved TaskListFilters component
+const ImprovedTaskFilters = React.lazy(
+  () => import('./improved-task-filters')
+);
 
 interface TaskListBoardProps {
   projectId: string;
@@ -62,19 +62,22 @@ interface DragState {
 const throttle = <T extends (...args: any[]) => void>(func: T, delay: number): T => {
   let timeoutId: NodeJS.Timeout | null = null;
   let lastExecTime = 0;
-  
+
   return ((...args: any[]) => {
     const currentTime = Date.now();
-    
+
     if (currentTime - lastExecTime > delay) {
       func(...args);
       lastExecTime = currentTime;
     } else {
       if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        func(...args);
-        lastExecTime = Date.now();
-      }, delay - (currentTime - lastExecTime));
+      timeoutId = setTimeout(
+        () => {
+          func(...args);
+          lastExecTime = Date.now();
+        },
+        delay - (currentTime - lastExecTime)
+      );
     }
   }) as T;
 };
@@ -100,7 +103,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const selectedTaskIds = useSelector(selectSelectedTaskIds);
   const loading = useSelector((state: RootState) => state.taskManagement.loading);
   const error = useSelector((state: RootState) => state.taskManagement.error);
-  
+
   // Get theme from Redux store
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
@@ -130,56 +133,131 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const hasSelection = selectedTaskIds.length > 0;
 
   // Memoized handlers for better performance
-  const handleGroupingChange = useCallback((newGroupBy: 'status' | 'priority' | 'phase') => {
-    dispatch(setCurrentGrouping(newGroupBy));
-  }, [dispatch]);
+  const handleGroupingChange = useCallback(
+    (newGroupBy: 'status' | 'priority' | 'phase') => {
+      dispatch(setCurrentGrouping(newGroupBy));
+    },
+    [dispatch]
+  );
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const { active } = event;
-    const taskId = active.id as string;
-    
-    // Find the task and its group
-    const activeTask = tasks.find(t => t.id === taskId) || null;
-    let activeGroupId: string | null = null;
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const { active } = event;
+      const taskId = active.id as string;
 
-    if (activeTask) {
-      // Determine group ID based on current grouping
-      if (currentGrouping === 'status') {
-        activeGroupId = `status-${activeTask.status}`;
-      } else if (currentGrouping === 'priority') {
-        activeGroupId = `priority-${activeTask.priority}`;
-      } else if (currentGrouping === 'phase') {
-        activeGroupId = `phase-${activeTask.phase}`;
+      // Find the task and its group
+      const activeTask = tasks.find(t => t.id === taskId) || null;
+      let activeGroupId: string | null = null;
+
+      if (activeTask) {
+        // Determine group ID based on current grouping
+        if (currentGrouping === 'status') {
+          activeGroupId = `status-${activeTask.status}`;
+        } else if (currentGrouping === 'priority') {
+          activeGroupId = `priority-${activeTask.priority}`;
+        } else if (currentGrouping === 'phase') {
+          activeGroupId = `phase-${activeTask.phase}`;
+        }
       }
-    }
 
-    setDragState({
-      activeTask,
-      activeGroupId,
-    });
-  }, [tasks, currentGrouping]);
+      setDragState({
+        activeTask,
+        activeGroupId,
+      });
+    },
+    [tasks, currentGrouping]
+  );
 
   // Throttled drag over handler for better performance
-  const handleDragOver = useCallback(throttle((event: DragOverEvent) => {
-    const { active, over } = event;
-    
-    if (!over || !dragState.activeTask) return;
-    
-    const activeTaskId = active.id as string;
-    const overContainer = over.id as string;
-    
-    // Clear any existing timeout
-    if (dragOverTimeoutRef.current) {
-      clearTimeout(dragOverTimeoutRef.current);
-    }
-    
-    // Optimistic update with throttling
-    dragOverTimeoutRef.current = setTimeout(() => {
-      // Only update if we're hovering over a different container
-      const targetTask = tasks.find(t => t.id === overContainer);
+  const handleDragOver = useCallback(
+    throttle((event: DragOverEvent) => {
+      const { active, over } = event;
+
+      if (!over || !dragState.activeTask) return;
+
+      const activeTaskId = active.id as string;
+      const overContainer = over.id as string;
+
+      // Clear any existing timeout
+      if (dragOverTimeoutRef.current) {
+        clearTimeout(dragOverTimeoutRef.current);
+      }
+
+      // Optimistic update with throttling
+      dragOverTimeoutRef.current = setTimeout(() => {
+        // Only update if we're hovering over a different container
+        const targetTask = tasks.find(t => t.id === overContainer);
+        let targetGroupId = overContainer;
+
+        if (targetTask) {
+          if (currentGrouping === 'status') {
+            targetGroupId = `status-${targetTask.status}`;
+          } else if (currentGrouping === 'priority') {
+            targetGroupId = `priority-${targetTask.priority}`;
+          } else if (currentGrouping === 'phase') {
+            targetGroupId = `phase-${targetTask.phase}`;
+          }
+        }
+
+        if (targetGroupId !== dragState.activeGroupId) {
+          // Perform optimistic update for visual feedback
+          const targetGroup = taskGroups.find(g => g.id === targetGroupId);
+          if (targetGroup) {
+            dispatch(
+              optimisticTaskMove({
+                taskId: activeTaskId,
+                newGroupId: targetGroupId,
+                newIndex: targetGroup.taskIds.length,
+              })
+            );
+          }
+        }
+      }, 50); // 50ms throttle for drag over events
+    }, 50),
+    [dragState, tasks, taskGroups, currentGrouping, dispatch]
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      // Clear any pending drag over timeouts
+      if (dragOverTimeoutRef.current) {
+        clearTimeout(dragOverTimeoutRef.current);
+        dragOverTimeoutRef.current = null;
+      }
+
+      // Reset drag state immediately for better UX
+      const currentDragState = dragState;
+      setDragState({
+        activeTask: null,
+        activeGroupId: null,
+      });
+
+      if (!over || !currentDragState.activeTask || !currentDragState.activeGroupId) {
+        return;
+      }
+
+      const activeTaskId = active.id as string;
+      const overContainer = over.id as string;
+
+      // Parse the group ID to get group type and value - optimized
+      const parseGroupId = (groupId: string) => {
+        const [groupType, ...groupValueParts] = groupId.split('-');
+        return {
+          groupType: groupType as 'status' | 'priority' | 'phase',
+          groupValue: groupValueParts.join('-'),
+        };
+      };
+
+      // Determine target group
       let targetGroupId = overContainer;
-      
+      let targetIndex = -1;
+
+      // Check if dropping on a task or a group
+      const targetTask = tasks.find(t => t.id === overContainer);
       if (targetTask) {
+        // Dropping on a task, determine its group
         if (currentGrouping === 'status') {
           targetGroupId = `status-${targetTask.status}`;
         } else if (currentGrouping === 'priority') {
@@ -187,119 +265,67 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         } else if (currentGrouping === 'phase') {
           targetGroupId = `phase-${targetTask.phase}`;
         }
-      }
-      
-      if (targetGroupId !== dragState.activeGroupId) {
-        // Perform optimistic update for visual feedback
+
+        // Find the index of the target task within its group
         const targetGroup = taskGroups.find(g => g.id === targetGroupId);
         if (targetGroup) {
-          dispatch(optimisticTaskMove({
-            taskId: activeTaskId,
-            newGroupId: targetGroupId,
-            newIndex: targetGroup.taskIds.length,
-          }));
+          targetIndex = targetGroup.taskIds.indexOf(targetTask.id);
         }
       }
-    }, 50); // 50ms throttle for drag over events
-  }, 50), [dragState, tasks, taskGroups, currentGrouping, dispatch]);
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    // Clear any pending drag over timeouts
-    if (dragOverTimeoutRef.current) {
-      clearTimeout(dragOverTimeoutRef.current);
-      dragOverTimeoutRef.current = null;
-    }
-    
-    // Reset drag state immediately for better UX
-    const currentDragState = dragState;
-    setDragState({
-      activeTask: null,
-      activeGroupId: null,
-    });
+      const sourceGroupInfo = parseGroupId(currentDragState.activeGroupId);
+      const targetGroupInfo = parseGroupId(targetGroupId);
 
-    if (!over || !currentDragState.activeTask || !currentDragState.activeGroupId) {
-      return;
-    }
-
-    const activeTaskId = active.id as string;
-    const overContainer = over.id as string;
-    
-    // Parse the group ID to get group type and value - optimized
-    const parseGroupId = (groupId: string) => {
-      const [groupType, ...groupValueParts] = groupId.split('-');
-      return {
-        groupType: groupType as 'status' | 'priority' | 'phase',
-        groupValue: groupValueParts.join('-')
-      };
-    };
-
-    // Determine target group
-    let targetGroupId = overContainer;
-    let targetIndex = -1;
-
-    // Check if dropping on a task or a group
-    const targetTask = tasks.find(t => t.id === overContainer);
-    if (targetTask) {
-      // Dropping on a task, determine its group
-      if (currentGrouping === 'status') {
-        targetGroupId = `status-${targetTask.status}`;
-      } else if (currentGrouping === 'priority') {
-        targetGroupId = `priority-${targetTask.priority}`;
-      } else if (currentGrouping === 'phase') {
-        targetGroupId = `phase-${targetTask.phase}`;
+      // If moving between different groups, update the task's group property
+      if (currentDragState.activeGroupId !== targetGroupId) {
+        dispatch(
+          moveTaskToGroup({
+            taskId: activeTaskId,
+            groupType: targetGroupInfo.groupType,
+            groupValue: targetGroupInfo.groupValue,
+          })
+        );
       }
-      
-      // Find the index of the target task within its group
+
+      // Handle reordering within the same group or between groups
+      const sourceGroup = taskGroups.find(g => g.id === currentDragState.activeGroupId);
       const targetGroup = taskGroups.find(g => g.id === targetGroupId);
-      if (targetGroup) {
-        targetIndex = targetGroup.taskIds.indexOf(targetTask.id);
+
+      if (sourceGroup && targetGroup && targetIndex !== -1) {
+        const sourceIndex = sourceGroup.taskIds.indexOf(activeTaskId);
+        const finalTargetIndex = targetIndex === -1 ? targetGroup.taskIds.length : targetIndex;
+
+        // Only reorder if actually moving to a different position
+        if (sourceGroup.id !== targetGroup.id || sourceIndex !== finalTargetIndex) {
+          // Calculate new order values - simplified
+          const allTasksInTargetGroup = targetGroup.taskIds.map(
+            id => tasks.find(t => t.id === id)!
+          );
+          const newOrder = allTasksInTargetGroup.map((task, index) => {
+            if (index < finalTargetIndex) return task.order;
+            if (index === finalTargetIndex) return currentDragState.activeTask!.order;
+            return task.order + 1;
+          });
+
+          // Dispatch reorder action
+          dispatch(
+            reorderTasks({
+              taskIds: [activeTaskId, ...allTasksInTargetGroup.map(t => t.id)],
+              newOrder: [currentDragState.activeTask!.order, ...newOrder],
+            })
+          );
+        }
       }
-    }
+    },
+    [dragState, tasks, taskGroups, currentGrouping, dispatch]
+  );
 
-    const sourceGroupInfo = parseGroupId(currentDragState.activeGroupId);
-    const targetGroupInfo = parseGroupId(targetGroupId);
-
-    // If moving between different groups, update the task's group property
-    if (currentDragState.activeGroupId !== targetGroupId) {
-      dispatch(moveTaskToGroup({
-        taskId: activeTaskId,
-        groupType: targetGroupInfo.groupType,
-        groupValue: targetGroupInfo.groupValue
-      }));
-    }
-
-    // Handle reordering within the same group or between groups
-    const sourceGroup = taskGroups.find(g => g.id === currentDragState.activeGroupId);
-    const targetGroup = taskGroups.find(g => g.id === targetGroupId);
-
-    if (sourceGroup && targetGroup && targetIndex !== -1) {
-      const sourceIndex = sourceGroup.taskIds.indexOf(activeTaskId);
-      const finalTargetIndex = targetIndex === -1 ? targetGroup.taskIds.length : targetIndex;
-
-      // Only reorder if actually moving to a different position
-      if (sourceGroup.id !== targetGroup.id || sourceIndex !== finalTargetIndex) {
-        // Calculate new order values - simplified
-        const allTasksInTargetGroup = targetGroup.taskIds.map(id => tasks.find(t => t.id === id)!);
-        const newOrder = allTasksInTargetGroup.map((task, index) => {
-          if (index < finalTargetIndex) return task.order;
-          if (index === finalTargetIndex) return currentDragState.activeTask!.order;
-          return task.order + 1;
-        });
-
-        // Dispatch reorder action
-        dispatch(reorderTasks({
-          taskIds: [activeTaskId, ...allTasksInTargetGroup.map(t => t.id)],
-          newOrder: [currentDragState.activeTask!.order, ...newOrder]
-        }));
-      }
-    }
-  }, [dragState, tasks, taskGroups, currentGrouping, dispatch]);
-
-  const handleSelectTask = useCallback((taskId: string, selected: boolean) => {
-    dispatch(toggleTaskSelection(taskId));
-  }, [dispatch]);
+  const handleSelectTask = useCallback(
+    (taskId: string, selected: boolean) => {
+      dispatch(toggleTaskSelection(taskId));
+    },
+    [dispatch]
+  );
 
   const handleToggleSubtasks = useCallback((taskId: string) => {
     // Implementation for toggling subtasks
@@ -309,7 +335,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   // Memoized DragOverlay content for better performance
   const dragOverlayContent = useMemo(() => {
     if (!dragState.activeTask || !dragState.activeGroupId) return null;
-    
+
     return (
       <TaskRow
         task={dragState.activeTask}
@@ -334,10 +360,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   if (error) {
     return (
       <Card className={className}>
-        <Empty 
-          description={`Error loading tasks: ${error}`}
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <Empty description={`Error loading tasks: ${error}`} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       </Card>
     );
   }
@@ -352,26 +375,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         onDragEnd={handleDragEnd}
       >
         {/* Task Filters */}
-        <Card 
-          size="small" 
-          className="mb-4"
-          styles={{ body: { padding: '12px 16px' } }}
-        >
+        <div className="mb-4">
           <React.Suspense fallback={<div>Loading filters...</div>}>
-            <TaskListFilters position="list" />
+            <ImprovedTaskFilters position="list" />
           </React.Suspense>
-        </Card>
-
-        {/* Bulk Action Bar */}
-        {hasSelection && (
-          <BulkActionBar
-            selectedTaskIds={selectedTaskIds}
-            totalSelected={selectedTaskIds.length}
-            currentGrouping={currentGrouping as any}
-            projectId={projectId}
-            onClearSelection={() => dispatch(clearSelection())}
-          />
-        )}
+        </div>
 
         {/* Virtualized Task Groups Container */}
         <div className="task-groups-container">
@@ -383,10 +391,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
             </Card>
           ) : taskGroups.length === 0 ? (
             <Card>
-              <Empty 
-                description="No tasks found"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              />
+              <Empty description="No tasks found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             </Card>
           ) : (
             <div className="virtualized-task-groups">
@@ -398,14 +403,19 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
                 const minGroupHeight = 300; // Minimum height for better visual appearance
                 const maxGroupHeight = 600; // Increased maximum height per group
                 const calculatedHeight = baseHeight + taskRowsHeight;
-                const groupHeight = Math.max(minGroupHeight, Math.min(calculatedHeight, maxGroupHeight));
-                
+                const groupHeight = Math.max(
+                  minGroupHeight,
+                  Math.min(calculatedHeight, maxGroupHeight)
+                );
+
                 return (
                   <VirtualizedTaskList
                     key={group.id}
                     group={group}
                     projectId={projectId}
-                    currentGrouping={(currentGrouping as 'status' | 'priority' | 'phase') || 'status'}
+                    currentGrouping={
+                      (currentGrouping as 'status' | 'priority' | 'phase') || 'status'
+                    }
                     selectedTaskIds={selectedTaskIds}
                     onSelectTask={handleSelectTask}
                     onToggleSubtasks={handleToggleSubtasks}
@@ -686,4 +696,4 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   );
 };
 
-export default TaskListBoard; 
+export default TaskListBoard;
