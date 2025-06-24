@@ -13,7 +13,6 @@
 }
 
 .enhanced-kanban-group.drag-over {
-  background: var(--ant-color-bg-layout);
   border-color: var(--ant-color-primary);
   box-shadow: 0 0 0 2px var(--ant-color-primary-border);
 }
