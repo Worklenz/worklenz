@@ -1,0 +1,7 @@
+{
+  "configurePhases": "Phasen konfigurieren",
+  "phaseLabel": "Phasenbezeichnung",
+  "enterPhaseName": "Namen für Phasenbezeichnung eingeben",
+  "addOption": "Option hinzufügen",
+  "phaseOptions": "Phasenoptionen:"
+}

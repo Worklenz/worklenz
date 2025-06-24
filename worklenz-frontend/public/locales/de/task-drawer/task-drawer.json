@@ -1,0 +1,78 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "Aufgabe eingeben",
+    "deleteTask": "Aufgabe löschen"
+  },
+  "taskInfoTab": {
+    "title": "Info",
+    "details": {
+      "title": "Details",
+      "task-key": "Aufgaben-Schlüssel",
+      "phase": "Phase",
+      "assignees": "Zugewiesene",
+      "due-date": "Fälligkeitsdatum",
+      "time-estimation": "Zeitschätzung",
+      "priority": "Priorität",
+      "labels": "Labels",
+      "billable": "Abrechenbar",
+      "notify": "Benachrichtigen",
+      "when-done-notify": "Bei Fertigstellung benachrichtigen",
+      "start-date": "Startdatum",
+      "end-date": "Enddatum",
+      "hide-start-date": "Startdatum ausblenden",
+      "show-start-date": "Startdatum anzeigen",
+      "hours": "Stunden",
+      "minutes": "Minuten"
+    },
+    "labels": {
+      "labelInputPlaceholder": "Suchen oder erstellen",
+      "labelsSelectorInputTip": "Enter drücken zum Erstellen"
+    },
+    "description": {
+      "title": "Beschreibung",
+      "placeholder": "Detaillierte Beschreibung hinzufügen..."
+    },
+    "subTasks": {
+      "title": "Unteraufgaben",
+      "addSubTask": "+ Unteraufgabe hinzufügen",
+      "addSubTaskInputPlaceholder": "Aufgabe eingeben und Enter drücken",
+      "refreshSubTasks": "Unteraufgaben aktualisieren",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "confirmDeleteSubTask": "Sind Sie sicher, dass Sie diese Unteraufgabe löschen möchten?",
+      "deleteSubTask": "Unteraufgabe löschen"
+    },
+    "dependencies": {
+      "title": "Abhängigkeiten",
+      "addDependency": "+ Neue Abhängigkeit hinzufügen",
+      "blockedBy": "Blockiert durch",
+      "searchTask": "Aufgabe suchen",
+      "noTasksFound": "Keine Aufgaben gefunden",
+      "confirmDeleteDependency": "Sind Sie sicher, dass Sie dies löschen möchten?"
+    },
+    "attachments": {
+      "title": "Anhänge",
+      "chooseOrDropFileToUpload": "Datei auswählen oder zum Hochladen ablegen",
+      "uploading": "Wird hochgeladen..."
+    },
+    "comments": {
+      "title": "Kommentare",
+      "addComment": "+ Neuen Kommentar hinzufügen",
+      "noComments": "Noch keine Kommentare. Seien Sie der Erste!",
+      "delete": "Löschen",
+      "confirmDeleteComment": "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?"
+    },
+    "searchInputPlaceholder": "Nach Namen suchen",
+    "pendingInvitation": "Einladung ausstehend"
+  },
+  "taskTimeLogTab": {
+    "title": "Zeiterfassung",
+    "addTimeLog": "Neuen Zeiteintrag hinzufügen",
+    "totalLogged": "Gesamt erfasst",
+    "exportToExcel": "Nach Excel exportieren",
+    "noTimeLogsFound": "Keine Zeiterfassungen gefunden"
+  },
+  "taskActivityLogTab": {
+    "title": "Aktivitätsprotokoll"
+  }
+}
