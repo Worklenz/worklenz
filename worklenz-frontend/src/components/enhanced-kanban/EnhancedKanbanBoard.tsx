@@ -39,6 +39,10 @@ import { useSocket } from '@/socket/socketContext';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
+import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
+import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-request';
+import alertService from '@/services/alerts/alertService';
+import { IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 // Import the TaskListFilters component
 const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
@@ -211,6 +215,11 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
     // Handle group (column) reordering
     if (activeData?.type === 'group') {
+      // Don't allow reordering if groupBy is phases
+      if (groupBy === IGroupBy.PHASE) {
+        return;
+      }
+
       const fromIndex = taskGroups.findIndex(g => g.id === activeId);
       const toIndex = taskGroups.findIndex(g => g.id === overId);
 
@@ -220,19 +229,35 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
         const [movedGroup] = reorderedGroups.splice(fromIndex, 1);
         reorderedGroups.splice(toIndex, 0, movedGroup);
 
-        // Synchronous UI update
+        // Synchronous UI update for immediate feedback
         dispatch(reorderGroups({ fromIndex, toIndex, reorderedGroups }));
         dispatch(reorderEnhancedKanbanGroups({ fromIndex, toIndex, reorderedGroups }) as any);
 
-        // Prepare column order for API/socket
+        // Prepare column order for API
         const columnOrder = reorderedGroups.map(group => group.id);
+
+        // Call API to update status order
         try {
-          // If you have a dedicated socket event for column order, emit it here
-          // Otherwise, call the backend API as fallback (like project-view-board.tsx)
-          // Example (pseudo):
-          // socket?.emit(SocketEvents.COLUMN_SORT_ORDER_CHANGE, { project_id: projectId, status_order: columnOrder, team_id: teamId });
-          // If not, call the API (not shown here for brevity)
+          const requestBody: ITaskStatusCreateRequest = {
+            status_order: columnOrder
+          };
+
+          const response = await statusApiService.updateStatusOrder(requestBody, projectId);
+          if (!response.done) {
+            // Revert the change if API call fails
+            const revertedGroups = [...reorderedGroups];
+            const [movedBackGroup] = revertedGroups.splice(toIndex, 1);
+            revertedGroups.splice(fromIndex, 0, movedBackGroup);
+            dispatch(reorderGroups({ fromIndex: toIndex, toIndex: fromIndex, reorderedGroups: revertedGroups }));
+            alertService.error('Failed to update column order', 'Please try again');
+          }
         } catch (error) {
+          // Revert the change if API call fails
+          const revertedGroups = [...reorderedGroups];
+          const [movedBackGroup] = revertedGroups.splice(toIndex, 1);
+          revertedGroups.splice(fromIndex, 0, movedBackGroup);
+          dispatch(reorderGroups({ fromIndex: toIndex, toIndex: fromIndex, reorderedGroups: revertedGroups }));
+          alertService.error('Failed to update column order', 'Please try again');
           logger.error('Failed to update column order', error);
         }
       }
