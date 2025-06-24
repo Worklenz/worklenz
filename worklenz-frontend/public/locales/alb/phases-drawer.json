@@ -1,0 +1,7 @@
+{
+  "configurePhases": "Konfiguro Fazat",
+  "phaseLabel": "Etiketa e Fazës",
+  "enterPhaseName": "Vendosni një emër për etiketën e fazës",
+  "addOption": "Shto Opsion",
+  "phaseOptions": "Opsionet e Fazës:"
+}

@@ -1,0 +1,63 @@
+{
+  "keyColumn": "Schlüssel",
+  "taskColumn": "Aufgabe",
+  "descriptionColumn": "Beschreibung",
+  "progressColumn": "Fortschritt",
+  "membersColumn": "Mitglieder",
+  "assigneesColumn": "Zugewiesene",
+  "labelsColumn": "Labels",
+  "phasesColumn": "Phasen",
+  "phaseColumn": "Phase",
+  "statusColumn": "Status",
+  "priorityColumn": "Priorität",
+  "timeTrackingColumn": "Zeiterfassung",
+  "timetrackingColumn": "Zeiterfassung",
+  "estimationColumn": "Schätzung",
+  "startDateColumn": "Startdatum",
+  "startdateColumn": "Startdatum",
+  "dueDateColumn": "Fälligkeitsdatum",
+  "duedateColumn": "Fälligkeitsdatum",
+  "completedDateColumn": "Abschlussdatum",
+  "completeddateColumn": "Abschlussdatum",
+  "createdDateColumn": "Erstellungsdatum",
+  "createddateColumn": "Erstellungsdatum",
+  "lastUpdatedColumn": "Zuletzt aktualisiert",
+  "lastupdatedColumn": "Zuletzt aktualisiert",
+  "reporterColumn": "Melder",
+  "dueTimeColumn": "Fällige Zeit",
+  "todoSelectorText": "Zu erledigen",
+  "doingSelectorText": "Tun",
+  "doneSelectorText": "Erledigt",
+
+  "lowSelectorText": "Niedrig",
+  "mediumSelectorText": "Mittel",
+  "highSelectorText": "Hoch",
+
+  "selectText": "Auswählen",
+  "labelsSelectorInputTip": "Enter drücken zum Erstellen!",
+
+  "addTaskText": "+ Aufgabe hinzufügen",
+  "addSubTaskText": "+ Unteraufgabe hinzufügen",
+  "addTaskInputPlaceholder": "Aufgabe eingeben und Enter drücken",
+
+  "openButton": "Öffnen",
+  "okButton": "OK",
+
+  "noLabelsFound": "Keine Labels gefunden",
+  "searchInputPlaceholder": "Suchen oder erstellen",
+  "assigneeSelectorInviteButton": "Neues Mitglied per E-Mail einladen",
+  "labelInputPlaceholder": "Suchen oder erstellen",
+
+  "pendingInvitation": "Einladung ausstehend",
+
+  "contextMenu": {
+    "assignToMe": "Mir zuweisen",
+    "moveTo": "Verschieben nach",
+    "unarchive": "Dearchivieren",
+    "archive": "Archivieren",
+    "convertToSubTask": "In Unteraufgabe umwandeln",
+    "convertToTask": "In Aufgabe umwandeln",
+    "delete": "Löschen",
+    "searchByNameInputPlaceholder": "Nach Namen suchen"
+  }
+}

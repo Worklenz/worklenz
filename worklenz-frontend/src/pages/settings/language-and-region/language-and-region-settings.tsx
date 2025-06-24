@@ -47,6 +47,14 @@ const LanguageAndRegionSettings = () => {
       value: Language.PT,
       label: 'Português',
     },
+    {
+      value: Language.ALB,
+      label: 'Shqip',
+    },
+    {
+      value: Language.DE,
+      label: 'Deutsch',
+    },
   ];
 
   const handleLanguageChange = async (values: { language?: ILanguageType; timezone?: string }) => {

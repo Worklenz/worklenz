@@ -1,0 +1,29 @@
+{
+  "details": {
+    "task-key": "Aufgabenschlüssel",
+    "phase": "Phase",
+    "assignees": "Zugewiesene",
+    "due-date": "Fälligkeitsdatum",
+    "time-estimation": "Zeitschätzung",
+    "priority": "Priorität",
+    "labels": "Labels",
+    "billable": "Abrechenbar",
+    "notify": "Benachrichtigen",
+    "when-done-notify": "Bei Fertigstellung benachrichtigen",
+    "start-date": "Startdatum",
+    "end-date": "Enddatum",
+    "hide-start-date": "Startdatum ausblenden",
+    "show-start-date": "Startdatum anzeigen",
+    "hours": "Stunden",
+    "minutes": "Minuten"
+  },
+  "description": {
+    "title": "Beschreibung",
+    "placeholder": "Fügen Sie eine detailliertere Beschreibung hinzu..."
+  },
+  "subTasks": {
+    "title": "Unteraufgaben",
+    "add-sub-task": "+ Unteraufgabe hinzufügen",
+    "refresh-sub-tasks": "Unteraufgaben aktualisieren"
+  }
+}

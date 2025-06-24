@@ -1,0 +1,9 @@
+{
+  "nameColumn": "Emri",
+  "createdColumn": "Krijuar",
+  "editToolTip": "Redakto",
+  "deleteToolTip": "Fshi",
+  "confirmText": "Jeni i sigurt?",
+  "okText": "Po",
+  "cancelText": "Anulo"
+}
