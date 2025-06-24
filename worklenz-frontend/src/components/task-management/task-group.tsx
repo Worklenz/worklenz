@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSelector } from 'react-redux';
 import { Button, Typography } from 'antd';
 import { PlusOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
-import { ITaskListGroup } from '@/types/tasks/taskList.types';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { IGroupBy, COLUMN_KEYS } from '@/features/tasks/tasks.slice';
+import { TaskGroup as TaskGroupType, Task } from '@/types/task-management.types';
+import { taskManagementSelectors } from '@/features/task-management/task-management.slice';
 import { RootState } from '@/app/store';
 import TaskRow from './task-row';
 import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-rows/add-task-list-row';
@@ -14,9 +13,9 @@ import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-tabl
 const { Text } = Typography;
 
 interface TaskGroupProps {
-  group: ITaskListGroup;
+  group: TaskGroupType;
   projectId: string;
-  currentGrouping: IGroupBy;
+  currentGrouping: 'status' | 'priority' | 'phase';
   selectedTaskIds: string[];
   onAddTask?: (groupId: string) => void;
   onToggleCollapse?: (groupId: string) => void;
@@ -24,7 +23,40 @@ interface TaskGroupProps {
   onToggleSubtasks?: (taskId: string) => void;
 }
 
-const TaskGroup: React.FC<TaskGroupProps> = ({
+// Group color mapping - moved outside component for better performance
+const GROUP_COLORS = {
+  status: {
+    todo: '#faad14',
+    doing: '#1890ff',
+    done: '#52c41a',
+  },
+  priority: {
+    high: '#fa8c16',
+    medium: '#faad14',
+    low: '#52c41a',
+  },
+  phase: '#722ed1',
+  default: '#d9d9d9',
+} as const;
+
+// Column configurations for consistent layout
+const FIXED_COLUMNS = [
+  { key: 'drag', label: '', width: 40, fixed: true },
+  { key: 'select', label: '', width: 40, fixed: true },
+  { key: 'key', label: 'Key', width: 80, fixed: true },
+  { key: 'task', label: 'Task', width: 475, fixed: true },
+];
+
+const SCROLLABLE_COLUMNS = [
+  { key: 'progress', label: 'Progress', width: 90 },
+  { key: 'members', label: 'Members', width: 150 },
+  { key: 'labels', label: 'Labels', width: 200 },
+  { key: 'status', label: 'Status', width: 100 },
+  { key: 'priority', label: 'Priority', width: 100 },
+  { key: 'timeTracking', label: 'Time Tracking', width: 120 },
+];
+
+const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
   group,
   projectId,
   currentGrouping,
@@ -34,7 +66,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
   onSelectTask,
   onToggleSubtasks,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(group.collapsed || false);
 
   const { setNodeRef, isOver } = useDroppable({
     id: group.id,
@@ -44,197 +76,182 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
     },
   });
 
-  // Get column visibility from Redux store
-  const columns = useSelector((state: RootState) => state.taskReducer.columns);
+  // Get all tasks from the store
+  const allTasks = useSelector(taskManagementSelectors.selectAll);
+  
+  // Get theme from Redux store
+  const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
+  
+  // Get tasks for this group using memoization for performance
+  const groupTasks = useMemo(() => {
+    return group.taskIds
+      .map(taskId => allTasks.find(task => task.id === taskId))
+      .filter((task): task is Task => task !== undefined);
+  }, [group.taskIds, allTasks]);
 
-  // Helper function to check if a column is visible
-  const isColumnVisible = (columnKey: string) => {
-    const column = columns.find(col => col.key === columnKey);
-    return column ? column.pinned : true; // Default to visible if column not found
-  };
+  // Calculate group statistics - memoized
+  const { completedTasks, totalTasks, completionRate } = useMemo(() => {
+    const completed = groupTasks.filter(task => task.progress === 100).length;
+    const total = groupTasks.length;
+    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    return {
+      completedTasks: completed,
+      totalTasks: total,
+      completionRate: rate,
+    };
+  }, [groupTasks]);
 
-  // Get task IDs for sortable context
-  const taskIds = group.tasks.map(task => task.id!);
-
-  // Calculate group statistics
-  const completedTasks = group.tasks.filter(
-    task => task.status_category?.is_done || task.complete_ratio === 100
-  ).length;
-  const totalTasks = group.tasks.length;
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-  // Get group color based on grouping type
-  const getGroupColor = () => {
-    if (group.color_code) return group.color_code;
+  // Get group color based on grouping type - memoized
+  const groupColor = useMemo(() => {
+    if (group.color) return group.color;
 
     // Fallback colors based on group value
     switch (currentGrouping) {
       case 'status':
-        return group.id === 'todo' ? '#faad14' : group.id === 'doing' ? '#1890ff' : '#52c41a';
+        return GROUP_COLORS.status[group.groupValue as keyof typeof GROUP_COLORS.status] || GROUP_COLORS.default;
       case 'priority':
-        return group.id === 'critical'
-          ? '#ff4d4f'
-          : group.id === 'high'
-            ? '#fa8c16'
-            : group.id === 'medium'
-              ? '#faad14'
-              : '#52c41a';
+        return GROUP_COLORS.priority[group.groupValue as keyof typeof GROUP_COLORS.priority] || GROUP_COLORS.default;
       case 'phase':
-        return '#722ed1';
+        return GROUP_COLORS.phase;
       default:
-        return '#d9d9d9';
+        return GROUP_COLORS.default;
     }
-  };
+  }, [group.color, group.groupValue, currentGrouping]);
 
-  const handleToggleCollapse = () => {
+  // Memoized event handlers
+  const handleToggleCollapse = useCallback(() => {
     setIsCollapsed(!isCollapsed);
     onToggleCollapse?.(group.id);
-  };
+  }, [isCollapsed, onToggleCollapse, group.id]);
 
-  const handleAddTask = () => {
+  const handleAddTask = useCallback(() => {
     onAddTask?.(group.id);
-  };
+  }, [onAddTask, group.id]);
+
+  // Memoized style object
+  const containerStyle = useMemo(() => ({
+    backgroundColor: isOver 
+      ? (isDarkMode ? '#1a2332' : '#f0f8ff') 
+      : undefined,
+  }), [isOver, isDarkMode]);
 
   return (
     <div
-      ref={setNodeRef}
-      className={`task-group ${isOver ? 'drag-over' : ''}`}
-      style={{
-        backgroundColor: isOver ? '#f0f8ff' : undefined,
-      }}
+      className={`task-group`}
+      style={{ ...containerStyle, overflowX: 'unset' }}
     >
-      {/* Group Header Row */}
-      <div className="task-group-header">
-        <div className="task-group-header-row">
-          <div 
-            className="task-group-header-content"
-            style={{ backgroundColor: getGroupColor() }}
-          >
-            <Button
-              type="text"
-              size="small"
-              icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
-              onClick={handleToggleCollapse}
-              className="task-group-header-button"
-            />
-            <Text strong className="task-group-header-text">
-              {group.name} ({totalTasks})
-            </Text>
-          </div>
-        </div>
-      </div>
-
-      {/* Column Headers */}
-      {!isCollapsed && totalTasks > 0 && (
-        <div 
-          className="task-group-column-headers"
-          style={{ borderLeft: `4px solid ${getGroupColor()}` }}
-        >
-          <div className="task-group-column-headers-row">
-            <div className="task-table-fixed-columns">
-              <div
-                className="task-table-cell task-table-header-cell"
-                style={{ width: '40px' }}
-              ></div>
-              <div
-                className="task-table-cell task-table-header-cell"
-                style={{ width: '40px' }}
-              ></div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '80px' }}>
-                <Text className="column-header-text">Key</Text>
-              </div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '475px' }}>
-                <Text className="column-header-text">Task</Text>
+      <div className="task-group-scroll-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
+        <div style={{ minWidth: FIXED_COLUMNS.reduce((sum, col) => sum + col.width, 0) + SCROLLABLE_COLUMNS.reduce((sum, col) => sum + col.width, 0) }}>
+          {/* Group Header Row */}
+          <div className="task-group-header">
+            <div className="task-group-header-row">
+              <div 
+                className="task-group-header-content"
+                style={{ backgroundColor: groupColor }}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
+                  onClick={handleToggleCollapse}
+                  className="task-group-header-button"
+                />
+                <Text strong className="task-group-header-text">
+                  {group.title} ({totalTasks})
+                </Text>
               </div>
             </div>
-            <div className="task-table-scrollable-columns">
-              {isColumnVisible(COLUMN_KEYS.PROGRESS) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '90px' }}>
-                  <Text className="column-header-text">Progress</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.ASSIGNEES) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '150px' }}>
-                  <Text className="column-header-text">Members</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.LABELS) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '150px' }}>
-                  <Text className="column-header-text">Labels</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.STATUS) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
-                  <Text className="column-header-text">Status</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.PRIORITY) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
-                  <Text className="column-header-text">Priority</Text>
-                </div>
-              )}
-              {isColumnVisible(COLUMN_KEYS.TIME_TRACKING) && (
-                <div className="task-table-cell task-table-header-cell" style={{ width: '120px' }}>
-                  <Text className="column-header-text">Time Tracking</Text>
-                </div>
-              )}
-            </div>
           </div>
-        </div>
-      )}
 
-      {/* Tasks List */}
-      {!isCollapsed && (
-        <div 
-          className="task-group-body"
-          style={{ borderLeft: `4px solid ${getGroupColor()}` }}
-        >
-          {group.tasks.length === 0 ? (
-            <div className="task-group-empty">
-              <div className="task-table-fixed-columns">
-                <div style={{ width: '380px', padding: '20px 12px' }}>
-                  <div className="text-center text-gray-500">
-                    <Text type="secondary">No tasks in this group</Text>
-                    <br />
-                    <Button
-                      type="link"
-                      icon={<PlusOutlined />}
-                      onClick={handleAddTask}
-                      className="mt-2"
+          {/* Column Headers */}
+          {!isCollapsed && totalTasks > 0 && (
+            <div 
+              className="task-group-column-headers"
+              style={{ borderLeft: `4px solid ${groupColor}` }}
+            >
+              <div className="task-group-column-headers-row">
+                <div className="task-table-fixed-columns">
+                  {FIXED_COLUMNS.map(col => (
+                    <div
+                      key={col.key}
+                      className="task-table-cell task-table-header-cell"
+                      style={{ width: col.width }}
                     >
-                      Add first task
-                    </Button>
-                  </div>
+                      {col.label && <Text className="column-header-text">{col.label}</Text>}
+                    </div>
+                  ))}
+                </div>
+                <div className="task-table-scrollable-columns">
+                  {SCROLLABLE_COLUMNS.map(col => (
+                    <div
+                      key={col.key}
+                      className="task-table-cell task-table-header-cell"
+                      style={{ width: col.width }}
+                    >
+                      <Text className="column-header-text">{col.label}</Text>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-          ) : (
-            <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-              <div className="task-group-tasks">
-                {group.tasks.map((task, index) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    projectId={projectId}
-                    groupId={group.id}
-                    currentGrouping={currentGrouping}
-                    isSelected={selectedTaskIds.includes(task.id!)}
-                    index={index}
-                    onSelect={onSelectTask}
-                    onToggleSubtasks={onToggleSubtasks}
-                  />
-                ))}
-              </div>
-            </SortableContext>
           )}
 
-          {/* Add Task Row - Always show when not collapsed */}
-          <div className="task-group-add-task">
-            <AddTaskListRow groupId={group.id} />
-          </div>
-        </div>
-      )}
+          {/* Tasks List */}
+          {!isCollapsed && (
+            <div 
+              className="task-group-body"
+              style={{ borderLeft: `4px solid ${groupColor}` }}
+            >
+              {groupTasks.length === 0 ? (
+                <div className="task-group-empty">
+                  <div className="task-table-fixed-columns">
+                    <div style={{ width: '380px', padding: '20px 12px' }}>
+                      <div className="text-center text-gray-500">
+                        <Text type="secondary">No tasks in this group</Text>
+                        <br />
+                        <Button
+                          type="link"
+                          icon={<PlusOutlined />}
+                          onClick={handleAddTask}
+                          className="mt-2"
+                        >
+                          Add first task
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
+                  <div className="task-group-tasks">
+                    {groupTasks.map((task, index) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        projectId={projectId}
+                        groupId={group.id}
+                        currentGrouping={currentGrouping}
+                        isSelected={selectedTaskIds.includes(task.id)}
+                        index={index}
+                        onSelect={onSelectTask}
+                        onToggleSubtasks={onToggleSubtasks}
+                        fixedColumns={FIXED_COLUMNS}
+                        scrollableColumns={SCROLLABLE_COLUMNS}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              )}
 
+              {/* Add Task Row - Always show when not collapsed */}
+              <div className="task-group-add-task">
+                <AddTaskListRow groupId={group.id} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
       <style>{`
         .task-group {
           border: 1px solid var(--task-border-primary, #e8e8e8);
@@ -242,7 +259,6 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
           margin-bottom: 16px;
           background: var(--task-bg-primary, white);
           box-shadow: 0 1px 3px var(--task-shadow, rgba(0, 0, 0, 0.1));
-          overflow-x: auto;
           overflow-y: visible;
           transition: all 0.3s ease;
           position: relative;
@@ -258,14 +274,14 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         }
 
         .task-group-header-row {
-          display: inline-flex;
+          display: flex;
           height: auto;
           max-height: none;
           overflow: hidden;
         }
 
         .task-group-header-content {
-          display: inline-flex;
+          display: flex;
           align-items: center;
           padding: 8px 12px;
           border-radius: 6px 6px 0 0;
@@ -322,7 +338,6 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
           max-height: 40px;
           overflow: visible;
           position: relative;
-          min-width: 1200px; /* Ensure minimum width for all columns */
         }
 
         .task-table-header-cell {
@@ -387,11 +402,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         .task-table-fixed-columns {
           display: flex;
           background: var(--task-bg-secondary, #f5f5f5);
-          position: sticky;
-          left: 0;
-          z-index: 11;
           border-right: 2px solid var(--task-border-primary, #e8e8e8);
-          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
           transition: all 0.3s ease;
         }
 
@@ -445,6 +456,17 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
       `}</style>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Simplified comparison for better performance
+  return (
+    prevProps.group.id === nextProps.group.id &&
+    prevProps.group.taskIds.length === nextProps.group.taskIds.length &&
+    prevProps.group.collapsed === nextProps.group.collapsed &&
+    prevProps.selectedTaskIds.length === nextProps.selectedTaskIds.length &&
+    prevProps.currentGrouping === nextProps.currentGrouping
+  );
+});
+
+TaskGroup.displayName = 'TaskGroup';
 
 export default TaskGroup;

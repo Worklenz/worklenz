@@ -1,5 +1,8 @@
+import { InlineMember } from './teamMembers/inlineMember.types';
+
 export interface Task {
   id: string;
+  task_key: string;
   title: string;
   description?: string;
   status: 'todo' | 'doing' | 'done';
@@ -7,7 +10,8 @@ export interface Task {
   phase: string; // Custom phases like 'planning', 'development', 'testing', 'deployment'
   progress: number; // 0-100
   assignees: string[];
-  labels: string[];
+  assignee_names?: InlineMember[];
+  labels: Label[];
   dueDate?: string;
   timeTracking: {
     estimated?: number;
@@ -56,6 +60,8 @@ export interface Label {
   id: string;
   name: string;
   color: string;
+  end?: boolean;
+  names?: string[];
 }
 
 // Redux State Interfaces
@@ -64,6 +70,9 @@ export interface TaskManagementState {
   ids: string[];
   loading: boolean;
   error: string | null;
+  groups: TaskGroup[]; // Pre-processed groups from V3 API
+  grouping: string | null; // Current grouping from V3 API
+  selectedPriorities: string[]; // Selected priority filters
 }
 
 export interface TaskGroupsState {

@@ -31,7 +31,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
 import TaskListTable from '../task-list-table/task-list-table';
 import Collapsible from '@/components/collapsible/collapsible';
-import TaskListBulkActionsBar from '@/components/taskListCommon/task-list-bulk-actions-bar/task-list-bulk-actions-bar';
+
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 import { createPortal } from 'react-dom';
 
@@ -232,7 +232,7 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
         </Flex>
       </ConfigProvider>
 
-      {createPortal(<TaskListBulkActionsBar />, document.body, 'bulk-action-container')}
+      
       {createPortal(
         <TaskTemplateDrawer showDrawer={false} selectedTemplateId={''} onClose={() => {}} />,
         document.body,
