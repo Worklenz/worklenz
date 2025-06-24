@@ -1,0 +1,27 @@
+{
+  "title": "Als Vorlage speichern",
+  "templateName": "Vorlagenname",
+  "includes": "Was soll aus dem Projekt in die Vorlage aufgenommen werden?",
+  "includesOptions": {
+    "statuses": "Status",
+    "phases": "Phasen",
+    "labels": "Labels"
+  },
+  "taskIncludes": "Was soll aus den Aufgaben in die Vorlage aufgenommen werden?",
+  "taskIncludesOptions": {
+    "statuses": "Status",
+    "phases": "Phasen",
+    "labels": "Labels",
+    "name": "Name",
+    "priority": "Priorität",
+    "status": "Status",
+    "phase": "Phase",
+    "label": "Label",
+    "timeEstimate": "Zeitschätzung",
+    "description": "Beschreibung",
+    "subTasks": "Unteraufgaben"
+  },
+  "cancel": "Abbrechen",
+  "save": "Speichern",
+  "templateNamePlaceholder": "Vorlagennamen eingeben"
+}

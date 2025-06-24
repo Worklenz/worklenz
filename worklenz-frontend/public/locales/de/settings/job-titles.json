@@ -1,0 +1,20 @@
+{
+  "nameColumn": "Name",
+  "deleteConfirmationTitle": "Sind Sie sicher?",
+  "deleteConfirmationOk": "Ja",
+  "deleteConfirmationCancel": "Abbrechen",
+  "searchPlaceholder": "Nach Namen suchen",
+  "createJobTitleButton": "Jobtitel erstellen",
+  "pinTooltip": "Zum Anheften an das Hauptmenü klicken",
+  "createJobTitleDrawerTitle": "Jobtitel erstellen",
+  "updateJobTitleDrawerTitle": "Jobtitel aktualisieren",
+  "nameLabel": "Name",
+  "namePlaceholder": "Name",
+  "nameRequiredError": "Bitte geben Sie einen Namen ein",
+  "createButton": "Erstellen",
+  "updateButton": "Aktualisieren",
+  "createJobTitleSuccessMessage": "Jobtitel erfolgreich erstellt!",
+  "createJobTitleErrorMessage": "Erstellung des Jobtitels fehlgeschlagen!",
+  "updateJobTitleSuccessMessage": "Jobtitel erfolgreich aktualisiert!",
+  "updateJobTitleErrorMessage": "Aktualisierung des Jobtitels fehlgeschlagen!"
+}
