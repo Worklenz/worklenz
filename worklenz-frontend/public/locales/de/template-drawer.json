@@ -1,0 +1,19 @@
+{
+  "title": "Aufgabenvorlage bearbeiten",
+  "cancelText": "Abbrechen",
+  "saveText": "Speichern",
+  "templateNameText": "Vorlagenname",
+  "selectedTasks": "Ausgewählte Aufgaben",
+  "removeTask": "Entfernen",
+  "description": "Beschreibung",
+  "phase": "Phase",
+  "statuses": "Status",
+  "priorities": "Prioritäten",
+  "labels": "Labels",
+  "tasks": "Aufgaben",
+  "noTemplateSelected": "Keine Vorlage ausgewählt",
+  "noDescription": "Keine Beschreibung",
+  "worklenzTemplates": "Worklenz-Vorlagen",
+  "yourTemplatesLibrary": "Ihre Bibliothek",
+  "searchTemplates": "Vorlagen durchsuchen"
+}
