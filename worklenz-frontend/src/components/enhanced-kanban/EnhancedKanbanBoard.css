@@ -11,7 +11,7 @@
 .kanban-groups-container {
   display: flex;
   gap: 16px;
-  min-height: calc(100vh - 200px);
+  min-height: calc(100vh - 350px);
   padding-bottom: 16px;
 }
 

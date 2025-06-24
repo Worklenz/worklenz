@@ -440,6 +440,14 @@ const enhancedKanbanSlice = createSlice({
       }, {} as Record<string, ITaskListGroup>);
       state.columnOrder = reorderedGroups.map(group => group.id);
     },
+
+    addTaskToGroup: (state, action) => {
+      const { sectionId, task } = action.payload;
+      const group = state.taskGroups.find(g => g.id === sectionId);
+      if (group) {
+        group.tasks.push(task);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -528,6 +536,7 @@ export const {
   resetState,
   reorderTasks,
   reorderGroups,
+  addTaskToGroup,
 } = enhancedKanbanSlice.actions;
 
 export default enhancedKanbanSlice.reducer; 
