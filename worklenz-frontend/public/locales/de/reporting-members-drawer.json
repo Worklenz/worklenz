@@ -1,0 +1,90 @@
+{
+  "exportButton": "Exportieren",
+  "timeLogsButton": "Zeiterfassungen",
+  "activityLogsButton": "Aktivitätsprotokolle",
+  "tasksButton": "Aufgaben",
+  "searchByNameInputPlaceholder": "Nach Namen suchen",
+
+  "overviewTab": "Übersicht",
+  "timeLogsTab": "Zeiterfassungen",
+  "activityLogsTab": "Aktivitätsprotokolle",
+  "tasksTab": "Aufgaben",
+
+  "projectsText": "Projekte",
+  "totalTasksText": "Gesamtaufgaben",
+  "assignedTasksText": "Zugewiesene Aufgaben",
+  "completedTasksText": "Abgeschlossene Aufgaben",
+  "ongoingTasksText": "Laufende Aufgaben",
+  "overdueTasksText": "Überfällige Aufgaben",
+  "loggedHoursText": "Erfasste Stunden",
+
+  "tasksText": "Aufgaben",
+  "allText": "Alle",
+
+  "tasksByProjectsText": "Aufgaben nach Projekten",
+  "tasksByStatusText": "Aufgaben nach Status",
+  "tasksByPriorityText": "Aufgaben nach Priorität",
+
+  "todoText": "Zu erledigen",
+  "doingText": "Tun",
+  "doneText": "Erledigt",
+  "lowText": "Niedrig",
+  "mediumText": "Mittel",
+  "highText": "Hoch",
+
+  "billableButton": "Abrechenbar",
+  "billableText": "Abrechenbar",
+  "nonBillableText": "Nicht abrechenbar",
+
+  "timeLogsEmptyPlaceholder": "Keine Zeiterfassungen vorhanden",
+  "loggedText": "Erfasst",
+  "forText": "für",
+  "inText": "in",
+  "updatedText": "Aktualisiert",
+  "fromText": "Von",
+  "toText": "bis",
+  "withinText": "innerhalb",
+
+  "activityLogsEmptyPlaceholder": "Keine Aktivitätsprotokolle vorhanden",
+
+  "filterByText": "Filtern nach:",
+  "selectProjectPlaceholder": "Projekt auswählen",
+
+  "taskColumn": "Aufgabe",
+  "nameColumn": "Name",
+  "projectColumn": "Projekt",
+  "statusColumn": "Status",
+  "priorityColumn": "Priorität",
+  "dueDateColumn": "Fälligkeitsdatum",
+  "completedDateColumn": "Abschlussdatum",
+  "estimatedTimeColumn": "Geschätzte Zeit",
+  "loggedTimeColumn": "Erfasste Zeit",
+  "overloggedTimeColumn": "Übererfasste Zeit",
+  "daysLeftColumn": "Tage übrig/überfällig",
+  "startDateColumn": "Startdatum",
+  "endDateColumn": "Enddatum",
+  "actualTimeColumn": "Tatsächliche Zeit",
+  "projectHealthColumn": "Projektstatus",
+  "categoryColumn": "Kategorie",
+  "projectManagerColumn": "Projektleiter",
+
+  "tasksStatsOverviewDrawerTitle": "Aufgaben von",
+  "projectsStatsOverviewDrawerTitle": "Projekte von",
+
+  "cancelledText": "Abgebrochen",
+  "blockedText": "Blockiert",
+  "onHoldText": "Pausiert",
+  "proposedText": "Vorgeschlagen",
+  "inPlanningText": "In Planung",
+  "inProgressText": "In Bearbeitung",
+  "completedText": "Abgeschlossen",
+  "continuousText": "Kontinuierlich",
+
+  "daysLeftText": "Tage übrig",
+  "daysOverdueText": "Tage überfällig",
+
+  "notSetText": "Nicht festgelegt",
+  "needsAttentionText": "Benötigt Aufmerksamkeit",
+  "atRiskText": "Gefährdet",
+  "goodText": "Gut"
+}
