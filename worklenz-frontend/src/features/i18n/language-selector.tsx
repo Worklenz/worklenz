@@ -16,6 +16,7 @@ const LanguageSelector = () => {
     { key: 'es', label: 'Español' },
     { key: 'pt', label: 'Português' },
     { key: 'alb', label: 'Shqip' },
+    { key: 'de', label: 'Deutsch' },
   ];
 
   const languageLabels = {
@@ -23,6 +24,7 @@ const LanguageSelector = () => {
     es: 'Es',
     pt: 'Pt',
     alb: 'Sq',
+    de: 'de',
   };
 
   return (
