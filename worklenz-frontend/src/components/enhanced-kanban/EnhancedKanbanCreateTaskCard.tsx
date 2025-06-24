@@ -9,8 +9,8 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { ITaskCreateRequest } from '@/types/tasks/task-create-request';
 import { addTaskToGroup } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
 
 interface EnhancedKanbanCreateTaskCardProps {
   sectionId: string;
@@ -97,12 +97,12 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
       style={{
         width: '100%',
         padding: 12,
-        backgroundColor: themeWiseColor('#292929', '#fafafa', themeMode),
+        backgroundColor: themeWiseColor('#fafafa', '#292929', themeMode),
         borderRadius: 6,
         cursor: 'pointer',
         overflow: 'hidden',
       }}
-      className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline`}
+      className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)}`}
     >
       <Input
         ref={inputRef}
