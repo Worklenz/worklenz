@@ -80,6 +80,9 @@ interface ITaskState {
   convertToSubtaskDrawerOpen: boolean;
   customColumns: ITaskListColumn[];
   customColumnValues: Record<string, Record<string, any>>;
+  allTasks: IProjectTask[];
+  grouping: string;
+  totalTasks: number;
 }
 
 const initialState: ITaskState = {
@@ -105,6 +108,9 @@ const initialState: ITaskState = {
   convertToSubtaskDrawerOpen: false,
   customColumns: [],
   customColumnValues: {},
+  allTasks: [],
+  grouping: '',
+  totalTasks: 0,
 };
 
 export const COLUMN_KEYS = {
@@ -165,7 +171,7 @@ export const fetchTaskGroups = createAsyncThunk(
         priorities: taskReducer.priorities.join(' '),
       };
 
-      const response = await tasksApiService.getTaskList(config);
+      const response = await tasksApiService.getTaskListV3(config);
       return response.body;
     } catch (error) {
       logger.error('Fetch Task Groups', error);
@@ -234,9 +240,9 @@ export const fetchSubTasks = createAsyncThunk(
       parent_task: taskId,
     };
     try {
-      const response = await tasksApiService.getTaskList(config);
+      const response = await tasksApiService.getTaskListV3(config);
       // Only expand if we actually fetched subtasks
-      if (response.body.length > 0) {
+      if (response.body && response.body.groups && response.body.groups.length > 0) {
         dispatch(toggleTaskRowExpansion(taskId));
       }
       return response.body;
@@ -1026,7 +1032,10 @@ const taskSlice = createSlice({
       })
       .addCase(fetchTaskGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
-        state.taskGroups = action.payload;
+        state.taskGroups = action.payload && action.payload.groups ? action.payload.groups : [];
+        state.allTasks = action.payload && action.payload.allTasks ? action.payload.allTasks : [];
+        state.grouping = action.payload && action.payload.grouping ? action.payload.grouping : '';
+        state.totalTasks = action.payload && action.payload.totalTasks ? action.payload.totalTasks : 0;
       })
       .addCase(fetchTaskGroups.rejected, (state, action) => {
         state.loadingGroups = false;
@@ -1035,14 +1044,16 @@ const taskSlice = createSlice({
       .addCase(fetchSubTasks.pending, state => {
         state.error = null;
       })
-      .addCase(fetchSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[]>) => {
-        if (action.payload.length > 0) {
-          const taskId = action.payload[0].parent_task_id;
+      .addCase(fetchSubTasks.fulfilled, (state, action) => {
+        if (action.payload && action.payload.groups && action.payload.groups.length > 0) {
+          // Assuming subtasks are in the first group for this context
+          const subtasks = action.payload.groups[0].tasks;
+          const taskId = subtasks.length > 0 ? subtasks[0].parent_task_id : null;
           if (taskId) {
             for (const group of state.taskGroups) {
               const task = group.tasks.find(t => t.id === taskId);
               if (task) {
-                task.sub_tasks = action.payload;
+                task.sub_tasks = subtasks;
                 task.show_sub_tasks = true;
                 break;
               }

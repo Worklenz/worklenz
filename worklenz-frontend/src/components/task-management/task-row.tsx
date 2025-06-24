@@ -1,34 +1,51 @@
-import React from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useSelector } from 'react-redux';
-import { Checkbox, Avatar, Tag, Progress, Typography, Space, Button, Tooltip } from 'antd';
+import { Input, Typography } from 'antd';
+import type { InputRef } from 'antd';
 import {
   HolderOutlined,
-  EyeOutlined,
   MessageOutlined,
   PaperClipOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { IGroupBy, COLUMN_KEYS } from '@/features/tasks/tasks.slice';
+import { Task } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
-
-const { Text } = Typography;
+import { AssigneeSelector, Avatar, AvatarGroup, Button, Checkbox, CustomColordLabel, CustomNumberLabel, LabelsSelector, Progress, Tag, Tooltip } from '@/components';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 interface TaskRowProps {
-  task: IProjectTask;
+  task: Task;
   projectId: string;
   groupId: string;
-  currentGrouping: IGroupBy;
+  currentGrouping: 'status' | 'priority' | 'phase';
   isSelected: boolean;
   isDragOverlay?: boolean;
   index?: number;
   onSelect?: (taskId: string, selected: boolean) => void;
   onToggleSubtasks?: (taskId: string) => void;
+  columns?: Array<{ key: string; label: string; width: number; fixed?: boolean }>;
+  fixedColumns?: Array<{ key: string; label: string; width: number; fixed?: boolean }>;
+  scrollableColumns?: Array<{ key: string; label: string; width: number; fixed?: boolean }>;
 }
 
-const TaskRow: React.FC<TaskRowProps> = ({
+// Priority and status colors - moved outside component to avoid recreation
+const PRIORITY_COLORS = {
+  critical: '#ff4d4f',
+  high: '#ff7a45',
+  medium: '#faad14',
+  low: '#52c41a',
+} as const;
+
+const STATUS_COLORS = {
+  todo: '#f0f0f0',
+  doing: '#1890ff',
+  done: '#52c41a',
+} as const;
+
+const TaskRow: React.FC<TaskRowProps> = React.memo(({
   task,
   projectId,
   groupId,
@@ -38,7 +55,18 @@ const TaskRow: React.FC<TaskRowProps> = ({
   index,
   onSelect,
   onToggleSubtasks,
+  columns,
+  fixedColumns,
+  scrollableColumns,
 }) => {
+  const { socket, connected } = useSocket();
+  
+  // Edit task name state
+  const [editTaskName, setEditTaskName] = useState(false);
+  const [taskName, setTaskName] = useState(task.title || '');
+  const inputRef = useRef<InputRef>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   const {
     attributes,
     listeners,
@@ -47,7 +75,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
     transition,
     isDragging,
   } = useSortable({
-    id: task.id!,
+    id: task.id,
     data: {
       type: 'task',
       taskId: task.id,
@@ -56,33 +84,135 @@ const TaskRow: React.FC<TaskRowProps> = ({
     disabled: isDragOverlay,
   });
 
-  // Get column visibility from Redux store
-  const columns = useSelector((state: RootState) => state.taskReducer.columns);
-  
-  // Helper function to check if a column is visible
-  const isColumnVisible = (columnKey: string) => {
-    const column = columns.find(col => col.key === columnKey);
-    return column ? column.pinned : true; // Default to visible if column not found
-  };
+  // Get theme from Redux store
+  const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
-  const style = {
+  // Click outside detection for edit mode
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        handleTaskNameSave();
+      }
+    };
+
+    if (editTaskName) {
+      document.addEventListener('mousedown', handleClickOutside);
+      inputRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editTaskName]);
+
+  // Handle task name save
+  const handleTaskNameSave = useCallback(() => {
+    const newTaskName = inputRef.current?.input?.value;
+    if (newTaskName?.trim() !== '' && connected && newTaskName !== task.title) {
+      socket?.emit(
+        SocketEvents.TASK_NAME_CHANGE.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          name: newTaskName,
+          parent_task: null, // Assuming top-level tasks for now
+        })
+      );
+    }
+    setEditTaskName(false);
+  }, [connected, socket, task.id, task.title]);
+
+  // Memoize style calculations - simplified
+  const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
+  }), [transform, transition, isDragging]);
 
-  const handleSelectChange = (checked: boolean) => {
-    onSelect?.(task.id!, checked);
-  };
+  // Memoize event handlers to prevent unnecessary re-renders
+  const handleSelectChange = useCallback((checked: boolean) => {
+    onSelect?.(task.id, checked);
+  }, [onSelect, task.id]);
 
-  const handleToggleSubtasks = () => {
-    onToggleSubtasks?.(task.id!);
-  };
+  const handleToggleSubtasks = useCallback(() => {
+    onToggleSubtasks?.(task.id);
+  }, [onToggleSubtasks, task.id]);
 
-  // Format due date
-  const formatDueDate = (dateString?: string) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
+  // Memoize assignees for AvatarGroup to prevent unnecessary re-renders
+  const avatarGroupMembers = useMemo(() => {
+    return task.assignee_names || [];
+  }, [task.assignee_names]);
+
+  // Simplified class name calculations
+  const containerClasses = useMemo(() => {
+    const baseClasses = 'border-b transition-all duration-300';
+    const themeClasses = isDarkMode 
+      ? 'border-gray-700 bg-gray-900 hover:bg-gray-800' 
+      : 'border-gray-200 bg-white hover:bg-gray-50';
+    const selectedClasses = isSelected 
+      ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50')
+      : '';
+    const overlayClasses = isDragOverlay 
+      ? `rounded shadow-lg border-2 ${isDarkMode ? 'bg-gray-900 border-gray-600 shadow-2xl' : 'bg-white border-gray-300 shadow-2xl'}`
+      : '';
+    return `${baseClasses} ${themeClasses} ${selectedClasses} ${overlayClasses}`;
+  }, [isDarkMode, isSelected, isDragOverlay]);
+
+  const fixedColumnsClasses = useMemo(() => 
+    `flex sticky left-0 z-10 border-r-2 shadow-sm ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`,
+    [isDarkMode]
+  );
+
+  const taskNameClasses = useMemo(() => {
+    const baseClasses = 'text-sm font-medium flex-1 overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-300 cursor-pointer';
+    const themeClasses = isDarkMode ? 'text-gray-100 hover:text-blue-400' : 'text-gray-900 hover:text-blue-600';
+    const completedClasses = task.progress === 100 
+      ? `line-through ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}` 
+      : '';
+    
+    return `${baseClasses} ${themeClasses} ${completedClasses}`;
+  }, [isDarkMode, task.progress]);
+
+  // Get colors - using constants for better performance
+  const getPriorityColor = useCallback((priority: string) => 
+    PRIORITY_COLORS[priority as keyof typeof PRIORITY_COLORS] || '#d9d9d9', []);
+  
+  const getStatusColor = useCallback((status: string) => 
+    STATUS_COLORS[status as keyof typeof STATUS_COLORS] || '#d9d9d9', []);
+
+  // Create adapter for LabelsSelector - memoized
+  const taskAdapter = useMemo(() => ({
+    id: task.id,
+    name: task.title,
+    parent_task_id: null,
+    all_labels: task.labels?.map(label => ({ 
+      id: label.id, 
+      name: label.name,
+      color_code: label.color 
+    })) || [],
+    labels: task.labels?.map(label => ({ 
+      id: label.id, 
+      name: label.name,
+      color_code: label.color 
+    })) || [],
+  } as any), [task.id, task.title, task.labels]);
+
+  // Create adapter for AssigneeSelector - memoized
+  const taskAdapterForAssignee = useMemo(() => ({
+    id: task.id,
+    name: task.title,
+    parent_task_id: null,
+    assignees: task.assignee_names?.map(member => ({
+      team_member_id: member.team_member_id,
+      id: member.team_member_id,
+      project_member_id: member.team_member_id,
+      name: member.name,
+    })) || [],
+  } as any), [task.id, task.title, task.assignee_names]);
+
+  // Memoize due date calculation
+  const dueDate = useMemo(() => {
+    if (!task.dueDate) return null;
+    const date = new Date(task.dueDate);
     const now = new Date();
     const diffTime = date.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -96,557 +226,238 @@ const TaskRow: React.FC<TaskRowProps> = ({
     } else {
       return { text: `Due ${date.toLocaleDateString()}`, color: 'default' };
     }
-  };
-
-  const dueDate = formatDueDate(task.end_date);
+  }, [task.dueDate]);
 
   return (
-    <>
-      <div
-        ref={setNodeRef}
-        style={style}
-        className={`task-row ${isSelected ? 'task-row-selected' : ''} ${isDragOverlay ? 'task-row-drag-overlay' : ''}`}
-      >
-        <div className="task-row-content">
-          {/* Fixed Columns */}
-          <div className="task-table-fixed-columns">
-            {/* Drag Handle */}
-            <div className="task-table-cell task-table-cell-drag" style={{ width: '40px' }}>
-              <Button
-                type="text"
-                size="small"
-                icon={<HolderOutlined />}
-                className="drag-handle opacity-40 hover:opacity-100 cursor-grab active:cursor-grabbing"
-                {...attributes}
-                {...listeners}
-              />
-            </div>
-
-            {/* Selection Checkbox */}
-            <div className="task-table-cell task-table-cell-checkbox" style={{ width: '40px' }}>
-              <Checkbox
-                checked={isSelected}
-                onChange={(e) => handleSelectChange(e.target.checked)}
-              />
-            </div>
-
-            {/* Task Key */}
-            <div className="task-table-cell task-table-cell-key" style={{ width: '80px' }}>
-              {task.project_id && task.task_key && (
-                <Text code className="task-key">
-                  {task.task_key}
-                </Text>
-              )}
-            </div>
-
-            {/* Task Name */}
-            <div className="task-table-cell task-table-cell-task" style={{ width: '475px' }}>
-              <div className="task-content">
-                <div className="task-header">
-                  <Text
-                    strong
-                    className={`task-name ${task.complete_ratio === 100 ? 'task-completed' : ''}`}
-                  >
-                    {task.name}
-                  </Text>
-                  {task.sub_tasks_count && task.sub_tasks_count > 0 && (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={containerClasses}
+    >
+      <div className="flex h-10 max-h-10 overflow-visible relative">
+        {/* Fixed Columns */}
+        <div
+          className="fixed-columns-row"
+          style={{
+            display: 'flex',
+            background: isDarkMode ? '#1a1a1a' : '#fff',
+            width: fixedColumns?.reduce((sum, col) => sum + col.width, 0) || 0,
+          }}
+        >
+          {fixedColumns?.map(col => {
+            switch (col.key) {
+              case 'drag':
+                return (
+                  <div key={col.key} className="w-10 flex items-center justify-center px-2 border-r" style={{ width: col.width }}>
                     <Button
-                      type="text"
+                      variant="text"
                       size="small"
-                      onClick={handleToggleSubtasks}
-                      className="subtask-toggle"
+                      icon={<HolderOutlined />}
+                      className="opacity-40 hover:opacity-100 cursor-grab active:cursor-grabbing"
+                      isDarkMode={isDarkMode}
+                      {...attributes}
+                      {...listeners}
+                    />
+                  </div>
+                );
+              case 'select':
+                return (
+                  <div key={col.key} className="w-10 flex items-center justify-center px-2 border-r" style={{ width: col.width }}>
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={handleSelectChange}
+                      isDarkMode={isDarkMode}
+                    />
+                  </div>
+                );
+              case 'key':
+                return (
+                  <div key={col.key} className="w-20 flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <Tag 
+                      backgroundColor={isDarkMode ? "#374151" : "#f0f0f0"} 
+                      color={isDarkMode ? "#d1d5db" : "#666"}
+                      className="truncate whitespace-nowrap max-w-full"
                     >
-                      {task.show_sub_tasks ? '−' : '+'} {task.sub_tasks_count}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Scrollable Columns */}
-          <div className="task-table-scrollable-columns">
-            {/* Progress */}
-            {isColumnVisible(COLUMN_KEYS.PROGRESS) && (
-              <div className="task-table-cell" style={{ width: '90px' }}>
-                {task.complete_ratio !== undefined && task.complete_ratio >= 0 && (
-                  <div className="task-progress">
-                    <Progress
-                      type="circle"
-                      percent={task.complete_ratio}
-                      size={32}
-                      strokeColor={task.complete_ratio === 100 ? '#52c41a' : '#1890ff'}
-                      strokeWidth={4}
-                      showInfo={true}
-                      format={(percent) => <span style={{ fontSize: '10px', fontWeight: '500' }}>{percent}%</span>}
-                    />
+                      {task.task_key}
+                    </Tag>
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Members */}
-            {isColumnVisible(COLUMN_KEYS.ASSIGNEES) && (
-              <div className="task-table-cell" style={{ width: '150px' }}>
-                {task.assignees && task.assignees.length > 0 && (
-                  <Avatar.Group size="small" maxCount={3}>
-                    {task.assignees.map((assignee) => (
-                      <Tooltip key={assignee.id} title={assignee.name}>
-                        <Avatar
-                          size="small"
-                        >
-                          {assignee.name?.charAt(0)?.toUpperCase()}
-                        </Avatar>
-                      </Tooltip>
-                    ))}
-                  </Avatar.Group>
-                )}
-              </div>
-            )}
-
-            {/* Labels */}
-            {isColumnVisible(COLUMN_KEYS.LABELS) && (
-              <div className="task-table-cell" style={{ width: '150px' }}>
-                {task.labels && task.labels.length > 0 && (
-                  <div className="task-labels-column">
-                    {task.labels.slice(0, 3).map((label) => (
-                      <Tag
-                        key={label.id}
-                        className="task-label"
-                        style={{ 
-                          backgroundColor: label.color_code,
-                          border: 'none',
-                          color: 'white',
-                        }}
-                      >
-                        {label.name}
-                      </Tag>
-                    ))}
-                    {task.labels.length > 3 && (
-                      <Text type="secondary" className="task-labels-more">
-                        +{task.labels.length - 3}
-                      </Text>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Status */}
-            {isColumnVisible(COLUMN_KEYS.STATUS) && (
-              <div className="task-table-cell" style={{ width: '100px' }}>
-                {task.status_name && (
-                  <div 
-                    className="task-status"
-                    style={{ 
-                      backgroundColor: task.status_color,
-                      color: 'white',
-                    }}
-                  >
-                    {task.status_name}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Priority */}
-            {isColumnVisible(COLUMN_KEYS.PRIORITY) && (
-              <div className="task-table-cell" style={{ width: '100px' }}>
-                {task.priority_name && (
-                  <div className="task-priority">
-                    <div
-                      className="task-priority-indicator"
-                      style={{ backgroundColor: task.priority_color }}
-                    />
-                    <Text className="task-priority-text">{task.priority_name}</Text>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Time Tracking */}
-            {isColumnVisible(COLUMN_KEYS.TIME_TRACKING) && (
-              <div className="task-table-cell" style={{ width: '120px' }}>
-                <div className="task-time-tracking">
-                  {task.time_spent_string && (
-                    <div className="task-time-spent">
-                      <ClockCircleOutlined className="task-time-icon" />
-                      <Text className="task-time-text">{task.time_spent_string}</Text>
+                );
+              case 'task':
+                return (
+                  <div key={col.key} className="flex items-center px-2" style={{ width: col.width }}>
+                    <div className="flex-1 min-w-0 flex flex-col justify-center h-full overflow-hidden">
+                      <div className="flex items-center gap-2 h-5 overflow-hidden">
+                        <div ref={wrapperRef} className="flex-1 min-w-0">
+                          {!editTaskName ? (
+                            <Typography.Text
+                              ellipsis={{ tooltip: task.title }}
+                              onClick={() => setEditTaskName(true)}
+                              className={taskNameClasses}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {task.title}
+                            </Typography.Text>
+                          ) : (
+                            <Input
+                              ref={inputRef}
+                              variant="borderless"
+                              value={taskName}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTaskName(e.target.value)}
+                              onPressEnter={handleTaskNameSave}
+                              className={`${isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
+                              style={{
+                                width: '100%',
+                                padding: '2px 4px',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  {/* Task Indicators */}
-                  <div className="task-indicators">
-                    {task.comments_count && task.comments_count > 0 && (
-                      <div className="task-indicator">
-                        <MessageOutlined />
-                        <span>{task.comments_count}</span>
-                      </div>
-                    )}
-                    {task.attachments_count && task.attachments_count > 0 && (
-                      <div className="task-indicator">
-                        <PaperClipOutlined />
-                        <span>{task.attachments_count}</span>
-                      </div>
+                  </div>
+                );
+              default:
+                return null;
+            }
+          })}
+        </div>
+        {/* Scrollable Columns */}
+        <div className="scrollable-columns-row" style={{ display: 'flex', minWidth: scrollableColumns?.reduce((sum, col) => sum + col.width, 0) || 0 }}>
+          {scrollableColumns?.map(col => {
+            switch (col.key) {
+              case 'progress':
+                return (
+                  <div key={col.key} className="flex items-center justify-center px-2 border-r" style={{ width: col.width }}>
+                    {task.progress !== undefined && task.progress >= 0 && (
+                      <Progress
+                        type="circle"
+                        percent={task.progress}
+                        size={24}
+                        strokeColor={task.progress === 100 ? '#52c41a' : '#1890ff'}
+                        strokeWidth={2}
+                        showInfo={true}
+                        isDarkMode={isDarkMode}
+                      />
                     )}
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
+                );
+              case 'members':
+                return (
+                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <div className="flex items-center gap-2">
+                      {avatarGroupMembers.length > 0 && (
+                        <AvatarGroup
+                          members={avatarGroupMembers}
+                          size={24}
+                          maxCount={3}
+                          isDarkMode={isDarkMode}
+                        />
+                      )}
+                      <AssigneeSelector
+                        task={taskAdapterForAssignee}
+                        groupId={groupId}
+                        isDarkMode={isDarkMode}
+                      />
+                    </div>
+                  </div>
+                );
+              case 'labels':
+                return (
+                  <div key={col.key} className="max-w-[200px] flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <div className="flex items-center gap-1 flex-wrap h-full w-full overflow-visible relative">
+                      {task.labels?.map((label, index) => (
+                        label.end && label.names && label.name ? (
+                          <CustomNumberLabel 
+                            key={`${label.id}-${index}`} 
+                            labelList={label.names} 
+                            namesString={label.name}
+                            isDarkMode={isDarkMode}
+                          />
+                        ) : (
+                          <CustomColordLabel 
+                            key={`${label.id}-${index}`} 
+                            label={label}
+                            isDarkMode={isDarkMode}
+                          />
+                        )
+                      ))}
+                      <LabelsSelector
+                        task={taskAdapter}
+                        isDarkMode={isDarkMode}
+                      />
+                    </div>
+                  </div>
+                );
+              case 'status':
+                return (
+                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <Tag
+                      backgroundColor={getStatusColor(task.status)}
+                      color="white"
+                      className="text-xs font-medium uppercase"
+                    >
+                      {task.status}
+                    </Tag>
+                  </div>
+                );
+              case 'priority':
+                return (
+                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getPriorityColor(task.priority) }}
+                      />
+                      <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {task.priority}
+                      </span>
+                    </div>
+                  </div>
+                );
+              case 'timeTracking':
+                return (
+                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                    <div className="flex items-center gap-2 h-full overflow-hidden">
+                      {task.timeTracking?.logged && task.timeTracking.logged > 0 && (
+                        <div className="flex items-center gap-1">
+                          <ClockCircleOutlined className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                          <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {typeof task.timeTracking.logged === 'number' 
+                              ? `${task.timeTracking.logged}h`
+                              : task.timeTracking.logged
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              default:
+                return null;
+            }
+          })}
         </div>
       </div>
-
-      {/* Subtasks */}
-      {task.show_sub_tasks && task.sub_tasks && task.sub_tasks.length > 0 && (
-        <div className="task-subtasks">
-          {task.sub_tasks.map((subtask) => (
-            <TaskRow
-              key={subtask.id}
-              task={subtask}
-              projectId={projectId}
-              groupId={groupId}
-              currentGrouping={currentGrouping}
-              isSelected={isSelected}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
-      )}
-
-      <style>{`
-        .task-row {
-          border-bottom: 1px solid var(--task-border-secondary, #f0f0f0);
-          background: var(--task-bg-primary, white);
-          transition: all 0.3s ease;
-        }
-
-        .task-row:hover {
-          background-color: var(--task-hover-bg, #fafafa);
-        }
-
-        .task-row-selected {
-          background-color: var(--task-selected-bg, #e6f7ff);
-          border-left: 3px solid var(--task-selected-border, #1890ff);
-        }
-
-        .task-row-drag-overlay {
-          background: var(--task-bg-primary, white);
-          border: 1px solid var(--task-border-tertiary, #d9d9d9);
-          border-radius: 4px;
-          box-shadow: 0 4px 12px var(--task-shadow, rgba(0, 0, 0, 0.15));
-        }
-
-        .task-row-content {
-          display: flex;
-          height: 40px;
-          max-height: 40px;
-          overflow: visible;
-          position: relative;
-          min-width: 1200px; /* Ensure minimum width for all columns */
-        }
-
-        .task-table-fixed-columns {
-          display: flex;
-          background: var(--task-bg-primary, white);
-          position: sticky;
-          left: 0;
-          z-index: 10;
-          border-right: 2px solid var(--task-border-primary, #e8e8e8);
-          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-          transition: all 0.3s ease;
-        }
-
-        .task-table-scrollable-columns {
-          display: flex;
-          flex: 1;
-          min-width: 0;
-        }
-
-        .task-table-cell {
-          display: flex;
-          align-items: center;
-          padding: 0 8px;
-          border-right: 1px solid var(--task-border-secondary, #f0f0f0);
-          font-size: 12px;
-          white-space: nowrap;
-          height: 40px;
-          max-height: 40px;
-          min-height: 40px;
-          overflow: hidden;
-          color: var(--task-text-primary, #262626);
-          transition: all 0.3s ease;
-        }
-
-        .task-table-cell:last-child {
-          border-right: none;
-        }
-
-        .task-content {
-          flex: 1;
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          height: 100%;
-          overflow: hidden;
-        }
-
-        .task-header {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          margin-bottom: 1px;
-          height: 20px;
-          overflow: hidden;
-        }
-
-        .task-key {
-          font-size: 10px;
-          color: var(--task-text-tertiary, #666);
-          background: var(--task-bg-secondary, #f0f0f0);
-          padding: 1px 4px;
-          border-radius: 2px;
-          transition: all 0.3s ease;
-        }
-
-        .task-name {
-          font-size: 14px;
-          font-weight: 500;
-          color: var(--task-text-primary, #262626);
-          flex: 1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          transition: color 0.3s ease;
-        }
-
-        .task-completed {
-          text-decoration: line-through;
-          color: var(--task-text-tertiary, #8c8c8c);
-        }
-
-        .subtask-toggle {
-          font-size: 10px;
-          color: var(--task-text-tertiary, #666);
-          padding: 0 4px;
-          height: 16px;
-          line-height: 16px;
-          transition: color 0.3s ease;
-        }
-
-        .task-labels {
-          display: flex;
-          gap: 2px;
-          flex-wrap: nowrap;
-          overflow: hidden;
-          height: 18px;
-          align-items: center;
-        }
-
-        .task-label {
-          font-size: 10px;
-          padding: 0 4px;
-          height: 16px;
-          line-height: 16px;
-          border-radius: 2px;
-          margin: 0;
-        }
-
-        .task-label-small {
-          font-size: 9px;
-          padding: 0 3px;
-          height: 14px;
-          line-height: 14px;
-          border-radius: 2px;
-          margin: 0;
-        }
-
-        .task-labels-more {
-          font-size: 10px;
-          color: var(--task-text-tertiary, #8c8c8c);
-          transition: color 0.3s ease;
-        }
-
-        .task-progress {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 100%;
-          height: 100%;
-        }
-
-        .task-progress .ant-progress {
-          flex: 0 0 auto;
-        }
-
-        .task-progress-text {
-          font-size: 10px;
-          color: var(--task-text-tertiary, #666);
-          min-width: 24px;
-          transition: color 0.3s ease;
-        }
-
-        .task-labels-column {
-          display: flex;
-          gap: 2px;
-          flex-wrap: nowrap;
-          overflow: hidden;
-          height: 100%;
-          align-items: center;
-        }
-
-        .task-status {
-          font-size: 10px;
-          padding: 2px 6px;
-          border-radius: 2px;
-          font-weight: 500;
-          text-transform: uppercase;
-        }
-
-        .task-priority {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .task-priority-indicator {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-        }
-
-        .task-priority-text {
-          font-size: 11px;
-          color: var(--task-text-tertiary, #666);
-          transition: color 0.3s ease;
-        }
-
-        .task-time-tracking {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          height: 100%;
-          overflow: hidden;
-        }
-
-        .task-time-spent {
-          display: flex;
-          align-items: center;
-          gap: 2px;
-        }
-
-        .task-time-icon {
-          font-size: 10px;
-          color: var(--task-text-tertiary, #8c8c8c);
-          transition: color 0.3s ease;
-        }
-
-        .task-time-text {
-          font-size: 10px;
-          color: var(--task-text-tertiary, #666);
-          transition: color 0.3s ease;
-        }
-
-        .task-indicators {
-          display: flex;
-          gap: 6px;
-        }
-
-        .task-indicator {
-          display: flex;
-          align-items: center;
-          gap: 2px;
-          font-size: 10px;
-          color: var(--task-text-tertiary, #8c8c8c);
-          transition: color 0.3s ease;
-        }
-
-        .task-subtasks {
-          margin-left: 40px;
-          border-left: 2px solid var(--task-border-secondary, #f0f0f0);
-          transition: border-color 0.3s ease;
-        }
-
-        .drag-handle {
-          opacity: 0.4;
-          transition: opacity 0.2s;
-        }
-
-        .drag-handle:hover {
-          opacity: 1;
-        }
-
-        /* Ensure buttons and components fit within row height */
-        .task-row .ant-btn {
-          height: auto;
-          max-height: 24px;
-          padding: 0 4px;
-          line-height: 1.2;
-        }
-
-        .task-row .ant-checkbox-wrapper {
-          height: 24px;
-          align-items: center;
-        }
-
-        .task-row .ant-avatar-group {
-          height: 24px;
-          align-items: center;
-        }
-
-        .task-row .ant-avatar {
-          width: 24px !important;
-          height: 24px !important;
-          line-height: 24px !important;
-          font-size: 10px !important;
-        }
-
-        .task-row .ant-tag {
-          margin: 0;
-          padding: 0 4px;
-          height: 16px;
-          line-height: 16px;
-          border-radius: 2px;
-        }
-
-        .task-row .ant-progress {
-          margin: 0;
-          line-height: 1;
-        }
-
-        .task-row .ant-progress-line {
-          height: 6px !important;
-        }
-
-        .task-row .ant-progress-bg {
-          height: 6px !important;
-        }
-
-        /* Dark mode specific adjustments for Ant Design components */
-        .dark .task-row .ant-progress-bg,
-        [data-theme="dark"] .task-row .ant-progress-bg {
-          background-color: var(--task-border-primary, #303030) !important;
-        }
-
-        .dark .task-row .ant-checkbox-wrapper,
-        [data-theme="dark"] .task-row .ant-checkbox-wrapper {
-          color: var(--task-text-primary, #ffffff);
-        }
-
-        .dark .task-row .ant-btn,
-        [data-theme="dark"] .task-row .ant-btn {
-          color: var(--task-text-secondary, #d9d9d9);
-          border-color: transparent;
-        }
-
-        .dark .task-row .ant-btn:hover,
-        [data-theme="dark"] .task-row .ant-btn:hover {
-          color: var(--task-text-primary, #ffffff);
-          background-color: var(--task-hover-bg, #2a2a2a);
-        }
-      `}</style>
-    </>
+    </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Simplified comparison for better performance
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.title === nextProps.task.title &&
+    prevProps.task.progress === nextProps.task.progress &&
+    prevProps.task.status === nextProps.task.status &&
+    prevProps.task.priority === nextProps.task.priority &&
+    prevProps.task.labels?.length === nextProps.task.labels?.length &&
+    prevProps.task.assignee_names?.length === nextProps.task.assignee_names?.length &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isDragOverlay === nextProps.isDragOverlay &&
+    prevProps.groupId === nextProps.groupId
+  );
+});
+
+TaskRow.displayName = 'TaskRow';
 
 export default TaskRow; 
