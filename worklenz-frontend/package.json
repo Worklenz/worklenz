@@ -53,6 +53,7 @@
     "react-router-dom": "^6.28.1",
     "react-timer-hook": "^3.0.8",
     "react-window": "^1.8.11",
+    "react-window-infinite-loader": "^1.0.10",
     "socket.io-client": "^4.8.1",
     "tinymce": "^7.7.2",
     "web-vitals": "^4.2.4",

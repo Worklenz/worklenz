@@ -1,0 +1,60 @@
+.virtualized-task-list {
+  background: transparent;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.virtualized-task-row {
+  padding: 4px 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.virtualized-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ant-color-bg-container);
+  border-radius: 6px;
+  border: 2px dashed var(--ant-color-border);
+}
+
+.empty-message {
+  color: var(--ant-color-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Ensure virtualized list works well with drag and drop */
+.virtualized-task-list .react-window__inner {
+  overflow: visible !important;
+}
+
+/* Performance optimizations */
+.virtualized-task-list * {
+  will-change: transform;
+}
+
+/* Smooth scrolling */
+.virtualized-task-list {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for better UX */
+.virtualized-task-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.virtualized-task-list::-webkit-scrollbar-track {
+  background: var(--ant-color-bg-container);
+  border-radius: 3px;
+}
+
+.virtualized-task-list::-webkit-scrollbar-thumb {
+  background: var(--ant-color-border);
+  border-radius: 3px;
+}
+
+.virtualized-task-list::-webkit-scrollbar-thumb:hover {
+  background: var(--ant-color-text-tertiary);
+} 
