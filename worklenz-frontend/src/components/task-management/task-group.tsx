@@ -39,6 +39,23 @@ const GROUP_COLORS = {
   default: '#d9d9d9',
 } as const;
 
+// Column configurations for consistent layout
+const FIXED_COLUMNS = [
+  { key: 'drag', label: '', width: 40, fixed: true },
+  { key: 'select', label: '', width: 40, fixed: true },
+  { key: 'key', label: 'Key', width: 80, fixed: true },
+  { key: 'task', label: 'Task', width: 475, fixed: true },
+];
+
+const SCROLLABLE_COLUMNS = [
+  { key: 'progress', label: 'Progress', width: 90 },
+  { key: 'members', label: 'Members', width: 150 },
+  { key: 'labels', label: 'Labels', width: 200 },
+  { key: 'status', label: 'Status', width: 100 },
+  { key: 'priority', label: 'Priority', width: 100 },
+  { key: 'timeTracking', label: 'Time Tracking', width: 120 },
+];
+
 const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
   group,
   projectId,
@@ -121,130 +138,120 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
 
   return (
     <div
-      ref={setNodeRef}
-      className={`task-group ${isOver ? 'drag-over' : ''}`}
-      style={containerStyle}
+      className={`task-group`}
+      style={{ ...containerStyle, overflowX: 'unset' }}
     >
-      {/* Group Header Row */}
-      <div className="task-group-header">
-        <div className="task-group-header-row">
-          <div 
-            className="task-group-header-content"
-            style={{ backgroundColor: groupColor }}
-          >
-            <Button
-              type="text"
-              size="small"
-              icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
-              onClick={handleToggleCollapse}
-              className="task-group-header-button"
-            />
-            <Text strong className="task-group-header-text">
-              {group.title} ({totalTasks})
-            </Text>
-          </div>
-        </div>
-      </div>
-
-      {/* Column Headers */}
-      {!isCollapsed && totalTasks > 0 && (
-        <div 
-          className="task-group-column-headers"
-          style={{ borderLeft: `4px solid ${groupColor}` }}
-        >
-          <div className="task-group-column-headers-row">
-            <div className="task-table-fixed-columns">
-              <div
-                className="task-table-cell task-table-header-cell"
-                style={{ width: '40px' }}
-              ></div>
-              <div
-                className="task-table-cell task-table-header-cell"
-                style={{ width: '40px' }}
-              ></div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '80px' }}>
-                <Text className="column-header-text">Key</Text>
-              </div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '475px' }}>
-                <Text className="column-header-text">Task</Text>
-              </div>
-            </div>
-            <div className="task-table-scrollable-columns">
-              <div className="task-table-cell task-table-header-cell" style={{ width: '90px' }}>
-                <Text className="column-header-text">Progress</Text>
-              </div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '150px' }}>
-                <Text className="column-header-text">Members</Text>
-              </div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '200px' }}>
-                <Text className="column-header-text">Labels</Text>
-              </div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
-                <Text className="column-header-text">Status</Text>
-              </div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
-                <Text className="column-header-text">Priority</Text>
-              </div>
-              <div className="task-table-cell task-table-header-cell" style={{ width: '120px' }}>
-                <Text className="column-header-text">Time Tracking</Text>
+      <div className="task-group-scroll-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
+        <div style={{ minWidth: FIXED_COLUMNS.reduce((sum, col) => sum + col.width, 0) + SCROLLABLE_COLUMNS.reduce((sum, col) => sum + col.width, 0) }}>
+          {/* Group Header Row */}
+          <div className="task-group-header">
+            <div className="task-group-header-row">
+              <div 
+                className="task-group-header-content"
+                style={{ backgroundColor: groupColor }}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
+                  onClick={handleToggleCollapse}
+                  className="task-group-header-button"
+                />
+                <Text strong className="task-group-header-text">
+                  {group.title} ({totalTasks})
+                </Text>
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Tasks List */}
-      {!isCollapsed && (
-        <div 
-          className="task-group-body"
-          style={{ borderLeft: `4px solid ${groupColor}` }}
-        >
-          {groupTasks.length === 0 ? (
-            <div className="task-group-empty">
-              <div className="task-table-fixed-columns">
-                <div style={{ width: '380px', padding: '20px 12px' }}>
-                  <div className="text-center text-gray-500">
-                    <Text type="secondary">No tasks in this group</Text>
-                    <br />
-                    <Button
-                      type="link"
-                      icon={<PlusOutlined />}
-                      onClick={handleAddTask}
-                      className="mt-2"
+          {/* Column Headers */}
+          {!isCollapsed && totalTasks > 0 && (
+            <div 
+              className="task-group-column-headers"
+              style={{ borderLeft: `4px solid ${groupColor}` }}
+            >
+              <div className="task-group-column-headers-row">
+                <div className="task-table-fixed-columns">
+                  {FIXED_COLUMNS.map(col => (
+                    <div
+                      key={col.key}
+                      className="task-table-cell task-table-header-cell"
+                      style={{ width: col.width }}
                     >
-                      Add first task
-                    </Button>
-                  </div>
+                      {col.label && <Text className="column-header-text">{col.label}</Text>}
+                    </div>
+                  ))}
+                </div>
+                <div className="task-table-scrollable-columns">
+                  {SCROLLABLE_COLUMNS.map(col => (
+                    <div
+                      key={col.key}
+                      className="task-table-cell task-table-header-cell"
+                      style={{ width: col.width }}
+                    >
+                      <Text className="column-header-text">{col.label}</Text>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-          ) : (
-            <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
-              <div className="task-group-tasks">
-                {groupTasks.map((task, index) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    projectId={projectId}
-                    groupId={group.id}
-                    currentGrouping={currentGrouping}
-                    isSelected={selectedTaskIds.includes(task.id)}
-                    index={index}
-                    onSelect={onSelectTask}
-                    onToggleSubtasks={onToggleSubtasks}
-                  />
-                ))}
-              </div>
-            </SortableContext>
           )}
 
-          {/* Add Task Row - Always show when not collapsed */}
-          <div className="task-group-add-task">
-            <AddTaskListRow groupId={group.id} />
-          </div>
-        </div>
-      )}
+          {/* Tasks List */}
+          {!isCollapsed && (
+            <div 
+              className="task-group-body"
+              style={{ borderLeft: `4px solid ${groupColor}` }}
+            >
+              {groupTasks.length === 0 ? (
+                <div className="task-group-empty">
+                  <div className="task-table-fixed-columns">
+                    <div style={{ width: '380px', padding: '20px 12px' }}>
+                      <div className="text-center text-gray-500">
+                        <Text type="secondary">No tasks in this group</Text>
+                        <br />
+                        <Button
+                          type="link"
+                          icon={<PlusOutlined />}
+                          onClick={handleAddTask}
+                          className="mt-2"
+                        >
+                          Add first task
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
+                  <div className="task-group-tasks">
+                    {groupTasks.map((task, index) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        projectId={projectId}
+                        groupId={group.id}
+                        currentGrouping={currentGrouping}
+                        isSelected={selectedTaskIds.includes(task.id)}
+                        index={index}
+                        onSelect={onSelectTask}
+                        onToggleSubtasks={onToggleSubtasks}
+                        fixedColumns={FIXED_COLUMNS}
+                        scrollableColumns={SCROLLABLE_COLUMNS}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              )}
 
+              {/* Add Task Row - Always show when not collapsed */}
+              <div className="task-group-add-task">
+                <AddTaskListRow groupId={group.id} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
       <style>{`
         .task-group {
           border: 1px solid var(--task-border-primary, #e8e8e8);
@@ -252,7 +259,6 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
           margin-bottom: 16px;
           background: var(--task-bg-primary, white);
           box-shadow: 0 1px 3px var(--task-shadow, rgba(0, 0, 0, 0.1));
-          overflow-x: auto;
           overflow-y: visible;
           transition: all 0.3s ease;
           position: relative;
@@ -268,14 +274,14 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
         }
 
         .task-group-header-row {
-          display: inline-flex;
+          display: flex;
           height: auto;
           max-height: none;
           overflow: hidden;
         }
 
         .task-group-header-content {
-          display: inline-flex;
+          display: flex;
           align-items: center;
           padding: 8px 12px;
           border-radius: 6px 6px 0 0;
@@ -332,7 +338,6 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
           max-height: 40px;
           overflow: visible;
           position: relative;
-          min-width: 1200px; /* Ensure minimum width for all columns */
         }
 
         .task-table-header-cell {
@@ -397,11 +402,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
         .task-table-fixed-columns {
           display: flex;
           background: var(--task-bg-secondary, #f5f5f5);
-          position: sticky;
-          left: 0;
-          z-index: 11;
           border-right: 2px solid var(--task-border-primary, #e8e8e8);
-          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
           transition: all 0.3s ease;
         }
 

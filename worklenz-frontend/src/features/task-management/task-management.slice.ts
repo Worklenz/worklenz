@@ -16,6 +16,7 @@ const initialState: TaskManagementState = {
   error: null,
   groups: [],
   grouping: null,
+  selectedPriorities: [],
 };
 
 // Async thunk to fetch tasks from API
@@ -137,6 +138,23 @@ export const fetchTasksV3 = createAsyncThunk(
       const state = getState() as RootState;
       const currentGrouping = state.grouping.currentGrouping;
       
+      // Get selected labels from taskReducer
+      const selectedLabels = state.taskReducer.labels
+        ? state.taskReducer.labels.filter(l => l.selected).map(l => l.id).join(',')
+        : '';
+      
+      // Get selected assignees from taskReducer
+      const selectedAssignees = state.taskReducer.taskAssignees
+        ? state.taskReducer.taskAssignees.filter(m => m.selected).map(m => m.id).join(',')
+        : '';
+      
+      // Get selected priorities from taskManagement slice
+      const selectedPriorities = state.taskManagement.selectedPriorities
+        ? state.taskManagement.selectedPriorities.join(',')
+        : '';
+      
+      console.log('fetchTasksV3 - selectedPriorities:', selectedPriorities);
+      
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: false,
@@ -145,11 +163,11 @@ export const fetchTasksV3 = createAsyncThunk(
         order: '',
         search: '',
         statuses: '',
-        members: '',
+        members: selectedAssignees,
         projects: '',
         isSubtasksInclude: false,
-        labels: '',
-        priorities: '',
+        labels: selectedLabels,
+        priorities: selectedPriorities,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
@@ -305,6 +323,11 @@ const taskManagementSlice = createSlice({
       state.error = action.payload;
       state.loading = false;
     },
+
+    // Filter actions
+    setSelectedPriorities: (state, action: PayloadAction<string[]>) => {
+      state.selectedPriorities = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -363,6 +386,7 @@ export const {
   optimisticTaskMove,
   setLoading,
   setError,
+  setSelectedPriorities,
 } = taskManagementSlice.actions;
 
 export default taskManagementSlice.reducer;

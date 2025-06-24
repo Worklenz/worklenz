@@ -72,6 +72,7 @@ export interface TaskManagementState {
   error: string | null;
   groups: TaskGroup[]; // Pre-processed groups from V3 API
   grouping: string | null; // Current grouping from V3 API
+  selectedPriorities: string[]; // Selected priority filters
 }
 
 export interface TaskGroupsState {

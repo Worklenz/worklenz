@@ -76,6 +76,10 @@ interface BoardState {
   priorities: string[];
   members: string[];
   editableSectionId: string | null;
+
+  allTasks: IProjectTask[];
+  grouping: string;
+  totalTasks: number;
 }
 
 const initialState: BoardState = {
@@ -98,6 +102,9 @@ const initialState: BoardState = {
   priorities: [],
   members: [],
   editableSectionId: null,
+  allTasks: [],
+  grouping: '',
+  totalTasks: 0,
 };
 
 const deleteTaskFromGroup = (
@@ -186,7 +193,7 @@ export const fetchBoardTaskGroups = createAsyncThunk(
         priorities: boardReducer.priorities.join(' '),
       };
 
-      const response = await tasksApiService.getTaskList(config);
+      const response = await tasksApiService.getTaskListV3(config);
       return response.body;
     } catch (error) {
       logger.error('Fetch Task Groups', error);
@@ -803,7 +810,10 @@ const boardSlice = createSlice({
       })
       .addCase(fetchBoardTaskGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
-        state.taskGroups = action.payload;
+        state.taskGroups = action.payload && action.payload.groups ? action.payload.groups : [];
+        state.allTasks = action.payload && action.payload.allTasks ? action.payload.allTasks : [];
+        state.grouping = action.payload && action.payload.grouping ? action.payload.grouping : '';
+        state.totalTasks = action.payload && action.payload.totalTasks ? action.payload.totalTasks : 0;
       })
       .addCase(fetchBoardTaskGroups.rejected, (state, action) => {
         state.loadingGroups = false;

@@ -98,8 +98,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
           w-5 h-5 rounded-full border border-dashed flex items-center justify-center
           transition-colors duration-200
           ${isDarkMode 
-            ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800' 
-            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100'
+            ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
+            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
           }
         `}
       >
@@ -117,7 +117,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
           `}
         >
           {/* Header */}
-          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+          <div className={`p-2 border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
             <input
               ref={searchInputRef}
               type="text"
