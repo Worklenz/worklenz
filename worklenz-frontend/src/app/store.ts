@@ -42,6 +42,7 @@ import priorityReducer from '@features/taskAttributes/taskPrioritySlice';
 import taskLabelsReducer from '@features/taskAttributes/taskLabelSlice';
 import taskStatusReducer, { deleteStatus } from '@features/taskAttributes/taskStatusSlice';
 import taskDrawerReducer from '@features/task-drawer/task-drawer.slice';
+import enhancedKanbanReducer from '@features/enhanced-kanban/enhanced-kanban.slice';
 
 // Settings & Management
 import memberReducer from '@features/settings/member/memberSlice';
@@ -135,6 +136,7 @@ export const store = configureStore({
     taskLabelsReducer: taskLabelsReducer,
     taskStatusReducer: taskStatusReducer,
     taskDrawerReducer: taskDrawerReducer,
+    enhancedKanbanReducer: enhancedKanbanReducer,
 
     // Settings & Management
     memberReducer: memberReducer,
