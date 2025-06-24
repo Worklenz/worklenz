@@ -1,0 +1,63 @@
+{
+  "keyColumn": "Çelësi",
+  "taskColumn": "Detyra",
+  "descriptionColumn": "Përshkrimi",
+  "progressColumn": "Progresi",
+  "membersColumn": "Anëtarët",
+  "assigneesColumn": "Përgjegjësit",
+  "labelsColumn": "Etiketa",
+  "phasesColumn": "Fazat",
+  "phaseColumn": "Faza",
+  "statusColumn": "Statusi",
+  "priorityColumn": "Prioriteti",
+  "timeTrackingColumn": "Gjurmimi i Kohës",
+  "timetrackingColumn": "Gjurmimi i Kohës",
+  "estimationColumn": "Vlerësimi",
+  "startDateColumn": "Data e Fillimit",
+  "startdateColumn": "Data e Fillimit",
+  "dueDateColumn": "Data e Afatit",
+  "duedateColumn": "Data e Afatit",
+  "completedDateColumn": "Data e Përfundimit",
+  "completeddateColumn": "Data e Përfundimit",
+  "createdDateColumn": "Data e Krijimit",
+  "createddateColumn": "Data e Krijimit",
+  "lastUpdatedColumn": "Përditësuar Së Fundi",
+  "lastupdatedColumn": "Përditësuar Së Fundi",
+  "reporterColumn": "Raportuesi",
+  "dueTimeColumn": "Koha e Afatit",
+  "todoSelectorText": "Për të Bërë",
+  "doingSelectorText": "Duke bërë",
+  "doneSelectorText": "E Përfunduar",
+
+  "lowSelectorText": "I ulët",
+  "mediumSelectorText": "I mesëm",
+  "highSelectorText": "I lartë",
+
+  "selectText": "Zgjidh",
+  "labelsSelectorInputTip": "Shtyp Enter për të krijuar!",
+
+  "addTaskText": "+ Shto Detyrë",
+  "addSubTaskText": "+ Shto Nën-Detyrë",
+  "addTaskInputPlaceholder": "Shkruaj detyrën dhe shtyp Enter",
+
+  "openButton": "Hap",
+  "okButton": "Në rregull",
+
+  "noLabelsFound": "Nuk u gjetën etiketa",
+  "searchInputPlaceholder": "Kërko ose krijo",
+  "assigneeSelectorInviteButton": "Fto një anëtar të ri me email",
+  "labelInputPlaceholder": "Kërko ose krijo",
+
+  "pendingInvitation": "Ftesë në Pritje",
+
+  "contextMenu": {
+    "assignToMe": "Cakto mua",
+    "moveTo": "Zhvendos në",
+    "unarchive": "Ç'arkivizo",
+    "archive": "Arkivizo",
+    "convertToSubTask": "Shndërro në Nën-Detyrë",
+    "convertToTask": "Shndërro në Detyrë",
+    "delete": "Fshi",
+    "searchByNameInputPlaceholder": "Kërko sipas emrit"
+  }
+}
