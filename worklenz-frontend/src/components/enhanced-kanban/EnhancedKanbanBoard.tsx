@@ -43,6 +43,7 @@ import { statusApiService } from '@/api/taskAttributes/status/status.api.service
 import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-request';
 import alertService from '@/services/alerts/alertService';
 import { IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import EnhancedKanbanCreateSection from './EnhancedKanbanCreateSection';
 
 // Import the TaskListFilters component
 const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
@@ -380,9 +381,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   }
 
   return (
-    <div className={`enhanced-kanban-board ${className}`}>
-      {/* Performance Monitor - only show for large datasets */}
-      {/* {performanceMetrics.totalTasks > 100 && <PerformanceMonitor />} */}
+    <>
       <Card
         size="small"
         className="mb-4"
@@ -392,57 +391,62 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
           <TaskListFilters position="board" />
         </React.Suspense>
       </Card>
+      <div className={`enhanced-kanban-board ${className}`}>
+        {/* Performance Monitor - only show for large datasets */}
+        {/* {performanceMetrics.totalTasks > 100 && <PerformanceMonitor />} */}
 
-      {loadingGroups ? (
-        <Card>
-          <div className="flex justify-center items-center py-8">
-            <Spin size="large" />
-          </div>
-        </Card>
-      ) : taskGroups.length === 0 ? (
-        <Card>
-          <Empty description="No tasks found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        </Card>
-      ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={collisionDetectionStrategy}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={allGroupIds} strategy={horizontalListSortingStrategy}>
-            <div className="kanban-groups-container">
-              {taskGroups.map(group => (
-                <EnhancedKanbanGroup
-                  key={group.id}
-                  group={group}
-                  activeTaskId={dragState.activeTaskId}
-                  overId={overId as string | null}
-                />
-              ))}
+        {loadingGroups ? (
+          <Card>
+            <div className="flex justify-center items-center py-8">
+              <Spin size="large" />
             </div>
-          </SortableContext>
-
-          <DragOverlay>
-            {activeTask && (
-              <EnhancedKanbanTaskCard
-                task={activeTask}
-                isDragOverlay={true}
-              />
-            )}
-            {activeGroup && (
-              <div className="group-drag-overlay">
-                <div className="group-header-content">
-                  <h3>{activeGroup.name}</h3>
-                  <span className="task-count">({activeGroup.tasks.length})</span>
-                </div>
+          </Card>
+        ) : taskGroups.length === 0 ? (
+          <Card>
+            <Empty description="No tasks found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          </Card>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={collisionDetectionStrategy}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={allGroupIds} strategy={horizontalListSortingStrategy}>
+              <div className="kanban-groups-container">
+                {taskGroups.map(group => (
+                  <EnhancedKanbanGroup
+                    key={group.id}
+                    group={group}
+                    activeTaskId={dragState.activeTaskId}
+                    overId={overId as string | null}
+                  />
+                ))}
+                <EnhancedKanbanCreateSection />
               </div>
-            )}
-          </DragOverlay>
-        </DndContext>
-      )}
-    </div>
+            </SortableContext>
+
+            <DragOverlay>
+              {activeTask && (
+                <EnhancedKanbanTaskCard
+                  task={activeTask}
+                  isDragOverlay={true}
+                />
+              )}
+              {activeGroup && (
+                <div className="group-drag-overlay">
+                  <div className="group-header-content">
+                    <h3>{activeGroup.name}</h3>
+                    <span className="task-count">({activeGroup.tasks.length})</span>
+                  </div>
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
+        )}
+      </div>
+    </>
   );
 };
 

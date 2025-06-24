@@ -19,7 +19,6 @@ import { Typography } from 'antd';
 import { Dropdown } from 'antd';
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons/lib/icons';
-import { deleteSection, IGroupBy, setBoardGroupName } from '@/features/board/board-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
@@ -31,6 +30,9 @@ import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { deleteStatusToggleDrawer, seletedStatusCategory } from '@/features/projects/status/DeleteStatusSlice';
+import { fetchEnhancedKanbanGroups, IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import EnhancedKanbanCreateTaskCard from './EnhancedKanbanCreateTaskCard';
+
 interface EnhancedKanbanGroupProps {
   group: ITaskListGroup;
   activeTaskId?: string | null;
@@ -57,10 +59,11 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
   const { projectId } = useAppSelector(state => state.projectReducer);
-  const { groupBy } = useAppSelector(state => state.boardReducer);
+  const { groupBy } = useAppSelector(state => state.enhancedKanbanReducer);
   const { statusCategories, status } = useAppSelector(state => state.taskStatusReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const [showNewCard, setShowNewCard] = useState(false);
+  const [showNewCardTop, setShowNewCardTop] = useState(false);
+  const [showNewCardBottom, setShowNewCardBottom] = useState(false);
   const { t } = useTranslation('kanban-board');
 
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
@@ -167,15 +170,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
     };
     const res = await statusApiService.updateStatus(group.id, body, projectId);
     if (res.done) {
-      dispatch(
-        setBoardGroupName({
-          groupId: group.id,
-          name: sectionName ?? '',
-          colorCode: res.body.color_code ?? '',
-          colorCodeDark: res.body.color_code_dark ?? '',
-          categoryId: category,
-        })
-      );
+      dispatch(fetchEnhancedKanbanGroups(projectId));
       dispatch(fetchStatuses(projectId));
       setName(sectionName);
     } else {
@@ -198,8 +193,8 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
   };
 
   const handleBlur = async () => {
-    if (group.name === 'Untitled section') {
-      dispatch(deleteSection({ sectionId: group.id }));
+    if (name === 'Untitled section') {
+      dispatch(fetchEnhancedKanbanGroups(projectId ?? ''));
     }
     setIsEditable(false);
 
@@ -218,14 +213,14 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
       const res = await phasesApiService.updateNameOfPhase(group.id, body as ITaskPhase, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_board_column_setting_click, { Rename: 'Phase' });
-        // dispatch(fetchPhasesByProjectId(projectId));
+        dispatch(fetchEnhancedKanbanGroups(projectId));
       }
     }
   };
 
   const handlePressEnter = () => {
-    setShowNewCard(true);
-    setIsEditable(false);
+    setShowNewCardTop(true);
+    setShowNewCardBottom(false);
     handleBlur();
   };
   const handleDeleteSection = async () => {
@@ -237,7 +232,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
         const res = await statusApiService.deleteStatus(group.id, projectId, replacingStatusId);
         if (res.message === 'At least one status should exists under each category.') return
         if (res.done) {
-          dispatch(deleteSection({ sectionId: group.id }));
+          dispatch(fetchEnhancedKanbanGroups(projectId));
         } else {
           dispatch(seletedStatusCategory({ id: group.id, name: name, category_id: group.category_id ?? '', message: res.message ?? '' }));
           dispatch(deleteStatusToggleDrawer());
@@ -245,7 +240,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
       } else if (groupBy === IGroupBy.PHASE) {
         const res = await phasesApiService.deletePhaseOption(group.id, projectId);
         if (res.done) {
-          dispatch(deleteSection({ sectionId: group.id }));
+          dispatch(fetchEnhancedKanbanGroups(projectId));
         }
       }
     } catch (error) {
@@ -327,6 +322,9 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
           style={{
             fontWeight: 600,
             borderRadius: 6,
+            width: '100%',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}
           onMouseEnter={() => setIsHover(true)}
           onMouseLeave={() => setIsHover(false)}
@@ -335,8 +333,12 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
             gap={6}
             align="center"
             style={{ cursor: 'pointer' }}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               if ((isProjectManager || isOwnerOrAdmin) && group.name !== 'Unmapped') setIsEditable(true);
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
             }}
           >
             <Flex
@@ -356,7 +358,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
             {isEditable ? (
               <Input
                 ref={inputRef}
-                value={group.name}
+                value={name}
                 variant="borderless"
                 style={{
                   backgroundColor: themeWiseColor('white', '#1e1e1e', themeMode),
@@ -364,6 +366,15 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onPressEnter={handlePressEnter}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
               />
             ) : (
               <Tooltip title={isEllipsisActive ? name : null}>
@@ -378,6 +389,17 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
                     color: themeMode === 'dark' ? '#383838' : '',
                     display: 'inline-block',
                     overflow: 'hidden',
+                    userSelect: 'text',
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  onMouseUp={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
                   }}
                 >
                   {name}
@@ -392,7 +414,10 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
               size="small"
               shape="circle"
               style={{ color: themeMode === 'dark' ? '#383838' : '' }}
-              onClick={() => setShowNewCard(true)}
+              onClick={() => {
+                setShowNewCardTop(true);
+                setShowNewCardBottom(false);
+              }}
             >
               <PlusOutlined />
             </Button>
@@ -427,6 +452,10 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
       </div>
 
       <div className="enhanced-kanban-group-tasks" ref={groupRef}>
+        {/* Create card at top */}
+        {showNewCardTop && (isOwnerOrAdmin || isProjectManager) && (
+          <EnhancedKanbanCreateTaskCard sectionId={group.id} setShowNewCard={setShowNewCardTop} position="top" />
+        )}
         {group.tasks.length === 0 && isDraggingOver && (
           <div className="drop-preview-empty">
             <div className="drop-indicator">Drop here</div>
@@ -474,6 +503,30 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
               </React.Fragment>
             ))}
           </SortableContext>
+        )}
+        {/* Create card at bottom */}
+        {showNewCardBottom && (isOwnerOrAdmin || isProjectManager) && (
+          <EnhancedKanbanCreateTaskCard sectionId={group.id} setShowNewCard={setShowNewCardBottom} position="bottom" />
+        )}
+        {/* Footer Add Task Button */}
+        {(isOwnerOrAdmin || isProjectManager) && !showNewCardTop && !showNewCardBottom && (
+          <Button
+            type="text"
+            style={{
+              height: '38px',
+              width: '100%',
+              borderRadius: 6,
+              boxShadow: 'none',
+              marginTop: 8,
+            }}
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setShowNewCardBottom(true);
+              setShowNewCardTop(false);
+            }}
+          >
+            {t('addTask')}
+          </Button>
         )}
       </div>
     </div>
