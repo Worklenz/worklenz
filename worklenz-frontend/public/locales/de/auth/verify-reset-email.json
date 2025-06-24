@@ -1,0 +1,14 @@
+{
+  "title": "E-Mail zurücksetzen bestätigen",
+  "description": "Geben Sie Ihr neues Passwort ein",
+  "placeholder": "Neues Passwort eingeben",
+  "confirmPasswordPlaceholder": "Neues Passwort bestätigen",
+  "passwordHint": "Mindestens 8 Zeichen, mit Groß- und Kleinbuchstaben, einer Zahl und einem Sonderzeichen.",
+  "resetPasswordButton": "Passwort zurücksetzen",
+  "orText": "Oder",
+  "resendResetEmail": "Zurücksetz-E-Mail erneut senden",
+  "passwordRequired": "Bitte geben Sie Ihr neues Passwort ein",
+  "returnToLoginButton": "Zurück zur Anmeldung",
+  "confirmPasswordRequired": "Bitte bestätigen Sie Ihr neues Passwort",
+  "passwordMismatch": "Die beiden Passwörter stimmen nicht überein"
+}

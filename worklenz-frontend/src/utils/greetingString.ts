@@ -35,6 +35,12 @@ export const greetingString = (name: string): string => {
     morning = 'mëngjesi';
     afternoon = 'pasdite';
     evening = 'mbrëmja';
+  } else if (language === 'de') {
+    greetingPrefix = 'Hallo';
+    greetingSuffix = 'Guten';
+    morning = 'Morgen';
+    afternoon = 'Tag';
+    evening = 'Abend';
   }
 
   return `${greetingPrefix} ${name}, ${greetingSuffix} ${greet}!`;

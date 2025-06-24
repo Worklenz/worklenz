@@ -1,0 +1,11 @@
+{
+  "createTaskTemplate": "Aufgabenvorlage erstellen",
+  "editTaskTemplate": "Aufgabenvorlage bearbeiten",
+  "cancelText": "Abbrechen",
+  "saveText": "Speichern",
+  "templateNameText": "Vorlagenname",
+  "selectedTasks": "Ausgewählte Aufgaben",
+  "removeTask": "Entfernen",
+  "cancelButton": "Abbrechen",
+  "saveButton": "Speichern"
+}

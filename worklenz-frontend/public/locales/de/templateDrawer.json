@@ -1,0 +1,23 @@
+{
+  "bugTracking": "Fehlerverfolgung",
+  "construction": "Bauwesen",
+  "designCreative": "Design & Kreatives",
+  "education": "Bildung",
+  "finance": "Finanzen",
+  "hrRecruiting": "Personalwesen & Recruiting",
+  "informationTechnology": "Informationstechnologie",
+  "legal": "Rechtliches",
+  "manufacturing": "Produktion",
+  "marketing": "Marketing",
+  "nonprofit": "Gemeinnützig",
+  "personalUse": "Persönliche Nutzung",
+  "salesCRM": "Vertrieb & CRM",
+  "serviceConsulting": "Dienstleistungen & Beratung",
+  "softwareDevelopment": "Softwareentwicklung",
+  "description": "Beschreibung",
+  "phase": "Phase",
+  "statuses": "Status",
+  "priorities": "Prioritäten",
+  "labels": "Labels",
+  "tasks": "Aufgaben"
+}
