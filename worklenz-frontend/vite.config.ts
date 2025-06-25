@@ -28,8 +28,8 @@ export default defineConfig(({ command, mode }) => {
         { find: '@layouts', replacement: path.resolve(__dirname, './src/layouts') },
         { find: '@services', replacement: path.resolve(__dirname, './src/services') },
       ],
-      // **Ensure single React instance**
-      dedupe: ['react', 'react-dom'],
+      // **Ensure single React instance to prevent context issues**
+      dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
     },
 
     // **CSS Configuration**
@@ -49,26 +49,20 @@ export default defineConfig(({ command, mode }) => {
       port: 5173,
       host: true,
       open: true,
-      hmr: {
-        overlay: false,
-      },
     },
 
-    // **Build**
+    // **Build Configuration**
     build: {
-      // **Target**
-      target: ['es2020'], // Updated to a more modern target, adjust according to your needs
-
-      // **Output**
+      // **Output Directory**
       outDir: 'build',
-      assetsDir: 'assets',
-      cssCodeSplit: true,
-
-      // **Sourcemaps**
+      
+      // **Source Maps**
       sourcemap: false,
-
+      
       // **Minification**
       minify: 'terser',
+      
+      // **Terser Options**
       terserOptions: {
         compress: {
           drop_console: isProduction,
@@ -76,18 +70,25 @@ export default defineConfig(({ command, mode }) => {
         },
       },
 
-      // **Chunk Size Warnings**
-      chunkSizeWarningLimit: 1000,
-
       // **Rollup Options**
       rollupOptions: {
+        // **External dependencies to prevent bundling issues**
+        external: (id) => {
+          // Don't externalize anything for now to prevent context issues
+          return false;
+        },
         output: {
-          // **Manual Chunking Strategy**
+          // **Manual Chunking Strategy - Fixed for React context issues**
           manualChunks: (id) => {
             // Vendor libraries
             if (id.includes('node_modules')) {
-              // Ant Design - Split into smaller chunks
-              if (id.includes('antd/es')) {
+              // React core - keep together to prevent context issues
+              if (id.includes('react') && !id.includes('react-router') && !id.includes('react-redux') && !id.includes('react-i18next')) {
+                return 'react-core';
+              }
+              
+              // Ant Design - Split into smaller chunks but ensure React dependency
+              if (id.includes('antd/es') || id.includes('antd/lib')) {
                 // Split antd by component types for better caching
                 if (id.includes('date-picker') || id.includes('time-picker') || id.includes('calendar')) {
                   return 'antd-date';
@@ -172,44 +173,11 @@ export default defineConfig(({ command, mode }) => {
               return 'common';
             }
           },
-        
-          // **File Naming Strategies**
-          chunkFileNames: (chunkInfo) => {
-            const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
-            return `assets/js/[name]-[hash].js`;
-          },
-          entryFileNames: 'assets/js/[name]-[hash].js',
-          assetFileNames: (assetInfo) => {
-            if (!assetInfo.name) return 'assets/[name]-[hash].[ext]';
-            const info = assetInfo.name.split('.');
-            let extType = info[info.length - 1];
-            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
-              extType = 'img';
-            } else if (/woff2?|eot|ttf|otf/i.test(extType)) {
-              extType = 'fonts';
-            }
-            return `assets/${extType}/[name]-[hash].[ext]`;
-          },
         },
-        
-        // **Tree shaking optimization**
-        treeshake: {
-          moduleSideEffects: false,
-          unknownGlobalSideEffects: false,
-        },
-        
-        // **External dependencies (if any should be externalized)**
-        external: [],
-        
-        // **Preserve modules to avoid context issues**
-        preserveEntrySignatures: 'strict',
       },
-
-      // **Experimental features for better performance**
-      reportCompressedSize: false, // Disable to speed up build
       
-      // **CSS optimization**
-      cssMinify: isProduction,
+      // **Chunk Size Warning Limit**
+      chunkSizeWarningLimit: 1000,
     },
 
     // **Optimization**
@@ -217,20 +185,23 @@ export default defineConfig(({ command, mode }) => {
       include: [
         'react',
         'react-dom',
+        'react/jsx-runtime',
         'react-router-dom',
         '@reduxjs/toolkit',
         'react-redux',
         'react-i18next',
         'dayjs',
+        // Include antd core to prevent context issues
+        'antd/es/config-provider',
+        'antd/es/button',
+        'antd/es/input',
+        'antd/es/select',
       ],
-      exclude: [
-        // Exclude antd from pre-bundling to allow better tree-shaking
-        'antd',
-        '@ant-design/icons',
-      ],
+      // Don't exclude antd to prevent React context issues
+      exclude: [],
     },
 
-    // **Define global constants**
+    // **Define Global Constants**
     define: {
       __DEV__: !isProduction,
     },
