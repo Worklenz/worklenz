@@ -121,6 +121,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
   const renderTask = useMemo(() => (task: any, index: number) => (
     <EnhancedKanbanTaskCard
       key={task.id}
+      sectionId={group.id}
       task={task}
       isActive={task.id === activeTaskId}
       isDropTarget={overId === task.id}
@@ -488,6 +489,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
 
                 <EnhancedKanbanTaskCard
                   task={task}
+                  sectionId={group.id}
                   isActive={task.id === activeTaskId}
                   isDropTarget={overId === task.id}
                 />

@@ -48,6 +48,7 @@ import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 const ProjectViewHeader = () => {
   const navigate = useNavigate();
@@ -79,7 +80,8 @@ const ProjectViewHeader = () => {
         dispatch(fetchTaskGroups(projectId));
         break;
       case 'board':
-        dispatch(fetchBoardTaskGroups(projectId));
+        // dispatch(fetchBoardTaskGroups(projectId));
+        dispatch(fetchEnhancedKanbanGroups(projectId));
         break;
       case 'project-insights-member-overview':
         dispatch(setRefreshTimestamp());
