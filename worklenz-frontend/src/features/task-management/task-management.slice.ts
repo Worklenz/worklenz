@@ -149,9 +149,9 @@ export const fetchTasksV3 = createAsyncThunk(
         ? state.taskReducer.taskAssignees.filter(m => m.selected).map(m => m.id).join(' ')
         : '';
       
-      // Get selected priorities from taskManagement slice
-      const selectedPriorities = state.taskManagement.selectedPriorities
-        ? state.taskManagement.selectedPriorities.join(' ')
+      // Get selected priorities from taskReducer (consistent with other slices)
+      const selectedPriorities = state.taskReducer.priorities
+        ? state.taskReducer.priorities.join(' ')
         : '';
       
       // Get search value from taskReducer

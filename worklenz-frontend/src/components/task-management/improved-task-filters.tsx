@@ -23,9 +23,9 @@ import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
 import { toggleField } from '@/features/task-management/taskListFields.slice';
 
 // Import Redux actions
-import { fetchTasksV3, setSelectedPriorities, setSearch as setTaskManagementSearch } from '@/features/task-management/task-management.slice';
+import { fetchTasksV3, setSearch as setTaskManagementSearch } from '@/features/task-management/task-management.slice';
 import { setCurrentGrouping, selectCurrentGrouping } from '@/features/task-management/grouping.slice';
-import { setMembers, setLabels, setSearch } from '@/features/tasks/tasks.slice';
+import { setMembers, setLabels, setSearch, setPriorities } from '@/features/tasks/tasks.slice';
 import { setBoardSearch } from '@/features/board/board-slice';
 
 // Optimized selectors with proper transformation logic
@@ -39,7 +39,6 @@ const selectFilterData = createSelector(
     (state: any) => state.taskReducer.taskAssignees,
     (state: any) => state.boardReducer.taskAssignees,
     (state: any) => state.projectReducer.project,
-    (state: any) => state.taskManagement.selectedPriorities,
   ],
   (
     priorities,
@@ -49,8 +48,7 @@ const selectFilterData = createSelector(
     boardLabels,
     taskAssignees,
     boardAssignees,
-    project,
-    selectedPriorities
+    project
   ) => ({
     priorities: priorities || [],
     taskPriorities: taskPriorities || [],
@@ -60,7 +58,7 @@ const selectFilterData = createSelector(
     taskAssignees: taskAssignees || [],
     boardAssignees: boardAssignees || [],
     project,
-    selectedPriorities: selectedPriorities || [],
+    selectedPriorities: taskPriorities || [], // Use taskReducer.priorities as selected priorities
   })
 );
 
@@ -687,7 +685,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     // Handle priorities
     if (sectionId === 'priority') {
       console.log('Priority selection changed:', { sectionId, values, projectId });
-      dispatch(setSelectedPriorities(values));
+      dispatch(setPriorities(values));
       dispatch(fetchTasksV3(projectId));
       return;
     }
@@ -763,7 +761,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     dispatch(setMembers(clearedAssignees));
     
     // Clear priority filters
-    dispatch(setSelectedPriorities([]));
+    dispatch(setPriorities([]));
     
     // Clear other filters
     setShowArchived(false);
