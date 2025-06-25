@@ -20,26 +20,46 @@ import { ForkOutlined } from '@ant-design/icons';
 import { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { CaretDownFilled, CaretRightFilled } from '@ant-design/icons';
+import { fetchBoardSubTasks } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { Divider } from 'antd';
+import { List } from 'antd';
+import { Skeleton } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import BoardSubTaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-sub-task-card';
+import BoardCreateSubtaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-create-sub-task-card';
+import { useTranslation } from 'react-i18next';
 
 interface EnhancedKanbanTaskCardProps {
   task: IProjectTask;
+  sectionId: string;
   isActive?: boolean;
   isDragOverlay?: boolean;
   isDropTarget?: boolean;
 }
+// Priority and status colors - moved outside component to avoid recreation
+const PRIORITY_COLORS = {
+  critical: '#ff4d4f',
+  high: '#ff7a45',
+  medium: '#faad14',
+  low: '#52c41a',
+} as const;
 
 const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo(({
   task,
+  sectionId,
   isActive = false,
   isDragOverlay = false,
   isDropTarget = false
 }) => {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation('kanban-board');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const [showNewSubtaskCard, setShowNewSubtaskCard] = useState(false);
   const [dueDate, setDueDate] = useState<Dayjs | null>(
     task?.end_date ? dayjs(task?.end_date) : null
   );
   const [isSubTaskShow, setIsSubTaskShow] = useState(false);
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
   const {
     attributes,
     listeners,
@@ -70,14 +90,8 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
 
     // Don't handle click if we're dragging
     if (isDragging) return;
-
-    // Add a small delay to ensure it's a click and not the start of a drag
-    const clickTimeout = setTimeout(() => {
-      dispatch(setSelectedTaskId(id));
-      dispatch(setShowTaskDrawer(true));
-    }, 50);
-
-    return () => clearTimeout(clickTimeout);
+    dispatch(setSelectedTaskId(id));
+    dispatch(setShowTaskDrawer(true));
   }, [dispatch, isDragging]);
 
   const renderLabels = useMemo(() => {
@@ -96,6 +110,32 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
       </>
     );
   }, [task.labels, themeMode]);
+
+
+
+  const handleSubTaskExpand = useCallback(() => {
+    console.log('handleSubTaskExpand', task, projectId);
+    if (task && task.id && projectId) {
+      if (task.show_sub_tasks) {
+        // If subtasks are already loaded, just toggle visibility
+        setIsSubTaskShow(prev => !prev);
+      } else {
+        // If subtasks need to be fetched, show the section first with loading state
+        setIsSubTaskShow(true);
+        dispatch(fetchBoardSubTasks({ taskId: task.id, projectId }));
+      }
+    }
+  }, [task, projectId, dispatch]);
+
+  const handleSubtaskButtonClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleSubTaskExpand();
+  }, [handleSubTaskExpand]);
+
+  const handleAddSubtaskClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowNewSubtaskCard(true);
+  }, []);
 
   return (
     <div
@@ -117,7 +157,10 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
         </Flex>
         <Flex gap={4} align="center">
           {/* Action Icons */}
-          <PrioritySection task={task} />
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: task.priority_color || '#d9d9d9' }}
+          />
           <Typography.Text
             style={{ fontWeight: 500 }}
             ellipsis={{ tooltip: task.name }}
@@ -126,42 +169,81 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
           </Typography.Text>
         </Flex>
         <Flex
-            align="center"
-            justify="space-between"
-            style={{
-              marginBlock: 8,
-            }}
-          >
-            {task && <CustomAvatarGroup task={task} sectionId={task.status_id || ''} />}
+          align="center"
+          justify="space-between"
+          style={{
+            marginBlock: 8,
+          }}
+        >
+          {task && <CustomAvatarGroup task={task} sectionId={sectionId} />}
 
-            <Flex gap={4} align="center">
-              <CustomDueDatePicker task={task} onDateChange={setDueDate} />
+          <Flex gap={4} align="center">
+            <CustomDueDatePicker task={task} onDateChange={setDueDate} />
 
-              {/* Subtask Section */}
-              <Button
-                // onClick={handleSubtaskButtonClick}
-                size="small"
+            {/* Subtask Section */}
+            <Button
+              onClick={handleSubtaskButtonClick}
+              size="small"
+              style={{
+                padding: 0,
+              }}
+              type="text"
+            >
+              <Tag
+                bordered={false}
                 style={{
-                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  margin: 0,
+                  backgroundColor: themeWiseColor('white', '#1e1e1e', themeMode),
                 }}
-                type="text"
               >
-                <Tag
-                  bordered={false}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    margin: 0,
-                    backgroundColor: themeWiseColor('white', '#1e1e1e', themeMode),
-                  }}
-                >
-                  <ForkOutlined rotate={90} />
-                  <span>{task.sub_tasks_count}</span>
-                  {isSubTaskShow ? <CaretDownFilled /> : <CaretRightFilled />}
-                </Tag>
+                <ForkOutlined rotate={90} />
+                <span>{task.sub_tasks_count}</span>
+                {isSubTaskShow ? <CaretDownFilled /> : <CaretRightFilled />}
+              </Tag>
+            </Button>
+          </Flex>
+        </Flex>
+        <Flex vertical gap={8}>
+          {isSubTaskShow && (
+            <Flex vertical>
+              <Divider style={{ marginBlock: 0 }} />
+              <List>
+                {task.sub_tasks_loading && (
+                  <List.Item>
+                    <Skeleton active paragraph={{ rows: 2 }} title={false} style={{ marginTop: 8 }} />
+                  </List.Item>
+                )}
+
+                {!task.sub_tasks_loading && task?.sub_tasks &&
+                  task?.sub_tasks.map((subtask: any) => (
+                    <BoardSubTaskCard key={subtask.id} subtask={subtask} sectionId={sectionId} />
+                  ))}
+
+                {showNewSubtaskCard && (
+                  <BoardCreateSubtaskCard
+                    sectionId={sectionId}
+                    parentTaskId={task.id || ''}
+                    setShowNewSubtaskCard={setShowNewSubtaskCard}
+                  />
+                )}
+              </List>
+              <Button
+                type="text"
+                style={{
+                  width: 'fit-content',
+                  borderRadius: 6,
+                  boxShadow: 'none',
+                }}
+                icon={<PlusOutlined />}
+                onClick={handleAddSubtaskClick}
+              >
+                {t('addSubtask', 'Add Subtask')}
               </Button>
             </Flex>
-          </Flex>
+          )}
+        </Flex>
       </div>
     </div>
   );

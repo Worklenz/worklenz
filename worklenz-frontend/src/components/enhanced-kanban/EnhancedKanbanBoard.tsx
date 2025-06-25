@@ -44,6 +44,7 @@ import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-reque
 import alertService from '@/services/alerts/alertService';
 import { IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import EnhancedKanbanCreateSection from './EnhancedKanbanCreateSection';
+import ImprovedTaskFilters from '../task-management/improved-task-filters';
 
 // Import the TaskListFilters component
 const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
@@ -382,15 +383,12 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
   return (
     <>
-      <Card
-        size="small"
-        className="mb-4"
-        styles={{ body: { padding: '12px 16px' } }}
-      >
-        <React.Suspense fallback={<div>Loading filters...</div>}>
-          <TaskListFilters position="board" />
-        </React.Suspense>
-      </Card>
+      {/* Task Filters */}
+      <div className="mb-4">
+          <React.Suspense fallback={<div>Loading filters...</div>}>
+            <ImprovedTaskFilters position="board" />
+          </React.Suspense>
+        </div>
       <div className={`enhanced-kanban-board ${className}`}>
         {/* Performance Monitor - only show for large datasets */}
         {/* {performanceMetrics.totalTasks > 100 && <PerformanceMonitor />} */}
@@ -431,6 +429,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
               {activeTask && (
                 <EnhancedKanbanTaskCard
                   task={activeTask}
+                  sectionId={activeTask.status_id || ''}
                   isDragOverlay={true}
                 />
               )}

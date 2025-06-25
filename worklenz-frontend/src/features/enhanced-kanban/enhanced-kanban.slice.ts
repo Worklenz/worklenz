@@ -263,6 +263,60 @@ export const reorderEnhancedKanbanGroups = createAsyncThunk(
   }
 );
 
+export const fetchBoardSubTasks = createAsyncThunk(
+  'enhancedKanban/fetchBoardSubTasks',
+  async (
+    { taskId, projectId }: { taskId: string; projectId: string },
+    { rejectWithValue, getState }
+  ) => {
+    try {
+      const state = getState() as { enhancedKanbanReducer: EnhancedKanbanState };
+      const { enhancedKanbanReducer } = state;
+
+      // Check if the task is already expanded (optional, can be enhanced later)
+      // const task = enhancedKanbanReducer.taskGroups.flatMap(group => group.tasks).find(t => t.id === taskId);
+      // if (task?.show_sub_tasks) {
+      //   return [];
+      // }
+
+      const selectedMembers = enhancedKanbanReducer.taskAssignees
+        .filter(member => member.selected)
+        .map(member => member.id)
+        .join(' ');
+
+      const selectedLabels = enhancedKanbanReducer.labels
+        .filter(label => label.selected)
+        .map(label => label.id)
+        .join(' ');
+
+      const config: ITaskListConfigV2 = {
+        id: projectId,
+        archived: enhancedKanbanReducer.archived,
+        group: enhancedKanbanReducer.groupBy,
+        field: enhancedKanbanReducer.fields.map(field => `${field.key} ${field.sort_order}`).join(','),
+        order: '',
+        search: enhancedKanbanReducer.search || '',
+        statuses: '',
+        members: selectedMembers,
+        projects: '',
+        isSubtasksInclude: false,
+        labels: selectedLabels,
+        priorities: enhancedKanbanReducer.priorities.join(' '),
+        parent_task: taskId,
+      };
+
+      const response = await tasksApiService.getTaskList(config);
+      return response.body;
+    } catch (error) {
+      logger.error('Fetch Enhanced Board Sub Tasks', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch sub tasks');
+    }
+  }
+);
+
 const enhancedKanbanSlice = createSlice({
   name: 'enhancedKanbanReducer',
   initialState,
