@@ -10,6 +10,7 @@ import { RootState } from '@/app/store';
 import TaskRow from './task-row';
 import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-rows/add-task-list-row';
 import { TaskListField } from '@/features/task-management/taskListFields.slice';
+import { Checkbox } from '@/components';
 
 const { Text } = Typography;
 
@@ -136,6 +137,19 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
     };
   }, [groupTasks]);
 
+  // Calculate selection state for the group checkbox
+  const { isAllSelected, isIndeterminate } = useMemo(() => {
+    if (groupTasks.length === 0) {
+      return { isAllSelected: false, isIndeterminate: false };
+    }
+    
+    const selectedTasksInGroup = groupTasks.filter(task => selectedTaskIds.includes(task.id));
+    const isAllSelected = selectedTasksInGroup.length === groupTasks.length;
+    const isIndeterminate = selectedTasksInGroup.length > 0 && selectedTasksInGroup.length < groupTasks.length;
+    
+    return { isAllSelected, isIndeterminate };
+  }, [groupTasks, selectedTaskIds]);
+
   // Get group color based on grouping type - memoized
   const groupColor = useMemo(() => {
     if (group.color) return group.color;
@@ -162,6 +176,25 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
   const handleAddTask = useCallback(() => {
     onAddTask?.(group.id);
   }, [onAddTask, group.id]);
+
+  // Handle select all tasks in group
+  const handleSelectAllInGroup = useCallback((checked: boolean) => {
+    if (checked) {
+      // Select all tasks in the group
+      groupTasks.forEach(task => {
+        if (!selectedTaskIds.includes(task.id)) {
+          onSelectTask?.(task.id, true);
+        }
+      });
+    } else {
+      // Deselect all tasks in the group
+      groupTasks.forEach(task => {
+        if (selectedTaskIds.includes(task.id)) {
+          onSelectTask?.(task.id, false);
+        }
+      });
+    }
+  }, [groupTasks, selectedTaskIds, onSelectTask]);
 
   // Memoized style object
   const containerStyle = useMemo(() => ({
@@ -212,7 +245,18 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
                       className="task-table-cell task-table-header-cell"
                       style={{ width: col.width }}
                     >
-                      {col.label && <Text className="column-header-text">{col.label}</Text>}
+                      {col.key === 'select' ? (
+                        <div className="flex items-center justify-center h-full">
+                          <Checkbox
+                            checked={isAllSelected}
+                            onChange={handleSelectAllInGroup}
+                            isDarkMode={isDarkMode}
+                            indeterminate={isIndeterminate}
+                          />
+                        </div>
+                      ) : (
+                        col.label && <Text className="column-header-text">{col.label}</Text>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -451,6 +495,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
           align-items: center;
           padding: 0 12px;
           border-right: 1px solid var(--task-border-secondary, #f0f0f0);
+          border-bottom: 1px solid var(--task-border-secondary, #f0f0f0);
           font-size: 12px;
           white-space: nowrap;
           height: 40px;
@@ -463,6 +508,49 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
 
         .task-table-cell:last-child {
           border-right: none;
+        }
+
+        /* Add row border styling for task rows */
+        .task-group-tasks > div {
+          border-bottom: 1px solid var(--task-border-secondary, #f0f0f0);
+          transition: border-color 0.3s ease;
+        }
+
+        .task-group-tasks > div:last-child {
+          border-bottom: none;
+        }
+
+        /* Ensure fixed columns also have bottom borders */
+        .fixed-columns-row > div {
+          border-bottom: 1px solid var(--task-border-secondary, #f0f0f0);
+          transition: border-color 0.3s ease;
+        }
+
+        .scrollable-columns-row > div {
+          border-bottom: 1px solid var(--task-border-secondary, #f0f0f0);
+          transition: border-color 0.3s ease;
+        }
+
+        /* Dark mode border adjustments */
+        .dark .task-table-cell,
+        [data-theme="dark"] .task-table-cell {
+          border-right-color: var(--task-border-secondary, #374151);
+          border-bottom-color: var(--task-border-secondary, #374151);
+        }
+
+        .dark .task-group-tasks > div,
+        [data-theme="dark"] .task-group-tasks > div {
+          border-bottom-color: var(--task-border-secondary, #374151);
+        }
+
+        .dark .fixed-columns-row > div,
+        [data-theme="dark"] .fixed-columns-row > div {
+          border-bottom-color: var(--task-border-secondary, #374151);
+        }
+
+        .dark .scrollable-columns-row > div,
+        [data-theme="dark"] .scrollable-columns-row > div {
+          border-bottom-color: var(--task-border-secondary, #374151);
         }
 
         .drag-over {

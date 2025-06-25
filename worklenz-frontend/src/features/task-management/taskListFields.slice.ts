@@ -69,15 +69,12 @@ const taskListFieldsSlice = createSlice({
       const field = state.find(f => f.key === action.payload);
       if (field) {
         field.visible = !field.visible;
-        saveFields(state);
       }
     },
     setFields(state, action: PayloadAction<TaskListField[]>) {
-      saveFields(action.payload);
       return action.payload;
     },
     resetFields() {
-      saveFields(DEFAULT_FIELDS);
       return DEFAULT_FIELDS;
     },
   },

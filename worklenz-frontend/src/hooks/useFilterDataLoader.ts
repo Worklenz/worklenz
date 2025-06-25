@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
@@ -15,13 +15,11 @@ import { getTeamMembers } from '@/features/team-members/team-members.slice';
 export const useFilterDataLoader = () => {
   const dispatch = useAppDispatch();
   
-  const { priorities } = useAppSelector(state => ({
-    priorities: state.priorityReducer.priorities,
-  }));
+  // Memoize the priorities selector to prevent unnecessary re-renders
+  const priorities = useAppSelector(state => state.priorityReducer.priorities);
   
-  const { projectId } = useAppSelector(state => ({
-    projectId: state.projectReducer.projectId,
-  }));
+  // Memoize the projectId selector to prevent unnecessary re-renders
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
 
   // Load filter data asynchronously
   const loadFilterData = useCallback(async () => {
