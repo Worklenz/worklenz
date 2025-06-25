@@ -23,6 +23,13 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const statusList = useAppSelector(state => state.taskStatusReducer.status);
+  
+  // Debug log only when statusList changes, not on every render
+  useEffect(() => {
+    if (statusList.length > 0) {
+      console.log('Status list loaded:', statusList.length, 'statuses');
+    }
+  }, [statusList]);
 
   // Find current status details
   const currentStatus = useMemo(() => {
@@ -76,32 +83,39 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
     };
   }, [isOpen]);
 
-  // Get status color
+  // Get status color - enhanced dark mode support
   const getStatusColor = useCallback((status: any) => {
     if (isDarkMode) {
-      return status?.color_code_dark || status?.color_code || '#6b7280';
+      return status?.color_code_dark || status?.color_code || '#4b5563';
     }
     return status?.color_code || '#6b7280';
   }, [isDarkMode]);
 
 
 
-  // Status display name
+  // Status display name - format status names by replacing underscores with spaces
   const getStatusDisplayName = useCallback((status: string) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    return status
+      .replace(/_/g, ' ') // Replace underscores with spaces
+      .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize first letter of each word
+  }, []);
+
+  // Format status name for display
+  const formatStatusName = useCallback((name: string) => {
+    if (!name) return name;
+    return name.replace(/_/g, ' '); // Replace underscores with spaces
   }, []);
 
   if (!task.status) return null;
 
   return (
     <>
-      {/* Status Button */}
+      {/* Status Button - Rounded Pill Design */}
       <button
         ref={buttonRef}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('Status dropdown clicked, current isOpen:', isOpen);
           setIsOpen(!isOpen);
         }}
         className={`
@@ -109,11 +123,11 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
           transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] justify-center
         `}
         style={{
-          backgroundColor: currentStatus ? getStatusColor(currentStatus) : (isDarkMode ? '#6b7280' : '#9ca3af'),
+          backgroundColor: currentStatus ? getStatusColor(currentStatus) : (isDarkMode ? '#4b5563' : '#9ca3af'),
           color: 'white',
         }}
       >
-        <span>{currentStatus?.name || getStatusDisplayName(task.status)}</span>
+        <span>{currentStatus ? formatStatusName(currentStatus.name || '') : getStatusDisplayName(task.status)}</span>
         <svg 
           className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -124,61 +138,109 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
         </svg>
       </button>
 
-      {/* Dropdown Menu - Rendered in Portal */}
+      {/* Dropdown Menu - Redesigned */}
       {isOpen && createPortal(
         <div 
           ref={dropdownRef}
           className={`
-            fixed min-w-[120px] max-w-[180px] 
-            rounded-lg shadow-xl border z-[9999]
+            fixed min-w-[160px] max-w-[220px] 
+            rounded border backdrop-blur-sm z-[9999]
             ${isDarkMode 
-              ? 'bg-gray-800 border-gray-600' 
-              : 'bg-white border-gray-200'
+              ? 'bg-gray-900/95 border-gray-600 shadow-2xl shadow-black/50' 
+              : 'bg-white/95 border-gray-200 shadow-2xl shadow-gray-500/20'
             }
           `}
           style={{ 
             top: dropdownPosition.top,
             left: dropdownPosition.left,
-            zIndex: 9999 
+            zIndex: 9999,
+            animation: 'fadeInScale 0.15s ease-out',
           }}
         >
-          <div className="py-1">
-            {statusList.map((status) => (
-              <button
-                key={status.id}
-                onClick={() => handleStatusChange(status.id!, status.name!)}
-                className={`
-                  w-full px-3 py-2 text-left text-xs font-medium flex items-center gap-2
-                  transition-colors duration-150 rounded-md mx-1
-                  ${isDarkMode 
-                    ? 'hover:bg-gray-700 text-gray-200' 
-                    : 'hover:bg-gray-50 text-gray-900'
-                  }
-                  ${(status.name?.toLowerCase() === task.status?.toLowerCase() || status.id === task.status)
-                    ? (isDarkMode ? 'bg-gray-700' : 'bg-gray-50') 
-                    : ''
-                  }
-                `}
-              >
-                {/* Status Pill Preview */}
-                <div 
-                  className="px-2 py-0.5 rounded-full text-white text-xs min-w-[50px] text-center"
-                  style={{ backgroundColor: getStatusColor(status) }}
+          {/* Status Options */}
+          <div className="py-1 max-h-64 overflow-y-auto">
+            {statusList.map((status, index) => {
+              const isSelected = status.name?.toLowerCase() === task.status?.toLowerCase() || status.id === task.status;
+              
+              return (
+                <button
+                  key={status.id}
+                  onClick={() => handleStatusChange(status.id!, status.name!)}
+                  className={`
+                    w-full px-3 py-2.5 text-left text-xs font-medium flex items-center gap-3
+                    transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]
+                    ${isDarkMode 
+                      ? 'hover:bg-gray-700/80 text-gray-100' 
+                      : 'hover:bg-gray-50/70 text-gray-900'
+                    }
+                    ${isSelected
+                      ? (isDarkMode ? 'bg-gray-700/60 ring-1 ring-blue-400/40' : 'bg-blue-50/50 ring-1 ring-blue-200') 
+                      : ''
+                    }
+                  `}
+                  style={{
+                    animationDelay: `${index * 30}ms`,
+                    animation: 'slideInFromLeft 0.2s ease-out forwards',
+                  }}
                 >
-                  {status.name}
-                </div>
-                
-                {/* Current Status Indicator */}
-                {(status.name?.toLowerCase() === task.status?.toLowerCase() || status.id === task.status) && (
-                  <div className="ml-auto">
-                    <div className={`w-1.5 h-1.5 rounded-full ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`} />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+                  {/* Status Color Indicator */}
+                  <div 
+                    className={`w-3 h-3 rounded-full shadow-sm border-2 ${
+                      isDarkMode ? 'border-gray-800/30' : 'border-white/20'
+                    }`}
+                    style={{ backgroundColor: getStatusColor(status) }}
+                  />
+                  
+                  {/* Status Name */}
+                  <span className="flex-1 truncate">
+                    {formatStatusName(status.name || '')}
+                  </span>
+                  
+                  {/* Current Status Badge */}
+                  {isSelected && (
+                    <div className="flex items-center gap-1">
+                      <div className={`w-1.5 h-1.5 rounded-full ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`} />
+                      <span className={`text-xs font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
+                        Current
+                      </span>
+                    </div>
+                  )}
+                </button>
+              );
+                         })}
+           </div>
         </div>,
         document.body
+      )}
+
+      {/* CSS Animations - Injected as style tag */}
+      {isOpen && createPortal(
+        <style>
+          {`
+            @keyframes fadeInScale {
+              from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-5px);
+              }
+              to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+              }
+            }
+            
+            @keyframes slideInFromLeft {
+              from {
+                opacity: 0;
+                transform: translateX(-10px);
+              }
+              to {
+                opacity: 1;
+                transform: translateX(0);
+              }
+            }
+          `}
+        </style>,
+        document.head
       )}
     </>
   );

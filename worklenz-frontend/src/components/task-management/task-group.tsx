@@ -91,10 +91,10 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
   const allScrollableColumns = [
     { key: 'description', label: 'Description', width: 200, fieldKey: 'DESCRIPTION' },
     { key: 'progress', label: 'Progress', width: 90, fieldKey: 'PROGRESS' },
+    { key: 'status', label: 'Status', width: 100, fieldKey: 'STATUS' },
     { key: 'members', label: 'Members', width: 150, fieldKey: 'ASSIGNEES' },
     { key: 'labels', label: 'Labels', width: 200, fieldKey: 'LABELS' },
     { key: 'phase', label: 'Phase', width: 100, fieldKey: 'PHASE' },
-    { key: 'status', label: 'Status', width: 100, fieldKey: 'STATUS' },
     { key: 'priority', label: 'Priority', width: 100, fieldKey: 'PRIORITY' },
     { key: 'timeTracking', label: 'Time Tracking', width: 120, fieldKey: 'TIME_TRACKING' },
     { key: 'estimation', label: 'Estimation', width: 100, fieldKey: 'ESTIMATION' },
