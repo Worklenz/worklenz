@@ -63,7 +63,20 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
     const handleScroll = () => {
       if (isOpen) {
-        updateDropdownPosition();
+        // Check if the button is still visible in the viewport
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect();
+          const isVisible = rect.top >= 0 && rect.left >= 0 && 
+                           rect.bottom <= window.innerHeight && 
+                           rect.right <= window.innerWidth;
+          
+          if (isVisible) {
+            updateDropdownPosition();
+          } else {
+            // Hide dropdown if button is not visible
+            setIsOpen(false);
+          }
+        }
       }
     };
 
