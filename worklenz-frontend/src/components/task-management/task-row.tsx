@@ -15,6 +15,7 @@ import { RootState } from '@/app/store';
 import { AssigneeSelector, Avatar, AvatarGroup, Button, Checkbox, CustomColordLabel, CustomNumberLabel, LabelsSelector, Progress, Tag, Tooltip } from '@/components';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import TaskStatusDropdown from './task-status-dropdown';
 
 interface TaskRowProps {
   task: Task;
@@ -324,7 +325,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           })}
         </div>
         {/* Scrollable Columns */}
-        <div className="scrollable-columns-row" style={{ display: 'flex', minWidth: scrollableColumns?.reduce((sum, col) => sum + col.width, 0) || 0 }}>
+        <div className="scrollable-columns-row overflow-visible" style={{ display: 'flex', minWidth: scrollableColumns?.reduce((sum, col) => sum + col.width, 0) || 0 }}>
           {scrollableColumns?.map(col => {
             switch (col.key) {
               case 'progress':
@@ -392,14 +393,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 );
               case 'status':
                 return (
-                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
-                    <Tag
-                      backgroundColor={getStatusColor(task.status)}
-                      color="white"
-                      className="text-xs font-medium uppercase"
-                    >
-                      {task.status}
-                    </Tag>
+                  <div key={col.key} className="flex items-center px-2 border-r overflow-visible" style={{ width: col.width }}>
+                    <TaskStatusDropdown
+                      task={task}
+                      projectId={projectId}
+                      isDarkMode={isDarkMode}
+                    />
                   </div>
                 );
               case 'priority':

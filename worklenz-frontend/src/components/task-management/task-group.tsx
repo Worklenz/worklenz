@@ -9,6 +9,7 @@ import { taskManagementSelectors } from '@/features/task-management/task-managem
 import { RootState } from '@/app/store';
 import TaskRow from './task-row';
 import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-rows/add-task-list-row';
+import { TaskListField } from '@/features/task-management/taskListFields.slice';
 
 const { Text } = Typography;
 
@@ -39,22 +40,7 @@ const GROUP_COLORS = {
   default: '#d9d9d9',
 } as const;
 
-// Column configurations for consistent layout
-const FIXED_COLUMNS = [
-  { key: 'drag', label: '', width: 40, fixed: true },
-  { key: 'select', label: '', width: 40, fixed: true },
-  { key: 'key', label: 'Key', width: 80, fixed: true },
-  { key: 'task', label: 'Task', width: 475, fixed: true },
-];
 
-const SCROLLABLE_COLUMNS = [
-  { key: 'progress', label: 'Progress', width: 90 },
-  { key: 'members', label: 'Members', width: 150 },
-  { key: 'labels', label: 'Labels', width: 200 },
-  { key: 'status', label: 'Status', width: 100 },
-  { key: 'priority', label: 'Priority', width: 100 },
-  { key: 'timeTracking', label: 'Time Tracking', width: 120 },
-];
 
 const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
   group,
@@ -82,6 +68,54 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
   // Get theme from Redux store
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
   
+  // Get field visibility from taskListFields slice
+  const taskListFields = useSelector((state: RootState) => state.taskManagementFields) as TaskListField[];
+
+  // Define all possible columns
+  const allFixedColumns = [
+    { key: 'drag', label: '', width: 40, alwaysVisible: true },
+    { key: 'select', label: '', width: 40, alwaysVisible: true },
+    { key: 'key', label: 'KEY', width: 80, fieldKey: 'KEY' },
+    { key: 'task', label: 'TASK', width: 220, alwaysVisible: true },
+  ];
+
+  const allScrollableColumns = [
+    { key: 'progress', label: 'Progress', width: 90, fieldKey: 'PROGRESS' },
+    { key: 'members', label: 'Members', width: 150, fieldKey: 'ASSIGNEES' },
+    { key: 'labels', label: 'Labels', width: 200, fieldKey: 'LABELS' },
+    { key: 'status', label: 'Status', width: 100, fieldKey: 'STATUS' },
+    { key: 'priority', label: 'Priority', width: 100, fieldKey: 'PRIORITY' },
+    { key: 'timeTracking', label: 'Time Tracking', width: 120, fieldKey: 'TIME_TRACKING' },
+  ];
+
+  // Filter columns based on field visibility
+  const visibleFixedColumns = useMemo(() => {
+    return allFixedColumns.filter(col => {
+      // Always show columns marked as alwaysVisible
+      if (col.alwaysVisible) return true;
+      
+      // For other columns, check field visibility
+      if (col.fieldKey) {
+        const field = taskListFields.find(f => f.key === col.fieldKey);
+        return field?.visible ?? false;
+      }
+      
+      return false;
+    });
+  }, [taskListFields, allFixedColumns]);
+
+  const visibleScrollableColumns = useMemo(() => {
+    return allScrollableColumns.filter(col => {
+      // For scrollable columns, check field visibility
+      if (col.fieldKey) {
+        const field = taskListFields.find(f => f.key === col.fieldKey);
+        return field?.visible ?? false;
+      }
+      
+      return false;
+    });
+  }, [taskListFields, allScrollableColumns]);
+
   // Get tasks for this group using memoization for performance
   const groupTasks = useMemo(() => {
     return group.taskIds
@@ -142,7 +176,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
       style={{ ...containerStyle, overflowX: 'unset' }}
     >
       <div className="task-group-scroll-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
-        <div style={{ minWidth: FIXED_COLUMNS.reduce((sum, col) => sum + col.width, 0) + SCROLLABLE_COLUMNS.reduce((sum, col) => sum + col.width, 0) }}>
+        <div style={{ minWidth: visibleFixedColumns.reduce((sum, col) => sum + col.width, 0) + visibleScrollableColumns.reduce((sum, col) => sum + col.width, 0) }}>
           {/* Group Header Row */}
           <div className="task-group-header">
             <div className="task-group-header-row">
@@ -172,7 +206,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
             >
               <div className="task-group-column-headers-row">
                 <div className="task-table-fixed-columns">
-                  {FIXED_COLUMNS.map(col => (
+                  {visibleFixedColumns.map(col => (
                     <div
                       key={col.key}
                       className="task-table-cell task-table-header-cell"
@@ -183,7 +217,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
                   ))}
                 </div>
                 <div className="task-table-scrollable-columns">
-                  {SCROLLABLE_COLUMNS.map(col => (
+                  {visibleScrollableColumns.map(col => (
                     <div
                       key={col.key}
                       className="task-table-cell task-table-header-cell"
@@ -236,8 +270,8 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
                         index={index}
                         onSelect={onSelectTask}
                         onToggleSubtasks={onToggleSubtasks}
-                        fixedColumns={FIXED_COLUMNS}
-                        scrollableColumns={SCROLLABLE_COLUMNS}
+                        fixedColumns={visibleFixedColumns}
+                        scrollableColumns={visibleScrollableColumns}
                       />
                     ))}
                   </div>
