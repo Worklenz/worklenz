@@ -2,17 +2,22 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useSelector } from 'react-redux';
-import { Input, Typography } from 'antd';
-import type { InputRef } from 'antd';
-import {
+import { 
+  Input, 
+  Typography, 
+  DatePicker,
+  dayjs,
+  taskManagementAntdConfig,
   HolderOutlined,
   MessageOutlined,
   PaperClipOutlined,
   ClockCircleOutlined,
-} from '@ant-design/icons';
+  UserOutlined,
+  type InputRef
+} from './antd-imports';
 import { Task } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
-import { AssigneeSelector, Avatar, AvatarGroup, Button, Checkbox, CustomColordLabel, CustomNumberLabel, LabelsSelector, Progress, Tag, Tooltip } from '@/components';
+import { AssigneeSelector, Avatar, AvatarGroup, Button, Checkbox, CustomColordLabel, CustomNumberLabel, LabelsSelector, Progress, Tooltip } from '@/components';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import TaskStatusDropdown from './task-status-dropdown';
@@ -147,19 +152,20 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   const containerClasses = useMemo(() => {
     const baseClasses = 'border-b transition-all duration-300';
     const themeClasses = isDarkMode 
-      ? 'border-gray-700 bg-gray-900 hover:bg-gray-800' 
-      : 'border-gray-200 bg-white hover:bg-gray-50';
+      ? 'border-gray-600 hover:bg-gray-800' 
+      : 'border-gray-300 hover:bg-gray-50';
+    const backgroundClasses = isDarkMode ? 'bg-[#18181b]' : 'bg-white';
     const selectedClasses = isSelected 
       ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50')
       : '';
     const overlayClasses = isDragOverlay 
-      ? `rounded shadow-lg border-2 ${isDarkMode ? 'bg-gray-900 border-gray-600 shadow-2xl' : 'bg-white border-gray-300 shadow-2xl'}`
+      ? `rounded shadow-lg border-2 ${isDarkMode ? 'border-gray-600 shadow-2xl' : 'border-gray-300 shadow-2xl'}`
       : '';
-    return `${baseClasses} ${themeClasses} ${selectedClasses} ${overlayClasses}`;
+    return `${baseClasses} ${themeClasses} ${backgroundClasses} ${selectedClasses} ${overlayClasses}`;
   }, [isDarkMode, isSelected, isDragOverlay]);
 
   const fixedColumnsClasses = useMemo(() => 
-    `flex sticky left-0 z-10 border-r-2 shadow-sm ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`,
+    `flex sticky left-0 z-10 border-r-2 shadow-sm ${isDarkMode ? 'bg-gray-900 border-gray-600' : 'bg-white border-gray-300'}`,
     [isDarkMode]
   );
 
@@ -179,6 +185,23 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   
   const getStatusColor = useCallback((status: string) => 
     STATUS_COLORS[status as keyof typeof STATUS_COLORS] || '#d9d9d9', []);
+
+  // Memoize date values for performance optimization
+  const startDateValue = useMemo(() => 
+    task.startDate ? dayjs(task.startDate) : undefined, 
+    [task.startDate]
+  );
+
+  const dueDateValue = useMemo(() => 
+    task.dueDate ? dayjs(task.dueDate) : undefined, 
+    [task.dueDate]
+  );
+
+  // Memoize DatePicker configuration
+  const datePickerProps = useMemo(() => ({
+    ...taskManagementAntdConfig.datePickerDefaults,
+    className: "w-full bg-transparent border-none shadow-none"
+  }), []);
 
   // Create adapter for LabelsSelector - memoized
   const taskAdapter = useMemo(() => ({
@@ -229,6 +252,35 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     }
   }, [task.dueDate]);
 
+  // Memoize date formatting functions
+  const formatDate = useCallback((dateString?: string) => {
+    if (!dateString) return '';
+    return dayjs(dateString).format('MMM DD, YYYY');
+  }, []);
+
+  const formatDateTime = useCallback((dateString?: string) => {
+    if (!dateString) return '';
+    return dayjs(dateString).format('MMM DD, YYYY HH:mm');
+  }, []);
+
+  // Handle date changes
+  const handleDateChange = useCallback((date: dayjs.Dayjs | null, field: 'startDate' | 'dueDate') => {
+    if (!connected || !socket) return;
+    
+    const eventType = field === 'startDate' ? SocketEvents.TASK_START_DATE_CHANGE : SocketEvents.TASK_END_DATE_CHANGE;
+    const dateField = field === 'startDate' ? 'start_date' : 'end_date';
+    
+    socket.emit(
+      eventType.toString(),
+      JSON.stringify({
+        task_id: task.id,
+        [dateField]: date?.format('YYYY-MM-DD'),
+        parent_task: null,
+        time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      })
+    );
+  }, [connected, socket, task.id]);
+
   return (
     <div
       ref={setNodeRef}
@@ -238,18 +290,18 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       <div className="flex h-10 max-h-10 overflow-visible relative">
         {/* Fixed Columns */}
         <div
-          className="fixed-columns-row"
+          className="flex"
           style={{
-            display: 'flex',
-            background: isDarkMode ? '#1a1a1a' : '#fff',
             width: fixedColumns?.reduce((sum, col) => sum + col.width, 0) || 0,
           }}
         >
-          {fixedColumns?.map(col => {
+          {fixedColumns?.map((col, colIdx) => {
+            const isLastFixed = colIdx === fixedColumns.length - 1;
+            const borderClasses = `${isLastFixed ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
             switch (col.key) {
               case 'drag':
                 return (
-                  <div key={col.key} className="w-10 flex items-center justify-center px-2 border-r" style={{ width: col.width }}>
+                  <div key={col.key} className={`w-10 flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
                     <Button
                       variant="text"
                       size="small"
@@ -263,7 +315,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 );
               case 'select':
                 return (
-                  <div key={col.key} className="w-10 flex items-center justify-center px-2 border-r" style={{ width: col.width }}>
+                  <div key={col.key} className={`w-10 flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
                     <Checkbox
                       checked={isSelected}
                       onChange={handleSelectChange}
@@ -273,14 +325,16 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 );
               case 'key':
                 return (
-                  <div key={col.key} className="w-20 flex items-center px-2 border-r" style={{ width: col.width }}>
-                    <Tag 
-                      backgroundColor={isDarkMode ? "#374151" : "#f0f0f0"} 
-                      color={isDarkMode ? "#d1d5db" : "#666"}
-                      className="truncate whitespace-nowrap max-w-full"
+                  <div key={col.key} className={`w-20 flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <span 
+                      className={`px-2 py-1 text-xs font-medium rounded truncate whitespace-nowrap max-w-full ${
+                        isDarkMode 
+                          ? 'bg-gray-700 text-gray-300' 
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
                     >
                       {task.task_key}
-                    </Tag>
+                    </span>
                   </div>
                 );
               case 'task':
@@ -291,7 +345,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 return (
                   <div
                     key={col.key}
-                    className={`flex items-center px-2${editTaskName ? ' task-name-edit-active' : ''}`}
+                    className={`flex items-center px-2 ${borderClasses}${editTaskName ? ' task-name-edit-active' : ''}`}
                     style={cellStyle}
                   >
                     <div className="flex-1 min-w-0 flex flex-col justify-center h-full overflow-hidden">
@@ -300,7 +354,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                           {editTaskName ? (
                             <input
                               ref={inputRef}
-                              className="task-name-input"
+                              className="task-name-input w-full bg-transparent border-none outline-none text-sm"
                               value={taskName}
                               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTaskName(e.target.value)}
                               onBlur={handleTaskNameSave}
@@ -310,10 +364,6 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                                 }
                               }}
                               style={{ 
-                                background: 'transparent', 
-                                border: 'none', 
-                                outline: 'none', 
-                                width: '100%',
                                 color: isDarkMode ? '#ffffff' : '#262626'
                               }}
                               autoFocus
@@ -339,12 +389,29 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           })}
         </div>
         {/* Scrollable Columns */}
-        <div className="scrollable-columns-row overflow-visible" style={{ display: 'flex', minWidth: scrollableColumns?.reduce((sum, col) => sum + col.width, 0) || 0 }}>
-          {scrollableColumns?.map(col => {
+        <div className="overflow-visible" style={{ display: 'flex', minWidth: scrollableColumns?.reduce((sum, col) => sum + col.width, 0) || 0 }}>
+          {scrollableColumns?.map((col, colIdx) => {
+            const isLastScrollable = colIdx === scrollableColumns.length - 1;
+            const borderClasses = `${isLastScrollable ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
             switch (col.key) {
+              case 'description':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <Typography.Paragraph
+                      ellipsis={{ 
+                        expandable: false,
+                        rows: 1,
+                        tooltip: task.description,
+                      }}
+                      className={`w-full mb-0 text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                    >
+                      {task.description || ''}
+                    </Typography.Paragraph>
+                  </div>
+                );
               case 'progress':
                 return (
-                  <div key={col.key} className="flex items-center justify-center px-2 border-r" style={{ width: col.width }}>
+                  <div key={col.key} className={`flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
                     {task.progress !== undefined && task.progress >= 0 && (
                       <Progress
                         type="circle"
@@ -360,7 +427,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 );
               case 'members':
                 return (
-                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
                     <div className="flex items-center gap-2">
                       {avatarGroupMembers.length > 0 && (
                         <AvatarGroup
@@ -380,7 +447,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 );
               case 'labels':
                 return (
-                  <div key={col.key} className="max-w-[200px] flex items-center px-2 border-r" style={{ width: col.width }}>
+                  <div key={col.key} className={`max-w-[200px] flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
                     <div className="flex items-center gap-1 flex-wrap h-full w-full overflow-visible relative">
                       {task.labels?.map((label, index) => (
                         label.end && label.names && label.name ? (
@@ -405,9 +472,17 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                     </div>
                   </div>
                 );
+              case 'phase':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {task.phase || 'No Phase'}
+                    </span>
+                  </div>
+                );
               case 'status':
                 return (
-                  <div key={col.key} className="flex items-center px-2 border-r overflow-visible" style={{ width: col.width }}>
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses} overflow-visible`} style={{ width: col.width }}>
                     <TaskStatusDropdown
                       task={task}
                       projectId={projectId}
@@ -417,13 +492,13 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 );
               case 'priority':
                 return (
-                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
                     <div className="flex items-center gap-2">
                       <div
                         className="w-2 h-2 rounded-full"
                         style={{ backgroundColor: getPriorityColor(task.priority) }}
                       />
-                      <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         {task.priority}
                       </span>
                     </div>
@@ -431,12 +506,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 );
               case 'timeTracking':
                 return (
-                  <div key={col.key} className="flex items-center px-2 border-r" style={{ width: col.width }}>
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
                     <div className="flex items-center gap-2 h-full overflow-hidden">
                       {task.timeTracking?.logged && task.timeTracking.logged > 0 && (
                         <div className="flex items-center gap-1">
-                          <ClockCircleOutlined className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                          <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          <ClockCircleOutlined className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
+                          <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                             {typeof task.timeTracking.logged === 'number' 
                               ? `${task.timeTracking.logged}h`
                               : task.timeTracking.logged
@@ -444,6 +519,79 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                           </span>
                         </div>
                       )}
+                    </div>
+                  </div>
+                );
+              case 'estimation':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {task.timeTracking?.estimated ? `${task.timeTracking.estimated}h` : '-'}
+                    </span>
+                  </div>
+                );
+              case 'startDate':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <DatePicker
+                      {...datePickerProps}
+                      value={startDateValue}
+                      onChange={(date) => handleDateChange(date, 'startDate')}
+                      placeholder="Start Date"
+                    />
+                  </div>
+                );
+              case 'dueDate':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <DatePicker
+                      {...datePickerProps}
+                      value={dueDateValue}
+                      onChange={(date) => handleDateChange(date, 'dueDate')}
+                      placeholder="Due Date"
+                    />
+                  </div>
+                );
+              case 'dueTime':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {task.dueDate ? dayjs(task.dueDate).format('HH:mm') : '-'}
+                    </span>
+                  </div>
+                );
+              case 'completedDate':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {task.completedAt ? formatDate(task.completedAt) : '-'}
+                    </span>
+                  </div>
+                );
+              case 'createdDate':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {task.createdAt ? formatDate(task.createdAt) : '-'}
+                    </span>
+                  </div>
+                );
+              case 'lastUpdated':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {task.updatedAt ? formatDateTime(task.updatedAt) : '-'}
+                    </span>
+                  </div>
+                );
+              case 'reporter':
+                return (
+                  <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+                    <div className="flex items-center gap-2">
+                      <UserOutlined className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
+                      <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {task.reporter || '-'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -457,66 +605,33 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   );
 }, (prevProps, nextProps) => {
   // Simplified comparison for better performance
-  return (
+  const taskPropsEqual = (
     prevProps.task.id === nextProps.task.id &&
     prevProps.task.title === nextProps.task.title &&
     prevProps.task.progress === nextProps.task.progress &&
     prevProps.task.status === nextProps.task.status &&
     prevProps.task.priority === nextProps.task.priority &&
     prevProps.task.labels?.length === nextProps.task.labels?.length &&
-    prevProps.task.assignee_names?.length === nextProps.task.assignee_names?.length &&
+    prevProps.task.assignee_names?.length === nextProps.task.assignee_names?.length
+  );
+
+  const otherPropsEqual = (
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isDragOverlay === nextProps.isDragOverlay &&
     prevProps.groupId === nextProps.groupId
   );
+
+  // Check column props - these are critical for re-rendering when columns change
+  const columnPropsEqual = (
+    prevProps.fixedColumns?.length === nextProps.fixedColumns?.length &&
+    prevProps.scrollableColumns?.length === nextProps.scrollableColumns?.length &&
+    JSON.stringify(prevProps.fixedColumns?.map(c => c.key)) === JSON.stringify(nextProps.fixedColumns?.map(c => c.key)) &&
+    JSON.stringify(prevProps.scrollableColumns?.map(c => c.key)) === JSON.stringify(nextProps.scrollableColumns?.map(c => c.key))
+  );
+
+  return taskPropsEqual && otherPropsEqual && columnPropsEqual;
 });
 
 TaskRow.displayName = 'TaskRow';
 
-// Add styles for better border visibility
-const taskRowStyles = `
-  .task-row-container {
-    border-bottom: 1px solid #f0f0f0;
-    transition: border-color 0.3s ease;
-  }
-  
-  .dark .task-row-container,
-  [data-theme="dark"] .task-row-container {
-    border-bottom-color: #374151;
-  }
-  
-  .task-row-container:hover {
-    border-bottom-color: #e8e8e8;
-  }
-  
-  .dark .task-row-container:hover,
-  [data-theme="dark"] .task-row-container:hover {
-    border-bottom-color: #4b5563;
-  }
-  
-  .fixed-columns-row > div,
-  .scrollable-columns-row > div {
-    border-bottom: 1px solid #f0f0f0;
-    transition: border-color 0.3s ease;
-  }
-  
-  .dark .fixed-columns-row > div,
-  .dark .scrollable-columns-row > div,
-  [data-theme="dark"] .fixed-columns-row > div,
-  [data-theme="dark"] .scrollable-columns-row > div {
-    border-bottom-color: #374151;
-  }
-`;
-
-// Inject styles
-if (typeof document !== 'undefined') {
-  const styleId = 'task-row-styles';
-  if (!document.getElementById(styleId)) {
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = taskRowStyles;
-    document.head.appendChild(style);
-  }
-}
-
-export default TaskRow; 
+export default TaskRow;

@@ -12,7 +12,10 @@ export interface Task {
   assignees: string[];
   assignee_names?: InlineMember[];
   labels: Label[];
-  dueDate?: string;
+  startDate?: string; // Start date for the task
+  dueDate?: string; // Due date for the task
+  completedAt?: string; // When the task was completed
+  reporter?: string; // Who reported/created the task
   timeTracking: {
     estimated?: number;
     logged: number;

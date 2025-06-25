@@ -16,7 +16,7 @@ import {
   CheckOutlined,
   SettingOutlined,
   MoreOutlined,
-} from '@ant-design/icons';
+} from './antd-imports';
 import { RootState } from '@/app/store';
 import { AppDispatch } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -27,7 +27,13 @@ import { SocketEvents } from '@/shared/socket-events';
 import { colors } from '@/styles/colors';
 import SingleAvatar from '@components/common/single-avatar/single-avatar';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
-import { Dropdown, Checkbox, Button, Space } from 'antd';
+import { 
+  Dropdown, 
+  Checkbox, 
+  Button, 
+  Space,
+  taskManagementAntdConfig 
+} from './antd-imports';
 import { toggleField, TaskListField } from '@/features/task-management/taskListFields.slice';
 
 // Import Redux actions
@@ -40,50 +46,40 @@ import { ITaskPriority } from '@/types/tasks/taskPriority.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
 
-// Memoized selectors to prevent unnecessary re-renders
-const selectPriorities = createSelector(
-  [(state: any) => state.priorityReducer.priorities],
-  (priorities) => priorities || []
-);
-
-const selectTaskPriorities = createSelector(
-  [(state: any) => state.taskReducer.priorities],
-  (priorities) => priorities || []
-);
-
-const selectBoardPriorities = createSelector(
-  [(state: any) => state.boardReducer.priorities],
-  (priorities) => priorities || []
-);
-
-const selectTaskLabels = createSelector(
-  [(state: any) => state.taskReducer.labels],
-  (labels) => labels || []
-);
-
-const selectBoardLabels = createSelector(
-  [(state: any) => state.boardReducer.labels],
-  (labels) => labels || []
-);
-
-const selectTaskAssignees = createSelector(
-  [(state: any) => state.taskReducer.taskAssignees],
-  (assignees) => assignees || []
-);
-
-const selectBoardAssignees = createSelector(
-  [(state: any) => state.boardReducer.taskAssignees],
-  (assignees) => assignees || []
-);
-
-const selectProject = createSelector(
-  [(state: any) => state.projectReducer.project],
-  (project) => project
-);
-
-const selectSelectedPriorities = createSelector(
-  [(state: any) => state.taskManagement.selectedPriorities],
-  (selectedPriorities) => selectedPriorities || []
+// Optimized selectors with proper transformation logic
+const selectFilterData = createSelector(
+  [
+    (state: any) => state.priorityReducer.priorities,
+    (state: any) => state.taskReducer.priorities,
+    (state: any) => state.boardReducer.priorities,
+    (state: any) => state.taskReducer.labels,
+    (state: any) => state.boardReducer.labels,
+    (state: any) => state.taskReducer.taskAssignees,
+    (state: any) => state.boardReducer.taskAssignees,
+    (state: any) => state.projectReducer.project,
+    (state: any) => state.taskManagement.selectedPriorities,
+  ],
+  (
+    priorities,
+    taskPriorities,
+    boardPriorities,
+    taskLabels,
+    boardLabels,
+    taskAssignees,
+    boardAssignees,
+    project,
+    selectedPriorities
+  ) => ({
+    priorities: priorities || [],
+    taskPriorities: taskPriorities || [],
+    boardPriorities: boardPriorities || [],
+    taskLabels: taskLabels || [],
+    boardLabels: boardLabels || [],
+    taskAssignees: taskAssignees || [],
+    boardAssignees: boardAssignees || [],
+    project,
+    selectedPriorities: selectedPriorities || [],
+  })
 );
 
 // Types
@@ -118,50 +114,29 @@ const useFilterData = (): FilterSection[] => {
   const [searchParams] = useSearchParams();
   const { projectView } = useTabSearchParam();
   
-  // Use memoized selectors to prevent unnecessary re-renders
-  const priorities = useAppSelector(selectPriorities);
-  const taskPriorities = useAppSelector(selectTaskPriorities);
-  const boardPriorities = useAppSelector(selectBoardPriorities);
-  const taskLabels = useAppSelector(selectTaskLabels);
-  const boardLabels = useAppSelector(selectBoardLabels);
-  const taskAssignees = useAppSelector(selectTaskAssignees);
-  const boardAssignees = useAppSelector(selectBoardAssignees);
-  const taskGroupBy = useAppSelector(state => state.taskReducer.groupBy);
-  const boardGroupBy = useAppSelector(state => state.boardReducer.groupBy);
-  const project = useAppSelector(selectProject);
+  // Use optimized selector to get all filter data at once
+  const filterData = useAppSelector(selectFilterData);
   const currentGrouping = useAppSelector(selectCurrentGrouping);
-  const selectedPriorities = useAppSelector(selectSelectedPriorities);
 
   const tab = searchParams.get('tab');
   const currentProjectView = tab === 'tasks-list' ? 'list' : 'kanban';
 
-  // Debug logging
-  console.log('Filter Data Debug:', {
-    priorities: priorities?.length,
-    taskAssignees: taskAssignees?.length,
-    boardAssignees: boardAssignees?.length,
-    labels: taskLabels?.length,
-    boardLabels: boardLabels?.length,
-    currentProjectView,
-    projectId: project?.id
-  });
-
   return useMemo(() => {
-    const currentPriorities = currentProjectView === 'list' ? taskPriorities : boardPriorities;
-    const currentLabels = currentProjectView === 'list' ? taskLabels : boardLabels;
-    const currentAssignees = currentProjectView === 'list' ? taskAssignees : boardAssignees;
+    const currentPriorities = currentProjectView === 'list' ? filterData.taskPriorities : filterData.boardPriorities;
+    const currentLabels = currentProjectView === 'list' ? filterData.taskLabels : filterData.boardLabels;
+    const currentAssignees = currentProjectView === 'list' ? filterData.taskAssignees : filterData.boardAssignees;
     const groupByValue = currentGrouping || 'status';
 
     return [
       {
         id: 'priority',
         label: 'Priority',
-        options: priorities.map((p: any) => ({
+        options: filterData.priorities.map((p: any) => ({
           value: p.id,
           label: p.name,
           color: p.color_code,
         })),
-        selectedValues: selectedPriorities,
+        selectedValues: filterData.selectedPriorities,
         multiSelect: true,
         searchable: false,
         icon: FlagOutlined,
@@ -206,25 +181,15 @@ const useFilterData = (): FilterSection[] => {
         options: [
           { id: 'status', label: t('statusText'), value: 'status' },
           { id: 'priority', label: t('priorityText'), value: 'priority' },
-          { id: 'phase', label: project?.phase_label || t('phaseText'), value: 'phase' },
+          { id: 'phase', label: filterData.project?.phase_label || t('phaseText'), value: 'phase' },
         ],
       },
     ];
   }, [
-    priorities, 
-    taskPriorities, 
-    boardPriorities, 
-    taskLabels, 
-    boardLabels, 
-    taskAssignees, 
-    boardAssignees, 
-    taskGroupBy, 
-    boardGroupBy, 
-    project, 
+    filterData, 
     currentProjectView, 
     t, 
-    currentGrouping,
-    selectedPriorities
+    currentGrouping
   ]);
 };
 
