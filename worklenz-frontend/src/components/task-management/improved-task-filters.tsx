@@ -45,6 +45,17 @@ import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
+// --- Enhanced Kanban imports ---
+import {
+  setGroupBy as setKanbanGroupBy,
+  setSearch as setKanbanSearch,
+  setArchived as setKanbanArchived,
+  setTaskAssignees as setKanbanTaskAssignees,
+  setLabels as setKanbanLabels,
+  setPriorities as setKanbanPriorities,
+  setMembers as setKanbanMembers,
+  fetchEnhancedKanbanGroups,
+} from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 // Optimized selectors with proper transformation logic
 const selectFilterData = createSelector(
@@ -109,7 +120,7 @@ interface ImprovedTaskFiltersProps {
 }
 
 // Get real filter data from Redux state
-const useFilterData = (): FilterSection[] => {
+const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
   const { t } = useTranslation('task-list-filters');
   const [searchParams] = useSearchParams();
   const { projectView } = useTabSearchParam();
@@ -117,80 +128,145 @@ const useFilterData = (): FilterSection[] => {
   // Use optimized selector to get all filter data at once
   const filterData = useAppSelector(selectFilterData);
   const currentGrouping = useAppSelector(selectCurrentGrouping);
-
+  // Enhanced Kanban selectors
+  const kanbanState = useAppSelector((state: RootState) => state.enhancedKanbanReducer);
+  const kanbanProject = useAppSelector((state: RootState) => state.projectReducer.project);
+  // Determine which state to use
+  const isBoard = position === 'board';
   const tab = searchParams.get('tab');
   const currentProjectView = tab === 'tasks-list' ? 'list' : 'kanban';
 
   return useMemo(() => {
-    const currentPriorities = currentProjectView === 'list' ? filterData.taskPriorities : filterData.boardPriorities;
-    const currentLabels = currentProjectView === 'list' ? filterData.taskLabels : filterData.boardLabels;
-    const currentAssignees = currentProjectView === 'list' ? filterData.taskAssignees : filterData.boardAssignees;
-    const groupByValue = currentGrouping || 'status';
-
-    return [
-      {
-        id: 'priority',
-        label: 'Priority',
-        options: filterData.priorities.map((p: any) => ({
-          value: p.id,
-          label: p.name,
-          color: p.color_code,
-        })),
-        selectedValues: filterData.selectedPriorities,
-        multiSelect: true,
-        searchable: false,
-        icon: FlagOutlined,
-      },
-      {
-        id: 'assignees',
-        label: t('membersText'),
-        icon: TeamOutlined,
-        multiSelect: true,
-        searchable: true,
-        selectedValues: currentAssignees.filter((m: any) => m.selected && m.id).map((m: any) => m.id || ''),
-        options: currentAssignees.map((assignee: any) => ({
-          id: assignee.id || '',
-          label: assignee.name || '',
-          value: assignee.id || '',
-          avatar: assignee.avatar_url,
-          selected: assignee.selected,
-        })),
-      },
-      {
-        id: 'labels',
-        label: t('labelsText'),
-        icon: TagOutlined,
-        multiSelect: true,
-        searchable: true,
-        selectedValues: currentLabels.filter((l: any) => l.selected && l.id).map((l: any) => l.id || ''),
-        options: currentLabels.map((label: any) => ({
-          id: label.id || '',
-          label: label.name || '',
-          value: label.id || '',
-          color: label.color_code,
-          selected: label.selected,
-        })),
-      },
-      {
-        id: 'groupBy',
-        label: t('groupByText'),
-        icon: GroupOutlined,
-        multiSelect: false,
-        searchable: false,
-        selectedValues: [groupByValue],
-        options: [
-          { id: 'status', label: t('statusText'), value: 'status' },
-          { id: 'priority', label: t('priorityText'), value: 'priority' },
-          { id: 'phase', label: filterData.project?.phase_label || t('phaseText'), value: 'phase' },
-        ],
-      },
-    ];
-  }, [
-    filterData, 
-    currentProjectView, 
-    t, 
-    currentGrouping
-  ]);
+    if (isBoard) {
+      // Use enhanced kanban state
+      const currentPriorities = kanbanState.priorities || [];
+      const currentLabels = kanbanState.labels || [];
+      const currentAssignees = kanbanState.taskAssignees || [];
+      const groupByValue = kanbanState.groupBy || 'status';
+      return [
+        {
+          id: 'priority',
+          label: 'Priority',
+          options: (kanbanProject?.priorities || []).map((p: any) => ({
+            value: p.id,
+            label: p.name,
+            color: p.color_code,
+          })),
+          selectedValues: currentPriorities,
+          multiSelect: true,
+          searchable: false,
+          icon: FlagOutlined,
+        },
+        {
+          id: 'assignees',
+          label: t('membersText'),
+          icon: TeamOutlined,
+          multiSelect: true,
+          searchable: true,
+          selectedValues: currentAssignees.filter((m: any) => m.selected && m.id).map((m: any) => m.id || ''),
+          options: currentAssignees.map((assignee: any) => ({
+            id: assignee.id || '',
+            label: assignee.name || '',
+            value: assignee.id || '',
+            avatar: assignee.avatar_url,
+            selected: assignee.selected,
+          })),
+        },
+        {
+          id: 'labels',
+          label: t('labelsText'),
+          icon: TagOutlined,
+          multiSelect: true,
+          searchable: true,
+          selectedValues: currentLabels.filter((l: any) => l.selected && l.id).map((l: any) => l.id || ''),
+          options: currentLabels.map((label: any) => ({
+            id: label.id || '',
+            label: label.name || '',
+            value: label.id || '',
+            color: label.color_code,
+            selected: label.selected,
+          })),
+        },
+        {
+          id: 'groupBy',
+          label: t('groupByText'),
+          icon: GroupOutlined,
+          multiSelect: false,
+          searchable: false,
+          selectedValues: [groupByValue],
+          options: [
+            { id: 'status', label: t('statusText'), value: 'status' },
+            { id: 'priority', label: t('priorityText'), value: 'priority' },
+            { id: 'phase', label: kanbanProject?.phase_label || t('phaseText'), value: 'phase' },
+          ],
+        },
+      ];
+    } else {
+      // Use task management/board state
+      const currentPriorities = currentProjectView === 'list' ? filterData.taskPriorities : filterData.boardPriorities;
+      const currentLabels = currentProjectView === 'list' ? filterData.taskLabels : filterData.boardLabels;
+      const currentAssignees = currentProjectView === 'list' ? filterData.taskAssignees : filterData.boardAssignees;
+      const groupByValue = currentGrouping || 'status';
+      return [
+        {
+          id: 'priority',
+          label: 'Priority',
+          options: filterData.priorities.map((p: any) => ({
+            value: p.id,
+            label: p.name,
+            color: p.color_code,
+          })),
+          selectedValues: filterData.selectedPriorities,
+          multiSelect: true,
+          searchable: false,
+          icon: FlagOutlined,
+        },
+        {
+          id: 'assignees',
+          label: t('membersText'),
+          icon: TeamOutlined,
+          multiSelect: true,
+          searchable: true,
+          selectedValues: currentAssignees.filter((m: any) => m.selected && m.id).map((m: any) => m.id || ''),
+          options: currentAssignees.map((assignee: any) => ({
+            id: assignee.id || '',
+            label: assignee.name || '',
+            value: assignee.id || '',
+            avatar: assignee.avatar_url,
+            selected: assignee.selected,
+          })),
+        },
+        {
+          id: 'labels',
+          label: t('labelsText'),
+          icon: TagOutlined,
+          multiSelect: true,
+          searchable: true,
+          selectedValues: currentLabels.filter((l: any) => l.selected && l.id).map((l: any) => l.id || ''),
+          options: currentLabels.map((label: any) => ({
+            id: label.id || '',
+            label: label.name || '',
+            value: label.id || '',
+            color: label.color_code,
+            selected: label.selected,
+          })),
+        },
+        {
+          id: 'groupBy',
+          label: t('groupByText'),
+          icon: GroupOutlined,
+          multiSelect: false,
+          searchable: false,
+          selectedValues: [groupByValue],
+          options: [
+            { id: 'status', label: t('statusText'), value: 'status' },
+            { id: 'priority', label: t('priorityText'), value: 'priority' },
+            { id: 'phase', label: filterData.project?.phase_label || t('phaseText'), value: 'phase' },
+          ],
+        },
+      ];
+    }
+  }, [isBoard, kanbanState, kanbanProject, filterData, currentProjectView, t, currentGrouping]);
 };
 
 // Filter Dropdown Component
@@ -629,7 +705,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
   // Get real filter data
-  const filterSectionsData = useFilterData();
+  const filterSectionsData = useFilterData(position);
 
   // Check if data is loaded - memoize this computation
   const isDataLoaded = useMemo(() => {
@@ -686,67 +762,76 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
 
   const handleSelectionChange = useCallback((sectionId: string, values: string[]) => {
     if (!projectId) return;
-
-    // Prevent clearing all group by options
-    if (sectionId === 'groupBy' && values.length === 0) {
-      return; // Do nothing
+    if (position === 'board') {
+      // Enhanced Kanban logic
+      if (sectionId === 'groupBy' && values.length > 0) {
+        dispatch(setKanbanGroupBy(values[0] as any));
+        dispatch(fetchEnhancedKanbanGroups(projectId));
+        return;
+      }
+      if (sectionId === 'priority') {
+        dispatch(setKanbanPriorities(values));
+        dispatch(fetchEnhancedKanbanGroups(projectId));
+        return;
+      }
+      if (sectionId === 'assignees') {
+        dispatch(setKanbanTaskAssignees(
+          // Map to {id, selected, ...}
+          values.map(id => ({ id, selected: true }))
+        ));
+        dispatch(fetchEnhancedKanbanGroups(projectId));
+        return;
+      }
+      if (sectionId === 'labels') {
+        dispatch(setKanbanLabels(
+          values.map(id => ({ id, selected: true }))
+        ));
+        dispatch(fetchEnhancedKanbanGroups(projectId));
+        return;
+      }
+    } else {
+      // ... existing list logic ...
+      if (sectionId === 'groupBy' && values.length > 0) {
+        dispatch(setCurrentGrouping(values[0] as 'status' | 'priority' | 'phase'));
+        dispatch(fetchTasksV3(projectId));
+        return;
+      }
+      if (sectionId === 'priority') {
+        dispatch(setSelectedPriorities(values));
+        dispatch(fetchTasksV3(projectId));
+        return;
+      }
+      if (sectionId === 'assignees') {
+        const updatedAssignees = currentTaskAssignees.map(member => ({
+          ...member,
+          selected: values.includes(member.id || '')
+        }));
+        dispatch(setMembers(updatedAssignees));
+        dispatch(fetchTasksV3(projectId));
+        return;
+      }
+      if (sectionId === 'labels') {
+        const updatedLabels = currentTaskLabels.map(label => ({
+          ...label,
+          selected: values.includes(label.id || '')
+        }));
+        dispatch(setLabels(updatedLabels));
+        dispatch(fetchTasksV3(projectId));
+        return;
+      }
     }
-
-    // Update local state first
-    setFilterSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? { ...section, selectedValues: values }
-        : section
-    ));
-
-    // Use task management slices for groupBy
-    if (sectionId === 'groupBy' && values.length > 0) {
-      dispatch(setCurrentGrouping(values[0] as 'status' | 'priority' | 'phase'));
-      dispatch(fetchTasksV3(projectId));
-      return;
-    }
-
-    // Handle priorities
-    if (sectionId === 'priority') {
-      console.log('Priority selection changed:', { sectionId, values, projectId });
-      dispatch(setSelectedPriorities(values));
-      dispatch(fetchTasksV3(projectId));
-      return;
-    }
-
-    // Handle assignees (members)
-    if (sectionId === 'assignees') {
-      // Update selected property for each assignee
-      const updatedAssignees = currentTaskAssignees.map(member => ({
-        ...member,
-        selected: values.includes(member.id || '')
-      }));
-      dispatch(setMembers(updatedAssignees));
-      dispatch(fetchTasksV3(projectId));
-      return;
-    }
-
-    // Handle labels
-    if (sectionId === 'labels') {
-      // Update selected property for each label
-      const updatedLabels = currentTaskLabels.map(label => ({
-        ...label,
-        selected: values.includes(label.id || '')
-      }));
-      dispatch(setLabels(updatedLabels));
-      dispatch(fetchTasksV3(projectId));
-      return;
-    }
-  }, [dispatch, projectId, currentTaskAssignees, currentTaskLabels]);
+  }, [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels]);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
-    
-    // Log the search change for now
-    console.log('Search change:', value, { projectView, projectId });
-    
-    // TODO: Implement proper search dispatch
-  }, [projectView, projectId]);
+    if (position === 'board') {
+      dispatch(setKanbanSearch(value));
+      dispatch(fetchEnhancedKanbanGroups(projectId));
+    } else {
+      // ... existing logic ...
+      // TODO: Implement proper search dispatch for list
+    }
+  }, [dispatch, projectId, position]);
 
   const clearAllFilters = useCallback(() => {
     // TODO: Implement clear all filters
@@ -757,9 +842,13 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
 
   const toggleArchived = useCallback(() => {
     setShowArchived(!showArchived);
-    // TODO: Implement proper archived toggle
-    console.log('Toggle archived:', !showArchived);
-  }, [showArchived]);
+    if (position === 'board') {
+      dispatch(setKanbanArchived(!showArchived));
+      dispatch(fetchEnhancedKanbanGroups(projectId));
+    } else {
+      // ... existing logic ...
+    }
+  }, [dispatch, projectId, position, showArchived]);
 
   // Show fields dropdown functionality
   const handleColumnVisibilityChange = useCallback(async (col: ITaskListColumn) => {
