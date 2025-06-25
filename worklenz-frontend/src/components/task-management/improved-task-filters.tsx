@@ -14,37 +14,18 @@ import {
   EyeOutlined,
   InboxOutlined,
   CheckOutlined,
-  SettingOutlined,
-  MoreOutlined,
 } from './antd-imports';
 import { RootState } from '@/app/store';
-import { AppDispatch } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
-import { useSocket } from '@/socket/socketContext';
-import { SocketEvents } from '@/shared/socket-events';
-import { colors } from '@/styles/colors';
-import SingleAvatar from '@components/common/single-avatar/single-avatar';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
-import { 
-  Dropdown, 
-  Checkbox, 
-  Button, 
-  Space,
-  taskManagementAntdConfig 
-} from './antd-imports';
-import { toggleField, TaskListField } from '@/features/task-management/taskListFields.slice';
+import { toggleField } from '@/features/task-management/taskListFields.slice';
 
 // Import Redux actions
 import { fetchTasksV3, setSelectedPriorities } from '@/features/task-management/task-management.slice';
 import { setCurrentGrouping, selectCurrentGrouping } from '@/features/task-management/grouping.slice';
-import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
-import { fetchLabelsByProject, fetchTaskAssignees, setMembers, setLabels } from '@/features/tasks/tasks.slice';
-import { getTeamMembers } from '@/features/team-members/team-members.slice';
-import { ITaskPriority } from '@/types/tasks/taskPriority.types';
-import { ITaskListColumn } from '@/types/tasks/taskList.types';
-import { IGroupBy } from '@/features/tasks/tasks.slice';
+import { setMembers, setLabels } from '@/features/tasks/tasks.slice';
 
 // Optimized selectors with proper transformation logic
 const selectFilterData = createSelector(
@@ -610,13 +591,10 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
 }) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
-  const { socket, connected } = useSocket();
   
   // Get current state values for filter updates
   const currentTaskAssignees = useAppSelector(state => state.taskReducer.taskAssignees);
-  const currentBoardAssignees = useAppSelector(state => state.boardReducer.taskAssignees);
   const currentTaskLabels = useAppSelector(state => state.taskReducer.labels);
-  const currentBoardLabels = useAppSelector(state => state.boardReducer.labels);
 
   // Use the filter data loader hook
   useFilterDataLoader();
@@ -649,7 +627,6 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { projectView } = useTabSearchParam();
-  const { columns } = useAppSelector(state => state.taskReducer);
 
   // Theme-aware class names - memoize to prevent unnecessary re-renders
   const themeClasses = useMemo(() => ({
@@ -761,12 +738,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     console.log('Toggle archived:', !showArchived);
   }, [showArchived]);
 
-  // Show fields dropdown functionality
-  const handleColumnVisibilityChange = useCallback(async (col: ITaskListColumn) => {
-    if (!projectId) return;
-    console.log('Column visibility change:', col);
-    // TODO: Implement column visibility change
-  }, [projectId]);
+
 
   return (
     <div className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-sm ${className}`}>
