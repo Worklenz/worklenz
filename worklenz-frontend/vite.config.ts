@@ -28,129 +28,98 @@ export default defineConfig(({ command, mode }) => {
         { find: '@layouts', replacement: path.resolve(__dirname, './src/layouts') },
         { find: '@services', replacement: path.resolve(__dirname, './src/services') },
       ],
-      // **Ensure single React instance to prevent context issues**
-      dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
-    },
-
-    // **CSS Configuration**
-    css: {
-      preprocessorOptions: {
-        less: {
-          modifyVars: {
-            '@primary-color': '#1890ff',
-          },
-          javascriptEnabled: true,
-        },
-      },
+      // **Ensure single React instance**
+      dedupe: ['react', 'react-dom'],
     },
 
     // **Development Server**
     server: {
       port: 5173,
-      host: true,
       open: true,
+      hmr: {
+        overlay: false,
+      },
     },
 
-    // **Build Configuration**
+    // **Build**
     build: {
-      // **Output Directory**
-      outDir: 'build',
-      
-      // **Source Maps**
-      sourcemap: false,
-      
-      // **Minification**
-      minify: 'terser',
-      
-      // **Terser Options**
-      terserOptions: {
-        compress: {
-          drop_console: isProduction,
-          drop_debugger: isProduction,
-        },
-      },
+      // **Target**
+      target: ['es2020'], // Updated to a more modern target, adjust according to your needs
 
-      // **Rollup Options**
-      rollupOptions: {
-        output: {
-          // **Simplified Manual Chunking Strategy - Fixed for React context issues**
-          manualChunks: (id) => {
-            // Vendor libraries
-            if (id.includes('node_modules')) {
-              // React and React DOM - keep in main vendor to ensure single instance
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'vendor';
-              }
+      // **Output**
+      outDir: 'build',
+      assetsDir: 'assets',
+      cssCodeSplit: true,
+
+      // **Sourcemaps**
+      sourcemap: !isProduction ? 'inline' : false, // Disable sourcemaps in production for smaller bundles
+
+      // **Minification**
+      minify: isProduction ? 'terser' : false,
+      terserOptions: isProduction ? {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+          pure_funcs: ['console.log', 'console.info', 'console.debug'],
+          passes: 2, // Multiple passes for better compression
+        },
+        mangle: {
+          safari10: true,
+        },
+        format: {
+          comments: false,
+        },
+      } : undefined,
+
+      // **Chunk Size Warnings**
+      chunkSizeWarningLimit: 1000,
+
+              // **Rollup Options**
+        rollupOptions: {
+          output: {
+            // **Simplified Chunking Strategy to avoid React context issues**
+            manualChunks: {
+              // Keep React and all React-dependent libraries together
+              'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
               
-              // Ant Design - Keep together to share React context
-              if (id.includes('antd') || id.includes('@ant-design')) {
-                return 'antd';
-              }
+              // Separate chunk for router
+              'react-router': ['react-router-dom'],
               
-              // Chart.js and related
-              if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
-                return 'charts';
-              }
-              
-              // Redux and related state management
-              if (id.includes('@reduxjs/toolkit') || id.includes('react-redux')) {
-                return 'redux';
-              }
-              
-              // React Router
-              if (id.includes('react-router')) {
-                return 'router';
-              }
-              
-              // i18n
-              if (id.includes('react-i18next') || id.includes('i18next')) {
-                return 'i18n';
-              }
-              
-              // Other large libraries
-              if (id.includes('lodash')) {
-                return 'lodash';
-              }
-              
-              if (id.includes('dayjs')) {
-                return 'dayjs';
-              }
-              
-              // Remaining vendor code
-              return 'vendor';
+              // Keep Ant Design separate but ensure React is available
+              'antd': ['antd', '@ant-design/icons'],
+            },
+          
+          // **File Naming Strategies**
+          chunkFileNames: (chunkInfo) => {
+            const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
+            return `assets/js/[name]-[hash].js`;
+          },
+          entryFileNames: 'assets/js/[name]-[hash].js',
+          assetFileNames: (assetInfo) => {
+            if (!assetInfo.name) return 'assets/[name]-[hash].[ext]';
+            const info = assetInfo.name.split('.');
+            let extType = info[info.length - 1];
+            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
+              extType = 'img';
+            } else if (/woff2?|eot|ttf|otf/i.test(extType)) {
+              extType = 'fonts';
             }
-            
-            // Application code chunking
-            // Project view components
-            if (id.includes('src/pages/projects/projectView')) {
-              return 'project-view';
-            }
-            
-            // Other project components
-            if (id.includes('src/pages/projects')) {
-              return 'projects';
-            }
-            
-            // Task management components
-            if (id.includes('src/components/task-') || id.includes('src/features/tasks')) {
-              return 'tasks';
-            }
-            
-            // Settings and admin components
-            if (id.includes('src/pages/settings') || id.includes('src/components/admin')) {
-              return 'admin';
-            }
-            
-            // Common components
-            if (id.includes('src/components/common') || id.includes('src/shared')) {
-              return 'common';
-            }
+            return `assets/${extType}/[name]-[hash].[ext]`;
           },
         },
+        
+        // **External dependencies (if any should be externalized)**
+        external: [],
+        
+        // **Preserve modules to avoid context issues**
+        preserveEntrySignatures: 'strict',
       },
+
+      // **Experimental features for better performance**
+      reportCompressedSize: false, // Disable to speed up build
       
-      // **Chunk Size Warning Limit**
-      chunkSizeWarningLimit: 2000, // Increased to accommodate larger antd chunk
+      // **CSS optimization**
+      cssMinify: isProduction,
     },
 
     // **Optimization**
@@ -159,21 +128,19 @@ export default defineConfig(({ command, mode }) => {
         'react',
         'react-dom',
         'react/jsx-runtime',
-        'react-router-dom',
-        '@reduxjs/toolkit',
-        'react-redux',
-        'react-i18next',
-        'dayjs',
+        'antd',
+        '@ant-design/icons',
       ],
-      // Remove antd from exclude to prevent context issues
-      exclude: [],
+      exclude: [
+        // Add any packages that should not be pre-bundled
+      ],
+      // Force pre-bundling to avoid runtime issues
+      force: true,
     },
 
-    // **Define Global Constants**
+    // **Define global constants**
     define: {
       __DEV__: !isProduction,
-      // Ensure global React is available
-      global: 'globalThis',
     },
   };
 });
