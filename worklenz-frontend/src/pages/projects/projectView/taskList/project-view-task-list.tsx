@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
+import { Empty } from '@/shared/antd-imports';
 import Flex from 'antd/es/flex';
 import Skeleton from 'antd/es/skeleton';
 import { useSearchParams } from 'react-router-dom';
@@ -10,7 +11,6 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchTaskGroups, fetchTaskListColumns } from '@/features/tasks/tasks.slice';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
-import { Empty } from 'antd';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 
 const ProjectViewTaskList = () => {

@@ -1,8 +1,19 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { PushpinFilled, PushpinOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { Badge, Button, ConfigProvider, Flex, Tabs, TabsProps, Tooltip } from 'antd';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
+
+// Centralized Ant Design imports
+import { 
+  Button, 
+  ConfigProvider, 
+  Flex, 
+  Tooltip,
+  Badge,
+  Tabs,
+  PushpinFilled, 
+  PushpinOutlined,
+  type TabsProps
+} from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';

@@ -1,4 +1,10 @@
-import {
+import { 
+  Button, 
+  Dropdown, 
+  Flex, 
+  Tag, 
+  Tooltip, 
+  Typography,
   ArrowLeftOutlined,
   BellFilled,
   BellOutlined,
@@ -9,10 +15,9 @@ import {
   SaveOutlined,
   SettingOutlined,
   SyncOutlined,
-  UsergroupAddOutlined,
-} from '@ant-design/icons';
+  UsergroupAddOutlined
+} from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
-import { Button, Dropdown, Flex, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
