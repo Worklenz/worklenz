@@ -28,6 +28,11 @@ import { setCurrentGrouping, selectCurrentGrouping } from '@/features/task-manag
 import { setMembers, setLabels, setSearch, setPriorities } from '@/features/tasks/tasks.slice';
 import { setBoardSearch } from '@/features/board/board-slice';
 
+// Performance constants
+const FILTER_DEBOUNCE_DELAY = 300; // ms
+const SEARCH_DEBOUNCE_DELAY = 500; // ms
+const MAX_FILTER_OPTIONS = 100; // Limit options to prevent UI lag
+
 // Optimized selectors with proper transformation logic
 const selectFilterData = createSelector(
   [
@@ -88,6 +93,33 @@ interface ImprovedTaskFiltersProps {
   className?: string;
 }
 
+// Enhanced debounce with cancellation support
+function createDebouncedFunction<T extends (...args: any[]) => void>(
+  func: T,
+  delay: number
+): T & { cancel: () => void } {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  
+  const debouncedFunc = ((...args: any[]) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      func(...args);
+      timeoutId = null;
+    }, delay);
+  }) as T & { cancel: () => void };
+  
+  debouncedFunc.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+  
+  return debouncedFunc;
+}
+
 // Get real filter data from Redux state
 const useFilterData = (): FilterSection[] => {
   const { t } = useTranslation('task-list-filters');
@@ -111,7 +143,7 @@ const useFilterData = (): FilterSection[] => {
       {
         id: 'priority',
         label: 'Priority',
-        options: filterData.priorities.map((p: any) => ({
+        options: filterData.priorities.slice(0, MAX_FILTER_OPTIONS).map((p: any) => ({
           value: p.id,
           label: p.name,
           color: p.color_code,
@@ -128,7 +160,7 @@ const useFilterData = (): FilterSection[] => {
         multiSelect: true,
         searchable: true,
         selectedValues: currentAssignees.filter((m: any) => m.selected && m.id).map((m: any) => m.id || ''),
-        options: currentAssignees.map((assignee: any) => ({
+        options: currentAssignees.slice(0, MAX_FILTER_OPTIONS).map((assignee: any) => ({
           id: assignee.id || '',
           label: assignee.name || '',
           value: assignee.id || '',
@@ -143,7 +175,7 @@ const useFilterData = (): FilterSection[] => {
         multiSelect: true,
         searchable: true,
         selectedValues: currentLabels.filter((l: any) => l.selected && l.id).map((l: any) => l.id || ''),
-        options: currentLabels.map((label: any) => ({
+        options: currentLabels.slice(0, MAX_FILTER_OPTIONS).map((label: any) => ({
           id: label.id || '',
           label: label.name || '',
           value: label.id || '',
@@ -187,18 +219,22 @@ const FilterDropdown: React.FC<{
   const [filteredOptions, setFilteredOptions] = useState(section.options);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Filter options based on search term
-  useEffect(() => {
+  // Memoized filter function to prevent unnecessary recalculations
+  const filteredOptionsMemo = useMemo(() => {
     if (!section.searchable || !searchTerm.trim()) {
-      setFilteredOptions(section.options);
-      return;
+      return section.options;
     }
 
-    const filtered = section.options.filter(option =>
-      option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    const searchLower = searchTerm.toLowerCase();
+    return section.options.filter(option =>
+      option.label.toLowerCase().includes(searchLower)
     );
-    setFilteredOptions(filtered);
   }, [searchTerm, section.options, section.searchable]);
+
+  // Update filtered options when memo changes
+  useEffect(() => {
+    setFilteredOptions(filteredOptionsMemo);
+  }, [filteredOptionsMemo]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -454,35 +490,28 @@ const SearchFilter: React.FC<{
   );
 };
 
-// Custom debounce implementation
-function debounce(func: (...args: any[]) => void, wait: number) {
-  let timeout: ReturnType<typeof setTimeout>;
-  return (...args: any[]) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
-
 const LOCAL_STORAGE_KEY = 'worklenz.taskManagement.fields';
 
 const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ themeClasses, isDarkMode }) => {
   const dispatch = useDispatch();
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
   const fields = Array.isArray(fieldsRaw) ? fieldsRaw : [];
-  const sortedFields = [...fields].sort((a, b) => a.order - b.order);
+  const sortedFields = useMemo(() => [...fields].sort((a, b) => a.order - b.order), [fields]);
 
   const [open, setOpen] = React.useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Debounced save to localStorage using custom debounce
-  const debouncedSaveFields = useMemo(() => debounce((fieldsToSave: typeof fields) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fieldsToSave));
-  }, 300), []);
+  // Debounced save to localStorage using enhanced debounce
+  const debouncedSaveFields = useMemo(() => 
+    createDebouncedFunction((fieldsToSave: typeof fields) => {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fieldsToSave));
+    }, 300), 
+  []);
 
   useEffect(() => {
     debouncedSaveFields(fields);
     // Cleanup debounce on unmount
-    return () => { /* no cancel needed for custom debounce */ };
+    return () => debouncedSaveFields.cancel();
   }, [fields, debouncedSaveFields]);
 
   // Close dropdown on outside click
@@ -497,7 +526,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const visibleCount = sortedFields.filter(field => field.visible).length;
+  const visibleCount = useMemo(() => sortedFields.filter(field => field.visible).length, [sortedFields]);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -604,6 +633,11 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   const [showArchived, setShowArchived] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  const [clearingFilters, setClearingFilters] = useState(false);
+
+  // Refs for debounced functions
+  const debouncedFilterChangeRef = useRef<((projectId: string) => void) & { cancel: () => void } | null>(null);
+  const debouncedSearchChangeRef = useRef<((projectId: string, value: string) => void) & { cancel: () => void } | null>(null);
 
   // Get real filter data
   const filterSectionsData = useFilterData();
@@ -618,9 +652,13 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     return filterSectionsData;
   }, [filterSectionsData]);
 
+  // Only update filter sections if they have actually changed
   useEffect(() => {
-    setFilterSections(memoizedFilterSections);
-  }, [memoizedFilterSections]);
+    const hasChanged = JSON.stringify(filterSections) !== JSON.stringify(memoizedFilterSections);
+    if (hasChanged && memoizedFilterSections.length > 0) {
+      setFilterSections(memoizedFilterSections);
+    }
+  }, [memoizedFilterSections, filterSections]);
 
   // Redux selectors for theme and other state
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
@@ -649,11 +687,46 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     searchText: isDarkMode ? 'text-gray-200' : 'text-gray-900',
   }), [isDarkMode]);
 
-  // Calculate active filters count
+  // Initialize debounced functions
   useEffect(() => {
-    const count = filterSections.reduce((acc, section) => acc + section.selectedValues.length, 0);
-    setActiveFiltersCount(count + (searchValue ? 1 : 0));
+    // Debounced filter change function
+    debouncedFilterChangeRef.current = createDebouncedFunction((projectId: string) => {
+      dispatch(fetchTasksV3(projectId));
+    }, FILTER_DEBOUNCE_DELAY);
+
+    // Debounced search change function
+    debouncedSearchChangeRef.current = createDebouncedFunction((projectId: string, value: string) => {
+      // Dispatch search action based on current view
+      if (projectView === 'list') {
+        dispatch(setSearch(value));
+      } else {
+        dispatch(setBoardSearch(value));
+      }
+      
+      // Trigger task refetch with new search value
+      dispatch(fetchTasksV3(projectId));
+    }, SEARCH_DEBOUNCE_DELAY);
+
+    // Cleanup function
+    return () => {
+      debouncedFilterChangeRef.current?.cancel();
+      debouncedSearchChangeRef.current?.cancel();
+    };
+  }, [dispatch, projectView]);
+
+  // Calculate active filters count - memoized to prevent unnecessary recalculations
+  const calculatedActiveFiltersCount = useMemo(() => {
+    const count = filterSections.reduce((acc, section) => 
+      section.id === 'groupBy' ? acc : acc + section.selectedValues.length, 0
+    );
+    return count + (searchValue ? 1 : 0);
   }, [filterSections, searchValue]);
+
+  useEffect(() => {
+    if (activeFiltersCount !== calculatedActiveFiltersCount) {
+      setActiveFiltersCount(calculatedActiveFiltersCount);
+    }
+  }, [calculatedActiveFiltersCount, activeFiltersCount]);
 
   // Handlers
   const handleDropdownToggle = useCallback((sectionId: string) => {
@@ -668,49 +741,46 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
       return; // Do nothing
     }
 
-    // Update local state first
+    // Update local state first for immediate UI feedback
     setFilterSections(prev => prev.map(section => 
       section.id === sectionId 
         ? { ...section, selectedValues: values }
         : section
     ));
 
-    // Use task management slices for groupBy
+    // Use task management slices for groupBy (immediate, no debounce)
     if (sectionId === 'groupBy' && values.length > 0) {
       dispatch(setCurrentGrouping(values[0] as 'status' | 'priority' | 'phase'));
       dispatch(fetchTasksV3(projectId));
       return;
     }
 
-    // Handle priorities
+    // Handle priorities (with debounce)
     if (sectionId === 'priority') {
-      console.log('Priority selection changed:', { sectionId, values, projectId });
       dispatch(setPriorities(values));
-      dispatch(fetchTasksV3(projectId));
+      debouncedFilterChangeRef.current?.(projectId);
       return;
     }
 
-    // Handle assignees (members)
+    // Handle assignees (members) (with debounce)
     if (sectionId === 'assignees') {
-      // Update selected property for each assignee
       const updatedAssignees = currentTaskAssignees.map(member => ({
         ...member,
         selected: values.includes(member.id || '')
       }));
       dispatch(setMembers(updatedAssignees));
-      dispatch(fetchTasksV3(projectId));
+      debouncedFilterChangeRef.current?.(projectId);
       return;
     }
 
-    // Handle labels
+    // Handle labels (with debounce)
     if (sectionId === 'labels') {
-      // Update selected property for each label
       const updatedLabels = currentTaskLabels.map(label => ({
         ...label,
         selected: values.includes(label.id || '')
       }));
       dispatch(setLabels(updatedLabels));
-      dispatch(fetchTasksV3(projectId));
+      debouncedFilterChangeRef.current?.(projectId);
       return;
     }
   }, [dispatch, projectId, currentTaskAssignees, currentTaskLabels]);
@@ -720,57 +790,79 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     
     if (!projectId) return;
     
-    // Dispatch search action based on current view
-    if (projectView === 'list') {
-      // For list view, use the tasks slice
-      dispatch(setSearch(value));
-    } else {
-      // For board view, use the board slice
-      dispatch(setBoardSearch(value));
-    }
-    
-    console.log('Search change:', value, { projectView, projectId });
-    
-    // Trigger task refetch with new search value
-    dispatch(fetchTasksV3(projectId));
-  }, [projectView, projectId, dispatch]);
+    // Use debounced search
+    debouncedSearchChangeRef.current?.(projectId, value);
+  }, [projectId]);
 
-  const clearAllFilters = useCallback(() => {
-    if (!projectId) return;
+  const clearAllFilters = useCallback(async () => {
+    if (!projectId || clearingFilters) return;
     
-    // Clear search
-    setSearchValue('');
-    if (projectView === 'list') {
-      dispatch(setSearch(''));
-    } else {
-      dispatch(setBoardSearch(''));
+    // Set loading state to prevent multiple clicks
+    setClearingFilters(true);
+    
+    try {
+      // Cancel any pending debounced calls
+      debouncedFilterChangeRef.current?.cancel();
+      debouncedSearchChangeRef.current?.cancel();
+      
+      // Batch all state updates together to prevent multiple re-renders
+      const batchUpdates = () => {
+        // Clear local state immediately for UI feedback
+        setSearchValue('');
+        setShowArchived(false);
+        
+        // Update local filter sections state immediately
+        setFilterSections(prev => prev.map(section => ({
+          ...section,
+          selectedValues: section.id === 'groupBy' ? section.selectedValues : [] // Keep groupBy, clear others
+        })));
+      };
+      
+      // Execute all local state updates in a batch
+      batchUpdates();
+      
+      // Prepare all Redux actions to be dispatched together
+      const reduxUpdates = () => {
+        // Clear search based on view
+        if (projectView === 'list') {
+          dispatch(setSearch(''));
+        } else {
+          dispatch(setBoardSearch(''));
+        }
+        
+        // Clear label filters
+        const clearedLabels = currentTaskLabels.map(label => ({
+          ...label,
+          selected: false
+        }));
+        dispatch(setLabels(clearedLabels));
+        
+        // Clear assignee filters
+        const clearedAssignees = currentTaskAssignees.map(member => ({
+          ...member,
+          selected: false
+        }));
+        dispatch(setMembers(clearedAssignees));
+        
+        // Clear priority filters
+        dispatch(setPriorities([]));
+      };
+      
+      // Execute Redux updates
+      reduxUpdates();
+      
+      // Use a short timeout to batch Redux state updates before API call
+      // This ensures all filter state is updated before the API call
+      setTimeout(() => {
+        dispatch(fetchTasksV3(projectId));
+        // Reset loading state after API call is initiated
+        setTimeout(() => setClearingFilters(false), 100);
+      }, 0);
+    } catch (error) {
+      console.error('Error clearing filters:', error);
+      setClearingFilters(false);
     }
-    
-    // Clear label filters
-    const clearedLabels = currentTaskLabels.map(label => ({
-      ...label,
-      selected: false
-    }));
-    dispatch(setLabels(clearedLabels));
-    
-    // Clear assignee filters
-    const clearedAssignees = currentTaskAssignees.map(member => ({
-      ...member,
-      selected: false
-    }));
-    dispatch(setMembers(clearedAssignees));
-    
-    // Clear priority filters
-    dispatch(setPriorities([]));
-    
-    // Clear other filters
-    setShowArchived(false);
-    
-    // Trigger task refetch with cleared filters
-    dispatch(fetchTasksV3(projectId));
-    
-    console.log('Clear all filters');
-  }, [projectId, projectView, dispatch, currentTaskLabels, currentTaskAssignees]);
+  }, [projectId, projectView, dispatch, currentTaskLabels, currentTaskAssignees, clearingFilters]);
 
   const toggleArchived = useCallback(() => {
     setShowArchived(!showArchived);
@@ -823,11 +915,16 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
               </span>
               <button
                 onClick={clearAllFilters}
-                className={`text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors duration-150 ${
-                  isDarkMode ? 'text-blue-400 hover:text-blue-300' : ''
+                disabled={clearingFilters}
+                className={`text-xs font-medium transition-colors duration-150 ${
+                  clearingFilters 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : isDarkMode 
+                      ? 'text-blue-400 hover:text-blue-300' 
+                      : 'text-blue-600 hover:text-blue-700'
                 }`}
               >
-                Clear all
+                {clearingFilters ? 'Clearing...' : 'Clear all'}
               </button>
             </div>
           )}
@@ -865,7 +962,19 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
               <SearchOutlined className="w-2.5 h-2.5" />
               <span>"{searchValue}"</span>
               <button
-                onClick={() => setSearchValue('')}
+                onClick={() => {
+                  setSearchValue('');
+                  if (projectId) {
+                    // Cancel pending search and immediately clear
+                    debouncedSearchChangeRef.current?.cancel();
+                    if (projectView === 'list') {
+                      dispatch(setSearch(''));
+                    } else {
+                      dispatch(setBoardSearch(''));
+                    }
+                    dispatch(fetchTasksV3(projectId));
+                  }
+                }}
                 className={`ml-1 rounded-full p-0.5 transition-colors duration-150 ${
                   isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-200'
                 }`}
@@ -896,6 +1005,14 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
                     <span>{option.label}</span>
                     <button
                       onClick={() => {
+                        // Update local state immediately for UI feedback
+                        setFilterSections(prev => prev.map(s => 
+                          s.id === section.id 
+                            ? { ...s, selectedValues: s.selectedValues.filter(v => v !== value) }
+                            : s
+                        ));
+                        
+                        // Use debounced API call
                         const newValues = section.selectedValues.filter(v => v !== value);
                         handleSelectionChange(section.id, newValues);
                       }}
