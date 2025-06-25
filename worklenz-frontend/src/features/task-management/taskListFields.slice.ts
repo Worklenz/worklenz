@@ -31,26 +31,17 @@ const LOCAL_STORAGE_KEY = 'worklenz.taskManagement.fields';
 
 function loadFields(): TaskListField[] {
   const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-  console.log('Loading fields from localStorage:', stored);
   
-  // Temporarily force defaults to debug
-  console.log('FORCING DEFAULT FIELDS FOR DEBUGGING');
-  return DEFAULT_FIELDS;
-  
-  /* Commented out for debugging
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      console.log('Parsed fields from localStorage:', parsed);
       return parsed;
     } catch (error) {
       console.warn('Failed to parse stored fields, using defaults:', error);
     }
   }
   
-  console.log('Using default fields:', DEFAULT_FIELDS);
   return DEFAULT_FIELDS;
-  */
 }
 
 function saveFields(fields: TaskListField[]) {

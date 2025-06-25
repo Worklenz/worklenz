@@ -39,14 +39,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   // Get field visibility from taskListFields slice
   const taskListFields = useSelector((state: RootState) => state.taskManagementFields) as TaskListField[];
   
-  // Debug logging
-  useEffect(() => {
-    console.log('VirtualizedTaskList Debug:', {
-      taskListFields,
-      fieldsLength: taskListFields?.length,
-      fieldsState: taskListFields?.map(f => ({ key: f.key, visible: f.visible }))
-    });
-  }, [taskListFields]);
+
 
   // Get tasks for this group using memoization for performance
   const groupTasks = useMemo(() => {
@@ -105,12 +98,22 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   ];
 
   const allScrollableColumns = [
+    { key: 'description', label: 'Description', width: 200, fieldKey: 'DESCRIPTION' },
     { key: 'progress', label: 'Progress', width: 90, fieldKey: 'PROGRESS' },
     { key: 'members', label: 'Members', width: 150, fieldKey: 'ASSIGNEES' },
     { key: 'labels', label: 'Labels', width: 200, fieldKey: 'LABELS' },
+    { key: 'phase', label: 'Phase', width: 100, fieldKey: 'PHASE' },
     { key: 'status', label: 'Status', width: 100, fieldKey: 'STATUS' },
     { key: 'priority', label: 'Priority', width: 100, fieldKey: 'PRIORITY' },
     { key: 'timeTracking', label: 'Time Tracking', width: 120, fieldKey: 'TIME_TRACKING' },
+    { key: 'estimation', label: 'Estimation', width: 100, fieldKey: 'ESTIMATION' },
+    { key: 'startDate', label: 'Start Date', width: 120, fieldKey: 'START_DATE' },
+    { key: 'dueDate', label: 'Due Date', width: 120, fieldKey: 'DUE_DATE' },
+    { key: 'dueTime', label: 'Due Time', width: 100, fieldKey: 'DUE_TIME' },
+    { key: 'completedDate', label: 'Completed Date', width: 130, fieldKey: 'COMPLETED_DATE' },
+    { key: 'createdDate', label: 'Created Date', width: 120, fieldKey: 'CREATED_DATE' },
+    { key: 'lastUpdated', label: 'Last Updated', width: 130, fieldKey: 'LAST_UPDATED' },
+    { key: 'reporter', label: 'Reporter', width: 100, fieldKey: 'REPORTER' },
   ];
 
   // Filter columns based on field visibility
@@ -144,6 +147,8 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   const fixedWidth = fixedColumns.reduce((sum, col) => sum + col.width, 0);
   const scrollableWidth = scrollableColumns.reduce((sum, col) => sum + col.width, 0);
   const totalTableWidth = fixedWidth + scrollableWidth;
+
+
 
   // Row renderer for virtualization (only task rows)
   const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {

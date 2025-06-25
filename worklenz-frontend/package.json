@@ -26,7 +26,7 @@
     "@tanstack/react-table": "^8.20.6",
     "@tanstack/react-virtual": "^3.11.2",
     "@tinymce/tinymce-react": "^5.1.1",
-    "antd": "^5.24.9",
+    "antd": "^5.26.2",
     "axios": "^1.9.0",
     "chart.js": "^4.4.7",
     "chartjs-plugin-datalabels": "^2.2.0",

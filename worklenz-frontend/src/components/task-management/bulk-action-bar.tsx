@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Typography, Dropdown, Menu, Popconfirm, message, Tooltip, Badge, CheckboxChangeEvent, InputRef } from 'antd';
-import {
+import { 
+  Button, 
+  Typography, 
+  Dropdown, 
+  Menu, 
+  Popconfirm, 
+  Tooltip, 
+  Badge,
   DeleteOutlined,
-  EditOutlined,
-  TagOutlined,
-  UserOutlined,
-  CheckOutlined,
   CloseOutlined,
   MoreOutlined,
   RetweetOutlined,
@@ -13,11 +15,11 @@ import {
   InboxOutlined,
   TagsOutlined,
   UsergroupAddOutlined,
-} from '@ant-design/icons';
+  type CheckboxChangeEvent,
+  type InputRef
+} from './antd-imports';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
 import { IGroupBy, fetchTaskGroups } from '@/features/tasks/tasks.slice';
-import { AppDispatch, RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
