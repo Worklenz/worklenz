@@ -83,14 +83,14 @@ const VirtualizedTaskGroup: React.FC<VirtualizedTaskGroupProps> = React.memo(({
                 <div className="task-table-cell task-table-header-cell" style={{ width: '90px' }}>
                   <span className="column-header-text">Progress</span>
                 </div>
+                <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
+                  <span className="column-header-text">Status</span>
+                </div>
                 <div className="task-table-cell task-table-header-cell" style={{ width: '150px' }}>
                   <span className="column-header-text">Members</span>
                 </div>
                 <div className="task-table-cell task-table-header-cell" style={{ width: '200px' }}>
                   <span className="column-header-text">Labels</span>
-                </div>
-                <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
-                  <span className="column-header-text">Status</span>
                 </div>
                 <div className="task-table-cell task-table-header-cell" style={{ width: '100px' }}>
                   <span className="column-header-text">Priority</span>

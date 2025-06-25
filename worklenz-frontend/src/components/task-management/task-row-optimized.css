@@ -1,0 +1,157 @@
+/* TaskRow Performance Optimizations CSS */
+
+.task-row-optimized {
+  contain: layout style;
+  will-change: transform;
+  transform: translateZ(0); /* Force GPU acceleration */
+}
+
+.task-row-optimized:hover {
+  contain: layout style paint;
+}
+
+.task-row-optimized.task-row-dragging {
+  contain: layout;
+  will-change: transform;
+  z-index: 1000;
+}
+
+.task-row-optimized.task-row-virtualized {
+  contain: strict;
+  will-change: transform;
+}
+
+.task-row-optimized.task-row-selected {
+  contain: layout style;
+}
+
+.task-name-edit-active {
+  contain: none; /* Disable containment during editing for proper focus */
+}
+
+.task-name-input {
+  contain: layout;
+  will-change: contents;
+}
+
+/* Performance optimizations for drag and drop */
+.task-row-optimized [data-dnd-draggable] {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.task-row-optimized [data-dnd-drag-handle] {
+  cursor: grab;
+  will-change: transform;
+}
+
+.task-row-optimized [data-dnd-drag-handle]:active {
+  cursor: grabbing;
+}
+
+/* Virtualization specific optimizations */
+.task-row-virtualized {
+  contain: strict;
+  will-change: transform;
+}
+
+.task-row-virtualized * {
+  contain: layout style;
+}
+
+/* Smooth scrolling for virtualized lists */
+.virtualized-task-container {
+  scroll-behavior: smooth;
+  contain: layout style paint;
+}
+
+/* Optimize frequent updates */
+.task-progress-circle {
+  contain: layout style paint;
+  will-change: stroke-dasharray;
+}
+
+.task-status-dropdown {
+  contain: layout style;
+  will-change: background-color;
+}
+
+.task-assignee-avatar {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+/* Reduce layout thrashing */
+.task-cell {
+  contain: layout;
+  will-change: auto;
+}
+
+.task-cell:hover {
+  will-change: background-color;
+}
+
+/* Dark mode optimizations */
+.dark .task-row-optimized {
+  contain: layout style;
+}
+
+.dark .task-row-optimized:hover {
+  contain: layout style paint;
+}
+
+/* Animation performance */
+@media (prefers-reduced-motion: reduce) {
+  .task-row-optimized {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+  .task-row-optimized {
+    contain: layout style paint;
+  }
+}
+
+/* Memory optimization for large lists */
+.task-list-container {
+  contain: layout style;
+  overflow: hidden;
+}
+
+.task-list-container.large-list {
+  contain: strict;
+}
+
+/* Intersection observer optimizations */
+.task-row-optimized.intersection-observed {
+  contain: layout style paint;
+}
+
+.task-row-optimized.intersection-observed.visible {
+  will-change: transform, opacity;
+}
+
+.task-row-optimized.intersection-observed.hidden {
+  will-change: auto;
+  contain: strict;
+}
+
+/* Performance debugging */
+.task-row-debug {
+  outline: 1px solid red !important;
+}
+
+.task-row-debug::before {
+  content: "DEBUG";
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: red;
+  color: white;
+  font-size: 10px;
+  padding: 2px 4px;
+  z-index: 9999;
+} 
