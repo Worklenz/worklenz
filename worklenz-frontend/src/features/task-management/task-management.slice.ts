@@ -17,6 +17,7 @@ const initialState: TaskManagementState = {
   groups: [],
   grouping: null,
   selectedPriorities: [],
+  search: '',
 };
 
 // Async thunk to fetch tasks from API
@@ -153,7 +154,11 @@ export const fetchTasksV3 = createAsyncThunk(
         ? state.taskManagement.selectedPriorities.join(',')
         : '';
       
+      // Get search value from taskReducer
+      const searchValue = state.taskReducer.search || '';
+      
       console.log('fetchTasksV3 - selectedPriorities:', selectedPriorities);
+      console.log('fetchTasksV3 - searchValue:', searchValue);
       
       const config: ITaskListConfigV2 = {
         id: projectId,
@@ -161,7 +166,7 @@ export const fetchTasksV3 = createAsyncThunk(
         group: currentGrouping,
         field: '',
         order: '',
-        search: '',
+        search: searchValue,
         statuses: '',
         members: selectedAssignees,
         projects: '',
@@ -328,6 +333,11 @@ const taskManagementSlice = createSlice({
     setSelectedPriorities: (state, action: PayloadAction<string[]>) => {
       state.selectedPriorities = action.payload;
     },
+
+    // Search action
+    setSearch: (state, action: PayloadAction<string>) => {
+      state.search = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -387,6 +397,7 @@ export const {
   setLoading,
   setError,
   setSelectedPriorities,
+  setSearch,
 } = taskManagementSlice.actions;
 
 export default taskManagementSlice.reducer;
