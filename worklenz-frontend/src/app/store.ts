@@ -83,6 +83,7 @@ import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 
 import projectViewReducer from '@features/project/project-view-slice';
+import taskManagementFields from '@features/task-management/taskListFields.slice';
 
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
@@ -171,6 +172,7 @@ export const store = configureStore({
     taskManagement: taskManagementReducer,
     grouping: groupingReducer,
     taskManagementSelection: selectionReducer,
+    taskManagementFields,
   },
 });
 

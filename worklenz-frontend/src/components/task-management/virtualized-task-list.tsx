@@ -6,6 +6,8 @@ import { taskManagementSelectors } from '@/features/task-management/task-managem
 import { Task } from '@/types/task-management.types';
 import TaskRow from './task-row';
 import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-rows/add-task-list-row';
+import { RootState } from '@/app/store';
+import { TaskListField } from '@/features/task-management/taskListFields.slice';
 
 interface VirtualizedTaskListProps {
   group: any;
@@ -30,6 +32,18 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
 }) => {
   const allTasks = useSelector(taskManagementSelectors.selectAll);
   
+  // Get field visibility from taskListFields slice
+  const taskListFields = useSelector((state: RootState) => state.taskManagementFields) as TaskListField[];
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('VirtualizedTaskList Debug:', {
+      taskListFields,
+      fieldsLength: taskListFields?.length,
+      fieldsState: taskListFields?.map(f => ({ key: f.key, visible: f.visible }))
+    });
+  }, [taskListFields]);
+
   // Get tasks for this group using memoization for performance
   const groupTasks = useMemo(() => {
     return group.taskIds
@@ -85,21 +99,43 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
     };
   }, []);
 
-  // Define columns array for alignment
-  const columns = [
-    { key: 'drag', label: '', width: 40, fixed: true },
-    { key: 'select', label: '', width: 40, fixed: true },
-    { key: 'key', label: 'KEY', width: 80, fixed: true },
-    { key: 'task', label: 'TASK', width: 475, fixed: true },
-    { key: 'progress', label: 'PROGRESS', width: 90 },
-    { key: 'members', label: 'MEMBERS', width: 150 },
-    { key: 'labels', label: 'LABELS', width: 200 },
-    { key: 'status', label: 'STATUS', width: 100 },
-    { key: 'priority', label: 'PRIORITY', width: 100 },
-    { key: 'timeTracking', label: 'TIME TRACKING', width: 120 },
+  // Define all possible columns
+  const allColumns = [
+    { key: 'drag', label: '', width: 40, fixed: true, alwaysVisible: true },
+    { key: 'select', label: '', width: 40, fixed: true, alwaysVisible: true },
+    { key: 'key', label: 'KEY', width: 80, fixed: true, fieldKey: 'KEY' },
+    { key: 'task', label: 'TASK', width: 475, fixed: true, alwaysVisible: true },
+    { key: 'progress', label: 'PROGRESS', width: 90, fieldKey: 'PROGRESS' },
+    { key: 'members', label: 'MEMBERS', width: 150, fieldKey: 'ASSIGNEES' },
+    { key: 'labels', label: 'LABELS', width: 200, fieldKey: 'LABELS' },
+    { key: 'status', label: 'STATUS', width: 100, fieldKey: 'STATUS' },
+    { key: 'priority', label: 'PRIORITY', width: 100, fieldKey: 'PRIORITY' },
+    { key: 'timeTracking', label: 'TIME TRACKING', width: 120, fieldKey: 'TIME_TRACKING' },
   ];
-  const fixedColumns = columns.filter(col => col.fixed);
-  const scrollableColumns = columns.filter(col => !col.fixed);
+
+  // Filter columns based on field visibility
+  const visibleColumns = useMemo(() => {
+    const filtered = allColumns.filter(col => {
+      // Always show columns marked as alwaysVisible
+      if (col.alwaysVisible) return true;
+      
+      // For other columns, check field visibility
+      if (col.fieldKey) {
+        const field = taskListFields.find(f => f.key === col.fieldKey);
+        const isVisible = field?.visible ?? false;
+        console.log(`Column ${col.key} (fieldKey: ${col.fieldKey}):`, { field, isVisible });
+        return isVisible;
+      }
+      
+      return false;
+    });
+    
+    console.log('Visible columns after filtering:', filtered.map(c => ({ key: c.key, fieldKey: c.fieldKey })));
+    return filtered;
+  }, [taskListFields, allColumns]);
+
+  const fixedColumns = visibleColumns.filter(col => col.fixed);
+  const scrollableColumns = visibleColumns.filter(col => !col.fixed);
   const fixedWidth = fixedColumns.reduce((sum, col) => sum + col.width, 0);
   const scrollableWidth = scrollableColumns.reduce((sum, col) => sum + col.width, 0);
   const totalTableWidth = fixedWidth + scrollableWidth;
@@ -130,7 +166,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
         />
       </div>
     );
-  }, [group, groupTasks, projectId, currentGrouping, selectedTaskIds, onSelectTask, onToggleSubtasks]);
+  }, [group, groupTasks, projectId, currentGrouping, selectedTaskIds, onSelectTask, onToggleSubtasks, fixedColumns, scrollableColumns]);
 
   return (
     <div className="virtualized-task-list" style={{ height: height }}>

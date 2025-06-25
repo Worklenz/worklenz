@@ -5,7 +5,6 @@ import { useSearchParams } from 'react-router-dom';
 import { createSelector } from '@reduxjs/toolkit';
 import {
   SearchOutlined,
-  FilterOutlined,
   CloseOutlined,
   DownOutlined,
   TeamOutlined,
@@ -28,6 +27,8 @@ import { SocketEvents } from '@/shared/socket-events';
 import { colors } from '@/styles/colors';
 import SingleAvatar from '@components/common/single-avatar/single-avatar';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
+import { Dropdown, Checkbox, Button, Space } from 'antd';
+import { toggleField, TaskListField } from '@/features/task-management/taskListFields.slice';
 
 // Import Redux actions
 import { fetchTasksV3, setSelectedPriorities } from '@/features/task-management/task-management.slice';
@@ -508,6 +509,113 @@ const SearchFilter: React.FC<{
   );
 };
 
+const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ themeClasses, isDarkMode }) => {
+  const dispatch = useDispatch();
+  const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
+  const fields = Array.isArray(fieldsRaw) ? fieldsRaw : [];
+  const sortedFields = [...fields].sort((a, b) => a.order - b.order);
+
+  const [open, setOpen] = React.useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const visibleCount = sortedFields.filter(field => field.visible).length;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Trigger Button - matching FilterDropdown style */}
+      <button
+        onClick={() => setOpen(!open)}
+        className={`
+          inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
+          border transition-all duration-200 ease-in-out
+          ${visibleCount > 0
+            ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold')
+            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          }
+          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+          ${themeClasses.containerBg === 'bg-gray-800' ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
+        `}
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        <EyeOutlined className="w-3.5 h-3.5" />
+        <span>Fields</span>
+        {visibleCount > 0 && (
+          <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-blue-500 rounded-full">
+            {visibleCount}
+          </span>
+        )}
+        <DownOutlined 
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} 
+        />
+      </button>
+
+      {/* Dropdown Panel - matching FilterDropdown style */}
+      {open && (
+        <div className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-lg border ${themeClasses.dropdownBorder}`}>
+          {/* Options List */}
+          <div className="max-h-48 overflow-y-auto">
+            {sortedFields.length === 0 ? (
+              <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
+                No fields available
+              </div>
+            ) : (
+              <div className="p-0.5">
+                {sortedFields.map((field) => {
+                  const isSelected = field.visible;
+                  
+                  return (
+                    <button
+                      key={field.key}
+                      onClick={() => dispatch(toggleField(field.key))}
+                      className={`
+                        w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
+                        transition-colors duration-150 text-left
+                        ${isSelected
+                          ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-800 font-semibold')
+                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                        }
+                      `}
+                    >
+                      {/* Checkbox indicator - matching FilterDropdown style */}
+                      <div className={`
+                        flex items-center justify-center w-3.5 h-3.5 border rounded
+                        ${isSelected
+                          ? 'bg-blue-500 border-blue-500 text-white'
+                          : 'border-gray-300 dark:border-gray-600'
+                        }
+                      `}>
+                        {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
+                      </div>
+
+                      {/* Label and Count */}
+                      <div className="flex-1 flex items-center justify-between">
+                        <span className="truncate">{field.label}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Main Component
 const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ 
   position, 
@@ -673,7 +781,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     // TODO: Implement column visibility change
   }, [projectId]);
 
-    return (
+  return (
     <div className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-sm ${className}`}>
       <div className="flex flex-wrap items-center gap-2">
         {/* Left Section - Main Filters */}
@@ -748,14 +856,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
           )}
 
           {/* Show Fields Button (for list view) */}
-          {position === 'list' && (
-            <button className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
-              isDarkMode ? 'focus:ring-offset-gray-800' : 'focus:ring-offset-white'
-            }`}>
-              <EyeOutlined className="w-3.5 h-3.5" />
-              <span>Fields</span>
-            </button>
-          )}
+          {position === 'list' && <FieldsDropdown themeClasses={themeClasses} isDarkMode={isDarkMode} />}
         </div>
       </div>
 
@@ -779,7 +880,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
           
           {filterSectionsData
             .filter(section => section.id !== 'groupBy') // <-- skip groupBy
-            .map((section) =>
+            .flatMap((section) =>
               section.selectedValues.map((value) => {
                 const option = section.options.find(opt => opt.value === value);
                 if (!option) return null;
@@ -809,7 +910,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
                     </button>
                   </div>
                 );
-              })
+              }).filter(Boolean)
             )}
         </div>
       )}
