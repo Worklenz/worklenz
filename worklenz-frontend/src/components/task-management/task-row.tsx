@@ -2,6 +2,7 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useSelector } from 'react-redux';
+import DOMPurify from 'dompurify';
 import { 
   Input, 
   Typography, 
@@ -86,18 +87,24 @@ const TaskKey = React.memo<{ taskKey: string; isDarkMode: boolean }>(({ taskKey,
   </span>
 ));
 
-const TaskDescription = React.memo<{ description?: string; isDarkMode: boolean }>(({ description, isDarkMode }) => (
-  <Typography.Paragraph
-    ellipsis={{ 
-      expandable: false,
-      rows: 1,
-      tooltip: description,
-    }}
-    className={`w-full mb-0 text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
-  >
-    {description || ''}
-  </Typography.Paragraph>
-));
+const TaskDescription = React.memo<{ description?: string; isDarkMode: boolean }>(({ description, isDarkMode }) => {
+  if (!description) return null;
+  
+  const sanitizedDescription = DOMPurify.sanitize(description);
+  
+  return (
+    <Typography.Paragraph
+      ellipsis={{ 
+        expandable: false,
+        rows: 1,
+        tooltip: description,
+      }}
+      className={`w-full mb-0 text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
+    >
+      <span dangerouslySetInnerHTML={{ __html: sanitizedDescription }} />
+    </Typography.Paragraph>
+  );
+});
 
 const TaskProgress = React.memo<{ progress: number; isDarkMode: boolean }>(({ progress, isDarkMode }) => (
   <Progress
@@ -402,8 +409,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       
       case 'members':
         return (
-          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className="flex items-center gap-2">
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses} overflow-visible`} style={{ width: col.width }}>
+            <div className="flex items-center gap-2 overflow-visible">
               {task.assignee_names && task.assignee_names.length > 0 && (
                 <AvatarGroup
                   members={task.assignee_names}
@@ -582,7 +589,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         {/* Fixed Columns */}
         {fixedColumns && fixedColumns.length > 0 && (
           <div
-            className="flex"
+            className="flex overflow-visible"
             style={{
               width: fixedColumns.reduce((sum, col) => sum + col.width, 0),
             }}
