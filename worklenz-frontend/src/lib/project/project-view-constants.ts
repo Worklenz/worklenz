@@ -1,12 +1,12 @@
 import React, { ReactNode } from 'react';
-import ProjectViewInsights from '@/pages/projects/projectView/insights/project-view-insights';
-import ProjectViewFiles from '@/pages/projects/projectView/files/project-view-files';
-import ProjectViewMembers from '@/pages/projects/projectView/members/project-view-members';
-import ProjectViewUpdates from '@/pages/projects/project-view-1/updates/project-view-updates';
-import ProjectViewTaskList from '@/pages/projects/projectView/taskList/project-view-task-list';
-import ProjectViewBoard from '@/pages/projects/projectView/board/project-view-board';
-import ProjectViewEnhancedTasks from '@/pages/projects/projectView/enhancedTasks/project-view-enhanced-tasks';
-import ProjectViewEnhancedBoard from '@/pages/projects/projectView/enhancedBoard/project-view-enhanced-board';
+
+// Lazy load all project view components to reduce initial bundle size
+const ProjectViewInsights = React.lazy(() => import('@/pages/projects/projectView/insights/project-view-insights'));
+const ProjectViewFiles = React.lazy(() => import('@/pages/projects/projectView/files/project-view-files'));
+const ProjectViewMembers = React.lazy(() => import('@/pages/projects/projectView/members/project-view-members'));
+const ProjectViewUpdates = React.lazy(() => import('@/pages/projects/project-view-1/updates/project-view-updates'));
+const ProjectViewEnhancedTasks = React.lazy(() => import('@/pages/projects/projectView/enhancedTasks/project-view-enhanced-tasks'));
+const ProjectViewEnhancedBoard = React.lazy(() => import('@/pages/projects/projectView/enhancedBoard/project-view-enhanced-board'));
 
 // type of a tab items
 type TabItems = {
@@ -28,57 +28,31 @@ export const tabItems: TabItems[] = [
   },
   {
     index: 1,
-    key: 'task-list-v1',
-    label: 'Task List v1',
-    isPinned: true,
-    element: React.createElement(ProjectViewTaskList),
-  },
-  {
-    index: 2,
     key: 'board',
     label: 'Board',
     isPinned: true,
     element: React.createElement(ProjectViewEnhancedBoard),
   },
   {
-    index: 3,
-    key: 'board-v1',
-    label: 'Board v1',
-    isPinned: true,
-    element: React.createElement(ProjectViewBoard),
-  },
-  // {
-  //   index: 3,
-  //   key: 'workload',
-  //   label: 'Workload',
-  //   element: React.createElement(ProjectViewWorkload),
-  // },
-  // {
-  //   index: 4,
-  //   key: 'roadmap',
-  //   label: 'Roadmap',
-  //   element: React.createElement(ProjectViewRoadmap),
-  // },
-  {
-    index: 5,
+    index: 2,
     key: 'project-insights-member-overview',
     label: 'Insights',
     element: React.createElement(ProjectViewInsights),
   },
   {
-    index: 6,
+    index: 3,
     key: 'all-attachments',
     label: 'Files',
     element: React.createElement(ProjectViewFiles),
   },
   {
-    index: 7,
+    index: 4,
     key: 'members',
     label: 'Members',
     element: React.createElement(ProjectViewMembers),
   },
   {
-    index: 8,
+    index: 5,
     key: 'updates',
     label: 'Updates',
     element: React.createElement(ProjectViewUpdates),

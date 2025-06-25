@@ -20,16 +20,34 @@ export default defineConfig(({ command, mode }) => {
         { find: '@features', replacement: path.resolve(__dirname, './src/features') },
         { find: '@assets', replacement: path.resolve(__dirname, './src/assets') },
         { find: '@utils', replacement: path.resolve(__dirname, './src/utils') },
-        { find: '@services', replacement: path.resolve(__dirname, './src/services') },
+        { find: '@hooks', replacement: path.resolve(__dirname, './src/hooks') },
+        { find: '@pages', replacement: path.resolve(__dirname, './src/pages') },
         { find: '@api', replacement: path.resolve(__dirname, './src/api') },
+        { find: '@types', replacement: path.resolve(__dirname, './src/types') },
+        { find: '@shared', replacement: path.resolve(__dirname, './src/shared') },
+        { find: '@layouts', replacement: path.resolve(__dirname, './src/layouts') },
+        { find: '@services', replacement: path.resolve(__dirname, './src/services') },
       ],
       // **Ensure single React instance**
       dedupe: ['react', 'react-dom'],
     },
 
+    // **CSS Configuration**
+    css: {
+      preprocessorOptions: {
+        less: {
+          modifyVars: {
+            '@primary-color': '#1890ff',
+          },
+          javascriptEnabled: true,
+        },
+      },
+    },
+
     // **Development Server**
     server: {
       port: 5173,
+      host: true,
       open: true,
       hmr: {
         overlay: false,
@@ -47,43 +65,114 @@ export default defineConfig(({ command, mode }) => {
       cssCodeSplit: true,
 
       // **Sourcemaps**
-      sourcemap: !isProduction ? 'inline' : false, // Disable sourcemaps in production for smaller bundles
+      sourcemap: false,
 
       // **Minification**
-      minify: isProduction ? 'terser' : false,
-      terserOptions: isProduction ? {
+      minify: 'terser',
+      terserOptions: {
         compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_funcs: ['console.log', 'console.info', 'console.debug'],
-          passes: 2, // Multiple passes for better compression
+          drop_console: isProduction,
+          drop_debugger: isProduction,
         },
-        mangle: {
-          safari10: true,
-        },
-        format: {
-          comments: false,
-        },
-      } : undefined,
+      },
 
       // **Chunk Size Warnings**
       chunkSizeWarningLimit: 1000,
 
-              // **Rollup Options**
-        rollupOptions: {
-          output: {
-            // **Simplified Chunking Strategy to avoid React context issues**
-            manualChunks: {
-              // Keep React and all React-dependent libraries together
-              'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
+      // **Rollup Options**
+      rollupOptions: {
+        output: {
+          // **Manual Chunking Strategy**
+          manualChunks: (id) => {
+            // Vendor libraries
+            if (id.includes('node_modules')) {
+              // Ant Design - Split into smaller chunks
+              if (id.includes('antd/es')) {
+                // Split antd by component types for better caching
+                if (id.includes('date-picker') || id.includes('time-picker') || id.includes('calendar')) {
+                  return 'antd-date';
+                }
+                if (id.includes('table') || id.includes('list') || id.includes('tree')) {
+                  return 'antd-data';
+                }
+                if (id.includes('form') || id.includes('input') || id.includes('select') || id.includes('checkbox')) {
+                  return 'antd-form';
+                }
+                if (id.includes('button') || id.includes('tooltip') || id.includes('dropdown') || id.includes('menu')) {
+                  return 'antd-basic';
+                }
+                if (id.includes('modal') || id.includes('drawer') || id.includes('popconfirm')) {
+                  return 'antd-overlay';
+                }
+                // Catch remaining antd components
+                return 'antd-misc';
+              }
               
-              // Separate chunk for router
-              'react-router': ['react-router-dom'],
+              // Icons
+              if (id.includes('@ant-design/icons')) {
+                return 'antd-icons';
+              }
               
-              // Keep Ant Design separate but ensure React is available
-              'antd': ['antd', '@ant-design/icons'],
-            },
-          
+              // Chart.js and related
+              if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
+                return 'charts';
+              }
+              
+              // Redux and related state management
+              if (id.includes('@reduxjs/toolkit') || id.includes('react-redux')) {
+                return 'redux';
+              }
+              
+              // React Router
+              if (id.includes('react-router')) {
+                return 'router';
+              }
+              
+              // i18n
+              if (id.includes('react-i18next') || id.includes('i18next')) {
+                return 'i18n';
+              }
+              
+              // Other large libraries
+              if (id.includes('lodash')) {
+                return 'lodash';
+              }
+              
+              if (id.includes('dayjs')) {
+                return 'dayjs';
+              }
+              
+              // Remaining vendor code
+              return 'vendor';
+            }
+            
+            // Application code chunking
+            // Project view components
+            if (id.includes('src/pages/projects/projectView')) {
+              return 'project-view';
+            }
+            
+            // Other project components
+            if (id.includes('src/pages/projects')) {
+              return 'projects';
+            }
+            
+            // Task management components
+            if (id.includes('src/components/task-') || id.includes('src/features/tasks')) {
+              return 'tasks';
+            }
+            
+            // Settings and admin components
+            if (id.includes('src/pages/settings') || id.includes('src/components/admin')) {
+              return 'admin';
+            }
+            
+            // Common components
+            if (id.includes('src/components/common') || id.includes('src/shared')) {
+              return 'common';
+            }
+          },
+        
           // **File Naming Strategies**
           chunkFileNames: (chunkInfo) => {
             const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
@@ -101,6 +190,12 @@ export default defineConfig(({ command, mode }) => {
             }
             return `assets/${extType}/[name]-[hash].[ext]`;
           },
+        },
+        
+        // **Tree shaking optimization**
+        treeshake: {
+          moduleSideEffects: false,
+          unknownGlobalSideEffects: false,
         },
         
         // **External dependencies (if any should be externalized)**
@@ -122,15 +217,17 @@ export default defineConfig(({ command, mode }) => {
       include: [
         'react',
         'react-dom',
-        'react/jsx-runtime',
+        'react-router-dom',
+        '@reduxjs/toolkit',
+        'react-redux',
+        'react-i18next',
+        'dayjs',
+      ],
+      exclude: [
+        // Exclude antd from pre-bundling to allow better tree-shaking
         'antd',
         '@ant-design/icons',
       ],
-      exclude: [
-        // Add any packages that should not be pre-bundled
-      ],
-      // Force pre-bundling to avoid runtime issues
-      force: true,
     },
 
     // **Define global constants**
