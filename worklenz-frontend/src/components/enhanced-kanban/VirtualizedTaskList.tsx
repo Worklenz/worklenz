@@ -38,7 +38,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
     onTaskRender?.(task, index);
 
     return (
-      <div style={style} className="virtualized-task-row">
+      <div className="virtualized-task-row">
         <EnhancedKanbanTaskCard
           task={task}
           isActive={task.id === activeTaskId}

@@ -121,6 +121,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
   const renderTask = useMemo(() => (task: any, index: number) => (
     <EnhancedKanbanTaskCard
       key={task.id}
+      sectionId={group.id}
       task={task}
       isActive={task.id === activeTaskId}
       isDropTarget={overId === task.id}
@@ -413,7 +414,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
               type="text"
               size="small"
               shape="circle"
-              style={{ color: themeMode === 'dark' ? '#383838' : '' }}
+              // style={{ color: themeMode === 'dark' ? '#383838' : '' }}
               onClick={() => {
                 setShowNewCardTop(true);
                 setShowNewCardBottom(false);
@@ -433,8 +434,8 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
                   <MoreOutlined
                     style={{
                       rotate: '90deg',
-                      fontSize: '25px',
-                      color: themeMode === 'dark' ? '#383838' : '',
+                      // fontSize: '25px',
+                      // color: themeMode === 'dark' ? '#383838' : '',
                     }}
                   />
                 </Button>
@@ -488,6 +489,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
 
                 <EnhancedKanbanTaskCard
                   task={task}
+                  sectionId={group.id}
                   isActive={task.id === activeTaskId}
                   isDropTarget={overId === task.id}
                 />
