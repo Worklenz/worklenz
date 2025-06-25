@@ -141,17 +141,17 @@ export const fetchTasksV3 = createAsyncThunk(
       
       // Get selected labels from taskReducer
       const selectedLabels = state.taskReducer.labels
-        ? state.taskReducer.labels.filter(l => l.selected).map(l => l.id).join(',')
+        ? state.taskReducer.labels.filter(l => l.selected).map(l => l.id).join(' ')
         : '';
       
       // Get selected assignees from taskReducer
       const selectedAssignees = state.taskReducer.taskAssignees
-        ? state.taskReducer.taskAssignees.filter(m => m.selected).map(m => m.id).join(',')
+        ? state.taskReducer.taskAssignees.filter(m => m.selected).map(m => m.id).join(' ')
         : '';
       
       // Get selected priorities from taskManagement slice
       const selectedPriorities = state.taskManagement.selectedPriorities
-        ? state.taskManagement.selectedPriorities.join(',')
+        ? state.taskManagement.selectedPriorities.join(' ')
         : '';
       
       // Get search value from taskReducer

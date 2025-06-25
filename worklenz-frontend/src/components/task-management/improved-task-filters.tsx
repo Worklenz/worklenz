@@ -748,6 +748,23 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
       dispatch(setBoardSearch(''));
     }
     
+    // Clear label filters
+    const clearedLabels = currentTaskLabels.map(label => ({
+      ...label,
+      selected: false
+    }));
+    dispatch(setLabels(clearedLabels));
+    
+    // Clear assignee filters
+    const clearedAssignees = currentTaskAssignees.map(member => ({
+      ...member,
+      selected: false
+    }));
+    dispatch(setMembers(clearedAssignees));
+    
+    // Clear priority filters
+    dispatch(setSelectedPriorities([]));
+    
     // Clear other filters
     setShowArchived(false);
     
@@ -755,7 +772,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     dispatch(fetchTasksV3(projectId));
     
     console.log('Clear all filters');
-  }, [projectId, projectView, dispatch]);
+  }, [projectId, projectView, dispatch, currentTaskLabels, currentTaskAssignees]);
 
   const toggleArchived = useCallback(() => {
     setShowArchived(!showArchived);
