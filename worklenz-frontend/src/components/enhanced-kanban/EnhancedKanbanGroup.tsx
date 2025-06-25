@@ -413,7 +413,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
               type="text"
               size="small"
               shape="circle"
-              style={{ color: themeMode === 'dark' ? '#383838' : '' }}
+              // style={{ color: themeMode === 'dark' ? '#383838' : '' }}
               onClick={() => {
                 setShowNewCardTop(true);
                 setShowNewCardBottom(false);
@@ -433,8 +433,8 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
                   <MoreOutlined
                     style={{
                       rotate: '90deg',
-                      fontSize: '25px',
-                      color: themeMode === 'dark' ? '#383838' : '',
+                      // fontSize: '25px',
+                      // color: themeMode === 'dark' ? '#383838' : '',
                     }}
                   />
                 </Button>
