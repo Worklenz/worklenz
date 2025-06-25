@@ -7,6 +7,9 @@
  * - Separate icon imports to avoid loading entire icon set
  */
 
+// Ensure React is available for Ant Design components
+import React from 'react';
+
 // Core Components - Import as default exports for better tree-shaking
 import Button from 'antd/es/button';
 import Input from 'antd/es/input';
@@ -59,6 +62,7 @@ import theme from 'antd/es/theme';
 
 // Re-export all components
 export {
+  React, // Export React to ensure it's available
   Button,
   Input,
   Select,
