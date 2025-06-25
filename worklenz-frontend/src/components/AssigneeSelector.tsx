@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { PlusOutlined, UserAddOutlined } from '@ant-design/icons';
 import { RootState } from '@/app/store';
@@ -24,7 +25,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [teamMembers, setTeamMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { projectId } = useSelector((state: RootState) => state.projectReducer);
@@ -38,20 +41,61 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     );
   }, [teamMembers, searchQuery]);
 
-  // Close dropdown when clicking outside
+  // Update dropdown position
+  const updateDropdownPosition = useCallback(() => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 2,
+        left: rect.left + window.scrollX,
+      });
+    }
+  }, []);
+
+  // Close dropdown when clicking outside and handle scroll
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const handleScroll = () => {
+      if (isOpen) {
+        updateDropdownPosition();
+      }
+    };
 
-  const handleDropdownToggle = () => {
+    const handleResize = () => {
+      if (isOpen) {
+        updateDropdownPosition();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
+    } else {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, updateDropdownPosition]);
+
+  const handleDropdownToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!isOpen) {
+      updateDropdownPosition();
+      
       // Prepare team members data when opening
       const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
       const membersData = (members?.data || []).map(member => ({
@@ -61,12 +105,14 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       const sortedMembers = sortTeamMembers(membersData);
       setTeamMembers({ data: sortedMembers });
       
+      setIsOpen(true);
       // Focus search input after opening
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 0);
+    } else {
+      setIsOpen(false);
     }
-    setIsOpen(!isOpen);
   };
 
   const handleMemberToggle = (memberId: string, checked: boolean) => {
@@ -91,30 +137,40 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <>
       <button
+        ref={buttonRef}
         onClick={handleDropdownToggle}
         className={`
           w-5 h-5 rounded-full border border-dashed flex items-center justify-center
           transition-colors duration-200
-          ${isDarkMode 
-            ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
-            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
+          ${isOpen 
+            ? isDarkMode 
+              ? 'border-blue-500 bg-blue-900/20 text-blue-400' 
+              : 'border-blue-500 bg-blue-50 text-blue-600'
+            : isDarkMode 
+              ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
+              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
           }
         `}
       >
         <PlusOutlined className="text-xs" />
       </button>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <div
+          ref={dropdownRef}
           className={`
-            absolute top-6 left-0 z-50 w-72 rounded-md shadow-lg border
+            fixed z-[9999] w-72 rounded-md shadow-lg border
             ${isDarkMode 
               ? 'bg-gray-800 border-gray-600' 
               : 'bg-white border-gray-200'
             }
           `}
+          style={{
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+          }}
         >
           {/* Header */}
           <div className={`p-2 border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
@@ -211,9 +267,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
               Invite member
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 };
 
