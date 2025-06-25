@@ -23,9 +23,10 @@ import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
 import { toggleField } from '@/features/task-management/taskListFields.slice';
 
 // Import Redux actions
-import { fetchTasksV3, setSelectedPriorities } from '@/features/task-management/task-management.slice';
+import { fetchTasksV3, setSelectedPriorities, setSearch as setTaskManagementSearch } from '@/features/task-management/task-management.slice';
 import { setCurrentGrouping, selectCurrentGrouping } from '@/features/task-management/grouping.slice';
-import { setMembers, setLabels } from '@/features/tasks/tasks.slice';
+import { setMembers, setLabels, setSearch } from '@/features/tasks/tasks.slice';
+import { setBoardSearch } from '@/features/board/board-slice';
 
 // Optimized selectors with proper transformation logic
 const selectFilterData = createSelector(
@@ -719,26 +720,48 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
     
-    // Log the search change for now
+    if (!projectId) return;
+    
+    // Dispatch search action based on current view
+    if (projectView === 'list') {
+      // For list view, use the tasks slice
+      dispatch(setSearch(value));
+    } else {
+      // For board view, use the board slice
+      dispatch(setBoardSearch(value));
+    }
+    
     console.log('Search change:', value, { projectView, projectId });
     
-    // TODO: Implement proper search dispatch
-  }, [projectView, projectId]);
+    // Trigger task refetch with new search value
+    dispatch(fetchTasksV3(projectId));
+  }, [projectView, projectId, dispatch]);
 
   const clearAllFilters = useCallback(() => {
-    // TODO: Implement clear all filters
-    console.log('Clear all filters');
+    if (!projectId) return;
+    
+    // Clear search
     setSearchValue('');
+    if (projectView === 'list') {
+      dispatch(setSearch(''));
+    } else {
+      dispatch(setBoardSearch(''));
+    }
+    
+    // Clear other filters
     setShowArchived(false);
-  }, []);
+    
+    // Trigger task refetch with cleared filters
+    dispatch(fetchTasksV3(projectId));
+    
+    console.log('Clear all filters');
+  }, [projectId, projectView, dispatch]);
 
   const toggleArchived = useCallback(() => {
     setShowArchived(!showArchived);
     // TODO: Implement proper archived toggle
     console.log('Toggle archived:', !showArchived);
   }, [showArchived]);
-
-
 
   return (
     <div className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-sm ${className}`}>

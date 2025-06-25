@@ -76,6 +76,7 @@ export interface TaskManagementState {
   groups: TaskGroup[]; // Pre-processed groups from V3 API
   grouping: string | null; // Current grouping from V3 API
   selectedPriorities: string[]; // Selected priority filters
+  search: string; // Search query for filtering tasks
 }
 
 export interface TaskGroupsState {
