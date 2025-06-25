@@ -509,6 +509,17 @@ const SearchFilter: React.FC<{
   );
 };
 
+// Custom debounce implementation
+function debounce(func: (...args: any[]) => void, wait: number) {
+  let timeout: ReturnType<typeof setTimeout>;
+  return (...args: any[]) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
+const LOCAL_STORAGE_KEY = 'worklenz.taskManagement.fields';
+
 const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ themeClasses, isDarkMode }) => {
   const dispatch = useDispatch();
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
@@ -517,6 +528,17 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
 
   const [open, setOpen] = React.useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounced save to localStorage using custom debounce
+  const debouncedSaveFields = useMemo(() => debounce((fieldsToSave: typeof fields) => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fieldsToSave));
+  }, 300), []);
+
+  useEffect(() => {
+    debouncedSaveFields(fields);
+    // Cleanup debounce on unmount
+    return () => { /* no cancel needed for custom debounce */ };
+  }, [fields, debouncedSaveFields]);
 
   // Close dropdown on outside click
   React.useEffect(() => {

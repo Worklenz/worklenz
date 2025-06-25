@@ -65,7 +65,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   // Edit task name state
   const [editTaskName, setEditTaskName] = useState(false);
   const [taskName, setTaskName] = useState(task.title || '');
-  const inputRef = useRef<InputRef>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -108,7 +108,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
 
   // Handle task name save
   const handleTaskNameSave = useCallback(() => {
-    const newTaskName = inputRef.current?.input?.value;
+    const newTaskName = inputRef.current?.value;
     if (newTaskName?.trim() !== '' && connected && newTaskName !== task.title) {
       socket?.emit(
         SocketEvents.TASK_NAME_CHANGE.toString(),
@@ -284,12 +284,41 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                   </div>
                 );
               case 'task':
+                // Compute the style for the cell
+                const cellStyle = editTaskName
+                  ? { width: col.width, border: '1px solid #1890ff', background: isDarkMode ? '#232b3a' : '#f0f7ff', transition: 'border 0.2s' }
+                  : { width: col.width };
                 return (
-                  <div key={col.key} className="flex items-center px-2" style={{ width: col.width }}>
+                  <div
+                    key={col.key}
+                    className={`flex items-center px-2${editTaskName ? ' task-name-edit-active' : ''}`}
+                    style={cellStyle}
+                  >
                     <div className="flex-1 min-w-0 flex flex-col justify-center h-full overflow-hidden">
                       <div className="flex items-center gap-2 h-5 overflow-hidden">
                         <div ref={wrapperRef} className="flex-1 min-w-0">
-                          {!editTaskName ? (
+                          {editTaskName ? (
+                            <input
+                              ref={inputRef}
+                              className="task-name-input"
+                              value={taskName}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTaskName(e.target.value)}
+                              onBlur={handleTaskNameSave}
+                              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                if (e.key === 'Enter') {
+                                  handleTaskNameSave();
+                                }
+                              }}
+                              style={{ 
+                                background: 'transparent', 
+                                border: 'none', 
+                                outline: 'none', 
+                                width: '100%',
+                                color: isDarkMode ? '#ffffff' : '#262626'
+                              }}
+                              autoFocus
+                            />
+                          ) : (
                             <Typography.Text
                               ellipsis={{ tooltip: task.title }}
                               onClick={() => setEditTaskName(true)}
@@ -298,21 +327,6 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                             >
                               {task.title}
                             </Typography.Text>
-                          ) : (
-                            <Input
-                              ref={inputRef}
-                              variant="borderless"
-                              value={taskName}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTaskName(e.target.value)}
-                              onPressEnter={handleTaskNameSave}
-                              className={`${isDarkMode ? 'bg-gray-800 text-gray-100 border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
-                              style={{
-                                width: '100%',
-                                padding: '2px 4px',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                              }}
-                            />
                           )}
                         </div>
                       </div>
@@ -458,5 +472,51 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
 });
 
 TaskRow.displayName = 'TaskRow';
+
+// Add styles for better border visibility
+const taskRowStyles = `
+  .task-row-container {
+    border-bottom: 1px solid #f0f0f0;
+    transition: border-color 0.3s ease;
+  }
+  
+  .dark .task-row-container,
+  [data-theme="dark"] .task-row-container {
+    border-bottom-color: #374151;
+  }
+  
+  .task-row-container:hover {
+    border-bottom-color: #e8e8e8;
+  }
+  
+  .dark .task-row-container:hover,
+  [data-theme="dark"] .task-row-container:hover {
+    border-bottom-color: #4b5563;
+  }
+  
+  .fixed-columns-row > div,
+  .scrollable-columns-row > div {
+    border-bottom: 1px solid #f0f0f0;
+    transition: border-color 0.3s ease;
+  }
+  
+  .dark .fixed-columns-row > div,
+  .dark .scrollable-columns-row > div,
+  [data-theme="dark"] .fixed-columns-row > div,
+  [data-theme="dark"] .scrollable-columns-row > div {
+    border-bottom-color: #374151;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleId = 'task-row-styles';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = taskRowStyles;
+    document.head.appendChild(style);
+  }
+}
 
 export default TaskRow; 
