@@ -1,68 +1,93 @@
 /**
- * Optimized Ant Design imports for maximum tree-shaking
+ * Centralized Ant Design imports for better tree-shaking and React context sharing
  * 
  * This file provides:
- * - Granular imports from antd/es for better tree-shaking
- * - Only commonly used components to reduce bundle size
- * - Separate icon imports to avoid loading entire icon set
+ * - Consistent imports across the application
+ * - Better tree-shaking through centralized management
+ * - Proper React context sharing
  */
 
-// Ensure React is available for Ant Design components
+// Import React to ensure context availability
 import React from 'react';
 
-// Core Components - Import as default exports for better tree-shaking
-import Button from 'antd/es/button';
-import Input from 'antd/es/input';
-import Select from 'antd/es/select';
-import Typography from 'antd/es/typography';
-import Card from 'antd/es/card';
-import Spin from 'antd/es/spin';
-import Empty from 'antd/es/empty';
-import Space from 'antd/es/space';
-import Tooltip from 'antd/es/tooltip';
-import Badge from 'antd/es/badge';
-import Popconfirm from 'antd/es/popconfirm';
-import Checkbox from 'antd/es/checkbox';
-import Dropdown from 'antd/es/dropdown';
-import Menu from 'antd/es/menu';
-import Modal from 'antd/es/modal';
-import Tag from 'antd/es/tag';
-import Avatar from 'antd/es/avatar';
-import List from 'antd/es/list';
-import Table from 'antd/es/table';
-import Flex from 'antd/es/flex';
-import Divider from 'antd/es/divider';
-import Progress from 'antd/es/progress';
-import Result from 'antd/es/result';
-import Skeleton from 'antd/es/skeleton';
-import Alert from 'antd/es/alert';
-import Tabs from 'antd/es/tabs';
-import ConfigProvider from 'antd/es/config-provider';
+// Import Ant Design components using the standard method for better context sharing
+import {
+  Button,
+  Input,
+  Select,
+  Typography,
+  Card,
+  Spin,
+  Empty,
+  Space,
+  Tooltip,
+  Badge,
+  Popconfirm,
+  Checkbox,
+  Dropdown,
+  Menu,
+  Modal,
+  Tag,
+  Avatar,
+  List,
+  Table,
+  Flex,
+  Divider,
+  Progress,
+  Result,
+  Skeleton,
+  Alert,
+  Tabs,
+  ConfigProvider,
+  DatePicker,
+  TimePicker,
+  Form,
+  InputNumber,
+  Row,
+  Col,
+  Layout,
+  Drawer,
+  message,
+  notification,
+  theme
+} from 'antd';
 
-// Date & Time Components
-import DatePicker from 'antd/es/date-picker';
-import TimePicker from 'antd/es/time-picker';
-
-// Form Components
-import Form from 'antd/es/form';
-import InputNumber from 'antd/es/input-number';
-
-// Layout Components
-import Row from 'antd/es/row';
-import Col from 'antd/es/col';
-import Layout from 'antd/es/layout';
-import Drawer from 'antd/es/drawer';
-
-// Message and Notification - Import separately
-import message from 'antd/es/message';
-import notification from 'antd/es/notification';
-
-// Theme
-import theme from 'antd/es/theme';
-
-// Re-export all components
+// Icons - Import commonly used ones
 export {
-  React, // Export React to ensure it's available
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  MoreOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  UserOutlined,
+  TeamOutlined,
+  TagOutlined,
+  BarsOutlined,
+  AppstoreOutlined,
+  FilterOutlined,
+  SearchOutlined,
+  SettingOutlined,
+  DownOutlined,
+  RightOutlined,
+  LeftOutlined,
+  UpOutlined,
+  ArrowLeftOutlined,
+  BellFilled,
+  BellOutlined,
+  SaveOutlined,
+  SyncOutlined,
+  PushpinFilled,
+  PushpinOutlined,
+  UsergroupAddOutlined,
+  ImportOutlined
+} from '@ant-design/icons';
+
+// Re-export all components with React
+export {
+  React,
   Button,
   Input,
   Select,
@@ -103,40 +128,7 @@ export {
   theme
 };
 
-// Icons - Import only commonly used ones
-export {
-  EditOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  MoreOutlined,
-  CheckOutlined,
-  CloseOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  UserOutlined,
-  TeamOutlined,
-  TagOutlined,
-  BarsOutlined,
-  AppstoreOutlined,
-  FilterOutlined,
-  SearchOutlined,
-  SettingOutlined,
-  DownOutlined,
-  RightOutlined,
-  LeftOutlined,
-  UpOutlined,
-  ArrowLeftOutlined,
-  BellFilled,
-  BellOutlined,
-  SaveOutlined,
-  SyncOutlined,
-  PushpinFilled,
-  PushpinOutlined,
-  UsergroupAddOutlined,
-  ImportOutlined
-} from '@ant-design/icons';
-
-// TypeScript Types - Import only commonly used ones
+// TypeScript Types - Import commonly used ones
 export type {
   ButtonProps,
   InputProps,

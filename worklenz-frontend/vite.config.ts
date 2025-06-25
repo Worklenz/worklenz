@@ -72,46 +72,19 @@ export default defineConfig(({ command, mode }) => {
 
       // **Rollup Options**
       rollupOptions: {
-        // **External dependencies to prevent bundling issues**
-        external: (id) => {
-          // Don't externalize anything for now to prevent context issues
-          return false;
-        },
         output: {
-          // **Manual Chunking Strategy - Fixed for React context issues**
+          // **Simplified Manual Chunking Strategy - Fixed for React context issues**
           manualChunks: (id) => {
             // Vendor libraries
             if (id.includes('node_modules')) {
-              // React core - keep together to prevent context issues
-              if (id.includes('react') && !id.includes('react-router') && !id.includes('react-redux') && !id.includes('react-i18next')) {
-                return 'react-core';
+              // React and React DOM - keep in main vendor to ensure single instance
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'vendor';
               }
               
-              // Ant Design - Split into smaller chunks but ensure React dependency
-              if (id.includes('antd/es') || id.includes('antd/lib')) {
-                // Split antd by component types for better caching
-                if (id.includes('date-picker') || id.includes('time-picker') || id.includes('calendar')) {
-                  return 'antd-date';
-                }
-                if (id.includes('table') || id.includes('list') || id.includes('tree')) {
-                  return 'antd-data';
-                }
-                if (id.includes('form') || id.includes('input') || id.includes('select') || id.includes('checkbox')) {
-                  return 'antd-form';
-                }
-                if (id.includes('button') || id.includes('tooltip') || id.includes('dropdown') || id.includes('menu')) {
-                  return 'antd-basic';
-                }
-                if (id.includes('modal') || id.includes('drawer') || id.includes('popconfirm')) {
-                  return 'antd-overlay';
-                }
-                // Catch remaining antd components
-                return 'antd-misc';
-              }
-              
-              // Icons
-              if (id.includes('@ant-design/icons')) {
-                return 'antd-icons';
+              // Ant Design - Keep together to share React context
+              if (id.includes('antd') || id.includes('@ant-design')) {
+                return 'antd';
               }
               
               // Chart.js and related
@@ -177,7 +150,7 @@ export default defineConfig(({ command, mode }) => {
       },
       
       // **Chunk Size Warning Limit**
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 2000, // Increased to accommodate larger antd chunk
     },
 
     // **Optimization**
@@ -191,19 +164,16 @@ export default defineConfig(({ command, mode }) => {
         'react-redux',
         'react-i18next',
         'dayjs',
-        // Include antd core to prevent context issues
-        'antd/es/config-provider',
-        'antd/es/button',
-        'antd/es/input',
-        'antd/es/select',
       ],
-      // Don't exclude antd to prevent React context issues
+      // Remove antd from exclude to prevent context issues
       exclude: [],
     },
 
     // **Define Global Constants**
     define: {
       __DEV__: !isProduction,
+      // Ensure global React is available
+      global: 'globalThis',
     },
   };
 });
