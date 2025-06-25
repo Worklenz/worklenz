@@ -10,6 +10,8 @@ import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { Avatar, Button, Checkbox } from '@/components';
 import { sortTeamMembers } from '@/utils/sort-team-members';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 
 interface AssigneeSelectorProps {
   task: IProjectTask;
@@ -34,6 +36,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const members = useSelector((state: RootState) => state.teamMembersReducer.teamMembers);
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
+  const dispatch = useAppDispatch();
 
   const filteredMembers = useMemo(() => {
     return teamMembers?.data?.filter(member =>
@@ -147,6 +150,11 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     if (!memberId) return false;
     const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
     return assignees?.includes(memberId) || false;
+  };
+
+  const handleInviteProjectMemberDrawer = () => {
+    setIsOpen(false); // Close the assignee dropdown first
+    dispatch(toggleProjectMemberDrawer()); // Then open the invite drawer
   };
 
   return (
@@ -271,10 +279,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                   : 'text-blue-600 hover:bg-blue-50'
                 }
               `}
-              onClick={() => {
-                // TODO: Implement invite member functionality
-                console.log('Invite member clicked');
-              }}
+              onClick={handleInviteProjectMemberDrawer}
             >
               <UserAddOutlined />
               Invite member
