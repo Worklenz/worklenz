@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
-const TaskListFilters = lazy(() => import('../taskList/task-list-filters/task-list-filters'));
+import TaskListFilters from '../taskList/task-list-filters/task-list-filters';
 import { Flex, Skeleton } from 'antd';
 import BoardSectionCardContainer from './board-section/board-section-container';
 import {
@@ -44,6 +44,7 @@ import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status'
 import { debounce } from 'lodash';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import { updateTaskPriority as updateBoardTaskPriority } from '@/features/board/board-slice';
+
 interface DroppableContainer {
   id: UniqueIdentifier;
   data: {
@@ -554,9 +555,7 @@ const ProjectViewBoard = () => {
 
   return (
     <Flex vertical gap={16}>
-      <Suspense fallback={<div>Loading filters...</div>}>
-        <TaskListFilters position={'board'} />
-      </Suspense>
+      <TaskListFilters position={'board'} />
       <Skeleton active loading={isLoading} className='mt-4 p-4'>
         <DndContext
           sensors={sensors}

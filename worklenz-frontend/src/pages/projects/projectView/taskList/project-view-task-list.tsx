@@ -1,10 +1,10 @@
-import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Empty } from '@/shared/antd-imports';
 import Flex from 'antd/es/flex';
 import Skeleton from 'antd/es/skeleton';
 import { useSearchParams } from 'react-router-dom';
 
-const TaskListFilters = lazy(() => import('./task-list-filters/task-list-filters'));
+import TaskListFilters from './task-list-filters/task-list-filters';
 import TaskGroupWrapperOptimized from './task-group-wrapper-optimized';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -17,7 +17,7 @@ const ProjectViewTaskList = () => {
   const dispatch = useAppDispatch();
   const { projectView } = useTabSearchParam();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [coreDataLoaded, setCoreDataLoaded] = useState(false);
 
   // Split selectors to prevent unnecessary rerenders
   const projectId = useAppSelector(state => state.projectReducer.projectId);
@@ -33,11 +33,11 @@ const ProjectViewTaskList = () => {
 
   const loadingPhases = useAppSelector(state => state.phaseReducer.loadingPhases);
 
-  // Single source of truth for loading state - EXCLUDE labels loading from skeleton
-  // Labels loading should not block the main task list display
+  // Simplified loading state - only wait for essential data
+  // Remove dependency on phases and status categories for initial render
   const isLoading = useMemo(() => 
-    loadingGroups || loadingPhases || loadingStatusCategories || !initialLoadComplete,
-    [loadingGroups, loadingPhases, loadingStatusCategories, initialLoadComplete]
+    loadingGroups || !coreDataLoaded,
+    [loadingGroups, coreDataLoaded]
   );
 
   // Memoize the empty state check
@@ -56,53 +56,63 @@ const ProjectViewTaskList = () => {
     }
   }, [projectView, setSearchParams, searchParams]);
 
-  // Batch initial data fetching - core data only
+  // Optimized parallel data fetching - don't wait for everything
   useEffect(() => {
-    const fetchInitialData = async () => {
-      if (!projectId || !groupBy || initialLoadComplete) return;
+    const fetchCoreData = async () => {
+      if (!projectId || !groupBy || coreDataLoaded) return;
 
       try {
-        // Batch only essential API calls for initial load
-        // Filter data (labels, assignees, etc.) will load separately and not block the UI
-        await Promise.allSettled([
+        // Start all requests in parallel, but only wait for task columns
+        // Other data can load in background without blocking UI
+        const corePromises = [
           dispatch(fetchTaskListColumns(projectId)),
-          dispatch(fetchPhasesByProjectId(projectId)),
-          dispatch(fetchStatusesCategories()),
-        ]);
-        setInitialLoadComplete(true);
+          dispatch(fetchTaskGroups(projectId)), // Start immediately
+        ];
+
+        // Background data - don't wait for these
+        dispatch(fetchPhasesByProjectId(projectId));
+        dispatch(fetchStatusesCategories());
+
+        // Only wait for essential data
+        await Promise.allSettled(corePromises);
+        setCoreDataLoaded(true);
       } catch (error) {
-        console.error('Error fetching initial data:', error);
-        setInitialLoadComplete(true); // Still mark as complete to prevent infinite loading
+        console.error('Error fetching core data:', error);
+        setCoreDataLoaded(true); // Still mark as complete to prevent infinite loading
       }
     };
 
-    fetchInitialData();
-  }, [projectId, groupBy, dispatch, initialLoadComplete]);
+    fetchCoreData();
+  }, [projectId, groupBy, dispatch, coreDataLoaded]);
 
-  // Fetch task groups with dependency on initial load completion
+  // Optimized task groups fetching - remove initialLoadComplete dependency
   useEffect(() => {
     const fetchTasks = async () => {
-      if (!projectId || !groupBy || projectView !== 'list' || !initialLoadComplete) return;
+      if (!projectId || !groupBy || projectView !== 'list') return;
 
       try {
-        await dispatch(fetchTaskGroups(projectId));
+        // Only refetch if filters change, not on initial load
+        if (coreDataLoaded) {
+          await dispatch(fetchTaskGroups(projectId));
+        }
       } catch (error) {
         console.error('Error fetching task groups:', error);
       }
     };
 
-    fetchTasks();
-  }, [projectId, groupBy, projectView, dispatch, fields, search, archived, initialLoadComplete]);
+    // Only refetch when filters change
+    if (coreDataLoaded) {
+      fetchTasks();
+    }
+  }, [projectId, groupBy, projectView, dispatch, fields, search, archived, coreDataLoaded]);
 
   // Memoize the task groups to prevent unnecessary re-renders
   const memoizedTaskGroups = useMemo(() => taskGroups || [], [taskGroups]);
 
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
-      {/* Filters load independently and don't block the main content */}
-      <Suspense fallback={<div>Loading filters...</div>}>
-        <TaskListFilters position="list" />
-      </Suspense>
+      {/* Filters load synchronously - no suspense boundary */}
+      <TaskListFilters position="list" />
 
       {isEmptyState ? (
         <Empty description="No tasks group found" />
