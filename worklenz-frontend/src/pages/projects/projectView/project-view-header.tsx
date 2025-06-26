@@ -54,6 +54,7 @@ import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 
 const ProjectViewHeader = () => {
   const navigate = useNavigate();
@@ -83,6 +84,8 @@ const ProjectViewHeader = () => {
         dispatch(fetchTaskListColumns(projectId));
         dispatch(fetchPhasesByProjectId(projectId))
         dispatch(fetchTaskGroups(projectId));
+        // Also refresh the enhanced tasks data
+        dispatch(fetchTasksV3(projectId));
         break;
       case 'board':
         // dispatch(fetchBoardTaskGroups(projectId));
@@ -166,7 +169,7 @@ const ProjectViewHeader = () => {
     try {
       setCreatingTask(true);
 
-      const body: ITaskCreateRequest = {
+      const body: Partial<ITaskCreateRequest> = {
         name: DEFAULT_TASK_NAME,
         project_id: selectedProject?.id,
         reporter_id: currentSession?.id,
