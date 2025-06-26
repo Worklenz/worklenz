@@ -38,9 +38,11 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
   const groupBy = useAppSelector(state => state.enhancedKanbanReducer.groupBy);
 
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const createRequestBody = (): ITaskCreateRequest | null => {
@@ -66,18 +68,30 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
     }, 100);
   };
 
+  const resetForNextTask = () => {
+    setNewTaskName('');
+    setCreatingTask(false);
+    // Keep the card visible for creating the next task
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  };
+
   const handleAddTask = async () => {
     if (creatingTask || !projectId || !currentSession || newTaskName.trim() === '') return;
-    setCreatingTask(true);
+
     const body = createRequestBody();
-    if (!body) return;
+    if (!body) {
+      setCreatingTask(true);
+      setShowNewCard(true);
+      return;
+    }
 
     // Real-time socket event handler
     const eventHandler = (task: IProjectTask) => {
-      setCreatingTask(false);
       dispatch(addTaskToGroup({ sectionId, task: { ...task, id: task.id || nanoid(), name: task.name || newTaskName.trim() } }));
       socket?.off(SocketEvents.QUICK_TASK.toString(), eventHandler);
-      resetForm();
+      resetForNextTask();
     };
     socket?.once(SocketEvents.QUICK_TASK.toString(), eventHandler);
     socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
@@ -87,6 +101,13 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
     setNewTaskName('');
     setShowNewCard(false);
     setCreatingTask(false);
+  };
+
+  const handleBlur = () => {
+    if (newTaskName.trim() === '') {
+      setCreatingTask(false);
+      setShowNewCard(false);
+    }
   };
 
   return (
@@ -111,9 +132,11 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
     >
       <Input
         ref={inputRef}
+        autoFocus
         value={newTaskName}
         onChange={e => setNewTaskName(e.target.value)}
         onPressEnter={handleAddTask}
+        onBlur={handleBlur}
         placeholder={t('newTaskNamePlaceholder')}
         style={{
           width: '100%',
