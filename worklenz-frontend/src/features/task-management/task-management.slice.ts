@@ -338,6 +338,11 @@ const taskManagementSlice = createSlice({
     setSearch: (state, action: PayloadAction<string>) => {
       state.search = action.payload;
     },
+
+    // Reset action
+    resetTaskManagement: (state) => {
+      return tasksAdapter.getInitialState(initialState);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -398,6 +403,7 @@ export const {
   setError,
   setSelectedPriorities,
   setSearch,
+  resetTaskManagement,
 } = taskManagementSlice.actions;
 
 export default taskManagementSlice.reducer;

@@ -85,6 +85,8 @@ const selectionSlice = createSlice({
       state.selectedTaskIds = action.payload;
       state.lastSelectedId = action.payload[action.payload.length - 1] || null;
     },
+
+    resetSelection: () => initialState,
   },
 });
 
@@ -97,6 +99,7 @@ export const {
   selectAllTasks,
   clearSelection,
   setSelection,
+  resetSelection,
 } = selectionSlice.actions;
 
 // Selectors

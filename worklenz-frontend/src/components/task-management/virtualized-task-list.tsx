@@ -2,6 +2,8 @@ import React, { useMemo, useCallback, useEffect, useRef } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
+import { Empty } from 'antd';
 import { taskManagementSelectors } from '@/features/task-management/task-management.slice';
 import { Task } from '@/types/task-management.types';
 import TaskRow from './task-row';
@@ -32,6 +34,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   width
 }) => {
   const allTasks = useSelector(taskManagementSelectors.selectAll);
+  const { t } = useTranslation('task-management');
   
   // Get theme from Redux store
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
@@ -39,51 +42,125 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   // Get field visibility from taskListFields slice
   const taskListFields = useSelector((state: RootState) => state.taskManagementFields) as TaskListField[];
   
+  // PERFORMANCE OPTIMIZATION: Reduce virtualization threshold for better performance
+  const VIRTUALIZATION_THRESHOLD = 20; // Reduced from 100 to 20 - virtualize even smaller lists
+  const TASK_ROW_HEIGHT = 40;
+  const HEADER_HEIGHT = 40;
+  const COLUMN_HEADER_HEIGHT = 40;
+  const ADD_TASK_ROW_HEIGHT = 40;
 
+  // PERFORMANCE OPTIMIZATION: Add early return for empty groups
+  if (!group || !group.taskIds || group.taskIds.length === 0) {
+    const emptyGroupHeight = HEADER_HEIGHT + COLUMN_HEADER_HEIGHT + 120 + ADD_TASK_ROW_HEIGHT; // 120px for empty state
+    
+    return (
+      <div className="virtualized-task-list empty-group" style={{ height: emptyGroupHeight }}>
+        <div className="task-group-header" style={{ height: HEADER_HEIGHT }}>
+          <div className="task-group-header-row">
+            <div 
+              className="task-group-header-content"
+              style={{ 
+                backgroundColor: group?.color || '#f0f0f0',
+                borderLeft: `4px solid ${group?.color || '#f0f0f0'}`
+              }}
+            >
+              <span className="task-group-header-text">
+                {group?.title || 'Empty Group'} (0)
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Column Headers */}
+        <div className="task-group-column-headers" style={{ 
+          borderLeft: `4px solid ${group?.color || '#f0f0f0'}`, 
+          height: COLUMN_HEADER_HEIGHT,
+          background: 'var(--task-bg-secondary, #f5f5f5)',
+          borderBottom: '1px solid var(--task-border-tertiary, #d9d9d9)',
+          display: 'flex',
+          alignItems: 'center',
+          paddingLeft: '12px'
+        }}>
+          <span className="column-header-text" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--task-text-secondary, #595959)' }}>
+            TASKS
+          </span>
+        </div>
+        
+        {/* Empty State */}
+        <div className="empty-tasks-container" style={{ 
+          height: '120px',
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          borderLeft: `4px solid ${group?.color || '#f0f0f0'}`,
+          backgroundColor: 'var(--task-bg-primary, white)'
+        }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--task-text-primary, #262626)', marginBottom: '4px' }}>
+                  {t('noTasksInGroup')}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--task-text-secondary, #595959)' }}>
+                  {t('noTasksInGroupDescription')}
+                </div>
+              </div>
+            }
+            style={{ 
+              margin: 0,
+              padding: '12px'
+            }}
+          />
+        </div>
+        
+        <div className="task-group-add-task" style={{ borderLeft: `4px solid ${group?.color || '#f0f0f0'}`, height: ADD_TASK_ROW_HEIGHT }}>
+          <AddTaskListRow groupId={group?.id} />
+        </div>
+      </div>
+    );
+  }
 
   // Get tasks for this group using memoization for performance
   const groupTasks = useMemo(() => {
-    return group.taskIds
+    const tasks = group.taskIds
       .map((taskId: string) => allTasks.find((task: Task) => task.id === taskId))
       .filter((task: Task | undefined): task is Task => task !== undefined);
+    
+    return tasks;
   }, [group.taskIds, allTasks]);
 
-  // Calculate selection state for the group checkbox
-  const { isAllSelected, isIndeterminate } = useMemo(() => {
+  // PERFORMANCE OPTIMIZATION: Only calculate selection state when needed
+  const selectionState = useMemo(() => {
     if (groupTasks.length === 0) {
       return { isAllSelected: false, isIndeterminate: false };
     }
     
-    const selectedTasksInGroup = groupTasks.filter(task => selectedTaskIds.includes(task.id));
+    const selectedTasksInGroup = groupTasks.filter((task: Task) => selectedTaskIds.includes(task.id));
     const isAllSelected = selectedTasksInGroup.length === groupTasks.length;
     const isIndeterminate = selectedTasksInGroup.length > 0 && selectedTasksInGroup.length < groupTasks.length;
     
     return { isAllSelected, isIndeterminate };
   }, [groupTasks, selectedTaskIds]);
 
-  // Handle select all tasks in group
+  // Handle select all tasks in group - optimized with useCallback
   const handleSelectAllInGroup = useCallback((checked: boolean) => {
     if (checked) {
       // Select all tasks in the group
-      groupTasks.forEach(task => {
+      groupTasks.forEach((task: Task) => {
         if (!selectedTaskIds.includes(task.id)) {
           onSelectTask(task.id, true);
         }
       });
     } else {
       // Deselect all tasks in the group
-      groupTasks.forEach(task => {
+      groupTasks.forEach((task: Task) => {
         if (selectedTaskIds.includes(task.id)) {
           onSelectTask(task.id, false);
         }
       });
     }
   }, [groupTasks, selectedTaskIds, onSelectTask]);
-
-  const TASK_ROW_HEIGHT = 40;
-  const HEADER_HEIGHT = 40;
-  const COLUMN_HEADER_HEIGHT = 40;
-  const ADD_TASK_ROW_HEIGHT = 40;
 
   // Calculate dynamic height for the group
   const taskRowsHeight = groupTasks.length * TASK_ROW_HEIGHT;
@@ -100,7 +177,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   const allScrollableColumns = [
     { key: 'description', label: 'Description', width: 200, fieldKey: 'DESCRIPTION' },
     { key: 'progress', label: 'Progress', width: 90, fieldKey: 'PROGRESS' },
-    { key: 'status', label: 'Status', width: 100, fieldKey: 'STATUS' },
+    { key: 'status', label: 'Status', width: 140, fieldKey: 'STATUS' },
     { key: 'members', label: 'Members', width: 150, fieldKey: 'ASSIGNEES' },
     { key: 'labels', label: 'Labels', width: 200, fieldKey: 'LABELS' },
     { key: 'phase', label: 'Phase', width: 100, fieldKey: 'PHASE' },
@@ -148,18 +225,22 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   const scrollableWidth = scrollableColumns.reduce((sum, col) => sum + col.width, 0);
   const totalTableWidth = fixedWidth + scrollableWidth;
 
+  // PERFORMANCE OPTIMIZATION: Increase overscanCount for better perceived performance
+  const shouldVirtualize = groupTasks.length > VIRTUALIZATION_THRESHOLD;
+  const overscanCount = shouldVirtualize ? Math.min(10, Math.ceil(groupTasks.length * 0.1)) : 0; // Dynamic overscan
 
-
-  // Row renderer for virtualization (only task rows)
+  // PERFORMANCE OPTIMIZATION: Memoize row renderer with better dependency management
   const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
     const task: Task | undefined = groupTasks[index];
     if (!task) return null;
+    
     return (
       <div 
         className="task-row-container"
         style={{ 
           ...style, 
-          '--group-color': group.color || '#f0f0f0'
+          '--group-color': group.color || '#f0f0f0',
+          contain: 'layout style', // CSS containment for better performance
         } as React.CSSProperties}
       >
         <TaskRow
@@ -176,7 +257,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
         />
       </div>
     );
-  }, [group, groupTasks, projectId, currentGrouping, selectedTaskIds, onSelectTask, onToggleSubtasks, fixedColumns, scrollableColumns]);
+  }, [group.id, group.color, groupTasks, projectId, currentGrouping, selectedTaskIds, onSelectTask, onToggleSubtasks, fixedColumns, scrollableColumns]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
@@ -198,9 +279,6 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
       }
     };
   }, []);
-
-  const VIRTUALIZATION_THRESHOLD = 20;
-  const shouldVirtualize = groupTasks.length > VIRTUALIZATION_THRESHOLD;
 
   return (
     <div className="virtualized-task-list" style={{ height: groupHeight }}>
@@ -240,10 +318,10 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
                 {col.key === 'select' ? (
                   <div className="flex items-center justify-center h-full">
                     <Checkbox
-                      checked={isAllSelected}
+                      checked={selectionState.isAllSelected}
                       onChange={handleSelectAllInGroup}
                       isDarkMode={isDarkMode}
-                      indeterminate={isIndeterminate}
+                      indeterminate={selectionState.isIndeterminate}
                     />
                   </div>
                 ) : (
@@ -275,6 +353,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
           width: '100%',
           minWidth: totalTableWidth,
           height: groupTasks.length > 0 ? taskRowsHeight : 'auto',
+          contain: 'layout style', // CSS containment for better performance
         }}
       >
         <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
@@ -284,36 +363,53 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
               width={width}
               itemCount={groupTasks.length}
               itemSize={TASK_ROW_HEIGHT}
-              overscanCount={50}
+              overscanCount={overscanCount} // Dynamic overscan
               className="react-window-list"
               style={{ minWidth: totalTableWidth }}
+              // PERFORMANCE OPTIMIZATION: Add performance-focused props
+              useIsScrolling={true}
+              itemData={{ 
+                groupTasks, 
+                group, 
+                projectId, 
+                currentGrouping, 
+                selectedTaskIds, 
+                onSelectTask, 
+                onToggleSubtasks, 
+                fixedColumns, 
+                scrollableColumns 
+              }}
             >
               {Row}
             </List>
           ) : (
-            groupTasks.map((task: Task, index: number) => (
-              <div
-                key={task.id}
-                className="task-row-container"
-                style={{
-                  height: TASK_ROW_HEIGHT,
-                  '--group-color': group.color || '#f0f0f0',
-                } as React.CSSProperties}
-              >
-                <TaskRow
-                  task={task}
-                  projectId={projectId}
-                  groupId={group.id}
-                  currentGrouping={currentGrouping}
-                  isSelected={selectedTaskIds.includes(task.id)}
-                  index={index}
-                  onSelect={onSelectTask}
-                  onToggleSubtasks={onToggleSubtasks}
-                  fixedColumns={fixedColumns}
-                  scrollableColumns={scrollableColumns}
-                />
-              </div>
-            ))
+            // PERFORMANCE OPTIMIZATION: Use React.Fragment to reduce DOM nodes
+            <React.Fragment>
+              {groupTasks.map((task: Task, index: number) => (
+                <div
+                  key={task.id}
+                  className="task-row-container"
+                  style={{
+                    height: TASK_ROW_HEIGHT,
+                    '--group-color': group.color || '#f0f0f0',
+                    contain: 'layout style', // CSS containment
+                  } as React.CSSProperties}
+                >
+                  <TaskRow
+                    task={task}
+                    projectId={projectId}
+                    groupId={group.id}
+                    currentGrouping={currentGrouping}
+                    isSelected={selectedTaskIds.includes(task.id)}
+                    index={index}
+                    onSelect={onSelectTask}
+                    onToggleSubtasks={onToggleSubtasks}
+                    fixedColumns={fixedColumns}
+                    scrollableColumns={scrollableColumns}
+                  />
+                </div>
+              ))}
+            </React.Fragment>
           )}
         </SortableContext>
       </div>
@@ -328,7 +424,6 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
         .virtualized-task-list {
           border: 1px solid var(--task-border-primary, #e8e8e8);
           border-radius: 8px;
-          margin-bottom: 16px;
           background: var(--task-bg-primary, white);
           box-shadow: 0 1px 3px var(--task-shadow, rgba(0, 0, 0, 0.1));
           overflow: hidden;
@@ -487,6 +582,19 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
         /* Performance optimizations */
         .virtualized-task-list {
           contain: layout style paint;
+          will-change: scroll-position;
+        }
+        .task-row-container {
+          contain: layout style;
+          will-change: transform;
+        }
+        .react-window-list {
+          contain: strict;
+        }
+        /* Reduce repaints during scrolling */
+        .task-list-scroll-container {
+          contain: layout style;
+          transform: translateZ(0); /* Force GPU layer */
         }
         /* Dark mode support */
         :root {

@@ -73,6 +73,8 @@ const groupingSlice = createSlice({
         state.groupStates[groupId].collapsed = false;
       });
     },
+
+    resetGrouping: () => initialState,
   },
 });
 
@@ -86,6 +88,7 @@ export const {
   setGroupCollapsed,
   collapseAllGroups,
   expandAllGroups,
+  resetGrouping,
 } = groupingSlice.actions;
 
 // Selectors

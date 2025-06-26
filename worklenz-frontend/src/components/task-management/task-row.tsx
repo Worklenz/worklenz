@@ -158,8 +158,6 @@ const TaskReporter = React.memo<{ reporter?: string; isDarkMode: boolean }>(({ r
   </div>
 ));
 
-
-
 const TaskRow: React.FC<TaskRowProps> = React.memo(({
   task,
   projectId,
@@ -174,6 +172,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   fixedColumns,
   scrollableColumns,
 }) => {
+  // PERFORMANCE OPTIMIZATION: Implement progressive loading
+  const [isFullyLoaded, setIsFullyLoaded] = useState(false);
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+  
+  // PERFORMANCE OPTIMIZATION: Only connect to socket after component is visible
   const { socket, connected } = useSocket();
   
   // Edit task name state
@@ -181,6 +185,40 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   const [taskName, setTaskName] = useState(task.title || '');
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // PERFORMANCE OPTIMIZATION: Intersection Observer for lazy loading
+  useEffect(() => {
+    if (!rowRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isIntersecting) {
+          setIsIntersecting(true);
+          // Delay full loading slightly to prioritize visible content
+          const timeoutId = setTimeout(() => {
+            setIsFullyLoaded(true);
+          }, 50);
+          
+          return () => clearTimeout(timeoutId);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '100px', // Start loading 100px before coming into view
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(rowRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isIntersecting]);
+
+  // PERFORMANCE OPTIMIZATION: Skip expensive operations during initial render
+  const shouldRenderFull = isFullyLoaded || isDragOverlay || editTaskName;
 
   // Optimized drag and drop setup with better performance
   const {
@@ -197,7 +235,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       taskId: task.id,
       groupId,
     },
-    disabled: isDragOverlay,
+    disabled: isDragOverlay || !shouldRenderFull, // Disable drag until fully loaded
     // Optimize animation performance
     animateLayoutChanges: () => false, // Disable layout animations for better performance
   });
@@ -205,9 +243,9 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   // Get theme from Redux store - memoized selector
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
-  // Optimized click outside detection
+  // PERFORMANCE OPTIMIZATION: Only setup click outside detection when editing
   useEffect(() => {
-    if (!editTaskName) return;
+    if (!editTaskName || !shouldRenderFull) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -221,7 +259,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [editTaskName]);
+  }, [editTaskName, shouldRenderFull]);
 
   // Optimized task name save handler
   const handleTaskNameSave = useCallback(() => {
@@ -313,8 +351,92 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     assignee: createAssigneeAdapter(task),
   }), [task]);
 
+  // PERFORMANCE OPTIMIZATION: Simplified column rendering for initial load
+  const renderColumnSimple = useCallback((col: { key: string; width: number }, isFixed: boolean, index: number, totalColumns: number) => {
+    const isLast = index === totalColumns - 1;
+    const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+    
+    // Only render essential columns during initial load
+    switch (col.key) {
+      case 'drag':
+        return (
+          <div key={col.key} className={`flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <div className="w-4 h-4 opacity-30 bg-gray-300 rounded"></div>
+          </div>
+        );
+      
+      case 'select':
+        return (
+          <div key={col.key} className={`flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <Checkbox
+              checked={isSelected}
+              onChange={handleSelectChange}
+              isDarkMode={isDarkMode}
+            />
+          </div>
+        );
+      
+      case 'key':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <TaskKey taskKey={task.task_key} isDarkMode={isDarkMode} />
+          </div>
+        );
+      
+      case 'task':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <div className="flex-1 min-w-0 flex flex-col justify-center h-full overflow-hidden">
+              <div className="flex items-center gap-2 h-5 overflow-hidden">
+                <div className="flex-1 min-w-0">
+                  <Typography.Text
+                    ellipsis={{ tooltip: task.title }}
+                    className={styleClasses.taskName}
+                  >
+                    {task.title}
+                  </Typography.Text>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'status':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <div className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+              {task.status || 'Todo'}
+            </div>
+          </div>
+        );
+      
+      case 'progress':
+        return (
+          <div key={col.key} className={`flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              {task.progress || 0}%
+            </div>
+          </div>
+        );
+      
+      default:
+        // For non-essential columns, show placeholder during initial load
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <div className={`w-8 h-3 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} animate-pulse`}></div>
+          </div>
+        );
+    }
+  }, [isDarkMode, task, isSelected, handleSelectChange, styleClasses]);
+
   // Optimized column rendering with better performance
   const renderColumn = useCallback((col: { key: string; width: number }, isFixed: boolean, index: number, totalColumns: number) => {
+    // Use simplified rendering for initial load
+    if (!shouldRenderFull) {
+      return renderColumnSimple(col, isFixed, index, totalColumns);
+    }
+
+    // Full rendering logic (existing code)
     const isLast = index === totalColumns - 1;
     const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
     
@@ -467,12 +589,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       
       case 'status':
         return (
-          <div key={col.key} className={`flex items-center px-2 ${borderClasses} overflow-visible`} style={{ width: col.width }}>
-            <TaskStatusDropdown
-              task={task}
-              projectId={projectId}
-              isDarkMode={isDarkMode}
-            />
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses} overflow-visible`} style={{ width: col.width, minWidth: col.width }}>
+            <div className="w-full">
+              <TaskStatusDropdown
+                task={task}
+                projectId={projectId}
+                isDarkMode={isDarkMode}
+              />
+            </div>
           </div>
         );
       
@@ -534,32 +658,32 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           </div>
         );
       
-              case 'completedDate':
-          return (
-            <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-              <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {task.completedAt ? utilFormatDate(task.completedAt) : '-'}
-              </span>
-            </div>
-          );
-        
-        case 'createdDate':
-          return (
-            <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-              <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {task.createdAt ? utilFormatDate(task.createdAt) : '-'}
-              </span>
-            </div>
-          );
-        
-        case 'lastUpdated':
-          return (
-            <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-              <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {task.updatedAt ? utilFormatDateTime(task.updatedAt) : '-'}
-              </span>
-            </div>
-          );
+      case 'completedDate':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              {task.completedAt ? utilFormatDate(task.completedAt) : '-'}
+            </span>
+          </div>
+        );
+      
+      case 'createdDate':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              {task.createdAt ? utilFormatDate(task.createdAt) : '-'}
+            </span>
+          </div>
+        );
+      
+      case 'lastUpdated':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              {task.updatedAt ? utilFormatDateTime(task.updatedAt) : '-'}
+            </span>
+          </div>
+        );
       
       case 'reporter':
         return (
@@ -572,17 +696,19 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         return null;
     }
   }, [
-    isDarkMode, task, isSelected, editTaskName, taskName, adapters, groupId, projectId,
+    shouldRenderFull, renderColumnSimple, isDarkMode, task, isSelected, editTaskName, taskName, adapters, groupId, projectId,
     attributes, listeners, handleSelectChange, handleTaskNameSave, handleDateChange,
     dateValues, styleClasses
   ]);
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        rowRef.current = node;
+      }}
       style={dragStyle}
-      className={`${styleClasses.container} task-row-optimized`}
-      // Add CSS containment for better performance
+      className={`${styleClasses.container} task-row-optimized ${shouldRenderFull ? 'fully-loaded' : 'initial-load'}`}
       data-task-id={task.id}
     >
       <div className="flex h-10 max-h-10 overflow-visible relative">
@@ -611,13 +737,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           </div>
         )}
       </div>
-      
-
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Optimized comparison function for better performance
-  // Only compare essential props that affect rendering
+  // PERFORMANCE OPTIMIZATION: Enhanced comparison function
+  // Skip comparison during initial renders to reduce CPU load
+  if (!prevProps.task.id || !nextProps.task.id) return false;
+  
+  // Quick identity checks first
   if (prevProps.task.id !== nextProps.task.id) return false;
   if (prevProps.isSelected !== nextProps.isSelected) return false;
   if (prevProps.isDragOverlay !== nextProps.isDragOverlay) return false;

@@ -14,15 +14,28 @@ export const getCsrfToken = (): string | null => {
 // Function to refresh CSRF token from server
 export const refreshCsrfToken = async (): Promise<string | null> => {
   try {
-    // Make a GET request to the server to get a fresh CSRF token
-    const response = await axios.get(`${config.apiUrl}/csrf-token`, { withCredentials: true });
+    const tokenStart = performance.now();
+    console.log('[CSRF] Starting CSRF token refresh...');
+    
+    // Make a GET request to the server to get a fresh CSRF token with timeout
+    const response = await axios.get(`${config.apiUrl}/csrf-token`, { 
+      withCredentials: true,
+      timeout: 10000 // 10 second timeout for CSRF token requests
+    });
+    
+    const tokenEnd = performance.now();
+    console.log(`[CSRF] CSRF token refresh completed in ${(tokenEnd - tokenStart).toFixed(2)}ms`);
+    
     if (response.data && response.data.token) {
       csrfToken = response.data.token;
+      console.log('[CSRF] CSRF token successfully refreshed');
       return csrfToken;
+    } else {
+      console.warn('[CSRF] No token in response:', response.data);
     }
     return null;
   } catch (error) {
-    console.error('Failed to refresh CSRF token:', error);
+    console.error('[CSRF] Failed to refresh CSRF token:', error);
     return null;
   }
 };
@@ -37,25 +50,36 @@ export const initializeCsrfToken = async (): Promise<void> => {
 const apiClient = axios.create({
   baseURL: config.apiUrl,
   withCredentials: true,
+  timeout: 30000, // 30 second timeout to prevent hanging requests
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 });
 
-// Request interceptor
+// Request interceptor with performance optimization
 apiClient.interceptors.request.use(
   async config => {
+    const requestStart = performance.now();
+    
     // Ensure we have a CSRF token before making requests
     if (!csrfToken) {
+      console.log('[API CLIENT] No CSRF token, fetching...');
+      const tokenStart = performance.now();
       await refreshCsrfToken();
+      const tokenEnd = performance.now();
+      console.log(`[API CLIENT] CSRF token fetch took ${(tokenEnd - tokenStart).toFixed(2)}ms`);
     }
     
     if (csrfToken) {
       config.headers['X-CSRF-Token'] = csrfToken;
     } else {
-      console.warn('No CSRF token available');
+      console.warn('No CSRF token available after refresh attempt');
     }
+    
+    const requestEnd = performance.now();
+    console.log(`[API CLIENT] Request interceptor took ${(requestEnd - requestStart).toFixed(2)}ms`);
+    
     return config;
   },
   error => Promise.reject(error)
