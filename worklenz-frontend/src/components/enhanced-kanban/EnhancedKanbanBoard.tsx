@@ -45,6 +45,7 @@ import alertService from '@/services/alerts/alertService';
 import { IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import EnhancedKanbanCreateSection from './EnhancedKanbanCreateSection';
 import ImprovedTaskFilters from '../task-management/improved-task-filters';
+import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 
 // Import the TaskListFilters component
 const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
@@ -66,7 +67,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   const { teamId } = useAppSelector((state: RootState) => state.auth);
   const groupBy = useSelector((state: RootState) => state.enhancedKanbanReducer.groupBy);
   const project = useAppSelector((state: RootState) => state.projectReducer.project);
-
+  const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);
   // Local state for drag overlay
   const [activeTask, setActiveTask] = useState<any>(null);
   const [activeGroup, setActiveGroup] = useState<any>(null);
@@ -85,6 +86,9 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   useEffect(() => {
     if (projectId) {
       dispatch(fetchEnhancedKanbanGroups(projectId) as any);
+    }
+    if (!statusCategories.length) {
+      dispatch(fetchStatusesCategories() as any);
     }
   }, [dispatch, projectId]);
 
@@ -385,10 +389,10 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
     <>
       {/* Task Filters */}
       <div className="mb-4">
-          <React.Suspense fallback={<div>Loading filters...</div>}>
-            <ImprovedTaskFilters position="board" />
-          </React.Suspense>
-        </div>
+        <React.Suspense fallback={<div>Loading filters...</div>}>
+          <ImprovedTaskFilters position="board" />
+        </React.Suspense>
+      </div>
       <div className={`enhanced-kanban-board ${className}`}>
         {/* Performance Monitor - only show for large datasets */}
         {/* {performanceMetrics.totalTasks > 100 && <PerformanceMonitor />} */}
