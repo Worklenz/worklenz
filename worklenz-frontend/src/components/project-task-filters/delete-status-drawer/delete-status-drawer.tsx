@@ -7,18 +7,19 @@ import { fetchStatuses, fetchStatusesCategories } from '@/features/taskAttribute
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
-import { fetchBoardTaskGroups } from '@/features/board/board-slice';
+
 import { deleteStatusToggleDrawer } from '@/features/projects/status/DeleteStatusSlice';
 import { Drawer, Alert, Card, Select, Button, Typography, Badge } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import {
-  deleteSection,
-  IGroupBy,
+    deleteSection,
+    IGroupBy,
 } from '@features/board/board-slice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import logger from '@/utils/errorLogger';
+import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
@@ -43,8 +44,8 @@ const DeleteStatusDrawer: React.FC = () => {
 
     const refreshTasks = useCallback(() => {
         if (!projectId) return;
-        const fetchAction = projectView === 'list' ? fetchTaskGroups : fetchBoardTaskGroups;
-        dispatch(fetchAction(projectId));
+        const fetchAction = projectView === 'list' ? fetchTaskGroups : fetchEnhancedKanbanGroups;
+        dispatch(fetchAction(projectId) as any);
     }, [projectId, projectView, dispatch]);
 
     const handleDrawerOpenChange = () => {
@@ -71,7 +72,7 @@ const DeleteStatusDrawer: React.FC = () => {
                     dispatch(fetchStatuses(projectId));
                     refreshTasks();
                     dispatch(fetchStatusesCategories());
-                } else{
+                } else {
                     console.error('Error deleting status', res);
                 }
             } else if (groupBy === IGroupBy.PHASE) {
@@ -83,7 +84,7 @@ const DeleteStatusDrawer: React.FC = () => {
 
         } catch (error) {
             logger.error('Error deleting section', error);
-        }finally {
+        } finally {
             setDeletingStatus(false);
         }
     };
@@ -98,7 +99,7 @@ const DeleteStatusDrawer: React.FC = () => {
             open={isDelteStatusDrawerOpen}
             afterOpenChange={handleDrawerOpenChange}
         >
-            <Alert type="warning" message={selectedForDelete?.message.replace("$","")} />
+            <Alert type="warning" message={selectedForDelete?.message.replace("$", "")} />
 
             <Card className="text-center" style={{ marginTop: 16 }}>
                 <Title level={5}>{selectedForDelete?.name}</Title>
