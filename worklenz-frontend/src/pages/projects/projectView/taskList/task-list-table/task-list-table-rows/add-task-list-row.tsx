@@ -8,13 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { DRAWER_ANIMATION_INTERVAL } from '@/shared/constants';
-import {
-  getCurrentGroup,
-  GROUP_BY_STATUS_VALUE,
-  GROUP_BY_PRIORITY_VALUE,
-  GROUP_BY_PHASE_VALUE,
-  addTask,
-} from '@/features/tasks/tasks.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
@@ -47,6 +40,7 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const customBorderColor = useMemo(() => themeMode === 'dark' && ' border-[#303030]', [themeMode]);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
+  const currentGrouping = useAppSelector(state => state.grouping.currentGrouping);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -106,12 +100,11 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
       reporter_id: currentSession.id,
     };
 
-    const groupBy = getCurrentGroup();
-    if (groupBy.value === GROUP_BY_STATUS_VALUE) {
+    if (currentGrouping === 'status') {
       body.status_id = groupId || undefined;
-    } else if (groupBy.value === GROUP_BY_PRIORITY_VALUE) {
+    } else if (currentGrouping === 'priority') {
       body.priority_id = groupId || undefined;
-    } else if (groupBy.value === GROUP_BY_PHASE_VALUE) {
+    } else if (currentGrouping === 'phase') {
       body.phase_id = groupId || undefined;
     }
 
@@ -149,29 +142,7 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
     }
   };
 
-  const onNewTaskReceived = (task: IAddNewTask) => {
-    if (!groupId) return;
 
-    // Ensure we're adding the task with the correct group
-    const taskWithGroup = {
-      ...task,
-      groupId: groupId,
-    };
-
-    // Add the task to the state
-    dispatch(
-      addTask({
-        task: taskWithGroup,
-        groupId,
-        insert: true,
-      })
-    );
-
-    socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.parent_task_id || task.id);
-
-    // Reset the input state
-    reset(false);
-  };
 
   const addInstantTask = async () => {
     // Validation
@@ -205,14 +176,21 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
 
       socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
       
-      // Handle success response
+      // Handle success response - the global socket handler will handle task addition
       socket?.once(SocketEvents.QUICK_TASK.toString(), (task: IProjectTask) => {
         clearTimeout(timeout);
         setTaskCreationTimeout(null);
         setCreatingTask(false);
         
         if (task && task.id) {
-          onNewTaskReceived(task as IAddNewTask);
+          // Just reset the form - the global handler will add the task to Redux
+          reset(false);
+          // Emit progress update for parent task if this is a subtask
+          if (task.parent_task_id) {
+            socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.parent_task_id);
+          } else {
+            socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
+          }
         } else {
           setError('Failed to create task. Please try again.');
         }

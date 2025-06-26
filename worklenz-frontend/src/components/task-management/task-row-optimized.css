@@ -25,6 +25,38 @@
   contain: layout style;
 }
 
+/* PERFORMANCE OPTIMIZATION: Progressive loading states */
+.task-row-optimized.initial-load {
+  contain: strict;
+  will-change: auto;
+}
+
+.task-row-optimized.fully-loaded {
+  contain: layout style;
+  will-change: transform;
+}
+
+/* Optimize initial render performance */
+.task-row-optimized.initial-load * {
+  contain: layout;
+  will-change: auto;
+}
+
+.task-row-optimized.fully-loaded * {
+  contain: layout style;
+  will-change: auto;
+}
+
+/* Skeleton loading animations for initial render */
+.task-row-optimized.initial-load .animate-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
 .task-name-edit-active {
   contain: none; /* Disable containment during editing for proper focus */
 }
@@ -91,6 +123,20 @@
   will-change: background-color;
 }
 
+/* PERFORMANCE OPTIMIZATION: Intersection observer optimizations */
+.task-row-optimized.intersection-observed {
+  contain: layout style paint;
+}
+
+.task-row-optimized.intersection-observed.visible {
+  will-change: transform, opacity;
+}
+
+.task-row-optimized.intersection-observed.hidden {
+  will-change: auto;
+  contain: strict;
+}
+
 /* Dark mode optimizations */
 .dark .task-row-optimized {
   contain: layout style;
@@ -104,6 +150,10 @@
 @media (prefers-reduced-motion: reduce) {
   .task-row-optimized {
     transition: none !important;
+    animation: none !important;
+  }
+  
+  .task-row-optimized .animate-pulse {
     animation: none !important;
   }
 }
@@ -125,18 +175,21 @@
   contain: strict;
 }
 
-/* Intersection observer optimizations */
-.task-row-optimized.intersection-observed {
-  contain: layout style paint;
+/* PERFORMANCE OPTIMIZATION: GPU acceleration for better scrolling */
+.task-row-optimized {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
-.task-row-optimized.intersection-observed.visible {
-  will-change: transform, opacity;
+/* Optimize rendering layers */
+.task-row-optimized.initial-load {
+  transform: translate3d(0, 0, 0);
 }
 
-.task-row-optimized.intersection-observed.hidden {
-  will-change: auto;
-  contain: strict;
+.task-row-optimized.fully-loaded {
+  transform: translate3d(0, 0, 0);
 }
 
 /* Performance debugging */
@@ -154,4 +207,32 @@
   font-size: 10px;
   padding: 2px 4px;
   z-index: 9999;
+}
+
+/* PERFORMANCE OPTIMIZATION: Optimize text rendering */
+.task-row-optimized {
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Optimize for mobile devices */
+@media (max-width: 768px) {
+  .task-row-optimized {
+    contain: strict;
+    will-change: auto;
+  }
+  
+  .task-row-optimized.initial-load {
+    contain: strict;
+  }
+}
+
+/* PERFORMANCE OPTIMIZATION: Reduce reflows during resize */
+.task-row-optimized {
+  box-sizing: border-box;
+}
+
+.task-row-optimized * {
+  box-sizing: border-box;
 } 

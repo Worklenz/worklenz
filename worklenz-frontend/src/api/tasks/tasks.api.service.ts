@@ -28,6 +28,7 @@ export interface ITaskListConfigV2 {
   parent_task?: string;
   group?: string;
   isSubtasksInclude: boolean;
+  include_empty?: string; // Include empty groups in response
 }
 
 export interface ITaskListV3Response {
@@ -137,13 +138,25 @@ export const tasksApiService = {
   },
 
   getTaskListV3: async (config: ITaskListConfigV2): Promise<IServerResponse<ITaskListV3Response>> => {
-    const q = toQueryString(config);
+    const q = toQueryString({ ...config, include_empty: "true" });
     const response = await apiClient.get(`${rootUrl}/list/v3/${config.id}${q}`);
     return response.data;
   },
 
   refreshTaskProgress: async (projectId: string): Promise<IServerResponse<{ message: string }>> => {
     const response = await apiClient.post(`${rootUrl}/refresh-progress/${projectId}`);
+    return response.data;
+  },
+
+  getTaskProgressStatus: async (projectId: string): Promise<IServerResponse<{
+    projectId: string;
+    totalTasks: number;
+    completedTasks: number;
+    avgProgress: number;
+    lastUpdated: string;
+    completionPercentage: number;
+  }>> => {
+    const response = await apiClient.get(`${rootUrl}/progress-status/${projectId}`);
     return response.data;
   },
 };

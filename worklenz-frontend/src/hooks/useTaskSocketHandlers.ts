@@ -6,6 +6,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
 import alertService from '@/services/alerts/alertService';
+import { store } from '@/app/store';
 
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
@@ -32,6 +33,14 @@ import {
   updateSubTasks,
   updateTaskProgress,
 } from '@/features/tasks/tasks.slice';
+import { 
+  addTask, 
+  updateTask, 
+  moveTaskToGroup,
+  selectCurrentGroupingV3,
+  fetchTasksV3
+} from '@/features/task-management/task-management.slice';
+import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import {
   setStartDate,
@@ -51,6 +60,7 @@ export const useTaskSocketHandlers = () => {
   
   const { loadingAssignees, taskGroups } = useAppSelector((state: any) => state.taskReducer);
   const { projectId } = useAppSelector((state: any) => state.projectReducer);
+  const currentGroupingV3 = useAppSelector(selectCurrentGroupingV3);
 
   // Memoize socket event handlers
   const handleAssigneesUpdate = useCallback(
@@ -112,6 +122,8 @@ export const useTaskSocketHandlers = () => {
     (response: ITaskListStatusChangeResponse) => {
       if (!response) return;
 
+      console.log('🔄 Status change received:', response);
+
       if (response.completed_deps === false) {
         alertService.error(
           'Task is not completed',
@@ -120,10 +132,18 @@ export const useTaskSocketHandlers = () => {
         return;
       }
 
+      // Update the old task slice (for backward compatibility)
       dispatch(updateTaskStatus(response));
       dispatch(deselectAll());
+
+      // For the task management slice, let's use a simpler approach:
+      // Just refetch the tasks to ensure consistency
+      if (response.id && projectId) {
+        console.log('🔄 Refetching tasks after status change to ensure consistency...');
+        dispatch(fetchTasksV3(projectId));
+      }
     },
-    [dispatch]
+    [dispatch, currentGroupingV3]
   );
 
   const handleTaskProgress = useCallback(
@@ -137,6 +157,7 @@ export const useTaskSocketHandlers = () => {
     }) => {
       if (!data) return;
 
+      // Update the old task slice (for backward compatibility)
       dispatch(
         updateTaskProgress({
           taskId: data.parent_task || data.id,
@@ -145,6 +166,18 @@ export const useTaskSocketHandlers = () => {
           completedCount: data.completed_count,
         })
       );
+
+      // For the task management slice, update task progress
+      const taskId = data.parent_task || data.id;
+      if (taskId) {
+        dispatch(updateTask({
+          id: taskId,
+          changes: {
+            progress: data.complete_ratio,
+            updatedAt: new Date().toISOString(),
+          }
+        }));
+      }
     },
     [dispatch]
   );
@@ -153,11 +186,18 @@ export const useTaskSocketHandlers = () => {
     (response: ITaskListPriorityChangeResponse) => {
       if (!response) return;
 
+      // Update the old task slice (for backward compatibility)
       dispatch(updateTaskPriority(response));
       dispatch(setTaskPriority(response));
       dispatch(deselectAll());
+
+      // For the task management slice, refetch tasks to ensure consistency
+      if (response.id && projectId) {
+        console.log('🔄 Refetching tasks after priority change...');
+        dispatch(fetchTasksV3(projectId));
+      }
     },
-    [dispatch]
+    [dispatch, currentGroupingV3]
   );
 
   const handleEndDateChange = useCallback(
@@ -182,7 +222,20 @@ export const useTaskSocketHandlers = () => {
   const handleTaskNameChange = useCallback(
     (data: { id: string; parent_task: string; name: string }) => {
       if (!data) return;
+      
+      // Update the old task slice (for backward compatibility)
       dispatch(updateTaskName(data));
+
+      // For the task management slice, update task name
+      if (data.id) {
+        dispatch(updateTask({
+          id: data.id,
+          changes: {
+            title: data.name,
+            updatedAt: new Date().toISOString(),
+          }
+        }));
+      }
     },
     [dispatch]
   );
@@ -190,10 +243,18 @@ export const useTaskSocketHandlers = () => {
   const handlePhaseChange = useCallback(
     (data: ITaskPhaseChangeResponse) => {
       if (!data) return;
+      
+      // Update the old task slice (for backward compatibility)
       dispatch(updateTaskPhase(data));
       dispatch(deselectAll());
+
+      // For the task management slice, refetch tasks to ensure consistency
+      if (data.task_id && projectId) {
+        console.log('🔄 Refetching tasks after phase change...');
+        dispatch(fetchTasksV3(projectId));
+      }
     },
-    [dispatch]
+    [dispatch, currentGroupingV3]
   );
 
   const handleStartDateChange = useCallback(
@@ -257,7 +318,44 @@ export const useTaskSocketHandlers = () => {
     (data: IProjectTask) => {
       if (!data) return;
       if (data.parent_task_id) {
+        // Handle subtask creation
         dispatch(updateSubTasks(data));
+      } else {
+        // Handle regular task creation - transform to Task format and add
+        const task = {
+          id: data.id || '',
+          task_key: data.task_key || '',
+          title: data.name || '',
+          description: data.description || '',
+          status: (data.status_category?.is_todo ? 'todo' : 
+                   data.status_category?.is_doing ? 'doing' : 
+                   data.status_category?.is_done ? 'done' : 'todo') as 'todo' | 'doing' | 'done',
+          priority: (data.priority_value === 3 ? 'critical' :
+                     data.priority_value === 2 ? 'high' :
+                     data.priority_value === 1 ? 'medium' : 'low') as 'critical' | 'high' | 'medium' | 'low',
+          phase: data.phase_name || 'Development',
+          progress: data.complete_ratio || 0,
+          assignees: data.assignees?.map(a => a.team_member_id) || [],
+          assignee_names: data.names || [],
+          labels: data.labels?.map(l => ({
+            id: l.id || '',
+            name: l.name || '',
+            color: l.color_code || '#1890ff',
+            end: l.end,
+            names: l.names
+          })) || [],
+          dueDate: data.end_date,
+          timeTracking: {
+            estimated: (data.total_hours || 0) + ((data.total_minutes || 0) / 60),
+            logged: ((data.time_spent?.hours || 0) + ((data.time_spent?.minutes || 0) / 60)),
+          },
+          customFields: {},
+          createdAt: data.created_at || new Date().toISOString(),
+          updatedAt: data.updated_at || new Date().toISOString(),
+          order: data.sort_order || 0,
+        };
+        
+        dispatch(addTask(task));
       }
     },
     [dispatch]

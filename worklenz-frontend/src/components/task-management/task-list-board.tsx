@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import {
   DndContext,
   DragOverlay,
@@ -13,7 +14,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Card, Spin, Empty } from 'antd';
+import { Card, Spin, Empty, Alert } from 'antd';
 import { RootState } from '@/app/store';
 import {
   taskManagementSelectors,
@@ -42,11 +43,14 @@ import TaskRow from './task-row';
 // import BulkActionBar from './bulk-action-bar';
 import VirtualizedTaskList from './virtualized-task-list';
 import { AppDispatch } from '@/app/store';
+import { shallowEqual } from 'react-redux';
 
 // Import the improved TaskListFilters component
 const ImprovedTaskFilters = React.lazy(
   () => import('./improved-task-filters')
 );
+
+
 
 interface TaskListBoardProps {
   projectId: string;
@@ -84,10 +88,15 @@ const throttle = <T extends (...args: any[]) => void>(func: T, delay: number): T
 
 const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = '' }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation('task-management');
   const [dragState, setDragState] = useState<DragState>({
     activeTask: null,
     activeGroupId: null,
   });
+
+  // Prevent duplicate API calls in React StrictMode
+  const hasInitialized = useRef(false);
+
 
   // Refs for performance optimization
   const dragOverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -98,10 +107,10 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Redux selectors using V3 API (pre-processed data, minimal loops)
   const tasks = useSelector(taskManagementSelectors.selectAll);
-  const taskGroups = useSelector(selectTaskGroupsV3); // Pre-processed groups from backend
-  const currentGrouping = useSelector(selectCurrentGroupingV3); // Current grouping from backend
+  const taskGroups = useSelector(selectTaskGroupsV3, shallowEqual);
+  const currentGrouping = useSelector(selectCurrentGroupingV3, shallowEqual);
   const selectedTaskIds = useSelector(selectSelectedTaskIds);
-  const loading = useSelector((state: RootState) => state.taskManagement.loading);
+  const loading = useSelector((state: RootState) => state.taskManagement.loading, shallowEqual);
   const error = useSelector((state: RootState) => state.taskManagement.error);
 
   // Get theme from Redux store
@@ -121,16 +130,20 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Fetch task groups when component mounts or dependencies change
   useEffect(() => {
-    if (projectId) {
+    if (projectId && !hasInitialized.current) {
+      hasInitialized.current = true;
+      
       // Fetch real tasks from V3 API (minimal processing needed)
       dispatch(fetchTasksV3(projectId));
     }
-  }, [dispatch, projectId, currentGrouping]);
+  }, [projectId, dispatch]);
 
   // Memoized calculations - optimized
-  const allTaskIds = useMemo(() => tasks.map(task => task.id), [tasks]);
-  const totalTasksCount = useMemo(() => tasks.length, [tasks]);
-  const hasSelection = selectedTaskIds.length > 0;
+  const totalTasks = useMemo(() => {
+    return taskGroups.reduce((total, g) => total + g.taskIds.length, 0);
+  }, [taskGroups]);
+
+  const hasAnyTasks = useMemo(() => totalTasks > 0, [totalTasks]);
 
   // Memoized handlers for better performance
   const handleGroupingChange = useCallback(
@@ -299,7 +312,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         if (sourceGroup.id !== targetGroup.id || sourceIndex !== finalTargetIndex) {
           // Calculate new order values - simplified
           const allTasksInTargetGroup = targetGroup.taskIds.map(
-            id => tasks.find(t => t.id === id)!
+            (id: string) => tasks.find((t: any) => t.id === id)!
           );
           const newOrder = allTasksInTargetGroup.map((task, index) => {
             if (index < finalTargetIndex) return task.order;
@@ -310,7 +323,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           // Dispatch reorder action
           dispatch(
             reorderTasks({
-              taskIds: [activeTaskId, ...allTasksInTargetGroup.map(t => t.id)],
+              taskIds: [activeTaskId, ...allTasksInTargetGroup.map((t: any) => t.id)],
               newOrder: [currentDragState.activeTask!.order, ...newOrder],
             })
           );
@@ -374,6 +387,10 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
+
+
+
+
         {/* Task Filters */}
         <div className="mb-4">
           <React.Suspense fallback={<div>Loading filters...</div>}>
@@ -391,17 +408,32 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
             </Card>
           ) : taskGroups.length === 0 ? (
             <Card>
-              <Empty description="No tasks found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <Empty 
+                description={
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>
+                      No task groups available
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--task-text-secondary, #595959)' }}>
+                      Create tasks to see them organized in groups
+                    </div>
+                  </div>
+                }
+                image={Empty.PRESENTED_IMAGE_SIMPLE} 
+              />
             </Card>
           ) : (
             <div className="virtualized-task-groups">
               {taskGroups.map((group, index) => {
-                // Calculate dynamic height for each group
+                // PERFORMANCE OPTIMIZATION: Optimized height calculations
                 const groupTasks = group.taskIds.length;
                 const baseHeight = 120; // Header + column headers + add task row
                 const taskRowsHeight = groupTasks * 40; // 40px per task row
-                const minGroupHeight = 300; // Minimum height for better visual appearance
-                const maxGroupHeight = 600; // Increased maximum height per group
+                
+                // PERFORMANCE OPTIMIZATION: Dynamic height based on task count and virtualization
+                const shouldVirtualizeGroup = groupTasks > 20;
+                const minGroupHeight = shouldVirtualizeGroup ? 200 : 150; // Smaller minimum for non-virtualized
+                const maxGroupHeight = shouldVirtualizeGroup ? 800 : 400; // Different max based on virtualization
                 const calculatedHeight = baseHeight + taskRowsHeight;
                 const groupHeight = Math.max(
                   minGroupHeight,
@@ -457,21 +489,19 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           position: relative;
           /* GPU acceleration for drag operations */
           transform: translateZ(0);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
         }
 
-        .virtualized-task-group {
+        .virtualized-task-list {
           border: 1px solid var(--task-border-primary, #e8e8e8);
           border-radius: 8px;
-          margin-bottom: 16px;
           background: var(--task-bg-primary, white);
           box-shadow: 0 1px 3px var(--task-shadow, rgba(0, 0, 0, 0.1));
           overflow: hidden;
           transition: all 0.3s ease;
           position: relative;
-        }
-
-        .virtualized-task-group:last-child {
-          margin-bottom: 0;
         }
 
         /* Task group header styles */
@@ -631,6 +661,15 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           z-index: 9999;
         }
 
+        /* Empty state styles */
+        .empty-tasks-container .ant-empty-description {
+          color: var(--task-text-secondary, #595959);
+        }
+
+        .empty-tasks-container .ant-empty-image svg {
+          opacity: 0.4;
+        }
+
         /* Dark mode support */
         :root {
           --task-bg-primary: #ffffff;
@@ -667,6 +706,17 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           --task-selected-border: #1890ff;
           --task-drag-over-bg: #1a2332;
           --task-drag-over-border: #40a9ff;
+        }
+
+        /* Dark mode empty state */
+        .dark .empty-tasks-container .ant-empty-description,
+        [data-theme="dark"] .empty-tasks-container .ant-empty-description {
+          color: var(--task-text-secondary, #d9d9d9);
+        }
+
+        .dark .empty-tasks-container .ant-empty-image svg,
+        [data-theme="dark"] .empty-tasks-container .ant-empty-image svg {
+          opacity: 0.6;
         }
 
         /* Performance optimizations */

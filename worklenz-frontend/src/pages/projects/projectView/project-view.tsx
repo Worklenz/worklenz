@@ -26,6 +26,10 @@ import ProjectViewHeader from './project-view-header';
 import './project-view.css';
 import { resetTaskListData } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
+import { resetTaskManagement } from '@/features/task-management/task-management.slice';
+import { resetGrouping } from '@/features/task-management/grouping.slice';
+import { resetSelection } from '@/features/task-management/selection.slice';
+import { resetFields } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { tabItems } from '@/lib/project/project-view-constants';
@@ -60,6 +64,10 @@ const ProjectView = () => {
     dispatch(deselectAll());
     dispatch(resetTaskListData());
     dispatch(resetBoardData());
+    dispatch(resetTaskManagement());
+    dispatch(resetGrouping());
+    dispatch(resetSelection());
+    dispatch(resetFields());
   }, [dispatch]);
 
   useEffect(() => {

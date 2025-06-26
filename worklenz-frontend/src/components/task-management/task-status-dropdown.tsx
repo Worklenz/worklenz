@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { Task } from '@/types/task-management.types';
+import { updateTask, selectCurrentGroupingV3 } from '@/features/task-management/task-management.slice';
 
 interface TaskStatusDropdownProps {
   task: Task;
@@ -16,6 +18,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   projectId, 
   isDarkMode = false 
 }) => {
+  const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
@@ -23,14 +26,8 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const statusList = useAppSelector(state => state.taskStatusReducer.status);
+  const currentGroupingV3 = useAppSelector(selectCurrentGroupingV3);
   
-  // Debug log only when statusList changes, not on every render
-  useEffect(() => {
-    if (statusList.length > 0) {
-      console.log('Status list loaded:', statusList.length, 'statuses');
-    }
-  }, [statusList]);
-
   // Find current status details
   const currentStatus = useMemo(() => {
     return statusList.find(status => 
@@ -42,6 +39,8 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   // Handle status change
   const handleStatusChange = useCallback((statusId: string, statusName: string) => {
     if (!task.id || !statusId || !connected) return;
+
+    console.log('🎯 Status change initiated:', { taskId: task.id, statusId, statusName });
 
     socket?.emit(
       SocketEvents.TASK_STATUS_CHANGE.toString(),
@@ -120,14 +119,15 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
         }}
         className={`
           inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
-          transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] justify-center
+          transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] max-w-full justify-center
+          whitespace-nowrap
         `}
         style={{
           backgroundColor: currentStatus ? getStatusColor(currentStatus) : (isDarkMode ? '#4b5563' : '#9ca3af'),
           color: 'white',
         }}
       >
-        <span>{currentStatus ? formatStatusName(currentStatus.name || '') : getStatusDisplayName(task.status)}</span>
+        <span className="truncate">{currentStatus ? formatStatusName(currentStatus.name || '') : getStatusDisplayName(task.status)}</span>
         <svg 
           className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
