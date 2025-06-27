@@ -36,6 +36,22 @@
   will-change: transform;
 }
 
+/* REAL-TIME UPDATES: Prevent flickering during socket updates */
+.task-row-optimized.stable-content {
+  contain: layout style;
+  will-change: transform;
+  /* Prevent content from disappearing during real-time updates */
+  min-height: 40px;
+  transition: none; /* Disable transitions during real-time updates */
+}
+
+.task-row-optimized.stable-content * {
+  contain: layout;
+  will-change: auto;
+  /* Ensure content stays visible */
+  opacity: 1 !important;
+}
+
 /* Optimize initial render performance */
 .task-row-optimized.initial-load * {
   contain: layout;
