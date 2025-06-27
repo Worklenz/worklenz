@@ -1,5 +1,6 @@
 {
   "importTasks": "Importo detyra",
+  "importTask": "Importo detyrë",
   "createTask": "Krijo detyrë",
   "settings": "Cilësimet",
   "subscribe": "Abonohu",
@@ -9,5 +10,8 @@
   "endDate": "Data e përfundimit",
   "projectSettings": "Cilësimet e projektit",
   "projectSummary": "Përmbledhja e projektit",
-  "receiveProjectSummary": "Merrni një përmbledhje të projektit çdo mbrëmje."
+  "receiveProjectSummary": "Merrni një përmbledhje të projektit çdo mbrëmje.",
+  "refreshProject": "Rifresko projektin",
+  "saveAsTemplate": "Ruaje si shabllon",
+  "invite": "Fto"
 }
