@@ -5,6 +5,7 @@ import { PlusOutlined, UserAddOutlined } from '@ant-design/icons';
 import { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
+import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
@@ -12,6 +13,7 @@ import { Avatar, Button, Checkbox } from '@/components';
 import { sortTeamMembers } from '@/utils/sort-team-members';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
+import { updateTask } from '@/features/task-management/task-management.slice';
 
 interface AssigneeSelectorProps {
   task: IProjectTask;
@@ -28,6 +30,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [teamMembers, setTeamMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [optimisticAssignees, setOptimisticAssignees] = useState<string[]>([]); // For optimistic updates
+  const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set()); // Track pending member changes
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -134,6 +138,34 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const handleMemberToggle = (memberId: string, checked: boolean) => {
     if (!memberId || !projectId || !task?.id || !currentSession?.id) return;
 
+    // Add to pending changes for visual feedback
+    setPendingChanges(prev => new Set(prev).add(memberId));
+
+    // OPTIMISTIC UPDATE: Update local state immediately for instant UI feedback
+    const currentAssignees = task?.assignees?.map(a => a.team_member_id) || [];
+    let newAssigneeIds: string[];
+
+    if (checked) {
+      // Adding assignee
+      newAssigneeIds = [...currentAssignees, memberId];
+    } else {
+      // Removing assignee
+      newAssigneeIds = currentAssignees.filter(id => id !== memberId);
+    }
+
+    // Update optimistic state for immediate UI feedback in dropdown
+    setOptimisticAssignees(newAssigneeIds);
+
+    // Update local team members state for dropdown UI
+    setTeamMembers(prev => ({
+      ...prev,
+      data: (prev.data || []).map(member => 
+        member.id === memberId 
+          ? { ...member, selected: checked }
+          : member
+      )
+    }));
+
     const body = {
       team_member_id: memberId,
       project_id: projectId,
@@ -143,13 +175,26 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       parent_task: task.parent_task_id,
     };
 
+    // Emit socket event - the socket handler will update Redux with proper types
     socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
+
+    // Remove from pending changes after a short delay (optimistic)
+    setTimeout(() => {
+      setPendingChanges(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(memberId);
+        return newSet;
+      });
+    }, 500); // Remove pending state after 500ms
   };
 
   const checkMemberSelected = (memberId: string) => {
     if (!memberId) return false;
-    const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
-    return assignees?.includes(memberId) || false;
+    // Use optimistic assignees if available, otherwise fall back to task assignees
+    const assignees = optimisticAssignees.length > 0 
+      ? optimisticAssignees 
+      : task?.assignees?.map(assignee => assignee.team_member_id) || [];
+    return assignees.includes(memberId);
   };
 
   const handleInviteProjectMemberDrawer = () => {
@@ -233,13 +278,28 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                       handleMemberToggle(member.id || '', !isSelected);
                     }
                   }}
+                  style={{
+                    // Add visual feedback for immediate response
+                    transition: 'all 0.15s ease-in-out',
+                  }}
                 >
-                  <Checkbox
-                    checked={checkMemberSelected(member.id || '')}
-                    onChange={(checked) => handleMemberToggle(member.id || '', checked)}
-                    disabled={member.pending_invitation}
-                    isDarkMode={isDarkMode}
-                  />
+                  <div className="relative">
+                    <Checkbox
+                      checked={checkMemberSelected(member.id || '')}
+                      onChange={(checked) => handleMemberToggle(member.id || '', checked)}
+                      disabled={member.pending_invitation || pendingChanges.has(member.id || '')}
+                      isDarkMode={isDarkMode}
+                    />
+                    {pendingChanges.has(member.id || '') && (
+                      <div className={`absolute inset-0 flex items-center justify-center ${
+                        isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'
+                      }`}>
+                        <div className={`w-3 h-3 border border-t-transparent rounded-full animate-spin ${
+                          isDarkMode ? 'border-blue-400' : 'border-blue-600'
+                        }`} />
+                      </div>
+                    )}
+                  </div>
                   
                   <Avatar
                     src={member.avatar_url}

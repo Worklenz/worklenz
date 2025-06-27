@@ -425,8 +425,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
 
   // PERFORMANCE OPTIMIZATION: Simplified column rendering for initial load
   const renderColumnSimple = useCallback((col: { key: string; width: number }, isFixed: boolean, index: number, totalColumns: number) => {
-    const isLast = index === totalColumns - 1;
-    const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+    // Fix border logic: if this is a fixed column, only consider it "last" if there are no scrollable columns
+    // If this is a scrollable column, use the normal logic
+    const isActuallyLast = isFixed 
+      ? (index === totalColumns - 1 && (!scrollableColumns || scrollableColumns.length === 0))
+      : (index === totalColumns - 1);
+    const borderClasses = `${isActuallyLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
     
     // Only render essential columns during initial load
     switch (col.key) {
@@ -527,8 +531,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     }
 
     // Full rendering logic (existing code)
-    const isLast = index === totalColumns - 1;
-    const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+    // Fix border logic: if this is a fixed column, only consider it "last" if there are no scrollable columns
+    // If this is a scrollable column, use the normal logic
+    const isActuallyLast = isFixed 
+      ? (index === totalColumns - 1 && (!scrollableColumns || scrollableColumns.length === 0))
+      : (index === totalColumns - 1);
+    const borderClasses = `${isActuallyLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
     
     switch (col.key) {
       case 'drag':
@@ -558,7 +566,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       
       case 'task':
         const cellStyle = editTaskName
-          ? { width: col.width, border: '1px solid #1890ff', background: isDarkMode ? '#232b3a' : '#f0f7ff', transition: 'border 0.2s' }
+          ? { 
+              width: col.width, 
+              borderTop: '1px solid #1890ff', 
+              borderBottom: '1px solid #1890ff', 
+              borderLeft: '1px solid #1890ff',
+              background: isDarkMode ? '#232b3a' : '#f0f7ff', 
+              transition: 'border 0.2s' 
+            }
           : { width: col.width };
         
         return (
@@ -954,8 +969,9 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 }}
               >
                 {fixedColumns.map((col, index) => {
-                  const isLast = index === fixedColumns.length - 1;
-                  const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+                  // Fix border logic for add subtask row: fixed columns should have right border if scrollable columns exist
+                  const isActuallyLast = index === fixedColumns.length - 1 && (!scrollableColumns || scrollableColumns.length === 0);
+                  const borderClasses = `${isActuallyLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
                   
                   if (col.key === 'task') {
                     return (
