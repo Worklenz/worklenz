@@ -481,7 +481,10 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         return (
           <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
             <div className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-              {task.status || 'Todo'}
+              {task.status === 'todo' ? 'To Do' : 
+               task.status === 'doing' ? 'Doing' : 
+               task.status === 'done' ? 'Done' : 
+               task.status || 'To Do'}
             </div>
           </div>
         );
@@ -499,7 +502,11 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         return (
           <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
             <div className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-              {task.priority || 'Medium'}
+              {task.priority === 'critical' ? 'Critical' :
+               task.priority === 'high' ? 'High' :
+               task.priority === 'medium' ? 'Medium' :
+               task.priority === 'low' ? 'Low' :
+               task.priority || 'Medium'}
             </div>
           </div>
         );
@@ -509,6 +516,81 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
             <div className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
               {task.phase || 'No Phase'}
+            </div>
+          </div>
+        );
+      
+      case 'members':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <div className="flex items-center gap-2">
+              {task.assignee_names && task.assignee_names.length > 0 ? (
+                <div className="flex items-center gap-1">
+                  {task.assignee_names.slice(0, 3).map((member, index) => (
+                    <div
+                      key={index}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                        isDarkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
+                      }`}
+                      title={member.name}
+                    >
+                      {member.name ? member.name.charAt(0).toUpperCase() : '?'}
+                    </div>
+                  ))}
+                  {task.assignee_names.length > 3 && (
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                        isDarkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      +{task.assignee_names.length - 3}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={`w-6 h-6 rounded-full border-2 border-dashed flex items-center justify-center ${
+                  isDarkMode ? 'border-gray-600' : 'border-gray-300'
+                }`}>
+                  <UserOutlined className={`text-xs ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      
+      case 'labels':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <div className="flex items-center gap-1 flex-wrap">
+              {task.labels && task.labels.length > 0 ? (
+                task.labels.slice(0, 3).map((label, index) => (
+                  <div
+                    key={index}
+                    className={`px-2 py-1 text-xs rounded ${
+                      isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                    }`}
+                    style={{
+                      backgroundColor: label.color || (isDarkMode ? '#374151' : '#f3f4f6'),
+                      color: label.color ? '#ffffff' : undefined
+                    }}
+                  >
+                    {label.name || 'Label'}
+                  </div>
+                ))
+              ) : (
+                <div className={`px-2 py-1 text-xs rounded border-dashed border ${
+                  isDarkMode ? 'border-gray-600 text-gray-600' : 'border-gray-300 text-gray-400'
+                }`}>
+                  No labels
+                </div>
+              )}
+              {task.labels && task.labels.length > 3 && (
+                <div className={`px-2 py-1 text-xs rounded ${
+                  isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  +{task.labels.length - 3}
+                </div>
+              )}
             </div>
           </div>
         );
