@@ -36,6 +36,8 @@ import {
   taskPropsEqual
 } from './task-row-utils';
 import './task-row-optimized.css';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { setSelectedTaskId, setShowTaskDrawer, fetchTask } from '@/features/task-drawer/task-drawer.slice';
 
 interface TaskRowProps {
   task: Task;
@@ -183,6 +185,9 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   
   // PERFORMANCE OPTIMIZATION: Only connect to socket after component is visible
   const { socket, connected } = useSocket();
+  
+  // Redux dispatch
+  const dispatch = useAppDispatch();
   
   // Edit task name state
   const [editTaskName, setEditTaskName] = useState(false);
@@ -344,6 +349,15 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       }, 100);
     }
   }, [showAddSubtask]);
+
+  // Handle opening task drawer
+  const handleOpenTask = useCallback(() => {
+    if (!task.id) return;
+    dispatch(setSelectedTaskId(task.id));
+    dispatch(setShowTaskDrawer(true));
+    // Fetch task data
+    dispatch(fetchTask({ taskId: task.id, projectId }));
+  }, [task.id, projectId, dispatch]);
 
   // Optimized date handling with better memoization
   const dateValues = useMemo(() => ({
@@ -596,8 +610,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 {!editTaskName && (
                   <div className="task-indicators flex items-center gap-1">
                     {/* Subtasks count */}
-                    {task.subtasks_count && task.subtasks_count > 0 && (
-                      <Tooltip title={`${task.subtasks_count} ${task.subtasks_count !== 1 ? t('subtasks') : t('subtask')}`}>
+                    {(task as any).subtasks_count && (task as any).subtasks_count > 0 && (
+                      <Tooltip title={`${(task as any).subtasks_count} ${(task as any).subtasks_count !== 1 ? t('subtasks') : t('subtask')}`}>
                         <div
                           className={`indicator-badge subtasks flex items-center gap-1 px-1 py-0.5 rounded text-xs font-semibold cursor-pointer transition-colors duration-200 ${
                             isDarkMode 
@@ -611,15 +625,15 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                             handleToggleSubtasks?.();
                           }}
                         >
-                          <span>{task.subtasks_count}</span>
+                          <span>{(task as any).subtasks_count}</span>
                           <RightOutlined style={{ fontSize: '8px' }} />
                         </div>
                       </Tooltip>
                     )}
 
                     {/* Comments indicator */}
-                    {task.comments_count && task.comments_count > 0 && (
-                      <Tooltip title={`${task.comments_count} ${task.comments_count !== 1 ? t('comments') : t('comment')}`}>
+                    {(task as any).comments_count && (task as any).comments_count > 0 && (
+                      <Tooltip title={`${(task as any).comments_count} ${(task as any).comments_count !== 1 ? t('comments') : t('comment')}`}>
                         <div
                           className={`indicator-badge comments flex items-center gap-1 px-1 py-0.5 rounded text-xs font-semibold ${
                             isDarkMode 
@@ -629,14 +643,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                           style={{ fontSize: '10px', border: '1px solid' }}
                         >
                           <MessageOutlined style={{ fontSize: '8px' }} />
-                          <span>{task.comments_count}</span>
+                          <span>{(task as any).comments_count}</span>
                         </div>
                       </Tooltip>
                     )}
 
                     {/* Attachments indicator */}
-                    {task.attachments_count && task.attachments_count > 0 && (
-                      <Tooltip title={`${task.attachments_count} ${task.attachments_count !== 1 ? t('attachments') : t('attachment')}`}>
+                    {(task as any).attachments_count && (task as any).attachments_count > 0 && (
+                      <Tooltip title={`${(task as any).attachments_count} ${(task as any).attachments_count !== 1 ? t('attachments') : t('attachment')}`}>
                         <div
                           className={`indicator-badge attachments flex items-center gap-1 px-1 py-0.5 rounded text-xs font-semibold ${
                             isDarkMode 
@@ -646,7 +660,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                           style={{ fontSize: '10px', border: '1px solid' }}
                         >
                           <PaperClipOutlined style={{ fontSize: '8px' }} />
-                          <span>{task.attachments_count}</span>
+                          <span>{(task as any).attachments_count}</span>
                         </div>
                       </Tooltip>
                     )}
@@ -661,7 +675,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      // Handle opening task drawer
+                      handleOpenTask();
                     }}
                     className={`flex items-center gap-1 px-2 py-1 rounded border transition-all duration-200 text-xs font-medium ${
                       isDarkMode 
@@ -956,10 +970,9 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                           <div className="flex gap-1">
                             <Button
                               size="small"
-                              type="primary"
                               onClick={handleAddSubtask}
                               disabled={!newSubtaskName.trim()}
-                              className="h-6 px-2 text-xs"
+                              className="h-6 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
                             >
                               {t('add')}
                             </Button>
