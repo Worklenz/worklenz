@@ -235,9 +235,6 @@ const taskManagementSlice = createSlice({
       
       // Add to groups array for V3 API compatibility
       if (state.groups && state.groups.length > 0) {
-        console.log('🔍 Looking for group with ID:', groupId);
-        console.log('📋 Available groups:', state.groups.map(g => ({ id: g.id, title: g.title })));
-        
         // Find the target group using the provided UUID
         const targetGroup = state.groups.find(group => {
           // If a specific groupId (UUID) is provided, use it directly
@@ -249,17 +246,13 @@ const taskManagementSlice = createSlice({
         });
         
         if (targetGroup) {
-          console.log('✅ Found target group:', targetGroup.title);
           // Add task ID to the end of the group's taskIds array (newest last)
           targetGroup.taskIds.push(task.id);
-          console.log('✅ Task added to group. New taskIds count:', targetGroup.taskIds.length);
           
           // Also add to the tasks array if it exists (for backward compatibility)
           if ((targetGroup as any).tasks) {
             (targetGroup as any).tasks.push(task);
           }
-        } else {
-          console.warn('❌ No matching group found for groupId:', groupId);
         }
       }
     },
@@ -327,6 +320,60 @@ const taskManagementSlice = createSlice({
       }
       
       tasksAdapter.updateOne(state, { id: taskId, changes });
+    },
+
+    // New action to move task between groups with proper group management
+    moveTaskBetweenGroups: (state, action: PayloadAction<{ 
+      taskId: string; 
+      fromGroupId: string; 
+      toGroupId: string; 
+      taskUpdate: Partial<Task>;
+    }>) => {
+      const { taskId, fromGroupId, toGroupId, taskUpdate } = action.payload;
+      
+      console.log('🔧 moveTaskBetweenGroups action:', {
+        taskId,
+        fromGroupId,
+        toGroupId,
+        taskUpdate,
+        hasGroups: !!state.groups,
+        groupsCount: state.groups?.length || 0
+      });
+      
+      // Update the task entity with new values
+      tasksAdapter.updateOne(state, {
+        id: taskId,
+        changes: {
+          ...taskUpdate,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+      
+      // Update groups if they exist
+      if (state.groups && state.groups.length > 0) {
+        // Remove task from old group
+        const fromGroup = state.groups.find(group => group.id === fromGroupId);
+        if (fromGroup) {
+          const beforeCount = fromGroup.taskIds.length;
+          fromGroup.taskIds = fromGroup.taskIds.filter(id => id !== taskId);
+          console.log(`🔧 Removed task from ${fromGroup.title}: ${beforeCount} -> ${fromGroup.taskIds.length}`);
+        } else {
+          console.warn('🚨 From group not found:', fromGroupId);
+        }
+        
+        // Add task to new group
+        const toGroup = state.groups.find(group => group.id === toGroupId);
+        if (toGroup) {
+          const beforeCount = toGroup.taskIds.length;
+          // Add to the end of the group (newest last)
+          toGroup.taskIds.push(taskId);
+          console.log(`🔧 Added task to ${toGroup.title}: ${beforeCount} -> ${toGroup.taskIds.length}`);
+        } else {
+          console.warn('🚨 To group not found:', toGroupId);
+        }
+      } else {
+        console.warn('🚨 No groups available for task movement');
+      }
     },
     
     // Optimistic update for drag operations - reduces perceived lag
@@ -437,6 +484,7 @@ export const {
   bulkDeleteTasks,
   reorderTasks,
   moveTaskToGroup,
+  moveTaskBetweenGroups,
   optimisticTaskMove,
   setLoading,
   setError,
