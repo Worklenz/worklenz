@@ -226,6 +226,44 @@ const taskManagementSlice = createSlice({
       tasksAdapter.addOne(state, action.payload);
     },
     
+
+    addTaskToGroup: (state, action: PayloadAction<{ task: Task; groupId?: string }>) => {
+      const { task, groupId } = action.payload;
+      
+      // Add to entity adapter
+      tasksAdapter.addOne(state, task);
+      
+      // Add to groups array for V3 API compatibility
+      if (state.groups && state.groups.length > 0) {
+        console.log('🔍 Looking for group with ID:', groupId);
+        console.log('📋 Available groups:', state.groups.map(g => ({ id: g.id, title: g.title })));
+        
+        // Find the target group using the provided UUID
+        const targetGroup = state.groups.find(group => {
+          // If a specific groupId (UUID) is provided, use it directly
+          if (groupId && group.id === groupId) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        if (targetGroup) {
+          console.log('✅ Found target group:', targetGroup.title);
+          // Add task ID to the end of the group's taskIds array (newest last)
+          targetGroup.taskIds.push(task.id);
+          console.log('✅ Task added to group. New taskIds count:', targetGroup.taskIds.length);
+          
+          // Also add to the tasks array if it exists (for backward compatibility)
+          if ((targetGroup as any).tasks) {
+            (targetGroup as any).tasks.push(task);
+          }
+        } else {
+          console.warn('❌ No matching group found for groupId:', groupId);
+        }
+      }
+    },
+    
     updateTask: (state, action: PayloadAction<{ id: string; changes: Partial<Task> }>) => {
       tasksAdapter.updateOne(state, {
         id: action.payload.id,
@@ -392,6 +430,7 @@ const taskManagementSlice = createSlice({
 export const {
   setTasks,
   addTask,
+  addTaskToGroup,
   updateTask,
   deleteTask,
   bulkUpdateTasks,
