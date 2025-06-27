@@ -33,10 +33,12 @@ import {
   updateSubTasks,
   updateTaskProgress,
 } from '@/features/tasks/tasks.slice';
-import { 
+import {
   addTask, 
+  addTaskToGroup,
   updateTask, 
   moveTaskToGroup,
+  moveTaskBetweenGroups,
   selectCurrentGroupingV3,
   fetchTasksV3
 } from '@/features/task-management/task-management.slice';
@@ -136,14 +138,66 @@ export const useTaskSocketHandlers = () => {
       dispatch(updateTaskStatus(response));
       dispatch(deselectAll());
 
-      // For the task management slice, let's use a simpler approach:
-      // Just refetch the tasks to ensure consistency
-      if (response.id && projectId) {
-        console.log('🔄 Refetching tasks after status change to ensure consistency...');
-        dispatch(fetchTasksV3(projectId));
+      // For the task management slice, move task between groups without resetting
+      const state = store.getState();
+      const groups = state.taskManagement.groups;
+      const currentTask = state.taskManagement.entities[response.id];
+      
+      console.log('🔍 Status change debug:', {
+        hasGroups: !!groups,
+        groupsLength: groups?.length || 0,
+        hasCurrentTask: !!currentTask,
+        statusId: response.status_id,
+        currentGrouping: state.taskManagement.grouping
+      });
+      
+      if (groups && groups.length > 0 && currentTask && response.status_id) {
+        // Find current group containing the task
+        const currentGroup = groups.find(group => group.taskIds.includes(response.id));
+        
+        // Find target group based on new status ID
+        // The status_id from response is the UUID of the new status
+        const targetGroup = groups.find(group => group.id === response.status_id);
+        
+        if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+          console.log('🔄 Moving task between groups:', {
+            taskId: response.id,
+            fromGroup: currentGroup.title,
+            toGroup: targetGroup.title
+          });
+          
+          // Determine the new status value based on status category
+          let newStatusValue: 'todo' | 'doing' | 'done' = 'todo';
+          if (response.statusCategory) {
+            if (response.statusCategory.is_done) {
+              newStatusValue = 'done';
+            } else if (response.statusCategory.is_doing) {
+              newStatusValue = 'doing';
+            } else {
+              newStatusValue = 'todo';
+            }
+          }
+          
+          // Use the new action to move task between groups
+          dispatch(moveTaskBetweenGroups({
+            taskId: response.id,
+            fromGroupId: currentGroup.id,
+            toGroupId: targetGroup.id,
+            taskUpdate: {
+              status: newStatusValue,
+              progress: response.complete_ratio || currentTask.progress,
+            }
+          }));
+        } else if (!currentGroup || !targetGroup) {
+          // Fallback to refetch if groups not found (shouldn't happen normally)
+          console.log('🔄 Groups not found, refetching tasks...');
+          if (projectId) {
+            dispatch(fetchTasksV3(projectId));
+          }
+        }
       }
     },
-    [dispatch, currentGroupingV3]
+    [dispatch, currentGroupingV3, projectId]
   );
 
   const handleTaskProgress = useCallback(
@@ -186,15 +240,82 @@ export const useTaskSocketHandlers = () => {
     (response: ITaskListPriorityChangeResponse) => {
       if (!response) return;
 
+      console.log('🎯 Priority change received:', response);
+
       // Update the old task slice (for backward compatibility)
       dispatch(updateTaskPriority(response));
       dispatch(setTaskPriority(response));
       dispatch(deselectAll());
 
-      // For the task management slice, refetch tasks to ensure consistency
-      if (response.id && projectId) {
-        console.log('🔄 Refetching tasks after priority change...');
-        dispatch(fetchTasksV3(projectId));
+      // For the task management slice, always update the task entity first
+      const state = store.getState();
+      const currentTask = state.taskManagement.entities[response.id];
+      
+      if (currentTask) {
+        // Get priority list to map priority_id to priority name
+        const priorityList = state.priorityReducer?.priorities || [];
+        const priority = priorityList.find(p => p.id === response.priority_id);
+        
+        let newPriorityValue: 'critical' | 'high' | 'medium' | 'low' = 'medium';
+        if (priority?.name) {
+          const priorityName = priority.name.toLowerCase();
+          if (['critical', 'high', 'medium', 'low'].includes(priorityName)) {
+            newPriorityValue = priorityName as 'critical' | 'high' | 'medium' | 'low';
+          }
+        }
+
+        console.log('🔧 Updating task priority:', {
+          taskId: response.id,
+          oldPriority: currentTask.priority,
+          newPriority: newPriorityValue,
+          priorityId: response.priority_id,
+          currentGrouping: state.taskManagement.grouping
+        });
+
+        // Update the task entity
+        dispatch(updateTask({
+          id: response.id,
+          changes: {
+            priority: newPriorityValue,
+            updatedAt: new Date().toISOString(),
+          }
+        }));
+
+        // Handle group movement ONLY if grouping by priority
+        const groups = state.taskManagement.groups;
+        const currentGrouping = state.taskManagement.grouping;
+        
+        if (groups && groups.length > 0 && currentGrouping === 'priority') {
+          // Find current group containing the task
+          const currentGroup = groups.find(group => group.taskIds.includes(response.id));
+          
+          // Find target group based on new priority value
+          const targetGroup = groups.find(group => 
+            group.groupValue.toLowerCase() === newPriorityValue.toLowerCase()
+          );
+          
+          if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+            console.log('🔄 Moving task between priority groups:', {
+              taskId: response.id,
+              fromGroup: currentGroup.title,
+              toGroup: targetGroup.title,
+              newPriority: newPriorityValue
+            });
+            
+            dispatch(moveTaskBetweenGroups({
+              taskId: response.id,
+              fromGroupId: currentGroup.id,
+              toGroupId: targetGroup.id,
+              taskUpdate: {
+                priority: newPriorityValue,
+              }
+            }));
+          } else {
+            console.log('🔧 No group movement needed for priority change');
+          }
+        } else {
+          console.log('🔧 Not grouped by priority, skipping group movement');
+        }
       }
     },
     [dispatch, currentGroupingV3]
@@ -244,17 +365,99 @@ export const useTaskSocketHandlers = () => {
     (data: ITaskPhaseChangeResponse) => {
       if (!data) return;
       
+      console.log('🎯 Phase change received:', data);
+      
       // Update the old task slice (for backward compatibility)
       dispatch(updateTaskPhase(data));
       dispatch(deselectAll());
 
-      // For the task management slice, refetch tasks to ensure consistency
-      if (data.task_id && projectId) {
-        console.log('🔄 Refetching tasks after phase change...');
-        dispatch(fetchTasksV3(projectId));
+      // For the task management slice, always update the task entity first
+      const state = store.getState();
+      const taskId = data.task_id;
+      
+      if (taskId) {
+        const currentTask = state.taskManagement.entities[taskId];
+        
+        if (currentTask) {
+        // Get phase list to map phase_id to phase name
+        const phaseList = state.phaseReducer?.phaseList || [];
+        let newPhaseValue = '';
+        
+        if (data.id) {
+          // data.id is the phase_id
+          const phase = phaseList.find(p => p.id === data.id);
+          newPhaseValue = phase?.name || '';
+        } else {
+          // No phase selected (cleared)
+          newPhaseValue = '';
+        }
+
+        console.log('🔧 Updating task phase:', {
+          taskId: taskId,
+          oldPhase: currentTask.phase,
+          newPhase: newPhaseValue,
+          phaseId: data.id,
+          currentGrouping: state.taskManagement.grouping
+        });
+
+        // Update the task entity
+        dispatch(updateTask({
+          id: taskId,
+          changes: {
+            phase: newPhaseValue,
+            updatedAt: new Date().toISOString(),
+          }
+        }));
+
+        // Handle group movement ONLY if grouping by phase
+        const groups = state.taskManagement.groups;
+        const currentGrouping = state.taskManagement.grouping;
+        
+        if (groups && groups.length > 0 && currentGrouping === 'phase') {
+          // Find current group containing the task
+          const currentGroup = groups.find(group => group.taskIds.includes(taskId));
+          
+          // Find target group based on new phase value
+          let targetGroup: any = null;
+          
+          if (newPhaseValue) {
+            // Find group by phase name
+            targetGroup = groups.find(group => 
+              group.groupValue === newPhaseValue || group.title === newPhaseValue
+            );
+          } else {
+            // Find "No Phase" or similar group
+            targetGroup = groups.find(group => 
+              group.groupValue === '' || group.title.toLowerCase().includes('no phase') || group.title.toLowerCase().includes('unassigned')
+            );
+          }
+          
+          if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+            console.log('🔄 Moving task between phase groups:', {
+              taskId: taskId,
+              fromGroup: currentGroup.title,
+              toGroup: targetGroup.title,
+              newPhase: newPhaseValue || 'No Phase'
+            });
+            
+            dispatch(moveTaskBetweenGroups({
+              taskId: taskId,
+              fromGroupId: currentGroup.id,
+              toGroupId: targetGroup.id,
+              taskUpdate: {
+                phase: newPhaseValue,
+              }
+            }));
+          } else {
+            console.log('🔧 No group movement needed for phase change');
+          }
+        } else {
+          console.log('🔧 Not grouped by phase, skipping group movement');
+        }
+        }
       }
     },
-    [dispatch, currentGroupingV3]
+    [dispatch, currentGroupingV3, projectId]
   );
 
   const handleStartDateChange = useCallback(
@@ -355,7 +558,26 @@ export const useTaskSocketHandlers = () => {
           order: data.sort_order || 0,
         };
         
-        dispatch(addTask(task));
+        // Extract the group UUID from the backend response based on current grouping
+        let groupId: string | undefined;
+        
+        // Select the correct UUID based on current grouping
+        // If currentGroupingV3 is null, default to 'status' since that's the most common grouping
+        const grouping = currentGroupingV3 || 'status';
+        
+        if (grouping === 'status') {
+          // For status grouping, use status field (which contains the status UUID)
+          groupId = data.status;
+        } else if (grouping === 'priority') {
+          // For priority grouping, use priority field (which contains the priority UUID)
+          groupId = data.priority;
+        } else if (grouping === 'phase') {
+          // For phase grouping, use phase_id
+          groupId = data.phase_id;
+        }
+        
+        // Use addTaskToGroup with the actual group UUID
+        dispatch(addTaskToGroup({ task, groupId }));
       }
     },
     [dispatch]

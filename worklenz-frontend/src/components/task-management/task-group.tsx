@@ -308,7 +308,6 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
                         <Text type="secondary">No tasks in this group</Text>
                         <br />
                         <Button
-                          type="link"
                           {...taskManagementAntdConfig.taskButtonDefaults}
                           icon={<PlusOutlined />}
                           onClick={handleAddTask}
@@ -599,10 +598,11 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Simplified comparison for better performance
+  // More comprehensive comparison to detect task movements
   return (
     prevProps.group.id === nextProps.group.id &&
     prevProps.group.taskIds.length === nextProps.group.taskIds.length &&
+    prevProps.group.taskIds.every((id, index) => id === nextProps.group.taskIds[index]) &&
     prevProps.group.collapsed === nextProps.group.collapsed &&
     prevProps.selectedTaskIds.length === nextProps.selectedTaskIds.length &&
     prevProps.currentGrouping === nextProps.currentGrouping
