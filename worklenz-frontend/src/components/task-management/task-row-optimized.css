@@ -6,8 +6,36 @@
   transform: translateZ(0); /* Force GPU acceleration */
 }
 
+/* HOVER STATE FIX: Ensure hover states reset properly */
+.task-row-optimized:not(:hover) {
+  /* Force reset of any stuck hover states */
+  contain: layout style;
+}
+
+.task-row-optimized:not(:hover) .task-open-button {
+  opacity: 0 !important;
+  visibility: hidden;
+}
+
+.task-row-optimized:not(:hover) .expand-icon-container.hover-only {
+  opacity: 0 !important;
+  visibility: hidden;
+}
+
+/* Force visibility on hover */
+.task-row-optimized:hover .task-open-button {
+  visibility: visible;
+}
+
+.task-row-optimized:hover .expand-icon-container.hover-only {
+  visibility: visible;
+}
+
 .task-row-optimized:hover {
-  contain: layout style paint;
+  contain: layout style;
+  /* Don't use paint containment on hover as it can interfere with hover effects */
+  /* Force repaint to ensure hover states update properly */
+  transform: translateZ(0.001px);
 }
 
 .task-row-optimized.task-row-dragging {
@@ -42,14 +70,14 @@
   will-change: transform;
   /* Prevent content from disappearing during real-time updates */
   min-height: 40px;
-  transition: none; /* Disable transitions during real-time updates */
+  /* Keep transitions for hover states but disable for layout changes */
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 
 .task-row-optimized.stable-content * {
   contain: layout;
   will-change: auto;
-  /* Ensure content stays visible */
-  opacity: 1 !important;
+  /* Don't force opacity - let hover states work naturally */
 }
 
 /* Optimize initial render performance */
@@ -159,7 +187,8 @@
 }
 
 .dark .task-row-optimized:hover {
-  contain: layout style paint;
+  contain: layout style;
+  /* Don't use paint containment on hover as it can interfere with hover effects */
 }
 
 /* Animation performance */
@@ -258,14 +287,24 @@
   opacity: 1 !important;
 }
 
+.task-cell-container:not(:hover) .task-open-button {
+  opacity: 0 !important;
+}
+
 .task-open-button {
   opacity: 0;
   transition: opacity 0.2s ease-in-out;
+  /* Force hardware acceleration for smoother transitions */
+  transform: translateZ(0);
+  will-change: opacity;
 }
 
 /* Expand icon smart visibility */
 .expand-icon-container {
   transition: opacity 0.2s ease-in-out;
+  /* Force hardware acceleration for smoother transitions */
+  transform: translateZ(0);
+  will-change: opacity;
 }
 
 /* Always show expand icon if task has subtasks */
@@ -275,10 +314,15 @@
 
 .expand-icon-container.has-subtasks .expand-toggle-btn {
   opacity: 0.8;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .task-cell-container:hover .expand-icon-container.has-subtasks .expand-toggle-btn {
   opacity: 1;
+}
+
+.task-cell-container:not(:hover) .expand-icon-container.has-subtasks .expand-toggle-btn {
+  opacity: 0.8;
 }
 
 /* Show expand icon on hover for tasks without subtasks (for adding subtasks) */
@@ -290,12 +334,21 @@
   opacity: 1;
 }
 
+.task-cell-container:not(:hover) .expand-icon-container.hover-only {
+  opacity: 0;
+}
+
 .expand-icon-container.hover-only .expand-toggle-btn {
   opacity: 0.6;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .task-cell-container:hover .expand-icon-container.hover-only .expand-toggle-btn {
   opacity: 1;
+}
+
+.task-cell-container:not(:hover) .expand-icon-container.hover-only .expand-toggle-btn {
+  opacity: 0.6;
 }
 
 /* Add subtask row styling */
@@ -352,4 +405,24 @@
 /* Dark mode specific hover effects */
 .dark .task-indicators .indicator-badge:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* HOVER STATE DEBUGGING: Force hover state reset on mouse leave */
+.task-row-optimized {
+  /* Ensure proper hover state management */
+  pointer-events: auto;
+}
+
+.task-row-optimized * {
+  /* Inherit pointer events to ensure proper hover detection */
+  pointer-events: inherit;
+}
+
+/* Force browser to recalculate hover states */
+@supports (contain: layout) {
+  .task-row-optimized:not(:hover) {
+    contain: layout;
+    /* Force style recalculation */
+    animation: none;
+  }
 } 
