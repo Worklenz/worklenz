@@ -1,5 +1,6 @@
 {
     "importTasks": "Importar tareas",
+    "importTask": "Importar tarea",
     "createTask": "Crear tarea",
     "settings": "Ajustes",
     "subscribe": "Suscribirse",
@@ -9,5 +10,8 @@
     "endDate": "Fecha de finalización",
     "projectSettings": "Ajustes del proyecto",
     "projectSummary": "Resumen del proyecto",
-    "receiveProjectSummary": "Recibir un resumen del proyecto todas las noches."
+    "receiveProjectSummary": "Recibir un resumen del proyecto todas las noches.",
+    "refreshProject": "Actualizar proyecto",
+    "saveAsTemplate": "Guardar como plantilla",
+    "invite": "Invitar"
 }
