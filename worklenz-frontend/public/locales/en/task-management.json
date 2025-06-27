@@ -1,5 +1,15 @@
 {
   "noTasksInGroup": "No tasks in this group",
   "noTasksInGroupDescription": "Add a task to get started",
-  "addFirstTask": "Add your first task"
+  "addFirstTask": "Add your first task",
+  "openTask": "Open",
+  "subtask": "subtask",
+  "subtasks": "subtasks",
+  "comment": "comment",
+  "comments": "comments",
+  "attachment": "attachment",
+  "attachments": "attachments",
+  "enterSubtaskName": "Enter subtask name...",
+  "add": "Add",
+  "cancel": "Cancel"
 } 

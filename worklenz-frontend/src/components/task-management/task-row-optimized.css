@@ -235,4 +235,105 @@
 
 .task-row-optimized * {
   box-sizing: border-box;
+}
+
+/* Task row hover effects for better performance */
+.task-cell-container:hover .task-open-button {
+  opacity: 1 !important;
+}
+
+.task-open-button {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Expand icon smart visibility */
+.expand-icon-container {
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Always show expand icon if task has subtasks */
+.expand-icon-container.has-subtasks {
+  opacity: 1;
+}
+
+.expand-icon-container.has-subtasks .expand-toggle-btn {
+  opacity: 0.8;
+}
+
+.task-cell-container:hover .expand-icon-container.has-subtasks .expand-toggle-btn {
+  opacity: 1;
+}
+
+/* Show expand icon on hover for tasks without subtasks (for adding subtasks) */
+.expand-icon-container.hover-only {
+  opacity: 0;
+}
+
+.task-cell-container:hover .expand-icon-container.hover-only {
+  opacity: 1;
+}
+
+.expand-icon-container.hover-only .expand-toggle-btn {
+  opacity: 0.6;
+}
+
+.task-cell-container:hover .expand-icon-container.hover-only .expand-toggle-btn {
+  opacity: 1;
+}
+
+/* Add subtask row styling */
+.add-subtask-row {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+  transform: translateY(-10px);
+}
+
+.add-subtask-row.visible {
+  opacity: 1;
+  max-height: 60px;
+  transform: translateY(0);
+}
+
+.add-subtask-input {
+  transition: all 0.2s ease-in-out;
+}
+
+.add-subtask-input:focus {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+/* Dark mode add subtask row */
+.dark .add-subtask-row {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.dark .add-subtask-input {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f3f4f6;
+}
+
+.dark .add-subtask-input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.25);
+}
+
+/* Task indicators hover effects */
+.task-indicators .indicator-badge {
+  transition: all 0.2s ease-in-out;
+}
+
+.task-indicators .indicator-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode specific hover effects */
+.dark .task-indicators .indicator-badge:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 } 
