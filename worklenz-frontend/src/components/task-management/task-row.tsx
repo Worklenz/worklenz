@@ -16,6 +16,8 @@ import {
   UserOutlined,
   type InputRef
 } from './antd-imports';
+import { DownOutlined, RightOutlined, ExpandAltOutlined, DoubleRightOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { Task } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
 import { AssigneeSelector, Avatar, AvatarGroup, Button, Checkbox, CustomColordLabel, CustomNumberLabel, LabelsSelector, Progress, Tooltip } from '@/components';
@@ -185,7 +187,10 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   // Edit task name state
   const [editTaskName, setEditTaskName] = useState(false);
   const [taskName, setTaskName] = useState(task.title || '');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [showAddSubtask, setShowAddSubtask] = useState(false);
+  const [newSubtaskName, setNewSubtaskName] = useState('');
+  const inputRef = useRef<InputRef>(null);
+  const addSubtaskInputRef = useRef<InputRef>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // PERFORMANCE OPTIMIZATION: Intersection Observer for lazy loading
@@ -244,6 +249,9 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
 
   // Get theme from Redux store - memoized selector
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
+  
+  // Translation hook
+  const { t } = useTranslation('task-management');
 
   // PERFORMANCE OPTIMIZATION: Only setup click outside detection when editing
   useEffect(() => {
@@ -265,7 +273,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
 
   // Optimized task name save handler
   const handleTaskNameSave = useCallback(() => {
-    const newTaskName = inputRef.current?.value?.trim();
+    const newTaskName = taskName?.trim();
     if (newTaskName && connected && newTaskName !== task.title) {
       socket?.emit(
         SocketEvents.TASK_NAME_CHANGE.toString(),
@@ -277,7 +285,30 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       );
     }
     setEditTaskName(false);
-  }, [connected, socket, task.id, task.title]);
+  }, [connected, socket, task.id, task.title, taskName]);
+
+  // Handle adding new subtask
+  const handleAddSubtask = useCallback(() => {
+    const subtaskName = newSubtaskName?.trim();
+    if (subtaskName && connected) {
+      socket?.emit(
+        SocketEvents.TASK_NAME_CHANGE.toString(), // Using existing event for now
+        JSON.stringify({
+          name: subtaskName,
+          parent_task_id: task.id,
+          project_id: projectId,
+        })
+      );
+      setNewSubtaskName('');
+      setShowAddSubtask(false);
+    }
+  }, [newSubtaskName, connected, socket, task.id, projectId]);
+
+  // Handle canceling add subtask
+  const handleCancelAddSubtask = useCallback(() => {
+    setNewSubtaskName('');
+    setShowAddSubtask(false);
+  }, []);
 
   // Optimized style calculations with better memoization
   const dragStyle = useMemo(() => {
@@ -301,6 +332,18 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   const handleToggleSubtasks = useCallback(() => {
     onToggleSubtasks?.(task.id);
   }, [onToggleSubtasks, task.id]);
+
+  // Handle expand/collapse or add subtask
+  const handleExpandClick = useCallback(() => {
+    // For now, just toggle add subtask row for all tasks
+    setShowAddSubtask(!showAddSubtask);
+    if (!showAddSubtask) {
+      // Focus the input after state update
+      setTimeout(() => {
+        addSubtaskInputRef.current?.focus();
+      }, 100);
+    }
+  }, [showAddSubtask]);
 
   // Optimized date handling with better memoization
   const dateValues = useMemo(() => ({
@@ -494,26 +537,46 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         return (
           <div
             key={col.key}
-            className={`flex items-center px-2 ${borderClasses}${editTaskName ? ' task-name-edit-active' : ''}`}
+            className={`task-cell-container flex items-center px-2 ${borderClasses}${editTaskName ? ' task-name-edit-active' : ''}`}
             style={cellStyle}
           >
-            <div className="flex-1 min-w-0 flex flex-col justify-center h-full overflow-hidden">
-              <div className="flex items-center gap-2 h-5 overflow-hidden">
+            <div className="flex-1 min-w-0 flex items-center justify-between h-full overflow-hidden">
+              {/* Left section with expand icon and task content */}
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {/* Expand/Collapse Icon - Smart visibility */}
+                <div className="expand-icon-container hover-only w-5 h-5 flex items-center justify-center">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleExpandClick();
+                    }}
+                    className={`expand-toggle-btn w-4 h-4 flex items-center justify-center border-none rounded text-xs cursor-pointer transition-all duration-200 ${
+                      isDarkMode 
+                        ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    style={{ backgroundColor: 'transparent' }}
+                    title="Add subtask"
+                  >
+                    {showAddSubtask ? <DownOutlined /> : <RightOutlined />}
+                  </button>
+                </div>
+
+                {/* Task name and input */}
                 <div ref={wrapperRef} className="flex-1 min-w-0">
                   {editTaskName ? (
-                    <input
+                    <Input
                       ref={inputRef}
-                      className="task-name-input w-full bg-transparent border-none outline-none text-sm"
+                      className="task-name-input"
                       value={taskName}
                       onChange={(e) => setTaskName(e.target.value)}
                       onBlur={handleTaskNameSave}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleTaskNameSave();
-                        }
-                      }}
+                      onPressEnter={handleTaskNameSave}
+                      variant="borderless"
                       style={{ 
-                        color: isDarkMode ? '#ffffff' : '#262626'
+                        color: isDarkMode ? '#ffffff' : '#262626',
+                        padding: 0
                       }}
                       autoFocus
                     />
@@ -528,7 +591,90 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                     </Typography.Text>
                   )}
                 </div>
+
+                {/* Indicators section */}
+                {!editTaskName && (
+                  <div className="task-indicators flex items-center gap-1">
+                    {/* Subtasks count */}
+                    {task.subtasks_count && task.subtasks_count > 0 && (
+                      <Tooltip title={`${task.subtasks_count} ${task.subtasks_count !== 1 ? t('subtasks') : t('subtask')}`}>
+                        <div
+                          className={`indicator-badge subtasks flex items-center gap-1 px-1 py-0.5 rounded text-xs font-semibold cursor-pointer transition-colors duration-200 ${
+                            isDarkMode 
+                              ? 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700' 
+                              : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                          }`}
+                          style={{ fontSize: '10px', border: '1px solid' }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleToggleSubtasks?.();
+                          }}
+                        >
+                          <span>{task.subtasks_count}</span>
+                          <RightOutlined style={{ fontSize: '8px' }} />
+                        </div>
+                      </Tooltip>
+                    )}
+
+                    {/* Comments indicator */}
+                    {task.comments_count && task.comments_count > 0 && (
+                      <Tooltip title={`${task.comments_count} ${task.comments_count !== 1 ? t('comments') : t('comment')}`}>
+                        <div
+                          className={`indicator-badge comments flex items-center gap-1 px-1 py-0.5 rounded text-xs font-semibold ${
+                            isDarkMode 
+                              ? 'bg-green-900 border-green-700 text-green-300' 
+                              : 'bg-green-50 border-green-200 text-green-700'
+                          }`}
+                          style={{ fontSize: '10px', border: '1px solid' }}
+                        >
+                          <MessageOutlined style={{ fontSize: '8px' }} />
+                          <span>{task.comments_count}</span>
+                        </div>
+                      </Tooltip>
+                    )}
+
+                    {/* Attachments indicator */}
+                    {task.attachments_count && task.attachments_count > 0 && (
+                      <Tooltip title={`${task.attachments_count} ${task.attachments_count !== 1 ? t('attachments') : t('attachment')}`}>
+                        <div
+                          className={`indicator-badge attachments flex items-center gap-1 px-1 py-0.5 rounded text-xs font-semibold ${
+                            isDarkMode 
+                              ? 'bg-blue-900 border-blue-700 text-blue-300' 
+                              : 'bg-blue-50 border-blue-200 text-blue-700'
+                          }`}
+                          style={{ fontSize: '10px', border: '1px solid' }}
+                        >
+                          <PaperClipOutlined style={{ fontSize: '8px' }} />
+                          <span>{task.attachments_count}</span>
+                        </div>
+                      </Tooltip>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Right section with open button - CSS hover only */}
+              {!editTaskName && (
+                <div className="task-open-button ml-2 opacity-0 transition-opacity duration-200" style={{ zIndex: 10 }}>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // Handle opening task drawer
+                    }}
+                    className={`flex items-center gap-1 px-2 py-1 rounded border transition-all duration-200 text-xs font-medium ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:border-gray-500 hover:text-gray-100' 
+                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                    style={{ fontSize: '11px', minWidth: 'fit-content' }}
+                  >
+                    <ExpandAltOutlined style={{ fontSize: '10px' }} />
+                    <span>{t('openTask')}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -767,6 +913,106 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           </div>
         )}
       </div>
+
+      {/* Add Subtask Row */}
+      {showAddSubtask && (
+        <div className={`add-subtask-row ${showAddSubtask ? 'visible' : ''} ${isDarkMode ? 'dark' : ''}`}>
+          <div className="flex h-10 max-h-10 overflow-visible relative">
+            {/* Fixed Columns for Add Subtask */}
+            {fixedColumns && fixedColumns.length > 0 && (
+              <div
+                className="flex overflow-visible"
+                style={{
+                  width: fixedColumns.reduce((sum, col) => sum + col.width, 0),
+                }}
+              >
+                {fixedColumns.map((col, index) => {
+                  const isLast = index === fixedColumns.length - 1;
+                  const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+                  
+                  if (col.key === 'task') {
+                    return (
+                      <div
+                        key={col.key}
+                        className={`flex items-center px-2 ${borderClasses}`}
+                        style={{ width: col.width }}
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
+                          <Input
+                            ref={addSubtaskInputRef}
+                            placeholder={t('enterSubtaskName')}
+                            value={newSubtaskName}
+                            onChange={(e) => setNewSubtaskName(e.target.value)}
+                            onPressEnter={handleAddSubtask}
+                            onBlur={handleCancelAddSubtask}
+                            className={`add-subtask-input flex-1 ${
+                              isDarkMode 
+                                ? 'bg-gray-700 border-gray-600 text-gray-200' 
+                                : 'bg-white border-gray-300 text-gray-900'
+                            }`}
+                            size="small"
+                            autoFocus
+                          />
+                          <div className="flex gap-1">
+                            <Button
+                              size="small"
+                              type="primary"
+                              onClick={handleAddSubtask}
+                              disabled={!newSubtaskName.trim()}
+                              className="h-6 px-2 text-xs"
+                            >
+                              {t('add')}
+                            </Button>
+                            <Button
+                              size="small"
+                              onClick={handleCancelAddSubtask}
+                              className="h-6 px-2 text-xs"
+                            >
+                              {t('cancel')}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div
+                        key={col.key}
+                        className={`flex items-center px-2 ${borderClasses}`}
+                        style={{ width: col.width }}
+                      />
+                    );
+                  }
+                })}
+              </div>
+            )}
+            
+            {/* Scrollable Columns for Add Subtask */}
+            {scrollableColumns && scrollableColumns.length > 0 && (
+              <div 
+                className="overflow-visible" 
+                style={{ 
+                  display: 'flex', 
+                  minWidth: scrollableColumns.reduce((sum, col) => sum + col.width, 0) 
+                }}
+              >
+                {scrollableColumns.map((col, index) => {
+                  const isLast = index === scrollableColumns.length - 1;
+                  const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+                  
+                  return (
+                    <div
+                      key={col.key}
+                      className={`flex items-center px-2 ${borderClasses}`}
+                      style={{ width: col.width }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }, (prevProps, nextProps) => {

@@ -114,6 +114,9 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.schedule_id = schedule_id;
       }
     },
+    resetTaskDrawer: (state) => {
+      return initialState;
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchTask.pending, state => {
@@ -142,6 +145,7 @@ export const {
   setTaskLabels,
   setTaskSubscribers,
   setTimeLogEditing,
-  setTaskRecurringSchedule
+  setTaskRecurringSchedule,
+  resetTaskDrawer
 } = taskDrawerSlice.actions;
 export default taskDrawerSlice.reducer;

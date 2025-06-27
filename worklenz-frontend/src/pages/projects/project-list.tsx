@@ -437,6 +437,21 @@ const ProjectList: React.FC = () => {
     }
   }, [navigate]);
 
+  // Preload project view components on hover for smoother navigation
+  const handleProjectHover = useCallback((project_id: string | undefined) => {
+    if (project_id) {
+      // Preload the project view route to reduce loading time
+      import('@/pages/projects/projectView/project-view').catch(() => {
+        // Silently fail if preload doesn't work
+      });
+      
+      // Also preload critical task management components
+      import('@/components/task-management/task-list-board').catch(() => {
+        // Silently fail if preload doesn't work
+      });
+    }
+  }, []);
+
   // Define table columns directly in the component to avoid hooks order issues
   const tableColumns: ColumnsType<IProjectViewModel> = useMemo(
     () => [
@@ -629,6 +644,7 @@ const ProjectList: React.FC = () => {
               locale={{ emptyText }}
               onRow={record => ({
                 onClick: () => navigateToProject(record.id, record.team_member_default_view),
+                onMouseEnter: () => handleProjectHover(record.id),
               })}
             />
           ) : (

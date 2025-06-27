@@ -45,12 +45,8 @@ import VirtualizedTaskList from './virtualized-task-list';
 import { AppDispatch } from '@/app/store';
 import { shallowEqual } from 'react-redux';
 
-// Import the improved TaskListFilters component
-const ImprovedTaskFilters = React.lazy(
-  () => import('./improved-task-filters')
-);
-
-
+// Import the improved TaskListFilters component synchronously to avoid suspense
+import ImprovedTaskFilters from './improved-task-filters';
 
 interface TaskListBoardProps {
   projectId: string;
@@ -393,9 +389,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
         {/* Task Filters */}
         <div className="mb-4">
-          <React.Suspense fallback={<div>Loading filters...</div>}>
-            <ImprovedTaskFilters position="list" />
-          </React.Suspense>
+          <ImprovedTaskFilters position="list" />
         </div>
 
         {/* Virtualized Task Groups Container */}

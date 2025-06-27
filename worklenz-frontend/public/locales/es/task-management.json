@@ -1,5 +1,15 @@
 {
   "noTasksInGroup": "No hay tareas en este grupo",
   "noTasksInGroupDescription": "Añade una tarea para comenzar",
-  "addFirstTask": "Añade tu primera tarea"
+  "addFirstTask": "Añade tu primera tarea",
+  "openTask": "Abrir",
+  "subtask": "subtarea",
+  "subtasks": "subtareas",
+  "comment": "comentario",
+  "comments": "comentarios",
+  "attachment": "adjunto",
+  "attachments": "adjuntos",
+  "enterSubtaskName": "Ingresa el nombre de la subtarea...",
+  "add": "Añadir",
+  "cancel": "Cancelar"
 } 
