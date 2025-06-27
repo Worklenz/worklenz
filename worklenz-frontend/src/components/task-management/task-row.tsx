@@ -179,9 +179,11 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   scrollableColumns,
 }) => {
   // PERFORMANCE OPTIMIZATION: Implement progressive loading
-  const [isFullyLoaded, setIsFullyLoaded] = useState(false);
+  // Immediately load first few tasks to prevent blank content for visible items
+  const [isFullyLoaded, setIsFullyLoaded] = useState((index !== undefined && index < 10) || false);
   const [isIntersecting, setIsIntersecting] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
+  const hasBeenFullyLoadedOnce = useRef((index !== undefined && index < 10) || false); // Track if we've ever been fully loaded
   
   // PERFORMANCE OPTIMIZATION: Only connect to socket after component is visible
   const { socket, connected } = useSocket();
@@ -200,16 +202,18 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
 
   // PERFORMANCE OPTIMIZATION: Intersection Observer for lazy loading
   useEffect(() => {
-    if (!rowRef.current) return;
+    // Skip intersection observer if already fully loaded
+    if (!rowRef.current || hasBeenFullyLoadedOnce.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (entry.isIntersecting && !isIntersecting) {
+        if (entry.isIntersecting && !isIntersecting && !hasBeenFullyLoadedOnce.current) {
           setIsIntersecting(true);
           // Delay full loading slightly to prioritize visible content
           const timeoutId = setTimeout(() => {
             setIsFullyLoaded(true);
+            hasBeenFullyLoadedOnce.current = true; // Mark as fully loaded once
           }, 50);
           
           return () => clearTimeout(timeoutId);
@@ -227,10 +231,18 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     return () => {
       observer.disconnect();
     };
-  }, [isIntersecting]);
+  }, [isIntersecting, hasBeenFullyLoadedOnce.current]);
 
   // PERFORMANCE OPTIMIZATION: Skip expensive operations during initial render
-  const shouldRenderFull = isFullyLoaded || isDragOverlay || editTaskName;
+  // Once fully loaded, always render full to prevent blanking during real-time updates
+  const shouldRenderFull = isFullyLoaded || hasBeenFullyLoadedOnce.current || isDragOverlay || editTaskName;
+  
+  // REAL-TIME UPDATES: Ensure content stays loaded during socket updates
+  useEffect(() => {
+    if (shouldRenderFull && !hasBeenFullyLoadedOnce.current) {
+      hasBeenFullyLoadedOnce.current = true;
+    }
+  }, [shouldRenderFull]);
 
   // Optimized drag and drop setup with better performance
   const {
@@ -355,7 +367,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     if (!task.id) return;
     dispatch(setSelectedTaskId(task.id));
     dispatch(setShowTaskDrawer(true));
-    // Fetch task data
+    // Fetch task data - this is necessary for detailed task drawer information
+    // that's not available in the list view (comments, attachments, etc.)
     dispatch(fetchTask({ taskId: task.id, projectId }));
   }, [task.id, projectId, dispatch]);
 
@@ -898,7 +911,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         rowRef.current = node;
       }}
       style={dragStyle}
-      className={`${styleClasses.container} task-row-optimized ${shouldRenderFull ? 'fully-loaded' : 'initial-load'}`}
+      className={`${styleClasses.container} task-row-optimized ${shouldRenderFull ? 'fully-loaded' : 'initial-load'} ${hasBeenFullyLoadedOnce.current ? 'stable-content' : ''}`}
       data-task-id={task.id}
     >
       <div className="flex h-10 max-h-10 overflow-visible relative">
@@ -1039,6 +1052,9 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   if (prevProps.isDragOverlay !== nextProps.isDragOverlay) return false;
   if (prevProps.groupId !== nextProps.groupId) return false;
   
+  // REAL-TIME UPDATES: Always re-render if updatedAt changed (indicates real-time update)
+  if (prevProps.task.updatedAt !== nextProps.task.updatedAt) return false;
+  
   // Deep comparison for task properties that commonly change
   const taskProps = ['title', 'progress', 'status', 'priority', 'description', 'startDate', 'dueDate'];
   for (const prop of taskProps) {
@@ -1047,9 +1063,36 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     }
   }
   
-  // Compare arrays by length first (fast path)
-  if (prevProps.task.labels?.length !== nextProps.task.labels?.length) return false;
+  // REAL-TIME UPDATES: Compare assignees and labels content (not just length)
+  if (prevProps.task.assignees?.length !== nextProps.task.assignees?.length) return false;
+  if (prevProps.task.assignees?.length > 0) {
+    // Deep compare assignee IDs
+    const prevAssigneeIds = prevProps.task.assignees.sort();
+    const nextAssigneeIds = nextProps.task.assignees.sort();
+    for (let i = 0; i < prevAssigneeIds.length; i++) {
+      if (prevAssigneeIds[i] !== nextAssigneeIds[i]) return false;
+    }
+  }
+  
   if (prevProps.task.assignee_names?.length !== nextProps.task.assignee_names?.length) return false;
+  if (prevProps.task.assignee_names && nextProps.task.assignee_names && prevProps.task.assignee_names.length > 0) {
+    // Deep compare assignee names
+    for (let i = 0; i < prevProps.task.assignee_names.length; i++) {
+      if (prevProps.task.assignee_names[i] !== nextProps.task.assignee_names[i]) return false;
+    }
+  }
+  
+  if (prevProps.task.labels?.length !== nextProps.task.labels?.length) return false;
+  if (prevProps.task.labels?.length > 0) {
+    // Deep compare label IDs and names
+    for (let i = 0; i < prevProps.task.labels.length; i++) {
+      const prevLabel = prevProps.task.labels[i];
+      const nextLabel = nextProps.task.labels[i];
+      if (prevLabel.id !== nextLabel.id || prevLabel.name !== nextLabel.name || prevLabel.color !== nextLabel.color) {
+        return false;
+      }
+    }
+  }
   
   // Compare column configurations
   if (prevProps.fixedColumns?.length !== nextProps.fixedColumns?.length) return false;
