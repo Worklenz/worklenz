@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 
@@ -33,32 +33,57 @@ import { resetFields } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { tabItems } from '@/lib/project/project-view-constants';
-import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import { setSelectedTaskId, setShowTaskDrawer, resetTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import { resetState as resetEnhancedKanbanState } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
+import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
+// Import critical components synchronously to avoid suspense interruptions
+import TaskDrawer from '@components/task-drawer/task-drawer';
+
+// Lazy load non-critical components with better error handling
 const DeleteStatusDrawer = React.lazy(() => import('@/components/project-task-filters/delete-status-drawer/delete-status-drawer'));
-const PhaseDrawer = React.lazy(() => import('@features/projects/singleProject/phase/PhaseDrawer'));
-const StatusDrawer = React.lazy(
-  () => import('@/components/project-task-filters/create-status-drawer/create-status-drawer')
-);
-const ProjectMemberDrawer = React.lazy(
-  () => import('@/components/projects/project-member-invite-drawer/project-member-invite-drawer')
-);
-const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
+const PhaseDrawer = React.lazy(() => import('@/features/projects/singleProject/phase/PhaseDrawer'));
+const StatusDrawer = React.lazy(() => import('@/components/project-task-filters/create-status-drawer/create-status-drawer'));
+const ProjectMemberDrawer = React.lazy(() => import('@/components/projects/project-member-invite-drawer/project-member-invite-drawer'));
 
-const ProjectView = () => {
+
+
+const ProjectView = React.memo(() => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
   const { projectId } = useParams();
 
+  // Memoized selectors to prevent unnecessary re-renders
   const selectedProject = useAppSelector(state => state.projectReducer.project);
+  const projectLoading = useAppSelector(state => state.projectReducer.projectLoading);
+  
+  // Optimize document title updates
   useDocumentTitle(selectedProject?.name || 'Project View');
-  const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || tabItems[0].key);
-  const [pinnedTab, setPinnedTab] = useState<string>(searchParams.get('pinned_tab') || '');
-  const [taskid, setTaskId] = useState<string>(searchParams.get('task') || '');
+  
+  // Memoize URL params to prevent unnecessary state updates
+  const urlParams = useMemo(() => ({
+    tab: searchParams.get('tab') || tabItems[0].key,
+    pinnedTab: searchParams.get('pinned_tab') || '',
+    taskId: searchParams.get('task') || ''
+  }), [searchParams]);
 
-  const resetProjectData = useCallback(() => {
+  const [activeTab, setActiveTab] = useState<string>(urlParams.tab);
+  const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
+  const [taskid, setTaskId] = useState<string>(urlParams.taskId);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Update local state when URL params change
+  useEffect(() => {
+    setActiveTab(urlParams.tab);
+    setPinnedTab(urlParams.pinnedTab);
+    setTaskId(urlParams.taskId);
+  }, [urlParams]);
+
+  // Comprehensive cleanup function for when leaving project view entirely
+  const resetAllProjectData = useCallback(() => {
     dispatch(setProjectId(null));
     dispatch(resetStatuses());
     dispatch(deselectAll());
@@ -68,140 +93,259 @@ const ProjectView = () => {
     dispatch(resetGrouping());
     dispatch(resetSelection());
     dispatch(resetFields());
+    dispatch(resetEnhancedKanbanState());
+    
+    // Reset project insights
+    dispatch(setInsightsProjectId(''));
+    
+    // Reset task drawer completely
+    dispatch(resetTaskDrawer());
   }, [dispatch]);
 
+  // Effect for handling component unmount (leaving project view entirely)
   useEffect(() => {
-    if (projectId) {
-      dispatch(setProjectId(projectId));
-      dispatch(getProject(projectId)).then((res: any) => {
-        if (!res.payload) {
-          navigate('/worklenz/projects');
-          return;
-        }
-        dispatch(fetchStatuses(projectId));
-        dispatch(fetchLabels());
-      });
+    // This cleanup only runs when the component unmounts
+    return () => {
+      resetAllProjectData();
+    };
+  }, []); // Empty dependency array - only runs on mount/unmount
+
+  // Effect for handling route changes (when navigating away from project view)
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    // If we're not on a project view path, clean up
+    if (!currentPath.includes('/worklenz/projects/') || currentPath === '/worklenz/projects') {
+      resetAllProjectData();
     }
-    if (taskid) {
-      dispatch(setSelectedTaskId(taskid || ''));
+  }, [location.pathname, resetAllProjectData]);
+
+  // Optimized project data loading with better error handling and performance tracking
+  useEffect(() => {
+    if (projectId && !isInitialized) {
+      const loadProjectData = async () => {
+        try {
+          // Clean up previous project data before loading new project
+          dispatch(resetTaskListData());
+          dispatch(resetBoardData());
+          dispatch(resetTaskManagement());
+          dispatch(resetEnhancedKanbanState());
+          dispatch(deselectAll());
+          
+          // Load new project data
+          dispatch(setProjectId(projectId));
+          
+          // Load project and essential data in parallel
+          const [projectResult] = await Promise.allSettled([
+            dispatch(getProject(projectId)),
+            dispatch(fetchStatuses(projectId)),
+            dispatch(fetchLabels())
+          ]);
+
+          if (projectResult.status === 'fulfilled' && !projectResult.value.payload) {
+            navigate('/worklenz/projects');
+            return;
+          }
+
+          setIsInitialized(true);
+        } catch (error) {
+          console.error('Error loading project data:', error);
+          navigate('/worklenz/projects');
+        }
+      };
+
+      loadProjectData();
+    }
+  }, [dispatch, navigate, projectId]);
+
+  // Reset initialization when project changes
+  useEffect(() => {
+    setIsInitialized(false);
+  }, [projectId]);
+
+  // Effect for handling task drawer opening from URL params
+  useEffect(() => {
+    if (taskid && isInitialized) {
+      dispatch(setSelectedTaskId(taskid));
       dispatch(setShowTaskDrawer(true));
     }
+  }, [dispatch, taskid, isInitialized]);
 
-    return () => {
-      resetProjectData();
-    };
-  }, [dispatch, navigate, projectId, taskid, resetProjectData]);
-
+  // Optimized pin tab function with better error handling
   const pinToDefaultTab = useCallback(async (itemKey: string) => {
     if (!itemKey || !projectId) return;
 
-    const defaultView = itemKey === 'tasks-list' ? 'TASK_LIST' : 'BOARD';
-    const res = await projectsApiService.updateDefaultTab({
-      project_id: projectId,
-      default_view: defaultView,
-    });
-
-    if (res.done) {
-      setPinnedTab(itemKey);
-      tabItems.forEach(item => {
-        if (item.key === itemKey) {
-          item.isPinned = true;
-        } else {
-          item.isPinned = false;
-        }
+    try {
+      const defaultView = itemKey === 'tasks-list' ? 'TASK_LIST' : 'BOARD';
+      const res = await projectsApiService.updateDefaultTab({
+        project_id: projectId,
+        default_view: defaultView,
       });
 
-      navigate({
-        pathname: `/worklenz/projects/${projectId}`,
-        search: new URLSearchParams({
-          tab: activeTab,
-          pinned_tab: itemKey
-        }).toString(),
-      });
+      if (res.done) {
+        setPinnedTab(itemKey);
+        
+        // Optimize tab items update
+        tabItems.forEach(item => {
+          item.isPinned = item.key === itemKey;
+        });
+
+        navigate({
+          pathname: `/worklenz/projects/${projectId}`,
+          search: new URLSearchParams({
+            tab: activeTab,
+            pinned_tab: itemKey
+          }).toString(),
+        }, { replace: true }); // Use replace to avoid history pollution
+      }
+    } catch (error) {
+      console.error('Error updating default tab:', error);
     }
   }, [projectId, activeTab, navigate]);
 
+  // Optimized tab change handler
   const handleTabChange = useCallback((key: string) => {
     setActiveTab(key);
     dispatch(setProjectView(key === 'board' ? 'kanban' : 'list'));
+    
+    // Use replace for better performance and history management
     navigate({
       pathname: location.pathname,
       search: new URLSearchParams({
         tab: key,
         pinned_tab: pinnedTab,
       }).toString(),
-    });
+    }, { replace: true });
   }, [dispatch, location.pathname, navigate, pinnedTab]);
 
-  const tabMenuItems = useMemo(() => tabItems.map(item => ({
-    key: item.key,
-    label: (
-      <Flex align="center" style={{ color: colors.skyBlue }}>
-        {item.label}
-        {item.key === 'tasks-list' || item.key === 'board' ? (
-          <ConfigProvider wave={{ disabled: true }}>
-            <Button
-              className="borderless-icon-btn"
-              style={{
-                backgroundColor: colors.transparent,
-                boxShadow: 'none',
-              }}
-              icon={
-                item.key === pinnedTab ? (
-                  <PushpinFilled
-                    size={20}
-                    style={{
-                      color: colors.skyBlue,
-                      rotate: '-45deg',
-                      transition: 'transform ease-in 300ms',
-                    }}
-                  />
-                ) : (
-                  <PushpinOutlined
-                    size={20}
-                    style={{
-                      color: colors.skyBlue,
-                    }}
-                  />
-                )
-              }
-              onClick={e => {
-                e.stopPropagation();
-                pinToDefaultTab(item.key);
-              }}
-            />
-          </ConfigProvider>
-        ) : null}
-      </Flex>
-    ),
-    children: item.element,
-  })), [pinnedTab, pinToDefaultTab]);
+  // Memoized tab menu items with enhanced styling
+  const tabMenuItems = useMemo(() => {
+    const menuItems = tabItems.map(item => ({
+      key: item.key,
+      label: (
+        <Flex align="center" gap={6} style={{ color: 'inherit' }}>
+          <span style={{ fontWeight: 500, fontSize: '13px' }}>{item.label}</span>
+          {(item.key === 'tasks-list' || item.key === 'board') && (
+            <ConfigProvider wave={{ disabled: true }}>
+              <Button
+                className="borderless-icon-btn"
+                size="small"
+                type="text"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                  padding: '2px',
+                  minWidth: 'auto',
+                  height: 'auto',
+                  lineHeight: 1,
+                }}
+                icon={
+                  item.key === pinnedTab ? (
+                                          <PushpinFilled
+                        style={{
+                          fontSize: '12px',
+                          color: 'currentColor',
+                          transform: 'rotate(-45deg)',
+                          transition: 'all 0.3s ease',
+                        }}
+                      />
+                    ) : (
+                      <PushpinOutlined
+                        style={{
+                          fontSize: '12px',
+                          color: 'currentColor',
+                          transition: 'all 0.3s ease',
+                        }}
+                      />
+                  )
+                }
+                onClick={e => {
+                  e.stopPropagation();
+                  pinToDefaultTab(item.key);
+                }}
+              />
+            </ConfigProvider>
+          )}
+        </Flex>
+      ),
+      children: item.element,
+    }));
 
+    return menuItems;
+  }, [pinnedTab, pinToDefaultTab]);
+
+  // Optimized secondary components loading with better UX
+  const [shouldLoadSecondaryComponents, setShouldLoadSecondaryComponents] = useState(false);
+
+  useEffect(() => {
+    if (isInitialized) {
+      // Reduce delay and load secondary components after core data is ready
+      const timer = setTimeout(() => {
+        setShouldLoadSecondaryComponents(true);
+      }, 500); // Reduced from 1000ms to 500ms
+
+      return () => clearTimeout(timer);
+    }
+  }, [isInitialized]);
+
+  // Optimized portal elements with better error boundaries
   const portalElements = useMemo(() => (
     <>
-      {createPortal(<ProjectMemberDrawer />, document.body, 'project-member-drawer')}
-      {createPortal(<PhaseDrawer />, document.body, 'phase-drawer')}
-      {createPortal(<StatusDrawer />, document.body, 'status-drawer')}
+      {/* Critical component - load immediately without suspense */}
       {createPortal(<TaskDrawer />, document.body, 'task-drawer')}
-      {createPortal(<DeleteStatusDrawer />, document.body, 'delete-status-drawer')}
+      
+      {/* Non-critical components - load after delay with suspense fallback */}
+      {shouldLoadSecondaryComponents && (
+        <Suspense fallback={<SuspenseFallback />}>
+          {createPortal(<ProjectMemberDrawer />, document.body, 'project-member-drawer')}
+          {createPortal(<PhaseDrawer />, document.body, 'phase-drawer')}
+          {createPortal(<StatusDrawer />, document.body, 'status-drawer')}
+          {createPortal(<DeleteStatusDrawer />, document.body, 'delete-status-drawer')}
+        </Suspense>
+      )}
     </>
-  ), []);
+  ), [shouldLoadSecondaryComponents]);
+
+  // Show loading state while project is being fetched
+  if (projectLoading || !isInitialized) {
+    return (
+      <div style={{ marginBlockStart: 80, marginBlockEnd: 16, minHeight: '80vh' }}>
+        <SuspenseFallback />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ marginBlockStart: 80, marginBlockEnd: 24, minHeight: '80vh' }}>
+    <div style={{ marginBlockStart: 80, marginBlockEnd: 16, minHeight: '80vh' }}>
       <ProjectViewHeader />
 
       <Tabs
+        className="project-view-tabs"
         activeKey={activeTab}
         onChange={handleTabChange}
         items={tabMenuItems}
-        tabBarStyle={{ paddingInline: 0 }}
-        destroyInactiveTabPane
+        tabBarStyle={{ 
+          paddingInline: 0,
+          marginBottom: 8,
+          background: 'transparent',
+          minHeight: '36px',
+        }}
+        tabBarGutter={0}
+        destroyInactiveTabPane={true} // Destroy inactive tabs to save memory
+        animated={{
+          inkBar: true,
+          tabPane: false, // Disable content animation for better performance
+        }}
+        size="small"
+        type="card"
       />
 
       {portalElements}
     </div>
   );
-};
+});
 
-export default React.memo(ProjectView);
+ProjectView.displayName = 'ProjectView';
+
+export default ProjectView;

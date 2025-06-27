@@ -4,3 +4,222 @@
   height: 8px;
   width: 8px;
 }
+
+/* Enhanced Project View Tab Styles - Compact */
+.project-view-tabs {
+  margin-top: 16px;
+}
+
+/* Remove default tab border */
+.project-view-tabs .ant-tabs-nav::before {
+  border: none !important;
+}
+
+/* Tab bar container */
+.project-view-tabs .ant-tabs-nav {
+  margin-bottom: 8px;
+  background: transparent;
+  padding: 0 12px;
+}
+
+/* Individual tab styling - Compact */
+.project-view-tabs .ant-tabs-tab {
+  position: relative;
+  margin: 0 4px 0 0;
+  padding: 8px 16px;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  font-size: 13px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+/* Light mode tab styles */
+[data-theme="default"] .project-view-tabs .ant-tabs-tab {
+  color: #64748b;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-theme="default"] .project-view-tabs .ant-tabs-tab:hover {
+  color: #3b82f6;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="default"] .project-view-tabs .ant-tabs-tab-active {
+  color: #1e40af !important;
+  background: #ffffff !important;
+  border-color: #3b82f6 !important;
+  border-bottom-color: #ffffff !important;
+  box-shadow: 0 -2px 8px rgba(59, 130, 246, 0.1), 0 4px 16px rgba(59, 130, 246, 0.1);
+  z-index: 1;
+}
+
+/* Dark mode tab styles */
+[data-theme="dark"] .project-view-tabs .ant-tabs-tab {
+  color: #94a3b8;
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .project-view-tabs .ant-tabs-tab:hover {
+  color: #60a5fa;
+  background: #1e3a8a;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
+}
+
+[data-theme="dark"] .project-view-tabs .ant-tabs-tab-active {
+  color: #60a5fa !important;
+  background: #0f172a !important;
+  border-color: #3b82f6 !important;
+  border-bottom-color: #0f172a !important;
+  box-shadow: 0 -2px 8px rgba(96, 165, 250, 0.15), 0 4px 16px rgba(96, 165, 250, 0.15);
+  z-index: 1;
+}
+
+/* Tab content area - Compact */
+.project-view-tabs .ant-tabs-content-holder {
+  background: transparent;
+  border-radius: 6px;
+  position: relative;
+  z-index: 0;
+  margin-top: 4px;
+}
+
+[data-theme="default"] .project-view-tabs .ant-tabs-content-holder {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .project-view-tabs .ant-tabs-content-holder {
+  background: #0f172a;
+  border: 1px solid #334155;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.project-view-tabs .ant-tabs-tabpane {
+  padding: 0;
+  min-height: 300px;
+}
+
+/* Pin button styling - Compact */
+.project-view-tabs .borderless-icon-btn {
+  margin-left: 6px;
+  padding: 2px;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.project-view-tabs .borderless-icon-btn:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+[data-theme="default"] .project-view-tabs .borderless-icon-btn:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+[data-theme="dark"] .project-view-tabs .borderless-icon-btn:hover {
+  background: rgba(96, 165, 250, 0.1) !important;
+}
+
+/* Pinned tab indicator */
+.project-view-tabs .ant-tabs-tab-active .borderless-icon-btn {
+  opacity: 1;
+}
+
+[data-theme="default"] .project-view-tabs .ant-tabs-tab-active .borderless-icon-btn {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+[data-theme="dark"] .project-view-tabs .ant-tabs-tab-active .borderless-icon-btn {
+  background: rgba(96, 165, 250, 0.1) !important;
+}
+
+/* Tab label flex container */
+.project-view-tabs .ant-tabs-tab .ant-tabs-tab-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* Responsive adjustments - Compact */
+@media (max-width: 768px) {
+  .project-view-tabs .ant-tabs-nav {
+    padding: 0 8px;
+  }
+  
+  .project-view-tabs .ant-tabs-tab {
+    margin: 0 2px 0 0;
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 32px;
+  }
+  
+  .project-view-tabs .borderless-icon-btn {
+    margin-left: 4px;
+    padding: 1px;
+  }
+}
+
+@media (max-width: 480px) {
+  .project-view-tabs .ant-tabs-tab {
+    padding: 6px 10px;
+    font-size: 11px;
+    min-height: 30px;
+  }
+  
+  .project-view-tabs .borderless-icon-btn {
+    display: none; /* Hide pin buttons on very small screens */
+  }
+}
+
+/* Animation for tab switching */
+.project-view-tabs .ant-tabs-content {
+  position: relative;
+}
+
+.project-view-tabs .ant-tabs-tabpane-active {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus states for accessibility - Compact */
+.project-view-tabs .ant-tabs-tab:focus-visible {
+  outline: 1px solid #3b82f6;
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+
+[data-theme="dark"] .project-view-tabs .ant-tabs-tab:focus-visible {
+  outline-color: #60a5fa;
+}
+
+/* Loading state for tab content */
+.project-view-tabs .ant-tabs-tabpane .suspense-fallback {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
