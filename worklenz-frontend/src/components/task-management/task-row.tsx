@@ -22,6 +22,8 @@ import { AssigneeSelector, Avatar, AvatarGroup, Button, Checkbox, CustomColordLa
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import TaskStatusDropdown from './task-status-dropdown';
+import TaskPriorityDropdown from './task-priority-dropdown';
+import TaskPhaseDropdown from './task-phase-dropdown';
 import { 
   formatDate as utilFormatDate, 
   formatDateTime as utilFormatDateTime, 
@@ -419,6 +421,24 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           </div>
         );
       
+      case 'priority':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <div className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+              {task.priority || 'Medium'}
+            </div>
+          </div>
+        );
+      
+      case 'phase':
+        return (
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            <div className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+              {task.phase || 'No Phase'}
+            </div>
+          </div>
+        );
+      
       default:
         // For non-essential columns, show placeholder during initial load
         return (
@@ -580,10 +600,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       
       case 'phase':
         return (
-          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              {task.phase || 'No Phase'}
-            </span>
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses} overflow-visible`} style={{ width: col.width, minWidth: col.width }}>
+            <div className="w-full">
+              <TaskPhaseDropdown
+                task={task}
+                projectId={projectId}
+                isDarkMode={isDarkMode}
+              />
+            </div>
           </div>
         );
       
@@ -602,8 +626,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       
       case 'priority':
         return (
-          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <TaskPriority priority={task.priority} isDarkMode={isDarkMode} />
+          <div key={col.key} className={`flex items-center px-2 ${borderClasses} overflow-visible`} style={{ width: col.width, minWidth: col.width }}>
+            <div className="w-full">
+              <TaskPriorityDropdown
+                task={task}
+                projectId={projectId}
+                isDarkMode={isDarkMode}
+              />
+            </div>
           </div>
         );
       
