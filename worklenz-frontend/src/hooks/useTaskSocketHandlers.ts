@@ -35,6 +35,7 @@ import {
 } from '@/features/tasks/tasks.slice';
 import { 
   addTask, 
+  addTaskToGroup,
   updateTask, 
   moveTaskToGroup,
   selectCurrentGroupingV3,
@@ -355,7 +356,39 @@ export const useTaskSocketHandlers = () => {
           order: data.sort_order || 0,
         };
         
-        dispatch(addTask(task));
+        // Extract the group UUID from the backend response based on current grouping
+        let groupId: string | undefined;
+        
+        console.log('🔍 Quick task received:', {
+          currentGrouping: currentGroupingV3,
+          status: data.status,
+          priority: data.priority,
+          phase_id: data.phase_id
+        });
+        
+        // Select the correct UUID based on current grouping
+        // If currentGroupingV3 is null, default to 'status' since that's the most common grouping
+        const grouping = currentGroupingV3 || 'status';
+        console.log('📊 Using grouping:', grouping);
+        
+        if (grouping === 'status') {
+          // For status grouping, use status field (which contains the status UUID)
+          groupId = data.status;
+          console.log('✅ Using status UUID:', groupId);
+        } else if (grouping === 'priority') {
+          // For priority grouping, use priority field (which contains the priority UUID)
+          groupId = data.priority;
+          console.log('✅ Using priority UUID:', groupId);
+        } else if (grouping === 'phase') {
+          // For phase grouping, use phase_id
+          groupId = data.phase_id;
+          console.log('✅ Using phase UUID:', groupId);
+        }
+        
+        console.log('📤 Dispatching addTaskToGroup with:', { taskId: task.id, groupId });
+        
+        // Use addTaskToGroup with the actual group UUID
+        dispatch(addTaskToGroup({ task, groupId }));
       }
     },
     [dispatch]
