@@ -18,16 +18,17 @@ const useTaskDrawerUrlSync = () => {
   
   // Use a ref to track whether we're in the process of closing the drawer
   const isClosingDrawer = useRef(false);
-  // Use a ref to track if we've already processed the initial URL
-  const initialUrlProcessed = useRef(false);
   // Use a ref to track the last task ID we processed
   const lastProcessedTaskId = useRef<string | null>(null);
+  // Use a ref to track if we should ignore URL changes (when programmatically updating)
+  const shouldIgnoreUrlChange = useRef(false);
 
   // Function to clear the task parameter from URL
   const clearTaskFromUrl = useCallback(() => {
     if (searchParams.has('task')) {
       // Set the flag to indicate we're closing the drawer
       isClosingDrawer.current = true;
+      shouldIgnoreUrlChange.current = true;
       
       // Create a new URLSearchParams object to avoid modifying the current one
       const newParams = new URLSearchParams(searchParams);
@@ -36,40 +37,52 @@ const useTaskDrawerUrlSync = () => {
       // Update the URL without triggering a navigation
       setSearchParams(newParams, { replace: true });
       
-      // Reset the flag after a short delay
+      // Reset the flags after a short delay
       setTimeout(() => {
         isClosingDrawer.current = false;
-      }, 200);
+        shouldIgnoreUrlChange.current = false;
+      }, 300); // Increased timeout to ensure proper cleanup
     }
   }, [searchParams, setSearchParams]);
 
-  // Check for task ID in URL when component mounts
+  // Check for task ID in URL when it changes
   useEffect(() => {
-    // Only process the URL once on initial mount
-    if (!initialUrlProcessed.current) {
-      const taskIdFromUrl = searchParams.get('task');
-      if (taskIdFromUrl && !showTaskDrawer && projectId && !isClosingDrawer.current) {
-        lastProcessedTaskId.current = taskIdFromUrl;
-        dispatch(setSelectedTaskId(taskIdFromUrl));
-        dispatch(setShowTaskDrawer(true));
-        
-        // Fetch task data
-        dispatch(fetchTask({ taskId: taskIdFromUrl, projectId }));
-      }
-      initialUrlProcessed.current = true;
+    // Skip if we're programmatically updating the URL or closing the drawer
+    if (shouldIgnoreUrlChange.current || isClosingDrawer.current) return;
+    
+    const taskIdFromUrl = searchParams.get('task');
+    
+    // Only process URL changes if:
+    // 1. There's a task ID in the URL
+    // 2. The drawer is not currently open
+    // 3. We have a project ID
+    // 4. It's a different task ID than what we last processed
+    // 5. The selected task ID is different from URL (to avoid reopening same task)
+    if (taskIdFromUrl && 
+        !showTaskDrawer && 
+        projectId && 
+        taskIdFromUrl !== lastProcessedTaskId.current &&
+        taskIdFromUrl !== selectedTaskId) {
+      lastProcessedTaskId.current = taskIdFromUrl;
+      dispatch(setSelectedTaskId(taskIdFromUrl));
+      dispatch(setShowTaskDrawer(true));
+      
+      // Fetch task data
+      dispatch(fetchTask({ taskId: taskIdFromUrl, projectId }));
     }
-  }, [searchParams, dispatch, showTaskDrawer, projectId]);
+  }, [searchParams, showTaskDrawer, projectId, selectedTaskId, dispatch]);
 
   // Update URL when task drawer state changes
   useEffect(() => {
-    // Don't update URL if we're in the process of closing
-    if (isClosingDrawer.current) return;
+    // Don't update URL if we're in the process of closing or ignoring changes
+    if (isClosingDrawer.current || shouldIgnoreUrlChange.current) return;
     
     if (showTaskDrawer && selectedTaskId) {
       // Don't update if it's the same task ID we already processed
       if (lastProcessedTaskId.current === selectedTaskId) return;
       
       // Add task ID to URL when drawer is opened
+      shouldIgnoreUrlChange.current = true;
       lastProcessedTaskId.current = selectedTaskId;
       
       // Create a new URLSearchParams object to avoid modifying the current one
@@ -78,12 +91,27 @@ const useTaskDrawerUrlSync = () => {
       
       // Update the URL without triggering a navigation
       setSearchParams(newParams, { replace: true });
-    } else if (!showTaskDrawer && searchParams.has('task')) {
-      // Remove task ID from URL when drawer is closed
+      
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        shouldIgnoreUrlChange.current = false;
+      }, 100);
+    }
+  }, [showTaskDrawer, selectedTaskId, searchParams, setSearchParams]);
+
+  // Separate effect to handle URL clearing when drawer is closed
+  useEffect(() => {
+    // Only clear URL when drawer is closed and we have a task in URL
+    // Also ensure we're not in the middle of processing other URL changes
+    if (!showTaskDrawer && 
+        searchParams.has('task') && 
+        !isClosingDrawer.current && 
+        !shouldIgnoreUrlChange.current &&
+        !selectedTaskId) { // Only clear if selectedTaskId is also null/cleared
       clearTaskFromUrl();
       lastProcessedTaskId.current = null;
     }
-  }, [showTaskDrawer, selectedTaskId, searchParams, setSearchParams, clearTaskFromUrl]);
+  }, [showTaskDrawer, searchParams, selectedTaskId, clearTaskFromUrl]);
 
   return { clearTaskFromUrl };
 };
