@@ -82,7 +82,12 @@ export {
   PushpinFilled,
   PushpinOutlined,
   UsergroupAddOutlined,
-  ImportOutlined
+  ImportOutlined,
+  UnorderedListOutlined,
+  TableOutlined,
+  BarChartOutlined,
+  FileOutlined,
+  MessageOutlined
 } from '@ant-design/icons';
 
 // Re-export all components with React

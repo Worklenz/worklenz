@@ -55,6 +55,20 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   loading,
   t
 }) => {
+  // Preload project view components on hover for smoother navigation
+  const handleProjectHover = React.useCallback((project_id: string) => {
+    if (project_id) {
+      // Preload the project view route to reduce loading time
+      import('@/pages/projects/projectView/project-view').catch(() => {
+        // Silently fail if preload doesn't work
+      });
+      
+      // Also preload critical task management components
+      import('@/components/task-management/task-list-board').catch(() => {
+        // Silently fail if preload doesn't work
+      });
+    }
+  }, []);
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
@@ -360,6 +374,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
             if (actionButtons) {
               actionButtons.style.opacity = '1';
             }
+            // Preload components for smoother navigation
+            handleProjectHover(project.id);
           }}
           onMouseLeave={(e) => {
             Object.assign(e.currentTarget.style, styles.projectCard);
