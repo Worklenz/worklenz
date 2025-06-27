@@ -74,6 +74,19 @@ export const useTaskSocketHandlers = () => {
         selected: true,
       })) || [];
 
+      // REAL-TIME UPDATES: Update the task-management slice for immediate UI updates
+      if (data.id) {
+        dispatch(updateTask({
+          id: data.id,
+          changes: {
+            assignees: data.assignees?.map(a => a.team_member_id) || [],
+            assignee_names: data.names || [],
+            updatedAt: new Date().toISOString(),
+          }
+        }));
+      }
+
+      // Update the old task slice (for backward compatibility)
       const groupId = taskGroups?.find((group: ITaskListGroup) =>
         group.tasks?.some(
           (task: IProjectTask) =>
@@ -98,9 +111,10 @@ export const useTaskSocketHandlers = () => {
           } as IProjectTask)
         );
 
-        if (currentSession?.team_id && !loadingAssignees) {
-          dispatch(fetchTaskAssignees(currentSession.team_id));
-        }
+        // Remove unnecessary refetch - real-time updates handle this
+        // if (currentSession?.team_id && !loadingAssignees) {
+        //   dispatch(fetchTaskAssignees(currentSession.team_id));
+        // }
       }
     },
     [taskGroups, dispatch, currentSession?.team_id, loadingAssignees]
@@ -110,11 +124,31 @@ export const useTaskSocketHandlers = () => {
     async (labels: ILabelsChangeResponse) => {
       if (!labels) return;
       
+      // REAL-TIME UPDATES: Update the task-management slice for immediate UI updates
+      if (labels.id) {
+        dispatch(updateTask({
+          id: labels.id,
+          changes: {
+            labels: labels.labels?.map(l => ({
+              id: l.id || '',
+              name: l.name || '',
+              color: l.color_code || '#1890ff',
+              end: l.end,
+              names: l.names
+            })) || [],
+            updatedAt: new Date().toISOString(),
+          }
+        }));
+      }
+      
+      // Update the old task slice and other related slices (for backward compatibility)
+      // Only update existing data, don't refetch from server
       await Promise.all([
         dispatch(updateTaskLabel(labels)),
         dispatch(setTaskLabels(labels)),
-        dispatch(fetchLabels()),
-        projectId && dispatch(fetchLabelsByProject(projectId)),
+        // Remove unnecessary refetches - real-time updates handle this
+        // dispatch(fetchLabels()),
+        // projectId && dispatch(fetchLabelsByProject(projectId)),
       ]);
     },
     [dispatch, projectId]
@@ -189,11 +223,12 @@ export const useTaskSocketHandlers = () => {
             }
           }));
         } else if (!currentGroup || !targetGroup) {
-          // Fallback to refetch if groups not found (shouldn't happen normally)
-          console.log('🔄 Groups not found, refetching tasks...');
-          if (projectId) {
-            dispatch(fetchTasksV3(projectId));
-          }
+          // Log the issue but don't refetch - real-time updates should handle this
+          console.log('🔄 Groups not found, but avoiding refetch to prevent data thrashing');
+          // Remove unnecessary refetch that causes data thrashing
+          // if (projectId) {
+          //   dispatch(fetchTasksV3(projectId));
+          // }
         }
       }
     },
@@ -611,13 +646,27 @@ export const useTaskSocketHandlers = () => {
     [dispatch, taskGroups]
   );
 
+  // Handler for TASK_ASSIGNEES_CHANGE (fallback event with limited data)
+  const handleTaskAssigneesChange = useCallback(
+    (data: { assigneeIds: string[] }) => {
+      if (!data || !data.assigneeIds) return;
+      
+      // This event only provides assignee IDs, so we update what we can
+      // The full assignee data will come from QUICK_ASSIGNEES_UPDATE
+      console.log('🔄 Task assignees change (limited data):', data);
+    },
+    []
+  );
+
   // Register socket event listeners
   useEffect(() => {
     if (!socket) return;
 
     const eventHandlers = [
       { event: SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handler: handleAssigneesUpdate },
+      { event: SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), handler: handleTaskAssigneesChange },
       { event: SocketEvents.TASK_LABELS_CHANGE.toString(), handler: handleLabelsChange },
+      { event: SocketEvents.CREATE_LABEL.toString(), handler: handleLabelsChange },
       { event: SocketEvents.TASK_STATUS_CHANGE.toString(), handler: handleTaskStatusChange },
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgress },
       { event: SocketEvents.TASK_PRIORITY_CHANGE.toString(), handler: handlePriorityChange },
@@ -646,6 +695,7 @@ export const useTaskSocketHandlers = () => {
   }, [
     socket,
     handleAssigneesUpdate,
+    handleTaskAssigneesChange,
     handleLabelsChange,
     handleTaskStatusChange,
     handleTaskProgress,
