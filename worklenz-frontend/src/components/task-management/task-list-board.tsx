@@ -44,9 +44,15 @@ import TaskRow from './task-row';
 import VirtualizedTaskList from './virtualized-task-list';
 import { AppDispatch } from '@/app/store';
 import { shallowEqual } from 'react-redux';
+import { performanceMonitor } from '@/utils/performance-monitor';
+import debugPerformance from '@/utils/debug-performance';
 
 // Import the improved TaskListFilters component synchronously to avoid suspense
 import ImprovedTaskFilters from './improved-task-filters';
+import PerformanceAnalysis from './performance-analysis';
+
+// Import drag and drop performance optimizations
+import './drag-drop-optimized.css';
 
 interface TaskListBoardProps {
   projectId: string;
@@ -111,12 +117,21 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Get theme from Redux store
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
+  const themeClass = isDarkMode ? 'dark' : 'light';
+
+  // Build a tasksById map for efficient lookup
+  const tasksById = useMemo(() => {
+    const map: Record<string, Task> = {};
+    tasks.forEach(task => { map[task.id] = task; });
+    return map;
+  }, [tasks]);
 
   // Drag and Drop sensors - optimized for better performance
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3, // Reduced from 8 for more responsive dragging
+        distance: 0, // No distance requirement for immediate response
+        delay: 0, // No delay for immediate activation
       },
     }),
     useSensor(KeyboardSensor, {
@@ -129,8 +144,47 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     if (projectId && !hasInitialized.current) {
       hasInitialized.current = true;
       
-      // Fetch real tasks from V3 API (minimal processing needed)
-      dispatch(fetchTasksV3(projectId));
+      // Start performance monitoring
+      if (process.env.NODE_ENV === 'development') {
+        const stopPerformanceCheck = debugPerformance.runPerformanceCheck();
+        
+        // Monitor task loading performance
+        const startTime = performance.now();
+        
+        // Monitor API call specifically
+        const apiStartTime = performance.now();
+        
+        // Fetch real tasks from V3 API (minimal processing needed)
+        dispatch(fetchTasksV3(projectId)).then((result: any) => {
+          const apiTime = performance.now() - apiStartTime;
+          const totalLoadTime = performance.now() - startTime;
+          
+          console.log(`API call took: ${apiTime.toFixed(2)}ms`);
+          console.log(`Total task loading took: ${totalLoadTime.toFixed(2)}ms`);
+          console.log(`Tasks loaded: ${result.payload?.tasks?.length || 0}`);
+          console.log(`Groups created: ${result.payload?.groups?.length || 0}`);
+          
+          if (apiTime > 5000) {
+            console.error(`🚨 API call is extremely slow: ${apiTime.toFixed(2)}ms - Check backend performance`);
+          }
+          
+          if (totalLoadTime > 1000) {
+            console.warn(`🚨 Slow task loading detected: ${totalLoadTime.toFixed(2)}ms`);
+          }
+          
+          // Log performance metrics after loading
+          debugPerformance.logMemoryUsage();
+          debugPerformance.logDOMNodes();
+          
+          return stopPerformanceCheck;
+        }).catch((error) => {
+          console.error('Task loading failed:', error);
+          return stopPerformanceCheck;
+        });
+      } else {
+        // Fetch real tasks from V3 API (minimal processing needed)
+        dispatch(fetchTasksV3(projectId));
+      }
     }
   }, [projectId, dispatch]);
 
@@ -177,54 +231,55 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     [tasks, currentGrouping]
   );
 
-  // Throttled drag over handler for better performance
-  const handleDragOver = useCallback(
-    throttle((event: DragOverEvent) => {
-      const { active, over } = event;
+  // Immediate drag over handler for instant response
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { active, over } = event;
 
-      if (!over || !dragState.activeTask) return;
+    if (!over || !dragState.activeTask) return;
 
-      const activeTaskId = active.id as string;
-      const overContainer = over.id as string;
+    const activeTaskId = active.id as string;
+    const overContainer = over.id as string;
 
-      // Clear any existing timeout
-      if (dragOverTimeoutRef.current) {
-        clearTimeout(dragOverTimeoutRef.current);
+    // Clear any existing timeout
+    if (dragOverTimeoutRef.current) {
+      clearTimeout(dragOverTimeoutRef.current);
+    }
+
+    // PERFORMANCE OPTIMIZATION: Immediate response for instant UX
+    // Only update if we're hovering over a different container
+    const targetTask = tasks.find(t => t.id === overContainer);
+    let targetGroupId = overContainer;
+
+    if (targetTask) {
+      // PERFORMANCE OPTIMIZATION: Use switch instead of multiple if statements
+      switch (currentGrouping) {
+        case 'status':
+          targetGroupId = `status-${targetTask.status}`;
+          break;
+        case 'priority':
+          targetGroupId = `priority-${targetTask.priority}`;
+          break;
+        case 'phase':
+          targetGroupId = `phase-${targetTask.phase}`;
+          break;
       }
+    }
 
-      // Optimistic update with throttling
-      dragOverTimeoutRef.current = setTimeout(() => {
-        // Only update if we're hovering over a different container
-        const targetTask = tasks.find(t => t.id === overContainer);
-        let targetGroupId = overContainer;
-
-        if (targetTask) {
-          if (currentGrouping === 'status') {
-            targetGroupId = `status-${targetTask.status}`;
-          } else if (currentGrouping === 'priority') {
-            targetGroupId = `priority-${targetTask.priority}`;
-          } else if (currentGrouping === 'phase') {
-            targetGroupId = `phase-${targetTask.phase}`;
-          }
-        }
-
-        if (targetGroupId !== dragState.activeGroupId) {
-          // Perform optimistic update for visual feedback
-          const targetGroup = taskGroups.find(g => g.id === targetGroupId);
-          if (targetGroup) {
-            dispatch(
-              optimisticTaskMove({
-                taskId: activeTaskId,
-                newGroupId: targetGroupId,
-                newIndex: targetGroup.taskIds.length,
-              })
-            );
-          }
-        }
-      }, 50); // 50ms throttle for drag over events
-    }, 50),
-    [dragState, tasks, taskGroups, currentGrouping, dispatch]
-  );
+    if (targetGroupId !== dragState.activeGroupId) {
+      // PERFORMANCE OPTIMIZATION: Use findIndex for better performance
+      const targetGroupIndex = taskGroups.findIndex(g => g.id === targetGroupId);
+      if (targetGroupIndex !== -1) {
+        const targetGroup = taskGroups[targetGroupIndex];
+        dispatch(
+          optimisticTaskMove({
+            taskId: activeTaskId,
+            newGroupId: targetGroupId,
+            newIndex: targetGroup.taskIds.length,
+          })
+        );
+      }
+    }
+  }, [dragState, tasks, taskGroups, currentGrouping, dispatch]);
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -375,7 +430,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   }
 
   return (
-    <div className={`task-list-board ${className}`} ref={containerRef}>
+    <div className={`task-list-board ${className} ${themeClass}`} ref={containerRef}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -391,6 +446,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         <div className="mb-4">
           <ImprovedTaskFilters position="list" />
         </div>
+
+        {/* Performance Analysis - Only show in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <PerformanceAnalysis projectId={projectId} />
+        )}
 
         {/* Virtualized Task Groups Container */}
         <div className="task-groups-container">
@@ -419,21 +479,22 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           ) : (
             <div className="virtualized-task-groups">
               {taskGroups.map((group, index) => {
-                // PERFORMANCE OPTIMIZATION: Optimized height calculations
+                // PERFORMANCE OPTIMIZATION: Pre-calculate height values to avoid recalculation
                 const groupTasks = group.taskIds.length;
                 const baseHeight = 120; // Header + column headers + add task row
                 const taskRowsHeight = groupTasks * 40; // 40px per task row
                 
-                // PERFORMANCE OPTIMIZATION: Dynamic height based on task count and virtualization
-                const shouldVirtualizeGroup = groupTasks > 20;
-                const minGroupHeight = shouldVirtualizeGroup ? 200 : 150; // Smaller minimum for non-virtualized
-                const maxGroupHeight = shouldVirtualizeGroup ? 800 : 400; // Different max based on virtualization
+                // PERFORMANCE OPTIMIZATION: Simplified height calculation
+                const shouldVirtualizeGroup = groupTasks > 15; // Reduced threshold
+                const minGroupHeight = shouldVirtualizeGroup ? 180 : 120; // Smaller minimum
+                const maxGroupHeight = shouldVirtualizeGroup ? 600 : 300; // Smaller maximum
                 const calculatedHeight = baseHeight + taskRowsHeight;
                 const groupHeight = Math.max(
                   minGroupHeight,
                   Math.min(calculatedHeight, maxGroupHeight)
                 );
 
+                // PERFORMANCE OPTIMIZATION: Memoize group rendering
                 return (
                   <VirtualizedTaskList
                     key={group.id}
@@ -447,6 +508,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
                     onToggleSubtasks={handleToggleSubtasks}
                     height={groupHeight}
                     width={1200}
+                    tasksById={tasksById}
                   />
                 );
               })}
@@ -467,9 +529,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
       <style>{`
         .task-groups-container {
-          max-height: calc(100vh - 300px);
-          overflow-y: auto;
-          overflow-x: visible;
           padding: 8px 8px 8px 0;
           border-radius: 8px;
           position: relative;

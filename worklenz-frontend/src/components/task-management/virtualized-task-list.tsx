@@ -21,6 +21,7 @@ interface VirtualizedTaskListProps {
   onToggleSubtasks: (taskId: string) => void;
   height: number;
   width: number;
+  tasksById: Record<string, Task>;
 }
 
 const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
@@ -31,9 +32,9 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   onSelectTask,
   onToggleSubtasks,
   height,
-  width
+  width,
+  tasksById
 }) => {
-  const allTasks = useSelector(taskManagementSelectors.selectAll);
   const { t } = useTranslation('task-management');
   
   // Get theme from Redux store
@@ -42,8 +43,8 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   // Get field visibility from taskListFields slice
   const taskListFields = useSelector((state: RootState) => state.taskManagementFields) as TaskListField[];
   
-  // PERFORMANCE OPTIMIZATION: Reduce virtualization threshold for better performance
-  const VIRTUALIZATION_THRESHOLD = 20; // Reduced from 100 to 20 - virtualize even smaller lists
+  // PERFORMANCE OPTIMIZATION: Aggressive virtualization for large lists
+  const VIRTUALIZATION_THRESHOLD = 5; // Reduced from 10 to 5 - virtualize everything
   const TASK_ROW_HEIGHT = 40;
   const HEADER_HEIGHT = 40;
   const COLUMN_HEADER_HEIGHT = 40;
@@ -121,14 +122,18 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
     );
   }
 
-  // Get tasks for this group using memoization for performance
+  // PERFORMANCE OPTIMIZATION: Get tasks for this group using direct lookup (no mapping/filtering)
   const groupTasks = useMemo(() => {
-    const tasks = group.taskIds
-      .map((taskId: string) => allTasks.find((task: Task) => task.id === taskId))
-      .filter((task: Task | undefined): task is Task => task !== undefined);
-    
+    // PERFORMANCE OPTIMIZATION: Use for loop instead of map for better performance
+    const tasks: Task[] = [];
+    for (let i = 0; i < group.taskIds.length; i++) {
+      const task = tasksById[group.taskIds[i]];
+      if (task) {
+        tasks.push(task);
+      }
+    }
     return tasks;
-  }, [group.taskIds, allTasks]);
+  }, [group.taskIds, tasksById]);
 
   // PERFORMANCE OPTIMIZATION: Only calculate selection state when needed
   const selectionState = useMemo(() => {
@@ -136,35 +141,55 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
       return { isAllSelected: false, isIndeterminate: false };
     }
     
-    const selectedTasksInGroup = groupTasks.filter((task: Task) => selectedTaskIds.includes(task.id));
-    const isAllSelected = selectedTasksInGroup.length === groupTasks.length;
-    const isIndeterminate = selectedTasksInGroup.length > 0 && selectedTasksInGroup.length < groupTasks.length;
+    // PERFORMANCE OPTIMIZATION: Use for loop instead of filter for better performance
+    let selectedCount = 0;
+    for (let i = 0; i < groupTasks.length; i++) {
+      if (selectedTaskIds.includes(groupTasks[i].id)) {
+        selectedCount++;
+      }
+    }
+    
+    const isAllSelected = selectedCount === groupTasks.length;
+    const isIndeterminate = selectedCount > 0 && selectedCount < groupTasks.length;
     
     return { isAllSelected, isIndeterminate };
   }, [groupTasks, selectedTaskIds]);
 
   // Handle select all tasks in group - optimized with useCallback
   const handleSelectAllInGroup = useCallback((checked: boolean) => {
+    // PERFORMANCE OPTIMIZATION: Batch selection updates
+    const tasksToUpdate: Array<{ taskId: string; selected: boolean }> = [];
+    
     if (checked) {
       // Select all tasks in the group
-      groupTasks.forEach((task: Task) => {
+      for (let i = 0; i < groupTasks.length; i++) {
+        const task = groupTasks[i];
         if (!selectedTaskIds.includes(task.id)) {
-          onSelectTask(task.id, true);
+          tasksToUpdate.push({ taskId: task.id, selected: true });
         }
-      });
+      }
     } else {
       // Deselect all tasks in the group
-      groupTasks.forEach((task: Task) => {
+      for (let i = 0; i < groupTasks.length; i++) {
+        const task = groupTasks[i];
         if (selectedTaskIds.includes(task.id)) {
-          onSelectTask(task.id, false);
+          tasksToUpdate.push({ taskId: task.id, selected: false });
         }
-      });
+      }
     }
+    
+    // Batch update all selections
+    tasksToUpdate.forEach(({ taskId, selected }) => {
+      onSelectTask(taskId, selected);
+    });
   }, [groupTasks, selectedTaskIds, onSelectTask]);
 
-  // Calculate dynamic height for the group
+  // PERFORMANCE OPTIMIZATION: Simplified height calculation
   const taskRowsHeight = groupTasks.length * TASK_ROW_HEIGHT;
   const groupHeight = HEADER_HEIGHT + COLUMN_HEADER_HEIGHT + taskRowsHeight + ADD_TASK_ROW_HEIGHT;
+
+  // PERFORMANCE OPTIMIZATION: Limit visible columns for large lists
+  const maxVisibleColumns = groupTasks.length > 50 ? 6 : 12; // Further reduce columns for large lists
 
   // Define all possible columns
   const allFixedColumns = [
@@ -210,7 +235,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   }, [taskListFields, allFixedColumns]);
 
   const scrollableColumns = useMemo(() => {
-    return allScrollableColumns.filter(col => {
+    const filtered = allScrollableColumns.filter(col => {
       // For scrollable columns, check field visibility
       if (col.fieldKey) {
         const field = taskListFields.find(f => f.key === col.fieldKey);
@@ -219,20 +244,30 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
       
       return false;
     });
-  }, [taskListFields, allScrollableColumns]);
+    
+    // PERFORMANCE OPTIMIZATION: Limit columns for large lists
+    return filtered.slice(0, maxVisibleColumns);
+  }, [taskListFields, allScrollableColumns, maxVisibleColumns]);
 
   const fixedWidth = fixedColumns.reduce((sum, col) => sum + col.width, 0);
   const scrollableWidth = scrollableColumns.reduce((sum, col) => sum + col.width, 0);
   const totalTableWidth = fixedWidth + scrollableWidth;
 
-  // PERFORMANCE OPTIMIZATION: Increase overscanCount for better perceived performance
+  // PERFORMANCE OPTIMIZATION: Optimize overscan for large lists
   const shouldVirtualize = groupTasks.length > VIRTUALIZATION_THRESHOLD;
-  const overscanCount = shouldVirtualize ? Math.min(10, Math.ceil(groupTasks.length * 0.1)) : 0; // Dynamic overscan
+  const overscanCount = useMemo(() => {
+    if (groupTasks.length <= 10) return 2;
+    if (groupTasks.length <= 50) return 3;
+    return 5; // Reduced from 10 for better performance
+  }, [groupTasks.length]);
 
   // PERFORMANCE OPTIMIZATION: Memoize row renderer with better dependency management
   const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
     const task: Task | undefined = groupTasks[index];
     if (!task) return null;
+    
+    // PERFORMANCE OPTIMIZATION: Pre-calculate selection state
+    const isSelected = selectedTaskIds.includes(task.id);
     
     return (
       <div 
@@ -248,7 +283,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
           projectId={projectId}
           groupId={group.id}
           currentGrouping={currentGrouping}
-          isSelected={selectedTaskIds.includes(task.id)}
+          isSelected={isSelected}
           index={index}
           onSelect={onSelectTask}
           onToggleSubtasks={onToggleSubtasks}
@@ -262,23 +297,25 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
 
+  // PERFORMANCE OPTIMIZATION: Throttled scroll handler
+  const handleScroll = useCallback(() => {
+    if (headerScrollRef.current && scrollContainerRef.current) {
+      headerScrollRef.current.scrollLeft = scrollContainerRef.current.scrollLeft;
+    }
+  }, []);
+
   // Synchronize header scroll with body scroll
   useEffect(() => {
-    const handleScroll = () => {
-      if (headerScrollRef.current && scrollContainerRef.current) {
-        headerScrollRef.current.scrollLeft = scrollContainerRef.current.scrollLeft;
-      }
-    };
     const scrollDiv = scrollContainerRef.current;
     if (scrollDiv) {
-      scrollDiv.addEventListener('scroll', handleScroll);
+      scrollDiv.addEventListener('scroll', handleScroll, { passive: true });
     }
     return () => {
       if (scrollDiv) {
         scrollDiv.removeEventListener('scroll', handleScroll);
       }
     };
-  }, []);
+  }, [handleScroll]);
 
   return (
     <div className="virtualized-task-list" style={{ height: groupHeight }}>
@@ -363,52 +400,50 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
               width={width}
               itemCount={groupTasks.length}
               itemSize={TASK_ROW_HEIGHT}
-              overscanCount={overscanCount} // Dynamic overscan
+              overscanCount={overscanCount}
               className="react-window-list"
               style={{ minWidth: totalTableWidth }}
-              // PERFORMANCE OPTIMIZATION: Add performance-focused props
-              useIsScrolling={true}
-              itemData={{ 
-                groupTasks, 
-                group, 
-                projectId, 
-                currentGrouping, 
-                selectedTaskIds, 
-                onSelectTask, 
-                onToggleSubtasks, 
-                fixedColumns, 
-                scrollableColumns 
-              }}
+              // PERFORMANCE OPTIMIZATION: Remove all expensive props for maximum performance
+              useIsScrolling={false}
+              itemData={undefined}
+              // Disable all animations and transitions
+              onItemsRendered={() => {}}
+              onScroll={() => {}}
             >
               {Row}
             </List>
           ) : (
             // PERFORMANCE OPTIMIZATION: Use React.Fragment to reduce DOM nodes
             <React.Fragment>
-              {groupTasks.map((task: Task, index: number) => (
-                <div
-                  key={task.id}
-                  className="task-row-container"
-                  style={{
-                    height: TASK_ROW_HEIGHT,
-                    '--group-color': group.color || '#f0f0f0',
-                    contain: 'layout style', // CSS containment
-                  } as React.CSSProperties}
-                >
-                  <TaskRow
-                    task={task}
-                    projectId={projectId}
-                    groupId={group.id}
-                    currentGrouping={currentGrouping}
-                    isSelected={selectedTaskIds.includes(task.id)}
-                    index={index}
-                    onSelect={onSelectTask}
-                    onToggleSubtasks={onToggleSubtasks}
-                    fixedColumns={fixedColumns}
-                    scrollableColumns={scrollableColumns}
-                  />
-                </div>
-              ))}
+              {groupTasks.map((task: Task, index: number) => {
+                // PERFORMANCE OPTIMIZATION: Pre-calculate selection state
+                const isSelected = selectedTaskIds.includes(task.id);
+                
+                return (
+                  <div
+                    key={task.id}
+                    className="task-row-container"
+                    style={{
+                      height: TASK_ROW_HEIGHT,
+                      '--group-color': group.color || '#f0f0f0',
+                      contain: 'layout style', // CSS containment
+                    } as React.CSSProperties}
+                  >
+                    <TaskRow
+                      task={task}
+                      projectId={projectId}
+                      groupId={group.id}
+                      currentGrouping={currentGrouping}
+                      isSelected={isSelected}
+                      index={index}
+                      onSelect={onSelectTask}
+                      onToggleSubtasks={onToggleSubtasks}
+                      fixedColumns={fixedColumns}
+                      scrollableColumns={scrollableColumns}
+                    />
+                  </div>
+                );
+              })}
             </React.Fragment>
           )}
         </SortableContext>

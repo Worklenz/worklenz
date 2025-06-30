@@ -38,6 +38,7 @@ import {
 import './task-row-optimized.css';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSelectedTaskId, setShowTaskDrawer, fetchTask } from '@/features/task-drawer/task-drawer.slice';
+import useDragCursor from '@/hooks/useDragCursor';
 
 interface TaskRowProps {
   task: Task;
@@ -68,17 +69,22 @@ const STATUS_COLORS = {
   done: '#52c41a',
 } as const;
 
-// Memoized sub-components for better performance
+// Memoized sub-components for maximum performance
 const DragHandle = React.memo<{ isDarkMode: boolean; attributes: any; listeners: any }>(({ isDarkMode, attributes, listeners }) => (
-  <Button
-    variant="text"
-    size="small"
-    icon={<HolderOutlined />}
-    className="opacity-40 hover:opacity-100 cursor-grab active:cursor-grabbing"
-    isDarkMode={isDarkMode}
+  <div
+    className="drag-handle-optimized flex items-center justify-center w-6 h-6 opacity-60 hover:opacity-100"
+    style={{
+      transition: 'opacity 0.1s ease', // Faster transition
+    }}
+    data-dnd-drag-handle="true"
     {...attributes}
     {...listeners}
-  />
+  >
+    <HolderOutlined 
+      className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+      style={{ pointerEvents: 'none' }} // Prevent icon from interfering
+    />
+  </div>
 ));
 
 const TaskKey = React.memo<{ taskKey: string; isDarkMode: boolean }>(({ taskKey, isDarkMode }) => (
@@ -178,12 +184,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   fixedColumns,
   scrollableColumns,
 }) => {
-  // PERFORMANCE OPTIMIZATION: Implement progressive loading
-  // Immediately load first few tasks to prevent blank content for visible items
-  const [isFullyLoaded, setIsFullyLoaded] = useState((index !== undefined && index < 10) || false);
+  // PERFORMANCE OPTIMIZATION: Aggressive progressive loading for large lists
+  // Only fully load first 5 tasks and tasks that are visible
+  const [isFullyLoaded, setIsFullyLoaded] = useState((index !== undefined && index < 5) || false);
   const [isIntersecting, setIsIntersecting] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
-  const hasBeenFullyLoadedOnce = useRef((index !== undefined && index < 10) || false); // Track if we've ever been fully loaded
+  const hasBeenFullyLoadedOnce = useRef((index !== undefined && index < 5) || false); // Track if we've ever been fully loaded
   
   // PERFORMANCE OPTIMIZATION: Only connect to socket after component is visible
   const { socket, connected } = useSocket();
@@ -210,18 +216,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         const [entry] = entries;
         if (entry.isIntersecting && !isIntersecting && !hasBeenFullyLoadedOnce.current) {
           setIsIntersecting(true);
-          // Delay full loading slightly to prioritize visible content
-          const timeoutId = setTimeout(() => {
-            setIsFullyLoaded(true);
-            hasBeenFullyLoadedOnce.current = true; // Mark as fully loaded once
-          }, 50);
-          
-          return () => clearTimeout(timeoutId);
+          // More aggressive loading - load immediately when visible
+          setIsFullyLoaded(true);
+          hasBeenFullyLoadedOnce.current = true; // Mark as fully loaded once
         }
       },
       {
         root: null,
-        rootMargin: '100px', // Start loading 100px before coming into view
+        rootMargin: '50px', // Reduced from 100px - load closer to viewport
         threshold: 0.1,
       }
     );
@@ -237,6 +239,10 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   // Once fully loaded, always render full to prevent blanking during real-time updates
   const shouldRenderFull = isFullyLoaded || hasBeenFullyLoadedOnce.current || isDragOverlay || editTaskName;
   
+  // PERFORMANCE OPTIMIZATION: Minimal initial render for non-visible tasks
+  // Only render essential columns during initial load to reduce DOM nodes
+  const shouldRenderMinimal = !shouldRenderFull && !isDragOverlay;
+  
   // REAL-TIME UPDATES: Ensure content stays loaded during socket updates
   useEffect(() => {
     if (shouldRenderFull && !hasBeenFullyLoadedOnce.current) {
@@ -244,7 +250,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     }
   }, [shouldRenderFull]);
 
-  // Optimized drag and drop setup with better performance
+  // Optimized drag and drop setup with maximum performance
   const {
     attributes,
     listeners,
@@ -260,8 +266,9 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       groupId,
     },
     disabled: isDragOverlay || !shouldRenderFull, // Disable drag until fully loaded
-    // Optimize animation performance
-    animateLayoutChanges: () => false, // Disable layout animations for better performance
+    // PERFORMANCE OPTIMIZATION: Disable all animations for maximum performance
+    animateLayoutChanges: () => false, // Disable layout animations
+    transition: null, // Disable transitions
   });
 
   // Get theme from Redux store - memoized selector
@@ -327,19 +334,19 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     setShowAddSubtask(false);
   }, []);
 
-  // Optimized style calculations with better memoization
+  // Optimized style calculations with maximum performance
   const dragStyle = useMemo(() => {
     if (!isDragging && !transform) return {};
     
     return {
       transform: CSS.Transform.toString(transform),
-      transition,
+      transition: 'none', // Disable all transitions for instant response
       opacity: isDragging ? 0.5 : 1,
       zIndex: isDragging ? 1000 : 'auto',
-      // Add GPU acceleration for better performance
+      // PERFORMANCE OPTIMIZATION: Force GPU acceleration
       willChange: isDragging ? 'transform' : 'auto',
     };
-  }, [transform, transition, isDragging]);
+  }, [transform, isDragging]);
 
   // Memoized event handlers with better dependency tracking
   const handleSelectChange = useCallback((checked: boolean) => {
@@ -397,7 +404,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
 
   // Optimized class name calculations with better memoization
   const styleClasses = useMemo(() => {
-    const base = 'border-b transition-all duration-200'; // Reduced duration for better performance
+    const base = 'border-b transition-all duration-150'; // Reduced duration for better performance
     const theme = isDarkMode 
       ? 'border-gray-600 hover:bg-gray-800' 
       : 'border-gray-300 hover:bg-gray-50';
@@ -411,7 +418,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     
     return {
       container: `${base} ${theme} ${background} ${selected} ${overlay}`,
-      taskName: `text-sm font-medium flex-1 overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-200 cursor-pointer ${
+      taskName: `text-sm font-medium flex-1 overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-150 cursor-pointer ${
         isDarkMode ? 'text-gray-100 hover:text-blue-400' : 'text-gray-900 hover:text-blue-600'
       } ${task.progress === 100 ? `line-through ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}` : ''}`,
     };
@@ -423,16 +430,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     assignee: createAssigneeAdapter(task),
   }), [task]);
 
-  // PERFORMANCE OPTIMIZATION: Simplified column rendering for initial load
-  const renderColumnSimple = useCallback((col: { key: string; width: number }, isFixed: boolean, index: number, totalColumns: number) => {
-    // Fix border logic: if this is a fixed column, only consider it "last" if there are no scrollable columns
-    // If this is a scrollable column, use the normal logic
+  // PERFORMANCE OPTIMIZATION: Minimal column rendering for initial load
+  const renderMinimalColumn = useCallback((col: { key: string; width: number }, isFixed: boolean, index: number, totalColumns: number) => {
     const isActuallyLast = isFixed 
       ? (index === totalColumns - 1 && (!scrollableColumns || scrollableColumns.length === 0))
       : (index === totalColumns - 1);
     const borderClasses = `${isActuallyLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
     
-    // Only render essential columns during initial load
+    // Only render essential columns during minimal load
     switch (col.key) {
       case 'drag':
         return (
@@ -464,6 +469,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
             <div className="flex-1 min-w-0 flex flex-col justify-center h-full overflow-hidden">
               <div className="flex items-center gap-2 h-5 overflow-hidden">
+                {/* Always reserve space for expand icon */}
+                <div style={{ width: 20, display: 'inline-block' }} />
                 <div className="flex-1 min-w-0">
                   <Typography.Text
                     ellipsis={{ tooltip: task.title }}
@@ -477,139 +484,21 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           </div>
         );
       
-      case 'status':
-        return (
-          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-              {task.status === 'todo' ? 'To Do' : 
-               task.status === 'doing' ? 'Doing' : 
-               task.status === 'done' ? 'Done' : 
-               task.status || 'To Do'}
-            </div>
-          </div>
-        );
-      
-      case 'progress':
-        return (
-          <div key={col.key} className={`flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              {task.progress || 0}%
-            </div>
-          </div>
-        );
-      
-      case 'priority':
-        return (
-          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-              {task.priority === 'critical' ? 'Critical' :
-               task.priority === 'high' ? 'High' :
-               task.priority === 'medium' ? 'Medium' :
-               task.priority === 'low' ? 'Low' :
-               task.priority || 'Medium'}
-            </div>
-          </div>
-        );
-      
-      case 'phase':
-        return (
-          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-              {task.phase || 'No Phase'}
-            </div>
-          </div>
-        );
-      
-      case 'members':
-        return (
-          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className="flex items-center gap-2">
-              {task.assignee_names && task.assignee_names.length > 0 ? (
-                <div className="flex items-center gap-1">
-                  {task.assignee_names.slice(0, 3).map((member, index) => (
-                    <div
-                      key={index}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                        isDarkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
-                      }`}
-                      title={member.name}
-                    >
-                      {member.name ? member.name.charAt(0).toUpperCase() : '?'}
-                    </div>
-                  ))}
-                  {task.assignee_names.length > 3 && (
-                    <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                        isDarkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
-                      }`}
-                    >
-                      +{task.assignee_names.length - 3}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className={`w-6 h-6 rounded-full border-2 border-dashed flex items-center justify-center ${
-                  isDarkMode ? 'border-gray-600' : 'border-gray-300'
-                }`}>
-                  <UserOutlined className={`text-xs ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      
-      case 'labels':
-        return (
-          <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className="flex items-center gap-1 flex-wrap">
-              {task.labels && task.labels.length > 0 ? (
-                task.labels.slice(0, 3).map((label, index) => (
-                  <div
-                    key={index}
-                    className={`px-2 py-1 text-xs rounded ${
-                      isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
-                    }`}
-                    style={{
-                      backgroundColor: label.color || (isDarkMode ? '#374151' : '#f3f4f6'),
-                      color: label.color ? '#ffffff' : undefined
-                    }}
-                  >
-                    {label.name || 'Label'}
-                  </div>
-                ))
-              ) : (
-                <div className={`px-2 py-1 text-xs rounded border-dashed border ${
-                  isDarkMode ? 'border-gray-600 text-gray-600' : 'border-gray-300 text-gray-400'
-                }`}>
-                  No labels
-                </div>
-              )}
-              {task.labels && task.labels.length > 3 && (
-                <div className={`px-2 py-1 text-xs rounded ${
-                  isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  +{task.labels.length - 3}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      
       default:
-        // For non-essential columns, show placeholder during initial load
+        // For non-essential columns, show minimal placeholder
         return (
           <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className={`w-8 h-3 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} animate-pulse`}></div>
+            <div className={`w-6 h-3 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
           </div>
         );
     }
-  }, [isDarkMode, task, isSelected, handleSelectChange, styleClasses]);
+  }, [isDarkMode, task, isSelected, handleSelectChange, styleClasses, scrollableColumns]);
 
   // Optimized column rendering with better performance
   const renderColumn = useCallback((col: { key: string; width: number }, isFixed: boolean, index: number, totalColumns: number) => {
     // Use simplified rendering for initial load
     if (!shouldRenderFull) {
-      return renderColumnSimple(col, isFixed, index, totalColumns);
+      return renderMinimalColumn(col, isFixed, index, totalColumns);
     }
 
     // Full rendering logic (existing code)
@@ -996,10 +885,20 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         return null;
     }
   }, [
-    shouldRenderFull, renderColumnSimple, isDarkMode, task, isSelected, editTaskName, taskName, adapters, groupId, projectId,
+    shouldRenderFull, renderMinimalColumn, isDarkMode, task, isSelected, editTaskName, taskName, adapters, groupId, projectId,
     attributes, listeners, handleSelectChange, handleTaskNameSave, handleDateChange,
     dateValues, styleClasses
   ]);
+
+  // Apply global cursor style when dragging
+  useDragCursor(isDragging);
+
+  // Compute theme class
+  const themeClass = isDarkMode ? 'dark' : '';
+
+  if (isDragging) {
+    console.log('TaskRow isDragging:', task.id);
+  }
 
   return (
     <div
@@ -1008,8 +907,11 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         rowRef.current = node;
       }}
       style={dragStyle}
-      className={`${styleClasses.container} task-row-optimized ${shouldRenderFull ? 'fully-loaded' : 'initial-load'} ${hasBeenFullyLoadedOnce.current ? 'stable-content' : ''}`}
+      className={`task-row task-row-optimized ${themeClass} ${isSelected ? 'selected' : ''} ${isDragOverlay ? 'drag-overlay' : ''} ${isDragging ? 'is-dragging' : ''}`}
+      data-dnd-draggable="true"
+      data-dnd-dragging={isDragging ? 'true' : 'false'}
       data-task-id={task.id}
+      data-group-id={groupId}
     >
       <div className="flex h-10 max-h-10 overflow-visible relative">
         {/* Fixed Columns */}
@@ -1020,7 +922,11 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
               width: fixedColumns.reduce((sum, col) => sum + col.width, 0),
             }}
           >
-            {fixedColumns.map((col, index) => renderColumn(col, true, index, fixedColumns.length))}
+            {fixedColumns.map((col, index) => 
+              shouldRenderMinimal 
+                ? renderMinimalColumn(col, true, index, fixedColumns.length)
+                : renderColumn(col, true, index, fixedColumns.length)
+            )}
           </div>
         )}
         
@@ -1033,7 +939,11 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
               minWidth: scrollableColumns.reduce((sum, col) => sum + col.width, 0) 
             }}
           >
-            {scrollableColumns.map((col, index) => renderColumn(col, false, index, scrollableColumns.length))}
+            {scrollableColumns.map((col, index) => 
+              shouldRenderMinimal 
+                ? renderMinimalColumn(col, false, index, scrollableColumns.length)
+                : renderColumn(col, false, index, scrollableColumns.length)
+            )}
           </div>
         )}
       </div>
@@ -1054,7 +964,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                   // Fix border logic for add subtask row: fixed columns should have right border if scrollable columns exist
                   const isActuallyLast = index === fixedColumns.length - 1 && (!scrollableColumns || scrollableColumns.length === 0);
                   const borderClasses = `${isActuallyLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
-                  
+                   
                   if (col.key === 'task') {
                     return (
                       <div
@@ -1123,7 +1033,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                 {scrollableColumns.map((col, index) => {
                   const isLast = index === scrollableColumns.length - 1;
                   const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
-                  
+                   
                   return (
                     <div
                       key={col.key}
