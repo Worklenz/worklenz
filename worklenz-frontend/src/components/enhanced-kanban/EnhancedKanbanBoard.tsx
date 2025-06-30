@@ -30,6 +30,8 @@ import {
   setDragState,
   reorderTasks,
   reorderGroups,
+  fetchEnhancedKanbanTaskAssignees,
+  fetchEnhancedKanbanLabels,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import EnhancedKanbanGroup from './EnhancedKanbanGroup';
 import EnhancedKanbanTaskCard from './EnhancedKanbanTaskCard';
@@ -46,6 +48,7 @@ import { IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import EnhancedKanbanCreateSection from './EnhancedKanbanCreateSection';
 import ImprovedTaskFilters from '../task-management/improved-task-filters';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
+import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
 
 // Import the TaskListFilters component
 const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
@@ -68,6 +71,10 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   const groupBy = useSelector((state: RootState) => state.enhancedKanbanReducer.groupBy);
   const project = useAppSelector((state: RootState) => state.projectReducer.project);
   const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);
+
+  // Load filter data
+  useFilterDataLoader();
+
   // Local state for drag overlay
   const [activeTask, setActiveTask] = useState<any>(null);
   const [activeGroup, setActiveGroup] = useState<any>(null);
@@ -86,6 +93,9 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   useEffect(() => {
     if (projectId) {
       dispatch(fetchEnhancedKanbanGroups(projectId) as any);
+      // Load filter data for enhanced kanban
+      dispatch(fetchEnhancedKanbanTaskAssignees(projectId) as any);
+      dispatch(fetchEnhancedKanbanLabels(projectId) as any);
     }
     if (!statusCategories.length) {
       dispatch(fetchStatusesCategories() as any);
