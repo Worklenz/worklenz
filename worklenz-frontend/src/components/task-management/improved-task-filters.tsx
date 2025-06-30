@@ -367,7 +367,7 @@ const FilterDropdown: React.FC<{
             ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold')
             : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+          hover:shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={isOpen}
@@ -397,7 +397,7 @@ const FilterDropdown: React.FC<{
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   placeholder={`Search ${section.label.toLowerCase()}...`}
-                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
+                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
                     isDarkMode
                       ? 'bg-[#141414] text-[#d9d9d9] placeholder-gray-400 border-[#303030]'
                       : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
@@ -520,7 +520,7 @@ const SearchFilter: React.FC<{
       {!isExpanded ? (
         <button
           onClick={handleToggle}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
             themeClasses.containerBg === 'bg-gray-800' ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
           }`}
         >
@@ -537,7 +537,7 @@ const SearchFilter: React.FC<{
               value={localValue}
               onChange={(e) => setLocalValue(e.target.value)}
               placeholder={placeholder}
-              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
+              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
                 isDarkMode
                   ? 'bg-[#141414] text-[#d9d9d9] placeholder-gray-400 border-[#303030]'
                   : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
@@ -555,7 +555,7 @@ const SearchFilter: React.FC<{
           </div>
           <button
             type="submit"
-            className="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors duration-200"
+            className="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors duration-200"
           >
             Search
           </button>
@@ -622,7 +622,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
             ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold')
             : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+          hover:shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={open}
@@ -977,7 +977,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   }, [dispatch, projectId, position, showArchived]);
 
   return (
-    <div className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-sm ${className}`}>
+    <div className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-xs ${className}`}>
       <div className="flex flex-wrap items-center gap-2">
         {/* Left Section - Main Filters */}
         <div className="flex flex-wrap items-center gap-2">

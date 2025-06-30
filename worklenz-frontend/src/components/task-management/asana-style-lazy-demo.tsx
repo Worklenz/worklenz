@@ -15,7 +15,7 @@ const HeavyAssigneeSelector = React.lazy(() =>
   new Promise<{ default: React.ComponentType }>((resolve) => 
     setTimeout(() => resolve({
       default: () => (
-        <div className="p-4 border rounded bg-blue-50">
+        <div className="p-4 border rounded-sm bg-blue-50">
           <Text strong>🚀 Heavy Assignee Selector Loaded!</Text>
           <br />
           <Text type="secondary">This component contains:</Text>
@@ -36,7 +36,7 @@ const HeavyDatePicker = React.lazy(() =>
   new Promise<{ default: React.ComponentType }>((resolve) => 
     setTimeout(() => resolve({
       default: () => (
-        <div className="p-4 border rounded bg-green-50">
+        <div className="p-4 border rounded-sm bg-green-50">
           <Text strong>📅 Heavy Date Picker Loaded!</Text>
           <br />
           <Text type="secondary">This component contains:</Text>
@@ -57,7 +57,7 @@ const HeavyPrioritySelector = React.lazy(() =>
   new Promise<{ default: React.ComponentType }>((resolve) => 
     setTimeout(() => resolve({
       default: () => (
-        <div className="p-4 border rounded bg-orange-50">
+        <div className="p-4 border rounded-sm bg-orange-50">
           <Text strong>🔥 Heavy Priority Selector Loaded!</Text>
           <br />
           <Text type="secondary">This component contains:</Text>
@@ -78,7 +78,7 @@ const HeavyLabelsSelector = React.lazy(() =>
   new Promise<{ default: React.ComponentType }>((resolve) => 
     setTimeout(() => resolve({
       default: () => (
-        <div className="p-4 border rounded bg-purple-50">
+        <div className="p-4 border rounded-sm bg-purple-50">
           <Text strong>🏷️ Heavy Labels Selector Loaded!</Text>
           <br />
           <Text type="secondary">This component contains:</Text>
@@ -163,7 +163,7 @@ const AsanaStyleLazyDemo: React.FC = () => {
     <Card className="max-w-4xl mx-auto">
       <Title level={3}>🎯 Asana-Style Lazy Loading Demo</Title>
       
-      <div className="mb-4 p-4 bg-gray-50 rounded">
+      <div className="mb-4 p-4 bg-gray-50 rounded-sm">
         <Text strong>Performance Benefits:</Text>
         <ul className="mt-2 text-sm">
           <li>✅ <strong>Faster Initial Load:</strong> Only lightweight placeholders load initially</li>
@@ -220,25 +220,25 @@ const AsanaStyleLazyDemo: React.FC = () => {
 
         <div className="space-y-4">
           {showComponents.assignee && (
-            <Suspense fallback={<div className="p-4 border rounded bg-gray-100">Loading assignee selector...</div>}>
+            <Suspense fallback={<div className="p-4 border rounded-sm bg-gray-100">Loading assignee selector...</div>}>
               <HeavyAssigneeSelector />
             </Suspense>
           )}
 
           {showComponents.date && (
-            <Suspense fallback={<div className="p-4 border rounded bg-gray-100">Loading date picker...</div>}>
+            <Suspense fallback={<div className="p-4 border rounded-sm bg-gray-100">Loading date picker...</div>}>
               <HeavyDatePicker />
             </Suspense>
           )}
 
           {showComponents.priority && (
-            <Suspense fallback={<div className="p-4 border rounded bg-gray-100">Loading priority selector...</div>}>
+            <Suspense fallback={<div className="p-4 border rounded-sm bg-gray-100">Loading priority selector...</div>}>
               <HeavyPrioritySelector />
             </Suspense>
           )}
 
           {showComponents.labels && (
-            <Suspense fallback={<div className="p-4 border rounded bg-gray-100">Loading labels selector...</div>}>
+            <Suspense fallback={<div className="p-4 border rounded-sm bg-gray-100">Loading labels selector...</div>}>
               <HeavyLabelsSelector />
             </Suspense>
           )}
