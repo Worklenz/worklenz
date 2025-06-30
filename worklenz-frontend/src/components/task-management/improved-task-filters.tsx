@@ -42,7 +42,19 @@ import {
   setPriorities as setKanbanPriorities,
   setMembers as setKanbanMembers,
   fetchEnhancedKanbanGroups,
+  setSelectedPriorities as setKanbanSelectedPriorities,
+  setBoardSearch as setKanbanBoardSearch,
+  setTaskAssigneeSelection,
+  setLabelSelection,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+
+// Board slice imports for compatibility
+import {
+  setBoardSearch,
+  setBoardPriorities,
+  setBoardMembers,
+  setBoardLabels,
+} from '@/features/board/board-slice';
 
 // Performance constants
 const FILTER_DEBOUNCE_DELAY = 300; // ms
@@ -60,6 +72,10 @@ const selectFilterData = createSelector(
     (state: any) => state.taskReducer.taskAssignees,
     (state: any) => state.boardReducer.taskAssignees,
     (state: any) => state.projectReducer.project,
+    // Enhanced kanban data - use original data for filter options
+    (state: any) => state.enhancedKanbanReducer.originalTaskAssignees,
+    (state: any) => state.enhancedKanbanReducer.originalLabels,
+    (state: any) => state.enhancedKanbanReducer.priorities,
   ],
   (
     priorities,
@@ -69,7 +85,10 @@ const selectFilterData = createSelector(
     boardLabels,
     taskAssignees,
     boardAssignees,
-    project
+    project,
+    kanbanOriginalTaskAssignees,
+    kanbanOriginalLabels,
+    kanbanPriorities
   ) => ({
     priorities: priorities || [],
     taskPriorities: taskPriorities || [],
@@ -80,6 +99,10 @@ const selectFilterData = createSelector(
     boardAssignees: boardAssignees || [],
     project,
     selectedPriorities: taskPriorities || [], // Use taskReducer.priorities as selected priorities
+    // Enhanced kanban data - use original data for filter options
+    kanbanTaskAssignees: kanbanOriginalTaskAssignees || [],
+    kanbanLabels: kanbanOriginalLabels || [],
+    kanbanPriorities: kanbanPriorities || [],
   })
 );
 
@@ -115,7 +138,7 @@ function createDebouncedFunction<T extends (...args: any[]) => void>(
   delay: number
 ): T & { cancel: () => void } {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
+
   const debouncedFunc = ((...args: any[]) => {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -125,14 +148,14 @@ function createDebouncedFunction<T extends (...args: any[]) => void>(
       timeoutId = null;
     }, delay);
   }) as T & { cancel: () => void };
-  
+
   debouncedFunc.cancel = () => {
     if (timeoutId) {
       clearTimeout(timeoutId);
       timeoutId = null;
     }
   };
-  
+
   return debouncedFunc;
 }
 
@@ -141,7 +164,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
   const { t } = useTranslation('task-list-filters');
   const [searchParams] = useSearchParams();
   const { projectView } = useTabSearchParam();
-  
+
   // Use optimized selector to get all filter data at once
   const filterData = useAppSelector(selectFilterData);
   const currentGrouping = useAppSelector(selectCurrentGrouping);
@@ -160,11 +183,15 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
       const currentLabels = kanbanState.labels || [];
       const currentAssignees = kanbanState.taskAssignees || [];
       const groupByValue = kanbanState.groupBy || 'status';
+
+      // Get priorities from the project or use empty array as fallback
+      const projectPriorities = (kanbanProject as any)?.priorities || [];
+
       return [
         {
           id: 'priority',
           label: 'Priority',
-          options: (kanbanProject?.priorities || []).map((p: any) => ({
+          options: filterData.priorities.map((p: any) => ({
             value: p.id,
             label: p.name,
             color: p.color_code,
@@ -181,7 +208,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           multiSelect: true,
           searchable: true,
           selectedValues: currentAssignees.filter((m: any) => m.selected && m.id).map((m: any) => m.id || ''),
-          options: currentAssignees.map((assignee: any) => ({
+          options: filterData.kanbanTaskAssignees.map((assignee: any) => ({
             id: assignee.id || '',
             label: assignee.name || '',
             value: assignee.id || '',
@@ -196,7 +223,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           multiSelect: true,
           searchable: true,
           selectedValues: currentLabels.filter((l: any) => l.selected && l.id).map((l: any) => l.id || ''),
-          options: currentLabels.map((label: any) => ({
+          options: filterData.kanbanLabels.map((label: any) => ({
             id: label.id || '',
             label: label.name || '',
             value: label.id || '',
@@ -214,7 +241,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           options: [
             { id: 'status', label: t('statusText'), value: 'status' },
             { id: 'priority', label: t('priorityText'), value: 'priority' },
-            { id: 'phase', label: kanbanProject?.phase_label || t('phaseText'), value: 'phase' },
+            { id: 'phase', label: (kanbanProject as any)?.phase_label || t('phaseText'), value: 'phase' },
           ],
         },
       ];
@@ -380,8 +407,8 @@ const FilterDropdown: React.FC<{
             {selectedCount}
           </span>
         )}
-        <DownOutlined 
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+        <DownOutlined
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -397,11 +424,10 @@ const FilterDropdown: React.FC<{
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   placeholder={`Search ${section.label.toLowerCase()}...`}
-                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
-                    isDarkMode
-                      ? 'bg-[#141414] text-[#d9d9d9] placeholder-gray-400 border-[#303030]'
-                      : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                  }`}
+                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${isDarkMode
+                    ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                    : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+                    }`}
                 />
               </div>
             </div>
@@ -417,7 +443,7 @@ const FilterDropdown: React.FC<{
               <div className="p-0.5">
                 {filteredOptions.map((option) => {
                   const isSelected = section.selectedValues.includes(option.value);
-                  
+
                   return (
                     <button
                       key={option.id}
@@ -444,7 +470,7 @@ const FilterDropdown: React.FC<{
 
                       {/* Color indicator */}
                       {option.color && (
-                        <div 
+                        <div
                           className="w-2.5 h-2.5 rounded-full"
                           style={{ backgroundColor: option.color }}
                         />
@@ -520,9 +546,8 @@ const SearchFilter: React.FC<{
       {!isExpanded ? (
         <button
           onClick={handleToggle}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
-            themeClasses.containerBg === 'bg-gray-800' ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
-          }`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${themeClasses.containerBg === 'bg-gray-800' ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
+            }`}
         >
           <SearchOutlined className="w-3.5 h-3.5" />
           <span>Search</span>
@@ -537,11 +562,10 @@ const SearchFilter: React.FC<{
               value={localValue}
               onChange={(e) => setLocalValue(e.target.value)}
               placeholder={placeholder}
-              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
-                isDarkMode
-                  ? 'bg-[#141414] text-[#d9d9d9] placeholder-gray-400 border-[#303030]'
-                  : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-              }`}
+              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${isDarkMode
+                ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+                }`}
             />
             {localValue && (
               <button
@@ -584,11 +608,11 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Debounced save to localStorage using enhanced debounce
-  const debouncedSaveFields = useMemo(() => 
+  const debouncedSaveFields = useMemo(() =>
     createDebouncedFunction((fieldsToSave: typeof fields) => {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fieldsToSave));
-    }, 300), 
-  []);
+    }, 300),
+    []);
 
   useEffect(() => {
     debouncedSaveFields(fields);
@@ -635,8 +659,8 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
             {visibleCount}
           </span>
         )}
-        <DownOutlined 
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} 
+        <DownOutlined
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -653,7 +677,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
               <div className="p-0.5">
                 {sortedFields.map((field) => {
                   const isSelected = field.visible;
-                  
+
                   return (
                     <button
                       key={field.key}
@@ -695,16 +719,19 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
 };
 
 // Main Component
-const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ 
-  position, 
-  className = '' 
+const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
+  position,
+  className = ''
 }) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
-  
+
   // Get current state values for filter updates
   const currentTaskAssignees = useAppSelector(state => state.taskReducer.taskAssignees);
   const currentTaskLabels = useAppSelector(state => state.taskReducer.labels);
+
+  // Enhanced Kanban state
+  const kanbanState = useAppSelector((state: RootState) => state.enhancedKanbanReducer);
 
   // Use the filter data loader hook
   useFilterDataLoader();
@@ -783,9 +810,9 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
       if (projectView === 'list') {
         dispatch(setSearch(value));
       } else {
-        dispatch(setBoardSearch(value));
+        dispatch(setKanbanSearch(value));
       }
-      
+
       // Trigger task refetch with new search value
       dispatch(fetchTasksV3(projectId));
     }, SEARCH_DEBOUNCE_DELAY);
@@ -799,7 +826,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
 
   // Calculate active filters count - memoized to prevent unnecessary recalculations
   const calculatedActiveFiltersCount = useMemo(() => {
-    const count = filterSections.reduce((acc, section) => 
+    const count = filterSections.reduce((acc, section) =>
       section.id === 'groupBy' ? acc : acc + section.selectedValues.length, 0
     );
     return count + (searchValue ? 1 : 0);
@@ -831,17 +858,42 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
         return;
       }
       if (sectionId === 'assignees') {
-        dispatch(setKanbanTaskAssignees(
-          // Map to {id, selected, ...}
-          values.map(id => ({ id, selected: true }))
-        ));
+        // Update individual assignee selections using the new action
+        const currentAssignees = kanbanState.taskAssignees || [];
+        const currentSelectedIds = currentAssignees.filter((m: any) => m.selected).map((m: any) => m.id);
+
+        // First, clear all selections
+        currentAssignees.forEach((assignee: any) => {
+          if (assignee.selected) {
+            dispatch(setTaskAssigneeSelection({ id: assignee.id, selected: false }));
+          }
+        });
+
+        // Then set the new selections
+        values.forEach(id => {
+          dispatch(setTaskAssigneeSelection({ id, selected: true }));
+        });
+
         dispatch(fetchEnhancedKanbanGroups(projectId));
         return;
       }
       if (sectionId === 'labels') {
-        dispatch(setKanbanLabels(
-          values.map(id => ({ id, selected: true }))
-        ));
+        // Update individual label selections using the new action
+        const currentLabels = kanbanState.labels || [];
+        const currentSelectedIds = currentLabels.filter((l: any) => l.selected).map((l: any) => l.id);
+
+        // First, clear all selections
+        currentLabels.forEach((label: any) => {
+          if (label.selected) {
+            dispatch(setLabelSelection({ id: label.id, selected: false }));
+          }
+        });
+
+        // Then set the new selections
+        values.forEach(id => {
+          dispatch(setLabelSelection({ id, selected: true }));
+        });
+
         dispatch(fetchEnhancedKanbanGroups(projectId));
         return;
       }
@@ -853,7 +905,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
         return;
       }
       if (sectionId === 'priority') {
-        dispatch(setSelectedPriorities(values));
+        dispatch(setPriorities(values));
         dispatch(fetchTasksV3(projectId));
         return;
       }
@@ -877,86 +929,92 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
       }
 
     }
-  }, [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels]);
+  }, [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState]);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
 
-    
+
     if (!projectId) return;
-      
+
     if (position === 'board') {
       dispatch(setKanbanSearch(value));
-      dispatch(fetchEnhancedKanbanGroups(projectId));
+      if (projectId) {
+        dispatch(fetchEnhancedKanbanGroups(projectId));
+      }
     } else {
       // Use debounced search
-      debouncedSearchChangeRef.current?.(projectId, value);
+      if (projectId) {
+        debouncedSearchChangeRef.current?.(projectId, value);
+      }
     }
-    
-    
+
+
   }, [dispatch, projectId, position]);
 
   const clearAllFilters = useCallback(async () => {
     if (!projectId || clearingFilters) return;
-    
+
     // Set loading state to prevent multiple clicks
     setClearingFilters(true);
-    
+
     try {
       // Cancel any pending debounced calls
       debouncedFilterChangeRef.current?.cancel();
       debouncedSearchChangeRef.current?.cancel();
-      
+
       // Batch all state updates together to prevent multiple re-renders
       const batchUpdates = () => {
         // Clear local state immediately for UI feedback
         setSearchValue('');
         setShowArchived(false);
-        
+
         // Update local filter sections state immediately
         setFilterSections(prev => prev.map(section => ({
           ...section,
           selectedValues: section.id === 'groupBy' ? section.selectedValues : [] // Keep groupBy, clear others
         })));
       };
-      
+
       // Execute all local state updates in a batch
       batchUpdates();
-      
+
       // Prepare all Redux actions to be dispatched together
       const reduxUpdates = () => {
         // Clear search based on view
         if (projectView === 'list') {
           dispatch(setSearch(''));
         } else {
-          dispatch(setBoardSearch(''));
+          dispatch(setKanbanBoardSearch(''));
         }
-        
+
         // Clear label filters
         const clearedLabels = currentTaskLabels.map(label => ({
           ...label,
           selected: false
         }));
         dispatch(setLabels(clearedLabels));
-        
+
         // Clear assignee filters
         const clearedAssignees = currentTaskAssignees.map(member => ({
           ...member,
           selected: false
         }));
         dispatch(setMembers(clearedAssignees));
-        
+
         // Clear priority filters
         dispatch(setPriorities([]));
       };
-      
+
       // Execute Redux updates
       reduxUpdates();
-      
+
       // Use a short timeout to batch Redux state updates before API call
       // This ensures all filter state is updated before the API call
       setTimeout(() => {
-        dispatch(fetchTasksV3(projectId));
+        if (projectId) {
+          dispatch(fetchTasksV3(projectId));
+        }
         // Reset loading state after API call is initiated
         setTimeout(() => setClearingFilters(false), 100);
       }, 0);
@@ -970,7 +1028,9 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     setShowArchived(!showArchived);
     if (position === 'board') {
       dispatch(setKanbanArchived(!showArchived));
-      dispatch(fetchEnhancedKanbanGroups(projectId));
+      if (projectId) {
+        dispatch(fetchEnhancedKanbanGroups(projectId));
+      }
     } else {
       // ... existing logic ...
     }
@@ -1022,13 +1082,12 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
               <button
                 onClick={clearAllFilters}
                 disabled={clearingFilters}
-                className={`text-xs font-medium transition-colors duration-150 ${
-                  clearingFilters 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : isDarkMode 
-                      ? 'text-blue-400 hover:text-blue-300' 
-                      : 'text-blue-600 hover:text-blue-700'
-                }`}
+                className={`text-xs font-medium transition-colors duration-150 ${clearingFilters
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'text-blue-400 hover:text-blue-300'
+                    : 'text-blue-600 hover:text-blue-700'
+                  }`}
               >
                 {clearingFilters ? 'Clearing...' : 'Clear all'}
               </button>
@@ -1073,23 +1132,27 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
                   if (projectId) {
                     // Cancel pending search and immediately clear
                     debouncedSearchChangeRef.current?.cancel();
-                    if (projectView === 'list') {
-                      dispatch(setSearch(''));
+                    if (position === 'board') {
+                      dispatch(setKanbanSearch(''));
+                      dispatch(fetchEnhancedKanbanGroups(projectId));
                     } else {
-                      dispatch(setBoardSearch(''));
+                      if (projectView === 'list') {
+                        dispatch(setSearch(''));
+                      } else {
+                        dispatch(setKanbanBoardSearch(''));
+                      }
+                      dispatch(fetchTasksV3(projectId));
                     }
-                    dispatch(fetchTasksV3(projectId));
                   }
                 }}
-                className={`ml-1 rounded-full p-0.5 transition-colors duration-150 ${
-                  isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-200'
-                }`}
+                className={`ml-1 rounded-full p-0.5 transition-colors duration-150 ${isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-200'
+                  }`}
               >
                 <CloseOutlined className="w-2.5 h-2.5" />
               </button>
             </div>
           )}
-          
+
           {filterSectionsData
             .filter(section => section.id !== 'groupBy') // <-- skip groupBy
             .flatMap((section) =>
@@ -1103,7 +1166,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
                     className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${themeClasses.pillBg} ${themeClasses.pillText}`}
                   >
                     {option.color && (
-                      <div 
+                      <div
                         className="w-2 h-2 rounded-full"
                         style={{ backgroundColor: option.color }}
                       />
@@ -1112,19 +1175,18 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
                     <button
                       onClick={() => {
                         // Update local state immediately for UI feedback
-                        setFilterSections(prev => prev.map(s => 
-                          s.id === section.id 
+                        setFilterSections(prev => prev.map(s =>
+                          s.id === section.id
                             ? { ...s, selectedValues: s.selectedValues.filter(v => v !== value) }
                             : s
                         ));
-                        
+
                         // Use debounced API call
                         const newValues = section.selectedValues.filter(v => v !== value);
                         handleSelectionChange(section.id, newValues);
                       }}
-                      className={`ml-1 rounded-full p-0.5 transition-colors duration-150 ${
-                        isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'
-                      }`}
+                      className={`ml-1 rounded-full p-0.5 transition-colors duration-150 ${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'
+                        }`}
                     >
                       <CloseOutlined className="w-2.5 h-2.5" />
                     </button>
