@@ -92,7 +92,7 @@ const AvatarGroup: React.FC<AvatarGroupProps> = ({
           isDarkMode={isDarkMode}
         >
           <div 
-            className={`rounded-full flex items-center justify-center text-white font-medium shadow-sm border-2 cursor-pointer ${
+            className={`rounded-full flex items-center justify-center text-white font-medium shadow-xs border-2 cursor-pointer ${
               isDarkMode 
                 ? 'bg-gray-600 border-gray-700' 
                 : 'bg-gray-400 border-white'

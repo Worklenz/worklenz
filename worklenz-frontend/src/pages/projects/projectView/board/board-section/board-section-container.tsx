@@ -99,7 +99,7 @@ const BoardSectionCardContainer = ({
     <Flex
       gap={16}
       align="flex-start"
-      className="max-w-screen max-h-[620px] min-h-[620px] overflow-x-scroll p-[1px]"
+      className="max-w-screen max-h-[620px] min-h-[620px] overflow-x-scroll p-px"
     >
       <SortableContext
         items={datasource?.map((section: any) => section.id)}

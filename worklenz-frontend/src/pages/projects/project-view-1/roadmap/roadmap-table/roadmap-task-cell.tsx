@@ -24,7 +24,7 @@ const RoadmapTaskCell = ({ task, isSubtask = false }: RoadmapTaskCellProps) => {
     return (
       <button
         onClick={() => dispatch(toggleTaskExpansion(id))}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
       >
         {task.isExpanded ? <DownOutlined /> : <RightOutlined />}
       </button>
@@ -36,7 +36,7 @@ const RoadmapTaskCell = ({ task, isSubtask = false }: RoadmapTaskCellProps) => {
     return !isSubtask ? (
       <button
         onClick={() => dispatch(toggleTaskExpansion(id))}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
       >
         {task.isExpanded ? <DownOutlined /> : <RightOutlined />}
       </button>

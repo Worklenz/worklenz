@@ -25,7 +25,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   return (
     <div className={`relative group ${className}`}>
       {children}
-      <div className={`absolute ${placementClasses[placement]} px-2 py-1 text-xs text-white ${isDarkMode ? 'bg-gray-700' : 'bg-gray-900'} rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none min-w-max`}>
+      <div className={`absolute ${placementClasses[placement]} px-2 py-1 text-xs text-white ${isDarkMode ? 'bg-gray-700' : 'bg-gray-900'} rounded-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none min-w-max`}>
         {title}
       </div>
     </div>

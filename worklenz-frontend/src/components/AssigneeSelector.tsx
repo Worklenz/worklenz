@@ -227,7 +227,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         <div
           ref={dropdownRef}
           className={`
-            fixed z-[9999] w-72 rounded-md shadow-lg border
+            fixed z-9999 w-72 rounded-md shadow-lg border
             ${isDarkMode 
               ? 'bg-gray-800 border-gray-600' 
               : 'bg-white border-gray-200'
@@ -252,7 +252,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                   ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
                 }
-                focus:outline-none focus:ring-1 focus:ring-blue-500
+                focus:outline-hidden focus:ring-1 focus:ring-blue-500
               `}
             />
           </div>

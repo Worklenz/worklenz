@@ -128,7 +128,7 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
         marginBottom: 8,
         marginTop: 8,
       }}
-      className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline`}
+      className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline-solid`}
     >
       <Input
         ref={inputRef}

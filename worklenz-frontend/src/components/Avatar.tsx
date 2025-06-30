@@ -69,7 +69,7 @@ const Avatar: React.FC<AvatarProps> = ({
         src={src}
         alt={name}
         onClick={handleClick}
-        className={`rounded-full object-cover shadow-sm cursor-pointer ${className}`}
+        className={`rounded-full object-cover shadow-xs cursor-pointer ${className}`}
         style={avatarStyle}
       />
     );
@@ -78,7 +78,7 @@ const Avatar: React.FC<AvatarProps> = ({
   return (
     <div 
       onClick={handleClick}
-      className={`rounded-full flex items-center justify-center text-white font-medium shadow-sm cursor-pointer ${className}`}
+      className={`rounded-full flex items-center justify-center text-white font-medium shadow-xs cursor-pointer ${className}`}
       style={avatarStyle}
     >
       {name.charAt(0)?.toUpperCase() || '?'}

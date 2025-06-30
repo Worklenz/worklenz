@@ -103,7 +103,7 @@ const TaskByMembersTable = () => {
 
   return (
     <div className="memberList-container min-h-0 max-w-full overflow-x-auto">
-      <table className="w-full min-w-max border-collapse rounded">
+      <table className="w-full min-w-max border-collapse rounded-sm">
         <thead
           style={{
             height: 42,

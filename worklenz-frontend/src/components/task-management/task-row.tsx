@@ -200,7 +200,7 @@ const AssigneePlaceholder = React.memo<{ isDarkMode: boolean; memberCount?: numb
     ) : (
       <div className={`w-6 h-6 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
     )}
-    <div className={`w-4 h-4 rounded ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+    <div className={`w-4 h-4 rounded-sm ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
   </div>
 ));
 
@@ -249,7 +249,7 @@ const LabelsPlaceholder = React.memo<{ labelCount?: number; isDarkMode: boolean 
         />
       ))
     ) : (
-      <div className={`w-4 h-4 rounded ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+      <div className={`w-4 h-4 rounded-sm ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
     )}
   </div>
 ));
@@ -257,7 +257,7 @@ const LabelsPlaceholder = React.memo<{ labelCount?: number; isDarkMode: boolean 
 // PERFORMANCE OPTIMIZATION: Simplified placeholders without animations under memory pressure
 const SimplePlaceholder = React.memo<{ width: number; height: number; isDarkMode: boolean }>(({ width, height, isDarkMode }) => (
   <div 
-    className={`rounded ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
+    className={`rounded-sm ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
     style={{ width, height }}
   />
 ));
@@ -614,7 +614,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50')
       : '';
     const overlay = isDragOverlay 
-      ? `rounded shadow-lg border-2 ${isDarkMode ? 'border-gray-600 shadow-2xl' : 'border-gray-300 shadow-2xl'}`
+      ? `rounded-sm shadow-lg border-2 ${isDarkMode ? 'border-gray-600 shadow-2xl' : 'border-gray-300 shadow-2xl'}`
       : '';
     
     return {
@@ -643,7 +643,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       case 'drag':
         return (
           <div key={col.key} className={`flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className="w-4 h-4 opacity-30 bg-gray-300 rounded"></div>
+            <div className="w-4 h-4 opacity-30 bg-gray-300 rounded-sm"></div>
           </div>
         );
       
@@ -689,7 +689,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         // For non-essential columns, show minimal placeholder
         return (
           <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <div className={`w-6 h-3 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+            <div className={`w-6 h-3 rounded-sm ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
           </div>
         );
     }
