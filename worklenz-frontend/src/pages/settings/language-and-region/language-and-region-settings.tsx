@@ -55,6 +55,10 @@ const LanguageAndRegionSettings = () => {
       value: Language.DE,
       label: 'Deutsch',
     },
+    {
+      value: Language.ZH_CN,
+      label: "简体中文"
+    }
   ];
 
   const handleLanguageChange = async (values: { language?: ILanguageType; timezone?: string }) => {
@@ -150,7 +154,7 @@ const LanguageAndRegionSettings = () => {
             {t('save_changes')}
           </Button>
         </Form.Item>
-      </Form>): (
+      </Form>) : (
         <Skeleton />
       )}
     </Card>
