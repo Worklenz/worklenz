@@ -44,9 +44,15 @@ import TaskRow from './task-row';
 import VirtualizedTaskList from './virtualized-task-list';
 import { AppDispatch } from '@/app/store';
 import { shallowEqual } from 'react-redux';
+import { performanceMonitor } from '@/utils/performance-monitor';
+import debugPerformance from '@/utils/debug-performance';
 
 // Import the improved TaskListFilters component synchronously to avoid suspense
 import ImprovedTaskFilters from './improved-task-filters';
+import PerformanceAnalysis from './performance-analysis';
+
+// Import drag and drop performance optimizations
+import './drag-drop-optimized.css';
 
 interface TaskListBoardProps {
   projectId: string;
@@ -92,6 +98,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Prevent duplicate API calls in React StrictMode
   const hasInitialized = useRef(false);
+  
+  // PERFORMANCE OPTIMIZATION: Frame rate monitoring and throttling
+  const frameTimeRef = useRef(performance.now());
+  const renderCountRef = useRef(0);
+  const [shouldThrottle, setShouldThrottle] = useState(false);
 
 
   // Refs for performance optimization
@@ -111,18 +122,51 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Get theme from Redux store
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
+  const themeClass = isDarkMode ? 'dark' : 'light';
 
-  // Drag and Drop sensors - optimized for better performance
+  // PERFORMANCE OPTIMIZATION: Build a tasksById map with memory-conscious approach
+  const tasksById = useMemo(() => {
+    const map: Record<string, Task> = {};
+    // Cache all tasks for full functionality - performance optimizations are handled at the virtualization level
+    tasks.forEach(task => { map[task.id] = task; });
+    return map;
+  }, [tasks]);
+
+  // Drag and Drop sensors - optimized for smoother experience
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3, // Reduced from 8 for more responsive dragging
+        distance: 3, // Small distance to prevent accidental drags
+        delay: 0, // No delay for immediate activation
+        tolerance: 5, // Tolerance for small movements
       },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // PERFORMANCE OPTIMIZATION: Monitor frame rate and enable throttling if needed
+  useEffect(() => {
+    const monitorPerformance = () => {
+      const now = performance.now();
+      const frameTime = now - frameTimeRef.current;
+      renderCountRef.current++;
+      
+      // If frame time is consistently over 16.67ms (60fps), enable throttling
+      if (frameTime > 20 && renderCountRef.current > 10) {
+        setShouldThrottle(true);
+      } else if (frameTime < 12 && renderCountRef.current > 50) {
+        setShouldThrottle(false);
+        renderCountRef.current = 0; // Reset counter
+      }
+      
+      frameTimeRef.current = now;
+    };
+    
+    const interval = setInterval(monitorPerformance, 100);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch task groups when component mounts or dependencies change
   useEffect(() => {
@@ -136,8 +180,10 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Memoized calculations - optimized
   const totalTasks = useMemo(() => {
-    return taskGroups.reduce((total, g) => total + g.taskIds.length, 0);
-  }, [taskGroups]);
+    const total = taskGroups.reduce((sum, g) => sum + g.taskIds.length, 0);
+    console.log(`[TASK-LIST-BOARD] Total tasks in groups: ${total}, Total tasks in store: ${tasks.length}, Groups: ${taskGroups.length}`);
+    return total;
+  }, [taskGroups, tasks.length]);
 
   const hasAnyTasks = useMemo(() => totalTasks > 0, [totalTasks]);
 
@@ -177,7 +223,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     [tasks, currentGrouping]
   );
 
-  // Throttled drag over handler for better performance
+  // Throttled drag over handler for smoother performance
   const handleDragOver = useCallback(
     throttle((event: DragOverEvent) => {
       const { active, over } = event;
@@ -187,42 +233,41 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const activeTaskId = active.id as string;
       const overContainer = over.id as string;
 
-      // Clear any existing timeout
-      if (dragOverTimeoutRef.current) {
-        clearTimeout(dragOverTimeoutRef.current);
+      // PERFORMANCE OPTIMIZATION: Immediate response for instant UX
+      // Only update if we're hovering over a different container
+      const targetTask = tasks.find(t => t.id === overContainer);
+      let targetGroupId = overContainer;
+
+      if (targetTask) {
+        // PERFORMANCE OPTIMIZATION: Use switch instead of multiple if statements
+        switch (currentGrouping) {
+          case 'status':
+            targetGroupId = `status-${targetTask.status}`;
+            break;
+          case 'priority':
+            targetGroupId = `priority-${targetTask.priority}`;
+            break;
+          case 'phase':
+            targetGroupId = `phase-${targetTask.phase}`;
+            break;
+        }
       }
 
-      // Optimistic update with throttling
-      dragOverTimeoutRef.current = setTimeout(() => {
-        // Only update if we're hovering over a different container
-        const targetTask = tasks.find(t => t.id === overContainer);
-        let targetGroupId = overContainer;
-
-        if (targetTask) {
-          if (currentGrouping === 'status') {
-            targetGroupId = `status-${targetTask.status}`;
-          } else if (currentGrouping === 'priority') {
-            targetGroupId = `priority-${targetTask.priority}`;
-          } else if (currentGrouping === 'phase') {
-            targetGroupId = `phase-${targetTask.phase}`;
-          }
+      if (targetGroupId !== dragState.activeGroupId) {
+        // PERFORMANCE OPTIMIZATION: Use findIndex for better performance
+        const targetGroupIndex = taskGroups.findIndex(g => g.id === targetGroupId);
+        if (targetGroupIndex !== -1) {
+          const targetGroup = taskGroups[targetGroupIndex];
+          dispatch(
+            optimisticTaskMove({
+              taskId: activeTaskId,
+              newGroupId: targetGroupId,
+              newIndex: targetGroup.taskIds.length,
+            })
+          );
         }
-
-        if (targetGroupId !== dragState.activeGroupId) {
-          // Perform optimistic update for visual feedback
-          const targetGroup = taskGroups.find(g => g.id === targetGroupId);
-          if (targetGroup) {
-            dispatch(
-              optimisticTaskMove({
-                taskId: activeTaskId,
-                newGroupId: targetGroupId,
-                newIndex: targetGroup.taskIds.length,
-              })
-            );
-          }
-        }
-      }, 50); // 50ms throttle for drag over events
-    }, 50),
+      }
+    }, 16), // 60fps throttling for smooth performance
     [dragState, tasks, taskGroups, currentGrouping, dispatch]
   );
 
@@ -338,7 +383,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   const handleToggleSubtasks = useCallback((taskId: string) => {
     // Implementation for toggling subtasks
-    console.log('Toggle subtasks for task:', taskId);
   }, []);
 
   // Memoized DragOverlay content for better performance
@@ -375,7 +419,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   }
 
   return (
-    <div className={`task-list-board ${className}`} ref={containerRef}>
+    <div className={`task-list-board ${className} ${themeClass}`} ref={containerRef}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -392,73 +436,89 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           <ImprovedTaskFilters position="list" />
         </div>
 
-        {/* Virtualized Task Groups Container */}
-        <div className="task-groups-container">
-          {loading ? (
-            <Card>
-              <div className="flex justify-center items-center py-8">
-                <Spin size="large" />
-              </div>
-            </Card>
-          ) : taskGroups.length === 0 ? (
-            <Card>
-              <Empty 
-                description={
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>
-                      No task groups available
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--task-text-secondary, #595959)' }}>
-                      Create tasks to see them organized in groups
-                    </div>
-                  </div>
-                }
-                image={Empty.PRESENTED_IMAGE_SIMPLE} 
-              />
-            </Card>
-          ) : (
-            <div className="virtualized-task-groups">
-              {taskGroups.map((group, index) => {
-                // PERFORMANCE OPTIMIZATION: Optimized height calculations
-                const groupTasks = group.taskIds.length;
-                const baseHeight = 120; // Header + column headers + add task row
-                const taskRowsHeight = groupTasks * 40; // 40px per task row
-                
-                // PERFORMANCE OPTIMIZATION: Dynamic height based on task count and virtualization
-                const shouldVirtualizeGroup = groupTasks > 20;
-                const minGroupHeight = shouldVirtualizeGroup ? 200 : 150; // Smaller minimum for non-virtualized
-                const maxGroupHeight = shouldVirtualizeGroup ? 800 : 400; // Different max based on virtualization
-                const calculatedHeight = baseHeight + taskRowsHeight;
-                const groupHeight = Math.max(
-                  minGroupHeight,
-                  Math.min(calculatedHeight, maxGroupHeight)
-                );
+        {/* Performance Analysis - Only show in development */}
+        {/* {process.env.NODE_ENV === 'development' && (
+          <PerformanceAnalysis projectId={projectId} />
+        )} */}
 
-                return (
-                  <VirtualizedTaskList
-                    key={group.id}
-                    group={group}
-                    projectId={projectId}
-                    currentGrouping={
-                      (currentGrouping as 'status' | 'priority' | 'phase') || 'status'
-                    }
-                    selectedTaskIds={selectedTaskIds}
-                    onSelectTask={handleSelectTask}
-                    onToggleSubtasks={handleToggleSubtasks}
-                    height={groupHeight}
-                    width={1200}
-                  />
-                );
-              })}
-            </div>
-          )}
+        {/* Fixed Height Task Groups Container - Asana Style */}
+        <div className="task-groups-container-fixed">
+          <div className="task-groups-scrollable">
+            {loading ? (
+              <div className="loading-container">
+                <div className="flex justify-center items-center py-8">
+                  <Spin size="large" />
+                </div>
+              </div>
+            ) : taskGroups.length === 0 ? (
+              <div className="empty-container">
+                <Empty 
+                  description={
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>
+                        No task groups available
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--task-text-secondary, #595959)' }}>
+                        Create tasks to see them organized in groups
+                      </div>
+                    </div>
+                  }
+                  image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                />
+              </div>
+            ) : (
+              <div className="virtualized-task-groups">
+                {taskGroups.map((group, index) => {
+                  // PERFORMANCE OPTIMIZATION: More aggressive height calculation for better performance
+                  const groupTasks = group.taskIds.length;
+                  const baseHeight = 120; // Header + column headers + add task row
+                  const taskRowsHeight = groupTasks * 40; // 40px per task row
+                  
+                  // PERFORMANCE OPTIMIZATION: Enhanced virtualization threshold for better UX
+                  const shouldVirtualizeGroup = groupTasks > 25; // Increased threshold for smoother experience
+                  const minGroupHeight = shouldVirtualizeGroup ? 200 : 120; // Minimum height for virtualized groups
+                  const maxGroupHeight = shouldVirtualizeGroup ? 600 : 1000; // Allow more height for virtualized groups
+                  const calculatedHeight = baseHeight + taskRowsHeight;
+                  const groupHeight = Math.max(
+                    minGroupHeight,
+                    Math.min(calculatedHeight, maxGroupHeight)
+                  );
+
+                  // PERFORMANCE OPTIMIZATION: Removed group throttling to show all tasks
+                  // Virtualization within each group handles performance for large task lists
+
+                  // PERFORMANCE OPTIMIZATION: Memoize group rendering
+                  return (
+                    <VirtualizedTaskList
+                      key={group.id}
+                      group={group}
+                      projectId={projectId}
+                      currentGrouping={
+                        (currentGrouping as 'status' | 'priority' | 'phase') || 'status'
+                      }
+                      selectedTaskIds={selectedTaskIds}
+                      onSelectTask={handleSelectTask}
+                      onToggleSubtasks={handleToggleSubtasks}
+                      height={groupHeight}
+                      width={1200}
+                      tasksById={tasksById}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         <DragOverlay
           adjustScale={false}
-          dropAnimation={null}
+          dropAnimation={{
+            duration: 200,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}
           style={{
             cursor: 'grabbing',
+            zIndex: 9999,
           }}
         >
           {dragOverlayContent}
@@ -466,16 +526,87 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       </DndContext>
 
       <style>{`
-        .task-groups-container {
-          max-height: calc(100vh - 300px);
-          overflow-y: auto;
-          overflow-x: visible;
-          padding: 8px 8px 8px 0;
-          border-radius: 8px;
+        /* Fixed height container - Asana style */
+        .task-groups-container-fixed {
+          height: calc(100vh - 200px); /* Fixed height, adjust based on your header height */
+          min-height: 400px;
+          max-height: calc(100vh - 120px);
           position: relative;
+          border: 1px solid var(--task-border-primary, #e8e8e8);
+          border-radius: 8px;
+          background: var(--task-bg-primary, white);
+          overflow: hidden;
           /* GPU acceleration for smooth scrolling */
           transform: translateZ(0);
           will-change: scroll-position;
+          /* Responsive adjustments */
+          margin-bottom: 16px;
+        }
+
+        /* Responsive height adjustments */
+        @media (max-height: 800px) {
+          .task-groups-container-fixed {
+            height: calc(100vh - 160px);
+            min-height: 300px;
+          }
+        }
+
+        @media (max-height: 600px) {
+          .task-groups-container-fixed {
+            height: calc(100vh - 120px);
+            min-height: 250px;
+          }
+        }
+
+        @media (min-height: 1200px) {
+          .task-groups-container-fixed {
+            height: calc(100vh - 240px);
+            max-height: none;
+          }
+        }
+
+        .task-groups-scrollable {
+          height: 100%;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 8px 8px 8px 0;
+          /* Smooth scrolling */
+          scroll-behavior: smooth;
+          /* Custom scrollbar styling */
+          scrollbar-width: thin;
+          scrollbar-color: var(--task-border-tertiary, #d9d9d9) transparent;
+          /* Performance optimizations */
+          contain: layout style paint;
+          transform: translateZ(0);
+          will-change: scroll-position;
+        }
+
+        .task-groups-scrollable::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .task-groups-scrollable::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .task-groups-scrollable::-webkit-scrollbar-thumb {
+          background-color: var(--task-border-tertiary, #d9d9d9);
+          border-radius: 3px;
+          transition: background-color 0.2s ease;
+        }
+
+        .task-groups-scrollable::-webkit-scrollbar-thumb:hover {
+          background-color: var(--task-border-primary, #e8e8e8);
+        }
+
+        /* Loading and empty state containers */
+        .loading-container,
+        .empty-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          min-height: 300px;
         }
 
         .virtualized-task-groups {
@@ -506,7 +637,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
         .task-group-header-row {
           display: inline-flex;
-          height: auto;
+          height: inherit;
           max-height: none;
           overflow: hidden;
         }
@@ -568,37 +699,76 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           transition: color 0.3s ease;
         }
 
-        /* Add task row styles */
+        /* Add task row styles - Fixed width responsive design */
         .task-group-add-task {
           background: var(--task-bg-primary, white);
           border-top: 1px solid var(--task-border-secondary, #f0f0f0);
           transition: all 0.3s ease;
           padding: 0 12px;
           width: 100%;
+          max-width: 500px; /* Fixed maximum width */
+          min-width: 300px; /* Minimum width for mobile */
           min-height: 40px;
           display: flex;
           align-items: center;
+          border-radius: 0 0 6px 6px;
+          margin-left: 0;
+          position: relative;
         }
 
         .task-group-add-task:hover {
           background: var(--task-hover-bg, #fafafa);
+          transform: translateX(2px);
+        }
+
+        /* Responsive adjustments for add task row */
+        @media (max-width: 768px) {
+          .task-group-add-task {
+            max-width: 400px;
+            min-width: 280px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .task-group-add-task {
+            max-width: calc(100vw - 40px);
+            min-width: 250px;
+          }
+        }
+
+        @media (min-width: 1200px) {
+          .task-group-add-task {
+            max-width: 600px;
+          }
         }
 
         .task-table-fixed-columns {
           display: flex;
-          background: var(--task-bg-secondary, #f5f5f5);
           position: sticky;
           left: 0;
           z-index: 11;
-          border-right: 2px solid var(--task-border-primary, #e8e8e8);
-          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
           transition: all 0.3s ease;
+          /* Background will be set inline to match theme */
+        }
+
+        /* Ensure task rows have proper overflow handling */
+        .task-row-container {
+          display: flex;
+          width: 100%;
+          min-width: fit-content;
+        }
+
+        .task-row {
+          display: flex;
+          width: 100%;
+          min-width: fit-content;
         }
 
         .task-table-scrollable-columns {
           display: flex;
           flex: 1;
           min-width: 0;
+          overflow: visible;
         }
 
         .task-table-cell {
@@ -639,6 +809,43 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           pointer-events: none;
           transform: translateZ(0);
           will-change: transform;
+        }
+
+        /* Simplified drag overlay styles */
+        .drag-overlay-simplified {
+          position: relative;
+          z-index: 9999;
+          pointer-events: none;
+          transform: translateZ(0);
+          will-change: transform;
+          user-select: none;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          animation: dragOverlayEntrance 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes dragOverlayEntrance {
+          0% {
+            transform: scale(0.95) translateZ(0);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1.02) translateZ(0);
+            opacity: 1;
+          }
+        }
+
+        .drag-overlay-simplified:hover {
+          /* Disable hover effects during drag */
+          background-color: inherit !important;
+        }
+
+        /* Smooth drag handle animation */
+        .drag-handle-icon {
+          transition: transform 0.1s ease-out;
+        }
+
+        .task-title-drag {
+          transition: color 0.1s ease-out;
         }
 
         /* Ensure drag overlay follows cursor properly */
@@ -683,8 +890,10 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           --task-drag-over-border: #40a9ff;
         }
 
-        .dark .task-groups-container,
-        [data-theme="dark"] .task-groups-container {
+        .dark .task-groups-container-fixed,
+        [data-theme="dark"] .task-groups-container-fixed,
+        .dark .task-groups-scrollable,
+        [data-theme="dark"] .task-groups-scrollable {
           --task-bg-primary: #1f1f1f;
           --task-bg-secondary: #141414;
           --task-bg-tertiary: #262626;
@@ -700,6 +909,17 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           --task-selected-border: #1890ff;
           --task-drag-over-bg: #1a2332;
           --task-drag-over-border: #40a9ff;
+        }
+
+        /* Dark mode scrollbar */
+        .dark .task-groups-scrollable::-webkit-scrollbar-thumb,
+        [data-theme="dark"] .task-groups-scrollable::-webkit-scrollbar-thumb {
+          background-color: #505050;
+        }
+
+        .dark .task-groups-scrollable::-webkit-scrollbar-thumb:hover,
+        [data-theme="dark"] .task-groups-scrollable::-webkit-scrollbar-thumb:hover {
+          background-color: #606060;
         }
 
         /* Dark mode empty state */
@@ -720,11 +940,52 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
         .task-row {
           contain: layout style;
+          /* GPU acceleration for smooth scrolling */
+          transform: translateZ(0);
+          will-change: transform;
+          transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .task-row.is-dragging {
+          transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), filter 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Smooth hover effects */
+        .task-row:hover:not(.is-dragging) {
+          transform: translateZ(0) translateY(-1px);
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         /* Reduce layout thrashing */
         .task-table-cell {
           contain: layout;
+        }
+
+        /* Optimize progressive component loading */
+        .progressive-component-placeholder {
+          contain: layout style paint;
+          transform: translateZ(0);
+        }
+
+        /* Shimmer animation optimization */
+        @keyframes shimmer {
+          0% { 
+            background-position: -200px 0; 
+            transform: translateX(-100%);
+          }
+          100% { 
+            background-position: calc(200px + 100%) 0; 
+            transform: translateX(100%);
+          }
+        }
+
+        /* Optimize shimmer performance */
+        .shimmer-element {
+          background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.2) 50%, transparent 75%);
+          background-size: 200px 100%;
+          animation: shimmer 1.5s infinite linear;
+          transform: translateZ(0);
+          will-change: background-position;
         }
 
         /* React Window specific optimizations */

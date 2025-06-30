@@ -487,13 +487,40 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
           transition: all 0.3s ease;
           padding: 0 12px;
           width: 100%;
+          max-width: 500px; /* Fixed maximum width */
+          min-width: 300px; /* Minimum width for mobile */
           min-height: 40px;
           display: flex;
           align-items: center;
+          border-radius: 0 0 6px 6px;
+          margin-left: 0;
+          position: relative;
         }
 
         .task-group-add-task:hover {
           background: var(--task-hover-bg, #fafafa);
+          transform: translateX(2px);
+        }
+
+        /* Responsive adjustments for add task row */
+        @media (max-width: 768px) {
+          .task-group-add-task {
+            max-width: 400px;
+            min-width: 280px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .task-group-add-task {
+            max-width: calc(100vw - 40px);
+            min-width: 250px;
+          }
+        }
+
+        @media (min-width: 1200px) {
+          .task-group-add-task {
+            max-width: 600px;
+          }
         }
 
         .task-table-fixed-columns {

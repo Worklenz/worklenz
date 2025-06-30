@@ -4,7 +4,7 @@ import { dayjs } from './antd-imports';
 // Performance constants
 export const PERFORMANCE_CONSTANTS = {
   CACHE_CLEAR_INTERVAL: 300000, // 5 minutes
-  VIRTUALIZATION_THRESHOLD: 50,
+  VIRTUALIZATION_THRESHOLD: 25, // Updated to match main virtualization threshold
   DRAG_THROTTLE_MS: 50,
   RENDER_TIMEOUT_MS: 16, // 60fps target
   MAX_CACHE_SIZE: 1000,
