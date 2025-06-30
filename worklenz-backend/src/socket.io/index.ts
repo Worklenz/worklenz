@@ -18,7 +18,7 @@ import { on_task_description_change } from "./commands/on-task-description-chang
 import { on_get_task_progress } from "./commands/on-get-task-progress";
 import { on_task_timer_start } from "./commands/on-task-timer-start";
 import { on_task_timer_stop } from "./commands/on-task-timer-stop";
-import { on_task_sort_order_change } from "./commands/on-task-sort-order-change";
+import on_task_sort_order_change from "./commands/on-task-sort-order-change";
 import { on_join_project_room as on_join_or_leave_project_room } from "./commands/on-join-or-leave-project-room";
 import { on_task_subscriber_change } from "./commands/on-task-subscriber-change";
 import { on_project_subscriber_change } from "./commands/on-project-subscriber-change";

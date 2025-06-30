@@ -368,7 +368,7 @@ const FilterDropdown: React.FC<{
             : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
           hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
-          ${themeClasses.containerBg === 'bg-gray-800' ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
+          ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -399,7 +399,7 @@ const FilterDropdown: React.FC<{
                   placeholder={`Search ${section.label.toLowerCase()}...`}
                   className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
                     isDarkMode
-                      ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                      ? 'bg-[#141414] text-[#d9d9d9] placeholder-gray-400 border-[#303030]'
                       : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
                   }`}
                 />
@@ -539,7 +539,7 @@ const SearchFilter: React.FC<{
               placeholder={placeholder}
               className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
                 isDarkMode
-                  ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                  ? 'bg-[#141414] text-[#d9d9d9] placeholder-gray-400 border-[#303030]'
                   : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
               }`}
             />
@@ -623,7 +623,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
             : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
           hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
-          ${themeClasses.containerBg === 'bg-gray-800' ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
+          ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={open}
         aria-haspopup="true"
@@ -748,25 +748,26 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   const { projectView } = useTabSearchParam();
 
   // Theme-aware class names - memoize to prevent unnecessary re-renders
+  // Using task list row colors for consistency: --task-bg-primary: #1f1f1f, --task-bg-secondary: #141414
   const themeClasses = useMemo(() => ({
-    containerBg: isDarkMode ? 'bg-gray-800' : 'bg-white',
-    containerBorder: isDarkMode ? 'border-gray-700' : 'border-gray-200',
-    buttonBg: isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50',
-    buttonBorder: isDarkMode ? 'border-gray-600' : 'border-gray-300',
-    buttonText: isDarkMode ? 'text-gray-200' : 'text-gray-700',
-    dropdownBg: isDarkMode ? 'bg-gray-800' : 'bg-white',
-    dropdownBorder: isDarkMode ? 'border-gray-700' : 'border-gray-200',
-    optionText: isDarkMode ? 'text-gray-200' : 'text-gray-700',
-    optionHover: isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50',
-    secondaryText: isDarkMode ? 'text-gray-400' : 'text-gray-500',
-    dividerBorder: isDarkMode ? 'border-gray-700' : 'border-gray-200',
-    pillBg: isDarkMode ? 'bg-gray-700' : 'bg-gray-100',
-    pillText: isDarkMode ? 'text-gray-200' : 'text-gray-700',
+    containerBg: isDarkMode ? 'bg-[#1f1f1f]' : 'bg-white',
+    containerBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-200',
+    buttonBg: isDarkMode ? 'bg-[#141414] hover:bg-[#262626]' : 'bg-white hover:bg-gray-50',
+    buttonBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-300',
+    buttonText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
+    dropdownBg: isDarkMode ? 'bg-[#1f1f1f]' : 'bg-white',
+    dropdownBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-200',
+    optionText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
+    optionHover: isDarkMode ? 'hover:bg-[#262626]' : 'hover:bg-gray-50',
+    secondaryText: isDarkMode ? 'text-[#8c8c8c]' : 'text-gray-500',
+    dividerBorder: isDarkMode ? 'border-[#404040]' : 'border-gray-200',
+    pillBg: isDarkMode ? 'bg-[#141414]' : 'bg-gray-100',
+    pillText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
     pillActiveBg: isDarkMode ? 'bg-blue-600' : 'bg-blue-100',
     pillActiveText: isDarkMode ? 'text-white' : 'text-blue-800',
-    searchBg: isDarkMode ? 'bg-gray-700' : 'bg-gray-50',
-    searchBorder: isDarkMode ? 'border-gray-600' : 'border-gray-300',
-    searchText: isDarkMode ? 'text-gray-200' : 'text-gray-900',
+    searchBg: isDarkMode ? 'bg-[#141414]' : 'bg-gray-50',
+    searchBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-300',
+    searchText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-900',
   }), [isDarkMode]);
 
   // Initialize debounced functions
@@ -1043,7 +1044,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
                 onChange={toggleArchived}
                 className={`w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500 transition-colors duration-150 ${
                   isDarkMode 
-                    ? 'border-gray-600 bg-gray-700 focus:ring-offset-gray-800' 
+                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800' 
                     : 'border-gray-300 bg-white focus:ring-offset-white'
                 }`}
               />

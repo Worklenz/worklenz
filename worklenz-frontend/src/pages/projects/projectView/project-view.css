@@ -29,7 +29,7 @@
   padding: 8px 16px;
   border-radius: 6px 6px 0 0;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-weight: 500;
   font-size: 13px;
@@ -42,13 +42,11 @@
 [data-theme="default"] .project-view-tabs .ant-tabs-tab {
   color: #64748b;
   background: #f8fafc;
-  border-color: #e2e8f0;
 }
 
 [data-theme="default"] .project-view-tabs .ant-tabs-tab:hover {
   color: #3b82f6;
   background: #eff6ff;
-  border-color: #bfdbfe;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
@@ -56,32 +54,26 @@
 [data-theme="default"] .project-view-tabs .ant-tabs-tab-active {
   color: #1e40af !important;
   background: #ffffff !important;
-  border-color: #3b82f6 !important;
-  border-bottom-color: #ffffff !important;
   box-shadow: 0 -2px 8px rgba(59, 130, 246, 0.1), 0 4px 16px rgba(59, 130, 246, 0.1);
   z-index: 1;
 }
 
-/* Dark mode tab styles */
+/* Dark mode tab styles - matching task list row colors */
 [data-theme="dark"] .project-view-tabs .ant-tabs-tab {
   color: #94a3b8;
-  background: #1e293b;
-  border-color: #334155;
+  background: #141414;
 }
 
 [data-theme="dark"] .project-view-tabs .ant-tabs-tab:hover {
   color: #60a5fa;
-  background: #1e3a8a;
-  border-color: #3b82f6;
+  background: #262626;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
 }
 
 [data-theme="dark"] .project-view-tabs .ant-tabs-tab-active {
   color: #60a5fa !important;
-  background: #0f172a !important;
-  border-color: #3b82f6 !important;
-  border-bottom-color: #0f172a !important;
+  background: #1f1f1f !important;
   box-shadow: 0 -2px 8px rgba(96, 165, 250, 0.15), 0 4px 16px rgba(96, 165, 250, 0.15);
   z-index: 1;
 }
@@ -102,8 +94,8 @@
 }
 
 [data-theme="dark"] .project-view-tabs .ant-tabs-content-holder {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #1f1f1f;
+  border: 1px solid #303030;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 

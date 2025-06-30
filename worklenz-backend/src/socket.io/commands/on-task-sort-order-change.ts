@@ -118,7 +118,7 @@ const onTaskSortOrderChange = async (io: Server, socket: Socket, data: ChangeReq
       project_id,
       team_id,
       user_id: userId,
-      update_type: 'task_sort_order_change',
+      update_type: "task_sort_order_change",
       task_id: task.id,
       from_group,
       to_group,
@@ -126,7 +126,7 @@ const onTaskSortOrderChange = async (io: Server, socket: Socket, data: ChangeReq
     };
 
     // Emit to all users in the project room
-    io.to(`project_${project_id}`).emit('project_updates', projectUpdateData);
+    io.to(`project_${project_id}`).emit("project_updates", projectUpdateData);
 
     // PERFORMANCE OPTIMIZATION: Optimized activity logging
     const activityLogData = {
@@ -139,15 +139,15 @@ const onTaskSortOrderChange = async (io: Server, socket: Socket, data: ChangeReq
     // Log activity asynchronously to avoid blocking the response
     setImmediate(async () => {
       try {
-        if (group_by === 'phase') {
+        if (group_by === "phase") {
           await logPhaseChange(activityLogData);
-        } else if (group_by === 'status') {
+        } else if (group_by === "status") {
           await logStatusChange(activityLogData);
-        } else if (group_by === 'priority') {
+        } else if (group_by === "priority") {
           await logPriorityChange(activityLogData);
         }
       } catch (error) {
-        log_error("Error logging task sort order change activity", error);
+        log_error(error);
       }
     });
 
@@ -161,7 +161,7 @@ const onTaskSortOrderChange = async (io: Server, socket: Socket, data: ChangeReq
     });
 
   } catch (error) {
-    log_error("Error in onTaskSortOrderChange", error);
+    log_error(error);
     socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), { 
       error: "Internal server error" 
     });
