@@ -13,6 +13,7 @@ import { ITaskStatusViewModel } from '@/types/tasks/taskStatusGetResponse.types'
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import { ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
+import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -55,7 +56,11 @@ interface EnhancedKanbanState {
   loadingGroups: boolean;
   error: string | null;
 
-  // Filters
+  // Filters - Original data (should not be filtered)
+  originalTaskAssignees: ITaskListMemberFilter[];
+  originalLabels: ITaskLabelFilter[];
+
+  // Filters - Current filtered data
   taskAssignees: ITaskListMemberFilter[];
   loadingAssignees: boolean;
   statuses: ITaskStatusViewModel[];
@@ -102,6 +107,8 @@ const initialState: EnhancedKanbanState = {
   taskGroups: [],
   loadingGroups: false,
   error: null,
+  originalTaskAssignees: [],
+  originalLabels: [],
   taskAssignees: [],
   loadingAssignees: false,
   statuses: [],
@@ -155,7 +162,6 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
     try {
       const state = getState() as { enhancedKanbanReducer: EnhancedKanbanState };
       const { enhancedKanbanReducer } = state;
-
       const selectedMembers = enhancedKanbanReducer.taskAssignees
         .filter(member => member.selected)
         .map(member => member.id)
@@ -317,6 +323,40 @@ export const fetchBoardSubTasks = createAsyncThunk(
   }
 );
 
+// Async thunk for loading task assignees
+export const fetchEnhancedKanbanTaskAssignees = createAsyncThunk(
+  'enhancedKanban/fetchTaskAssignees',
+  async (projectId: string, { rejectWithValue }) => {
+    try {
+      const response = await tasksApiService.fetchTaskAssignees(projectId);
+      return response.body;
+    } catch (error) {
+      logger.error('Fetch Enhanced Kanban Task Assignees', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch task assignees');
+    }
+  }
+);
+
+// Async thunk for loading labels
+export const fetchEnhancedKanbanLabels = createAsyncThunk(
+  'enhancedKanban/fetchLabels',
+  async (projectId: string, { rejectWithValue }) => {
+    try {
+      const response = await labelsApiService.getPriorityByProject(projectId);
+      return response.body;
+    } catch (error) {
+      logger.error('Fetch Enhanced Kanban Labels', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch project labels');
+    }
+  }
+);
+
 const enhancedKanbanSlice = createSlice({
   name: 'enhancedKanbanReducer',
   initialState,
@@ -407,6 +447,38 @@ const enhancedKanbanSlice = createSlice({
       state.members = action.payload;
     },
 
+    // New actions for filter selection that work with original data
+    setTaskAssigneeSelection: (state, action: PayloadAction<{ id: string; selected: boolean }>) => {
+      const { id, selected } = action.payload;
+      // Update both original and current data
+      state.originalTaskAssignees = state.originalTaskAssignees.map(assignee =>
+        assignee.id === id ? { ...assignee, selected } : assignee
+      );
+      state.taskAssignees = state.originalTaskAssignees;
+    },
+
+    setLabelSelection: (state, action: PayloadAction<{ id: string; selected: boolean }>) => {
+      const { id, selected } = action.payload;
+      // Update both original and current data
+      state.originalLabels = state.originalLabels.map(label =>
+        label.id === id ? { ...label, selected } : label
+      );
+      state.labels = state.originalLabels;
+    },
+
+    // Add missing actions for filter compatibility
+    setSelectedPriorities: (state, action: PayloadAction<string[]>) => {
+      state.priorities = action.payload;
+    },
+
+    setBoardSearch: (state, action: PayloadAction<string | null>) => {
+      state.search = action.payload;
+    },
+
+    setBoardArchived: (state, action: PayloadAction<boolean>) => {
+      state.archived = action.payload;
+    },
+
     // Status updates
     updateTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
       const { id: task_id, status_id } = action.payload;
@@ -421,6 +493,42 @@ const enhancedKanbanSlice = createSlice({
           }
         });
       });
+    },
+
+    // Enhanced Kanban external status update (for use in task drawer dropdown)
+    updateEnhancedKanbanTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
+      const { id: task_id, status_id } = action.payload;
+      let oldGroupId: string | null = null;
+      let foundTask: IProjectTask | null = null;
+      // Find the task and its group
+      for (const group of state.taskGroups) {
+        const task = group.tasks.find(t => t.id === task_id);
+        if (task) {
+          foundTask = task;
+          oldGroupId = group.id;
+          break;
+        }
+      }
+      if (!foundTask) return;
+      // If grouped by status and the group changes, move the task
+      if (state.groupBy === IGroupBy.STATUS && oldGroupId && oldGroupId !== status_id) {
+        // Remove from old group
+        const oldGroup = state.taskGroups.find(g => g.id === oldGroupId);
+        if (oldGroup) {
+          oldGroup.tasks = oldGroup.tasks.filter(t => t.id !== task_id);
+        }
+        // Add to new group at the top
+        const newGroup = state.taskGroups.find(g => g.id === status_id);
+        if (newGroup) {
+          foundTask.status_id = status_id;
+          newGroup.tasks.unshift(foundTask);
+        }
+      } else {
+        // Just update the status_id
+        foundTask.status_id = status_id;
+      }
+      // Update cache
+      state.taskCache[task_id] = foundTask;
     },
 
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
@@ -562,6 +670,38 @@ const enhancedKanbanSlice = createSlice({
 
         // Update column order
         state.columnOrder = reorderedGroups.map(group => group.id);
+      })
+      // Fetch Task Assignees
+      .addCase(fetchEnhancedKanbanTaskAssignees.pending, (state) => {
+        state.loadingAssignees = true;
+        state.error = null;
+      })
+      .addCase(fetchEnhancedKanbanTaskAssignees.fulfilled, (state, action) => {
+        state.loadingAssignees = false;
+        // Store original data and current data
+        state.originalTaskAssignees = action.payload;
+        state.taskAssignees = action.payload;
+      })
+      .addCase(fetchEnhancedKanbanTaskAssignees.rejected, (state, action) => {
+        state.loadingAssignees = false;
+        state.error = action.payload as string;
+      })
+      // Fetch Labels
+      .addCase(fetchEnhancedKanbanLabels.pending, (state) => {
+        state.loadingLabels = true;
+        state.error = null;
+      })
+      .addCase(fetchEnhancedKanbanLabels.fulfilled, (state, action) => {
+        state.loadingLabels = false;
+        // Transform labels to include selected property
+        const newLabels = action.payload.map((label: any) => ({ ...label, selected: false }));
+        // Store original data and current data
+        state.originalLabels = newLabels;
+        state.labels = newLabels;
+      })
+      .addCase(fetchEnhancedKanbanLabels.rejected, (state, action) => {
+        state.loadingLabels = false;
+        state.error = action.payload as string;
       });
   },
 });
@@ -584,6 +724,11 @@ export const {
   setLabels,
   setPriorities,
   setMembers,
+  setTaskAssigneeSelection,
+  setLabelSelection,
+  setSelectedPriorities,
+  setBoardSearch,
+  setBoardArchived,
   updateTaskStatus,
   updateTaskPriority,
   deleteTask,
@@ -591,6 +736,7 @@ export const {
   reorderTasks,
   reorderGroups,
   addTaskToGroup,
+  updateEnhancedKanbanTaskStatus,
 } = enhancedKanbanSlice.actions;
 
 export default enhancedKanbanSlice.reducer; 
