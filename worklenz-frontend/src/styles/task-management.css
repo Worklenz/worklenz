@@ -472,23 +472,23 @@
   background-color: #262626 !important;
 }
 
-/* System preference fallback */
+/* System preference fallback - only apply when explicitly in dark mode */
 @media (prefers-color-scheme: dark) {
-  .task-list-board:not(.light) {
+  .task-list-board.dark:not(.light) {
     color: rgba(255, 255, 255, 0.85);
   }
 
-  .task-group:not(.light) {
+  .task-group.dark:not(.light) {
     background-color: #1f1f1f;
   }
 
-  .task-row:not(.light) {
+  .task-row.dark:not(.light) {
     background-color: #1f1f1f;
     color: rgba(255, 255, 255, 0.85);
     border-color: #303030;
   }
 
-  .task-row:not(.light):hover {
+  .task-row.dark:not(.light):hover {
     background-color: #262626 !important;
     border-left-color: #595959;
   }

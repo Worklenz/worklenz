@@ -43,26 +43,45 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   // Get field visibility from taskListFields slice
   const taskListFields = useSelector((state: RootState) => state.taskManagementFields) as TaskListField[];
   
-  // PERFORMANCE OPTIMIZATION: Aggressive virtualization for large lists
-  const VIRTUALIZATION_THRESHOLD = 5; // Reduced from 10 to 5 - virtualize everything
+  // PERFORMANCE OPTIMIZATION: Improved virtualization for better user experience
+  const VIRTUALIZATION_THRESHOLD = 25; // Increased threshold - virtualize when there are more tasks
   const TASK_ROW_HEIGHT = 40;
   const HEADER_HEIGHT = 40;
   const COLUMN_HEADER_HEIGHT = 40;
   const ADD_TASK_ROW_HEIGHT = 40;
+  
+  // PERFORMANCE OPTIMIZATION: Batch rendering to prevent long tasks
+  const RENDER_BATCH_SIZE = 5; // Render max 5 tasks per frame
+  const FRAME_BUDGET_MS = 8; // Leave 8ms per frame for other operations
 
   // PERFORMANCE OPTIMIZATION: Add early return for empty groups
   if (!group || !group.taskIds || group.taskIds.length === 0) {
     const emptyGroupHeight = HEADER_HEIGHT + COLUMN_HEADER_HEIGHT + 120 + ADD_TASK_ROW_HEIGHT; // 120px for empty state
     
     return (
-      <div className="virtualized-task-list empty-group" style={{ height: emptyGroupHeight }}>
+      <div className="virtualized-task-list empty-group" style={{ height: emptyGroupHeight, position: 'relative' }}>
+        {/* Sticky Group Color Border */}
+        <div 
+          className="sticky-group-border"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: '4px',
+            backgroundColor: group?.color || '#f0f0f0',
+            zIndex: 15,
+            pointerEvents: 'none',
+          }}
+        />
+        
         <div className="task-group-header" style={{ height: HEADER_HEIGHT }}>
           <div className="task-group-header-row">
             <div 
               className="task-group-header-content"
               style={{ 
                 backgroundColor: group?.color || '#f0f0f0',
-                borderLeft: `4px solid ${group?.color || '#f0f0f0'}`
+                // No margin - header should overlap the sticky border
               }}
             >
               <span className="task-group-header-text">
@@ -74,7 +93,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
         
         {/* Column Headers */}
         <div className="task-group-column-headers" style={{ 
-          borderLeft: `4px solid ${group?.color || '#f0f0f0'}`, 
+          marginLeft: '4px', // Account for sticky border
           height: COLUMN_HEADER_HEIGHT,
           background: 'var(--task-bg-secondary, #f5f5f5)',
           borderBottom: '1px solid var(--task-border-tertiary, #d9d9d9)',
@@ -93,7 +112,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center',
-          borderLeft: `4px solid ${group?.color || '#f0f0f0'}`,
+          marginLeft: '4px', // Account for sticky border
           backgroundColor: 'var(--task-bg-primary, white)'
         }}>
           <Empty
@@ -115,7 +134,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
           />
         </div>
         
-        <div className="task-group-add-task" style={{ borderLeft: `4px solid ${group?.color || '#f0f0f0'}`, height: ADD_TASK_ROW_HEIGHT }}>
+        <div className="task-group-add-task" style={{ marginLeft: '4px', height: ADD_TASK_ROW_HEIGHT }}>
           <AddTaskListRow groupId={group?.id} />
         </div>
       </div>
@@ -184,9 +203,10 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
     });
   }, [groupTasks, selectedTaskIds, onSelectTask]);
 
-  // PERFORMANCE OPTIMIZATION: Simplified height calculation
+  // PERFORMANCE OPTIMIZATION: Use passed height prop and calculate available space for tasks
   const taskRowsHeight = groupTasks.length * TASK_ROW_HEIGHT;
-  const groupHeight = HEADER_HEIGHT + COLUMN_HEADER_HEIGHT + taskRowsHeight + ADD_TASK_ROW_HEIGHT;
+  const groupHeight = height; // Use the height passed from parent
+  const availableTaskRowsHeight = Math.max(0, groupHeight - HEADER_HEIGHT - COLUMN_HEADER_HEIGHT - ADD_TASK_ROW_HEIGHT);
 
   // PERFORMANCE OPTIMIZATION: Limit visible columns for large lists
   const maxVisibleColumns = groupTasks.length > 50 ? 6 : 12; // Further reduce columns for large lists
@@ -253,12 +273,13 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   const scrollableWidth = scrollableColumns.reduce((sum, col) => sum + col.width, 0);
   const totalTableWidth = fixedWidth + scrollableWidth;
 
-  // PERFORMANCE OPTIMIZATION: Optimize overscan for large lists
+  // PERFORMANCE OPTIMIZATION: Enhanced overscan for smoother scrolling experience
   const shouldVirtualize = groupTasks.length > VIRTUALIZATION_THRESHOLD;
   const overscanCount = useMemo(() => {
-    if (groupTasks.length <= 10) return 2;
-    if (groupTasks.length <= 50) return 3;
-    return 5; // Reduced from 10 for better performance
+    if (groupTasks.length <= 20) return 5;   // Small lists: 5 items overscan
+    if (groupTasks.length <= 100) return 10; // Medium lists: 10 items overscan
+    if (groupTasks.length <= 500) return 15; // Large lists: 15 items overscan
+    return 20; // Very large lists: 20 items overscan for smooth scrolling
   }, [groupTasks.length]);
 
   // PERFORMANCE OPTIMIZATION: Memoize row renderer with better dependency management
@@ -274,6 +295,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
         className="task-row-container"
         style={{ 
           ...style, 
+          marginLeft: '4px', // Account for sticky border
           '--group-color': group.color || '#f0f0f0',
           contain: 'layout style', // CSS containment for better performance
         } as React.CSSProperties}
@@ -318,7 +340,22 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   }, [handleScroll]);
 
   return (
-    <div className="virtualized-task-list" style={{ height: groupHeight }}>
+    <div className="virtualized-task-list" style={{ height: groupHeight, position: 'relative' }}>
+      {/* Sticky Group Color Border */}
+      <div 
+        className="sticky-group-border"
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '4px',
+          backgroundColor: group.color || '#f0f0f0',
+          zIndex: 15,
+          pointerEvents: 'none',
+        }}
+      />
+      
       {/* Group Header */}
       <div className="task-group-header" style={{ height: HEADER_HEIGHT }}>
         <div className="task-group-header-row">
@@ -326,7 +363,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
             className="task-group-header-content"
             style={{ 
               backgroundColor: group.color || '#f0f0f0',
-              borderLeft: `4px solid ${group.color || '#f0f0f0'}`
+              // No margin - header should overlap the sticky border
             }}
           >
             <span className="task-group-header-text">
@@ -343,9 +380,21 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
       >
         <div 
           className="task-group-column-headers" 
-          style={{ borderLeft: `4px solid ${group.color || '#f0f0f0'}`, minWidth: totalTableWidth, display: 'flex', position: 'relative' }}
+          style={{ marginLeft: '4px', minWidth: totalTableWidth, display: 'flex', position: 'relative' }}
         >
-          <div className="fixed-columns-header" style={{ display: 'flex', position: 'sticky', left: 0, zIndex: 2, background: 'inherit', width: fixedWidth }}>
+          <div 
+            className="task-table-fixed-columns fixed-columns-header" 
+            style={{ 
+              display: 'flex', 
+              position: 'sticky', 
+              left: 0, 
+              zIndex: 12, 
+              background: isDarkMode ? 'var(--task-bg-secondary, #141414)' : 'var(--task-bg-secondary, #f5f5f5)', 
+              width: fixedWidth,
+              borderRight: scrollableColumns.length > 0 ? '2px solid var(--task-border-primary, #e8e8e8)' : 'none',
+              boxShadow: scrollableColumns.length > 0 ? '2px 0 4px rgba(0, 0, 0, 0.1)' : 'none',
+            }}
+          >
             {fixedColumns.map(col => (
               <div
                 key={col.key}
@@ -389,15 +438,15 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
           overflowY: 'auto',
           width: '100%',
           minWidth: totalTableWidth,
-          height: groupTasks.length > 0 ? taskRowsHeight : 'auto',
+          height: groupTasks.length > 0 ? availableTaskRowsHeight : 'auto',
           contain: 'layout style', // CSS containment for better performance
         }}
       >
         <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
           {shouldVirtualize ? (
             <List
-              height={taskRowsHeight}
-              width={width}
+              height={availableTaskRowsHeight}
+              width={totalTableWidth}
               itemCount={groupTasks.length}
               itemSize={TASK_ROW_HEIGHT}
               overscanCount={overscanCount}
@@ -425,6 +474,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
                     className="task-row-container"
                     style={{
                       height: TASK_ROW_HEIGHT,
+                      marginLeft: '4px', // Account for sticky border
                       '--group-color': group.color || '#f0f0f0',
                       contain: 'layout style', // CSS containment
                     } as React.CSSProperties}
@@ -451,7 +501,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
       {/* Add Task Row - Always show at the bottom */}
       <div 
         className="task-group-add-task"
-        style={{ borderLeft: `4px solid ${group.color || '#f0f0f0'}`, height: ADD_TASK_ROW_HEIGHT }}
+        style={{ marginLeft: '4px', height: ADD_TASK_ROW_HEIGHT }}
       >
         <AddTaskListRow groupId={group.id} />
       </div>
@@ -503,16 +553,6 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
         .task-row-container {
           position: relative;
           background: var(--task-bg-primary, white);
-        }
-        .task-row-container::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 4px;
-          background-color: var(--group-color, #f0f0f0);
-          z-index: 10;
         }
         /* Ensure no gaps between list items */
         .react-window-list > div {
@@ -567,20 +607,47 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
           letter-spacing: 0.5px;
           transition: color 0.3s ease;
         }
-        /* Add task row styles */
+        /* Add task row styles - Fixed width responsive design */
         .task-group-add-task {
           background: var(--task-bg-primary, white);
           border-top: 1px solid var(--task-border-secondary, #f0f0f0);
           transition: all 0.3s ease;
           padding: 0 12px;
           width: 100%;
+          max-width: 500px; /* Fixed maximum width */
+          min-width: 300px; /* Minimum width for mobile */
           min-height: 40px;
           display: flex;
           align-items: center;
           flex-shrink: 0;
+          border-radius: 0 0 6px 6px;
+          margin-left: 0;
+          position: relative;
         }
         .task-group-add-task:hover {
           background: var(--task-hover-bg, #fafafa);
+          transform: translateX(2px);
+        }
+        
+        /* Responsive adjustments for add task row */
+        @media (max-width: 768px) {
+          .task-group-add-task {
+            max-width: 400px;
+            min-width: 280px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .task-group-add-task {
+            max-width: calc(100vw - 40px);
+            min-width: 250px;
+          }
+        }
+
+        @media (min-width: 1200px) {
+          .task-group-add-task {
+            max-width: 600px;
+          }
         }
         .task-table-fixed-columns {
           display: flex;

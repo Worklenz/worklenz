@@ -151,7 +151,7 @@ const VirtualizedTaskGroup: React.FC<VirtualizedTaskGroupProps> = React.memo(({
           width={width}
           itemCount={groupTasks.length + 3} // +3 for header, column headers, and add task row
           itemSize={TASK_ROW_HEIGHT}
-          overscanCount={5} // Render 5 extra items for smooth scrolling
+          overscanCount={10} // Increased overscan for smoother scrolling experience
         >
           {Row}
         </List>
