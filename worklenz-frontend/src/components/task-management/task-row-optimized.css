@@ -2,42 +2,56 @@
 
 .task-row-optimized {
   contain: layout style;
-  will-change: transform;
-  transform: translateZ(0); /* Force GPU acceleration */
+  /* Remove conflicting will-change and transform */
+  transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+  background: var(--task-bg-primary, #fff);
+  color: var(--task-text-primary, #262626);
+  border-color: var(--task-border-primary, #e8e8e8);
 }
 
-/* HOVER STATE FIX: Ensure hover states reset properly */
-.task-row-optimized:not(:hover) {
-  /* Force reset of any stuck hover states */
-  contain: layout style;
+/* SIMPLIFIED HOVER STATE: Remove complex containment and transforms */
+.task-row-optimized:hover {
+  /* Remove transform that was causing GPU conflicts */
+  /* Remove complex containment rules */
 }
 
-.task-row-optimized:not(:hover) .task-open-button {
-  opacity: 0 !important;
-  visibility: hidden;
+/* OPTIMIZED HOVER BUTTONS: Use opacity only, no visibility changes */
+.task-open-button {
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+  /* Remove will-change to prevent GPU conflicts */
 }
 
-.task-row-optimized:not(:hover) .expand-icon-container.hover-only {
-  opacity: 0 !important;
-  visibility: hidden;
-}
-
-/* Force visibility on hover */
 .task-row-optimized:hover .task-open-button {
-  visibility: visible;
+  opacity: 1;
+}
+
+/* OPTIMIZED EXPAND ICON: Simplified hover behavior */
+.expand-icon-container.hover-only {
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
 }
 
 .task-row-optimized:hover .expand-icon-container.hover-only {
-  visibility: visible;
+  opacity: 1;
 }
 
-.task-row-optimized:hover {
-  contain: layout style;
-  /* Don't use paint containment on hover as it can interfere with hover effects */
-  /* Force repaint to ensure hover states update properly */
-  transform: translateZ(0.001px);
+/* REMOVE COMPLEX CONTAINMENT RULES that were causing layout thrashing */
+.task-row-optimized:not(:hover) {
+  /* Remove forced containment and transforms */
 }
 
+.task-row-optimized:not(:hover) .task-open-button {
+  opacity: 0;
+  /* Remove !important and visibility changes */
+}
+
+.task-row-optimized:not(:hover) .expand-icon-container.hover-only {
+  opacity: 0;
+  /* Remove !important and visibility changes */
+}
+
+/* DRAG STATE: Simplified */
 .task-row-optimized.task-row-dragging {
   contain: layout;
   will-change: transform;
@@ -61,23 +75,21 @@
 
 .task-row-optimized.fully-loaded {
   contain: layout style;
-  will-change: transform;
+  /* Remove will-change: transform to prevent conflicts */
 }
 
-/* REAL-TIME UPDATES: Prevent flickering during socket updates */
+/* REAL-TIME UPDATES: Simplified stable content */
 .task-row-optimized.stable-content {
   contain: layout style;
-  will-change: transform;
-  /* Prevent content from disappearing during real-time updates */
+  /* Remove will-change to prevent GPU conflicts */
   min-height: 40px;
-  /* Keep transitions for hover states but disable for layout changes */
-  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  /* Simplified transitions */
+  transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
 }
 
 .task-row-optimized.stable-content * {
   contain: layout;
-  will-change: auto;
-  /* Don't force opacity - let hover states work naturally */
+  /* Remove will-change to prevent conflicts */
 }
 
 /* Optimize initial render performance */
@@ -184,11 +196,14 @@
 /* Dark mode optimizations */
 .dark .task-row-optimized {
   contain: layout style;
+  background: var(--task-bg-primary, #1f1f1f);
+  color: var(--task-text-primary, #fff);
+  border-color: var(--task-border-primary, #303030);
 }
 
 .dark .task-row-optimized:hover {
   contain: layout style;
-  /* Don't use paint containment on hover as it can interfere with hover effects */
+  /* Remove complex containment rules */
 }
 
 /* Animation performance */
@@ -220,21 +235,20 @@
   contain: strict;
 }
 
-/* PERFORMANCE OPTIMIZATION: GPU acceleration for better scrolling */
+/* PERFORMANCE OPTIMIZATION: Simplified GPU acceleration */
 .task-row-optimized {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
+  /* Remove transform-style to prevent conflicts */
 }
 
 /* Optimize rendering layers */
 .task-row-optimized.initial-load {
-  transform: translate3d(0, 0, 0);
+  /* Remove transform to prevent conflicts */
 }
 
 .task-row-optimized.fully-loaded {
-  transform: translate3d(0, 0, 0);
+  /* Remove transform to prevent conflicts */
 }
 
 /* Performance debugging */
@@ -282,29 +296,19 @@
   box-sizing: border-box;
 }
 
-/* Task row hover effects for better performance */
+/* SIMPLIFIED TASK ROW HOVER EFFECTS */
 .task-cell-container:hover .task-open-button {
-  opacity: 1 !important;
+  opacity: 1;
 }
 
 .task-cell-container:not(:hover) .task-open-button {
-  opacity: 0 !important;
-}
-
-.task-open-button {
   opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-  /* Force hardware acceleration for smoother transitions */
-  transform: translateZ(0);
-  will-change: opacity;
 }
 
-/* Expand icon smart visibility */
+/* Expand icon smart visibility - simplified */
 .expand-icon-container {
-  transition: opacity 0.2s ease-in-out;
-  /* Force hardware acceleration for smoother transitions */
-  transform: translateZ(0);
-  will-change: opacity;
+  transition: opacity 0.15s ease-out;
+  /* Remove transform and will-change to prevent conflicts */
 }
 
 /* Always show expand icon if task has subtasks */
@@ -314,7 +318,7 @@
 
 .expand-icon-container.has-subtasks .expand-toggle-btn {
   opacity: 0.8;
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.15s ease-out;
 }
 
 .task-cell-container:hover .expand-icon-container.has-subtasks .expand-toggle-btn {
@@ -340,7 +344,7 @@
 
 .expand-icon-container.hover-only .expand-toggle-btn {
   opacity: 0.6;
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.15s ease-out;
 }
 
 .task-cell-container:hover .expand-icon-container.hover-only .expand-toggle-btn {
@@ -394,7 +398,7 @@
 
 /* Task indicators hover effects */
 .task-indicators .indicator-badge {
-  transition: all 0.2s ease-in-out;
+  transition: all 0.15s ease-out;
 }
 
 .task-indicators .indicator-badge:hover {
@@ -407,7 +411,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* HOVER STATE DEBUGGING: Force hover state reset on mouse leave */
+/* SIMPLIFIED HOVER STATE MANAGEMENT */
 .task-row-optimized {
   /* Ensure proper hover state management */
   pointer-events: auto;
@@ -418,11 +422,71 @@
   pointer-events: inherit;
 }
 
-/* Force browser to recalculate hover states */
+/* Remove complex hover state forcing */
 @supports (contain: layout) {
   .task-row-optimized:not(:hover) {
     contain: layout;
-    /* Force style recalculation */
-    animation: none;
+    /* Remove animation forcing */
   }
+}
+
+.task-row-optimized.selected {
+  background: var(--task-selected-bg, #e6f7ff) !important;
+  border-left-color: var(--task-selected-border, #1890ff);
+}
+
+.task-row-optimized.drag-overlay {
+  background: var(--task-bg-primary, #fff);
+  color: var(--task-text-primary, #262626);
+  border: 1px solid var(--task-border-primary, #e8e8e8);
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  z-index: 1000;
+  opacity: 0.95;
+}
+
+/* Dark mode support */
+.dark .task-row-optimized.selected,
+[data-theme="dark"] .task-row-optimized.selected {
+  background: var(--task-selected-bg, #1a2332) !important;
+  border-left-color: var(--task-selected-border, #1890ff);
+}
+
+.dark .task-row-optimized.drag-overlay,
+[data-theme="dark"] .task-row-optimized.drag-overlay {
+  background: var(--task-bg-primary, #1f1f1f);
+  color: var(--task-text-primary, #fff);
+  border: 1px solid var(--task-border-primary, #303030);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.32);
+}
+
+.task-row-optimized.is-dragging {
+  border: 3px solid #1890ff !important;
+  box-shadow: 0 0 24px 4px #1890ff, 0 6px 16px rgba(0,0,0,0.18);
+  opacity: 0.85 !important;
+  background: var(--task-bg-primary, #fff) !important;
+  z-index: 2000 !important;
+  transition: none !important;
+}
+
+.dark .task-row-optimized.is-dragging,
+[data-theme="dark"] .task-row-optimized.is-dragging {
+  border: 3px solid #40a9ff !important;
+  box-shadow: 0 0 24px 4px #40a9ff, 0 6px 16px rgba(0,0,0,0.38);
+  background: var(--task-bg-primary, #1f1f1f) !important;
+}
+
+.task-row-optimized.drag-overlay {
+  border: 3px dashed #ff4d4f !important;
+  box-shadow: 0 0 32px 8px #ff4d4f, 0 6px 16px rgba(0,0,0,0.22);
+  background: #fffbe6 !important;
+  opacity: 0.95 !important;
+  z-index: 3000 !important;
+}
+
+.dark .task-row-optimized.drag-overlay,
+[data-theme="dark"] .task-row-optimized.drag-overlay {
+  border: 3px dashed #ff7875 !important;
+  box-shadow: 0 0 32px 8px #ff7875, 0 6px 16px rgba(0,0,0,0.42);
+  background: #2a2a2a !important;
 } 

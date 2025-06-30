@@ -159,16 +159,86 @@ const CustomCell = React.memo(({
   renderColumnContent: any;
   updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
 }) => {
-  if (column.custom_column && column.key && column.pinned) {
-    return renderCustomColumnContent(
-      column.custom_column_obj || {},
-      column.custom_column_obj?.fieldType,
-      task,
-      column.key,
-      updateTaskCustomColumnValue
-    );
+  try {
+    if (column.custom_column && column.key && column.pinned) {
+      return renderCustomColumnContent(
+        column.custom_column_obj || {},
+        column.custom_column_obj?.fieldType,
+        task,
+        column.key,
+        updateTaskCustomColumnValue
+      );
+    }
+    
+    const result = renderColumnContent(column.key || '', task, isSubtask);
+    
+    // If renderColumnContent returns null or undefined, provide a fallback
+    if (result === null || result === undefined) {
+      // Handle specific column types with fallbacks
+      switch (column.key) {
+        case 'STATUS':
+          return (
+            <div className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">
+              {task.status_name || task.status || 'To Do'}
+            </div>
+          );
+        case 'PRIORITY':
+          return (
+            <div className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">
+              {task.priority_name || task.priority || 'Medium'}
+            </div>
+          );
+        case 'ASSIGNEES':
+          return (
+            <div className="text-xs text-gray-500">
+              {task.assignees?.length ? `${task.assignees.length} assignee(s)` : 'No assignees'}
+            </div>
+          );
+        case 'LABELS':
+          return (
+            <div className="text-xs text-gray-500">
+              {task.labels?.length ? `${task.labels.length} label(s)` : 'No labels'}
+            </div>
+          );
+        default:
+          return <div className="text-xs text-gray-400">-</div>;
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error rendering task cell:', error, { column: column.key, task: task.id });
+    
+    // Fallback rendering for errors
+    switch (column.key) {
+      case 'STATUS':
+        return (
+          <div className="px-2 py-1 text-xs rounded bg-red-100 text-red-600">
+            {task.status_name || task.status || 'Error'}
+          </div>
+        );
+      case 'PRIORITY':
+        return (
+          <div className="px-2 py-1 text-xs rounded bg-red-100 text-red-600">
+            {task.priority_name || task.priority || 'Error'}
+          </div>
+        );
+      case 'ASSIGNEES':
+        return (
+          <div className="text-xs text-red-500">
+            Error loading assignees
+          </div>
+        );
+      case 'LABELS':
+        return (
+          <div className="text-xs text-red-500">
+            Error loading labels
+          </div>
+        );
+      default:
+        return <div className="text-xs text-red-400">Error</div>;
+    }
   }
-  return renderColumnContent(column.key || '', task, isSubtask);
 });
 
 // First, let's extract the custom column cell to a completely separate component

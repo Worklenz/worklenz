@@ -38,11 +38,12 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
     onTaskRender?.(task, index);
 
     return (
-      <div className="virtualized-task-row">
+      <div className="virtualized-task-row" style={style}>
         <EnhancedKanbanTaskCard
           task={task}
           isActive={task.id === activeTaskId}
           isDropTarget={overId === task.id}
+          sectionId={task.status || 'default'}
         />
       </div>
     );
@@ -52,10 +53,11 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
   const VirtualizedList = useMemo(() => (
     <List
       height={height}
+      width="100%"
       itemCount={tasks.length}
       itemSize={itemHeight}
       itemData={taskData}
-      overscanCount={5} // Render 5 extra items for smooth scrolling
+      overscanCount={10} // Increased overscan for smoother scrolling experience
       className="virtualized-task-list"
     >
       {Row}
