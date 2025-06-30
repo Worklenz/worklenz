@@ -495,6 +495,42 @@ const enhancedKanbanSlice = createSlice({
       });
     },
 
+    // Enhanced Kanban external status update (for use in task drawer dropdown)
+    updateEnhancedKanbanTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
+      const { id: task_id, status_id } = action.payload;
+      let oldGroupId: string | null = null;
+      let foundTask: IProjectTask | null = null;
+      // Find the task and its group
+      for (const group of state.taskGroups) {
+        const task = group.tasks.find(t => t.id === task_id);
+        if (task) {
+          foundTask = task;
+          oldGroupId = group.id;
+          break;
+        }
+      }
+      if (!foundTask) return;
+      // If grouped by status and the group changes, move the task
+      if (state.groupBy === IGroupBy.STATUS && oldGroupId && oldGroupId !== status_id) {
+        // Remove from old group
+        const oldGroup = state.taskGroups.find(g => g.id === oldGroupId);
+        if (oldGroup) {
+          oldGroup.tasks = oldGroup.tasks.filter(t => t.id !== task_id);
+        }
+        // Add to new group at the top
+        const newGroup = state.taskGroups.find(g => g.id === status_id);
+        if (newGroup) {
+          foundTask.status_id = status_id;
+          newGroup.tasks.unshift(foundTask);
+        }
+      } else {
+        // Just update the status_id
+        foundTask.status_id = status_id;
+      }
+      // Update cache
+      state.taskCache[task_id] = foundTask;
+    },
+
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
       const { id: task_id, priority_id } = action.payload;
 
@@ -700,6 +736,7 @@ export const {
   reorderTasks,
   reorderGroups,
   addTaskToGroup,
+  updateEnhancedKanbanTaskStatus,
 } = enhancedKanbanSlice.actions;
 
 export default enhancedKanbanSlice.reducer; 
