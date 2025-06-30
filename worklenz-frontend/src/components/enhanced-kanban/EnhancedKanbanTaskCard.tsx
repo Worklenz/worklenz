@@ -114,7 +114,6 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
 
 
   const handleSubTaskExpand = useCallback(() => {
-    console.log('handleSubTaskExpand', task, projectId);
     if (task && task.id && projectId) {
       if (task.show_sub_tasks) {
         // If subtasks are already loaded, just toggle visibility
