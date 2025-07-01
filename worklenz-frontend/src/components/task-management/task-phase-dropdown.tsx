@@ -187,7 +187,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
               
               {/* No Phase Color Indicator */}
               <div 
-                className={`w-3 h-3 rounded-full shadow-xs border-2 ${
+                className={`w-3 h-3 rounded-full shadow-sm border-2 ${
                   isDarkMode ? 'border-gray-800/30' : 'border-white/20'
                 }`}
                 style={{ backgroundColor: isDarkMode ? '#4b5563' : '#9ca3af' }}
@@ -234,7 +234,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
                 >
                   {/* Phase Color Indicator */}
                   <div 
-                    className={`w-3 h-3 rounded-full shadow-xs border-2 ${
+                    className={`w-3 h-3 rounded-full shadow-sm border-2 ${
                       isDarkMode ? 'border-gray-800/30' : 'border-white/20'
                     }`}
                     style={{ backgroundColor: getPhaseColor(phase) }}

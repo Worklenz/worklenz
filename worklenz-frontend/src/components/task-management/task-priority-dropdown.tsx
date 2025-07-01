@@ -193,7 +193,7 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
                   
                   {/* Priority Color Indicator */}
                   <div 
-                    className={`w-3 h-3 rounded-full shadow-xs border-2 ${
+                    className={`w-3 h-3 rounded-full shadow-sm border-2 ${
                       isDarkMode ? 'border-gray-800/30' : 'border-white/20'
                     }`}
                     style={{ backgroundColor: getPriorityColor(priority) }}
