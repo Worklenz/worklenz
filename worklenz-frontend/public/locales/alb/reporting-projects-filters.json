@@ -1,0 +1,35 @@
+{
+  "searchByNamePlaceholder": "Kërko sipas emrit",
+  "searchByCategoryPlaceholder": "Kërko sipas kategorisë",
+
+  "statusText": "Statusi",
+  "healthText": "Gjendja",
+  "categoryText": "Kategoria",
+  "projectManagerText": "Menaxheri i Projektit",
+  "showFieldsText": "Shfaq fushat",
+
+  "cancelledText": "Anuluar",
+  "blockedText": "E bllokuar",
+  "onHoldText": "Në pritje",
+  "proposedText": "E propozuar",
+  "inPlanningText": "Në planifikim",
+  "inProgressText": "Në progres",
+  "completedText": "E përfunduar",
+  "continuousText": "E vazhdueshme",
+
+  "notSetText": "Pa caktuar",
+  "needsAttentionText": "Kërkon vëmendje",
+  "atRiskText": "Në rrezik",
+  "goodText": "Në rregull",
+
+  "nameText": "Projekti",
+  "estimatedVsActualText": "Vlerësuar vs Aktual",
+  "tasksProgressText": "Progresi i detyrave",
+  "lastActivityText": "Aktiviteti i fundit",
+  "datesText": "Datat e Fillimit/Përfundimit",
+  "daysLeftText": "Ditë të mbetura/vonuar",
+  "projectHealthText": "Gjendja e projektit",
+  "projectUpdateText": "Përditësimi i projektit",
+  "clientText": "Klienti",
+  "teamText": "Ekipi"
+}

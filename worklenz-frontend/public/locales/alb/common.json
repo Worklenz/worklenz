@@ -1,0 +1,9 @@
+{
+  "login-success": "Hyrja u krye me sukses!",
+  "login-failed": "Hyrja dështoi. Ju lutemi kontrolloni kredencialet dhe provoni përsëri.",
+  "signup-success": "Regjistrimi u krye me sukses! Mirë se erdhët.",
+  "signup-failed": "Regjistrimi dështoi. Ju lutemi sigurohuni që të gjitha fushat e nevojshme janë plotësuar dhe provoni përsëri.",
+  "reconnecting": "Jeni shkëputur nga serveri.",
+  "connection-lost": "Lidhja me serverin dështoi. Ju lutemi kontrolloni lidhjen tuaj me internet.",
+  "connection-restored": "U lidhët me serverin me sukses"
+}

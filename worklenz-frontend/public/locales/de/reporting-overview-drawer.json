@@ -1,0 +1,39 @@
+{
+  "exportButton": "Exportieren",
+  "projectsButton": "Projekte",
+  "membersButton": "Mitglieder",
+  "searchByNameInputPlaceholder": "Nach Namen suchen",
+
+  "overviewTab": "Übersicht",
+  "projectsTab": "Projekte",
+  "membersTab": "Mitglieder",
+
+  "projectsByStatusText": "Projekte nach Status",
+  "projectsByCategoryText": "Projekte nach Kategorie",
+  "projectsByHealthText": "Projekte nach Gesundheit",
+
+  "projectsText": "Projekte",
+  "allText": "Alle",
+
+  "cancelledText": "Abgebrochen",
+  "blockedText": "Blockiert",
+  "onHoldText": "Pausiert",
+  "proposedText": "Vorgeschlagen",
+  "inPlanningText": "In Planung",
+  "inProgressText": "In Bearbeitung",
+  "completedText": "Abgeschlossen",
+  "continuousText": "Kontinuierlich",
+
+  "notSetText": "Nicht festgelegt",
+  "needsAttentionText": "Benötigt Aufmerksamkeit",
+  "atRiskText": "Gefährdet",
+  "goodText": "Gut",
+
+  "nameColumn": "Name",
+  "emailColumn": "E-Mail",
+  "projectsColumn": "Projekte",
+  "tasksColumn": "Aufgaben",
+  "overdueTasksColumn": "Überfällige Aufgaben",
+  "completedTasksColumn": "Abgeschlossene Aufgaben",
+  "ongoingTasksColumn": "Laufende Aufgaben"
+}

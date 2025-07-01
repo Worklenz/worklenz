@@ -1,0 +1,13 @@
+{
+  "importTasks": "Importo detyra",
+  "createTask": "Krijo detyrë",
+  "settings": "Cilësimet",
+  "subscribe": "Abonohu",
+  "unsubscribe": "Ç'abonohu",
+  "deleteProject": "Fshi projektin",
+  "startDate": "Data e fillimit",
+  "endDate": "Data e përfundimit",
+  "projectSettings": "Cilësimet e projektit",
+  "projectSummary": "Përmbledhja e projektit",
+  "receiveProjectSummary": "Merrni një përmbledhje të projektit çdo mbrëmje."
+}

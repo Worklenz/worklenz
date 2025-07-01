@@ -1,0 +1,23 @@
+{
+  "bugTracking": "Gjurmimi i Gabimeve",
+  "construction": "Ndërtim",
+  "designCreative": "Dizajn & Kreativ",
+  "education": "Arsim",
+  "finance": "Financë",
+  "hrRecruiting": "Burime Njerëzore & Rekrutim",
+  "informationTechnology": "Teknologji Informacioni",
+  "legal": "Juridik",
+  "manufacturing": "Prodhim",
+  "marketing": "Marketing",
+  "nonprofit": "Jo-fitimprurës",
+  "personalUse": "Përdorim Personal",
+  "salesCRM": "Shitje & CRM",
+  "serviceConsulting": "Shërbime & Këshillim",
+  "softwareDevelopment": "Zhvillim Softueri",
+  "description": "Përshkrimi",
+  "phase": "Faza",
+  "statuses": "Statuset",
+  "priorities": "Prioritetet",
+  "labels": "Etiketa",
+  "tasks": "Detyrat"
+}
