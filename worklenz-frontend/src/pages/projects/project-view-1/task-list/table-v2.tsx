@@ -323,7 +323,7 @@ const TaskListTable = ({
         }}
       >
         {activeTask && (
-          <div className="bg-white dark:bg-gray-800 shadow-lg rounded border">
+          <div className="bg-white dark:bg-gray-800 shadow-lg rounded-sm border">
             <DraggableRow
               task={activeTask}
               visibleColumns={visibleColumns}

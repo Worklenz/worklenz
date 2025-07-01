@@ -39,7 +39,7 @@ const TaskCell = ({
     return (
       <button
         onClick={() => toggleTaskExpansion(taskId)}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
       >
         {expandedTasks.includes(taskId) ? <DownOutlined /> : <RightOutlined />}
       </button>
@@ -51,7 +51,7 @@ const TaskCell = ({
     return !isSubTask ? (
       <button
         onClick={() => toggleTaskExpansion(taskId)}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
       >
         {expandedTasks.includes(taskId) ? <DownOutlined /> : <RightOutlined />}
       </button>

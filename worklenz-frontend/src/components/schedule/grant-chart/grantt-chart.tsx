@@ -114,7 +114,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
         style={{
           background: themeWiseColor('#fff', '#141414', themeMode),
         }}
-        className={`after:content relative z-10 after:absolute after:-right-1 after:top-0 after:-z-10 after:h-full after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent`}
+        className={`after:content relative z-10 after:absolute after:-right-1 after:top-0 after:-z-10 after:h-full after:w-1.5 after:bg-transparent after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent`}
       >
         <GranttMembersTable
           members={teamData}
@@ -266,7 +266,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                           >
                             <div
                               style={{ width: '100%', height: '100%' }}
-                              className={`rounded-sm outline-1 hover:outline ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
+                              className={`rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
                             ></div>
                           </div>
                         ))
