@@ -394,7 +394,7 @@ const FilterDropdown: React.FC<{
             ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold')
             : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={isOpen}
@@ -414,7 +414,7 @@ const FilterDropdown: React.FC<{
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-lg border ${themeClasses.dropdownBorder}`}>
+        <div className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}>
           {/* Search Input */}
           {section.searchable && (
             <div className={`p-2 border-b ${themeClasses.dividerBorder}`}>
@@ -546,7 +546,7 @@ const SearchFilter: React.FC<{
       {!isExpanded ? (
         <button
           onClick={handleToggle}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${themeClasses.containerBg === 'bg-gray-800' ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${themeClasses.containerBg === 'bg-gray-800' ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
             }`}
         >
           <SearchOutlined className="w-3.5 h-3.5" />
@@ -579,7 +579,7 @@ const SearchFilter: React.FC<{
           </div>
           <button
             type="submit"
-            className="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors duration-200"
+            className="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
           >
             Search
           </button>
@@ -646,7 +646,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
             ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold')
             : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={open}
@@ -666,7 +666,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
 
       {/* Dropdown Panel - matching FilterDropdown style */}
       {open && (
-        <div className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-lg border ${themeClasses.dropdownBorder}`}>
+        <div className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}>
           {/* Options List */}
           <div className="max-h-48 overflow-y-auto">
             {sortedFields.length === 0 ? (
@@ -1037,7 +1037,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   }, [dispatch, projectId, position, showArchived]);
 
   return (
-    <div className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-xs ${className}`}>
+    <div className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-sm ${className}`}>
       <div className="flex flex-wrap items-center gap-2">
         {/* Left Section - Main Filters */}
         <div className="flex flex-wrap items-center gap-2">

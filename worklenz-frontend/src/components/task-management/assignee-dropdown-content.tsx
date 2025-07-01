@@ -171,7 +171,7 @@ const AssigneeDropdownContent: React.FC<AssigneeDropdownContentProps> = ({
               ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
               : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
             }
-            focus:outline-hidden focus:ring-1 focus:ring-blue-500
+            focus:outline-none focus:ring-1 focus:ring-blue-500
           `}
         />
       </div>

@@ -20,7 +20,7 @@ const TaskManagementDemo: React.FC = () => {
 
   return (
     <Layout className="min-h-screen bg-gray-50">
-      <Header className="bg-white shadow-xs">
+      <Header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
           <Title level={2} className="mb-0 text-gray-800">
             Enhanced Task Management System
