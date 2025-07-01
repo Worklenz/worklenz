@@ -1,10 +1,12 @@
 import React, { useMemo, useCallback, useEffect, useRef } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Empty } from 'antd';
+import { Empty, Button } from 'antd';
+import { RightOutlined, DownOutlined } from '@ant-design/icons';
 import { taskManagementSelectors } from '@/features/task-management/task-management.slice';
+import { toggleGroupCollapsed } from '@/features/task-management/grouping.slice';
 import { Task } from '@/types/task-management.types';
 import TaskRow from './task-row';
 import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-rows/add-task-list-row';
@@ -35,6 +37,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   width,
   tasksById
 }) => {
+  const dispatch = useDispatch();
   const { t } = useTranslation('task-management');
   
   // Get theme from Redux store
@@ -42,6 +45,10 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   
   // Get field visibility from taskListFields slice
   const taskListFields = useSelector((state: RootState) => state.taskManagementFields) as TaskListField[];
+  
+  // Get group collapse state from Redux
+  const groupStates = useSelector((state: RootState) => state.grouping.groupStates);
+  const isCollapsed = groupStates[group.id]?.collapsed || false;
   
   // PERFORMANCE OPTIMIZATION: Improved virtualization for better user experience
   const VIRTUALIZATION_THRESHOLD = 25; // Increased threshold - virtualize when there are more tasks
@@ -52,7 +59,12 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   
   // PERFORMANCE OPTIMIZATION: Batch rendering to prevent long tasks
   const RENDER_BATCH_SIZE = 5; // Render max 5 tasks per frame
-  const FRAME_BUDGET_MS = 8; // Leave 8ms per frame for other operations
+  const FRAME_BUDGET_MS = 8;
+
+  // Handle collapse/expand toggle
+  const handleToggleCollapse = useCallback(() => {
+    dispatch(toggleGroupCollapsed(group.id));
+  }, [dispatch, group.id]);
 
   // PERFORMANCE OPTIMIZATION: Add early return for empty groups
   if (!group || !group.taskIds || group.taskIds.length === 0) {
@@ -84,6 +96,22 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
                 // No margin - header should overlap the sticky border
               }}
             >
+              <Button
+                type="text"
+                icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
+                onClick={handleToggleCollapse}
+                className="task-group-collapse-button"
+                style={{
+                  color: 'white',
+                  border: 'none',
+                  background: 'transparent',
+                  padding: '4px',
+                  marginRight: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
               <span className="task-group-header-text">
                 {group?.title || 'Empty Group'} (0)
               </span>
@@ -92,7 +120,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
         </div>
         
         {/* Column Headers */}
-        <div className="task-group-column-headers" style={{ 
+        <div style={{
           marginLeft: '4px', // Account for sticky border
           height: COLUMN_HEADER_HEIGHT,
           background: 'var(--task-bg-secondary, #f5f5f5)',
@@ -141,35 +169,22 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
     );
   }
 
-  // PERFORMANCE OPTIMIZATION: Get tasks for this group using direct lookup (no mapping/filtering)
+  // Get tasks for this group using memoization for performance
   const groupTasks = useMemo(() => {
-    // PERFORMANCE OPTIMIZATION: Use for loop instead of map for better performance
-    const tasks: Task[] = [];
-    for (let i = 0; i < group.taskIds.length; i++) {
-      const task = tasksById[group.taskIds[i]];
-      if (task) {
-        tasks.push(task);
-      }
-    }
-    return tasks;
+    return group.taskIds
+      .map((taskId: string) => tasksById[taskId])
+      .filter((task: Task | undefined): task is Task => task !== undefined);
   }, [group.taskIds, tasksById]);
 
-  // PERFORMANCE OPTIMIZATION: Only calculate selection state when needed
+  // Calculate selection state for the group checkbox
   const selectionState = useMemo(() => {
     if (groupTasks.length === 0) {
       return { isAllSelected: false, isIndeterminate: false };
     }
     
-    // PERFORMANCE OPTIMIZATION: Use for loop instead of filter for better performance
-    let selectedCount = 0;
-    for (let i = 0; i < groupTasks.length; i++) {
-      if (selectedTaskIds.includes(groupTasks[i].id)) {
-        selectedCount++;
-      }
-    }
-    
-    const isAllSelected = selectedCount === groupTasks.length;
-    const isIndeterminate = selectedCount > 0 && selectedCount < groupTasks.length;
+    const selectedTasksInGroup = groupTasks.filter((task: Task) => selectedTaskIds.includes(task.id));
+    const isAllSelected = selectedTasksInGroup.length === groupTasks.length;
+    const isIndeterminate = selectedTasksInGroup.length > 0 && selectedTasksInGroup.length < groupTasks.length;
     
     return { isAllSelected, isIndeterminate };
   }, [groupTasks, selectedTaskIds]);
@@ -339,6 +354,69 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
     };
   }, [handleScroll]);
 
+  // If group is collapsed, show only header
+  if (isCollapsed) {
+    return (
+      <div className="virtualized-task-list collapsed" style={{ height: HEADER_HEIGHT, position: 'relative' }}>
+        {/* Sticky Group Color Border */}
+        <div 
+          className="sticky-group-border"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: '4px',
+            backgroundColor: group.color || '#f0f0f0',
+            zIndex: 15,
+            pointerEvents: 'none',
+          }}
+        />
+        
+        {/* Group Header */}
+        <div className="task-group-header" style={{ height: HEADER_HEIGHT }}>
+          <div className="task-group-header-row">
+            <div 
+              className="task-group-header-content"
+              style={{ 
+                backgroundColor: group.color || '#f0f0f0',
+                // No margin - header should overlap the sticky border
+              }}
+            >
+              <Button
+                type="text"
+                icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
+                onClick={handleToggleCollapse}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleToggleCollapse();
+                  }
+                }}
+                className="task-group-collapse-button"
+                aria-label={isCollapsed ? 'Expand group' : 'Collapse group'}
+                title={isCollapsed ? 'Click to expand group' : 'Click to collapse group'}
+                style={{
+                  color: 'white',
+                  border: 'none',
+                  background: 'transparent',
+                  padding: '4px',
+                  marginRight: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
+              <span className="task-group-header-text">
+                {group.title} ({groupTasks.length})
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="virtualized-task-list" style={{ height: groupHeight, position: 'relative' }}>
       {/* Sticky Group Color Border */}
@@ -366,6 +444,30 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
               // No margin - header should overlap the sticky border
             }}
           >
+                          <Button
+                type="text"
+                icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
+                onClick={handleToggleCollapse}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleToggleCollapse();
+                  }
+                }}
+                className="task-group-collapse-button"
+                aria-label={isCollapsed ? 'Expand group' : 'Collapse group'}
+                title={isCollapsed ? 'Click to expand group' : 'Click to collapse group'}
+                style={{
+                  color: 'white',
+                  border: 'none',
+                  background: 'transparent',
+                  padding: '4px',
+                  marginRight: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
             <span className="task-group-header-text">
               {group.title} ({groupTasks.length})
             </span>
@@ -585,6 +687,24 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
           font-size: 13px !important;
           font-weight: 600 !important;
           margin: 0 !important;
+        }
+        /* Collapse button styles */
+        .task-group-collapse-button {
+          transition: all 0.2s ease;
+          border-radius: 4px;
+          min-width: 24px;
+          height: 24px;
+        }
+        .task-group-collapse-button:hover {
+          background-color: rgba(255, 255, 255, 0.15) !important;
+          transform: scale(1.05);
+        }
+        .task-group-collapse-button:active {
+          transform: scale(0.95);
+        }
+        .task-group-collapse-button .anticon {
+          font-size: 12px;
+          transition: transform 0.2s ease;
         }
         /* Column headers styles */
         .task-table-header-cell {
