@@ -15,6 +15,7 @@ import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priorit
 import { setTaskPriority } from '@/features/task-drawer/task-drawer.slice';
 import { updateTaskPriority as updateBoardTaskPriority } from '@/features/board/board-slice';
 import { updateTaskPriority as updateTasksListTaskPriority } from '@/features/tasks/tasks.slice';
+import { updateEnhancedKanbanTaskPriority } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 type PriorityDropdownProps = {
   task: ITaskViewModel;
@@ -48,7 +49,7 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
           dispatch(updateTasksListTaskPriority(data));
         }
         if (tab === 'board') {
-          dispatch(updateBoardTaskPriority(data));
+          dispatch(updateEnhancedKanbanTaskPriority(data));
         }
       }
     );
