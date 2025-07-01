@@ -14,6 +14,7 @@ import { sortTeamMembers } from '@/utils/sort-team-members';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { updateTask } from '@/features/task-management/task-management.slice';
+import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 interface AssigneeSelectorProps {
   task: IProjectTask;
@@ -177,6 +178,12 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
     // Emit socket event - the socket handler will update Redux with proper types
     socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
+    socket?.once(
+      SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
+      (data: any) => {
+        dispatch(updateEnhancedKanbanTaskAssignees(data));
+      }
+    );
 
     // Remove from pending changes after a short delay (optimistic)
     setTimeout(() => {
@@ -226,6 +233,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       {isOpen && createPortal(
         <div
           ref={dropdownRef}
+          onClick={e => e.stopPropagation()}
           className={`
             fixed z-9999 w-72 rounded-md shadow-lg border
             ${isDarkMode 
@@ -284,12 +292,14 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                   }}
                 >
                   <div className="relative">
-                    <Checkbox
-                      checked={checkMemberSelected(member.id || '')}
-                      onChange={(checked) => handleMemberToggle(member.id || '', checked)}
-                      disabled={member.pending_invitation || pendingChanges.has(member.id || '')}
-                      isDarkMode={isDarkMode}
-                    />
+                    <span onClick={e => e.stopPropagation()}>
+                      <Checkbox
+                        checked={checkMemberSelected(member.id || '')}
+                        onChange={(checked) => handleMemberToggle(member.id || '', checked)}
+                        disabled={member.pending_invitation || pendingChanges.has(member.id || '')}
+                        isDarkMode={isDarkMode}
+                      />
+                    </span>
                     {pendingChanges.has(member.id || '') && (
                       <div className={`absolute inset-0 flex items-center justify-center ${
                         isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'
