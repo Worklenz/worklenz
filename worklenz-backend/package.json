@@ -86,7 +86,6 @@
     "passport-local": "^1.0.0",
     "path": "^0.12.7",
     "pg": "^8.14.1",
-    "pg-native": "^3.3.0",
     "pug": "^3.0.2",
     "redis": "^4.6.7",
     "sanitize-html": "^2.11.0",
