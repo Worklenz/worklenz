@@ -73,7 +73,7 @@ const onTaskSortOrderChange = async (io: Server, socket: Socket, data: ChangeReq
     // PERFORMANCE OPTIMIZATION: Use cached dependency check if available
     const cacheKey = `${project_id}-${userId}-${team_id}`;
     const cachedDependency = dependencyCache.get(cacheKey);
-    
+
     let hasAccess = false;
     if (cachedDependency && (Date.now() - cachedDependency.timestamp) < CACHE_TTL) {
       hasAccess = cachedDependency.result;
@@ -82,16 +82,16 @@ const onTaskSortOrderChange = async (io: Server, socket: Socket, data: ChangeReq
       const dependencyResult = await dbPool.query(`
         SELECT EXISTS(
           SELECT 1 FROM project_members pm
-          INNER JOIN projects p ON p.id = pm.project_id
-          WHERE pm.project_id = $1 
-          AND pm.user_id = $2 
-          AND p.team_id = $3
-          AND pm.is_active = true
+                  INNER JOIN projects p ON p.id = pm.project_id
+         INNER JOIN team_members tm ON pm.team_member_id = tm.id
+WHERE pm.project_id = $1
+  AND tm.user_id = $2
+  AND p.team_id = $3
         ) as has_access
       `, [project_id, userId, team_id]);
-      
+
       hasAccess = dependencyResult.rows[0]?.has_access || false;
-      
+
       // Cache the result
       dependencyCache.set(cacheKey, { result: hasAccess, timestamp: Date.now() });
     }
@@ -152,8 +152,8 @@ const onTaskSortOrderChange = async (io: Server, socket: Socket, data: ChangeReq
     });
 
     // Send success response
-    socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), { 
-      success: true, 
+    socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
+      success: true,
       task_id: task.id,
       from_group,
       to_group,
@@ -162,8 +162,8 @@ const onTaskSortOrderChange = async (io: Server, socket: Socket, data: ChangeReq
 
   } catch (error) {
     log_error(error);
-    socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), { 
-      error: "Internal server error" 
+    socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
+      error: "Internal server error"
     });
   }
 };
