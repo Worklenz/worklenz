@@ -42,6 +42,18 @@ import {
   selectCurrentGroupingV3,
   fetchTasksV3
 } from '@/features/task-management/task-management.slice';
+import {
+  updateEnhancedKanbanSubtask,
+  addTaskToGroup as addEnhancedKanbanTaskToGroup,
+  updateEnhancedKanbanTaskStatus,
+  updateEnhancedKanbanTaskPriority,
+  updateEnhancedKanbanTaskAssignees,
+  updateEnhancedKanbanTaskLabels,
+  updateEnhancedKanbanTaskProgress,
+  updateEnhancedKanbanTaskName,
+  updateEnhancedKanbanTaskEndDate,
+  updateEnhancedKanbanTaskStartDate
+} from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import {
@@ -110,6 +122,9 @@ export const useTaskSocketHandlers = () => {
             manual_progress: false,
           } as IProjectTask)
         );
+        
+        // Update enhanced kanban slice
+        dispatch(updateEnhancedKanbanTaskAssignees(data));
 
         // Remove unnecessary refetch - real-time updates handle this
         // if (currentSession?.team_id && !loadingAssignees) {
@@ -150,6 +165,9 @@ export const useTaskSocketHandlers = () => {
         // dispatch(fetchLabels()),
         // projectId && dispatch(fetchLabelsByProject(projectId)),
       ]);
+      
+      // Update enhanced kanban slice
+      dispatch(updateEnhancedKanbanTaskLabels(labels));
     },
     [dispatch, projectId]
   );
@@ -171,6 +189,9 @@ export const useTaskSocketHandlers = () => {
       // Update the old task slice (for backward compatibility)
       dispatch(updateTaskStatus(response));
       dispatch(deselectAll());
+      
+      // Update enhanced kanban slice
+      dispatch(updateEnhancedKanbanTaskStatus(response));
 
       // For the task management slice, move task between groups without resetting
       const state = store.getState();
@@ -267,6 +288,15 @@ export const useTaskSocketHandlers = () => {
           }
         }));
       }
+      
+      // Update enhanced kanban slice
+      dispatch(updateEnhancedKanbanTaskProgress({
+        id: data.id,
+        complete_ratio: data.complete_ratio,
+        completed_count: data.completed_count,
+        total_tasks_count: data.total_tasks_count,
+        parent_task: data.parent_task,
+      }));
     },
     [dispatch]
   );
@@ -281,6 +311,9 @@ export const useTaskSocketHandlers = () => {
       dispatch(updateTaskPriority(response));
       dispatch(setTaskPriority(response));
       dispatch(deselectAll());
+      
+      // Update enhanced kanban slice
+      dispatch(updateEnhancedKanbanTaskPriority(response));
 
       // For the task management slice, always update the task entity first
       const state = store.getState();
@@ -371,6 +404,9 @@ export const useTaskSocketHandlers = () => {
 
       dispatch(updateTaskEndDate({ task: taskWithProgress }));
       dispatch(setTaskEndDate(taskWithProgress));
+      
+      // Update enhanced kanban slice
+      dispatch(updateEnhancedKanbanTaskEndDate({ task: taskWithProgress }));
     },
     [dispatch]
   );
@@ -392,6 +428,9 @@ export const useTaskSocketHandlers = () => {
           }
         }));
       }
+      
+      // Update enhanced kanban slice
+      dispatch(updateEnhancedKanbanTaskName({ task: data }));
     },
     [dispatch]
   );
@@ -558,6 +597,13 @@ export const useTaskSocketHandlers = () => {
       if (data.parent_task_id) {
         // Handle subtask creation
         dispatch(updateSubTasks(data));
+        
+        // Also update enhanced kanban slice for subtask creation
+        dispatch(updateEnhancedKanbanSubtask({ 
+          sectionId: '', 
+          subtask: data, 
+          mode: 'add' 
+        }));
       } else {
         // Handle regular task creation - transform to Task format and add
         const task = {
@@ -613,6 +659,12 @@ export const useTaskSocketHandlers = () => {
         
         // Use addTaskToGroup with the actual group UUID
         dispatch(addTaskToGroup({ task, groupId }));
+        
+        // Also update enhanced kanban slice for regular task creation
+        dispatch(addEnhancedKanbanTaskToGroup({ 
+          sectionId: groupId || '', 
+          task: data 
+        }));
       }
     },
     [dispatch]
