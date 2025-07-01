@@ -24,7 +24,7 @@ const Tag: React.FC<TagProps> = ({
     default: 'px-2 py-1 text-xs'
   };
 
-  const baseClasses = `inline-flex items-center font-medium rounded ${sizeClasses[size]}`;
+  const baseClasses = `inline-flex items-center font-medium rounded-sm ${sizeClasses[size]}`;
   
   if (variant === 'outlined') {
     return (

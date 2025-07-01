@@ -18,7 +18,7 @@ const CustomColordLabel: React.FC<CustomColordLabelProps> = ({
   return (
     <Tooltip title={label.name}>
       <span
-        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white flex-shrink-0 max-w-[120px]"
+        className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium text-white shrink-0 max-w-[120px]"
         style={{ backgroundColor: label.color }}
       >
         <span className="truncate">{truncatedName}</span>

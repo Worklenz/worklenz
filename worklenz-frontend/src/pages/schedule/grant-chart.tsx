@@ -409,7 +409,7 @@
 //                                 i >= startOffset &&
 //                                 i < startOffset + projectDuration
 //                                   ? 'empty-cell-hide'
-//                                   : `empty-cell rounded-sm outline-1 hover:outline ${themeMode === 'dark' ? 'outline-white/25' : 'outline-black/25'}`
+//                                   : `empty-cell rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/25' : 'outline-black/25'}`
 //                               }
 //                               key={i}
 //                               style={{
@@ -687,7 +687,7 @@ export default Grant;
 //         style={{
 //           background: themeWiseColor('#fff', '#141414', themeMode),
 //         }}
-//         className={`after:content relative z-10 after:absolute after:-right-1 after:top-0 after:-z-10 after:h-full after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent`}
+//         className={`after:content relative z-10 after:absolute after:-right-1 after:top-0 after:-z-10 after:h-full after:w-1.5 after:bg-transparent after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent`}
 //       >
 //         <GranttMembersTable
 //           members={members}
@@ -874,7 +874,7 @@ export default Grant;
 //                               i >= startOffset &&
 //                               i < startOffset + projectDuration
 //                                 ? 'empty-cell-hide'
-//                                 : `empty-cell rounded-sm outline-1 hover:outline ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`
+//                                 : `empty-cell rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`
 //                             }
 //                             key={i}
 //                             style={{

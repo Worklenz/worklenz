@@ -74,7 +74,7 @@ const TaskListTaskCell = ({
     return (
       <button
         onClick={() => handleToggleExpansion(taskId)}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
       >
         {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
       </button>
@@ -90,7 +90,7 @@ const TaskListTaskCell = ({
       return (
         <button
           onClick={() => handleToggleExpansion(taskId)}
-          className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+          className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
         >
           {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
         </button>
@@ -100,7 +100,7 @@ const TaskListTaskCell = ({
     return !isSubTask ? (
       <button
         onClick={() => handleToggleExpansion(taskId)}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54] open-task-button"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54] open-task-button"
       >
         {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
       </button>
