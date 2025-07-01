@@ -148,7 +148,7 @@ const BoardCreateSubtaskCard = ({
         cursor: 'pointer',
         overflow: 'hidden',
       }}
-      className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline`}
+      className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline-solid`}
       onBlur={handleCancelNewCard}
     >
       <Input

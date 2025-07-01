@@ -178,13 +178,13 @@ const CustomCell = React.memo(({
       switch (column.key) {
         case 'STATUS':
           return (
-            <div className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">
+            <div className="px-2 py-1 text-xs rounded-sm bg-gray-100 text-gray-600">
               {task.status_name || task.status || 'To Do'}
             </div>
           );
         case 'PRIORITY':
           return (
-            <div className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">
+            <div className="px-2 py-1 text-xs rounded-sm bg-gray-100 text-gray-600">
               {task.priority_name || task.priority || 'Medium'}
             </div>
           );
@@ -213,13 +213,13 @@ const CustomCell = React.memo(({
     switch (column.key) {
       case 'STATUS':
         return (
-          <div className="px-2 py-1 text-xs rounded bg-red-100 text-red-600">
+          <div className="px-2 py-1 text-xs rounded-sm bg-red-100 text-red-600">
             {task.status_name || task.status || 'Error'}
           </div>
         );
       case 'PRIORITY':
         return (
-          <div className="px-2 py-1 text-xs rounded bg-red-100 text-red-600">
+          <div className="px-2 py-1 text-xs rounded-sm bg-red-100 text-red-600">
             {task.priority_name || task.priority || 'Error'}
           </div>
         );
@@ -1483,7 +1483,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
         case 'TASK':
           return `sticky left-[48px] z-10 after:content after:absolute after:top-0 after:-right-1 after:h-full after:-z-10 after:w-1.5 after:bg-transparent ${
             scrollingTables[tableId]
-              ? 'after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent'
+              ? 'after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent'
               : ''
           }`;
         default:
@@ -1886,7 +1886,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
         dropAnimation={null} // Disable drop animation
       >
         {dragActiveId ? (
-          <div className="bg-white dark:bg-gray-800 shadow-lg rounded border p-2 opacity-90">
+          <div className="bg-white dark:bg-gray-800 shadow-lg rounded-sm border p-2 opacity-90">
             <span className="text-sm font-medium">Moving task...</span>
           </div>
         ) : null}

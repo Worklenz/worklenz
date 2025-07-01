@@ -153,7 +153,7 @@ const PriorityDropdown = ({ task, teamId }: PriorityDropdownProps) => {
   // Fallback rendering for raw priority values or when priority list is not loaded
   return (
     <div 
-      className="px-2 py-1 text-xs rounded"
+      className="px-2 py-1 text-xs rounded-sm"
       style={{
         backgroundColor: getPriorityColor(task.priority) + ALPHA_CHANNEL,
         borderRadius: 16,

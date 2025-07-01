@@ -128,7 +128,7 @@ const StatusDropdown = ({ task, teamId }: StatusDropdownProps) => {
   // Fallback rendering for raw status values or when status list is not loaded
   return (
     <div 
-      className="px-2 py-1 text-xs rounded"
+      className="px-2 py-1 text-xs rounded-sm"
       style={{
         backgroundColor: getStatusColor(task.status),
         borderRadius: 16,

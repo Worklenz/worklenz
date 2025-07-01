@@ -271,7 +271,7 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
         cursor: 'grab',
         overflow: 'hidden',
       }}
-      className={`group outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline board-task-card`}
+      className={`group outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline-solid board-task-card`}
       data-id={task.id}
       data-dragging={isDragging ? "true" : "false"}
     >
