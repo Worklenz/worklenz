@@ -694,6 +694,24 @@ const enhancedKanbanSlice = createSlice({
       state.taskCache[parent_task || id] = task;
     },
 
+    // Enhanced Kanban task name update (for use in task drawer header)
+    updateEnhancedKanbanTaskName: (
+      state,
+      action: PayloadAction<{
+        task: IProjectTask;
+      }>
+    ) => {
+      const { task } = action.payload;
+
+      // Find the task and update it
+      const result = findTaskInAllGroups(state.taskGroups, task.id || '');
+      if (result) {
+        result.task.name = task.name;
+        // Update cache
+        state.taskCache[task.id!] = result.task;
+      }
+    },
+
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
       const { id: task_id, priority_id } = action.payload;
 
@@ -907,6 +925,7 @@ export const {
   updateEnhancedKanbanTaskAssignees,
   updateEnhancedKanbanTaskLabels,
   updateEnhancedKanbanTaskProgress,
+  updateEnhancedKanbanTaskName,
 } = enhancedKanbanSlice.actions;
 
 export default enhancedKanbanSlice.reducer; 
