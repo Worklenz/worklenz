@@ -1,0 +1,11 @@
+{
+  "labelColumn": "Label",
+  "deleteConfirmationTitle": "Sind Sie sicher?",
+  "deleteConfirmationOk": "Ja",
+  "deleteConfirmationCancel": "Abbrechen",
+  "associatedTaskColumn": "Zugeordnete Aufgabenanzahl",
+  "searchPlaceholder": "Nach Name suchen",
+  "emptyText": "Labels können beim Aktualisieren oder Erstellen von Aufgaben erstellt werden.",
+  "pinTooltip": "Zum Anheften an das Hauptmenü klicken",
+  "colorChangeTooltip": "Zum Ändern der Farbe klicken"
+}

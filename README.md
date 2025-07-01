@@ -192,6 +192,27 @@ Email [info@worklenz.com](mailto:info@worklenz.com) to disclose any security vul
 
 This project is licensed under the [MIT License](LICENSE).
 
+## Analytics
+
+Worklenz uses Google Analytics to understand how the application is being used. This helps us improve the application and make better decisions about future development.
+
+### What We Track
+- Anonymous usage statistics
+- Page views and navigation patterns
+- Feature usage
+- Browser and device information
+
+### Privacy
+- Analytics is opt-in only
+- No personal information is collected
+- Users can opt-out at any time
+- Data is stored according to Google's privacy policy
+
+### How to Opt-Out
+If you've previously opted in and want to opt-out:
+1. Clear your browser's local storage for the Worklenz domain
+2. Or click the "Decline" button in the analytics notice if it appears
+
 ## Screenshots
 
 <p align="center">
