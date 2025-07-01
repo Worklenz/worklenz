@@ -180,7 +180,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
         <div
           ref={dropdownRef}
           className={`
-            fixed z-[9999] w-72 rounded-md shadow-lg border
+            fixed z-9999 w-72 rounded-md shadow-lg border
             ${isDarkMode 
               ? 'bg-gray-800 border-gray-600' 
               : 'bg-white border-gray-200'
@@ -230,7 +230,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
                   />
                   
                   <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    className="w-3 h-3 rounded-full shrink-0"
                     style={{ backgroundColor: label.color_code }}
                   />
                   

@@ -147,7 +147,7 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
           ref={dropdownRef}
           className={`
             fixed min-w-[160px] max-w-[220px] 
-            rounded border backdrop-blur-sm z-[9999]
+            rounded border backdrop-blur-xs z-9999
             ${isDarkMode 
               ? 'bg-gray-900/95 border-gray-600 shadow-2xl shadow-black/50' 
               : 'bg-white/95 border-gray-200 shadow-2xl shadow-gray-500/20'
