@@ -794,6 +794,104 @@ const enhancedKanbanSlice = createSlice({
         state.groupCache[sectionId] = group;
       }
     },
+
+    // Enhanced Kanban end date update (for use in task drawer and socket events)
+    updateEnhancedKanbanTaskEndDate: (
+      state,
+      action: PayloadAction<{
+        task: IProjectTask;
+      }>
+    ) => {
+      const { task } = action.payload;
+
+      // Find the task and update it
+      const result = findTaskInAllGroups(state.taskGroups, task.id || '');
+      if (result) {
+        result.task.end_date = task.end_date;
+        // Update cache
+        state.taskCache[task.id!] = result.task;
+      }
+    },
+
+    // Enhanced Kanban start date update (for use in task drawer and socket events)
+    updateEnhancedKanbanTaskStartDate: (
+      state,
+      action: PayloadAction<{
+        task: IProjectTask;
+      }>
+    ) => {
+      const { task } = action.payload;
+
+      // Find the task and update it
+      const result = findTaskInAllGroups(state.taskGroups, task.id || '');
+      if (result) {
+        result.task.start_date = task.start_date;
+        // Update cache
+        state.taskCache[task.id!] = result.task;
+      }
+    },
+
+    // Enhanced Kanban subtask update (for use in task drawer and socket events)
+    updateEnhancedKanbanSubtask: (
+      state,
+      action: PayloadAction<{
+        sectionId: string;
+        subtask: IProjectTask;
+        mode: 'add' | 'delete';
+      }>
+    ) => {
+      const { sectionId, subtask, mode } = action.payload;
+      const parentTaskId = subtask?.parent_task_id || null;
+
+      if (!parentTaskId) return;
+
+      // Function to update a task with a new subtask
+      const updateTaskWithSubtask = (task: IProjectTask): boolean => {
+        if (!task) return false;
+
+        // Initialize sub_tasks array if it doesn't exist
+        if (!task.sub_tasks) {
+          task.sub_tasks = [];
+        }
+
+        if (mode === 'add') {
+          // Increment subtask count
+          task.sub_tasks_count = (task.sub_tasks_count || 0) + 1;
+
+          // Add the subtask
+          task.sub_tasks.push({ ...subtask });
+        } else {
+          // Remove the subtask
+          task.sub_tasks = task.sub_tasks.filter(t => t.id !== subtask.id);
+          task.sub_tasks_count = Math.max(0, (task.sub_tasks_count || 1) - 1);
+        }
+        
+        // Update cache
+        state.taskCache[task.id!] = task;
+        return true;
+      };
+
+      // First try to find the task in the specified section
+      if (sectionId) {
+        const section = state.taskGroups.find(sec => sec.id === sectionId);
+        if (section) {
+          const task = section.tasks.find(task => task.id === parentTaskId);
+          if (task && updateTaskWithSubtask(task)) {
+            // Update group cache
+            state.groupCache[sectionId] = section;
+            return;
+          }
+        }
+      }
+
+      // If not found in the specified section, try all groups
+      const result = findTaskInAllGroups(state.taskGroups, parentTaskId);
+      if (result) {
+        updateTaskWithSubtask(result.task);
+        // Update group cache
+        state.groupCache[result.groupId] = result.group;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -926,6 +1024,9 @@ export const {
   updateEnhancedKanbanTaskLabels,
   updateEnhancedKanbanTaskProgress,
   updateEnhancedKanbanTaskName,
+  updateEnhancedKanbanTaskEndDate,
+  updateEnhancedKanbanTaskStartDate,
+  updateEnhancedKanbanSubtask,
 } = enhancedKanbanSlice.actions;
 
 export default enhancedKanbanSlice.reducer; 
