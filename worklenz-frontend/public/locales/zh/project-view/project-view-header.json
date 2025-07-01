@@ -1,0 +1,13 @@
+{
+    "importTasks": "导入任务",
+    "createTask": "创建任务",
+    "settings": "设置",
+    "subscribe": "订阅",
+    "unsubscribe": "取消订阅",
+    "deleteProject": "删除项目",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "projectSettings": "项目设置",
+    "projectSummary": "项目摘要",
+    "receiveProjectSummary": "每晚接收项目摘要。"
+}

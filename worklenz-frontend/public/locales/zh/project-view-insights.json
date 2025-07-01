@@ -1,0 +1,41 @@
+{
+  "overview": {
+    "title": "概览",
+    "statusOverview": "状态概览",
+    "priorityOverview": "优先级概览",
+    "lastUpdatedTasks": "最近更新的任务"
+  },
+  "members": {
+    "title": "成员",
+    "tooltip": "成员",
+    "tasksByMembers": "按成员分类任务",
+    "tasksByMembersTooltip": "按成员分类任务",
+    "name": "名称",
+    "taskCount": "任务计数",
+    "contribution": "贡献",
+    "completed": "已完成",
+    "incomplete": "未完成",
+    "overdue": "逾期",
+    "progress": "进度"
+  },
+  "tasks": {
+    "overdueTasks": "逾期任务",
+    "overLoggedTasks": "超额记录任务",
+    "tasksCompletedEarly": "提前完成的任务",
+    "tasksCompletedLate": "延迟完成的任务",
+    "overLoggedTasksTooltip": "记录时间超过预计时间的任务",
+    "overdueTasksTooltip": "超过截止日期的任务"
+  },
+  "common": {
+    "seeAll": "查看全部",
+    "totalLoggedHours": "总记录小时数",
+    "totalEstimation": "总估算",
+    "completedTasks": "已完成任务",
+    "incompleteTasks": "未完成任务",
+    "overdueTasks": "逾期任务",
+    "overdueTasksTooltip": "超过截止日期的任务",
+    "totalLoggedHoursTooltip": "任务估算和任务记录时间。",
+    "includeArchivedTasks": "包含已归档任务",
+    "export": "导出"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "membersCount": "成员数量",
+  "createdAt": "创建于",
+  "projectName": "项目名称",
+  "teamName": "团队名称",
+  "refreshProjects": "刷新项目",
+  "searchPlaceholder": "按项目名称搜索",
+  "deleteProject": "您确定要删除此项目吗？",
+  "confirm": "确认",
+  "cancel": "取消",
+  "delete": "删除项目"
+}

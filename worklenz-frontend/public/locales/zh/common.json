@@ -1,0 +1,9 @@
+{
+  "login-success": "登录成功！",
+  "login-failed": "登录失败。请检查您的凭据并重试。",
+  "signup-success": "注册成功！欢迎加入。",
+  "signup-failed": "注册失败。请确保填写所有必填字段并重试。",
+  "reconnecting": "与服务器断开连接。",
+  "connection-lost": "无法连接到服务器。请检查您的互联网连接。",
+  "connection-restored": "成功连接到服务器"
+}

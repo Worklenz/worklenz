@@ -1,0 +1,7 @@
+{
+    "configurePhases": "配置阶段",
+    "phaseLabel": "阶段标签",
+    "enterPhaseName": "输入阶段标签名称",
+    "addOption": "添加选项",
+    "phaseOptions": "阶段选项："
+}

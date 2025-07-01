@@ -1,0 +1,11 @@
+{
+  "title": "通知设置",
+  "emailTitle": "向我发送电子邮件通知",
+  "emailDescription": "包括新的任务分配",
+  "dailyDigestTitle": "向我发送每日摘要",
+  "dailyDigestDescription": "每天晚上，您将收到任务中最近活动的摘要。",
+  "popupTitle": "当Worklenz打开时，在我的电脑上弹出通知",
+  "popupDescription": "弹出通知可能会被您的浏览器禁用。更改您的浏览器设置以允许它们。",
+  "unreadItemsTitle": "显示未读项目的数量",
+  "unreadItemsDescription": "您将看到每个通知的计数。"
+}

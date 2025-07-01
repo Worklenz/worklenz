@@ -1,0 +1,27 @@
+{
+  "headerDescription": "登录到您的账户",
+  "emailLabel": "电子邮件",
+  "emailPlaceholder": "输入您的电子邮件",
+  "emailRequired": "请输入您的电子邮件！",
+  "passwordLabel": "密码",
+  "passwordPlaceholder": "输入您的密码",
+  "passwordRequired": "请输入您的密码！",
+  "rememberMe": "记住我",
+  "loginButton": "登录",
+  "signupButton": "注册",
+  "forgotPasswordButton": "忘记密码？",
+  "signInWithGoogleButton": "使用Google登录",
+  "dontHaveAccountText": "没有账户？",
+  "orText": "或",
+  "successMessage": "您已成功登录！",
+  "loginError": "登录失败",
+  "googleLoginError": "Google登录失败",
+  "validationMessages": {
+    "email": "请输入有效的电子邮件地址",
+    "password": "密码必须至少包含8个字符"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "登录失败",
+    "loginErrorMessage": "请检查您的电子邮件和密码并重试"
+  }
+}

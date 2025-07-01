@@ -1,0 +1,27 @@
+{
+  "title": "保存为模板",
+  "templateName": "模板名称",
+  "includes": "项目中应包含哪些内容到模板中？",
+  "includesOptions": {
+    "statuses": "状态",
+    "phases": "阶段",
+    "labels": "标签"
+  },
+  "taskIncludes": "任务中应包含哪些内容到模板中？",
+  "taskIncludesOptions": {
+    "statuses": "状态",
+    "phases": "阶段",
+    "labels": "标签",
+    "name": "名称",
+    "priority": "优先级",
+    "status": "状态",
+    "phase": "阶段",
+    "label": "标签",
+    "timeEstimate": "预计用时",
+    "description": "描述",
+    "subTasks": "子任务"
+  },
+  "cancel": "取消",
+  "save": "保存",
+  "templateNamePlaceholder": "输入模板名称"
+}

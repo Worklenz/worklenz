@@ -1,0 +1,17 @@
+{
+  "nameColumn": "名称",
+  "jobTitleColumn": "职位",
+  "emailColumn": "电子邮件",
+  "tasksColumn": "任务",
+  "taskProgressColumn": "任务进度",
+  "accessColumn": "访问权限",
+  "fileIconAlt": "文件图标",
+  "deleteConfirmationTitle": "您确定吗？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "refreshButtonTooltip": "刷新成员",
+  "deleteButtonTooltip": "从项目中移除",
+  "memberCount": "成员",
+  "membersCountPlural": "成员",
+  "emptyText": "项目中没有附件。"
+}
