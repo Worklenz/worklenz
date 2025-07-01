@@ -6,6 +6,7 @@ import {
   ITaskListSortableColumn,
 } from '@/types/tasks/taskList.types';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
+import { subTasksApiService } from '@/api/tasks/subtasks.api.service';
 import logger from '@/utils/errorLogger';
 import { ITaskListMemberFilter } from '@/types/tasks/taskListFilters.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
@@ -280,43 +281,9 @@ export const fetchBoardSubTasks = createAsyncThunk(
     { rejectWithValue, getState }
   ) => {
     try {
-      const state = getState() as { enhancedKanbanReducer: EnhancedKanbanState };
-      const { enhancedKanbanReducer } = state;
-
-      // Check if the task is already expanded (optional, can be enhanced later)
-      // const task = enhancedKanbanReducer.taskGroups.flatMap(group => group.tasks).find(t => t.id === taskId);
-      // if (task?.show_sub_tasks) {
-      //   return [];
-      // }
-
-      const selectedMembers = enhancedKanbanReducer.taskAssignees
-        .filter(member => member.selected)
-        .map(member => member.id)
-        .join(' ');
-
-      const selectedLabels = enhancedKanbanReducer.labels
-        .filter(label => label.selected)
-        .map(label => label.id)
-        .join(' ');
-
-      const config: ITaskListConfigV2 = {
-        id: projectId,
-        archived: enhancedKanbanReducer.archived,
-        group: enhancedKanbanReducer.groupBy,
-        field: enhancedKanbanReducer.fields.map(field => `${field.key} ${field.sort_order}`).join(','),
-        order: '',
-        search: enhancedKanbanReducer.search || '',
-        statuses: '',
-        members: selectedMembers,
-        projects: '',
-        isSubtasksInclude: false,
-        labels: selectedLabels,
-        priorities: enhancedKanbanReducer.priorities.join(' '),
-        parent_task: taskId,
-      };
-
-      const response = await tasksApiService.getTaskList(config);
-      return response.body;
+      // Use the dedicated subtasks API endpoint
+      const response = await subTasksApiService.getSubTasks(taskId);
+      return response.body || [];
     } catch (error) {
       logger.error('Fetch Enhanced Board Sub Tasks', error);
       if (error instanceof Error) {
@@ -831,6 +798,18 @@ const enhancedKanbanSlice = createSlice({
       }
     },
 
+    // Enhanced Kanban task expansion toggle (for subtask expand/collapse)
+    toggleTaskExpansion: (state, action: PayloadAction<string>) => {
+      const taskId = action.payload;
+      const result = findTaskInAllGroups(state.taskGroups, taskId);
+
+      if (result) {
+        result.task.show_sub_tasks = !result.task.show_sub_tasks;
+        // Update cache
+        state.taskCache[taskId] = result.task;
+      }
+    },
+
     // Enhanced Kanban subtask update (for use in task drawer and socket events)
     updateEnhancedKanbanSubtask: (
       state,
@@ -906,10 +885,24 @@ const enhancedKanbanSlice = createSlice({
         // Update performance metrics
         state.performanceMetrics = calculatePerformanceMetrics(action.payload);
 
-        // Update caches
+        // Update caches and initialize subtask properties
         action.payload.forEach(group => {
           state.groupCache[group.id] = group;
           group.tasks.forEach(task => {
+            // Initialize subtask-related properties if they don't exist
+            if (task.sub_tasks === undefined) {
+              task.sub_tasks = [];
+            }
+            if (task.sub_tasks_loading === undefined) {
+              task.sub_tasks_loading = false;
+            }
+            if (task.show_sub_tasks === undefined) {
+              task.show_sub_tasks = false;
+            }
+            if (task.sub_tasks_count === undefined) {
+              task.sub_tasks_count = 0;
+            }
+            
             state.taskCache[task.id!] = task;
           });
         });
@@ -984,6 +977,46 @@ const enhancedKanbanSlice = createSlice({
       .addCase(fetchEnhancedKanbanLabels.rejected, (state, action) => {
         state.loadingLabels = false;
         state.error = action.payload as string;
+      })
+      // Fetch Board Sub Tasks
+      .addCase(fetchBoardSubTasks.pending, (state, action) => {
+        state.error = null;
+        // Find the task and set sub_tasks_loading to true
+        const taskId = action.meta.arg.taskId;
+        const result = findTaskInAllGroups(state.taskGroups, taskId);
+        if (result) {
+          result.task.sub_tasks_loading = true;
+        }
+      })
+      .addCase(fetchBoardSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[]>) => {
+        const taskId = (action as any).meta?.arg?.taskId;
+        const result = findTaskInAllGroups(state.taskGroups, taskId);
+        
+        if (result) {
+          result.task.sub_tasks_loading = false;
+          result.task.sub_tasks = action.payload;
+          result.task.show_sub_tasks = true;
+          
+          // Only update the count if we don't have a count yet or if the API returned a different count
+          // This preserves the original count from the initial data load
+          if (!result.task.sub_tasks_count || result.task.sub_tasks_count === 0) {
+            result.task.sub_tasks_count = action.payload.length;
+          }
+          
+          // Update cache
+          state.taskCache[taskId] = result.task;
+        }
+      })
+      .addCase(fetchBoardSubTasks.rejected, (state, action) => {
+        state.error = action.error.message || 'Failed to fetch sub tasks';
+        // Set loading to false on rejection
+        const taskId = action.meta.arg.taskId;
+        const result = findTaskInAllGroups(state.taskGroups, taskId);
+        if (result) {
+          result.task.sub_tasks_loading = false;
+          // Update cache
+          state.taskCache[taskId] = result.task;
+        }
       });
   },
 });
@@ -1027,6 +1060,7 @@ export const {
   updateEnhancedKanbanTaskEndDate,
   updateEnhancedKanbanTaskStartDate,
   updateEnhancedKanbanSubtask,
+  toggleTaskExpansion,
 } = enhancedKanbanSlice.actions;
 
 export default enhancedKanbanSlice.reducer; 

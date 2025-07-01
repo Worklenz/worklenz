@@ -49,6 +49,7 @@ import EnhancedKanbanCreateSection from './EnhancedKanbanCreateSection';
 import ImprovedTaskFilters from '../task-management/improved-task-filters';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
+import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 
 // Import the TaskListFilters component
 const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
@@ -74,6 +75,9 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
   // Load filter data
   useFilterDataLoader();
+  
+  // Set up socket event handlers for real-time updates
+  useTaskSocketHandlers();
 
   // Local state for drag overlay
   const [activeTask, setActiveTask] = useState<any>(null);
