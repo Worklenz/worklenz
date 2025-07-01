@@ -14,6 +14,10 @@ import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.ty
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import { ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
+import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
+import { ITaskAssignee } from '@/types/project/projectTasksViewModel.types';
+import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -357,6 +361,53 @@ export const fetchEnhancedKanbanLabels = createAsyncThunk(
   }
 );
 
+// Helper functions for common operations (similar to board-slice.ts)
+const findTaskInAllGroups = (
+  taskGroups: ITaskListGroup[],
+  taskId: string
+): { task: IProjectTask; group: ITaskListGroup; groupId: string } | null => {
+  for (const group of taskGroups) {
+    const task = group.tasks.find(t => t.id === taskId);
+    if (task) return { task, group, groupId: group.id };
+
+    // Check in subtasks
+    for (const parentTask of group.tasks) {
+      if (!parentTask.sub_tasks) continue;
+      const subtask = parentTask.sub_tasks.find(st => st.id === taskId);
+      if (subtask) return { task: subtask, group, groupId: group.id };
+    }
+  }
+  return null;
+};
+
+const deleteTaskFromGroup = (
+  taskGroups: ITaskListGroup[],
+  task: IProjectTask,
+  groupId: string,
+  index: number | null = null
+): void => {
+  const group = taskGroups.find(g => g.id === groupId);
+  if (!group || !task.id) return;
+
+  if (task.is_sub_task) {
+    const parentTask = group.tasks.find(t => t.id === task.parent_task_id);
+    if (parentTask) {
+      const subTaskIndex = parentTask.sub_tasks?.findIndex(t => t.id === task.id);
+      if (typeof subTaskIndex !== 'undefined' && subTaskIndex !== -1) {
+        parentTask.sub_tasks_count = Math.max((parentTask.sub_tasks_count || 0) - 1, 0);
+        parentTask.sub_tasks?.splice(subTaskIndex, 1);
+      }
+    }
+  } else {
+    const taskIndex = index ?? group.tasks.findIndex(t => t.id === task.id);
+    if (taskIndex !== -1) {
+      group.tasks.splice(taskIndex, 1);
+    }
+  }
+};
+
+
+
 const enhancedKanbanSlice = createSlice({
   name: 'enhancedKanbanReducer',
   initialState,
@@ -497,7 +548,7 @@ const enhancedKanbanSlice = createSlice({
 
     // Enhanced Kanban external status update (for use in task drawer dropdown)
     updateEnhancedKanbanTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
-      const { id: task_id, status_id } = action.payload;
+      const { id: task_id, status_id, color_code, color_code_dark, complete_ratio, statusCategory } = action.payload;
       let oldGroupId: string | null = null;
       let foundTask: IProjectTask | null = null;
       // Find the task and its group
@@ -510,6 +561,14 @@ const enhancedKanbanSlice = createSlice({
         }
       }
       if (!foundTask) return;
+      
+      // Update the task properties
+      foundTask.status_color = color_code;
+      foundTask.status_color_dark = color_code_dark;
+      foundTask.complete_ratio = +complete_ratio;
+      foundTask.status = status_id;
+      foundTask.status_category = statusCategory;
+      
       // If grouped by status and the group changes, move the task
       if (state.groupBy === IGroupBy.STATUS && oldGroupId && oldGroupId !== status_id) {
         // Remove from old group
@@ -529,6 +588,128 @@ const enhancedKanbanSlice = createSlice({
       }
       // Update cache
       state.taskCache[task_id] = foundTask;
+    },
+
+    // Enhanced Kanban priority update (for use in task drawer dropdown)
+    updateEnhancedKanbanTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
+      const { id, priority_id, color_code, color_code_dark } = action.payload;
+
+      // Find the task in any group
+      const taskInfo = findTaskInAllGroups(state.taskGroups, id);
+      if (!taskInfo || !priority_id) return;
+
+      const { task, groupId } = taskInfo;
+
+      // Update the task properties
+      task.priority = priority_id;
+      task.priority_color = color_code;
+      task.priority_color_dark = color_code_dark;
+
+      // If grouped by priority and not a subtask, move the task to the new priority group
+      if (
+        state.groupBy === IGroupBy.PRIORITY &&
+        !task.is_sub_task &&
+        groupId !== priority_id
+      ) {
+        // Remove from current group
+        deleteTaskFromGroup(state.taskGroups, task, groupId);
+
+        // Add to new priority group
+        const newGroup = state.taskGroups.find(g => g.id === priority_id);
+        if (newGroup) {
+          newGroup.tasks.unshift(task);
+          state.groupCache[priority_id] = newGroup;
+        }
+      }
+      
+      // Update cache
+      state.taskCache[id] = task;
+    },
+
+    // Enhanced Kanban assignee update (for use in task drawer dropdown)
+    updateEnhancedKanbanTaskAssignees: (state, action: PayloadAction<ITaskAssigneesUpdateResponse>) => {
+      const { id, assignees, names } = action.payload;
+      
+      // Find the task in any group
+      const taskInfo = findTaskInAllGroups(state.taskGroups, id);
+      if (!taskInfo) return;
+
+      const { task } = taskInfo;
+
+      // Update the task properties
+      task.assignees = assignees as ITaskAssignee[];
+      task.names = names as InlineMember[];
+      
+      // Update cache
+      state.taskCache[id] = task;
+    },
+
+    // Enhanced Kanban label update (for use in task drawer dropdown)
+    updateEnhancedKanbanTaskLabels: (state, action: PayloadAction<ILabelsChangeResponse>) => {
+      const label = action.payload;
+      for (const group of state.taskGroups) {
+        // Find the task or its subtask
+        const task =
+          group.tasks.find(task => task.id === label.id) ||
+          group.tasks
+            .flatMap(task => task.sub_tasks || [])
+            .find(subtask => subtask.id === label.id);
+        if (task) {
+          task.labels = label.labels || [];
+          task.all_labels = label.all_labels || [];
+          // Update cache
+          state.taskCache[label.id] = task;
+          break;
+        }
+      }
+    },
+
+    // Enhanced Kanban progress update (for use in task drawer and socket events)
+    updateEnhancedKanbanTaskProgress: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        complete_ratio: number;
+        completed_count: number;
+        total_tasks_count: number;
+        parent_task: string;
+      }>
+    ) => {
+      const { id, complete_ratio, completed_count, total_tasks_count, parent_task } = action.payload;
+
+      // Find the task in any group
+      const taskInfo = findTaskInAllGroups(state.taskGroups, parent_task || id);
+
+      // Check if taskInfo exists before destructuring
+      if (!taskInfo) return;
+
+      const { task } = taskInfo;
+
+      // Update the task properties
+      task.complete_ratio = +complete_ratio;
+      task.completed_count = completed_count;
+      task.total_tasks_count = total_tasks_count;
+      
+      // Update cache
+      state.taskCache[parent_task || id] = task;
+    },
+
+    // Enhanced Kanban task name update (for use in task drawer header)
+    updateEnhancedKanbanTaskName: (
+      state,
+      action: PayloadAction<{
+        task: IProjectTask;
+      }>
+    ) => {
+      const { task } = action.payload;
+
+      // Find the task and update it
+      const result = findTaskInAllGroups(state.taskGroups, task.id || '');
+      if (result) {
+        result.task.name = task.name;
+        // Update cache
+        state.taskCache[task.id!] = result.task;
+      }
     },
 
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
@@ -608,6 +789,9 @@ const enhancedKanbanSlice = createSlice({
       const group = state.taskGroups.find(g => g.id === sectionId);
       if (group) {
         group.tasks.push(task);
+        // Update cache
+        state.taskCache[task.id!] = task;
+        state.groupCache[sectionId] = group;
       }
     },
   },
@@ -737,6 +921,11 @@ export const {
   reorderGroups,
   addTaskToGroup,
   updateEnhancedKanbanTaskStatus,
+  updateEnhancedKanbanTaskPriority,
+  updateEnhancedKanbanTaskAssignees,
+  updateEnhancedKanbanTaskLabels,
+  updateEnhancedKanbanTaskProgress,
+  updateEnhancedKanbanTaskName,
 } = enhancedKanbanSlice.actions;
 
 export default enhancedKanbanSlice.reducer; 
