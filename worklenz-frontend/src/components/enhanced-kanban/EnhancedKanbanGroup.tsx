@@ -342,18 +342,6 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
               e.stopPropagation();
             }}
           >
-            <Flex
-              align="center"
-              justify="center"
-              style={{
-                minWidth: 26,
-                height: 26,
-                borderRadius: 120,
-                backgroundColor: themeWiseColor('white', '#1e1e1e', themeMode),
-              }}
-            >
-              {group.tasks.length}
-            </Flex>
 
             {isLoading && <LoadingOutlined style={{ color: colors.darkGray }} />}
             {isEditable ? (
@@ -403,7 +391,7 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
                     e.stopPropagation();
                   }}
                 >
-                  {name}
+                  {name} ({group.tasks.length})
                 </Typography.Text>
               </Tooltip>
             )}
@@ -480,28 +468,36 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
           <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
             {group.tasks.map((task, index) => (
               <React.Fragment key={task.id}>
-                {/* Show drop indicator before task if this is the target position */}
-                {shouldShowDropIndicators && overId === task.id && (
-                  <div className="drop-preview-indicator">
-                    <div className="drop-line"></div>
-                  </div>
+                {/* Drop indicator before the card if this is the drop target */}
+                {overId === task.id && (
+                  <div
+                    style={{
+                      height: 20,
+                      background: themeMode === 'dark' ? '#444' : '#e0e0e0',
+                      borderRadius: 4,
+                      margin: '4px 0',
+                      transition: 'background 0.2s',
+                    }}
+                  />
                 )}
-
                 <EnhancedKanbanTaskCard
                   task={task}
                   sectionId={group.id}
                   isActive={task.id === activeTaskId}
                   isDropTarget={overId === task.id}
                 />
-
-                {/* Show drop indicator after last task if dropping at the end */}
-                {shouldShowDropIndicators &&
-                  index === group.tasks.length - 1 &&
-                  overId === group.id && (
-                    <div className="drop-preview-indicator">
-                      <div className="drop-line"></div>
-                    </div>
-                  )}
+                {/* Drop indicator at the end if dropping at the end of the group */}
+                {index === group.tasks.length - 1 && overId === group.id && (
+                  <div
+                    style={{
+                      height: 12,
+                      background: themeMode === 'dark' ? '#444' : '#e0e0e0',
+                      borderRadius: 4,
+                      margin: '8px 0',
+                      transition: 'background 0.2s',
+                    }}
+                  />
+                )}
               </React.Fragment>
             ))}
           </SortableContext>
