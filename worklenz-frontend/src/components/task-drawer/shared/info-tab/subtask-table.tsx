@@ -92,6 +92,9 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
         if (task.parent_task_id) {
           refreshSubTasks();
           dispatch(updateSubtask({ sectionId: '', subtask: task, mode: 'add' }));
+          
+          // Note: Enhanced kanban updates are now handled by the global socket handler
+          // No need to dispatch here as it will be handled by useTaskSocketHandlers
         }
       });
     } catch (error) {
@@ -109,6 +112,10 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
     try {
       await tasksApiService.deleteTask(taskId);
       dispatch(updateSubtask({ sectionId: '', subtask: { id: taskId, parent_task_id: selectedTaskId || '' }, mode: 'delete' }));
+      
+      // Note: Enhanced kanban updates are now handled by the global socket handler
+      // No need to dispatch here as it will be handled by useTaskSocketHandlers
+      
       refreshSubTasks();
     } catch (error) {
       logger.error('Error deleting subtask:', error);

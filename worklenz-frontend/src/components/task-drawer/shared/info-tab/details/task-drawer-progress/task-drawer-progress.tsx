@@ -14,6 +14,7 @@ import { setTaskStatus } from '@/features/task-drawer/task-drawer.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateBoardTaskStatus } from '@/features/board/board-slice';
 import { updateTaskProgress, updateTaskStatus } from '@/features/tasks/tasks.slice';
+import { updateEnhancedKanbanTaskStatus, updateEnhancedKanbanTaskProgress } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 
 interface TaskDrawerProgressProps {
@@ -102,14 +103,27 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
       );
 
       socket?.once(SocketEvents.GET_TASK_PROGRESS.toString(), (data: any) => {
-        dispatch(
-          updateTaskProgress({
-            taskId: task.id,
-            progress: data.complete_ratio,
-            totalTasksCount: data.total_tasks_count,
-            completedCount: data.completed_count,
-          })
-        );
+        if (tab === 'tasks-list') {
+          dispatch(
+            updateTaskProgress({
+              taskId: task.id,
+              progress: data.complete_ratio,
+              totalTasksCount: data.total_tasks_count,
+              completedCount: data.completed_count,
+            })
+          );
+        }
+        if (tab === 'board') {
+          dispatch(
+            updateEnhancedKanbanTaskProgress({
+              id: task.id,
+              complete_ratio: data.complete_ratio,
+              completed_count: data.completed_count,
+              total_tasks_count: data.total_tasks_count,
+              parent_task: task.parent_task_id || null,
+            })
+          );
+        }
       });
 
       if (task.id) {
@@ -185,7 +199,7 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
                   dispatch(updateTaskStatus(data));
                 }
                 if (tab === 'board') {
-                  dispatch(updateBoardTaskStatus(data));
+                  dispatch(updateEnhancedKanbanTaskStatus(data));
                 }
                 if (data.parent_task)
                   socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), data.parent_task);

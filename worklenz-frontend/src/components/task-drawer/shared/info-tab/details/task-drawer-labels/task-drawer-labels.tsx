@@ -28,6 +28,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setTaskLabels } from '@/features/task-drawer/task-drawer.slice';
 import { setLabels, updateTaskLabel } from '@/features/tasks/tasks.slice';
 import { setBoardLabels, updateBoardTaskLabel } from '@/features/board/board-slice';
+import { updateEnhancedKanbanTaskLabels } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 import { ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
 
@@ -65,7 +66,7 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
             dispatch(updateTaskLabel(data));
           }
           if (tab === 'board') {
-            dispatch(updateBoardTaskLabel(data));
+            dispatch(updateEnhancedKanbanTaskLabels(data));
           }
         }
       );
@@ -90,9 +91,9 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
             if (tab === 'tasks-list') {
               dispatch(updateTaskLabel(data));
             }
-            if (tab === 'board') {
-              dispatch(updateBoardTaskLabel(data));
-            }
+                      if (tab === 'board') {
+            dispatch(updateEnhancedKanbanTaskLabels(data));
+          }
           }
         );
   };
