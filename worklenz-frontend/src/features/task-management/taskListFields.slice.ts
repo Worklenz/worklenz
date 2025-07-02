@@ -50,7 +50,6 @@ function saveFields(fields: TaskListField[]) {
 }
 
 const initialState: TaskListField[] = loadFields();
-console.log('TaskListFields slice initial state:', initialState);
 
 const taskListFieldsSlice = createSlice({
   name: 'taskManagementFields',

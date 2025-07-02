@@ -997,11 +997,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const shouldRefreshProgress = req.query.refresh_progress === "true";
     
     if (shouldRefreshProgress && req.params.id) {
-      console.log(`[PERFORMANCE] Starting progress refresh for project ${req.params.id}`);
       const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
       const progressEndTime = performance.now();
-      console.log(`[PERFORMANCE] Progress refresh completed in ${(progressEndTime - progressStartTime).toFixed(2)}ms`);
     }
 
     const queryStartTime = performance.now();
@@ -1011,13 +1009,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const result = await db.query(q, params);
     const tasks = [...result.rows];
     const queryEndTime = performance.now();
-    console.log(`[PERFORMANCE] Database query completed in ${(queryEndTime - queryStartTime).toFixed(2)}ms for ${tasks.length} tasks`);
 
     // Get groups metadata dynamically from database
     const groupsStartTime = performance.now();
     const groups = await this.getGroups(groupBy, req.params.id);
     const groupsEndTime = performance.now();
-    console.log(`[PERFORMANCE] Groups fetched in ${(groupsEndTime - groupsStartTime).toFixed(2)}ms`);
 
     // Create priority value to name mapping
     const priorityMap: Record<string, string> = {
@@ -1094,10 +1090,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
         originalPriorityId: task.priority,
         statusColor: task.status_color,
         priorityColor: task.priority_color,
+        // Add subtask count
+        sub_tasks_count: task.sub_tasks_count || 0,
+        // Add indicator fields for frontend icons
+        comments_count: task.comments_count || 0,
+        has_subscribers: !!task.has_subscribers,
+        attachments_count: task.attachments_count || 0,
+        has_dependencies: !!task.has_dependencies,
+        schedule_id: task.schedule_id || null,
       };
     });
     const transformEndTime = performance.now();
-    console.log(`[PERFORMANCE] Task transformation completed in ${(transformEndTime - transformStartTime).toFixed(2)}ms`);
 
     // Create groups based on dynamic data from database
     const groupingStartTime = performance.now();
@@ -1164,11 +1167,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
       .filter(group => group && (group.tasks.length > 0 || req.query.include_empty === "true"));
     
     const groupingEndTime = performance.now();
-    console.log(`[PERFORMANCE] Task grouping completed in ${(groupingEndTime - groupingStartTime).toFixed(2)}ms`);
 
     const endTime = performance.now();
     const totalTime = endTime - startTime;
-    console.log(`[PERFORMANCE] Total getTasksV3 request completed in ${totalTime.toFixed(2)}ms for project ${req.params.id}`);
     
     // Log warning if request is taking too long
     if (totalTime > 1000) {
@@ -1235,9 +1236,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
             projectId: req.params.id
           }
         }));
-      } else {
-        return res.status(400).send(new ServerResponse(false, null, "Project ID is required"));
       }
+      return res.status(400).send(new ServerResponse(false, null, "Project ID is required"));
     } catch (error) {
       console.error("Error refreshing task progress:", error);
       return res.status(500).send(new ServerResponse(false, null, "Failed to refresh task progress"));

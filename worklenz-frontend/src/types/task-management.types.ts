@@ -24,6 +24,10 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   order: number;
+  // Subtask-related properties
+  sub_tasks_count?: number;
+  show_sub_tasks?: boolean;
+  sub_tasks?: Task[];
 }
 
 export interface TaskGroup {

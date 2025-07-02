@@ -157,9 +157,6 @@ export const fetchTasksV3 = createAsyncThunk(
       // Get search value from taskReducer
       const searchValue = state.taskReducer.search || '';
       
-      console.log('fetchTasksV3 - selectedPriorities:', selectedPriorities);
-      console.log('fetchTasksV3 - searchValue:', searchValue);
-      
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: false,

@@ -16,7 +16,7 @@ import {
   type InputRef,
   Tooltip
 } from './antd-imports';
-import { DownOutlined, RightOutlined, ExpandAltOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { DownOutlined, RightOutlined, ExpandAltOutlined, CheckCircleOutlined, MinusCircleOutlined, EyeOutlined, RetweetOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { Task } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
@@ -50,6 +50,7 @@ interface TaskRowProps {
   columns?: Array<{ key: string; label: string; width: number; fixed?: boolean }>;
   fixedColumns?: Array<{ key: string; label: string; width: number; fixed?: boolean }>;
   scrollableColumns?: Array<{ key: string; label: string; width: number; fixed?: boolean }>;
+  onExpandSubtaskInput?: (taskId: string) => void;
 }
 
 // Priority and status colors - moved outside component to avoid recreation
@@ -352,6 +353,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   columns,
   fixedColumns,
   scrollableColumns,
+  onExpandSubtaskInput,
 }) => {
   // PERFORMANCE OPTIMIZATION: Frame-rate aware loading
   const canRenderComplex = useFrameRateOptimizedLoading(index);
@@ -494,23 +496,6 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     };
   }, [editTaskName, shouldRenderFull, handleTaskNameSave]);
 
-  // Handle adding new subtask
-  const handleAddSubtask = useCallback(() => {
-    const subtaskName = newSubtaskName?.trim();
-    if (subtaskName && connected) {
-      socket?.emit(
-        SocketEvents.TASK_NAME_CHANGE.toString(), // Using existing event for now
-        JSON.stringify({
-          name: subtaskName,
-          parent_task_id: task.id,
-          project_id: projectId,
-        })
-      );
-      setNewSubtaskName('');
-      setShowAddSubtask(false);
-    }
-  }, [newSubtaskName, connected, socket, task.id, projectId]);
-
   // Handle canceling add subtask
   const handleCancelAddSubtask = useCallback(() => {
     setNewSubtaskName('');
@@ -541,9 +526,55 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     onToggleSubtasks?.(task.id);
   }, [onToggleSubtasks, task.id]);
 
+  // Handle successful subtask creation
+  const handleSubtaskCreated = useCallback((newTask: any) => {
+    if (newTask && newTask.id) {
+      // Update parent task progress
+      socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
+      
+      // Clear form and hide add subtask row
+      setNewSubtaskName('');
+      setShowAddSubtask(false);
+      
+      // The global socket handler will automatically add the subtask to the parent task
+      // and update the UI through Redux
+      
+      // After creating the first subtask, the task now has subtasks
+      // so we should expand it to show the new subtask
+      if (task.sub_tasks_count === 0 || !task.sub_tasks_count) {
+        // Trigger expansion to show the newly created subtask
+        setTimeout(() => {
+          onToggleSubtasks?.(task.id);
+        }, 100);
+      }
+    }
+  }, [socket, task.id, task.sub_tasks_count, onToggleSubtasks]);
+
+  // Handle adding new subtask
+  const handleAddSubtask = useCallback(() => {
+    const subtaskName = newSubtaskName?.trim();
+    if (subtaskName && connected && projectId) {
+      // Get current session for reporter_id and team_id
+      const currentSession = JSON.parse(localStorage.getItem('session') || '{}');
+      
+      const requestBody = {
+        project_id: projectId,
+        name: subtaskName,
+        reporter_id: currentSession.id,
+        team_id: currentSession.team_id,
+        parent_task_id: task.id,
+      };
+
+      socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(requestBody));
+      
+      // Handle the response
+      socket?.once(SocketEvents.QUICK_TASK.toString(), handleSubtaskCreated);
+    }
+  }, [newSubtaskName, connected, socket, task.id, projectId, handleSubtaskCreated]);
+
   // Handle expand/collapse or add subtask
   const handleExpandClick = useCallback(() => {
-    // For now, just toggle add subtask row for all tasks
+    // Always show add subtask row when clicking expand icon
     setShowAddSubtask(!showAddSubtask);
     if (!showAddSubtask) {
       // Focus the input after state update
@@ -655,13 +686,22 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
               <div className="flex items-center gap-2 h-5 overflow-hidden">
                 {/* Always reserve space for expand icon */}
                 <div style={{ width: 20, display: 'inline-block' }} />
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex items-center gap-2">
                   <Typography.Text
                     ellipsis={{ tooltip: task.title }}
                     className={styleClasses.taskName}
                   >
                     {task.title}
                   </Typography.Text>
+                  {(task as any).sub_tasks_count > 0 && (
+                    <div
+                      className={`subtask-count-badge flex items-center gap-1 px-1 py-0.5 text-xs font-semibold`}
+                      style={{ fontSize: '10px', marginLeft: 4, color: isDarkMode ? '#b0b3b8' : '#888' }}
+                    >
+                      <span>{(task as any).sub_tasks_count}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 600, marginLeft: 1 }}>{'»'}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -707,12 +747,9 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     }
 
     // Full rendering logic (existing code)
-    // Fix border logic: if this is a fixed column, only consider it "last" if there are no scrollable columns
-    // If this is a scrollable column, use the normal logic
-    const isActuallyLast = isFixed 
-      ? (index === totalColumns - 1 && (!scrollableColumns || scrollableColumns.length === 0))
-      : (index === totalColumns - 1);
-    const borderClasses = `${isActuallyLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+    // Simplified border logic - no fixed columns
+    const isLast = index === totalColumns - 1;
+    const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
     
     switch (col.key) {
       case 'drag':
@@ -767,7 +804,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      handleExpandClick();
+                      if (onExpandSubtaskInput) onExpandSubtaskInput(task.id);
                     }}
                     className={`expand-toggle-btn w-4 h-4 flex items-center justify-center border-none rounded text-xs cursor-pointer transition-all duration-200 ${
                       isDarkMode 
@@ -777,12 +814,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                     style={{ backgroundColor: 'transparent' }}
                     title="Add subtask"
                   >
-                    {showAddSubtask ? <DownOutlined /> : <RightOutlined />}
+                    <RightOutlined style={{ fontSize: 16, color: isDarkMode ? '#b0b3b8' : '#888' }} />
                   </button>
                 </div>
 
                 {/* Task name and input */}
-                <div ref={wrapperRef} className="flex-1 min-w-0">
+                <div ref={wrapperRef} className="flex-1 min-w-0 flex items-center gap-2">
                   {editTaskName ? (
                     <Input
                       ref={inputRef}
@@ -799,73 +836,59 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
                       autoFocus
                     />
                   ) : (
-                    <Typography.Text
-                      ellipsis={{ tooltip: task.title }}
-                      onClick={() => setEditTaskName(true)}
-                      className={styleClasses.taskName}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {task.title}
-                    </Typography.Text>
+                    <>
+                      <Typography.Text
+                        ellipsis={{ tooltip: task.title }}
+                        onClick={() => setEditTaskName(true)}
+                        className={styleClasses.taskName}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {task.title}
+                      </Typography.Text>
+                      {(task as any).sub_tasks_count > 0 && (
+                        <div
+                          className={`subtask-count-badge flex items-center gap-1 px-1 py-0.5 text-xs font-semibold`}
+                          style={{ fontSize: '10px', marginLeft: 4, color: isDarkMode ? '#b0b3b8' : '#888' }}
+                        >
+                          <span>{(task as any).sub_tasks_count}</span>
+                          <span style={{ fontSize: '12px', fontWeight: 600, marginLeft: 1 }}>{'»'}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
                 {/* Indicators section */}
                 {!editTaskName && (
-                  <div className="task-indicators flex items-center gap-1">
-                    {/* Subtasks count */}
-                    {(task as any).subtasks_count && (task as any).subtasks_count > 0 && (
-                      <Tooltip title={`${(task as any).subtasks_count} ${(task as any).subtasks_count !== 1 ? t('subtasks') : t('subtask')}`}>
-                        <div
-                          className={`indicator-badge subtasks flex items-center gap-1 px-1 py-0.5 rounded text-xs font-semibold cursor-pointer transition-colors duration-200 ${
-                            isDarkMode 
-                              ? 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700' 
-                              : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
-                          }`}
-                          style={{ fontSize: '10px', border: '1px solid' }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleToggleSubtasks?.();
-                          }}
-                        >
-                          <span>{(task as any).subtasks_count}</span>
-                          <RightOutlined style={{ fontSize: '8px' }} />
-                        </div>
-                      </Tooltip>
-                    )}
-
+                  <div className="task-indicators flex items-center gap-2">
                     {/* Comments indicator */}
-                    {(task as any).comments_count && (task as any).comments_count > 0 && (
-                      <Tooltip title={`${(task as any).comments_count} ${(task as any).comments_count !== 1 ? t('comments') : t('comment')}`}>
-                        <div
-                          className={`indicator-badge comments flex items-center gap-1 px-1 py-0.5 rounded text-xs font-semibold ${
-                            isDarkMode 
-                              ? 'bg-green-900 border-green-700 text-green-300' 
-                              : 'bg-green-50 border-green-200 text-green-700'
-                          }`}
-                          style={{ fontSize: '10px', border: '1px solid' }}
-                        >
-                          <MessageOutlined style={{ fontSize: '8px' }} />
-                          <span>{(task as any).comments_count}</span>
-                        </div>
+                    {(task as any).comments_count > 0 && (
+                      <Tooltip title={t('taskManagement.comments', 'Comments')}>
+                        <MessageOutlined style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }} />
                       </Tooltip>
                     )}
-
                     {/* Attachments indicator */}
-                    {(task as any).attachments_count && (task as any).attachments_count > 0 && (
-                      <Tooltip title={`${(task as any).attachments_count} ${(task as any).attachments_count !== 1 ? t('attachments') : t('attachment')}`}>
-                        <div
-                          className={`indicator-badge attachments flex items-center gap-1 px-1 py-0.5 rounded text-xs font-semibold ${
-                            isDarkMode 
-                              ? 'bg-blue-900 border-blue-700 text-blue-300' 
-                              : 'bg-blue-50 border-blue-200 text-blue-700'
-                          }`}
-                          style={{ fontSize: '10px', border: '1px solid' }}
-                        >
-                          <PaperClipOutlined style={{ fontSize: '8px' }} />
-                          <span>{(task as any).attachments_count}</span>
-                        </div>
+                    {(task as any).attachments_count > 0 && (
+                      <Tooltip title={t('taskManagement.attachments', 'Attachments')}>
+                        <PaperClipOutlined style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }} />
+                      </Tooltip>
+                    )}
+                    {/* Dependencies indicator */}
+                    {(task as any).has_dependencies && (
+                      <Tooltip title={t('taskManagement.dependencies', 'Dependencies')}>
+                        <MinusCircleOutlined style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }} />
+                      </Tooltip>
+                    )}
+                    {/* Subscribers indicator */}
+                    {(task as any).has_subscribers && (
+                      <Tooltip title={t('taskManagement.subscribers', 'Subscribers')}>
+                        <EyeOutlined style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }} />
+                      </Tooltip>
+                    )}
+                    {/* Recurring indicator */}
+                    {(task as any).schedule_id && (
+                      <Tooltip title={t('taskManagement.recurringTask', 'Recurring Task')}>
+                        <RetweetOutlined style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }} />
                       </Tooltip>
                     )}
                   </div>
@@ -1191,7 +1214,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   }, [
     shouldRenderFull, renderMinimalColumn, isDarkMode, task, isSelected, editTaskName, taskName, adapters, groupId, projectId,
     attributes, listeners, handleSelectChange, handleTaskNameSave, handleDateChange,
-    dateValues, styleClasses
+    dateValues, styleClasses, onExpandSubtaskInput
   ]);
 
   // Apply global cursor style when dragging
@@ -1269,154 +1292,32 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       data-task-id={task.id}
       data-group-id={groupId}
     >
-      <div className="flex h-10 max-h-10 overflow-visible relative">
-        {/* Fixed Columns */}
-        {fixedColumns && fixedColumns.length > 0 && (
-          <div
-            className="task-table-fixed-columns flex overflow-visible"
-            style={{
-              width: fixedColumns.reduce((sum, col) => sum + col.width, 0),
-              position: 'sticky',
-              left: 0,
-              zIndex: 10,
-              background: isDarkMode ? 'var(--task-bg-primary, #1f1f1f)' : 'var(--task-bg-primary, white)',
-              borderRight: scrollableColumns && scrollableColumns.length > 0 ? '2px solid var(--task-border-primary, #e8e8e8)' : 'none',
-              boxShadow: scrollableColumns && scrollableColumns.length > 0 ? '2px 0 4px rgba(0, 0, 0, 0.1)' : 'none',
-            }}
-          >
-            {fixedColumns.map((col, index) => 
-              shouldRenderMinimal 
-                ? renderMinimalColumn(col, true, index, fixedColumns.length)
-                : renderColumn(col, true, index, fixedColumns.length)
-            )}
-          </div>
-        )}
-        
-        {/* Scrollable Columns */}
-        {scrollableColumns && scrollableColumns.length > 0 && (
-          <div 
-            className="task-table-scrollable-columns overflow-visible" 
-            style={{ 
-              display: 'flex', 
-              flex: 1,
-              minWidth: scrollableColumns.reduce((sum, col) => sum + col.width, 0) 
-            }}
-          >
-            {scrollableColumns.map((col, index) => 
-              shouldRenderMinimal 
-                ? renderMinimalColumn(col, false, index, scrollableColumns.length)
-                : renderColumn(col, false, index, scrollableColumns.length)
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Add Subtask Row */}
-      {showAddSubtask && (
-        <div className={`add-subtask-row ${showAddSubtask ? 'visible' : ''} ${isDarkMode ? 'dark' : ''}`}>
-          <div className="flex h-10 max-h-10 overflow-visible relative">
-            {/* Fixed Columns for Add Subtask */}
-            {fixedColumns && fixedColumns.length > 0 && (
-              <div
-                className="task-table-fixed-columns flex overflow-visible"
-                style={{
-                  width: fixedColumns.reduce((sum, col) => sum + col.width, 0),
-                  position: 'sticky',
-                  left: 0,
-                  zIndex: 10,
-                  background: isDarkMode ? 'var(--task-bg-primary, #1f1f1f)' : 'var(--task-bg-primary, white)',
-                  borderRight: scrollableColumns && scrollableColumns.length > 0 ? '2px solid var(--task-border-primary, #e8e8e8)' : 'none',
-                  boxShadow: scrollableColumns && scrollableColumns.length > 0 ? '2px 0 4px rgba(0, 0, 0, 0.1)' : 'none',
-                }}
-              >
-                {fixedColumns.map((col, index) => {
-                  // Fix border logic for add subtask row: fixed columns should have right border if scrollable columns exist
-                  const isActuallyLast = index === fixedColumns.length - 1 && (!scrollableColumns || scrollableColumns.length === 0);
-                  const borderClasses = `${isActuallyLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
-                   
-                  if (col.key === 'task') {
-                    return (
-                      <div
-                        key={col.key}
-                        className={`flex items-center px-2 ${borderClasses}`}
-                        style={{ width: col.width }}
-                      >
-                        <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
-                          <Input
-                            ref={addSubtaskInputRef}
-                            placeholder={t('enterSubtaskName')}
-                            value={newSubtaskName}
-                            onChange={(e) => setNewSubtaskName(e.target.value)}
-                            onPressEnter={handleAddSubtask}
-                            onBlur={handleCancelAddSubtask}
-                            className={`add-subtask-input flex-1 ${
-                              isDarkMode 
-                                ? 'bg-gray-700 border-gray-600 text-gray-200' 
-                                : 'bg-white border-gray-300 text-gray-900'
-                            }`}
-                            size="small"
-                            autoFocus
-                          />
-                          <div className="flex gap-1">
-                            <Button
-                              size="small"
-                              onClick={handleAddSubtask}
-                              disabled={!newSubtaskName.trim()}
-                              className="h-6 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
-                            >
-                              {t('add')}
-                            </Button>
-                            <Button
-                              size="small"
-                              onClick={handleCancelAddSubtask}
-                              className="h-6 px-2 text-xs"
-                            >
-                              {t('cancel')}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  } else {
-                    return (
-                      <div
-                        key={col.key}
-                        className={`flex items-center px-2 ${borderClasses}`}
-                        style={{ width: col.width }}
-                      />
-                    );
-                  }
-                })}
-              </div>
-            )}
-            
-            {/* Scrollable Columns for Add Subtask */}
-            {scrollableColumns && scrollableColumns.length > 0 && (
-              <div 
-                className="task-table-scrollable-columns overflow-visible" 
-                style={{ 
-                  display: 'flex', 
-                  flex: 1,
-                  minWidth: scrollableColumns.reduce((sum, col) => sum + col.width, 0) 
-                }}
-              >
-                {scrollableColumns.map((col, index) => {
-                  const isLast = index === scrollableColumns.length - 1;
-                  const borderClasses = `${isLast ? '' : 'border-r'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
-                   
-                  return (
-                    <div
-                      key={col.key}
-                      className={`flex items-center px-2 ${borderClasses}`}
-                      style={{ width: col.width }}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
+      <div className="task-row-container flex h-10 max-h-10 relative">
+        {/* All Columns - No Fixed Positioning */}
+        <div className="task-table-all-columns flex">
+          {/* Fixed Columns (now scrollable) */}
+          {(fixedColumns ?? []).length > 0 && (
+            <>
+              {(fixedColumns ?? []).map((col, index) => 
+                shouldRenderMinimal 
+                  ? renderMinimalColumn(col, false, index, (fixedColumns ?? []).length)
+                  : renderColumn(col, false, index, (fixedColumns ?? []).length)
+              )}
+            </>
+          )}
+          
+          {/* Scrollable Columns */}
+          {(scrollableColumns ?? []).length > 0 && (
+            <>
+              {(scrollableColumns ?? []).map((col, index) => 
+                shouldRenderMinimal 
+                  ? renderMinimalColumn(col, false, index, (scrollableColumns ?? []).length)
+                  : renderColumn(col, false, index, (scrollableColumns ?? []).length)
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }, (prevProps, nextProps) => {

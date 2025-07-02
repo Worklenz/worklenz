@@ -221,7 +221,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   // Memoized calculations - optimized
   const totalTasks = useMemo(() => {
     const total = taskGroups.reduce((sum, g) => sum + g.taskIds.length, 0);
-    console.log(`[TASK-LIST-BOARD] Total tasks in groups: ${total}, Total tasks in store: ${tasks.length}, Groups: ${taskGroups.length}`);
     return total;
   }, [taskGroups, tasks.length]);
 
@@ -815,7 +814,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           min-height: 400px;
           max-height: calc(100vh - 120px);
           position: relative;
-          border: 1px solid var(--task-border-primary, #e8e8e8);
           border-radius: 8px;
           background: var(--task-bg-primary, white);
           overflow: hidden;
@@ -939,7 +937,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
         .task-group-header-text {
           color: white !important;
-          font-size: 13px !important;
+          font-size: 14px !important;
           font-weight: 600 !important;
           margin: 0 !important;
         }

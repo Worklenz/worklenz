@@ -9,6 +9,87 @@
   border-color: var(--task-border-primary, #e8e8e8);
 }
 
+/* Horizontal Scrolling Optimizations */
+.task-table-fixed-columns {
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: var(--task-bg-primary, #fff);
+  border-right: 2px solid var(--task-border-primary, #e8e8e8);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.task-table-scrollable-container {
+  flex: 1;
+  overflow: hidden;
+  min-width: 0; /* Allow flex item to shrink below content size */
+}
+
+.task-table-scrollable-columns {
+  display: flex;
+  width: max-content; /* Allow content to determine width */
+  min-width: 100%; /* Ensure it takes at least full width */
+}
+
+/* Dark mode support for horizontal scrolling */
+.dark .task-table-fixed-columns {
+  background: var(--task-bg-primary, #1f1f1f);
+  border-right-color: var(--task-border-primary, #303030);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 
+ * HORIZONTAL SCROLLING SETUP
+ * 
+ * For proper horizontal scrolling, the parent container should have:
+ * - overflow-x: auto
+ * - width: 100% (or specific width)
+ * - min-width: fit-content (optional, for very wide content)
+ * 
+ * Example parent container CSS:
+ * .task-list-container {
+ *   overflow-x: auto;
+ *   width: 100%;
+ *   min-width: fit-content;
+ * }
+ */
+
+/* Ensure task row works with horizontal scrolling containers */
+.task-row-optimized {
+  min-width: fit-content;
+  width: 100%;
+}
+
+/* Container styles for horizontal scrolling */
+.task-row-container {
+  display: flex;
+  width: 100%;
+  min-width: fit-content;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* All columns container - no fixed positioning */
+.task-table-all-columns {
+  display: flex;
+  min-width: fit-content;
+  width: 100%;
+}
+
+/* Ensure columns maintain their widths */
+.task-table-all-columns > div {
+  flex-shrink: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .task-row-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* SIMPLIFIED HOVER STATE: Remove complex containment and transforms */
 .task-row-optimized:hover {
   /* Remove transform that was causing GPU conflicts */
