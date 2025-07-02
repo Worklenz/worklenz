@@ -56,7 +56,10 @@ import billingApiRouter from "./billing-api-router";
 import taskDependenciesApiRouter from "./task-dependencies-api-router";
 
 import taskRecurringApiRouter from "./task-recurring-api-router";
-import customColumnsApiRouter from "./custom-columns-api-router";
+
+import customColumnsApiRouter from "./custom-columns-api-router";
+
+import projectActivityLogsApiRouter from "./project-activity-logs-api-router";
 
 const api = express.Router();
 
@@ -116,5 +119,8 @@ api.use("/task-dependencies", taskDependenciesApiRouter);
 api.use("/task-recurring", taskRecurringApiRouter);
 
 api.use("/custom-columns", customColumnsApiRouter);
+api.use("/activity-logs", activityLogsApiRouter);
+
+api.use("/project-activity-logs", projectActivityLogsApiRouter);
 
 export default api;
