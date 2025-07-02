@@ -51,7 +51,7 @@ export class PerformanceMonitor {
   // Get all metrics
   getMetrics(): Record<string, { average: number; count: number; min: number; max: number }> {
     const result: Record<string, { average: number; count: number; min: number; max: number }> = {};
-    
+
     this.metrics.forEach((values, name) => {
       if (values.length > 0) {
         result[name] = {
@@ -62,7 +62,7 @@ export class PerformanceMonitor {
         };
       }
     });
-    
+
     return result;
   }
 
@@ -70,9 +70,9 @@ export class PerformanceMonitor {
   monitorComponentRender(componentName: string): () => void {
     const startMark = `${componentName}-render-start`;
     const endMark = `${componentName}-render-end`;
-    
+
     this.mark(startMark);
-    
+
     return () => {
       this.mark(endMark);
       this.measure(`${componentName}-render-time`, startMark, endMark);
@@ -84,7 +84,7 @@ export class PerformanceMonitor {
     const startTime = performance.now();
     const result = selectorFn();
     const endTime = performance.now();
-    
+
     this.addMetric(`${selectorName}-execution-time`, endTime - startTime);
     return result;
   }
@@ -94,7 +94,7 @@ export class PerformanceMonitor {
     const startTime = performance.now();
     operation();
     const endTime = performance.now();
-    
+
     this.addMetric(`${operationName}-dom-time`, endTime - startTime);
   }
 
@@ -112,23 +112,24 @@ export class PerformanceMonitor {
   startFrameRateMonitoring(): () => void {
     let frameCount = 0;
     let lastTime = performance.now();
-    
+
     const measureFrameRate = () => {
       frameCount++;
       const currentTime = performance.now();
-      
-      if (currentTime - lastTime >= 1000) { // Every second
+
+      if (currentTime - lastTime >= 1000) {
+        // Every second
         const fps = frameCount / ((currentTime - lastTime) / 1000);
         this.addMetric('fps', fps);
         frameCount = 0;
         lastTime = currentTime;
       }
-      
+
       requestAnimationFrame(measureFrameRate);
     };
-    
+
     const animationId = requestAnimationFrame(measureFrameRate);
-    
+
     return () => {
       cancelAnimationFrame(animationId);
     };
@@ -137,7 +138,7 @@ export class PerformanceMonitor {
   // Monitor long tasks
   startLongTaskMonitoring(): () => void {
     if ('PerformanceObserver' in window) {
-      const observer = new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           if (entry.entryType === 'longtask') {
             this.addMetric('long-task-duration', entry.duration);
@@ -145,16 +146,16 @@ export class PerformanceMonitor {
           }
         }
       });
-      
+
       observer.observe({ entryTypes: ['longtask'] });
       this.observers.set('longtask', observer);
-      
+
       return () => {
         observer.disconnect();
         this.observers.delete('longtask');
       };
     }
-    
+
     return () => {};
   }
 
@@ -163,19 +164,20 @@ export class PerformanceMonitor {
     let layoutCount = 0;
     let lastLayoutTime = 0;
     const monitor = this;
-    
+
     const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
-    
-    Element.prototype.getBoundingClientRect = function() {
+
+    Element.prototype.getBoundingClientRect = function () {
       const currentTime = performance.now();
-      if (currentTime - lastLayoutTime < 16) { // Less than 16ms between calls
+      if (currentTime - lastLayoutTime < 16) {
+        // Less than 16ms between calls
         layoutCount++;
         monitor.addMetric('layout-thrashing-count', layoutCount);
       }
       lastLayoutTime = currentTime;
       return originalGetBoundingClientRect.call(this);
     };
-    
+
     return () => {
       Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
     };
@@ -190,60 +192,62 @@ export class PerformanceMonitor {
       summary: this.generateSummary(metrics),
       recommendations: this.generateRecommendations(metrics),
     };
-    
+
     return JSON.stringify(report, null, 2);
   }
 
   private generateSummary(metrics: Record<string, any>): Record<string, string> {
     const summary: Record<string, string> = {};
-    
+
     // Component render times
     const renderTimes = Object.keys(metrics).filter(key => key.includes('render-time'));
     if (renderTimes.length > 0) {
-      const avgRenderTime = renderTimes.reduce((sum, key) => sum + metrics[key].average, 0) / renderTimes.length;
+      const avgRenderTime =
+        renderTimes.reduce((sum, key) => sum + metrics[key].average, 0) / renderTimes.length;
       summary.renderPerformance = avgRenderTime > 16 ? 'Poor' : avgRenderTime > 8 ? 'Fair' : 'Good';
     }
-    
+
     // FPS
     if (metrics.fps) {
-      summary.frameRate = metrics.fps.average > 55 ? 'Good' : metrics.fps.average > 30 ? 'Fair' : 'Poor';
+      summary.frameRate =
+        metrics.fps.average > 55 ? 'Good' : metrics.fps.average > 30 ? 'Fair' : 'Poor';
     }
-    
+
     // Memory usage
     if (metrics['memory-used'] && metrics['memory-limit']) {
       const memoryUsage = (metrics['memory-used'].average / metrics['memory-limit'].average) * 100;
       summary.memoryUsage = memoryUsage > 80 ? 'High' : memoryUsage > 50 ? 'Moderate' : 'Low';
     }
-    
+
     return summary;
   }
 
   private generateRecommendations(metrics: Record<string, any>): string[] {
     const recommendations: string[] = [];
-    
+
     // Check for slow component renders
-    const slowRenders = Object.keys(metrics).filter(key => 
-      key.includes('render-time') && metrics[key].average > 16
+    const slowRenders = Object.keys(metrics).filter(
+      key => key.includes('render-time') && metrics[key].average > 16
     );
     if (slowRenders.length > 0) {
       recommendations.push(`Optimize component renders: ${slowRenders.join(', ')}`);
     }
-    
+
     // Check for layout thrashing
     if (metrics['layout-thrashing-count'] && metrics['layout-thrashing-count'].count > 10) {
       recommendations.push('Reduce layout thrashing by batching DOM reads and writes');
     }
-    
+
     // Check for long tasks
     if (metrics['long-task-duration'] && metrics['long-task-duration'].count > 0) {
       recommendations.push('Break down long tasks into smaller chunks');
     }
-    
+
     // Check for low FPS
     if (metrics.fps && metrics.fps.average < 30) {
       recommendations.push('Optimize rendering performance to maintain 60fps');
     }
-    
+
     // Check for high memory usage
     if (metrics['memory-used'] && metrics['memory-limit']) {
       const memoryUsage = (metrics['memory-used'].average / metrics['memory-limit'].average) * 100;
@@ -251,7 +255,7 @@ export class PerformanceMonitor {
         recommendations.push('Reduce memory usage to prevent performance degradation');
       }
     }
-    
+
     return recommendations;
   }
 
@@ -265,7 +269,7 @@ export class PerformanceMonitor {
 
   // Stop all monitoring
   stop(): void {
-    this.observers.forEach((observer) => {
+    this.observers.forEach(observer => {
       observer.disconnect();
     });
     this.observers.clear();
@@ -292,13 +296,13 @@ export const performanceMiddleware = (store: any) => (next: any) => (action: any
   const startTime = performance.now();
   const result = next(action);
   const endTime = performance.now();
-  
+
   performanceMonitor.addMetric(`redux-action-${action.type}`, endTime - startTime);
-  
+
   return result;
 };
 
 // Export for global access
 if (typeof window !== 'undefined') {
   (window as any).performanceMonitor = performanceMonitor;
-} 
+}

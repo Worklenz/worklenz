@@ -6,7 +6,7 @@ const TaskListDescriptionCell = ({ description }: { description: string }) => {
 
   return (
     <Typography.Paragraph
-      ellipsis={{ 
+      ellipsis={{
         expandable: false,
         rows: 1,
         tooltip: description,

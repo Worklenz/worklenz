@@ -6,10 +6,18 @@ import ProjectViewEnhancedTasks from '@/pages/projects/projectView/enhancedTasks
 import ProjectViewEnhancedBoard from '@/pages/projects/projectView/enhancedBoard/project-view-enhanced-board';
 
 // Lazy load less critical components
-const ProjectViewInsights = React.lazy(() => import('@/pages/projects/projectView/insights/project-view-insights'));
-const ProjectViewFiles = React.lazy(() => import('@/pages/projects/projectView/files/project-view-files'));
-const ProjectViewMembers = React.lazy(() => import('@/pages/projects/projectView/members/project-view-members'));
-const ProjectViewUpdates = React.lazy(() => import('@/pages/projects/project-view-1/updates/project-view-updates'));
+const ProjectViewInsights = React.lazy(
+  () => import('@/pages/projects/projectView/insights/project-view-insights')
+);
+const ProjectViewFiles = React.lazy(
+  () => import('@/pages/projects/projectView/files/project-view-files')
+);
+const ProjectViewMembers = React.lazy(
+  () => import('@/pages/projects/projectView/members/project-view-members')
+);
+const ProjectViewUpdates = React.lazy(
+  () => import('@/pages/projects/project-view-1/updates/project-view-updates')
+);
 
 // type of a tab items
 type TabItems = {
@@ -40,7 +48,8 @@ export const tabItems: TabItems[] = [
     index: 2,
     key: 'project-insights-member-overview',
     label: 'Insights',
-    element: React.createElement(Suspense, 
+    element: React.createElement(
+      Suspense,
       { fallback: React.createElement(InlineSuspenseFallback) },
       React.createElement(ProjectViewInsights)
     ),
@@ -49,7 +58,8 @@ export const tabItems: TabItems[] = [
     index: 3,
     key: 'all-attachments',
     label: 'Files',
-    element: React.createElement(Suspense, 
+    element: React.createElement(
+      Suspense,
       { fallback: React.createElement(InlineSuspenseFallback) },
       React.createElement(ProjectViewFiles)
     ),
@@ -58,7 +68,8 @@ export const tabItems: TabItems[] = [
     index: 4,
     key: 'members',
     label: 'Members',
-    element: React.createElement(Suspense, 
+    element: React.createElement(
+      Suspense,
       { fallback: React.createElement(InlineSuspenseFallback) },
       React.createElement(ProjectViewMembers)
     ),
@@ -67,7 +78,8 @@ export const tabItems: TabItems[] = [
     index: 5,
     key: 'updates',
     label: 'Updates',
-    element: React.createElement(Suspense, 
+    element: React.createElement(
+      Suspense,
       { fallback: React.createElement(InlineSuspenseFallback) },
       React.createElement(ProjectViewUpdates)
     ),

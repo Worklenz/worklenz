@@ -42,13 +42,16 @@ const BillableFilter = ({ billable, onBillableChange }: BillableFilterProps) => 
             }}
           >
             <Space>
-              <Checkbox 
-                id={item.key} 
-                checked={billable[item.key as keyof typeof billable]} 
-                onChange={() => onBillableChange({ 
-                  ...billable, 
-                  [item.key as keyof typeof billable]: !billable[item.key as keyof typeof billable] 
-                })} 
+              <Checkbox
+                id={item.key}
+                checked={billable[item.key as keyof typeof billable]}
+                onChange={() =>
+                  onBillableChange({
+                    ...billable,
+                    [item.key as keyof typeof billable]:
+                      !billable[item.key as keyof typeof billable],
+                  })
+                }
               />
               {t(`${item.key}Text`)}
             </Space>

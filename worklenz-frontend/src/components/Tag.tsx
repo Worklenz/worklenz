@@ -10,30 +10,30 @@ interface TagProps {
   isDarkMode?: boolean;
 }
 
-const Tag: React.FC<TagProps> = ({ 
-  children, 
-  color = 'white', 
-  backgroundColor = '#1890ff', 
+const Tag: React.FC<TagProps> = ({
+  children,
+  color = 'white',
+  backgroundColor = '#1890ff',
   className = '',
   size = 'default',
   variant = 'default',
-  isDarkMode = false
+  isDarkMode = false,
 }) => {
   const sizeClasses = {
     small: 'px-1 py-0.5 text-xs',
-    default: 'px-2 py-1 text-xs'
+    default: 'px-2 py-1 text-xs',
   };
 
   const baseClasses = `inline-flex items-center font-medium rounded-sm ${sizeClasses[size]}`;
-  
+
   if (variant === 'outlined') {
     return (
       <span
         className={`${baseClasses} border ${className}`}
-        style={{ 
-          borderColor: backgroundColor, 
+        style={{
+          borderColor: backgroundColor,
           color: backgroundColor,
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
         }}
       >
         {children}
@@ -42,13 +42,10 @@ const Tag: React.FC<TagProps> = ({
   }
 
   return (
-    <span
-      className={`${baseClasses} ${className}`}
-      style={{ backgroundColor, color }}
-    >
+    <span className={`${baseClasses} ${className}`} style={{ backgroundColor, color }}>
       {children}
     </span>
   );
 };
 
-export default Tag; 
+export default Tag;

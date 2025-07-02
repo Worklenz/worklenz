@@ -1,5 +1,8 @@
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
-import { fetchProjectData, setSelectedProjectStatuses } from '@/features/reporting/projectReports/project-reports-slice';
+import {
+  fetchProjectData,
+  setSelectedProjectStatuses,
+} from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectStatus } from '@/types/project/projectStatus.types';
@@ -30,7 +33,7 @@ const ProjectStatusFilterDropdown = () => {
   const debouncedUpdate = useCallback(
     debounce((statuses: IProjectStatus[]) => {
       dispatch(setSelectedProjectStatuses(statuses));
-      dispatch(fetchProjectData()); 
+      dispatch(fetchProjectData());
     }, 300),
     [dispatch]
   );
@@ -45,7 +48,7 @@ const ProjectStatusFilterDropdown = () => {
       updatedStatuses = [...selectedStatuses, status];
     }
 
-    setSelectedStatuses(updatedStatuses); 
+    setSelectedStatuses(updatedStatuses);
     debouncedUpdate(updatedStatuses);
   };
 
@@ -65,11 +68,7 @@ const ProjectStatusFilterDropdown = () => {
             }}
           >
             <Space>
-              <Checkbox
-                id={item.id}
-                key={item.id}
-                onChange={e => handleProjectStatusClick(item)}
-              >
+              <Checkbox id={item.id} key={item.id} onChange={e => handleProjectStatusClick(item)}>
                 {item.name}
               </Checkbox>
             </Space>

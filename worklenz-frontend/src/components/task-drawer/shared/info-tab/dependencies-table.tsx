@@ -112,7 +112,13 @@ const DependenciesTable = ({
       render: record => (
         <Select
           value={record.dependency_type}
-          options={[{ key: IDependencyType.BLOCKED_BY, value: IDependencyType.BLOCKED_BY, label: 'Blocked By' }]}
+          options={[
+            {
+              key: IDependencyType.BLOCKED_BY,
+              value: IDependencyType.BLOCKED_BY,
+              label: 'Blocked By',
+            },
+          ]}
           size="small"
         />
       ),
@@ -176,7 +182,13 @@ const DependenciesTable = ({
             <Col span={6}>
               <Form.Item name="blockedBy" style={{ marginBottom: 0 }}>
                 <Select
-                  options={[{ key: IDependencyType.BLOCKED_BY, value: IDependencyType.BLOCKED_BY, label: 'Blocked By' }]}
+                  options={[
+                    {
+                      key: IDependencyType.BLOCKED_BY,
+                      value: IDependencyType.BLOCKED_BY,
+                      label: 'Blocked By',
+                    },
+                  ]}
                   size="small"
                   disabled
                 />

@@ -10,130 +10,122 @@ import KanbanTaskCard from './kanbanTaskCard';
 const { Text } = Typography;
 
 interface TaskGroupProps {
-    group: ITaskListGroup;
-    projectId: string;
-    currentGrouping: IGroupBy;
-    selectedTaskIds: string[];
-    onAddTask?: (groupId: string) => void;
-    onToggleCollapse?: (groupId: string) => void;
-    onSelectTask?: (taskId: string, selected: boolean) => void;
-    onToggleSubtasks?: (taskId: string) => void;
-    dragHandleProps?: any;
-    activeTaskId?: string | null;
+  group: ITaskListGroup;
+  projectId: string;
+  currentGrouping: IGroupBy;
+  selectedTaskIds: string[];
+  onAddTask?: (groupId: string) => void;
+  onToggleCollapse?: (groupId: string) => void;
+  onSelectTask?: (taskId: string, selected: boolean) => void;
+  onToggleSubtasks?: (taskId: string) => void;
+  dragHandleProps?: any;
+  activeTaskId?: string | null;
 }
 
 const KanbanGroup: React.FC<TaskGroupProps> = ({
-    group,
-    projectId,
-    currentGrouping,
-    selectedTaskIds,
-    onAddTask,
-    onToggleCollapse,
-    onSelectTask,
-    onToggleSubtasks,
-    dragHandleProps,
-    activeTaskId,
+  group,
+  projectId,
+  currentGrouping,
+  selectedTaskIds,
+  onAddTask,
+  onToggleCollapse,
+  onSelectTask,
+  onToggleSubtasks,
+  dragHandleProps,
+  activeTaskId,
 }) => {
-    const [isCollapsed, setIsCollapsed] = useState(false);
-    const { setNodeRef, isOver } = useDroppable({
-        id: group.id,
-        data: {
-            type: 'group',
-            groupId: group.id,
-        },
-    });
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { setNodeRef, isOver } = useDroppable({
+    id: group.id,
+    data: {
+      type: 'group',
+      groupId: group.id,
+    },
+  });
 
-    // Get task IDs for sortable context
-    const taskIds = group.tasks.map(task => task.id!);
+  // Get task IDs for sortable context
+  const taskIds = group.tasks.map(task => task.id!);
 
-    // Get group color based on grouping type
-    const getGroupColor = () => {
-        if (group.color_code) return group.color_code;
-        switch (currentGrouping) {
-            case 'status':
-                return group.id === 'todo' ? '#faad14' : group.id === 'doing' ? '#1890ff' : '#52c41a';
-            case 'priority':
-                return group.id === 'critical'
-                    ? '#ff4d4f'
-                    : group.id === 'high'
-                        ? '#fa8c16'
-                        : group.id === 'medium'
-                            ? '#faad14'
-                            : '#52c41a';
-            case 'phase':
-                return '#722ed1';
-            default:
-                return '#d9d9d9';
-        }
-    };
+  // Get group color based on grouping type
+  const getGroupColor = () => {
+    if (group.color_code) return group.color_code;
+    switch (currentGrouping) {
+      case 'status':
+        return group.id === 'todo' ? '#faad14' : group.id === 'doing' ? '#1890ff' : '#52c41a';
+      case 'priority':
+        return group.id === 'critical'
+          ? '#ff4d4f'
+          : group.id === 'high'
+            ? '#fa8c16'
+            : group.id === 'medium'
+              ? '#faad14'
+              : '#52c41a';
+      case 'phase':
+        return '#722ed1';
+      default:
+        return '#d9d9d9';
+    }
+  };
 
-    const handleAddTask = () => {
-        onAddTask?.(group.id);
-    };
+  const handleAddTask = () => {
+    onAddTask?.(group.id);
+  };
 
-    return (
-        <div
-            ref={setNodeRef}
-            className={`kanban-group-column${isOver ? ' drag-over' : ''}`}
-        >
-            {/* Group Header */}
-            <div className="kanban-group-header" style={{ backgroundColor: getGroupColor() }}>
-                {/* Drag handle for column */}
-                <Button
-                    type="text"
-                    size="small"
-                    icon={<MenuOutlined />}
-                    className="kanban-group-drag-handle"
-                    style={{ marginRight: 8, cursor: 'grab', opacity: 0.7 }}
-                    {...(dragHandleProps || {})}
+  return (
+    <div ref={setNodeRef} className={`kanban-group-column${isOver ? ' drag-over' : ''}`}>
+      {/* Group Header */}
+      <div className="kanban-group-header" style={{ backgroundColor: getGroupColor() }}>
+        {/* Drag handle for column */}
+        <Button
+          type="text"
+          size="small"
+          icon={<MenuOutlined />}
+          className="kanban-group-drag-handle"
+          style={{ marginRight: 8, cursor: 'grab', opacity: 0.7 }}
+          {...(dragHandleProps || {})}
+        />
+        <Text strong className="kanban-group-header-text">
+          {group.name} <span className="kanban-group-count">({group.tasks.length})</span>
+        </Text>
+      </div>
+
+      {/* Tasks as Cards */}
+      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+        <div className="kanban-group-tasks">
+          {group.tasks.length === 0 ? (
+            <div className="kanban-group-empty">
+              <Text type="secondary">No tasks in this group</Text>
+            </div>
+          ) : (
+            group.tasks.map((task, index) =>
+              task.id === activeTaskId ? (
+                <div key={task.id} className="kanban-task-card kanban-task-card-placeholder" />
+              ) : (
+                <KanbanTaskCard
+                  key={task.id}
+                  task={task}
+                  projectId={projectId}
+                  groupId={group.id}
+                  currentGrouping={currentGrouping}
+                  isSelected={selectedTaskIds.includes(task.id!)}
+                  index={index}
+                  onSelect={onSelectTask}
+                  onToggleSubtasks={onToggleSubtasks}
                 />
-                <Text strong className="kanban-group-header-text">
-                    {group.name} <span className="kanban-group-count">({group.tasks.length})</span>
-                </Text>
-            </div>
+              )
+            )
+          )}
+        </div>
+      </SortableContext>
 
-            {/* Tasks as Cards */}
-            <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                <div className="kanban-group-tasks">
-                    {group.tasks.length === 0 ? (
-                        <div className="kanban-group-empty">
-                            <Text type="secondary">No tasks in this group</Text>
-                        </div>
-                    ) : (
-                        group.tasks.map((task, index) => (
-                            task.id === activeTaskId ? (
-                                <div key={task.id} className="kanban-task-card kanban-task-card-placeholder" />
-                            ) : (
-                                <KanbanTaskCard
-                                    key={task.id}
-                                    task={task}
-                                    projectId={projectId}
-                                    groupId={group.id}
-                                    currentGrouping={currentGrouping}
-                                    isSelected={selectedTaskIds.includes(task.id!)}
-                                    index={index}
-                                    onSelect={onSelectTask}
-                                    onToggleSubtasks={onToggleSubtasks}
-                                />
-                            )
-                        ))
-                    )}
-                </div>
-            </SortableContext>
+      {/* Add Task Button */}
+      <div className="kanban-group-add-task">
+        <Button type="dashed" icon={<PlusOutlined />} block onClick={handleAddTask}>
+          Add Task
+        </Button>
+      </div>
 
-            {/* Add Task Button */}
-            <div className="kanban-group-add-task">
-                <Button
-                    type="dashed"
-                    icon={<PlusOutlined />}
-                    block
-                    onClick={handleAddTask}
-                >
-                    Add Task
-                </Button>
-            </div>
-
-            <style>{`
+      <style>{`
                 .kanban-group-column {
                     display: flex;
                     flex-direction: column;
@@ -221,8 +213,8 @@ const KanbanGroup: React.FC<TaskGroupProps> = ({
                     border: 2px dashed var(--task-drag-over-border, #40a9ff);
                 }
             `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default KanbanGroup;

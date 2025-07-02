@@ -36,48 +36,54 @@ const PriorityDropdown = ({ task, teamId }: PriorityDropdownProps) => {
   // Helper function to get display name for raw priority values
   const getPriorityDisplayName = (priority: string | undefined) => {
     if (!priority) return 'Medium';
-    
+
     // Handle raw priority values from backend
     const priorityDisplayMap: Record<string, string> = {
-      'critical': 'Critical',
-      'high': 'High',
-      'medium': 'Medium',
-      'low': 'Low',
+      critical: 'Critical',
+      high: 'High',
+      medium: 'Medium',
+      low: 'Low',
     };
-    
+
     return priorityDisplayMap[priority.toLowerCase()] || priority;
   };
 
   // Helper function to get priority color for raw priority values
   const getPriorityColor = (priority: string | undefined) => {
     if (!priority) return themeMode === 'dark' ? '#434343' : '#f0f0f0';
-    
+
     // Default colors for raw priority values
     const priorityColorMap: Record<string, { light: string; dark: string }> = {
-      'critical': { light: '#ff4d4f', dark: '#ff7875' },
-      'high': { light: '#fa8c16', dark: '#ffa940' },
-      'medium': { light: '#1890ff', dark: '#40a9ff' },
-      'low': { light: '#52c41a', dark: '#73d13d' },
+      critical: { light: '#ff4d4f', dark: '#ff7875' },
+      high: { light: '#fa8c16', dark: '#ffa940' },
+      medium: { light: '#1890ff', dark: '#40a9ff' },
+      low: { light: '#52c41a', dark: '#73d13d' },
     };
-    
+
     const colorPair = priorityColorMap[priority.toLowerCase()];
-    return colorPair ? (themeMode === 'dark' ? colorPair.dark : colorPair.light) : (themeMode === 'dark' ? '#434343' : '#f0f0f0');
+    return colorPair
+      ? themeMode === 'dark'
+        ? colorPair.dark
+        : colorPair.light
+      : themeMode === 'dark'
+        ? '#434343'
+        : '#f0f0f0';
   };
 
   // Find matching priority from the list, or use raw value
   const currentPriority = useMemo(() => {
     if (!task.priority) return null;
-    
+
     // First try to find by ID
     const priorityById = priorityList.find(priority => priority.id === task.priority);
     if (priorityById) return priorityById;
-    
+
     // Then try to find by name (case insensitive)
-    const priorityByName = priorityList.find(priority => 
-      priority.name.toLowerCase() === task.priority?.toLowerCase()
+    const priorityByName = priorityList.find(
+      priority => priority.name.toLowerCase() === task.priority?.toLowerCase()
     );
     if (priorityByName) return priorityByName;
-    
+
     // Return null if no match found (will use fallback rendering)
     return null;
   }, [task.priority, priorityList]);
@@ -152,7 +158,7 @@ const PriorityDropdown = ({ task, teamId }: PriorityDropdownProps) => {
 
   // Fallback rendering for raw priority values or when priority list is not loaded
   return (
-    <div 
+    <div
       className="px-2 py-1 text-xs rounded-sm"
       style={{
         backgroundColor: getPriorityColor(task.priority) + ALPHA_CHANNEL,

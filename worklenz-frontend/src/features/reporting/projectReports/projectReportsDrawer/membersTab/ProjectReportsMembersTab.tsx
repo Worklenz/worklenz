@@ -23,7 +23,7 @@ const ProjectReportsMembersTab = ({ projectId = null }: ProjectReportsMembersTab
 
   const fetchMembersData = async () => {
     if (!projectId || loading) return;
-    
+
     try {
       setLoading(true);
       const res = await reportingProjectsApiService.getProjectMembers(projectId);

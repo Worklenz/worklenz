@@ -79,7 +79,7 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     // Check and unregister ngsw-worker if present
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
         const ngswWorker = registrations.find(reg => reg.active?.scriptURL.includes('ngsw-worker'));
         if (ngswWorker) {
           ngswWorker.unregister().then(() => {

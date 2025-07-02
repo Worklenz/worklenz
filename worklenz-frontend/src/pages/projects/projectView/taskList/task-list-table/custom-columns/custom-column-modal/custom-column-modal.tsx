@@ -1,4 +1,15 @@
-import { Button, Divider, Flex, Form, Input, message, Modal, Select, Typography, Popconfirm } from 'antd';
+import {
+  Button,
+  Divider,
+  Flex,
+  Form,
+  Input,
+  message,
+  Modal,
+  Select,
+  Typography,
+  Popconfirm,
+} from 'antd';
 import SelectionTypeColumn from './selection-type-column/selection-type-column';
 import NumberTypeColumn from './number-type-column/number-type-column';
 import LabelTypeColumn from './label-type-column/label-type-column';
@@ -30,7 +41,10 @@ import {
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import KeyTypeColumn from './key-type-column/key-type-column';
 import logger from '@/utils/errorLogger';
-import { addCustomColumn, deleteCustomColumn as deleteCustomColumnFromTasks } from '@/features/tasks/tasks.slice';
+import {
+  addCustomColumn,
+  deleteCustomColumn as deleteCustomColumnFromTasks,
+} from '@/features/tasks/tasks.slice';
 import { useParams } from 'react-router-dom';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import { ExclamationCircleFilled } from '@ant-design/icons';
@@ -76,22 +90,22 @@ const CustomColumnModal = () => {
   // Function to handle deleting a custom column
   const handleDeleteColumn = async () => {
     if (!customColumnId) return;
-    
+
     try {
       // Make API request to delete the custom column using the service
       await tasksCustomColumnsService.deleteCustomColumn(openedColumn?.id || customColumnId);
-      
+
       // Dispatch actions to update the Redux store
       dispatch(deleteCustomColumnFromTasks(customColumnId));
       dispatch(deleteCustomColumnFromColumns(customColumnId));
-      
+
       // Close the modal
       dispatch(toggleCustomColumnModalOpen(false));
       dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
-      
+
       // Show success message
       message.success('Custom column deleted successfully');
-      
+
       // Reload the page to reflect the changes
       window.location.reload();
     } catch (error) {
@@ -211,14 +225,14 @@ const CustomColumnModal = () => {
             field_type: value.fieldType,
             width: 120,
             is_visible: true,
-            configuration
+            configuration,
           });
 
           if (res.done) {
             if (res.body.id) newColumn.id = res.body.id;
-          dispatch(addCustomColumn(newColumn));
-          dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
-          dispatch(toggleCustomColumnModalOpen(false));
+            dispatch(addCustomColumn(newColumn));
+            dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
+            dispatch(toggleCustomColumnModalOpen(false));
           }
         } catch (error) {
           logger.error('Error creating custom column:', error);
@@ -290,7 +304,7 @@ const CustomColumnModal = () => {
               field_type: value.fieldType,
               width: 150,
               is_visible: true,
-              configuration
+              configuration,
             });
 
             // Close modal
@@ -329,24 +343,33 @@ const CustomColumnModal = () => {
         mainForm.resetFields();
       }}
       afterOpenChange={open => {
-        if (open && customColumnModalType === 'edit' && openedColumn) {        
+        if (open && customColumnModalType === 'edit' && openedColumn) {
           // Set the field type first so the correct form fields are displayed
           dispatch(setCustomFieldType(openedColumn.custom_column_obj?.fieldType || 'people'));
-          
+
           // Set other field values based on the custom column type
           if (openedColumn.custom_column_obj?.fieldType === 'number') {
-            dispatch(setCustomFieldNumberType(openedColumn.custom_column_obj?.numberType || 'formatted'));
+            dispatch(
+              setCustomFieldNumberType(openedColumn.custom_column_obj?.numberType || 'formatted')
+            );
             dispatch(setDecimals(openedColumn.custom_column_obj?.decimals || 0));
             dispatch(setLabel(openedColumn.custom_column_obj?.label || ''));
             dispatch(setLabelPosition(openedColumn.custom_column_obj?.labelPosition || 'left'));
           } else if (openedColumn.custom_column_obj?.fieldType === 'formula') {
             dispatch(setExpression(openedColumn.custom_column_obj?.expression || 'add'));
-            dispatch(setFirstNumericColumn(openedColumn.custom_column_obj?.firstNumericColumn || null));
-            dispatch(setSecondNumericColumn(openedColumn.custom_column_obj?.secondNumericColumn || null));
+            dispatch(
+              setFirstNumericColumn(openedColumn.custom_column_obj?.firstNumericColumn || null)
+            );
+            dispatch(
+              setSecondNumericColumn(openedColumn.custom_column_obj?.secondNumericColumn || null)
+            );
           } else if (openedColumn.custom_column_obj?.fieldType === 'selection') {
             // Directly set the selections list in the Redux store
             if (Array.isArray(openedColumn.custom_column_obj?.selectionsList)) {
-              console.log('Setting selections list:', openedColumn.custom_column_obj.selectionsList);
+              console.log(
+                'Setting selections list:',
+                openedColumn.custom_column_obj.selectionsList
+              );
               dispatch(setSelectionsList(openedColumn.custom_column_obj.selectionsList));
             }
           } else if (openedColumn.custom_column_obj?.fieldType === 'labels') {
@@ -356,7 +379,7 @@ const CustomColumnModal = () => {
               dispatch(setLabelsList(openedColumn.custom_column_obj.labelsList));
             }
           }
-          
+
           // Set form values
           mainForm.setFieldsValue({
             fieldTitle: openedColumn.name || openedColumn.custom_column_obj?.fieldTitle,

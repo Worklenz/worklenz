@@ -8,7 +8,6 @@ const Unauthorized = () => {
   const { t } = useTranslation('unauthorized');
   useDocumentTitle('Unauthorized');
 
-
   return (
     <div style={{ marginBlock: 65, minHeight: '90vh' }}>
       <Result

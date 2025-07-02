@@ -37,7 +37,7 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
   }, [currentConfig, open]);
 
   const handleToggleColumn = (key: string) => {
-    const newConfig = config.map(col => 
+    const newConfig = config.map(col =>
       col.key === key ? { ...col, showInDropdown: !col.showInDropdown } : col
     );
     setConfig(newConfig);
@@ -76,14 +76,17 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
     setHasChanges(false);
   };
 
-  const groupedColumns = config.reduce((groups, column) => {
-    const category = column.category || 'other';
-    if (!groups[category]) {
-      groups[category] = [];
-    }
-    groups[category].push(column);
-    return groups;
-  }, {} as Record<string, ColumnConfig[]>);
+  const groupedColumns = config.reduce(
+    (groups, column) => {
+      const category = column.category || 'other';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(column);
+      return groups;
+    },
+    {} as Record<string, ColumnConfig[]>
+  );
 
   const categoryLabels: Record<string, string> = {
     basic: 'Basic Information',
@@ -117,8 +120,8 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
     >
       <div style={{ marginBottom: 16 }}>
         <Typography.Text type="secondary">
-          Configure which columns appear in the "Show Fields" dropdown and their order.
-          Use the up/down arrows to reorder columns.
+          Configure which columns appear in the "Show Fields" dropdown and their order. Use the
+          up/down arrows to reorder columns.
         </Typography.Text>
       </div>
 
@@ -127,7 +130,7 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
           <Divider orientation="left">
             <Typography.Text strong>{categoryLabels[category] || category}</Typography.Text>
           </Divider>
-          
+
           {columns.map((column, index) => (
             <div
               key={column.key}
@@ -149,11 +152,11 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
               >
                 <Typography.Text>{column.label}</Typography.Text>
               </Checkbox>
-              
+
               <Typography.Text type="secondary" style={{ fontSize: '12px', minWidth: '60px' }}>
                 Order: {column.order}
               </Typography.Text>
-              
+
               <Space>
                 <Button
                   size="small"
@@ -176,4 +179,4 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
   );
 };
 
-export default ColumnConfigurationModal; 
+export default ColumnConfigurationModal;

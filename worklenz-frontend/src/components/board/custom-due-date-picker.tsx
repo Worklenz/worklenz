@@ -86,7 +86,7 @@ const CustomDueDatePicker = ({
               width: 26,
               height: 26,
             }}
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation(); // Keep this as a backup
               setIsDatePickerOpen(true);
             }}

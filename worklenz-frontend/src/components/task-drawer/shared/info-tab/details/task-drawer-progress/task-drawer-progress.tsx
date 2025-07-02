@@ -14,7 +14,10 @@ import { setTaskStatus } from '@/features/task-drawer/task-drawer.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateBoardTaskStatus } from '@/features/board/board-slice';
 import { updateTaskProgress, updateTaskStatus } from '@/features/tasks/tasks.slice';
-import { updateEnhancedKanbanTaskStatus, updateEnhancedKanbanTaskProgress } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import {
+  updateEnhancedKanbanTaskStatus,
+  updateEnhancedKanbanTaskProgress,
+} from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 
 interface TaskDrawerProgressProps {
@@ -325,7 +328,12 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
         okText={t('taskProgress.confirmMarkAsDone', 'Yes, mark as done')}
         cancelText={t('taskProgress.cancelMarkAsDone', 'No, keep current status')}
       >
-        <p>{t('taskProgress.markAsDoneDescription', 'You\'ve set the progress to 100%. Would you like to update the task status to "Done"?')}</p>
+        <p>
+          {t(
+            'taskProgress.markAsDoneDescription',
+            'You\'ve set the progress to 100%. Would you like to update the task status to "Done"?'
+          )}
+        </p>
       </Modal>
     </>
   );

@@ -4,4 +4,4 @@
 
 // Set undefined values so the application falls back to build-time env vars
 window.VITE_API_URL = undefined;
-window.VITE_SOCKET_URL = undefined; 
+window.VITE_SOCKET_URL = undefined;

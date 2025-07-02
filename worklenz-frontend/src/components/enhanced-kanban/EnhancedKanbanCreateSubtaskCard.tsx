@@ -85,22 +85,27 @@ const EnhancedKanbanCreateSubtaskCard = ({
         }, 0);
         if (task.parent_task_id) {
           socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.parent_task_id);
-          socket?.once(SocketEvents.GET_TASK_PROGRESS.toString(), (data: {
-            id: string;
-            complete_ratio: number;
-            completed_count: number;
-            total_tasks_count: number;
-            parent_task: string;
-          }) => { 
-            if (!data.parent_task) data.parent_task = task.parent_task_id || '';
-            dispatch(updateEnhancedKanbanTaskProgress({
-              id: task.id || '',
-              complete_ratio: data.complete_ratio,
-              completed_count: data.completed_count,
-              total_tasks_count: data.total_tasks_count,
-              parent_task: data.parent_task,
-            }));
-          });
+          socket?.once(
+            SocketEvents.GET_TASK_PROGRESS.toString(),
+            (data: {
+              id: string;
+              complete_ratio: number;
+              completed_count: number;
+              total_tasks_count: number;
+              parent_task: string;
+            }) => {
+              if (!data.parent_task) data.parent_task = task.parent_task_id || '';
+              dispatch(
+                updateEnhancedKanbanTaskProgress({
+                  id: task.id || '',
+                  complete_ratio: data.complete_ratio,
+                  completed_count: data.completed_count,
+                  total_tasks_count: data.total_tasks_count,
+                  parent_task: data.parent_task,
+                })
+              );
+            }
+          );
         }
       });
     } catch (error) {
@@ -143,7 +148,7 @@ const EnhancedKanbanCreateSubtaskCard = ({
         cursor: 'pointer',
         overflow: 'hidden',
       }}
-    //   className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline`}
+      //   className={`outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline`}
       onBlur={handleCancelNewCard}
     >
       <Input
@@ -170,4 +175,4 @@ const EnhancedKanbanCreateSubtaskCard = ({
   );
 };
 
-export default EnhancedKanbanCreateSubtaskCard; 
+export default EnhancedKanbanCreateSubtaskCard;

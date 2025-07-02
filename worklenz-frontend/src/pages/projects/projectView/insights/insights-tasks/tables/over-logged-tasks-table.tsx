@@ -15,7 +15,6 @@ const OverLoggedTasksTable = () => {
   const [loading, setLoading] = useState(true);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
 
-
   const getOverLoggedTasks = async () => {
     try {
       setLoading(true);
@@ -35,7 +34,7 @@ const OverLoggedTasksTable = () => {
 
   useEffect(() => {
     getOverLoggedTasks();
-  }, [projectId, includeArchivedTasks,refreshTimestamp]);
+  }, [projectId, includeArchivedTasks, refreshTimestamp]);
 
   // table columns
   const columns: TableProps['columns'] = [

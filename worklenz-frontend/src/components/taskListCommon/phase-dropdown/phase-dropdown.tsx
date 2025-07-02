@@ -70,9 +70,9 @@ const PhaseDropdown = ({ task }: PhaseDropdownProps) => {
     <Select
       className="phase-select"
       placeholder={
-      <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-        {t('selectText')}
-      </Typography.Text>
+        <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+          {t('selectText')}
+        </Typography.Text>
       }
       value={currentPhase}
       onChange={handlePhaseOptionSelect}
@@ -89,56 +89,56 @@ const PhaseDropdown = ({ task }: PhaseDropdownProps) => {
         width: 120,
         textAlign: 'left',
       }}
-        >
+    >
       {phaseList?.map(phase => (
-      <Select.Option
-        key={phase.id}
-        value={phase.id}
-        label={
-        <div
-          style={{
-          width: '100%',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          }}
-        >
-          <Flex
-          gap={6}
-          align="center"
-          style={{
-            width: 'fit-content',
-            borderRadius: 24,
-            paddingInline: 8,
-            height: 22,
-            fontSize: 13,
-            color: colors.darkGray,
-          }}
-          >
-          <Tooltip title={phase.name}>
-            <Typography.Text
-            ellipsis
-            style={{
-              fontSize: 13,
-              maxWidth: 90,
-            }}
+        <Select.Option
+          key={phase.id}
+          value={phase.id}
+          label={
+            <div
+              style={{
+                width: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
             >
-            {phase.name}
-            </Typography.Text>
-          </Tooltip>
+              <Flex
+                gap={6}
+                align="center"
+                style={{
+                  width: 'fit-content',
+                  borderRadius: 24,
+                  paddingInline: 8,
+                  height: 22,
+                  fontSize: 13,
+                  color: colors.darkGray,
+                }}
+              >
+                <Tooltip title={phase.name}>
+                  <Typography.Text
+                    ellipsis
+                    style={{
+                      fontSize: 13,
+                      maxWidth: 90,
+                    }}
+                  >
+                    {phase.name}
+                  </Typography.Text>
+                </Tooltip>
+              </Flex>
+            </div>
+          }
+        >
+          <Flex gap={4} align="center">
+            <Badge color={phase.color_code} />
+            <Tooltip title={phase.name}>
+              <Typography.Text ellipsis style={{ maxWidth: 100 }}>
+                {phase.name}
+              </Typography.Text>
+            </Tooltip>
           </Flex>
-        </div>
-        }
-      >
-        <Flex gap={4} align="center">
-        <Badge color={phase.color_code} />
-        <Tooltip title={phase.name}>
-          <Typography.Text ellipsis style={{ maxWidth: 100 }}>
-          {phase.name}
-          </Typography.Text>
-        </Tooltip>
-        </Flex>
-      </Select.Option>
+        </Select.Option>
       ))}
     </Select>
   );

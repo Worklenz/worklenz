@@ -1,5 +1,8 @@
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
-import { fetchProjectData, setSelectedProjectHealths } from '@/features/reporting/projectReports/project-reports-slice';
+import {
+  fetchProjectData,
+  setSelectedProjectHealths,
+} from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectHealth } from '@/types/project/projectHealth.types';
@@ -23,22 +26,19 @@ const ProjectHealthFilterDropdown = () => {
     state => state.projectReportsReducer
   );
 
-  
   useEffect(() => {
     setSelectedHealths(selectedProjectHealths);
   }, [selectedProjectHealths]);
 
-  
   useEffect(() => {
     if (!projectHealthsLoading) dispatch(fetchProjectHealth());
   }, [dispatch]);
 
-  
   const debouncedUpdate = useCallback(
     debounce((healths: IProjectHealth[]) => {
       dispatch(setSelectedProjectHealths(healths));
-      dispatch(fetchProjectData()); 
-    }, 300), 
+      dispatch(fetchProjectData());
+    }, 300),
     [dispatch]
   );
 
@@ -52,8 +52,8 @@ const ProjectHealthFilterDropdown = () => {
       updatedHealths = [...selectedHealths, health];
     }
 
-    setSelectedHealths(updatedHealths); 
-    debouncedUpdate(updatedHealths); 
+    setSelectedHealths(updatedHealths);
+    debouncedUpdate(updatedHealths);
   };
 
   const projectHealthDropdownContent = (
@@ -75,7 +75,7 @@ const ProjectHealthFilterDropdown = () => {
                 id={item.id}
                 checked={selectedHealths.some(h => h.id === item.id)}
                 onChange={() => handleHealthChange(item)}
-                disabled={projectLoading} 
+                disabled={projectLoading}
               >
                 {item.name}
               </Checkbox>
@@ -96,7 +96,7 @@ const ProjectHealthFilterDropdown = () => {
       <Button
         icon={<CaretDownFilled />}
         iconPosition="end"
-        loading={projectHealthsLoading} 
+        loading={projectHealthsLoading}
         className={`transition-colors duration-300 ${
           isDropdownOpen
             ? 'border-[#1890ff] text-[#1890ff]'

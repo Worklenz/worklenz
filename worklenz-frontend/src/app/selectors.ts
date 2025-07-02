@@ -7,10 +7,7 @@ import { RootState } from './store';
 // Auth selectors
 export const selectAuth = (state: RootState) => state.auth;
 export const selectUser = (state: RootState) => state.userReducer;
-export const selectIsAuthenticated = createSelector(
-  [selectAuth],
-  (auth) => !!auth.user
-);
+export const selectIsAuthenticated = createSelector([selectAuth], auth => !!auth.user);
 
 // Project selectors
 export const selectProjects = (state: RootState) => state.projectsReducer;
@@ -69,13 +66,10 @@ export const selectGroupByFilter = (state: RootState) => state.groupByFilterDrop
 // Memoized computed selectors for common use cases
 export const selectHasActiveProject = createSelector(
   [selectCurrentProject],
-  (project) => !!project && Object.keys(project).length > 0
+  project => !!project && Object.keys(project).length > 0
 );
 
-export const selectIsLoading = createSelector(
-  [selectTasks, selectProjects],
-  (tasks, projects) => {
-    // Check if any major feature is loading
-    return (tasks as any)?.loading || (projects as any)?.loading;
-  }
-); 
+export const selectIsLoading = createSelector([selectTasks, selectProjects], (tasks, projects) => {
+  // Check if any major feature is loading
+  return (tasks as any)?.loading || (projects as any)?.loading;
+});

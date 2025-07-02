@@ -31,7 +31,7 @@ const LOCAL_STORAGE_KEY = 'worklenz.taskManagement.fields';
 
 function loadFields(): TaskListField[] {
   const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-  
+
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
@@ -40,7 +40,7 @@ function loadFields(): TaskListField[] {
       console.warn('Failed to parse stored fields, using defaults:', error);
     }
   }
-  
+
   return DEFAULT_FIELDS;
 }
 
@@ -84,4 +84,4 @@ if (typeof window !== 'undefined') {
   (window as any).forceResetTaskFields = forceResetFields;
 }
 
-export default taskListFieldsSlice.reducer; 
+export default taskListFieldsSlice.reducer;

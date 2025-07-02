@@ -140,7 +140,7 @@ const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCatego
               onChange={e => setCategoryText(e.currentTarget.value)}
               allowClear
               onClear={() => {
-                setIsAddCategoryInputShow(false)
+                setIsAddCategoryInputShow(false);
               }}
               onPressEnter={() => handleAddCategoryItem(categoryText)}
               onBlur={() => handleAddCategoryInputBlur(categoryText)}

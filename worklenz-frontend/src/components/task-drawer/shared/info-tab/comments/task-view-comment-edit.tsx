@@ -15,10 +15,10 @@ interface TaskViewCommentEditProps {
 // Helper function to prepare content for editing by removing HTML tags
 const prepareContentForEditing = (content: string): string => {
   if (!content) return '';
-  
+
   // Replace mention spans with plain @mentions
   const withoutMentionSpans = content.replace(/<span class="mentions">@(\w+)<\/span>/g, '@$1');
-  
+
   // Remove any other HTML tags
   return withoutMentionSpans.replace(/<[^>]*>/g, '');
 };
@@ -27,7 +27,7 @@ const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProp
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState('');
-  
+
   // Initialize content when component mounts
   useEffect(() => {
     if (commentData.content) {
@@ -42,18 +42,18 @@ const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProp
 
   const handleSave = async () => {
     if (!commentData.id || !commentData.task_id) return;
-    
+
     try {
       setLoading(true);
       const res = await taskCommentsApiService.update(commentData.id, {
         ...commentData,
         content: content,
       });
-      
+
       if (res.done) {
         commentData.content = content;
         onUpdated(commentData);
-        
+
         // Dispatch event to notify that a comment was updated
         document.dispatchEvent(new Event('task-comment-update'));
       }
@@ -77,7 +77,7 @@ const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProp
         <Form.Item>
           <Input.TextArea
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={e => setContent(e.target.value)}
             autoSize={{ minRows: 3, maxRows: 6 }}
             style={textAreaStyle}
             placeholder="Type your comment here... Use @username to mention someone"
@@ -96,4 +96,4 @@ const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProp
   );
 };
 
-export default TaskViewCommentEdit; 
+export default TaskViewCommentEdit;

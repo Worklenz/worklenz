@@ -19,12 +19,12 @@ interface Dates {
 }
 
 export interface DateList {
-    chart_end?: string;
-    date_data?: Dates[];
-    chart_start?: string;
+  chart_end?: string;
+  date_data?: Dates[];
+  chart_start?: string;
 }
 
-interface  DateUnion {
+interface DateUnion {
   start?: string;
   end?: string;
 }
@@ -37,29 +37,28 @@ export interface Project {
   date_union?: DateUnion;
   indicator_offset?: number;
   indicator_width?: number;
-  tasks?:any [];
+  tasks?: any[];
 }
 
 export interface Member {
   id?: string;
   name?: string;
-  projects?:Project[];
+  projects?: Project[];
 }
 
 export interface Project {
   id?: string;
-  projects?:Project[];
+  projects?: Project[];
 }
 
 export interface ScheduleData {
   id?: string;
-  project_id?:string;
-  team_member_id?:string;
-  seconds_per_day?:string;
-  total_seconds?:string;
-  allocated_from?:Dayjs|null;
-  allocated_to?:Dayjs|null;
-
+  project_id?: string;
+  team_member_id?: string;
+  seconds_per_day?: string;
+  total_seconds?: string;
+  allocated_from?: Dayjs | null;
+  allocated_to?: Dayjs | null;
 }
 
 export type PickerType = 'week' | 'month';

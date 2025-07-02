@@ -20,7 +20,7 @@ const api = createApi({
       if (!token) {
         token = await refreshCsrfToken();
       }
-      
+
       if (token) {
         headers.set('X-CSRF-Token', token);
       }

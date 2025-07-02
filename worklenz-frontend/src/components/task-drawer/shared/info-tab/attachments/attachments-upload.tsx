@@ -1,7 +1,7 @@
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import React, { useRef, useState } from 'react';
 import { TFunction } from 'i18next';
-import './attachments-upload.css'; 
+import './attachments-upload.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 interface AttachmentsUploadProps {
@@ -11,11 +11,11 @@ interface AttachmentsUploadProps {
   onFilesSelected: (files: File[]) => void;
 }
 
-const AttachmentsUpload = ({ 
-  t, 
-  loadingTask, 
-  uploading, 
-  onFilesSelected 
+const AttachmentsUpload = ({
+  t,
+  loadingTask,
+  uploading,
+  onFilesSelected,
 }: AttachmentsUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -46,7 +46,7 @@ const AttachmentsUpload = ({
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     if (!loadingTask && !uploading && e.dataTransfer.files.length > 0) {
       const filesArray = Array.from(e.dataTransfer.files);
       onFilesSelected(filesArray);
@@ -54,41 +54,45 @@ const AttachmentsUpload = ({
   };
 
   return (
-    <div 
+    <div
       className={`ant-upload-list ant-upload-list-picture-card ${isDragOver ? 'focused' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="ant-upload ant-upload-select ant-upload-select-picture-card">
-        <div 
-          className="ant-upload" 
-          tabIndex={0} 
+        <div
+          className="ant-upload"
+          tabIndex={0}
           role="button"
           onClick={handleClick}
           style={{
             backgroundColor: themeMode === 'dark' ? '#292929' : '#fafafa',
           }}
         >
-          <input 
-            type="file" 
+          <input
+            type="file"
             ref={fileInputRef}
-            style={{ display: 'none' }} 
+            style={{ display: 'none' }}
             onChange={handleFileChange}
             disabled={loadingTask || uploading}
             multiple
           />
           <div>
             {uploading ? <LoadingOutlined spin /> : <PlusOutlined />}
-            <div style={{ 
-              marginTop: '8px', 
-              fontSize: '11px', 
-              marginLeft: 'auto', 
-              marginRight: 'auto', 
-              paddingLeft: '8px', 
-              paddingRight: '8px' 
-            }}>
-              {uploading ? t('taskInfoTab.attachments.uploading') : t('taskInfoTab.attachments.chooseOrDropFileToUpload')}
+            <div
+              style={{
+                marginTop: '8px',
+                fontSize: '11px',
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                paddingLeft: '8px',
+                paddingRight: '8px',
+              }}
+            >
+              {uploading
+                ? t('taskInfoTab.attachments.uploading')
+                : t('taskInfoTab.attachments.chooseOrDropFileToUpload')}
             </div>
           </div>
         </div>
@@ -97,4 +101,4 @@ const AttachmentsUpload = ({
   );
 };
 
-export default AttachmentsUpload; 
+export default AttachmentsUpload;

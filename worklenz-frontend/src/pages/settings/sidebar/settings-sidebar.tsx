@@ -58,8 +58,8 @@ const SettingSidebar: React.FC = () => {
         items={items}
         selectedKeys={[getCurrentActiveKey()]}
         mode="vertical"
-        style={{ 
-          border: 'none', 
+        style={{
+          border: 'none',
           width: '100%',
         }}
       />

@@ -3,16 +3,16 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { createPortal } from 'react-dom';
 
 // Centralized Ant Design imports
-import { 
-  Button, 
-  ConfigProvider, 
-  Flex, 
+import {
+  Button,
+  ConfigProvider,
+  Flex,
   Tooltip,
   Badge,
   Tabs,
-  PushpinFilled, 
+  PushpinFilled,
   PushpinOutlined,
-  type TabsProps
+  type TabsProps,
 } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -33,7 +33,11 @@ import { resetFields } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { tabItems } from '@/lib/project/project-view-constants';
-import { setSelectedTaskId, setShowTaskDrawer, resetTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import {
+  setSelectedTaskId,
+  setShowTaskDrawer,
+  resetTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
 import { resetState as resetEnhancedKanbanState } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
@@ -42,12 +46,16 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import TaskDrawer from '@components/task-drawer/task-drawer';
 
 // Lazy load non-critical components with better error handling
-const DeleteStatusDrawer = React.lazy(() => import('@/components/project-task-filters/delete-status-drawer/delete-status-drawer'));
+const DeleteStatusDrawer = React.lazy(
+  () => import('@/components/project-task-filters/delete-status-drawer/delete-status-drawer')
+);
 const PhaseDrawer = React.lazy(() => import('@/features/projects/singleProject/phase/PhaseDrawer'));
-const StatusDrawer = React.lazy(() => import('@/components/project-task-filters/create-status-drawer/create-status-drawer'));
-const ProjectMemberDrawer = React.lazy(() => import('@/components/projects/project-member-invite-drawer/project-member-invite-drawer'));
-
-
+const StatusDrawer = React.lazy(
+  () => import('@/components/project-task-filters/create-status-drawer/create-status-drawer')
+);
+const ProjectMemberDrawer = React.lazy(
+  () => import('@/components/projects/project-member-invite-drawer/project-member-invite-drawer')
+);
 
 const ProjectView = React.memo(() => {
   const location = useLocation();
@@ -59,16 +67,19 @@ const ProjectView = React.memo(() => {
   // Memoized selectors to prevent unnecessary re-renders
   const selectedProject = useAppSelector(state => state.projectReducer.project);
   const projectLoading = useAppSelector(state => state.projectReducer.projectLoading);
-  
+
   // Optimize document title updates
   useDocumentTitle(selectedProject?.name || 'Project View');
-  
+
   // Memoize URL params to prevent unnecessary state updates
-  const urlParams = useMemo(() => ({
-    tab: searchParams.get('tab') || tabItems[0].key,
-    pinnedTab: searchParams.get('pinned_tab') || '',
-    taskId: searchParams.get('task') || ''
-  }), [searchParams]);
+  const urlParams = useMemo(
+    () => ({
+      tab: searchParams.get('tab') || tabItems[0].key,
+      pinnedTab: searchParams.get('pinned_tab') || '',
+      taskId: searchParams.get('task') || '',
+    }),
+    [searchParams]
+  );
 
   const [activeTab, setActiveTab] = useState<string>(urlParams.tab);
   const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
@@ -94,10 +105,10 @@ const ProjectView = React.memo(() => {
     dispatch(resetSelection());
     dispatch(resetFields());
     dispatch(resetEnhancedKanbanState());
-    
+
     // Reset project insights
     dispatch(setInsightsProjectId(''));
-    
+
     // Reset task drawer completely
     dispatch(resetTaskDrawer());
   }, [dispatch]);
@@ -113,7 +124,7 @@ const ProjectView = React.memo(() => {
   // Effect for handling route changes (when navigating away from project view)
   useEffect(() => {
     const currentPath = location.pathname;
-    
+
     // If we're not on a project view path, clean up
     if (!currentPath.includes('/worklenz/projects/') || currentPath === '/worklenz/projects') {
       resetAllProjectData();
@@ -131,15 +142,15 @@ const ProjectView = React.memo(() => {
           dispatch(resetTaskManagement());
           dispatch(resetEnhancedKanbanState());
           dispatch(deselectAll());
-          
+
           // Load new project data
           dispatch(setProjectId(projectId));
-          
+
           // Load project and essential data in parallel
           const [projectResult] = await Promise.allSettled([
             dispatch(getProject(projectId)),
             dispatch(fetchStatuses(projectId)),
-            dispatch(fetchLabels())
+            dispatch(fetchLabels()),
           ]);
 
           if (projectResult.status === 'fulfilled' && !projectResult.value.payload) {
@@ -172,51 +183,63 @@ const ProjectView = React.memo(() => {
   }, [dispatch, taskid, isInitialized]);
 
   // Optimized pin tab function with better error handling
-  const pinToDefaultTab = useCallback(async (itemKey: string) => {
-    if (!itemKey || !projectId) return;
+  const pinToDefaultTab = useCallback(
+    async (itemKey: string) => {
+      if (!itemKey || !projectId) return;
 
-    try {
-      const defaultView = itemKey === 'tasks-list' ? 'TASK_LIST' : 'BOARD';
-      const res = await projectsApiService.updateDefaultTab({
-        project_id: projectId,
-        default_view: defaultView,
-      });
-
-      if (res.done) {
-        setPinnedTab(itemKey);
-        
-        // Optimize tab items update
-        tabItems.forEach(item => {
-          item.isPinned = item.key === itemKey;
+      try {
+        const defaultView = itemKey === 'tasks-list' ? 'TASK_LIST' : 'BOARD';
+        const res = await projectsApiService.updateDefaultTab({
+          project_id: projectId,
+          default_view: defaultView,
         });
 
-        navigate({
-          pathname: `/worklenz/projects/${projectId}`,
-          search: new URLSearchParams({
-            tab: activeTab,
-            pinned_tab: itemKey
-          }).toString(),
-        }, { replace: true }); // Use replace to avoid history pollution
+        if (res.done) {
+          setPinnedTab(itemKey);
+
+          // Optimize tab items update
+          tabItems.forEach(item => {
+            item.isPinned = item.key === itemKey;
+          });
+
+          navigate(
+            {
+              pathname: `/worklenz/projects/${projectId}`,
+              search: new URLSearchParams({
+                tab: activeTab,
+                pinned_tab: itemKey,
+              }).toString(),
+            },
+            { replace: true }
+          ); // Use replace to avoid history pollution
+        }
+      } catch (error) {
+        console.error('Error updating default tab:', error);
       }
-    } catch (error) {
-      console.error('Error updating default tab:', error);
-    }
-  }, [projectId, activeTab, navigate]);
+    },
+    [projectId, activeTab, navigate]
+  );
 
   // Optimized tab change handler
-  const handleTabChange = useCallback((key: string) => {
-    setActiveTab(key);
-    dispatch(setProjectView(key === 'board' ? 'kanban' : 'list'));
-    
-    // Use replace for better performance and history management
-    navigate({
-      pathname: location.pathname,
-      search: new URLSearchParams({
-        tab: key,
-        pinned_tab: pinnedTab,
-      }).toString(),
-    }, { replace: true });
-  }, [dispatch, location.pathname, navigate, pinnedTab]);
+  const handleTabChange = useCallback(
+    (key: string) => {
+      setActiveTab(key);
+      dispatch(setProjectView(key === 'board' ? 'kanban' : 'list'));
+
+      // Use replace for better performance and history management
+      navigate(
+        {
+          pathname: location.pathname,
+          search: new URLSearchParams({
+            tab: key,
+            pinned_tab: pinnedTab,
+          }).toString(),
+        },
+        { replace: true }
+      );
+    },
+    [dispatch, location.pathname, navigate, pinnedTab]
+  );
 
   // Memoized tab menu items with enhanced styling
   const tabMenuItems = useMemo(() => {
@@ -242,22 +265,22 @@ const ProjectView = React.memo(() => {
                 }}
                 icon={
                   item.key === pinnedTab ? (
-                                          <PushpinFilled
-                        style={{
-                          fontSize: '12px',
-                          color: 'currentColor',
-                          transform: 'rotate(-45deg)',
-                          transition: 'all 0.3s ease',
-                        }}
-                      />
-                    ) : (
-                      <PushpinOutlined
-                        style={{
-                          fontSize: '12px',
-                          color: 'currentColor',
-                          transition: 'all 0.3s ease',
-                        }}
-                      />
+                    <PushpinFilled
+                      style={{
+                        fontSize: '12px',
+                        color: 'currentColor',
+                        transform: 'rotate(-45deg)',
+                        transition: 'all 0.3s ease',
+                      }}
+                    />
+                  ) : (
+                    <PushpinOutlined
+                      style={{
+                        fontSize: '12px',
+                        color: 'currentColor',
+                        transition: 'all 0.3s ease',
+                      }}
+                    />
                   )
                 }
                 onClick={e => {
@@ -290,22 +313,25 @@ const ProjectView = React.memo(() => {
   }, [isInitialized]);
 
   // Optimized portal elements with better error boundaries
-  const portalElements = useMemo(() => (
-    <>
-      {/* Critical component - load immediately without suspense */}
-      {createPortal(<TaskDrawer />, document.body, 'task-drawer')}
-      
-      {/* Non-critical components - load after delay with suspense fallback */}
-      {shouldLoadSecondaryComponents && (
-        <Suspense fallback={<SuspenseFallback />}>
-          {createPortal(<ProjectMemberDrawer />, document.body, 'project-member-drawer')}
-          {createPortal(<PhaseDrawer />, document.body, 'phase-drawer')}
-          {createPortal(<StatusDrawer />, document.body, 'status-drawer')}
-          {createPortal(<DeleteStatusDrawer />, document.body, 'delete-status-drawer')}
-        </Suspense>
-      )}
-    </>
-  ), [shouldLoadSecondaryComponents]);
+  const portalElements = useMemo(
+    () => (
+      <>
+        {/* Critical component - load immediately without suspense */}
+        {createPortal(<TaskDrawer />, document.body, 'task-drawer')}
+
+        {/* Non-critical components - load after delay with suspense fallback */}
+        {shouldLoadSecondaryComponents && (
+          <Suspense fallback={<SuspenseFallback />}>
+            {createPortal(<ProjectMemberDrawer />, document.body, 'project-member-drawer')}
+            {createPortal(<PhaseDrawer />, document.body, 'phase-drawer')}
+            {createPortal(<StatusDrawer />, document.body, 'status-drawer')}
+            {createPortal(<DeleteStatusDrawer />, document.body, 'delete-status-drawer')}
+          </Suspense>
+        )}
+      </>
+    ),
+    [shouldLoadSecondaryComponents]
+  );
 
   // Show loading state while project is being fetched
   if (projectLoading || !isInitialized) {
@@ -325,7 +351,7 @@ const ProjectView = React.memo(() => {
         activeKey={activeTab}
         onChange={handleTabChange}
         items={tabMenuItems}
-        tabBarStyle={{ 
+        tabBarStyle={{
           paddingInline: 0,
           marginBottom: 8,
           background: 'transparent',

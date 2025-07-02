@@ -37,4 +37,4 @@
 /* Hide drag handle during drag */
 [data-dnd-dragging="true"] .drag-handle-optimized {
   opacity: 0;
-} 
+}

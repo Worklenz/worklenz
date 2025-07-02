@@ -267,7 +267,10 @@ const projectSlice = createSlice({
         ...action.payload,
       };
     },
-    setGroupedRequestParams: (state, action: PayloadAction<Partial<ProjectState['groupedRequestParams']>>) => {
+    setGroupedRequestParams: (
+      state,
+      action: PayloadAction<Partial<ProjectState['groupedRequestParams']>>
+    ) => {
       state.groupedRequestParams = {
         ...state.groupedRequestParams,
         ...action.payload,

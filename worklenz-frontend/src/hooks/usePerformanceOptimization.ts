@@ -15,29 +15,32 @@ export const usePerformanceOptimization = () => {
     lastRenderTimeRef.current = now;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[${componentName}] Render #${renderCountRef.current}, Time since last: ${timeSinceLastRender.toFixed(2)}ms`);
-      
-      if (timeSinceLastRender < 16) { // Less than 60fps
+      console.log(
+        `[${componentName}] Render #${renderCountRef.current}, Time since last: ${timeSinceLastRender.toFixed(2)}ms`
+      );
+
+      if (timeSinceLastRender < 16) {
+        // Less than 60fps
         console.warn(`[${componentName}] Potential over-rendering detected`);
       }
     }
   }, []);
 
   // Debounced callback creator
-  const createDebouncedCallback = useCallback(<T extends (...args: any[]) => any>(
-    callback: T,
-    delay: number = 300
-  ) => {
-    return debounce(callback, delay);
-  }, []);
+  const createDebouncedCallback = useCallback(
+    <T extends (...args: any[]) => any>(callback: T, delay: number = 300) => {
+      return debounce(callback, delay);
+    },
+    []
+  );
 
   // Throttled callback creator
-  const createThrottledCallback = useCallback(<T extends (...args: any[]) => any>(
-    callback: T,
-    delay: number = 100
-  ) => {
-    return throttle(callback, delay);
-  }, []);
+  const createThrottledCallback = useCallback(
+    <T extends (...args: any[]) => any>(callback: T, delay: number = 100) => {
+      return throttle(callback, delay);
+    },
+    []
+  );
 
   return {
     trackRender,
@@ -73,11 +76,11 @@ export const useOptimizedEventHandlers = <T extends Record<string, (...args: any
 ) => {
   return useMemo(() => {
     const optimizedHandlers = {} as any;
-    
+
     Object.entries(handlers).forEach(([key, handler]) => {
       optimizedHandlers[key] = useCallback(handler, [handler]);
     });
-    
+
     return optimizedHandlers as T;
   }, [handlers]);
 };
@@ -90,11 +93,8 @@ export const useVirtualScrolling = (
 ) => {
   const visibleRange = useMemo(() => {
     const startIndex = Math.floor(window.scrollY / itemHeight);
-    const endIndex = Math.min(
-      startIndex + Math.ceil(containerHeight / itemHeight) + 1,
-      itemCount
-    );
-    
+    const endIndex = Math.min(startIndex + Math.ceil(containerHeight / itemHeight) + 1, itemCount);
+
     return { startIndex: Math.max(0, startIndex), endIndex };
   }, [itemCount, itemHeight, containerHeight]);
 
@@ -106,22 +106,25 @@ export const useLazyLoading = (threshold: number = 0.1) => {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  const targetRef = useCallback((node: HTMLElement | null) => {
-    if (observerRef.current) observerRef.current.disconnect();
-    
-    if (node) {
-      observerRef.current = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-            observerRef.current?.disconnect();
-          }
-        },
-        { threshold }
-      );
-      observerRef.current.observe(node);
-    }
-  }, [threshold]);
+  const targetRef = useCallback(
+    (node: HTMLElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      if (node) {
+        observerRef.current = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting) {
+              setIsVisible(true);
+              observerRef.current?.disconnect();
+            }
+          },
+          { threshold }
+        );
+        observerRef.current.observe(node);
+      }
+    },
+    [threshold]
+  );
 
   useEffect(() => {
     return () => {
@@ -133,10 +136,7 @@ export const useLazyLoading = (threshold: number = 0.1) => {
 };
 
 // Memory optimization for large datasets
-export const useMemoryOptimization = <T>(
-  data: T[],
-  maxCacheSize: number = 1000
-) => {
+export const useMemoryOptimization = <T>(data: T[], maxCacheSize: number = 1000) => {
   const cacheRef = useRef(new Map<string, T>());
 
   const optimizedData = useMemo(() => {
@@ -147,7 +147,7 @@ export const useMemoryOptimization = <T>(
     // Keep only the most recently accessed items
     const cache = cacheRef.current;
     const recentData = data.slice(0, maxCacheSize);
-    
+
     // Clear old cache entries
     cache.clear();
     recentData.forEach((item, index) => {
@@ -160,4 +160,4 @@ export const useMemoryOptimization = <T>(
   return optimizedData;
 };
 
-export default usePerformanceOptimization; 
+export default usePerformanceOptimization;

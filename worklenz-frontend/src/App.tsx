@@ -22,7 +22,7 @@ import { SuspenseFallback } from './components/suspense-fallback/suspense-fallba
 
 /**
  * Main App Component - Performance Optimized
- * 
+ *
  * Performance optimizations applied:
  * 1. React.memo() - Prevents unnecessary re-renders
  * 2. useMemo() - Memoizes expensive computations
@@ -37,7 +37,7 @@ const App: React.FC = memo(() => {
 
   // Memoize mixpanel initialization to prevent re-initialization
   const mixpanelToken = useMemo(() => import.meta.env.VITE_MIXPANEL_TOKEN as string, []);
-  
+
   useEffect(() => {
     initMixpanel(mixpanelToken);
   }, [mixpanelToken]);
@@ -60,12 +60,12 @@ const App: React.FC = memo(() => {
   // Initialize CSRF token and translations on app startup
   useEffect(() => {
     let isMounted = true;
-    
+
     const initializeApp = async () => {
       try {
         // Initialize CSRF token
         await initializeCsrfToken();
-        
+
         // Preload essential translations
         await ensureTranslationsLoaded();
       } catch (error) {
@@ -85,11 +85,11 @@ const App: React.FC = memo(() => {
   return (
     <Suspense fallback={<SuspenseFallback />}>
       <ThemeWrapper>
-        <RouterProvider 
-          router={router} 
-          future={{ 
-            v7_startTransition: true 
-          }} 
+        <RouterProvider
+          router={router}
+          future={{
+            v7_startTransition: true,
+          }}
         />
       </ThemeWrapper>
     </Suspense>
