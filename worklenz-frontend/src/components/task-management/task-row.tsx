@@ -26,6 +26,8 @@ import { SocketEvents } from '@/shared/socket-events';
 import TaskStatusDropdown from './task-status-dropdown';
 import TaskPriorityDropdown from './task-priority-dropdown';
 import TaskPhaseDropdown from './task-phase-dropdown';
+import TaskTimer from '@/components/taskListCommon/task-timer/task-timer';
+import { useTaskTimer } from '@/hooks/useTaskTimer';
 import { 
   formatDate as utilFormatDate, 
   formatDateTime as utilFormatDateTime, 
@@ -145,19 +147,20 @@ const TaskPriority = React.memo<{ priority: string; isDarkMode: boolean }>(({ pr
   );
 });
 
-const TaskTimeTracking = React.memo<{ timeTracking?: { logged?: number | string }; isDarkMode: boolean }>(({ timeTracking, isDarkMode }) => {
-  if (!timeTracking?.logged || timeTracking.logged === 0) return null;
-  
+const TaskTimeTracking = React.memo<{ taskId: string; isDarkMode: boolean }>(({ taskId, isDarkMode }) => {
+  const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimer(
+    taskId,
+    null // The hook will get the timer start time from Redux
+  );
+
   return (
-    <div className="flex items-center gap-1">
-      <ClockCircleOutlined className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
-      <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-        {typeof timeTracking.logged === 'number' 
-          ? `${timeTracking.logged}h`
-          : timeTracking.logged
-        }
-      </span>
-    </div>
+    <TaskTimer
+      taskId={taskId}
+      started={started}
+      handleStartTimer={handleStartTimer}
+      handleStopTimer={handleStopTimer}
+      timeString={timeString}
+    />
   );
 });
 
@@ -1117,7 +1120,10 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
       case 'timeTracking':
         return (
           <div key={col.key} className={`flex items-center px-2 ${borderClasses}`} style={{ width: col.width }}>
-            <TaskTimeTracking timeTracking={task.timeTracking} isDarkMode={isDarkMode} />
+            <TaskTimeTracking 
+              taskId={task.id || ''} 
+              isDarkMode={isDarkMode} 
+            />
           </div>
         );
       
