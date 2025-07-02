@@ -409,7 +409,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
 
         .task-group-header-text {
           color: white !important;
-          font-size: 13px !important;
+          font-size: 14px !important;
           font-weight: 600 !important;
           margin: 0 !important;
         }

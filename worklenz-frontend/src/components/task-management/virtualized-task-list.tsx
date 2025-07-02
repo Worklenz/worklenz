@@ -3,7 +3,7 @@ import { FixedSizeList as List } from 'react-window';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Empty, Button } from 'antd';
+import { Empty, Button, Input } from 'antd';
 import { RightOutlined, DownOutlined } from '@ant-design/icons';
 import { taskManagementSelectors } from '@/features/task-management/task-management.slice';
 import { toggleGroupCollapsed } from '@/features/task-management/grouping.slice';
@@ -13,6 +13,8 @@ import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-tabl
 import { RootState } from '@/app/store';
 import { TaskListField } from '@/features/task-management/taskListFields.slice';
 import { Checkbox } from '@/components';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 interface VirtualizedTaskListProps {
   group: any;
@@ -60,6 +62,35 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   // PERFORMANCE OPTIMIZATION: Batch rendering to prevent long tasks
   const RENDER_BATCH_SIZE = 5; // Render max 5 tasks per frame
   const FRAME_BUDGET_MS = 8;
+
+  const [showAddSubtaskForTaskId, setShowAddSubtaskForTaskId] = React.useState<string | null>(null);
+  const [newSubtaskName, setNewSubtaskName] = React.useState('');
+  const addSubtaskInputRef = React.useRef<any>(null);
+
+  const { socket, connected } = useSocket();
+
+  const handleAddSubtask = (parentTaskId: string) => {
+    if (!newSubtaskName.trim() || !connected || !socket) return;
+    const currentSession = JSON.parse(localStorage.getItem('session') || '{}');
+    const requestBody = {
+      project_id: group.project_id || group.projectId || projectId,
+      name: newSubtaskName.trim(),
+      reporter_id: currentSession.id,
+      team_id: currentSession.team_id,
+      parent_task_id: parentTaskId,
+    };
+    socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(requestBody));
+    // Listen for the response and clear input/collapse row
+    socket.once(SocketEvents.QUICK_TASK.toString(), (response: any) => {
+      setNewSubtaskName('');
+      setShowAddSubtaskForTaskId(null);
+      // Optionally: trigger a refresh or update tasks in parent
+    });
+  };
+  const handleCancelAddSubtask = () => {
+    setNewSubtaskName('');
+    setShowAddSubtaskForTaskId(null);
+  };
 
   // Handle collapse/expand toggle
   const handleToggleCollapse = useCallback(() => {
@@ -297,39 +328,15 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
     return 20; // Very large lists: 20 items overscan for smooth scrolling
   }, [groupTasks.length]);
 
-  // PERFORMANCE OPTIMIZATION: Memoize row renderer with better dependency management
-  const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const task: Task | undefined = groupTasks[index];
-    if (!task) return null;
-    
-    // PERFORMANCE OPTIMIZATION: Pre-calculate selection state
-    const isSelected = selectedTaskIds.includes(task.id);
-    
-    return (
-      <div 
-        className="task-row-container"
-        style={{ 
-          ...style, 
-          marginLeft: '4px', // Account for sticky border
-          '--group-color': group.color || '#f0f0f0',
-          contain: 'layout style', // CSS containment for better performance
-        } as React.CSSProperties}
-      >
-        <TaskRow
-          task={task}
-          projectId={projectId}
-          groupId={group.id}
-          currentGrouping={currentGrouping}
-          isSelected={isSelected}
-          index={index}
-          onSelect={onSelectTask}
-          onToggleSubtasks={onToggleSubtasks}
-          fixedColumns={fixedColumns}
-          scrollableColumns={scrollableColumns}
-        />
-      </div>
-    );
-  }, [group.id, group.color, groupTasks, projectId, currentGrouping, selectedTaskIds, onSelectTask, onToggleSubtasks, fixedColumns, scrollableColumns]);
+  // Build displayRows array
+  const displayRows = [];
+  for (let i = 0; i < groupTasks.length; i++) {
+    const task = groupTasks[i];
+    displayRows.push({ type: 'task', task });
+    if (showAddSubtaskForTaskId === task.id) {
+      displayRows.push({ type: 'add-subtask', parentTask: task });
+    }
+  }
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
@@ -548,53 +555,170 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
           {shouldVirtualize ? (
             <List
               height={availableTaskRowsHeight}
-              width={totalTableWidth}
-              itemCount={groupTasks.length}
+              itemCount={displayRows.length}
               itemSize={TASK_ROW_HEIGHT}
+              width={totalTableWidth}
+              ref={scrollContainerRef}
               overscanCount={overscanCount}
-              className="react-window-list"
-              style={{ minWidth: totalTableWidth }}
-              // PERFORMANCE OPTIMIZATION: Remove all expensive props for maximum performance
-              useIsScrolling={false}
-              itemData={undefined}
-              // Disable all animations and transitions
-              onItemsRendered={() => {}}
-              onScroll={() => {}}
             >
-              {Row}
+              {({ index, style }) => {
+                const row = displayRows[index];
+                if (row.type === 'task') {
+                  return (
+                    <div style={style} key={row.task.id}>
+                      <TaskRow
+                        task={row.task}
+                        projectId={projectId}
+                        groupId={group.id}
+                        currentGrouping={currentGrouping}
+                        isSelected={selectedTaskIds.includes(row.task.id)}
+                        index={index}
+                        onSelect={onSelectTask}
+                        onToggleSubtasks={onToggleSubtasks}
+                        fixedColumns={fixedColumns}
+                        scrollableColumns={scrollableColumns}
+                        onExpandSubtaskInput={() => setShowAddSubtaskForTaskId(row.task.id)}
+                      />
+                    </div>
+                  );
+                }
+                if (row.type === 'add-subtask') {
+                  return (
+                    <div style={style} key={row.parentTask.id + '-add-subtask'} className={`add-subtask-row visible ${isDarkMode ? 'dark' : ''}`}
+                      >
+                      <div className="task-row-container flex h-10 max-h-10 relative w-full">
+                        <div className="task-table-all-columns flex w-full">
+                          {(fixedColumns ?? []).map((col, index) => {
+                            const borderClasses = `border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+                            if (col.key === 'task') {
+                              return (
+                                <div
+                                  key={col.key}
+                                  className={`flex items-center px-2 ${borderClasses}`}
+                                  style={{ width: col.width }}
+                                >
+                                  <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
+                                    <Input
+                                      ref={addSubtaskInputRef}
+                                      placeholder={t('enterSubtaskName')}
+                                      value={newSubtaskName}
+                                      onChange={e => setNewSubtaskName(e.target.value)}
+                                      onPressEnter={() => handleAddSubtask(row.parentTask.id)}
+                                      onBlur={handleCancelAddSubtask}
+                                      className={`add-subtask-input flex-1 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
+                                      size="small"
+                                      autoFocus
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div
+                                  key={col.key}
+                                  className={`flex items-center px-2 ${borderClasses}`}
+                                  style={{ width: col.width }}
+                                />
+                              );
+                            }
+                          })}
+                          {(scrollableColumns ?? []).map((col, index) => {
+                            const borderClasses = `border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+                            return (
+                              <div
+                                key={col.key}
+                                className={`flex items-center px-2 ${borderClasses}`}
+                                style={{ width: col.width }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
             </List>
           ) : (
             // PERFORMANCE OPTIMIZATION: Use React.Fragment to reduce DOM nodes
             <React.Fragment>
-              {groupTasks.map((task: Task, index: number) => {
-                // PERFORMANCE OPTIMIZATION: Pre-calculate selection state
-                const isSelected = selectedTaskIds.includes(task.id);
-                
-                return (
-                  <div
-                    key={task.id}
-                    className="task-row-container"
-                    style={{
-                      height: TASK_ROW_HEIGHT,
-                      marginLeft: '4px', // Account for sticky border
-                      '--group-color': group.color || '#f0f0f0',
-                      contain: 'layout style', // CSS containment
-                    } as React.CSSProperties}
-                  >
+              {displayRows.map((row, idx) => {
+                if (row.type === 'task') {
+                  return (
                     <TaskRow
-                      task={task}
+                      key={row.task.id}
+                      task={row.task}
                       projectId={projectId}
                       groupId={group.id}
                       currentGrouping={currentGrouping}
-                      isSelected={isSelected}
-                      index={index}
+                      isSelected={selectedTaskIds.includes(row.task.id)}
+                      index={idx}
                       onSelect={onSelectTask}
                       onToggleSubtasks={onToggleSubtasks}
                       fixedColumns={fixedColumns}
                       scrollableColumns={scrollableColumns}
+                      onExpandSubtaskInput={() => setShowAddSubtaskForTaskId(row.task.id)}
                     />
-                  </div>
-                );
+                  );
+                }
+                if (row.type === 'add-subtask') {
+                  return (
+                    <div key={row.parentTask.id + '-add-subtask'} className={`add-subtask-row visible ${isDarkMode ? 'dark' : ''}`}
+                      style={{ display: 'flex', alignItems: 'center', minHeight: 40 }}
+                    >
+                      <div className="task-row-container flex h-10 max-h-10 relative w-full">
+                        <div className="task-table-all-columns flex w-full">
+                          {(fixedColumns ?? []).map((col, index) => {
+                            const borderClasses = `border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+                            if (col.key === 'task') {
+                              return (
+                                <div
+                                  key={col.key}
+                                  className={`flex items-center px-2 ${borderClasses}`}
+                                  style={{ width: col.width }}
+                                >
+                                  <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
+                                    <Input
+                                      ref={addSubtaskInputRef}
+                                      placeholder={t('enterSubtaskName')}
+                                      value={newSubtaskName}
+                                      onChange={e => setNewSubtaskName(e.target.value)}
+                                      onPressEnter={() => handleAddSubtask(row.parentTask.id)}
+                                      onBlur={handleCancelAddSubtask}
+                                      className={`add-subtask-input flex-1 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
+                                      size="small"
+                                      autoFocus
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div
+                                  key={col.key}
+                                  className={`flex items-center px-2 ${borderClasses}`}
+                                  style={{ width: col.width }}
+                                />
+                              );
+                            }
+                          })}
+                          {(scrollableColumns ?? []).map((col, index) => {
+                            const borderClasses = `border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`;
+                            return (
+                              <div
+                                key={col.key}
+                                className={`flex items-center px-2 ${borderClasses}`}
+                                style={{ width: col.width }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
               })}
             </React.Fragment>
           )}
@@ -684,7 +808,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
         }
         .task-group-header-text {
           color: white !important;
-          font-size: 13px !important;
+          font-size: 14px !important;
           font-weight: 600 !important;
           margin: 0 !important;
         }

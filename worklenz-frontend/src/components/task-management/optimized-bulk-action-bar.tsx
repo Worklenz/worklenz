@@ -540,7 +540,6 @@ OptimizedBulkActionBarContent.displayName = 'OptimizedBulkActionBarContent';
 
 // Portal wrapper for performance isolation
 const OptimizedBulkActionBar: React.FC<OptimizedBulkActionBarProps> = React.memo((props) => {
-  console.log('BulkActionBar totalSelected:', props.totalSelected, typeof props.totalSelected);
   if (!props.totalSelected || Number(props.totalSelected) < 1) {
     return null;
   }

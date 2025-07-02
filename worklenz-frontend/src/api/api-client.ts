@@ -64,11 +64,9 @@ apiClient.interceptors.request.use(
     
     // Ensure we have a CSRF token before making requests
     if (!csrfToken) {
-      console.log('[API CLIENT] No CSRF token, fetching...');
       const tokenStart = performance.now();
       await refreshCsrfToken();
       const tokenEnd = performance.now();
-      console.log(`[API CLIENT] CSRF token fetch took ${(tokenEnd - tokenStart).toFixed(2)}ms`);
     }
     
     if (csrfToken) {
@@ -78,7 +76,6 @@ apiClient.interceptors.request.use(
     }
     
     const requestEnd = performance.now();
-    console.log(`[API CLIENT] Request interceptor took ${(requestEnd - requestStart).toFixed(2)}ms`);
     
     return config;
   },
