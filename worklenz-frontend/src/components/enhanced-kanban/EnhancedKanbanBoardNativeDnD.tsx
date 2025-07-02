@@ -1,11 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/store';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import './EnhancedKanbanBoard.css';
 import './EnhancedKanbanGroup.css';
 import './EnhancedKanbanTaskCard.css';
+import ImprovedTaskFilters from '../task-management/improved-task-filters';
+import Card from 'antd/es/card';
+import Spin from 'antd/es/spin';
+import Empty from 'antd/es/empty';
+import { reorderGroups, reorderEnhancedKanbanGroups, reorderTasks, reorderEnhancedKanbanTasks, fetchEnhancedKanbanLabels, fetchEnhancedKanbanGroups, fetchEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 // Minimal task card for prototype (reuse your styles)
 const TaskCard: React.FC<{
@@ -55,13 +62,22 @@ const KanbanGroup: React.FC<{
   onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
   hoveredTaskIdx: number | null;
   hoveredGroupId: string | null;
-}> = ({ group, onGroupDragStart, onGroupDragOver, onGroupDrop, onTaskDragStart, onTaskDragOver, onTaskDrop, hoveredTaskIdx, hoveredGroupId }) => (
-  <div
-    className="enhanced-kanban-group"
-    // Only group header is draggable for group drag
-    >
+}> = ({ group, onGroupDragStart, onGroupDragOver, onGroupDrop, onTaskDragStart, onTaskDragOver, onTaskDrop, hoveredTaskIdx, hoveredGroupId }) => {
+    const themeMode = useAppSelector(state => state.themeReducer.mode);
+    
+    const headerBackgroundColor = useMemo(() => {
+        if (themeMode === 'dark') {
+          return group.color_code_dark || group.color_code || '#1e1e1e';
+        }
+        return group.color_code || '#f5f5f5';
+      }, [themeMode, group.color_code, group.color_code_dark]);
+    return (
+  <div className="enhanced-kanban-group">
     <div
       className="enhanced-kanban-group-header"
+      style={{
+          backgroundColor: headerBackgroundColor,
+        }}
       draggable
       onDragStart={e => onGroupDragStart(e, group.id)}
       onDragOver={onGroupDragOver}
@@ -96,25 +112,42 @@ const KanbanGroup: React.FC<{
       )}
     </div>
   </div>
-);
+)};
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
-  // Get initial groups from Redux
-  const reduxGroups = useSelector((state: RootState) => state.enhancedKanbanReducer.taskGroups);
-  // Local state for groups/tasks
-  const [groups, setGroups] = useState<ITaskListGroup[]>([]);
-  // Drag state
+  const dispatch = useDispatch();
+  const {
+    taskGroups,
+    loadingGroups,
+    error,
+  } = useSelector((state: RootState) => state.enhancedKanbanReducer);
   const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [draggedTaskGroupId, setDraggedTaskGroupId] = useState<string | null>(null);
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
   const [hoveredTaskIdx, setHoveredTaskIdx] = useState<number | null>(null);
   const [dragType, setDragType] = useState<'group' | 'task' | null>(null);
-
-  // Sync local state with Redux on mount or when reduxGroups or projectId change
+  const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);
   useEffect(() => {
-    setGroups(reduxGroups.map(g => ({ ...g, tasks: [...g.tasks] })));
-  }, [reduxGroups, projectId]);
+    if (projectId) {
+      dispatch(fetchEnhancedKanbanGroups(projectId) as any);
+      // Load filter data for enhanced kanban
+      dispatch(fetchEnhancedKanbanTaskAssignees(projectId) as any);
+      dispatch(fetchEnhancedKanbanLabels(projectId) as any);
+    }
+    if (!statusCategories.length) {
+      dispatch(fetchStatusesCategories() as any);
+    }
+  }, [dispatch, projectId]);
+  // Reset drag state if taskGroups changes (e.g., real-time update)
+  useEffect(() => {
+    setDraggedGroupId(null);
+    setDraggedTaskId(null);
+    setDraggedTaskGroupId(null);
+    setHoveredGroupId(null);
+    setHoveredTaskIdx(null);
+    setDragType(null);
+  }, [taskGroups]);
 
   // Group drag handlers
   const handleGroupDragStart = (e: React.DragEvent, groupId: string) => {
@@ -130,12 +163,15 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     if (dragType !== 'group') return;
     e.preventDefault();
     if (!draggedGroupId || draggedGroupId === targetGroupId) return;
-    const updated = [...groups];
-    const fromIdx = updated.findIndex(g => g.id === draggedGroupId);
-    const [moved] = updated.splice(fromIdx, 1);
-    const toIdx = updated.findIndex(g => g.id === targetGroupId);
-    updated.splice(toIdx, 0, moved);
-    setGroups(updated);
+    // Calculate new order and dispatch
+    const fromIdx = taskGroups.findIndex(g => g.id === draggedGroupId);
+    const toIdx = taskGroups.findIndex(g => g.id === targetGroupId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const reorderedGroups = [...taskGroups];
+    const [moved] = reorderedGroups.splice(fromIdx, 1);
+    reorderedGroups.splice(toIdx, 0, moved);
+    dispatch(reorderGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }));
+    dispatch(reorderEnhancedKanbanGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }) as any);
     setDraggedGroupId(null);
     setDragType(null);
   };
@@ -159,23 +195,44 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     if (dragType !== 'task') return;
     e.preventDefault();
     if (!draggedTaskId || !draggedTaskGroupId || hoveredGroupId === null || hoveredTaskIdx === null) return;
-    const updated = [...groups];
-    const sourceGroup = updated.find(g => g.id === draggedTaskGroupId);
-    const targetGroup = updated.find(g => g.id === targetGroupId);
+    // Calculate new order and dispatch
+    const sourceGroup = taskGroups.find(g => g.id === draggedTaskGroupId);
+    const targetGroup = taskGroups.find(g => g.id === targetGroupId);
     if (!sourceGroup || !targetGroup) return;
-    // Remove from source
     const taskIdx = sourceGroup.tasks.findIndex(t => t.id === draggedTaskId);
     if (taskIdx === -1) return;
-    const [movedTask] = sourceGroup.tasks.splice(taskIdx, 1);
-    // Insert into target at the correct index
+    const movedTask = sourceGroup.tasks[taskIdx];
+    // Prepare updated task arrays
+    const updatedSourceTasks = [...sourceGroup.tasks];
+    updatedSourceTasks.splice(taskIdx, 1);
     let insertIdx = targetTaskIdx;
     if (sourceGroup.id === targetGroup.id && taskIdx < insertIdx) {
       insertIdx--;
     }
     if (insertIdx < 0) insertIdx = 0;
     if (insertIdx > targetGroup.tasks.length) insertIdx = targetGroup.tasks.length;
-    targetGroup.tasks.splice(insertIdx, 0, movedTask);
-    setGroups(updated);
+    const updatedTargetTasks = sourceGroup.id === targetGroup.id
+      ? [...updatedSourceTasks]
+      : [...targetGroup.tasks];
+    updatedTargetTasks.splice(insertIdx, 0, movedTask);
+    dispatch(reorderTasks({
+      activeGroupId: sourceGroup.id,
+      overGroupId: targetGroup.id,
+      fromIndex: taskIdx,
+      toIndex: insertIdx,
+      task: movedTask,
+      updatedSourceTasks,
+      updatedTargetTasks,
+    }));
+    dispatch(reorderEnhancedKanbanTasks({
+      activeGroupId: sourceGroup.id,
+      overGroupId: targetGroup.id,
+      fromIndex: taskIdx,
+      toIndex: insertIdx,
+      task: movedTask,
+      updatedSourceTasks,
+      updatedTargetTasks,
+    }) as any);
     setDraggedTaskId(null);
     setDraggedTaskGroupId(null);
     setHoveredGroupId(null);
@@ -183,25 +240,52 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setDragType(null);
   };
 
+  if (error) {
+    return (
+      <Card>
+        <Empty description={`Error loading tasks: ${error}`} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      </Card>
+    );
+  }
+
   return (
-    <div className="enhanced-kanban-board">
-      <div className="kanban-groups-container">
-        {groups.map(group => (
-          <KanbanGroup
-            key={group.id}
-            group={group}
-            onGroupDragStart={handleGroupDragStart}
-            onGroupDragOver={handleGroupDragOver}
-            onGroupDrop={handleGroupDrop}
-            onTaskDragStart={handleTaskDragStart}
-            onTaskDragOver={handleTaskDragOver}
-            onTaskDrop={handleTaskDrop}
-            hoveredTaskIdx={hoveredGroupId === group.id ? hoveredTaskIdx : null}
-            hoveredGroupId={hoveredGroupId}
-          />
-        ))}
+    <>
+      <div className="mb-4">
+        <React.Suspense fallback={<div>Loading filters...</div>}>
+          <ImprovedTaskFilters position="board" />
+        </React.Suspense>
       </div>
-    </div>
+      <div className="enhanced-kanban-board">
+        {loadingGroups ? (
+          <Card>
+            <div className="flex justify-center items-center py-8">
+              <Spin size="large" />
+            </div>
+          </Card>
+        ) : taskGroups.length === 0 ? (
+          <Card>
+            <Empty description="No tasks found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          </Card>
+        ) : (
+          <div className="kanban-groups-container">
+            {taskGroups.map(group => (
+              <KanbanGroup
+                key={group.id}
+                group={group}
+                onGroupDragStart={handleGroupDragStart}
+                onGroupDragOver={handleGroupDragOver}
+                onGroupDrop={handleGroupDrop}
+                onTaskDragStart={handleTaskDragStart}
+                onTaskDragOver={handleTaskDragOver}
+                onTaskDrop={handleTaskDrop}
+                hoveredTaskIdx={hoveredGroupId === group.id ? hoveredTaskIdx : null}
+                hoveredGroupId={hoveredGroupId}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
