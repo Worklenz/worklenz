@@ -16,6 +16,9 @@ import { SocketEvents } from '@/shared/socket-events';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import { deleteTask } from '@/features/tasks/tasks.slice';
 import { deleteBoardTask, updateTaskName } from '@/features/board/board-slice';
+import { updateEnhancedKanbanTaskName } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
 type TaskDrawerHeaderProps = {
   inputRef: React.RefObject<InputRef | null>;
@@ -26,6 +29,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
+  const { tab } = useTabSearchParam();
   const isDeleting = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -84,7 +88,13 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
 
   const handleReceivedTaskNameChange = (data: { id: string; parent_task: string; name: string }) => {
     if (data.id === selectedTaskId) {
-      dispatch(updateTaskName({ task: data }));
+      const taskData = { ...data, manual_progress: false } as IProjectTask;
+      dispatch(updateTaskName({ task: taskData }));
+      
+      // Also update enhanced kanban if on board tab
+      if (tab === 'board') {
+        dispatch(updateEnhancedKanbanTaskName({ task: taskData }));
+      }
     }
   };
 
@@ -152,7 +162,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
 
       <TaskDrawerStatusDropdown
         statuses={taskFormViewModel?.statuses ?? []}
-        task={taskFormViewModel?.task ?? {}}
+        task={taskFormViewModel?.task ?? {} as ITaskViewModel}
         teamId={currentSession?.team_id ?? ''}
       />
 

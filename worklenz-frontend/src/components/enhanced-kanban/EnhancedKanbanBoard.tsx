@@ -49,6 +49,7 @@ import EnhancedKanbanCreateSection from './EnhancedKanbanCreateSection';
 import ImprovedTaskFilters from '../task-management/improved-task-filters';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
+import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 
 // Import the TaskListFilters component
 const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
@@ -71,9 +72,13 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   const groupBy = useSelector((state: RootState) => state.enhancedKanbanReducer.groupBy);
   const project = useAppSelector((state: RootState) => state.projectReducer.project);
   const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   // Load filter data
   useFilterDataLoader();
+  
+  // Set up socket event handlers for real-time updates
+  useTaskSocketHandlers();
 
   // Local state for drag overlay
   const [activeTask, setActiveTask] = useState<any>(null);
@@ -441,18 +446,42 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
 
             <DragOverlay>
               {activeTask && (
-                <EnhancedKanbanTaskCard
-                  task={activeTask}
-                  sectionId={activeTask.status_id || ''}
-                  isDragOverlay={true}
-                />
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#23272f' : '#fff',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                    padding: '12px 20px',
+                    minWidth: 180,
+                    maxWidth: 340,
+                    opacity: 0.95,
+                    fontWeight: 600,
+                    fontSize: 16,
+                    color: themeMode === 'dark' ? '#fff' : '#23272f',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  {activeTask.name}
+                </div>
               )}
               {activeGroup && (
-                <div className="group-drag-overlay">
-                  <div className="group-header-content">
-                    <h3>{activeGroup.name}</h3>
-                    <span className="task-count">({activeGroup.tasks.length})</span>
-                  </div>
+                <div
+                  style={{
+                    background: themeMode === 'dark' ? '#23272f' : '#fff',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                    padding: '16px 24px',
+                    minWidth: 220,
+                    maxWidth: 320,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    opacity: 0.95,
+                  }}
+                >
+                  <h3 style={{ margin: 0, fontWeight: 600, fontSize: 18 }}>{activeGroup.name}</h3>
+                  <span style={{ fontSize: 15, color: '#888' }}>({activeGroup.tasks.length})</span>
                 </div>
               )}
             </DragOverlay>

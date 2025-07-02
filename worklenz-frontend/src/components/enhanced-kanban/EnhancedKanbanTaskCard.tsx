@@ -20,7 +20,7 @@ import { ForkOutlined } from '@ant-design/icons';
 import { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { CaretDownFilled, CaretRightFilled } from '@ant-design/icons';
-import { fetchBoardSubTasks } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { fetchBoardSubTasks, toggleTaskExpansion } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { Divider } from 'antd';
 import { List } from 'antd';
 import { Skeleton } from 'antd';
@@ -28,6 +28,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import BoardSubTaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-sub-task-card';
 import BoardCreateSubtaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-create-sub-task-card';
 import { useTranslation } from 'react-i18next';
+import EnhancedKanbanCreateSubtaskCard from './EnhancedKanbanCreateSubtaskCard';
 
 interface EnhancedKanbanTaskCardProps {
   task: IProjectTask;
@@ -58,7 +59,7 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
   const [dueDate, setDueDate] = useState<Dayjs | null>(
     task?.end_date ? dayjs(task?.end_date) : null
   );
-  const [isSubTaskShow, setIsSubTaskShow] = useState(false);
+
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const {
     attributes,
@@ -115,13 +116,17 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
 
   const handleSubTaskExpand = useCallback(() => {
     if (task && task.id && projectId) {
-      if (task.show_sub_tasks) {
+      // Check if subtasks are already loaded and we have subtask data
+      if (task.sub_tasks && task.sub_tasks.length > 0 && task.sub_tasks_count > 0) {
         // If subtasks are already loaded, just toggle visibility
-        setIsSubTaskShow(prev => !prev);
-      } else {
-        // If subtasks need to be fetched, show the section first with loading state
-        setIsSubTaskShow(true);
+        dispatch(toggleTaskExpansion(task.id));
+      } else if (task.sub_tasks_count > 0) {
+        // If we have a subtask count but no loaded subtasks, fetch them
+        dispatch(toggleTaskExpansion(task.id));
         dispatch(fetchBoardSubTasks({ taskId: task.id, projectId }));
+      } else {
+        // If no subtasks exist, just toggle visibility (will show empty state)
+        dispatch(toggleTaskExpansion(task.id));
       }
     }
   }, [task, projectId, dispatch]);
@@ -199,13 +204,13 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
               >
                 <ForkOutlined rotate={90} />
                 <span>{task.sub_tasks_count}</span>
-                {isSubTaskShow ? <CaretDownFilled /> : <CaretRightFilled />}
+                {task.show_sub_tasks ? <CaretDownFilled /> : <CaretRightFilled />}
               </Tag>
             </Button>
           </Flex>
         </Flex>
         <Flex vertical gap={8}>
-          {isSubTaskShow && (
+          {task.show_sub_tasks && (
             <Flex vertical>
               <Divider style={{ marginBlock: 0 }} />
               <List>
@@ -215,13 +220,21 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
                   </List.Item>
                 )}
 
-                {!task.sub_tasks_loading && task?.sub_tasks &&
-                  task?.sub_tasks.map((subtask: any) => (
+                {!task.sub_tasks_loading && task?.sub_tasks && task.sub_tasks.length > 0 &&
+                  task.sub_tasks.map((subtask: any) => (
                     <BoardSubTaskCard key={subtask.id} subtask={subtask} sectionId={sectionId} />
                   ))}
 
+                {!task.sub_tasks_loading && (!task?.sub_tasks || task.sub_tasks.length === 0) && task.sub_tasks_count === 0 && (
+                  <List.Item>
+                    <div style={{ padding: '8px 0', color: '#999', fontSize: '12px' }}>
+                      {t('noSubtasks', 'No subtasks')}
+                    </div>
+                  </List.Item>
+                )}
+
                 {showNewSubtaskCard && (
-                  <BoardCreateSubtaskCard
+                  <EnhancedKanbanCreateSubtaskCard
                     sectionId={sectionId}
                     parentTaskId={task.id || ''}
                     setShowNewSubtaskCard={setShowNewSubtaskCard}
