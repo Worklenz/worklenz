@@ -1,5 +1,5 @@
 import { Task } from '@/types/task-management.types';
-import { dayjs } from './antd-imports';
+import { dayjs } from '@/shared/antd-imports';
 
 // Performance constants
 export const PERFORMANCE_CONSTANTS = {

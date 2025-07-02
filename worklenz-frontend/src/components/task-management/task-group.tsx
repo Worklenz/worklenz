@@ -9,7 +9,7 @@ import {
   PlusOutlined, 
   RightOutlined, 
   DownOutlined 
-} from './antd-imports';
+} from '@/shared/antd-imports';
 import { TaskGroup as TaskGroupType, Task } from '@/types/task-management.types';
 import { taskManagementSelectors } from '@/features/task-management/task-management.slice';
 import { RootState } from '@/app/store';

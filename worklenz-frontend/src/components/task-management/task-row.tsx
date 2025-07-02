@@ -15,8 +15,15 @@ import {
   UserOutlined,
   type InputRef,
   Tooltip
-} from './antd-imports';
-import { DownOutlined, RightOutlined, ExpandAltOutlined, CheckCircleOutlined, MinusCircleOutlined, EyeOutlined, RetweetOutlined } from '@ant-design/icons';
+} from '@/shared/antd-imports';
+import {
+  RightOutlined,
+  ExpandAltOutlined,
+  CheckCircleOutlined,
+  MinusCircleOutlined,
+  EyeOutlined,
+  RetweetOutlined,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { Task } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
@@ -68,22 +75,25 @@ const STATUS_COLORS = {
 } as const;
 
 // Memoized sub-components for maximum performance
-const DragHandle = React.memo<{ isDarkMode: boolean; attributes: any; listeners: any }>(({ isDarkMode, attributes, listeners }) => (
-  <div
-    className="drag-handle-optimized flex items-center justify-center w-6 h-6 opacity-60 hover:opacity-100"
-    style={{
-      transition: 'opacity 0.1s ease', // Faster transition
-    }}
-    data-dnd-drag-handle="true"
-    {...attributes}
-    {...listeners}
-  >
-    <HolderOutlined 
-      className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
-      style={{ pointerEvents: 'none' }} // Prevent icon from interfering
-    />
-  </div>
-));
+const DragHandle = React.memo<{ isDarkMode: boolean; attributes: any; listeners: any }>(({ isDarkMode, attributes, listeners }) => {
+  return (
+    <div
+      className="drag-handle-optimized flex items-center justify-center w-6 h-6 opacity-60 hover:opacity-100"
+      style={{
+        transition: 'opacity 0.1s ease', // Faster transition
+        cursor: 'grab',
+      }}
+      data-dnd-drag-handle="true"
+      {...attributes}
+      {...listeners}
+    >
+      <HolderOutlined 
+        className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+        style={{ pointerEvents: 'none' }} // Prevent icon from interfering
+      />
+    </div>
+  );
+});
 
 const TaskKey = React.memo<{ taskKey: string; isDarkMode: boolean }>(({ taskKey, isDarkMode }) => (
   <span 
@@ -508,12 +518,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
     
     return {
       transform: CSS.Transform.toString(transform),
-      transition: isDragging ? 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-      opacity: isDragging ? 0.3 : 1,
+      opacity: isDragging ? 0.5 : 1,
       zIndex: isDragging ? 1000 : 'auto',
-      // PERFORMANCE OPTIMIZATION: Force GPU acceleration
-      willChange: 'transform, opacity',
-      filter: isDragging ? 'blur(0.5px)' : 'none',
     };
   }, [transform, isDragging]);
 
@@ -1223,58 +1229,27 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
   // Compute theme class
   const themeClass = isDarkMode ? 'dark' : '';
 
-  if (isDragging) {
-    console.log('TaskRow isDragging:', task.id);
-  }
-
   // DRAG OVERLAY: Render simplified version when dragging
   if (isDragOverlay) {
     return (
       <div
-        className={`drag-overlay-simplified ${themeClass}`}
+        className="drag-overlay-simplified"
         style={{
-          padding: '10px 16px',
-          backgroundColor: isDarkMode ? 'rgba(42, 42, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          border: `1px solid ${isDarkMode ? 'rgba(74, 158, 255, 0.8)' : 'rgba(24, 144, 255, 0.8)'}`,
-          borderRadius: '8px',
-          boxShadow: isDarkMode 
-            ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(74, 158, 255, 0.2)' 
-            : '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(24, 144, 255, 0.15)',
-          backdropFilter: 'blur(8px)',
-          maxWidth: '320px',
-          minWidth: '200px',
+          padding: '8px 12px',
+          backgroundColor: isDarkMode ? '#1f1f1f' : 'white',
+          border: `1px solid ${isDarkMode ? '#404040' : '#d9d9d9'}`,
+          borderRadius: '4px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+          color: isDarkMode ? 'white' : 'black',
+          fontSize: '14px',
+          fontWeight: '500',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          transform: 'scale(1.02)',
-          transition: 'none',
-          willChange: 'transform',
+          maxWidth: '300px',
         }}
       >
-        <div className="flex items-center gap-3">
-          <div 
-            className={`drag-handle-icon ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}
-            style={{
-              fontSize: '14px',
-              opacity: 0.8,
-              transform: 'translateZ(0)',
-            }}
-          >
-            <HolderOutlined />
-          </div>
-          <span 
-            className={`task-title-drag ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
-            title={task.title}
-            style={{
-              fontSize: '14px',
-              fontWeight: 500,
-              letterSpacing: '0.01em',
-              lineHeight: '1.4',
-            }}
-          >
-            {task.title}
-          </span>
-        </div>
+        {task.title}
       </div>
     );
   }
