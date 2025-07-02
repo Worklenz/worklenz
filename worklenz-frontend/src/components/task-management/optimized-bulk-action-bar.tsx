@@ -30,6 +30,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 const { Text } = Typography;
 
@@ -143,8 +144,13 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
   onBulkExport,
   onBulkSetDueDate,
 }) => {
-  const { t } = useTranslation('task-management');
+  const { t } = useTranslation('tasks/task-table-bulk-actions');
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
+  
+  // Get data from Redux store
+  const statusList = useAppSelector(state => state.taskStatusReducer.status);
+  const priorityList = useAppSelector(state => state.priorityReducer.priorities);
+  const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
   
   // Performance state management
   const [isVisible, setIsVisible] = useState(false);
@@ -177,6 +183,41 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
   const updateLoadingState = useCallback((action: keyof typeof loadingStates, loading: boolean) => {
     setLoadingStates(prev => ({ ...prev, [action]: loading }));
   }, []);
+
+  // Create dropdown menus
+  const statusMenuItems = useMemo(() => 
+    statusList.map(status => ({
+      key: status.id || '',
+      label: <Badge color={status.color_code} text={status.name} />,
+    })), [statusList]
+  );
+
+  const priorityMenuItems = useMemo(() => 
+    priorityList.map(priority => ({
+      key: priority.id || '',
+      label: <Badge color={priority.color_code} text={priority.name} />,
+    })), [priorityList]
+  );
+
+  const phaseMenuItems = useMemo(() => 
+    phaseList.map(phase => ({
+      key: phase.id || '',
+      label: <Badge color={phase.color_code} text={phase.name} />,
+    })), [phaseList]
+  );
+
+  // Menu click handlers
+  const handleStatusMenuClick = useCallback((e: any) => {
+    onBulkStatusChange?.(e.key);
+  }, [onBulkStatusChange]);
+
+  const handlePriorityMenuClick = useCallback((e: any) => {
+    onBulkPriorityChange?.(e.key);
+  }, [onBulkPriorityChange]);
+
+  const handlePhaseMenuClick = useCallback((e: any) => {
+    onBulkPhaseChange?.(e.key);
+  }, [onBulkPhaseChange]);
 
   // Memoized handlers with loading states
   const handleStatusChange = useCallback(async () => {
@@ -289,54 +330,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     whiteSpace: 'nowrap' as const,
   }), [isDarkMode]);
 
-  // Quick actions dropdown menu
-  const quickActionsMenu = useMemo(() => ({
-    items: [
-      {
-        key: 'change-status',
-        label: 'Change Status',
-        icon: <RetweetOutlined />,
-        onClick: handleStatusChange,
-      },
-      {
-        key: 'change-priority',
-        label: 'Change Priority', 
-        icon: <FlagOutlined />,
-        onClick: handlePriorityChange,
-      },
-      {
-        key: 'change-phase',
-        label: 'Change Phase',
-        icon: <RetweetOutlined />,
-        onClick: handlePhaseChange,
-      },
-      {
-        key: 'set-due-date',
-        label: 'Set Due Date',
-        icon: <CalendarOutlined />,
-        onClick: () => onBulkSetDueDate?.(new Date().toISOString()),
-      },
-      { 
-        type: 'divider' as const,
-        key: 'divider-1',
-      },
-      {
-        key: 'duplicate',
-        label: 'Duplicate Tasks',
-        icon: <CopyOutlined />,
-        onClick: handleDuplicate,
-      },
-      {
-        key: 'export',
-        label: 'Export Tasks',
-        icon: <ExportOutlined />,
-        onClick: handleExport,
-      },
-    ],
-  }), [handleStatusChange, handlePriorityChange, handlePhaseChange, handleDuplicate, handleExport, onBulkSetDueDate]);
-
-  // Don't render if no tasks selected
-  if (totalSelected === 0) {
+  if (!totalSelected || Number(totalSelected) < 1) {
     return null;
   }
 
@@ -356,7 +350,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             marginRight: '6px'
           }}
         />
-        {totalSelected} {totalSelected === 1 ? 'task' : 'tasks'} selected
+{t('TASKS_SELECTED', { count: totalSelected })}
       </Text>
 
       <Divider 
@@ -370,10 +364,13 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
 
       {/* Actions in same order as original component */}
       <Space size={2}>
-        {/* Change Status/Priority/Phase */}
-        <Tooltip title="Change Status/Priority/Phase" placement="top">
+        {/* Change Status */}
+        <Tooltip title={t('CHANGE_STATUS')} placement="top">
           <Dropdown 
-            menu={quickActionsMenu} 
+            menu={{ 
+              items: statusMenuItems,
+              onClick: handleStatusMenuClick
+            }}
             trigger={['click']}
             placement="top"
             arrow
@@ -396,7 +393,75 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
               }}
               size="small"
               type="text"
-              loading={loadingStates.status || loadingStates.priority || loadingStates.phase}
+              loading={loadingStates.status}
+            />
+          </Dropdown>
+        </Tooltip>
+
+        {/* Change Priority */}
+        <Tooltip title={t('CHANGE_PRIORITY')} placement="top">
+          <Dropdown 
+            menu={{ 
+              items: priorityMenuItems,
+              onClick: handlePriorityMenuClick
+            }}
+            trigger={['click']}
+            placement="top"
+            arrow
+          >
+            <Button
+              icon={<FlagOutlined />}
+              style={{
+                background: 'transparent',
+                color: isDarkMode ? '#e5e7eb' : '#374151',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                height: '32px',
+                width: '32px',
+                fontSize: '14px',
+                borderRadius: '6px',
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              size="small"
+              type="text"
+              loading={loadingStates.priority}
+            />
+          </Dropdown>
+        </Tooltip>
+
+        {/* Change Phase */}
+        <Tooltip title={t('CHANGE_PHASE')} placement="top">
+          <Dropdown 
+            menu={{ 
+              items: phaseMenuItems,
+              onClick: handlePhaseMenuClick
+            }}
+            trigger={['click']}
+            placement="top"
+            arrow
+          >
+            <Button
+              icon={<BulbOutlined />}
+              style={{
+                background: 'transparent',
+                color: isDarkMode ? '#e5e7eb' : '#374151',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                height: '32px',
+                width: '32px',
+                fontSize: '14px',
+                borderRadius: '6px',
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              size="small"
+              type="text"
+              loading={loadingStates.phase}
             />
           </Dropdown>
         </Tooltip>
@@ -404,7 +469,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         {/* Change Labels */}
         <ActionButton
           icon={<TagsOutlined />}
-          tooltip="Add Labels"
+          tooltip={t('ADD_LABELS')}
           onClick={() => onBulkAddLabels?.([])}
           loading={loadingStates.labels}
           isDarkMode={isDarkMode}
@@ -413,7 +478,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         {/* Assign to Me */}
         <ActionButton
           icon={<UserAddOutlined />}
-          tooltip="Assign to Me"
+          tooltip={t('ASSIGN_TO_ME')}
           onClick={handleAssignToMe}
           loading={loadingStates.assignToMe}
           isDarkMode={isDarkMode}
@@ -422,7 +487,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         {/* Change Assignees */}
         <ActionButton
           icon={<UsergroupAddOutlined />}
-          tooltip="Assign Members"
+          tooltip={t('ASSIGN_MEMBERS')}
           onClick={() => onBulkAssignMembers?.([])}
           loading={loadingStates.assignMembers}
           isDarkMode={isDarkMode}
@@ -431,7 +496,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         {/* Archive */}
         <ActionButton
           icon={<InboxOutlined />}
-          tooltip="Archive"
+          tooltip={t('ARCHIVE')}
           onClick={handleArchive}
           loading={loadingStates.archive}
           isDarkMode={isDarkMode}
@@ -439,17 +504,17 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
 
         {/* Delete */}
         <Popconfirm
-          title={`Delete ${totalSelected} ${totalSelected === 1 ? 'task' : 'tasks'}?`}
-          description="This action cannot be undone."
+          title={t('DELETE_TASKS_CONFIRM', { count: totalSelected })}
+          description={t('DELETE_TASKS_WARNING')}
           onConfirm={handleDelete}
-          okText="Delete"
-          cancelText="Cancel"
+          okText={t('DELETE')}
+          cancelText={t('CANCEL')}
           okType="danger"
           placement="top"
         >
           <ActionButton
             icon={<DeleteOutlined />}
-            tooltip="Delete"
+            tooltip={t('DELETE')}
             loading={loadingStates.delete}
             danger
             isDarkMode={isDarkMode}
@@ -468,7 +533,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         {/* Clear Selection */}
         <ActionButton
           icon={<CloseOutlined />}
-          tooltip="Clear Selection"
+          tooltip={t('CLEAR_SELECTION')}
           onClick={onClearSelection}
           isDarkMode={isDarkMode}
         />
@@ -481,8 +546,8 @@ OptimizedBulkActionBarContent.displayName = 'OptimizedBulkActionBarContent';
 
 // Portal wrapper for performance isolation
 const OptimizedBulkActionBar: React.FC<OptimizedBulkActionBarProps> = React.memo((props) => {
-  // Only render portal if tasks are selected for better performance
-  if (props.totalSelected === 0) {
+  console.log('BulkActionBar totalSelected:', props.totalSelected, typeof props.totalSelected);
+  if (!props.totalSelected || Number(props.totalSelected) < 1) {
     return null;
   }
 

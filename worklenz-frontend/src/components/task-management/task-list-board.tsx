@@ -42,6 +42,7 @@ import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import TaskRow from './task-row';
 // import BulkActionBar from './bulk-action-bar';
 import OptimizedBulkActionBar from './optimized-bulk-action-bar';
+// import OptimizedBulkActionBar from './optimized-bulk-action-bar';
 import VirtualizedTaskList from './virtualized-task-list';
 import { AppDispatch } from '@/app/store';
 import { shallowEqual } from 'react-redux';
@@ -443,6 +444,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   // Bulk action handlers - implementing real functionality from task-list-bulk-actions-bar
   const handleClearSelection = useCallback(() => {
     dispatch(deselectAll());
+    dispatch(clearSelection());
   }, [dispatch]);
 
   const handleBulkStatusChange = useCallback(async (statusId: string) => {
@@ -480,6 +482,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_change_status);
         dispatch(deselectAll());
+        dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
     } catch (error) {
@@ -501,6 +504,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_change_priority);
         dispatch(deselectAll());
+        dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
     } catch (error) {
@@ -522,6 +526,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_change_phase);
         dispatch(deselectAll());
+        dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
     } catch (error) {
@@ -540,6 +545,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_assign_me);
         dispatch(deselectAll());
+        dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
     } catch (error) {
@@ -571,6 +577,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_assign_members);
         dispatch(deselectAll());
+        dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
     } catch (error) {
@@ -595,6 +602,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_update_labels);
         dispatch(deselectAll());
+        dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
         dispatch(fetchLabels());
       }
@@ -614,6 +622,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_archive);
         dispatch(deselectAll());
+        dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
     } catch (error) {
@@ -632,6 +641,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_delete);
         dispatch(deselectAll());
+        dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
     } catch (error) {
