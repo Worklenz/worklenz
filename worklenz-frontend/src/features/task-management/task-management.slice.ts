@@ -208,6 +208,60 @@ export const refreshTaskProgress = createAsyncThunk(
   }
 );
 
+// Async thunk to reorder tasks with API call
+export const reorderTasksWithAPI = createAsyncThunk(
+  'taskManagement/reorderTasksWithAPI',
+  async ({ taskIds, newOrder, projectId }: { taskIds: string[]; newOrder: number[]; projectId: string }, { rejectWithValue }) => {
+    try {
+      // Make API call to update task order
+      const response = await tasksApiService.reorderTasks({
+        taskIds,
+        newOrder,
+        projectId,
+      });
+      
+      if (response.done) {
+        return { taskIds, newOrder };
+      } else {
+        return rejectWithValue('Failed to reorder tasks');
+      }
+    } catch (error) {
+      logger.error('Reorder Tasks API Error:', error);
+      return rejectWithValue('Failed to reorder tasks');
+    }
+  }
+);
+
+// Async thunk to move task between groups with API call
+export const moveTaskToGroupWithAPI = createAsyncThunk(
+  'taskManagement/moveTaskToGroupWithAPI',
+  async ({ taskId, groupType, groupValue, projectId }: { 
+    taskId: string; 
+    groupType: 'status' | 'priority' | 'phase'; 
+    groupValue: string; 
+    projectId: string;
+  }, { rejectWithValue }) => {
+    try {
+      // Make API call to update task group
+      const response = await tasksApiService.updateTaskGroup({
+        taskId,
+        groupType,
+        groupValue,
+        projectId,
+      });
+      
+      if (response.done) {
+        return { taskId, groupType, groupValue };
+      } else {
+        return rejectWithValue('Failed to move task');
+      }
+    } catch (error) {
+      logger.error('Move Task API Error:', error);
+      return rejectWithValue('Failed to move task');
+    }
+  }
+);
+
 const taskManagementSlice = createSlice({
   name: 'taskManagement',
   initialState: tasksAdapter.getInitialState(initialState),
@@ -328,15 +382,6 @@ const taskManagementSlice = createSlice({
     }>) => {
       const { taskId, fromGroupId, toGroupId, taskUpdate } = action.payload;
       
-      console.log('🔧 moveTaskBetweenGroups action:', {
-        taskId,
-        fromGroupId,
-        toGroupId,
-        taskUpdate,
-        hasGroups: !!state.groups,
-        groupsCount: state.groups?.length || 0
-      });
-      
       // Update the task entity with new values
       tasksAdapter.updateOne(state, {
         id: taskId,
@@ -351,25 +396,15 @@ const taskManagementSlice = createSlice({
         // Remove task from old group
         const fromGroup = state.groups.find(group => group.id === fromGroupId);
         if (fromGroup) {
-          const beforeCount = fromGroup.taskIds.length;
           fromGroup.taskIds = fromGroup.taskIds.filter(id => id !== taskId);
-          console.log(`🔧 Removed task from ${fromGroup.title}: ${beforeCount} -> ${fromGroup.taskIds.length}`);
-        } else {
-          console.warn('🚨 From group not found:', fromGroupId);
         }
         
         // Add task to new group
         const toGroup = state.groups.find(group => group.id === toGroupId);
         if (toGroup) {
-          const beforeCount = toGroup.taskIds.length;
           // Add to the end of the group (newest last)
           toGroup.taskIds.push(taskId);
-          console.log(`🔧 Added task to ${toGroup.title}: ${beforeCount} -> ${toGroup.taskIds.length}`);
-        } else {
-          console.warn('🚨 To group not found:', toGroupId);
         }
-      } else {
-        console.warn('🚨 No groups available for task movement');
       }
     },
     
@@ -397,7 +432,76 @@ const taskManagementSlice = createSlice({
           changes.phase = groupValue;
         }
         
+        // Update the task entity
         tasksAdapter.updateOne(state, { id: taskId, changes });
+        
+        // Update groups if they exist
+        if (state.groups && state.groups.length > 0) {
+          // Find the target group
+          const targetGroup = state.groups.find(group => group.id === newGroupId);
+          if (targetGroup) {
+            // Remove task from all groups first
+            state.groups.forEach(group => {
+              group.taskIds = group.taskIds.filter(id => id !== taskId);
+            });
+            
+            // Add task to target group at the specified index
+            if (newIndex >= targetGroup.taskIds.length) {
+              targetGroup.taskIds.push(taskId);
+            } else {
+              targetGroup.taskIds.splice(newIndex, 0, taskId);
+            }
+          }
+        }
+      }
+    },
+    
+    // Proper reorder action that handles both task entities and group arrays
+    reorderTasksInGroup: (state, action: PayloadAction<{ 
+      taskId: string; 
+      fromGroupId: string; 
+      toGroupId: string; 
+      fromIndex: number; 
+      toIndex: number; 
+      groupType: 'status' | 'priority' | 'phase';
+      groupValue: string;
+    }>) => {
+      const { taskId, fromGroupId, toGroupId, fromIndex, toIndex, groupType, groupValue } = action.payload;
+      
+      // Update the task entity
+      const changes: Partial<Task> = {
+        order: toIndex,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      // Update group-specific field
+      if (groupType === 'status') {
+        changes.status = groupValue as Task['status'];
+      } else if (groupType === 'priority') {
+        changes.priority = groupValue as Task['priority'];
+      } else if (groupType === 'phase') {
+        changes.phase = groupValue;
+      }
+      
+      tasksAdapter.updateOne(state, { id: taskId, changes });
+      
+      // Update groups if they exist
+      if (state.groups && state.groups.length > 0) {
+        // Remove task from source group
+        const fromGroup = state.groups.find(group => group.id === fromGroupId);
+        if (fromGroup) {
+          fromGroup.taskIds = fromGroup.taskIds.filter(id => id !== taskId);
+        }
+        
+        // Add task to target group
+        const toGroup = state.groups.find(group => group.id === toGroupId);
+        if (toGroup) {
+          if (toIndex >= toGroup.taskIds.length) {
+            toGroup.taskIds.push(taskId);
+          } else {
+            toGroup.taskIds.splice(toIndex, 0, taskId);
+          }
+        }
       }
     },
     
@@ -483,6 +587,7 @@ export const {
   moveTaskToGroup,
   moveTaskBetweenGroups,
   optimisticTaskMove,
+  reorderTasksInGroup,
   setLoading,
   setError,
   setSelectedPriorities,

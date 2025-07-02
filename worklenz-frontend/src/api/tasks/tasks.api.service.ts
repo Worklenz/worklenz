@@ -159,4 +159,24 @@ export const tasksApiService = {
     const response = await apiClient.get(`${rootUrl}/progress-status/${projectId}`);
     return response.data;
   },
+
+  // API method to reorder tasks
+  reorderTasks: async (params: { taskIds: string[]; newOrder: number[]; projectId: string }): Promise<IServerResponse<{ done: boolean }>> => {
+    const response = await apiClient.post(`${rootUrl}/reorder`, {
+      task_ids: params.taskIds,
+      new_order: params.newOrder,
+      project_id: params.projectId,
+    });
+    return response.data;
+  },
+
+  // API method to update task group (status, priority, phase)
+  updateTaskGroup: async (params: { taskId: string; groupType: 'status' | 'priority' | 'phase'; groupValue: string; projectId: string }): Promise<IServerResponse<{ done: boolean }>> => {
+    const response = await apiClient.put(`${rootUrl}/${params.taskId}/group`, {
+      group_type: params.groupType,
+      group_value: params.groupValue,
+      project_id: params.projectId,
+    });
+    return response.data;
+  },
 };

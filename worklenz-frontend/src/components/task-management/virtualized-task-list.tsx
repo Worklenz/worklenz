@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useEffect, useRef } from 'react';
-import { FixedSizeList as List } from 'react-window';
+import { FixedSizeList as List, FixedSizeList } from 'react-window';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -205,7 +205,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
     return group.taskIds
       .map((taskId: string) => tasksById[taskId])
       .filter((task: Task | undefined): task is Task => task !== undefined);
-  }, [group.taskIds, tasksById]);
+  }, [group.taskIds, tasksById, group.id]);
 
   // Calculate selection state for the group checkbox
   const selectionState = useMemo(() => {
@@ -329,7 +329,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
   }, [groupTasks.length]);
 
   // Build displayRows array
-  const displayRows = [];
+  const displayRows: Array<{ type: 'task'; task: Task } | { type: 'add-subtask'; parentTask: Task }> = [];
   for (let i = 0; i < groupTasks.length; i++) {
     const task = groupTasks[i];
     displayRows.push({ type: 'task', task });
@@ -340,6 +340,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<FixedSizeList>(null);
 
   // PERFORMANCE OPTIMIZATION: Throttled scroll handler
   const handleScroll = useCallback(() => {
@@ -551,14 +552,17 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(({
           contain: 'layout style', // CSS containment for better performance
         }}
       >
-        <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
+        <SortableContext 
+          items={group.taskIds} 
+          strategy={verticalListSortingStrategy}
+        >
           {shouldVirtualize ? (
             <List
               height={availableTaskRowsHeight}
               itemCount={displayRows.length}
               itemSize={TASK_ROW_HEIGHT}
               width={totalTableWidth}
-              ref={scrollContainerRef}
+              ref={listRef}
               overscanCount={overscanCount}
             >
               {({ index, style }) => {
