@@ -89,7 +89,7 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
 
     // Real-time socket event handler
     const eventHandler = (task: IProjectTask) => {
-      dispatch(addTaskToGroup({ sectionId, task: { ...task, id: task.id || nanoid(), name: task.name || newTaskName.trim() } }));
+      // Only reset the form - the global handler will add the task to Redux
       socket?.off(SocketEvents.QUICK_TASK.toString(), eventHandler);
       resetForNextTask();
     };
