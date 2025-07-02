@@ -17,7 +17,9 @@
   "createTaskTemplate": "Krijo Shabllon Detyre",
   "apply": "Apliko",
   "createLabel": "+ Krijo Etiketë",
+  "searchOrCreateLabel": "Kërko ose krijo etiketë...",
   "hitEnterToCreate": "Shtyp Enter për të krijuar",
+  "labelExists": "Etiketa ekziston tashmë",
   "pendingInvitation": "Ftesë në Pritje",
   "noMatchingLabels": "Asnjë etiketë që përputhet",
   "noLabels": "Asnjë etiketë"

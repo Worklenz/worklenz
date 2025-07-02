@@ -1365,6 +1365,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editColumnKey, setEditColumnKey] = useState<string | null>(null);
+  const [showAddSubtaskFor, setShowAddSubtaskFor] = useState<string | null>(null);
 
   const toggleTaskExpansion = (taskId: string) => {
     const task = displayTasks.find(t => t.id === taskId);
@@ -1857,14 +1858,38 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                         {renderTaskRow(updatedTask)}
                         {updatedTask.show_sub_tasks && (
                           <>
-                            {updatedTask?.sub_tasks?.map(subtask => 
+                            {updatedTask?.sub_tasks?.map(subtask =>
                               subtask?.id ? renderTaskRow(subtask, true) : null
                             )}
-                            <tr key={`add-subtask-${updatedTask.id}`}>
-                              <td colSpan={visibleColumns.length + 1}>
-                                <AddTaskListRow groupId={tableId} parentTask={updatedTask.id} />
-                              </td>
-                            </tr>
+                            {showAddSubtaskFor !== updatedTask.id && (
+                              <tr key={`add-subtask-link-${updatedTask.id}`}>
+                                <td colSpan={visibleColumns.length + 1}>
+                                  <div
+                                    style={{
+                                      padding: '8px 16px',
+                                      color: '#1677ff',
+                                      cursor: 'pointer',
+                                      fontWeight: 500,
+                                      background: '#f6f8fa'
+                                    }}
+                                    onClick={() => setShowAddSubtaskFor(updatedTask.id)}
+                                  >
+                                    + Add Sub Task
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            {showAddSubtaskFor === updatedTask.id && (
+                              <tr key={`add-subtask-input-${updatedTask.id}`}>
+                                <td colSpan={visibleColumns.length + 1}>
+                                  <AddTaskListRow
+                                    groupId={tableId}
+                                    parentTask={updatedTask.id}
+                                    onCancel={() => setShowAddSubtaskFor(null)}
+                                  />
+                                </td>
+                              </tr>
+                            )}
                           </>
                         )}
                       </React.Fragment>
