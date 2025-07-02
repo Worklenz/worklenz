@@ -56,6 +56,12 @@ import {
   setBoardLabels,
 } from '@/features/board/board-slice';
 
+// Import ConfigPhaseButton and CreateStatusButton components
+import ConfigPhaseButton from '@/features/projects/singleProject/phase/ConfigPhaseButton';
+import CreateStatusButton from '@/components/project-task-filters/create-status-button/create-status-button';
+import { useAuthService } from '@/hooks/useAuth';
+import useIsProjectManager from '@/hooks/useIsProjectManager';
+
 // Performance constants
 const FILTER_DEBOUNCE_DELAY = 300; // ms
 const SEARCH_DEBOUNCE_DELAY = 500; // ms
@@ -324,6 +330,10 @@ const FilterDropdown: React.FC<{
   isDarkMode: boolean;
   className?: string;
 }> = ({ section, onSelectionChange, isOpen, onToggle, themeClasses, isDarkMode, className = '' }) => {
+  // Add permission checks for groupBy section
+  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+  const isProjectManager = useIsProjectManager();
+  const canConfigure = isOwnerOrAdmin || isProjectManager;
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredOptions, setFilteredOptions] = useState(section.options);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -411,6 +421,14 @@ const FilterDropdown: React.FC<{
           className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
+
+      {/* Configuration Buttons for GroupBy section */}
+      {section.id === 'groupBy' && canConfigure && (
+        <div className="inline-flex items-center gap-1 ml-2">
+          {section.selectedValues[0] === 'phase' && <ConfigPhaseButton />}
+          {section.selectedValues[0] === 'status' && <CreateStatusButton />}
+        </div>
+      )}
 
       {/* Dropdown Panel */}
       {isOpen && (
