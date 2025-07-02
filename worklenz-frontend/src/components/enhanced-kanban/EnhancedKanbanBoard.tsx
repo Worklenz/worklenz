@@ -7,7 +7,6 @@ import {
   DragStartEvent,
   DragEndEvent,
   DragOverEvent,
-  closestCorners,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -20,7 +19,6 @@ import {
 import {
   SortableContext,
   horizontalListSortingStrategy,
-  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { RootState } from '@/app/store';
 import {
@@ -34,8 +32,6 @@ import {
   fetchEnhancedKanbanLabels,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import EnhancedKanbanGroup from './EnhancedKanbanGroup';
-import EnhancedKanbanTaskCard from './EnhancedKanbanTaskCard';
-import PerformanceMonitor from './PerformanceMonitor';
 import './EnhancedKanbanBoard.css';
 import { useSocket } from '@/socket/socketContext';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -50,6 +46,7 @@ import ImprovedTaskFilters from '../task-management/improved-task-filters';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
+import { useAuthService } from '@/hooks/useAuth';
 
 // Import the TaskListFilters component
 const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
@@ -68,7 +65,8 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
     performanceMetrics
   } = useSelector((state: RootState) => state.enhancedKanbanReducer);
   const { socket } = useSocket();
-  const { teamId } = useAppSelector((state: RootState) => state.auth);
+  const authService = useAuthService();
+  const teamId = authService.getCurrentSession()?.team_id;
   const groupBy = useSelector((state: RootState) => state.enhancedKanbanReducer.groupBy);
   const project = useAppSelector((state: RootState) => state.projectReducer.project);
   const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);

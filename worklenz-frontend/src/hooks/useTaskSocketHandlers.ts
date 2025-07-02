@@ -176,8 +176,6 @@ export const useTaskSocketHandlers = () => {
     (response: ITaskListStatusChangeResponse) => {
       if (!response) return;
 
-      console.log('🔄 Status change received:', response);
-
       if (response.completed_deps === false) {
         alertService.error(
           'Task is not completed',
@@ -198,13 +196,6 @@ export const useTaskSocketHandlers = () => {
       const groups = state.taskManagement.groups;
       const currentTask = state.taskManagement.entities[response.id];
       
-      console.log('🔍 Status change debug:', {
-        hasGroups: !!groups,
-        groupsLength: groups?.length || 0,
-        hasCurrentTask: !!currentTask,
-        statusId: response.status_id,
-        currentGrouping: state.taskManagement.grouping
-      });
       
       if (groups && groups.length > 0 && currentTask && response.status_id) {
         // Find current group containing the task
@@ -215,11 +206,6 @@ export const useTaskSocketHandlers = () => {
         const targetGroup = groups.find(group => group.id === response.status_id);
         
         if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-          console.log('🔄 Moving task between groups:', {
-            taskId: response.id,
-            fromGroup: currentGroup.title,
-            toGroup: targetGroup.title
-          });
           
           // Determine the new status value based on status category
           let newStatusValue: 'todo' | 'doing' | 'done' = 'todo';
@@ -244,8 +230,6 @@ export const useTaskSocketHandlers = () => {
             }
           }));
         } else if (!currentGroup || !targetGroup) {
-          // Log the issue but don't refetch - real-time updates should handle this
-          console.log('🔄 Groups not found, but avoiding refetch to prevent data thrashing');
           // Remove unnecessary refetch that causes data thrashing
           // if (projectId) {
           //   dispatch(fetchTasksV3(projectId));
@@ -305,8 +289,6 @@ export const useTaskSocketHandlers = () => {
     (response: ITaskListPriorityChangeResponse) => {
       if (!response) return;
 
-      console.log('🎯 Priority change received:', response);
-
       // Update the old task slice (for backward compatibility)
       dispatch(updateTaskPriority(response));
       dispatch(setTaskPriority(response));
@@ -332,14 +314,6 @@ export const useTaskSocketHandlers = () => {
           }
         }
 
-        console.log('🔧 Updating task priority:', {
-          taskId: response.id,
-          oldPriority: currentTask.priority,
-          newPriority: newPriorityValue,
-          priorityId: response.priority_id,
-          currentGrouping: state.taskManagement.grouping
-        });
-
         // Update the task entity
         dispatch(updateTask({
           id: response.id,
@@ -363,12 +337,6 @@ export const useTaskSocketHandlers = () => {
           );
           
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-            console.log('🔄 Moving task between priority groups:', {
-              taskId: response.id,
-              fromGroup: currentGroup.title,
-              toGroup: targetGroup.title,
-              newPriority: newPriorityValue
-            });
             
             dispatch(moveTaskBetweenGroups({
               taskId: response.id,
@@ -439,8 +407,6 @@ export const useTaskSocketHandlers = () => {
     (data: ITaskPhaseChangeResponse) => {
       if (!data) return;
       
-      console.log('🎯 Phase change received:', data);
-      
       // Update the old task slice (for backward compatibility)
       dispatch(updateTaskPhase(data));
       dispatch(deselectAll());
@@ -465,14 +431,6 @@ export const useTaskSocketHandlers = () => {
           // No phase selected (cleared)
           newPhaseValue = '';
         }
-
-        console.log('🔧 Updating task phase:', {
-          taskId: taskId,
-          oldPhase: currentTask.phase,
-          newPhase: newPhaseValue,
-          phaseId: data.id,
-          currentGrouping: state.taskManagement.grouping
-        });
 
         // Update the task entity
         dispatch(updateTask({
@@ -507,12 +465,6 @@ export const useTaskSocketHandlers = () => {
           }
           
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-            console.log('🔄 Moving task between phase groups:', {
-              taskId: taskId,
-              fromGroup: currentGroup.title,
-              toGroup: targetGroup.title,
-              newPhase: newPhaseValue || 'No Phase'
-            });
             
             dispatch(moveTaskBetweenGroups({
               taskId: taskId,
@@ -705,7 +657,7 @@ export const useTaskSocketHandlers = () => {
       
       // This event only provides assignee IDs, so we update what we can
       // The full assignee data will come from QUICK_ASSIGNEES_UPDATE
-      console.log('🔄 Task assignees change (limited data):', data);
+      // console.log('🔄 Task assignees change (limited data):', data);
     },
     []
   );

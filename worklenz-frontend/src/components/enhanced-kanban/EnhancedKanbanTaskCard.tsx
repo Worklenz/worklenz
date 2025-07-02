@@ -13,7 +13,6 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setShowTaskDrawer, setSelectedTaskId } from '@/features/task-drawer/task-drawer.slice';
 import PrioritySection from '../board/taskCard/priority-section/priority-section';
 import Typography from 'antd/es/typography';
-import CustomAvatarGroup from '../board/custom-avatar-group';
 import CustomDueDatePicker from '../board/custom-due-date-picker';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { ForkOutlined } from '@ant-design/icons';
@@ -29,6 +28,8 @@ import BoardSubTaskCard from '@/pages/projects/projectView/board/board-section/b
 import BoardCreateSubtaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-create-sub-task-card';
 import { useTranslation } from 'react-i18next';
 import EnhancedKanbanCreateSubtaskCard from './EnhancedKanbanCreateSubtaskCard';
+import LazyAssigneeSelectorWrapper from '@/components/task-management/lazy-assignee-selector';
+import AvatarGroup from '@/components/AvatarGroup';
 
 interface EnhancedKanbanTaskCardProps {
   task: IProjectTask;
@@ -179,8 +180,15 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
             marginBlock: 8,
           }}
         >
-          {task && <CustomAvatarGroup task={task} sectionId={sectionId} />}
-
+          <Flex align="center" gap={2}>
+            <AvatarGroup
+              members={task.names || []}
+              maxCount={3}
+              isDarkMode={themeMode === 'dark'}
+              size={24}
+            />
+            <LazyAssigneeSelectorWrapper task={task} groupId={sectionId} isDarkMode={themeMode === 'dark'} />
+          </Flex>
           <Flex gap={4} align="center">
             <CustomDueDatePicker task={task} onDateChange={setDueDate} />
 
