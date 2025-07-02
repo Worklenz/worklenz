@@ -20,5 +20,20 @@
     "hitEnterToCreate": "Pressione Enter para criar",
     "pendingInvitation": "Convite Pendente",
     "noMatchingLabels": "Nenhuma etiqueta correspondente",
-    "noLabels": "Sem etiquetas"
+    "noLabels": "Sem etiquetas",
+    "CHANGE_STATUS": "Alterar Status",
+    "CHANGE_PRIORITY": "Alterar Prioridade",
+    "CHANGE_PHASE": "Alterar Fase",
+    "ADD_LABELS": "Adicionar Etiquetas",
+    "ASSIGN_TO_ME": "Atribuir a Mim",
+    "ASSIGN_MEMBERS": "Atribuir Membros",
+    "ARCHIVE": "Arquivar",
+    "DELETE": "Deletar",
+    "CANCEL": "Cancelar",
+    "CLEAR_SELECTION": "Limpar Seleção",
+    "TASKS_SELECTED": "{{count}} tarefa selecionada",
+    "TASKS_SELECTED_plural": "{{count}} tarefas selecionadas",
+    "DELETE_TASKS_CONFIRM": "Deletar {{count}} tarefa?",
+    "DELETE_TASKS_CONFIRM_plural": "Deletar {{count}} tarefas?",
+    "DELETE_TASKS_WARNING": "Esta ação não pode ser desfeita."
 }
