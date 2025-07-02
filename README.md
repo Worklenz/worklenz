@@ -69,8 +69,7 @@ cd worklenz
 2. Set up environment variables
    - Copy the example environment files
    ```bash
-   cp .env.example .env
-   cp worklenz-backend/.env.example worklenz-backend/.env
+   cp worklenz-backend/.env.template worklenz-backend/.env
    ```
    - Update the environment variables with your configuration
 
