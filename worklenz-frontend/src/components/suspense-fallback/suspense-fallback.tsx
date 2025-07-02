@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
-import { Spin } from 'antd';
+import { Skeleton } from 'antd';
 
-// Lightweight loading component - removed heavy theme calculations
+// Lightweight loading component with skeleton animation
 export const SuspenseFallback = memo(() => {
   return (
     <div 
@@ -16,9 +16,16 @@ export const SuspenseFallback = memo(() => {
         justifyContent: 'center',
         background: 'transparent',
         zIndex: 9999,
+        padding: '20px',
       }}
     >
-      <Spin size="large" />
+      <div style={{ width: '100%', maxWidth: '400px' }}>
+        <Skeleton 
+          active 
+          paragraph={{ rows: 3, width: ['100%', '80%', '60%'] }}
+          title={{ width: '70%' }}
+        />
+      </div>
     </div>
   );
 });
@@ -35,7 +42,13 @@ export const InlineSuspenseFallback = memo(() => {
         minHeight: '200px',
       }}
     >
-      <Spin size="large" />
+      <div style={{ width: '100%', maxWidth: '300px' }}>
+        <Skeleton 
+          active 
+          paragraph={{ rows: 2, width: ['100%', '70%'] }}
+          title={{ width: '60%' }}
+        />
+      </div>
     </div>
   );
 });
