@@ -2,6 +2,7 @@
 import React, { Suspense, useEffect, memo, useMemo, useCallback } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import i18next from 'i18next';
+import { ensureTranslationsLoaded } from './i18n';
 
 // Components
 import ThemeWrapper from './features/theme/ThemeWrapper';
@@ -56,15 +57,25 @@ const App: React.FC = memo(() => {
     handleLanguageChange(language || Language.EN);
   }, [language, handleLanguageChange]);
 
-  // Initialize CSRF token on app startup - memoize to prevent re-initialization
+  // Initialize CSRF token and translations on app startup
   useEffect(() => {
     let isMounted = true;
     
-    initializeCsrfToken().catch(error => {
-      if (isMounted) {
-        logger.error('Failed to initialize CSRF token:', error);
+    const initializeApp = async () => {
+      try {
+        // Initialize CSRF token
+        await initializeCsrfToken();
+        
+        // Preload essential translations
+        await ensureTranslationsLoaded();
+      } catch (error) {
+        if (isMounted) {
+          logger.error('Failed to initialize app:', error);
+        }
       }
-    });
+    };
+
+    initializeApp();
 
     return () => {
       isMounted = false;

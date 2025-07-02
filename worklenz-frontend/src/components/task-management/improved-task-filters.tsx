@@ -14,7 +14,7 @@ import {
   EyeOutlined,
   InboxOutlined,
   CheckOutlined,
-} from './antd-imports';
+} from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
