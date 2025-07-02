@@ -21,10 +21,10 @@ import {
   FlagOutlined,
   BulbOutlined
 } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useBulkActionTranslations } from '@/hooks/useTranslationPreloader';
 
 const { Text } = Typography;
 
@@ -138,7 +138,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
   onBulkExport,
   onBulkSetDueDate,
 }) => {
-  const { t } = useTranslation('tasks/task-table-bulk-actions');
+  const { t, ready, isLoading } = useBulkActionTranslations();
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
   
   // Get data from Redux store
@@ -323,6 +323,11 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     marginRight: '12px',
     whiteSpace: 'nowrap' as const,
   }), [isDarkMode]);
+
+  // Don't render until translations are ready to prevent Suspense
+  if (!ready || isLoading) {
+    return null;
+  }
 
   if (!totalSelected || Number(totalSelected) < 1) {
     return null;
