@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import EnhancedKanbanBoard from '@/components/enhanced-kanban/EnhancedKanbanBoard';
-import EnhancedKanbanBoardNativeDnD from '@/components/enhanced-kanban/EnhancedKanbanBoardNativeDnD';
+import EnhancedKanbanBoardNativeDnD from '@/components/enhanced-kanban/EnhancedKanbanBoardNativeDnD/EnhancedKanbanBoardNativeDnD';
 
 const ProjectViewEnhancedBoard: React.FC = () => {
   const { project } = useAppSelector(state => state.projectReducer);
