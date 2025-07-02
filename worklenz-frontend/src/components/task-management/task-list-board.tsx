@@ -38,6 +38,11 @@ import {
   toggleTaskSelection,
   clearSelection,
 } from '@/features/task-management/selection.slice';
+import {
+  selectTaskIds,
+  selectTasks,
+  deselectAll as deselectAllBulk,
+} from '@/features/projects/bulkActions/bulkActionSlice';
 import { Task } from '@/types/task-management.types';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { useSocket } from '@/socket/socketContext';
@@ -49,7 +54,6 @@ import OptimizedBulkActionBar from './optimized-bulk-action-bar';
 import VirtualizedTaskList from './virtualized-task-list';
 import { AppDispatch } from '@/app/store';
 import { shallowEqual } from 'react-redux';
-import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
@@ -73,6 +77,7 @@ import { ITaskPriority } from '@/types/tasks/taskPriority.types';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
@@ -153,7 +158,9 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const tasks = useSelector(taskManagementSelectors.selectAll);
   const taskGroups = useSelector(selectTaskGroupsV3, shallowEqual);
   const currentGrouping = useSelector(selectCurrentGroupingV3, shallowEqual);
-  const selectedTaskIds = useSelector(selectSelectedTaskIds);
+  // Use bulk action slice for selected tasks instead of selection slice
+  const selectedTaskIds = useSelector((state: RootState) => state.bulkActionReducer.selectedTaskIdsList);
+  const selectedTasks = useSelector((state: RootState) => state.bulkActionReducer.selectedTasks);
   const loading = useSelector((state: RootState) => state.taskManagement.loading, shallowEqual);
   const error = useSelector((state: RootState) => state.taskManagement.error);
 
@@ -403,9 +410,53 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   const handleSelectTask = useCallback(
     (taskId: string, selected: boolean) => {
-      dispatch(toggleTaskSelection(taskId));
+      if (selected) {
+        // Add task to bulk selection
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          // Convert Task to IProjectTask format for bulk actions
+          const projectTask: IProjectTask = {
+            id: task.id,
+            name: task.title, // Always use title as the name
+            task_key: task.task_key,
+            status: task.status,
+            status_id: task.status,
+            priority: task.priority,
+            phase_id: task.phase,
+            phase_name: task.phase,
+            description: task.description,
+            start_date: task.startDate,
+            end_date: task.dueDate,
+            total_hours: task.timeTracking.estimated || 0,
+            total_minutes: task.timeTracking.logged || 0,
+            progress: task.progress,
+            sub_tasks_count: task.sub_tasks_count || 0,
+            assignees: task.assignees.map(assigneeId => ({
+              id: assigneeId,
+              name: '',
+              email: '',
+              avatar_url: '',
+              team_member_id: assigneeId,
+              project_member_id: assigneeId,
+            })),
+            labels: task.labels,
+            manual_progress: false, // Default value for Task type
+            created_at: task.createdAt,
+            updated_at: task.updatedAt,
+            sort_order: task.order,
+          };
+          dispatch(selectTasks([...selectedTasks, projectTask]));
+          dispatch(selectTaskIds([...selectedTaskIds, taskId]));
+        }
+      } else {
+        // Remove task from bulk selection
+        const updatedTasks = selectedTasks.filter(t => t.id !== taskId);
+        const updatedTaskIds = selectedTaskIds.filter(id => id !== taskId);
+        dispatch(selectTasks(updatedTasks));
+        dispatch(selectTaskIds(updatedTaskIds));
+      }
     },
-    [dispatch]
+    [dispatch, selectedTasks, selectedTaskIds, tasks]
   );
 
   const handleToggleSubtasks = useCallback((taskId: string) => {
@@ -430,7 +481,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Bulk action handlers - implementing real functionality from task-list-bulk-actions-bar
   const handleClearSelection = useCallback(() => {
-    dispatch(deselectAll());
+    dispatch(deselectAllBulk());
     dispatch(clearSelection());
   }, [dispatch]);
 
@@ -468,7 +519,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.changeStatus(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_change_status);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -490,7 +541,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.changePriority(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_change_priority);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -512,7 +563,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.changePhase(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_change_phase);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -531,7 +582,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.assignToMe(body);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_assign_me);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -563,7 +614,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.assignTasks(body);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_assign_members);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -588,7 +639,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.assignLabels(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_update_labels);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
         dispatch(fetchLabels());
@@ -608,7 +659,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.archiveTasks(body, archived);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_archive);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -627,7 +678,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.deleteTasks(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_delete);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }

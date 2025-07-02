@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Button, 
@@ -19,12 +19,23 @@ import {
   TagsOutlined,
   UsergroupAddOutlined,
   FlagOutlined,
-  BulbOutlined
+  BulbOutlined,
+  MoreOutlined
 } from '@ant-design/icons';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useBulkActionTranslations } from '@/hooks/useTranslationPreloader';
+import LabelsDropdown from '@/components/taskListCommon/task-list-bulk-actions-bar/components/LabelsDropdown';
+import AssigneesDropdown from '@/components/taskListCommon/task-list-bulk-actions-bar/components/AssigneesDropdown';
+import { ITaskLabel } from '@/types/tasks/taskLabel.types';
+import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
+import { InputRef } from 'antd/es/input';
+import { CheckboxChangeEvent } from 'antd/es/checkbox';
+import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
+import { useAuthService } from '@/hooks/useAuth';
 
 const { Text } = Typography;
 
@@ -139,12 +150,16 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
   onBulkSetDueDate,
 }) => {
   const { t, ready, isLoading } = useBulkActionTranslations();
+  const dispatch = useDispatch();
   const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
   
   // Get data from Redux store
   const statusList = useAppSelector(state => state.taskStatusReducer.status);
   const priorityList = useAppSelector(state => state.priorityReducer.priorities);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
+  const labelsList = useAppSelector(state => state.taskLabelsReducer.labels);
+  const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const tasks = useAppSelector(state => state.taskManagement.entities);
   
   // Performance state management
   const [isVisible, setIsVisible] = useState(false);
@@ -161,6 +176,20 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     export: false,
     dueDate: false,
   });
+
+  // Labels dropdown state
+  const [selectedLabels, setSelectedLabels] = useState<ITaskLabel[]>([]);
+  const [createLabelText, setCreateLabelText] = useState<string>('');
+  const labelsInputRef = useRef<InputRef>(null);
+
+  // Assignees dropdown state
+  const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
+
+  // Task template state
+  const [showDrawer, setShowDrawer] = useState(false);
+
+  // Auth service for permissions
+  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
 
   // Smooth entrance animation
   useEffect(() => {
@@ -200,6 +229,8 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     })), [phaseList]
   );
 
+
+
   // Menu click handlers
   const handleStatusMenuClick = useCallback((e: any) => {
     onBulkStatusChange?.(e.key);
@@ -212,6 +243,126 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
   const handlePhaseMenuClick = useCallback((e: any) => {
     onBulkPhaseChange?.(e.key);
   }, [onBulkPhaseChange]);
+
+  const handleLabelsMenuClick = useCallback((e: any) => {
+    onBulkAddLabels?.([e.key]);
+  }, [onBulkAddLabels]);
+
+  // Labels dropdown handlers
+  const handleLabelChange = useCallback((e: CheckboxChangeEvent, label: ITaskLabel) => {
+    if (e.target.checked) {
+      setSelectedLabels(prev => [...prev, label]);
+    } else {
+      setSelectedLabels(prev => prev.filter(l => l.id !== label.id));
+    }
+  }, []);
+
+  const handleApplyLabels = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      updateLoadingState('labels', true);
+      const body = {
+        tasks: selectedTaskIds,
+        labels: selectedLabels,
+        text: selectedLabels.length > 0 ? null : createLabelText.trim() !== '' ? createLabelText.trim() : null,
+      };
+      await onBulkAddLabels?.(selectedLabels.map(l => l.id).filter((id): id is string => id !== undefined));
+      setCreateLabelText('');
+      setSelectedLabels([]);
+    } catch (error) {
+      // Error handling is done in the parent component
+    } finally {
+      updateLoadingState('labels', false);
+    }
+  }, [selectedLabels, createLabelText, selectedTaskIds, projectId, onBulkAddLabels, updateLoadingState]);
+
+  // Assignees dropdown handlers
+  const handleChangeAssignees = useCallback(async (selectedAssignees: ITeamMemberViewModel[]) => {
+    if (!projectId) return;
+    try {
+      updateLoadingState('assignMembers', true);
+      await onBulkAssignMembers?.(selectedAssignees.map(m => m.id).filter((id): id is string => id !== undefined));
+    } catch (error) {
+      // Error handling is done in the parent component
+    } finally {
+      updateLoadingState('assignMembers', false);
+    }
+  }, [projectId, onBulkAssignMembers, updateLoadingState]);
+
+  const onAssigneeDropdownOpenChange = useCallback((open: boolean) => {
+    setAssigneeDropdownOpen(open);
+  }, []);
+
+  // Get selected task objects for template creation
+  const selectedTaskObjects = useMemo(() => {
+    return Object.values(tasks).filter((task: any) => selectedTaskIds.includes(task.id));
+  }, [tasks, selectedTaskIds]);
+
+  // Update Redux state when opening template drawer
+  const handleOpenTemplateDrawer = useCallback(() => {
+    // Convert Task objects to IProjectTask format for template creation
+    const projectTasks: IProjectTask[] = selectedTaskObjects.map((task: any) => ({
+      id: task.id,
+      name: task.title, // Always use title as the name
+      task_key: task.task_key,
+      status: task.status,
+      status_id: task.status,
+      priority: task.priority,
+      phase_id: task.phase,
+      phase_name: task.phase,
+      description: task.description,
+      start_date: task.startDate,
+      end_date: task.dueDate,
+      total_hours: task.timeTracking?.estimated || 0,
+      total_minutes: task.timeTracking?.logged || 0,
+      progress: task.progress,
+      sub_tasks_count: task.sub_tasks_count || 0,
+      assignees: task.assignees?.map((assigneeId: string) => ({
+        id: assigneeId,
+        name: '',
+        email: '',
+        avatar_url: '',
+        team_member_id: assigneeId,
+        project_member_id: assigneeId,
+      })) || [],
+      labels: task.labels || [],
+      manual_progress: false,
+      created_at: task.createdAt,
+      updated_at: task.updatedAt,
+      sort_order: task.order,
+    }));
+    
+    // Update the bulkActionReducer with selected tasks
+    dispatch(selectTasks(projectTasks));
+    setShowDrawer(true);
+  }, [selectedTaskObjects, dispatch]);
+
+  // Labels dropdown content
+  const labelsDropdownContent = useMemo(() => (
+    <LabelsDropdown
+      labelsList={labelsList || []}
+      themeMode={isDarkMode ? 'dark' : 'light'}
+      createLabelText={createLabelText}
+      selectedLabels={selectedLabels}
+      labelsInputRef={labelsInputRef as React.RefObject<InputRef>}
+      onLabelChange={handleLabelChange}
+      onCreateLabelTextChange={setCreateLabelText}
+      onApply={handleApplyLabels}
+      t={t}
+      loading={loadingStates.labels}
+    />
+  ), [labelsList, isDarkMode, createLabelText, selectedLabels, handleLabelChange, handleApplyLabels, t, loadingStates.labels]);
+
+  // Assignees dropdown content
+  const assigneesDropdownContent = useMemo(() => (
+    <AssigneesDropdown
+      members={members?.data || []}
+      themeMode={isDarkMode ? 'dark' : 'light'}
+      onApply={handleChangeAssignees}
+      onClose={() => setAssigneeDropdownOpen(false)}
+      t={t}
+    />
+  ), [members?.data, isDarkMode, handleChangeAssignees, t]);
 
   // Memoized handlers with loading states
   const handleStatusChange = useCallback(async () => {
@@ -466,13 +617,41 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         </Tooltip>
 
         {/* Change Labels */}
-        <ActionButton
-          icon={<TagsOutlined />}
-          tooltip={t('ADD_LABELS')}
-          onClick={() => onBulkAddLabels?.([])}
-          loading={loadingStates.labels}
-          isDarkMode={isDarkMode}
-        />
+        <Tooltip title={t('ADD_LABELS')} placement="top">
+          <Dropdown 
+            dropdownRender={() => labelsDropdownContent}
+            trigger={['click']}
+            placement="top"
+            arrow
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelectedLabels([]);
+                setCreateLabelText('');
+              }
+            }}
+          >
+            <Button
+              icon={<TagsOutlined />}
+              style={{
+                background: 'transparent',
+                color: isDarkMode ? '#e5e7eb' : '#374151',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                height: '32px',
+                width: '32px',
+                fontSize: '14px',
+                borderRadius: '6px',
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              size="small"
+              type="text"
+              loading={loadingStates.labels}
+            />
+          </Dropdown>
+        </Tooltip>
 
         {/* Assign to Me */}
         <ActionButton
@@ -484,13 +663,37 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         />
 
         {/* Change Assignees */}
-        <ActionButton
-          icon={<UsergroupAddOutlined />}
-          tooltip={t('ASSIGN_MEMBERS')}
-          onClick={() => onBulkAssignMembers?.([])}
-          loading={loadingStates.assignMembers}
-          isDarkMode={isDarkMode}
-        />
+        <Tooltip title={t('ASSIGN_MEMBERS')} placement="top">
+          <Dropdown 
+            dropdownRender={() => assigneesDropdownContent}
+            open={assigneeDropdownOpen}
+            onOpenChange={onAssigneeDropdownOpenChange}
+            trigger={['click']}
+            placement="top"
+            arrow
+          >
+            <Button
+              icon={<UsergroupAddOutlined />}
+              style={{
+                background: 'transparent',
+                color: isDarkMode ? '#e5e7eb' : '#374151',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                height: '32px',
+                width: '32px',
+                fontSize: '14px',
+                borderRadius: '6px',
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              size="small"
+              type="text"
+              loading={loadingStates.assignMembers}
+            />
+          </Dropdown>
+        </Tooltip>
 
         {/* Archive */}
         <ActionButton
@@ -520,6 +723,46 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           />
         </Popconfirm>
 
+        {/* More Options (Create Task Template) - Only for owners/admins */}
+        {isOwnerOrAdmin && (
+          <Tooltip title={t('moreOptions')} placement="top">
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  {
+                    key: '1',
+                    label: t('createTaskTemplate'),
+                    onClick: handleOpenTemplateDrawer,
+                  },
+                ],
+              }}
+              placement="top"
+              arrow
+            >
+              <Button
+                icon={<MoreOutlined />}
+                style={{
+                  background: 'transparent',
+                  color: isDarkMode ? '#e5e7eb' : '#374151',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                  height: '32px',
+                  width: '32px',
+                  fontSize: '14px',
+                  borderRadius: '6px',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                size="small"
+                type="text"
+              />
+            </Dropdown>
+          </Tooltip>
+        )}
+
         <Divider 
           type="vertical" 
           style={{ 
@@ -537,6 +780,20 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           isDarkMode={isDarkMode}
         />
       </Space>
+
+      {/* Task Template Drawer */}
+      {createPortal(
+        <TaskTemplateDrawer
+          showDrawer={showDrawer}
+          selectedTemplateId={null}
+          onClose={() => {
+            setShowDrawer(false);
+            onClearSelection?.();
+          }}
+        />,
+        document.body,
+        'create-task-template'
+      )}
     </div>
   );
 });
