@@ -1,4 +1,4 @@
-import { IProjectMember } from "./project/projectMember.types";
+import { IProjectMember } from './project/projectMember.types';
 
 export interface IProjectMemberViewModel extends IProjectMember {
   id?: string;

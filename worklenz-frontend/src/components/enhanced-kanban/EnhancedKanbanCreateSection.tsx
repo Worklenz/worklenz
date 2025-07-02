@@ -7,7 +7,10 @@ import { nanoid } from '@reduxjs/toolkit';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { IGroupBy, fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import {
+  IGroupBy,
+  fetchEnhancedKanbanGroups,
+} from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { createStatus, fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { ALPHA_CHANNEL } from '@/shared/constants';
@@ -19,10 +22,12 @@ import useIsProjectManager from '@/hooks/useIsProjectManager';
 const EnhancedKanbanCreateSection: React.FC = () => {
   const { t } = useTranslation('kanban-board');
 
-  const themeMode = useAppSelector((state) => state.themeReducer.mode);
-  const { projectId } = useAppSelector((state) => state.projectReducer);
-  const groupBy = useAppSelector((state) => state.enhancedKanbanReducer.groupBy);
-  const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { projectId } = useAppSelector(state => state.projectReducer);
+  const groupBy = useAppSelector(state => state.enhancedKanbanReducer.groupBy);
+  const { statusCategories, status: existingStatuses } = useAppSelector(
+    state => state.taskStatusReducer
+  );
 
   const dispatch = useAppDispatch();
   const isOwnerorAdmin = useAuthService().isOwnerOrAdmin();
@@ -36,20 +41,20 @@ const EnhancedKanbanCreateSection: React.FC = () => {
   const getUniqueSectionName = (baseName: string): string => {
     // Check if the base name already exists
     const existingNames = existingStatuses.map(status => status.name?.toLowerCase());
-    
+
     if (!existingNames.includes(baseName.toLowerCase())) {
       return baseName;
     }
-    
+
     // If the base name exists, add a number suffix
     let counter = 1;
     let newName = `${baseName.trim()} (${counter})`;
-    
+
     while (existingNames.includes(newName.toLowerCase())) {
       counter++;
       newName = `${baseName.trim()} (${counter})`;
     }
-    
+
     return newName;
   };
 
@@ -57,14 +62,14 @@ const EnhancedKanbanCreateSection: React.FC = () => {
     const sectionId = nanoid();
     const baseNameSection = 'Untitled section';
     const sectionName = getUniqueSectionName(baseNameSection);
-    
+
     if (groupBy === IGroupBy.STATUS && projectId) {
       // Find the "To do" category
-      const todoCategory = statusCategories.find(category => 
-        category.name?.toLowerCase() === 'to do' || 
-        category.name?.toLowerCase() === 'todo'
+      const todoCategory = statusCategories.find(
+        category =>
+          category.name?.toLowerCase() === 'to do' || category.name?.toLowerCase() === 'todo'
       );
-      
+
       if (todoCategory && todoCategory.id) {
         // Create a new status
         const body = {
@@ -72,11 +77,13 @@ const EnhancedKanbanCreateSection: React.FC = () => {
           project_id: projectId,
           category_id: todoCategory.id,
         };
-        
+
         try {
           // Create the status
-          const response = await dispatch(createStatus({ body, currentProjectId: projectId })).unwrap();
-          
+          const response = await dispatch(
+            createStatus({ body, currentProjectId: projectId })
+          ).unwrap();
+
           if (response.done && response.body) {
             // Refresh the board to show the new section
             dispatch(fetchEnhancedKanbanGroups(projectId));
@@ -87,7 +94,7 @@ const EnhancedKanbanCreateSection: React.FC = () => {
           logger.error('Failed to create status:', error);
         }
       }
-    } 
+    }
 
     if (groupBy === IGroupBy.PHASE && projectId) {
       const body = {
@@ -95,7 +102,7 @@ const EnhancedKanbanCreateSection: React.FC = () => {
         project_id: projectId,
       };
 
-      try { 
+      try {
         const response = await phasesApiService.addPhaseOption(projectId);
         if (response.done && response.body) {
           dispatch(fetchEnhancedKanbanGroups(projectId));
@@ -147,4 +154,4 @@ const EnhancedKanbanCreateSection: React.FC = () => {
   );
 };
 
-export default React.memo(EnhancedKanbanCreateSection); 
+export default React.memo(EnhancedKanbanCreateSection);

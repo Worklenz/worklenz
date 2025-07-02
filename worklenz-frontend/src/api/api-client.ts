@@ -16,16 +16,16 @@ export const refreshCsrfToken = async (): Promise<string | null> => {
   try {
     const tokenStart = performance.now();
     console.log('[CSRF] Starting CSRF token refresh...');
-    
+
     // Make a GET request to the server to get a fresh CSRF token with timeout
-    const response = await axios.get(`${config.apiUrl}/csrf-token`, { 
+    const response = await axios.get(`${config.apiUrl}/csrf-token`, {
       withCredentials: true,
-      timeout: 10000 // 10 second timeout for CSRF token requests
+      timeout: 10000, // 10 second timeout for CSRF token requests
     });
-    
+
     const tokenEnd = performance.now();
     console.log(`[CSRF] CSRF token refresh completed in ${(tokenEnd - tokenStart).toFixed(2)}ms`);
-    
+
     if (response.data && response.data.token) {
       csrfToken = response.data.token;
       console.log('[CSRF] CSRF token successfully refreshed');
@@ -61,22 +61,22 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async config => {
     const requestStart = performance.now();
-    
+
     // Ensure we have a CSRF token before making requests
     if (!csrfToken) {
       const tokenStart = performance.now();
       await refreshCsrfToken();
       const tokenEnd = performance.now();
     }
-    
+
     if (csrfToken) {
       config.headers['X-CSRF-Token'] = csrfToken;
     } else {
       console.warn('No CSRF token available after refresh attempt');
     }
-    
+
     const requestEnd = performance.now();
-    
+
     return config;
   },
   error => Promise.reject(error)
@@ -114,14 +114,17 @@ apiClient.interceptors.response.use(
     const errorResponse = error.response;
 
     // Handle CSRF token errors
-    if (errorResponse?.status === 403 && 
-        (typeof errorResponse.data === 'object' && 
-         errorResponse.data !== null && 
-         'message' in errorResponse.data && 
-         (errorResponse.data.message === 'invalid csrf token' || errorResponse.data.message === 'Invalid CSRF token') || 
-         (error as any).code === 'EBADCSRFTOKEN')) {
+    if (
+      errorResponse?.status === 403 &&
+      ((typeof errorResponse.data === 'object' &&
+        errorResponse.data !== null &&
+        'message' in errorResponse.data &&
+        (errorResponse.data.message === 'invalid csrf token' ||
+          errorResponse.data.message === 'Invalid CSRF token')) ||
+        (error as any).code === 'EBADCSRFTOKEN')
+    ) {
       alertService.error('Security Error', 'Invalid security token. Refreshing your session...');
-      
+
       // Try to refresh the CSRF token and retry the request
       const newToken = await refreshCsrfToken();
       if (newToken && error.config) {

@@ -20,7 +20,7 @@ const TawkTo: React.FC<TawkToProps> = ({ propertyId, widgetId }) => {
     s1.async = true;
     s1.src = `https://embed.tawk.to/${propertyId}/${widgetId}`;
     s1.setAttribute('crossorigin', '*');
-    
+
     const s0 = document.getElementsByTagName('script')[0];
     s0.parentNode?.insertBefore(s1, s0);
 
@@ -31,13 +31,13 @@ const TawkTo: React.FC<TawkToProps> = ({ propertyId, widgetId }) => {
       if (tawkScript && tawkScript.parentNode) {
         tawkScript.parentNode.removeChild(tawkScript);
       }
-      
+
       // Remove the tawk.to iframe
       const tawkIframe = document.getElementById('tawk-iframe');
       if (tawkIframe) {
         tawkIframe.remove();
       }
-      
+
       // Reset Tawk globals
       delete window.Tawk_API;
       delete window.Tawk_LoadStart;
@@ -47,4 +47,4 @@ const TawkTo: React.FC<TawkToProps> = ({ propertyId, widgetId }) => {
   return null;
 };
 
-export default TawkTo; 
+export default TawkTo;

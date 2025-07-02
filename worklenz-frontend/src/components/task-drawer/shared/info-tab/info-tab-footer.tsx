@@ -51,7 +51,9 @@ const InfoTabFooter = () => {
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState<boolean>(false);
 
-  const [selectedMembers, setSelectedMembers] = useState<{ team_member_id: string; name: string }[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<
+    { team_member_id: string; name: string }[]
+  >([]);
   const [commentValue, setCommentValue] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
 
@@ -102,20 +104,23 @@ const InfoTabFooter = () => {
       key: member.id,
     })) ?? [];
 
-  const memberSelectHandler = useCallback((member: IMentionMemberSelectOption) => {
-    if (!member?.value || !member?.label) return;
-    
-    // Find the member ID from the members list using the name
-    const selectedMember = members.find(m => m.name === member.value);
-    if (!selectedMember) return;
-    
-    // Add to selected members if not already present
-    setSelectedMembers(prev =>
-      prev.some(mention => mention.team_member_id === selectedMember.id)
-        ? prev
-        : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
-    );
-  }, [members]);
+  const memberSelectHandler = useCallback(
+    (member: IMentionMemberSelectOption) => {
+      if (!member?.value || !member?.label) return;
+
+      // Find the member ID from the members list using the name
+      const selectedMember = members.find(m => m.name === member.value);
+      if (!selectedMember) return;
+
+      // Add to selected members if not already present
+      setSelectedMembers(prev =>
+        prev.some(mention => mention.team_member_id === selectedMember.id)
+          ? prev
+          : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
+      );
+    },
+    [members]
+  );
 
   const handleCommentChange = useCallback((value: string) => {
     setCommentValue(value);
@@ -149,7 +154,7 @@ const InfoTabFooter = () => {
         setAttachmentComment(false);
         setIsCommentBoxExpand(false);
         setCommentValue('');
-        
+
         // Dispatch event to notify that a comment was created
         // This will trigger scrolling to the new comment
         document.dispatchEvent(new Event('task-comment-create'));

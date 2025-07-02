@@ -1,6 +1,10 @@
 import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 import { AppDispatch } from '@/app/store';
-import { fetchProjectData, setProjectId, toggleProjectDrawer } from '@/features/project/project-drawer.slice';
+import {
+  fetchProjectData,
+  setProjectId,
+  toggleProjectDrawer,
+} from '@/features/project/project-drawer.slice';
 import {
   toggleArchiveProjectForAll,
   toggleArchiveProject,
@@ -12,7 +16,11 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import logger from '@/utils/errorLogger';
 import { SettingOutlined, InboxOutlined } from '@ant-design/icons';
 import { Tooltip, Button, Popconfirm, Space } from 'antd';
-import { evt_projects_archive, evt_projects_archive_all, evt_projects_settings_click } from '@/shared/worklenz-analytics-events';
+import {
+  evt_projects_archive,
+  evt_projects_archive_all,
+  evt_projects_settings_click,
+} from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 interface ActionButtonsProps {
@@ -71,7 +79,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           icon={<SettingOutlined />}
         />
       </Tooltip>
-      <Tooltip title={isEditable ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}>
+      <Tooltip
+        title={isEditable ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
+      >
         <Popconfirm
           title={record.archived ? t('unarchive') : t('archive')}
           description={record.archived ? t('unarchiveConfirm') : t('archiveConfirm')}

@@ -18,7 +18,9 @@ const AccountStorage = ({ themeMode }: IAccountStorageProps) => {
   const dispatch = useAppDispatch();
   const [subscriptionType, setSubscriptionType] = useState<string>(SUBSCRIPTION_STATUS.TRIALING);
 
-  const { loadingBillingInfo, billingInfo, storageInfo } = useAppSelector(state => state.adminCenterReducer);
+  const { loadingBillingInfo, billingInfo, storageInfo } = useAppSelector(
+    state => state.adminCenterReducer
+  );
 
   const formatBytes = useMemo(
     () =>

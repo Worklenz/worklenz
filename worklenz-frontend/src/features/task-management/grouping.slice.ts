@@ -21,7 +21,7 @@ const groupingSlice = createSlice({
     setCurrentGrouping: (state, action: PayloadAction<'status' | 'priority' | 'phase'>) => {
       state.currentGrouping = action.payload;
     },
-    
+
     addCustomPhase: (state, action: PayloadAction<string>) => {
       const phase = action.payload.trim();
       if (phase && !state.customPhases.includes(phase)) {
@@ -29,23 +29,23 @@ const groupingSlice = createSlice({
         state.groupOrder.phase.push(phase);
       }
     },
-    
+
     removeCustomPhase: (state, action: PayloadAction<string>) => {
       const phase = action.payload;
       state.customPhases = state.customPhases.filter(p => p !== phase);
       state.groupOrder.phase = state.groupOrder.phase.filter(p => p !== phase);
     },
-    
+
     updateCustomPhases: (state, action: PayloadAction<string[]>) => {
       state.customPhases = action.payload;
       state.groupOrder.phase = action.payload;
     },
-    
+
     updateGroupOrder: (state, action: PayloadAction<{ groupType: string; order: string[] }>) => {
       const { groupType, order } = action.payload;
       state.groupOrder[groupType] = order;
     },
-    
+
     toggleGroupCollapsed: (state, action: PayloadAction<string>) => {
       const groupId = action.payload;
       if (!state.groupStates[groupId]) {
@@ -53,7 +53,7 @@ const groupingSlice = createSlice({
       }
       state.groupStates[groupId].collapsed = !state.groupStates[groupId].collapsed;
     },
-    
+
     setGroupCollapsed: (state, action: PayloadAction<{ groupId: string; collapsed: boolean }>) => {
       const { groupId, collapsed } = action.payload;
       if (!state.groupStates[groupId]) {
@@ -61,14 +61,14 @@ const groupingSlice = createSlice({
       }
       state.groupStates[groupId].collapsed = collapsed;
     },
-    
-    collapseAllGroups: (state) => {
+
+    collapseAllGroups: state => {
       Object.keys(state.groupStates).forEach(groupId => {
         state.groupStates[groupId].collapsed = true;
       });
     },
-    
-    expandAllGroups: (state) => {
+
+    expandAllGroups: state => {
       Object.keys(state.groupStates).forEach(groupId => {
         state.groupStates[groupId].collapsed = false;
       });
@@ -104,27 +104,40 @@ export const selectCurrentGroupOrder = createSelector(
 );
 
 export const selectTaskGroups = createSelector(
-  [taskManagementSelectors.selectAll, selectCurrentGrouping, selectCurrentGroupOrder, selectGroupStates],
+  [
+    taskManagementSelectors.selectAll,
+    selectCurrentGrouping,
+    selectCurrentGroupOrder,
+    selectGroupStates,
+  ],
   (tasks, currentGrouping, groupOrder, groupStates) => {
     const groups: TaskGroup[] = [];
-    
+
     // Get unique values for the current grouping
-    const groupValues = groupOrder.length > 0 ? groupOrder : 
-      [...new Set(tasks.map(task => {
-        if (currentGrouping === 'status') return task.status;
-        if (currentGrouping === 'priority') return task.priority;
-        return task.phase;
-      }))];
-    
+    const groupValues =
+      groupOrder.length > 0
+        ? groupOrder
+        : [
+            ...new Set(
+              tasks.map(task => {
+                if (currentGrouping === 'status') return task.status;
+                if (currentGrouping === 'priority') return task.priority;
+                return task.phase;
+              })
+            ),
+          ];
+
     groupValues.forEach(value => {
-      const tasksInGroup = tasks.filter(task => {
-        if (currentGrouping === 'status') return task.status === value;
-        if (currentGrouping === 'priority') return task.priority === value;
-        return task.phase === value;
-      }).sort((a, b) => a.order - b.order);
-      
+      const tasksInGroup = tasks
+        .filter(task => {
+          if (currentGrouping === 'status') return task.status === value;
+          if (currentGrouping === 'priority') return task.priority === value;
+          return task.phase === value;
+        })
+        .sort((a, b) => a.order - b.order);
+
       const groupId = `${currentGrouping}-${value}`;
-      
+
       groups.push({
         id: groupId,
         title: value.charAt(0).toUpperCase() + value.slice(1),
@@ -135,7 +148,7 @@ export const selectTaskGroups = createSelector(
         color: getGroupColor(currentGrouping, value),
       });
     });
-    
+
     return groups;
   }
 );
@@ -144,22 +157,22 @@ export const selectTasksByCurrentGrouping = createSelector(
   [taskManagementSelectors.selectAll, selectCurrentGrouping],
   (tasks, currentGrouping) => {
     const grouped: Record<string, typeof tasks> = {};
-    
+
     tasks.forEach(task => {
       let key: string;
       if (currentGrouping === 'status') key = task.status;
       else if (currentGrouping === 'priority') key = task.priority;
       else key = task.phase;
-      
+
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(task);
     });
-    
+
     // Sort tasks within each group by order
     Object.keys(grouped).forEach(key => {
       grouped[key].sort((a, b) => a.order - b.order);
     });
-    
+
     return grouped;
   }
 );
@@ -185,8 +198,8 @@ const getGroupColor = (groupType: string, value: string): string => {
       Deployment: '#52c41a',
     },
   };
-  
+
   return colorMaps[groupType as keyof typeof colorMaps]?.[value as keyof any] || '#d9d9d9';
 };
 
-export default groupingSlice.reducer; 
+export default groupingSlice.reducer;

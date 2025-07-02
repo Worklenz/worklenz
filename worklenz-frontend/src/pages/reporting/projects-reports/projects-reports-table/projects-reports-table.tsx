@@ -64,10 +64,13 @@ const ProjectsReportsTable = () => {
   const columnsVisibility = useAppSelector(state => state.projectReportsTableColumnsReducer);
 
   // Memoize the drawer open handler to prevent recreation on every render
-  const handleDrawerOpen = useCallback((record: IRPTProject) => {
-    setSelectedProject(record);
-    dispatch(toggleProjectReportsDrawer());
-  }, [dispatch]);
+  const handleDrawerOpen = useCallback(
+    (record: IRPTProject) => {
+      setSelectedProject(record);
+      dispatch(toggleProjectReportsDrawer());
+    },
+    [dispatch]
+  );
 
   const columns: TableColumnsType<IRPTProject> = useMemo(
     () => [
@@ -242,12 +245,15 @@ const ProjectsReportsTable = () => {
   );
 
   // Memoize the table change handler to prevent recreation on every render
-  const handleTableChange = useCallback((pagination: PaginationProps, filters: any, sorter: any) => {
-    if (sorter.order) dispatch(setOrder(sorter.order));
-    if (sorter.field) dispatch(setField(sorter.field));
-    dispatch(setIndex(pagination.current));
-    dispatch(setPageSize(pagination.pageSize));
-  }, [dispatch]);
+  const handleTableChange = useCallback(
+    (pagination: PaginationProps, filters: any, sorter: any) => {
+      if (sorter.order) dispatch(setOrder(sorter.order));
+      if (sorter.field) dispatch(setField(sorter.field));
+      dispatch(setIndex(pagination.current));
+      dispatch(setPageSize(pagination.pageSize));
+    },
+    [dispatch]
+  );
 
   useEffect(() => {
     if (!isLoading) dispatch(fetchProjectData());
@@ -295,13 +301,16 @@ const ProjectsReportsTable = () => {
   );
 
   // Memoize pagination configuration to prevent recreation on every render
-  const paginationConfig = useMemo(() => ({
-    showSizeChanger: true,
-    defaultPageSize: 10,
-    total: total,
-    current: index,
-    pageSizeOptions: PAGE_SIZE_OPTIONS,
-  }), [total, index]);
+  const paginationConfig = useMemo(
+    () => ({
+      showSizeChanger: true,
+      defaultPageSize: 10,
+      total: total,
+      current: index,
+      pageSizeOptions: PAGE_SIZE_OPTIONS,
+    }),
+    [total, index]
+  );
 
   // Memoize scroll configuration to prevent recreation on every render
   const scrollConfig = useMemo(() => ({ x: 'max-content' }), []);

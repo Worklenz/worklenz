@@ -1,11 +1,11 @@
 {
-    "importTaskTemplate": "Import Task Template",
-    "templateName": "Template Name",
-    "templateDescription": "Template Description",
-    "selectedTasks": "Selected Tasks",
-    "tasks": "Tasks",
-    "templates": "Templates",
-    "remove": "Remove",
-    "cancel": "Cancel",
-    "import": "Import"
+  "importTaskTemplate": "Import Task Template",
+  "templateName": "Template Name",
+  "templateDescription": "Template Description",
+  "selectedTasks": "Selected Tasks",
+  "tasks": "Tasks",
+  "templates": "Templates",
+  "remove": "Remove",
+  "cancel": "Cancel",
+  "import": "Import"
 }

@@ -18,7 +18,11 @@ class RoutePreloader {
   /**
    * Register a route for preloading
    */
-  public registerRoute(path: string, loader: () => Promise<any>, priority: 'high' | 'medium' | 'low' = 'medium'): void {
+  public registerRoute(
+    path: string,
+    loader: () => Promise<any>,
+    priority: 'high' | 'medium' | 'low' = 'medium'
+  ): void {
     if (this.preloadedRoutes.has(path)) return;
 
     this.preloadQueue.push({ path, loader, priority });
@@ -83,7 +87,11 @@ class RoutePreloader {
   /**
    * Preload routes on user interaction (hover, focus)
    */
-  public preloadOnInteraction(element: HTMLElement, path: string, loader: () => Promise<any>): void {
+  public preloadOnInteraction(
+    element: HTMLElement,
+    path: string,
+    loader: () => Promise<any>
+  ): void {
     if (this.preloadedRoutes.has(path)) return;
 
     let preloadTriggered = false;
@@ -93,7 +101,7 @@ class RoutePreloader {
       preloadTriggered = true;
 
       this.preloadRoute(path, loader);
-      
+
       // Clean up listeners
       element.removeEventListener('mouseenter', handleInteraction);
       element.removeEventListener('focus', handleInteraction);
@@ -110,9 +118,12 @@ class RoutePreloader {
    */
   public preloadOnIdle(): void {
     if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => {
-        this.startPreloading();
-      }, { timeout: 2000 });
+      requestIdleCallback(
+        () => {
+          this.startPreloading();
+        },
+        { timeout: 2000 }
+      );
     } else {
       setTimeout(() => {
         this.startPreloading();
@@ -147,7 +158,9 @@ export const routePreloader = new RoutePreloader();
 /**
  * React hook to preload routes on component mount
  */
-export function useRoutePreloader(routes: Array<{ path: string; loader: () => Promise<any>; priority?: 'high' | 'medium' | 'low' }>): void {
+export function useRoutePreloader(
+  routes: Array<{ path: string; loader: () => Promise<any>; priority?: 'high' | 'medium' | 'low' }>
+): void {
   React.useEffect(() => {
     routes.forEach(route => {
       routePreloader.registerRoute(route.path, route.loader, route.priority);
@@ -178,4 +191,4 @@ export function usePreloadOnHover(path: string, loader: () => Promise<any>) {
   return elementRef;
 }
 
-export default routePreloader; 
+export default routePreloader;

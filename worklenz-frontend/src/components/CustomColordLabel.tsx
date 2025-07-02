@@ -7,13 +7,9 @@ interface CustomColordLabelProps {
   isDarkMode?: boolean;
 }
 
-const CustomColordLabel: React.FC<CustomColordLabelProps> = ({ 
-  label, 
-  isDarkMode = false 
-}) => {
-  const truncatedName = label.name && label.name.length > 10 
-    ? `${label.name.substring(0, 10)}...` 
-    : label.name;
+const CustomColordLabel: React.FC<CustomColordLabelProps> = ({ label, isDarkMode = false }) => {
+  const truncatedName =
+    label.name && label.name.length > 10 ? `${label.name.substring(0, 10)}...` : label.name;
 
   return (
     <Tooltip title={label.name}>
@@ -27,4 +23,4 @@ const CustomColordLabel: React.FC<CustomColordLabelProps> = ({
   );
 };
 
-export default CustomColordLabel; 
+export default CustomColordLabel;

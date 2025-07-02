@@ -39,36 +39,37 @@ const ProjectsReports = () => {
   }, [dispatch, archived]);
 
   // Memoize the dropdown menu items to prevent recreation on every render
-  const dropdownMenuItems = useMemo(() => [
-    { key: '1', label: t('excelButton'), onClick: handleExcelExport }
-  ], [t, handleExcelExport]);
+  const dropdownMenuItems = useMemo(
+    () => [{ key: '1', label: t('excelButton'), onClick: handleExcelExport }],
+    [t, handleExcelExport]
+  );
 
   // Memoize the header children to prevent recreation on every render
-  const headerChildren = useMemo(() => (
-    <Space>
-      <Button>
-        <Checkbox checked={archived} onChange={handleArchivedChange}>
-          <Typography.Text>{t('includeArchivedButton')}</Typography.Text>
-        </Checkbox>
-      </Button>
-
-      <Dropdown menu={{ items: dropdownMenuItems }}>
-        <Button type="primary" icon={<DownOutlined />} iconPosition="end">
-          {t('exportButton')}
+  const headerChildren = useMemo(
+    () => (
+      <Space>
+        <Button>
+          <Checkbox checked={archived} onChange={handleArchivedChange}>
+            <Typography.Text>{t('includeArchivedButton')}</Typography.Text>
+          </Checkbox>
         </Button>
-      </Dropdown>
-    </Space>
-  ), [archived, handleArchivedChange, t, dropdownMenuItems]);
+
+        <Dropdown menu={{ items: dropdownMenuItems }}>
+          <Button type="primary" icon={<DownOutlined />} iconPosition="end">
+            {t('exportButton')}
+          </Button>
+        </Dropdown>
+      </Space>
+    ),
+    [archived, handleArchivedChange, t, dropdownMenuItems]
+  );
 
   // Memoize the card title to prevent recreation on every render
   const cardTitle = useMemo(() => <ProjectsReportsFilters />, []);
 
   return (
     <Flex vertical>
-      <CustomPageHeader
-        title={pageTitle}
-        children={headerChildren}
-      />
+      <CustomPageHeader title={pageTitle} children={headerChildren} />
 
       <Card title={cardTitle}>
         <ProjectReportsTable />

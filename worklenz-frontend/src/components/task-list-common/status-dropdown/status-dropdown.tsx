@@ -39,52 +39,58 @@ const StatusDropdown = ({ task, teamId }: StatusDropdownProps) => {
   // Helper function to get display name for raw status values
   const getStatusDisplayName = (status: string | undefined) => {
     if (!status) return 'To Do';
-    
+
     // Handle raw status values from backend
     const statusDisplayMap: Record<string, string> = {
-      'to_do': 'To Do',
-      'todo': 'To Do',
-      'doing': 'Doing',
-      'in_progress': 'In Progress',
-      'done': 'Done',
-      'completed': 'Completed',
+      to_do: 'To Do',
+      todo: 'To Do',
+      doing: 'Doing',
+      in_progress: 'In Progress',
+      done: 'Done',
+      completed: 'Completed',
     };
-    
+
     return statusDisplayMap[status.toLowerCase()] || status;
   };
 
   // Helper function to get status color for raw status values
   const getStatusColor = (status: string | undefined) => {
     if (!status) return themeMode === 'dark' ? '#434343' : '#f0f0f0';
-    
+
     // Default colors for raw status values
     const statusColorMap: Record<string, { light: string; dark: string }> = {
-      'to_do': { light: '#f0f0f0', dark: '#434343' },
-      'todo': { light: '#f0f0f0', dark: '#434343' },
-      'doing': { light: '#1890ff', dark: '#177ddc' },
-      'in_progress': { light: '#1890ff', dark: '#177ddc' },
-      'done': { light: '#52c41a', dark: '#389e0d' },
-      'completed': { light: '#52c41a', dark: '#389e0d' },
+      to_do: { light: '#f0f0f0', dark: '#434343' },
+      todo: { light: '#f0f0f0', dark: '#434343' },
+      doing: { light: '#1890ff', dark: '#177ddc' },
+      in_progress: { light: '#1890ff', dark: '#177ddc' },
+      done: { light: '#52c41a', dark: '#389e0d' },
+      completed: { light: '#52c41a', dark: '#389e0d' },
     };
-    
+
     const colorPair = statusColorMap[status.toLowerCase()];
-    return colorPair ? (themeMode === 'dark' ? colorPair.dark : colorPair.light) : (themeMode === 'dark' ? '#434343' : '#f0f0f0');
+    return colorPair
+      ? themeMode === 'dark'
+        ? colorPair.dark
+        : colorPair.light
+      : themeMode === 'dark'
+        ? '#434343'
+        : '#f0f0f0';
   };
 
   // Find matching status from the list, or use raw value
   const currentStatus = useMemo(() => {
     if (!task.status) return null;
-    
+
     // First try to find by ID
     const statusById = statusList.find(status => status.id === task.status);
     if (statusById) return statusById;
-    
+
     // Then try to find by name (case insensitive)
-    const statusByName = statusList.find(status => 
-      status.name.toLowerCase() === task.status?.toLowerCase()
+    const statusByName = statusList.find(
+      status => status.name.toLowerCase() === task.status?.toLowerCase()
     );
     if (statusByName) return statusByName;
-    
+
     // Return null if no match found (will use fallback rendering)
     return null;
   }, [task.status, statusList]);
@@ -108,7 +114,8 @@ const StatusDropdown = ({ task, teamId }: StatusDropdownProps) => {
         onChange={handleStatusChange}
         dropdownStyle={{ borderRadius: 8, minWidth: 150, maxWidth: 200 }}
         style={{
-          backgroundColor: themeMode === 'dark' ? currentStatus.color_code_dark : currentStatus.color_code,
+          backgroundColor:
+            themeMode === 'dark' ? currentStatus.color_code_dark : currentStatus.color_code,
           borderRadius: 16,
           height: 22,
         }}
@@ -116,18 +123,14 @@ const StatusDropdown = ({ task, teamId }: StatusDropdownProps) => {
           return <span style={{ fontSize: 13 }}>{currentStatus.name}</span>;
         }}
         options={options}
-        optionRender={(option) => (
-          <Flex align="center">
-            {option.label}
-          </Flex>
-        )}
+        optionRender={option => <Flex align="center">{option.label}</Flex>}
       />
     );
   }
 
   // Fallback rendering for raw status values or when status list is not loaded
   return (
-    <div 
+    <div
       className="px-2 py-1 text-xs rounded-sm"
       style={{
         backgroundColor: getStatusColor(task.status),

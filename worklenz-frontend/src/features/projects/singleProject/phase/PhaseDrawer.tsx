@@ -75,7 +75,7 @@ const PhaseDrawer = () => {
 
   const handleAddOptions = async () => {
     if (!projectId) return;
-    
+
     await dispatch(addPhaseOption({ projectId: projectId }));
     await dispatch(fetchPhasesByProjectId(projectId));
     await refreshTasks();

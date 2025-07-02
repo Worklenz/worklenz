@@ -36,7 +36,10 @@ import { useAuthService } from '@/hooks/useAuth';
 import { SocketEvents } from '@/shared/socket-events';
 import alertService from '@/services/alerts/alertService';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { evt_project_board_visit, evt_project_task_list_drag_and_move } from '@/shared/worklenz-analytics-events';
+import {
+  evt_project_board_visit,
+  evt_project_task_list_drag_and_move,
+} from '@/shared/worklenz-analytics-events';
 import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-request';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import logger from '@/utils/errorLogger';
@@ -66,7 +69,9 @@ const ProjectViewBoard = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const { projectId } = useAppSelector(state => state.projectReducer);
-  const { taskGroups, groupBy, loadingGroups, search, archived } = useAppSelector(state => state.boardReducer);
+  const { taskGroups, groupBy, loadingGroups, search, archived } = useAppSelector(
+    state => state.boardReducer
+  );
   const { statusCategories, loading: loadingStatusCategories } = useAppSelector(
     state => state.taskStatusReducer
   );
@@ -140,9 +145,7 @@ const ProjectViewBoard = () => {
       // Start by finding any intersecting droppable
       const pointerIntersections = pointerWithin(args);
       const intersections =
-        pointerIntersections.length > 0
-          ? pointerIntersections
-          : rectIntersection(args);
+        pointerIntersections.length > 0 ? pointerIntersections : rectIntersection(args);
       let overId = getFirstCollision(intersections, 'id');
 
       if (overId !== null) {
@@ -151,17 +154,14 @@ const ProjectViewBoard = () => {
         );
 
         if (overContainer?.data.current?.type === 'section') {
-          const containerItems = taskGroups.find(
-            (group) => group.id === overId
-          )?.tasks || [];
+          const containerItems = taskGroups.find(group => group.id === overId)?.tasks || [];
 
           if (containerItems.length > 0) {
             overId = closestCenter({
               ...args,
               droppableContainers: args.droppableContainers.filter(
                 (container: DroppableContainer) =>
-                  container.id !== overId &&
-                  container.data.current?.type === 'task'
+                  container.id !== overId && container.data.current?.type === 'task'
               ),
             })[0]?.id;
           }
@@ -193,16 +193,19 @@ const ProjectViewBoard = () => {
 
   // Debounced move task function to prevent rapid updates
   const debouncedMoveTask = useCallback(
-    debounce((taskId: string, sourceGroupId: string, targetGroupId: string, targetIndex: number) => {
-      dispatch(
-        moveTaskBetweenGroups({
-          taskId,
-          sourceGroupId,
-          targetGroupId,
-          targetIndex,
-        })
-      );
-    }, 100),
+    debounce(
+      (taskId: string, sourceGroupId: string, targetGroupId: string, targetIndex: number) => {
+        dispatch(
+          moveTaskBetweenGroups({
+            taskId,
+            sourceGroupId,
+            targetGroupId,
+            targetIndex,
+          })
+        );
+      },
+      100
+    ),
     [dispatch]
   );
 
@@ -241,11 +244,7 @@ const ProjectViewBoard = () => {
       const overGroupId = findGroupForId(overId as string);
 
       // Only move if both groups exist and are different, and the active is a task
-      if (
-        activeGroupId &&
-        overGroupId &&
-        active.data.current?.type === 'task'
-      ) {
+      if (activeGroupId && overGroupId && active.data.current?.type === 'task') {
         // Find the target index in the over group
         const targetGroup = taskGroups.find(g => g.id === overGroupId);
         let targetIndex = 0;
@@ -259,12 +258,7 @@ const ProjectViewBoard = () => {
           }
         }
         // Use debounced move task to prevent rapid updates
-        debouncedMoveTask(
-          activeId as string,
-          activeGroupId,
-          overGroupId,
-          targetIndex
-        );
+        debouncedMoveTask(activeId as string, activeGroupId, overGroupId, targetIndex);
       }
     } catch (error) {
       console.error('handleDragOver error:', error);
@@ -281,9 +275,12 @@ const ProjectViewBoard = () => {
     };
 
     socket.emit(SocketEvents.TASK_PRIORITY_CHANGE.toString(), JSON.stringify(payload));
-    socket.once(SocketEvents.TASK_PRIORITY_CHANGE.toString(), (data: ITaskListPriorityChangeResponse) => {
-      dispatch(updateBoardTaskPriority(data));
-    });
+    socket.once(
+      SocketEvents.TASK_PRIORITY_CHANGE.toString(),
+      (data: ITaskListPriorityChangeResponse) => {
+        dispatch(updateBoardTaskPriority(data));
+      }
+    );
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -373,7 +370,8 @@ const ProjectViewBoard = () => {
         }
 
         // Calculate toPos similar to Angular implementation
-        const toPos = targetGroup.tasks[toIndex]?.sort_order ||
+        const toPos =
+          targetGroup.tasks[toIndex]?.sort_order ||
           targetGroup.tasks[targetGroup.tasks.length - 1]?.sort_order ||
           -1;
 
@@ -387,7 +385,7 @@ const ProjectViewBoard = () => {
           to_group: targetGroupId,
           group_by: groupBy || 'status',
           task,
-          team_id: currentSession?.team_id
+          team_id: currentSession?.team_id,
         };
 
         // Emit socket event
@@ -428,7 +426,8 @@ const ProjectViewBoard = () => {
       }
 
       // Calculate toPos similar to Angular implementation
-      const toPos = targetGroup.tasks[toIndex]?.sort_order ||
+      const toPos =
+        targetGroup.tasks[toIndex]?.sort_order ||
         targetGroup.tasks[targetGroup.tasks.length - 1]?.sort_order ||
         -1;
       // Prepare socket event payload
@@ -438,10 +437,10 @@ const ProjectViewBoard = () => {
         to_index: toPos,
         to_last_index: !toPos,
         from_group: sourceGroupId, // Use the direct IDs instead of group objects
-        to_group: targetGroupId,   // Use the direct IDs instead of group objects
+        to_group: targetGroupId, // Use the direct IDs instead of group objects
         group_by: groupBy || 'status', // Use the current groupBy value
         task,
-        team_id: currentSession?.team_id
+        team_id: currentSession?.team_id,
       };
       // Emit socket event
       if (socket) {
@@ -488,7 +487,7 @@ const ProjectViewBoard = () => {
         try {
           // Use the correct API endpoint based on the Angular code
           const requestBody: ITaskStatusCreateRequest = {
-            status_order: columnOrder
+            status_order: columnOrder,
           };
 
           const response = await statusApiService.updateStatusOrder(requestBody, projectId);
@@ -556,7 +555,7 @@ const ProjectViewBoard = () => {
   return (
     <Flex vertical gap={16}>
       <TaskListFilters position={'board'} />
-      <Skeleton active loading={isLoading} className='mt-4 p-4'>
+      <Skeleton active loading={isLoading} className="mt-4 p-4">
         <DndContext
           sensors={sensors}
           collisionDetection={collisionDetectionStrategy}

@@ -1,23 +1,23 @@
-import { ITaskListColumn } from "@/types/tasks/taskList.types";
-import apiClient from "../api-client";
-import { IServerResponse } from "@/types/common.types";
+import { ITaskListColumn } from '@/types/tasks/taskList.types';
+import apiClient from '../api-client';
+import { IServerResponse } from '@/types/common.types';
 
 export const tasksCustomColumnsService = {
   getCustomColumns: async (projectId: string): Promise<IServerResponse<ITaskListColumn[]>> => {
     const response = await apiClient.get(`/api/v1/custom-columns/project/${projectId}/columns`);
     return response.data;
   },
-  
+
   updateTaskCustomColumnValue: async (
-    taskId: string, 
-    columnKey: string, 
+    taskId: string,
+    columnKey: string,
     value: string | number | boolean,
     projectId: string
   ): Promise<IServerResponse<any>> => {
     const response = await apiClient.put(`/api/v1/tasks/${taskId}/custom-column`, {
       column_key: columnKey,
       value: value,
-      project_id: projectId
+      project_id: projectId,
     });
     return response.data;
   },
@@ -35,7 +35,7 @@ export const tasksCustomColumnsService = {
   ): Promise<IServerResponse<any>> => {
     const response = await apiClient.post('/api/v1/custom-columns', {
       project_id: projectId,
-      ...columnData
+      ...columnData,
     });
     return response.data;
   },
@@ -63,7 +63,10 @@ export const tasksCustomColumnsService = {
     projectId: string,
     item: ITaskListColumn
   ): Promise<IServerResponse<ITaskListColumn>> => {
-    const response = await apiClient.put(`/api/v1/custom-columns/project/${projectId}/columns`, item);
+    const response = await apiClient.put(
+      `/api/v1/custom-columns/project/${projectId}/columns`,
+      item
+    );
     return response.data;
-  }
+  },
 };

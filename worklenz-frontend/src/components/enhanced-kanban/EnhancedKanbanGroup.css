@@ -127,7 +127,8 @@
 }
 
 @keyframes dropPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.6;
     transform: scaleX(0.8);
   }
@@ -205,7 +206,7 @@
     min-width: 240px;
     max-width: 280px;
   }
-  
+
   .enhanced-kanban-group-tasks {
     max-height: 400px;
   }
@@ -216,7 +217,7 @@
     min-width: 200px;
     max-width: 240px;
   }
-  
+
   .enhanced-kanban-group-tasks {
     max-height: 300px;
   }
@@ -239,4 +240,4 @@
   max-width: 220px;
   display: inline-block;
   vertical-align: middle;
-} 
+}

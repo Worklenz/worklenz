@@ -54,7 +54,9 @@
 [data-theme="default"] .project-view-tabs .ant-tabs-tab-active {
   color: #1e40af !important;
   background: #ffffff !important;
-  box-shadow: 0 -2px 8px rgba(59, 130, 246, 0.1), 0 4px 16px rgba(59, 130, 246, 0.1);
+  box-shadow:
+    0 -2px 8px rgba(59, 130, 246, 0.1),
+    0 4px 16px rgba(59, 130, 246, 0.1);
   z-index: 1;
 }
 
@@ -74,7 +76,9 @@
 [data-theme="dark"] .project-view-tabs .ant-tabs-tab-active {
   color: #60a5fa !important;
   background: #1f1f1f !important;
-  box-shadow: 0 -2px 8px rgba(96, 165, 250, 0.15), 0 4px 16px rgba(96, 165, 250, 0.15);
+  box-shadow:
+    0 -2px 8px rgba(96, 165, 250, 0.15),
+    0 4px 16px rgba(96, 165, 250, 0.15);
   z-index: 1;
 }
 
@@ -151,14 +155,14 @@
   .project-view-tabs .ant-tabs-nav {
     padding: 0 8px;
   }
-  
+
   .project-view-tabs .ant-tabs-tab {
     margin: 0 2px 0 0;
     padding: 6px 12px;
     font-size: 12px;
     min-height: 32px;
   }
-  
+
   .project-view-tabs .borderless-icon-btn {
     margin-left: 4px;
     padding: 1px;
@@ -171,7 +175,7 @@
     font-size: 11px;
     min-height: 30px;
   }
-  
+
   .project-view-tabs .borderless-icon-btn {
     display: none; /* Hide pin buttons on very small screens */
   }

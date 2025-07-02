@@ -28,10 +28,7 @@ const MembersFilterDropdown = () => {
 
   const { t } = useTranslation('task-list-filters');
 
-  const membersList = [
-    ...members,
-    useAppSelector(state => state.memberReducer.owner),
-  ];
+  const membersList = [...members, useAppSelector(state => state.memberReducer.owner)];
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 

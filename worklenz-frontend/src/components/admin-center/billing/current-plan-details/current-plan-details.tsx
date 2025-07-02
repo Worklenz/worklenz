@@ -7,7 +7,20 @@ import {
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import logger from '@/utils/errorLogger';
-import { Button, Card, Flex, Modal, Space, Tooltip, Typography, Statistic, Select, Form, Row, Col } from 'antd/es';
+import {
+  Button,
+  Card,
+  Flex,
+  Modal,
+  Space,
+  Tooltip,
+  Typography,
+  Statistic,
+  Select,
+  Form,
+  Row,
+  Col,
+} from 'antd/es';
 import RedeemCodeDrawer from '../drawers/redeem-code-drawer/redeem-code-drawer';
 import {
   fetchBillingInfo,
@@ -44,8 +57,9 @@ const CurrentPlanDetails = () => {
   const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   type SeatOption = { label: string; value: number | string };
-  const seatCountOptions: SeatOption[] = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
-    .map(value => ({ label: value.toString(), value }));
+  const seatCountOptions: SeatOption[] = [
+    1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
+  ].map(value => ({ label: value.toString(), value }));
   seatCountOptions.push({ label: '100+', value: '100+' });
 
   const handleSubscriptionAction = async (action: 'pause' | 'resume') => {
@@ -127,8 +141,10 @@ const CurrentPlanDetails = () => {
 
   const shouldShowAddSeats = () => {
     if (!billingInfo) return false;
-    return billingInfo.subscription_type === ISUBSCRIPTION_TYPE.PADDLE && 
-           billingInfo.status === SUBSCRIPTION_STATUS.ACTIVE;
+    return (
+      billingInfo.subscription_type === ISUBSCRIPTION_TYPE.PADDLE &&
+      billingInfo.status === SUBSCRIPTION_STATUS.ACTIVE
+    );
   };
 
   const renderExtra = () => {
@@ -199,13 +215,13 @@ const CurrentPlanDetails = () => {
     const getExpirationMessage = (expireDate: string) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Set to start of day for comparison
-      
+
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      
+
       const expDate = new Date(expireDate);
       expDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
-      
+
       if (expDate.getTime() === today.getTime()) {
         return t('expirestoday', 'today');
       } else if (expDate.getTime() === tomorrow.getTime()) {
@@ -230,14 +246,13 @@ const CurrentPlanDetails = () => {
         </Typography.Text>
         <Tooltip title={formatDate(new Date(trialExpireDate))}>
           <Typography.Text>
-            {isExpired 
+            {isExpired
               ? t('trialExpired', {
-                  trial_expire_string: getExpirationMessage(trialExpireDate)
+                  trial_expire_string: getExpirationMessage(trialExpireDate),
                 })
               : t('trialInProgress', {
-                  trial_expire_string: getExpirationMessage(trialExpireDate)
-                })
-            }
+                  trial_expire_string: getExpirationMessage(trialExpireDate),
+                })}
           </Typography.Text>
         </Tooltip>
       </Flex>
@@ -268,25 +283,24 @@ const CurrentPlanDetails = () => {
             {billingInfo?.billing_type === 'year'
               ? billingInfo.unit_price_per_month
               : billingInfo?.unit_price}
-
             &nbsp;{t('perMonthPerUser')}
           </Typography.Text>
         </Flex>
-        
+
         {shouldShowAddSeats() && billingInfo?.total_seats && (
           <div style={{ marginTop: '16px' }}>
             <Row gutter={16} align="middle">
               <Col span={6}>
-                <Statistic 
-                  title={t('totalSeats')} 
-                  value={billingInfo.total_seats} 
+                <Statistic
+                  title={t('totalSeats')}
+                  value={billingInfo.total_seats}
                   valueStyle={{ fontSize: '24px', fontWeight: 'bold' }}
                 />
               </Col>
               <Col span={8}>
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />} 
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
                   onClick={handleAddMoreSeats}
                   style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
                 >
@@ -294,9 +308,9 @@ const CurrentPlanDetails = () => {
                 </Button>
               </Col>
               <Col span={6}>
-                <Statistic 
-                  title={t('availableSeats')} 
-                  value={calculateRemainingSeats()} 
+                <Statistic
+                  title={t('availableSeats')}
+                  value={calculateRemainingSeats()}
                   valueStyle={{ fontSize: '24px', fontWeight: 'bold' }}
                 />
               </Col>
@@ -308,16 +322,24 @@ const CurrentPlanDetails = () => {
   };
 
   const renderCreditSubscriptionInfo = () => {
-    return <Flex vertical>
-      <Typography.Text strong>{t('creditPlan','Credit Plan')}</Typography.Text>
-    </Flex>
+    return (
+      <Flex vertical>
+        <Typography.Text strong>{t('creditPlan', 'Credit Plan')}</Typography.Text>
+      </Flex>
+    );
   };
 
   const renderCustomSubscriptionInfo = () => {
-    return <Flex vertical>
-      <Typography.Text strong>{t('customPlan','Custom Plan')}</Typography.Text>
-      <Typography.Text>{t('planValidTill','Your plan is valid till {{date}}',{date: billingInfo?.valid_till_date})}</Typography.Text>
-    </Flex>
+    return (
+      <Flex vertical>
+        <Typography.Text strong>{t('customPlan', 'Custom Plan')}</Typography.Text>
+        <Typography.Text>
+          {t('planValidTill', 'Your plan is valid till {{date}}', {
+            date: billingInfo?.valid_till_date,
+          })}
+        </Typography.Text>
+      </Flex>
+    );
   };
 
   return (
@@ -326,7 +348,6 @@ const CurrentPlanDetails = () => {
       title={
         <Typography.Text
           style={{
-
             color: themeMode === 'dark' ? '#ffffffd9' : '#000000d9',
             fontWeight: 500,
             fontSize: '16px',
@@ -340,12 +361,16 @@ const CurrentPlanDetails = () => {
     >
       <Flex vertical>
         <div style={{ marginBottom: '14px' }}>
-          {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL && renderLtdDetails()}
+          {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL &&
+            renderLtdDetails()}
           {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL && renderTrialDetails()}
           {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.FREE && renderFreePlan()}
-          {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE && renderPaddleSubscriptionInfo()}
-          {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.CREDIT && renderCreditSubscriptionInfo()}
-          {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.CUSTOM && renderCustomSubscriptionInfo()}
+          {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE &&
+            renderPaddleSubscriptionInfo()}
+          {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.CREDIT &&
+            renderCreditSubscriptionInfo()}
+          {billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.CUSTOM &&
+            renderCustomSubscriptionInfo()}
         </div>
 
         {shouldShowRedeemButton() && (
@@ -370,7 +395,7 @@ const CurrentPlanDetails = () => {
         >
           {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />}
         </Modal>
-        
+
         <Modal
           title={t('addMoreSeats')}
           open={isMoreSeatsModalVisible}
@@ -380,18 +405,22 @@ const CurrentPlanDetails = () => {
           centered
         >
           <Flex vertical gap="middle" style={{ marginTop: '8px' }}>
-            <Typography.Paragraph style={{ fontSize: '16px', margin: '0 0 16px 0', fontWeight: 500 }}>
-              {t('purchaseSeatsText','To continue, you\'ll need to purchase additional seats.')}
+            <Typography.Paragraph
+              style={{ fontSize: '16px', margin: '0 0 16px 0', fontWeight: 500 }}
+            >
+              {t('purchaseSeatsText', "To continue, you'll need to purchase additional seats.")}
             </Typography.Paragraph>
-            
+
             <Typography.Paragraph style={{ margin: '0 0 16px 0' }}>
-              {t('currentSeatsText','You currently have {{seats}} seats available.',{seats: billingInfo?.total_seats})}
+              {t('currentSeatsText', 'You currently have {{seats}} seats available.', {
+                seats: billingInfo?.total_seats,
+              })}
             </Typography.Paragraph>
-            
+
             <Typography.Paragraph style={{ margin: '0 0 24px 0' }}>
-              {t('selectSeatsText','Please select the number of additional seats to purchase.')}
+              {t('selectSeatsText', 'Please select the number of additional seats to purchase.')}
             </Typography.Paragraph>
-            
+
             <div style={{ marginBottom: '24px' }}>
               <span style={{ color: '#ff4d4f', marginRight: '4px' }}>*</span>
               <span style={{ marginRight: '8px' }}>Seats:</span>
@@ -402,28 +431,25 @@ const CurrentPlanDetails = () => {
                 style={{ width: '300px' }}
               />
             </div>
-            
+
             <Flex justify="end">
               {selectedSeatCount.toString() !== '100+' ? (
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   loading={addingSeats}
                   onClick={handlePurchaseMoreSeats}
-                  style={{ 
-                    minWidth: '100px', 
+                  style={{
+                    minWidth: '100px',
                     backgroundColor: '#1890ff',
                     borderColor: '#1890ff',
-                    borderRadius: '2px'
+                    borderRadius: '2px',
                   }}
                 >
-                  {t('purchase','Purchase')}
+                  {t('purchase', 'Purchase')}
                 </Button>
               ) : (
-                <Button 
-                  type="primary" 
-                  size="middle"
-                >
-                  {t('contactSales','Contact sales')}
+                <Button type="primary" size="middle">
+                  {t('contactSales', 'Contact sales')}
                 </Button>
               )}
             </Flex>

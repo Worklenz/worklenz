@@ -1,5 +1,5 @@
-import { GroupedProject, ProjectGroupBy } from "@/types/project/project.types";
-import { IProjectViewModel } from "@/types/project/projectViewModel.types";
+import { GroupedProject, ProjectGroupBy } from '@/types/project/project.types';
+import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
 export const groupProjects = (
   projects: IProjectViewModel[],
@@ -33,7 +33,7 @@ export const groupProjects = (
         projects: [],
         count: 0,
         totalProgress: 0,
-        totalTasks: 0
+        totalTasks: 0,
       };
     }
 

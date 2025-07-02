@@ -61,9 +61,7 @@ const Users: React.FC = () => {
       key: 'email',
       render: text => (
         <span className="email-hover">
-          <Typography.Text copyable={{ text }}>
-            {text}
-          </Typography.Text>
+          <Typography.Text copyable={{ text }}>{text}</Typography.Text>
         </span>
       ),
     },

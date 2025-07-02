@@ -16,7 +16,6 @@ const initialState: IProjectDrawerState = {
   project: null,
 };
 
-
 export const fetchProjectData = createAsyncThunk(
   'project/fetchProjectData',
   async (projectId: string, { rejectWithValue, dispatch }) => {

@@ -21,7 +21,7 @@ type TaskListCustomColumnsState = {
   isCustomColumnModalOpen: boolean;
   customColumnModalType: 'create' | 'edit';
   customColumnId: string | null;
-  
+
   customFieldType: CustomFieldsTypes;
   customFieldNumberType: CustomFieldNumberTypes;
   decimals: number;
@@ -60,7 +60,10 @@ const taskListCustomColumnsSlice = createSlice({
     toggleCustomColumnModalOpen: (state, action: PayloadAction<boolean>) => {
       state.isCustomColumnModalOpen = action.payload;
     },
-    setCustomColumnModalAttributes: (state, action: PayloadAction<{modalType: 'create' | 'edit', columnId: string | null}>) => {
+    setCustomColumnModalAttributes: (
+      state,
+      action: PayloadAction<{ modalType: 'create' | 'edit'; columnId: string | null }>
+    ) => {
       state.customColumnModalType = action.payload.modalType;
       state.customColumnId = action.payload.columnId;
     },

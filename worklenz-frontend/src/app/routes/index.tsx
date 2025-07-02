@@ -62,10 +62,12 @@ export const AdminGuard = memo(({ children }: GuardProps) => {
   const guardResult = useMemo(() => {
     try {
       // Defensive checks to ensure authService and its methods exist
-      if (!authService || 
-          typeof authService.isAuthenticated !== 'function' ||
-          typeof authService.isOwnerOrAdmin !== 'function' ||
-          typeof authService.getCurrentSession !== 'function') {
+      if (
+        !authService ||
+        typeof authService.isAuthenticated !== 'function' ||
+        typeof authService.isOwnerOrAdmin !== 'function' ||
+        typeof authService.getCurrentSession !== 'function'
+      ) {
         return null; // Don't redirect if auth service is not ready
       }
 
@@ -75,7 +77,7 @@ export const AdminGuard = memo(({ children }: GuardProps) => {
 
       const currentSession = authService.getCurrentSession();
       const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
-      
+
       if (!authService.isOwnerOrAdmin() || isFreePlan) {
         return { redirect: '/worklenz/unauthorized' };
       }
@@ -103,9 +105,11 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   const shouldRedirect = useMemo(() => {
     try {
       // Defensive checks to ensure authService and its methods exist
-      if (!authService || 
-          typeof authService.isAuthenticated !== 'function' ||
-          typeof authService.getCurrentSession !== 'function') {
+      if (
+        !authService ||
+        typeof authService.isAuthenticated !== 'function' ||
+        typeof authService.getCurrentSession !== 'function'
+      ) {
         return false; // Don't redirect if auth service is not ready
       }
 
@@ -120,37 +124,40 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
       const currentSession = authService.getCurrentSession();
 
       // Check if trial is expired more than 7 days or if is_expired flag is set
-      const isLicenseExpiredMoreThan7Days = () => {   
+      const isLicenseExpiredMoreThan7Days = () => {
         // Quick bail if no session data is available
         if (!currentSession) return false;
-        
+
         // Check is_expired flag first
-        if (currentSession.is_expired) {      
+        if (currentSession.is_expired) {
           // If no trial_expire_date exists but is_expired is true, defer to backend check
           if (!currentSession.trial_expire_date) return true;
-          
+
           // If there is a trial_expire_date, check if it's more than 7 days past
           const today = new Date();
           const expiryDate = new Date(currentSession.trial_expire_date);
           const diffTime = today.getTime() - expiryDate.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
+
           // Redirect if more than 7 days past expiration
           return diffDays > 7;
         }
-        
+
         // If not marked as expired but has trial_expire_date, do a date check
-        if (currentSession.subscription_type === ISUBSCRIPTION_TYPE.TRIAL && currentSession.trial_expire_date) {
+        if (
+          currentSession.subscription_type === ISUBSCRIPTION_TYPE.TRIAL &&
+          currentSession.trial_expire_date
+        ) {
           const today = new Date();
           const expiryDate = new Date(currentSession.trial_expire_date);
 
           const diffTime = today.getTime() - expiryDate.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
+
           // If expired more than 7 days, redirect
           return diffDays > 7;
         }
-        
+
         // No expiration data found
         return false;
       };
@@ -227,30 +234,34 @@ const wrapRoutes = (
 // Optimized static license expired component
 const StaticLicenseExpired = memo(() => {
   return (
-    <div style={{ 
-      marginTop: 65, 
-      minHeight: '90vh', 
-      backgroundColor: '#f5f5f5', 
-      padding: '20px',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center'
-    }}>
-      <div style={{ 
-        background: 'white', 
-        padding: '30px', 
-        borderRadius: '8px', 
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        textAlign: 'center',
-        maxWidth: '600px'
-      }}>
+    <div
+      style={{
+        marginTop: 65,
+        minHeight: '90vh',
+        backgroundColor: '#f5f5f5',
+        padding: '20px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <div
+        style={{
+          background: 'white',
+          padding: '30px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          textAlign: 'center',
+          maxWidth: '600px',
+        }}
+      >
         <h1 style={{ fontSize: '24px', color: '#faad14', marginBottom: '16px' }}>
           Your Worklenz trial has expired!
         </h1>
         <p style={{ fontSize: '16px', color: '#555', marginBottom: '24px' }}>
           Please upgrade now to continue using Worklenz.
         </p>
-        <button 
+        <button
           style={{
             backgroundColor: '#1890ff',
             color: 'white',
@@ -258,9 +269,9 @@ const StaticLicenseExpired = memo(() => {
             padding: '8px 16px',
             borderRadius: '4px',
             fontSize: '16px',
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
-          onClick={() => window.location.href = '/worklenz/admin-center/billing'}
+          onClick={() => (window.location.href = '/worklenz/admin-center/billing')}
         >
           Upgrade now
         </button>
@@ -272,11 +283,7 @@ const StaticLicenseExpired = memo(() => {
 StaticLicenseExpired.displayName = 'StaticLicenseExpired';
 
 // Create route arrays (moved outside of useMemo to avoid hook violations)
-const publicRoutes = [
-  ...rootRoutes, 
-  ...authRoutes,
-  notFoundRoute
-];
+const publicRoutes = [...rootRoutes, ...authRoutes, notFoundRoute];
 
 const protectedMainRoutes = wrapRoutes(mainRoutes, AuthGuard);
 const adminRoutes = wrapRoutes(reportingRoutes, AdminGuard);
@@ -305,37 +312,35 @@ const withLicenseExpiryCheck = (routes: RouteObject[]): RouteObject[] => {
 const licenseCheckedMainRoutes = withLicenseExpiryCheck(protectedMainRoutes);
 
 // Create optimized router with future flags for better performance
-const router = createBrowserRouter([
+const router = createBrowserRouter(
+  [
+    {
+      element: (
+        <ErrorBoundary>
+          <AuthenticatedLayout />
+        </ErrorBoundary>
+      ),
+      errorElement: (
+        <ErrorBoundary>
+          <Suspense fallback={<SuspenseFallback />}>
+            <NotFoundPage />
+          </Suspense>
+        </ErrorBoundary>
+      ),
+      children: [...licenseCheckedMainRoutes, ...adminRoutes, ...setupRoutes, licenseExpiredRoute],
+    },
+    ...publicRoutes,
+  ],
   {
-    element: (
-      <ErrorBoundary>
-        <AuthenticatedLayout />
-      </ErrorBoundary>
-    ),
-    errorElement: (
-      <ErrorBoundary>
-        <Suspense fallback={<SuspenseFallback />}>
-          <NotFoundPage />
-        </Suspense>
-      </ErrorBoundary>
-    ),
-    children: [
-      ...licenseCheckedMainRoutes,
-      ...adminRoutes,
-      ...setupRoutes,
-      licenseExpiredRoute,
-    ],
-  },
-  ...publicRoutes,
-], {
-  // Enable React Router future features for better performance
-  future: {
-    v7_relativeSplatPath: true,
-    v7_fetcherPersist: true,
-    v7_normalizeFormMethod: true,
-    v7_partialHydration: true,
-    v7_skipActionErrorRevalidation: true
+    // Enable React Router future features for better performance
+    future: {
+      v7_relativeSplatPath: true,
+      v7_fetcherPersist: true,
+      v7_normalizeFormMethod: true,
+      v7_partialHydration: true,
+      v7_skipActionErrorRevalidation: true,
+    },
   }
-});
+);
 
 export default router;

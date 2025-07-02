@@ -39,7 +39,9 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode }) => {
 
   const updateTask = (id: number, value: string) => {
     const sanitizedValue = sanitizeInput(value);
-    dispatch(setTasks(tasks.map(task => (task.id === id ? { ...task, value: sanitizedValue } : task))));
+    dispatch(
+      setTasks(tasks.map(task => (task.id === id ? { ...task, value: sanitizedValue } : task)))
+    );
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {

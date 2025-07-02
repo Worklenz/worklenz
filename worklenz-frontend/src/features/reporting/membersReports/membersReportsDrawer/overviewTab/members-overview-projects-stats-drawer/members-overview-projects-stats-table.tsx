@@ -78,19 +78,19 @@ const MembersOverviewProjectsStatsTable = ({ projectList, loading }: ProjectRepo
       key: 'status',
       title: <CustomTableTitle title={t('statusColumn')} />,
       // render: record => {
-        // const statusItem = statusData.find(item => item.label === record.status_name);
+      // const statusItem = statusData.find(item => item.label === record.status_name);
 
-        // return statusItem ? (
-        //   <Typography.Text
-        //     style={{ display: 'flex', alignItems: 'center', gap: 4 }}
-        //     className="group-hover:text-[#1890ff]"
-        //   >
-        //     {statusItem.icon}
-        //     {t(`${statusItem.value}Text`)}
-        //   </Typography.Text>
-        // ) : (
-        //   <Typography.Text>-</Typography.Text>
-        // );
+      // return statusItem ? (
+      //   <Typography.Text
+      //     style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+      //     className="group-hover:text-[#1890ff]"
+      //   >
+      //     {statusItem.icon}
+      //     {t(`${statusItem.value}Text`)}
+      //   </Typography.Text>
+      // ) : (
+      //   <Typography.Text>-</Typography.Text>
+      // );
       // },
       width: 120,
     },
@@ -156,29 +156,29 @@ const MembersOverviewProjectsStatsTable = ({ projectList, loading }: ProjectRepo
   return (
     <ConfigProvider
       theme={{
-      components: {
-        Table: {
-        cellPaddingBlock: 8,
-        cellPaddingInline: 8,
+        components: {
+          Table: {
+            cellPaddingBlock: 8,
+            cellPaddingInline: 8,
+          },
         },
-      },
       }}
     >
       {loading ? (
-      <Skeleton style={{ paddingTop: 16 }} />
+        <Skeleton style={{ paddingTop: 16 }} />
       ) : (
-      <Table
-        columns={columns}
-        dataSource={projectList}
-        pagination={{ showSizeChanger: true, defaultPageSize: 10 }}
-        scroll={{ x: 'max-content' }}
-        onRow={record => {
-        return {
-          style: { height: 38, cursor: 'pointer' },
-          className: 'group even:bg-[#4e4e4e10]',
-        };
-        }}
-      />
+        <Table
+          columns={columns}
+          dataSource={projectList}
+          pagination={{ showSizeChanger: true, defaultPageSize: 10 }}
+          scroll={{ x: 'max-content' }}
+          onRow={record => {
+            return {
+              style: { height: 38, cursor: 'pointer' },
+              className: 'group even:bg-[#4e4e4e10]',
+            };
+          }}
+        />
       )}
     </ConfigProvider>
   );

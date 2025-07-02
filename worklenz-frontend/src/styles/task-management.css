@@ -111,12 +111,12 @@
   .task-row {
     padding: 12px;
   }
-  
+
   .task-row .flex {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .task-row .task-metadata {
     margin-top: 8px;
     margin-left: 0 !important;
@@ -160,7 +160,9 @@
 .task-row-enter-active {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 300ms, transform 300ms;
+  transition:
+    opacity 300ms,
+    transform 300ms;
 }
 
 .task-row-exit {
@@ -170,7 +172,9 @@
 .task-row-exit-active {
   opacity: 0;
   transform: translateY(-10px);
-  transition: opacity 300ms, transform 300ms;
+  transition:
+    opacity 300ms,
+    transform 300ms;
 }
 
 /* Custom scrollbar */
@@ -492,4 +496,4 @@
     background-color: #262626 !important;
     border-left-color: #595959;
   }
-} 
+}

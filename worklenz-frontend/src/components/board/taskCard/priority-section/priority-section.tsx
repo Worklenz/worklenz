@@ -31,7 +31,8 @@ const PrioritySection = ({ task }: PrioritySectionProps) => {
 
     const iconProps = {
       style: {
-        color: themeMode === 'dark' ? selectedPriority.color_code_dark : selectedPriority.color_code,
+        color:
+          themeMode === 'dark' ? selectedPriority.color_code_dark : selectedPriority.color_code,
         marginRight: '0.25rem',
       },
     };
@@ -40,9 +41,19 @@ const PrioritySection = ({ task }: PrioritySectionProps) => {
       case 'Low':
         return <MinusOutlined {...iconProps} />;
       case 'Medium':
-        return <PauseOutlined {...iconProps} style={{ ...iconProps.style, transform: 'rotate(90deg)' }} />;
+        return (
+          <PauseOutlined
+            {...iconProps}
+            style={{ ...iconProps.style, transform: 'rotate(90deg)' }}
+          />
+        );
       case 'High':
-        return <DoubleLeftOutlined {...iconProps} style={{ ...iconProps.style, transform: 'rotate(90deg)' }} />;
+        return (
+          <DoubleLeftOutlined
+            {...iconProps}
+            style={{ ...iconProps.style, transform: 'rotate(90deg)' }}
+          />
+        );
       default:
         return null;
     }
@@ -50,11 +61,7 @@ const PrioritySection = ({ task }: PrioritySectionProps) => {
 
   if (!task.priority || !selectedPriority) return null;
 
-  return (
-    <Flex gap={4}>
-      {priorityIcon}
-    </Flex>
-  );
+  return <Flex gap={4}>{priorityIcon}</Flex>;
 };
 
 export default PrioritySection;

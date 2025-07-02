@@ -1,7 +1,12 @@
 import { useCallback, useState } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import { Col, Flex, Typography, List, Dropdown, MenuProps, Popconfirm } from 'antd';
-import { UserAddOutlined, DeleteOutlined, ExclamationCircleFilled, InboxOutlined } from '@ant-design/icons';
+import {
+  UserAddOutlined,
+  DeleteOutlined,
+  ExclamationCircleFilled,
+  InboxOutlined,
+} from '@ant-design/icons';
 import CustomAvatarGroup from '@/components/board/custom-avatar-group';
 import CustomDueDatePicker from '@/components/board/custom-due-date-picker';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
@@ -97,7 +102,10 @@ const BoardSubTaskCard = ({ subtask, sectionId }: IBoardSubTaskCardProps) => {
     if (!projectId || !subtask.id) return;
 
     try {
-      const res = await taskListBulkActionsApiService.deleteTasks({ tasks: [subtask.id] }, projectId);
+      const res = await taskListBulkActionsApiService.deleteTasks(
+        { tasks: [subtask.id] },
+        projectId
+      );
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_context_menu_delete);
         dispatch(deleteBoardTask({ sectionId, taskId: subtask.id }));

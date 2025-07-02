@@ -90,9 +90,7 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
           selected: true,
         }));
 
-        const groupId = groups.find(group => 
-          group.tasks.some(task => task.id === data.id)
-        )?.id;
+        const groupId = groups.find(group => group.tasks.some(task => task.id === data.id))?.id;
 
         if (groupId) {
           dispatch(
@@ -129,13 +127,13 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
     const overGroupId = over.data.current?.groupId;
     const activeTaskId = active.id;
     const overTaskId = over.id;
-    
+
     setGroups(prevGroups => {
       // ... existing drag end logic ...
     });
   };
 
-  const getDropdownItems = (groupId: string): MenuProps['items'] => ([
+  const getDropdownItems = (groupId: string): MenuProps['items'] => [
     {
       key: '1',
       icon: <EditOutlined />,
@@ -157,7 +155,7 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
         type: 'group',
       })),
     },
-  ]);
+  ];
 
   return (
     <DndContext
@@ -184,20 +182,25 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
                   <Button
                     className="custom-collapse-button"
                     style={{
-                      backgroundColor: themeMode === 'dark' ? group.color_code_dark : group.color_code,
+                      backgroundColor:
+                        themeMode === 'dark' ? group.color_code_dark : group.color_code,
                       border: 'none',
                       borderBottomLeftRadius: expandedGroups[group.id] ? 0 : 4,
                       borderBottomRightRadius: expandedGroups[group.id] ? 0 : 4,
                       color: colors.darkGray,
                     }}
                     icon={<RightOutlined rotate={expandedGroups[group.id] ? 90 : 0} />}
-                    onClick={() => setExpandedGroups(prev => ({ ...prev, [group.id]: !prev[group.id] }))}
+                    onClick={() =>
+                      setExpandedGroups(prev => ({ ...prev, [group.id]: !prev[group.id] }))
+                    }
                   >
                     {renamingGroup === group.id ? (
                       <Input
                         size="small"
                         value={groupNames[group.id]}
-                        onChange={e => setGroupNames(prev => ({ ...prev, [group.id]: e.target.value }))}
+                        onChange={e =>
+                          setGroupNames(prev => ({ ...prev, [group.id]: e.target.value }))
+                        }
                         onBlur={() => setRenamingGroup(null)}
                         onPressEnter={() => setRenamingGroup(null)}
                         onClick={e => e.stopPropagation()}
@@ -220,11 +223,7 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
                   className="border-l-[3px] relative after:content after:absolute after:h-full after:w-1 after:z-10 after:top-0 after:left-0 mt-1"
                   color={themeMode === 'dark' ? group.color_code_dark : group.color_code}
                 >
-                  <TaskListTable
-                    taskList={group.tasks}
-                    tableId={group.id}
-                    activeId={activeId}
-                  />
+                  <TaskListTable taskList={group.tasks} tableId={group.id} activeId={activeId} />
                 </Collapsible>
               </Flex>
             </div>
@@ -232,7 +231,6 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
         </Flex>
       </ConfigProvider>
 
-      
       {createPortal(
         <TaskTemplateDrawer showDrawer={false} selectedTemplateId={''} onClose={() => {}} />,
         document.body,
@@ -242,4 +240,4 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
   );
 };
 
-export default TaskGroupList; 
+export default TaskGroupList;

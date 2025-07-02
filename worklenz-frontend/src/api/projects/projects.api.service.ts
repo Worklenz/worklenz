@@ -101,7 +101,9 @@ export const projectsApiService = {
     return response.data;
   },
 
-  updateProject: async (payload: UpdateProjectPayload): Promise<IServerResponse<IProjectViewModel>> => {
+  updateProject: async (
+    payload: UpdateProjectPayload
+  ): Promise<IServerResponse<IProjectViewModel>> => {
     const { id, ...data } = payload;
     const q = toQueryString({ current_project_id: id });
     const url = `${API_BASE_URL}/projects/${id}${q}`;
@@ -127,7 +129,10 @@ export const projectsApiService = {
     return response.data;
   },
 
-  updateDefaultTab: async (body: { project_id: string; default_view: string }): Promise<IServerResponse<any>> => {
+  updateDefaultTab: async (body: {
+    project_id: string;
+    default_view: string;
+  }): Promise<IServerResponse<any>> => {
     const url = `${rootUrl}/update-pinned-view`;
     const response = await apiClient.put<IServerResponse<IProjectViewModel>>(`${url}`, body);
     return response.data;
@@ -139,4 +144,3 @@ export const projectsApiService = {
     return response.data;
   },
 };
-

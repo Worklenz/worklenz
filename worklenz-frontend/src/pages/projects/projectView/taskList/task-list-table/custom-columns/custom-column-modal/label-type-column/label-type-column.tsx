@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { nanoid } from "nanoid";
+import { nanoid } from 'nanoid';
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
 import { Button, Flex, Input, Select, Tag, Typography } from 'antd';
 import { CloseCircleOutlined, HolderOutlined } from '@ant-design/icons';
@@ -27,9 +27,9 @@ const LabelTypeColumn = () => {
   const { customColumnModalType, customColumnId } = useAppSelector(
     state => state.taskListCustomColumnsReducer
   );
-  
+
   // Get the opened column data if in edit mode
-  const openedColumn = useAppSelector(state => 
+  const openedColumn = useAppSelector(state =>
     state.taskReducer.customColumns.find(col => col.key === customColumnId)
   );
 
@@ -127,11 +127,7 @@ const LabelTypeColumn = () => {
           ))}
         </Flex>
 
-        <Button
-          type="link"
-          onClick={handleAddLabel}
-          style={{ width: 'fit-content', padding: 0 }}
-        >
+        <Button type="link" onClick={handleAddLabel} style={{ width: 'fit-content', padding: 0 }}>
           + Add a label
         </Button>
       </Flex>

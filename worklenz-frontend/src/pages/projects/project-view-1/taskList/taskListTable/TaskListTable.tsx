@@ -50,7 +50,9 @@ const TaskListTable = ({
   const selectedProject = useSelectedProject();
 
   // get columns list details
-  const columnsVisibility = useAppSelector(    state => state.projectViewTaskListColumnsReducer.columnList  );
+  const columnsVisibility = useAppSelector(
+    state => state.projectViewTaskListColumnsReducer.columnList
+  );
   const visibleColumns = columnList.filter(
     column => columnsVisibility[column.key as keyof typeof columnsVisibility]
   );

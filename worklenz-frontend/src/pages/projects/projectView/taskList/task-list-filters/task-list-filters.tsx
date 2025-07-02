@@ -62,14 +62,16 @@ const TaskListFilters: React.FC<TaskListFiltersProps> = ({ position }) => {
 
           // Load team members last (heaviest query)
           setTimeout(() => {
-            dispatch(getTeamMembers({ 
-              index: 0, 
-              size: 50, // Reduce initial load size
-              field: null, 
-              order: null, 
-              search: null, 
-              all: false // Don't load all at once
-            }));
+            dispatch(
+              getTeamMembers({
+                index: 0,
+                size: 50, // Reduce initial load size
+                field: null,
+                order: null,
+                search: null,
+                all: false, // Don't load all at once
+              })
+            );
           }, 300);
         }
       } catch (error) {

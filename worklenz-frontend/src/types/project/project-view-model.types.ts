@@ -8,4 +8,4 @@ export interface IProjectViewModel {
   use_manual_progress: boolean;
   use_weighted_progress: boolean;
   use_time_progress: boolean;
-} 
+}

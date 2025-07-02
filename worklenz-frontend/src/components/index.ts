@@ -9,4 +9,4 @@ export { default as CustomNumberLabel } from './CustomNumberLabel';
 export { default as LabelsSelector } from './LabelsSelector';
 export { default as Progress } from './Progress';
 export { default as Tag } from './Tag';
-export { default as Tooltip } from './Tooltip'; 
+export { default as Tooltip } from './Tooltip';

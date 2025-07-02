@@ -11,7 +11,7 @@
   "taskIncludesOptions": {
     "statuses": "Status",
     "phases": "Fases",
-    "labels": "Etiquetas", 
+    "labels": "Etiquetas",
     "name": "Nome",
     "priority": "Prioridade",
     "status": "Status",

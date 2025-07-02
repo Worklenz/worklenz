@@ -44,7 +44,9 @@ export const teamMembersApiService = {
     return response.data;
   },
 
-  getAll: async (projectId: string | null = null): Promise<IServerResponse<ITeamMemberViewModel[]>> => {
+  getAll: async (
+    projectId: string | null = null
+  ): Promise<IServerResponse<ITeamMemberViewModel[]>> => {
     const params = new URLSearchParams(projectId ? { project: projectId } : {});
     const response = await apiClient.get<IServerResponse<ITeamMemberViewModel[]>>(
       `${rootUrl}/all${params.toString() ? '?' + params.toString() : ''}`

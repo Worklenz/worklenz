@@ -1,9 +1,9 @@
-import { 
-  Button, 
-  Dropdown, 
-  Flex, 
-  Tag, 
-  Tooltip, 
+import {
+  Button,
+  Dropdown,
+  Flex,
+  Tag,
+  Tooltip,
   Typography,
   ArrowLeftOutlined,
   BellFilled,
@@ -15,7 +15,7 @@ import {
   SaveOutlined,
   SettingOutlined,
   SyncOutlined,
-  UsergroupAddOutlined
+  UsergroupAddOutlined,
 } from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
 import { useTranslation } from 'react-i18next';
@@ -29,8 +29,18 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
-import { setProject, setImportTaskTemplateDrawerOpen, setRefreshTimestamp, getProject } from '@features/project/project.slice';
-import { addTask, fetchTaskGroups, fetchTaskListColumns, IGroupBy } from '@features/tasks/tasks.slice';
+import {
+  setProject,
+  setImportTaskTemplateDrawerOpen,
+  setRefreshTimestamp,
+  getProject,
+} from '@features/project/project.slice';
+import {
+  addTask,
+  fetchTaskGroups,
+  fetchTaskListColumns,
+  IGroupBy,
+} from '@features/tasks/tasks.slice';
 import ProjectStatusIcon from '@/components/common/project-status-icon/project-status-icon';
 import { formatDate } from '@/utils/timeUtils';
 import { toggleSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
@@ -85,9 +95,9 @@ const ProjectViewHeader = memo(() => {
   // Memoized refresh handler with optimized dependencies
   const handleRefresh = useCallback(() => {
     if (!projectId) return;
-    
+
     dispatch(getProject(projectId));
-    
+
     switch (tab) {
       case 'tasks-list':
         dispatch(fetchTaskListColumns(projectId));
@@ -110,7 +120,7 @@ const ProjectViewHeader = memo(() => {
   // Optimized subscription handler with proper cleanup
   const handleSubscribe = useCallback(() => {
     if (!selectedProject?.id || !socket || subscriptionLoading) return;
-    
+
     try {
       setSubscriptionLoading(true);
       const newSubscriptionState = !selectedProject.subscribed;
@@ -131,16 +141,20 @@ const ProjectViewHeader = memo(() => {
       // Listen for response with cleanup
       const handleResponse = (response: any) => {
         try {
-          dispatch(setProject({ 
-            ...selectedProject, 
-            subscribed: newSubscriptionState 
-          }));
+          dispatch(
+            setProject({
+              ...selectedProject,
+              subscribed: newSubscriptionState,
+            })
+          );
         } catch (error) {
           logger.error('Error handling project subscription response:', error);
-          dispatch(setProject({ 
-            ...selectedProject, 
-            subscribed: selectedProject.subscribed 
-          }));
+          dispatch(
+            setProject({
+              ...selectedProject,
+              subscribed: selectedProject.subscribed,
+            })
+          );
         } finally {
           setSubscriptionLoading(false);
           if (subscriptionTimeoutRef.current) {
@@ -158,7 +172,6 @@ const ProjectViewHeader = memo(() => {
         logger.error('Project subscription timeout - no response from server');
         subscriptionTimeoutRef.current = null;
       }, 5000);
-
     } catch (error) {
       logger.error('Error updating project subscription:', error);
       setSubscriptionLoading(false);
@@ -235,16 +248,19 @@ const ProjectViewHeader = memo(() => {
   }, [dispatch]);
 
   // Memoized dropdown items
-  const dropdownItems = useMemo(() => [
-    {
-      key: 'import',
-      label: (
-        <div style={{ width: '100%', margin: 0, padding: 0 }} onClick={handleImportTaskTemplate}>
-          <ImportOutlined /> {t('importTask')}
-        </div>
-      ),
-    },
-  ], [handleImportTaskTemplate, t]);
+  const dropdownItems = useMemo(
+    () => [
+      {
+        key: 'import',
+        label: (
+          <div style={{ width: '100%', margin: 0, padding: 0 }} onClick={handleImportTaskTemplate}>
+            <ImportOutlined /> {t('importTask')}
+          </div>
+        ),
+      },
+    ],
+    [handleImportTaskTemplate, t]
+  );
 
   // Memoized project attributes with optimized date formatting
   const projectAttributes = useMemo(() => {
@@ -254,9 +270,9 @@ const ProjectViewHeader = memo(() => {
 
     if (selectedProject.category_id) {
       elements.push(
-        <Tag 
+        <Tag
           key="category"
-          color={colors.vibrantOrange} 
+          color={colors.vibrantOrange}
           style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
         >
           {selectedProject.category_name}
@@ -330,11 +346,7 @@ const ProjectViewHeader = memo(() => {
     if (isOwnerOrAdmin) {
       actions.push(
         <Tooltip key="template" title={t('saveAsTemplate')}>
-          <Button
-            shape="circle"
-            icon={<SaveOutlined />}
-            onClick={handleSaveAsTemplate}
-          />
+          <Button shape="circle" icon={<SaveOutlined />} onClick={handleSaveAsTemplate} />
         </Tooltip>
       );
     }
@@ -363,12 +375,7 @@ const ProjectViewHeader = memo(() => {
     // Invite button (owner/admin/project manager only)
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
-        <Button
-          key="invite"
-          type="primary"
-          icon={<UsergroupAddOutlined />}
-          onClick={handleInvite}
-        >
+        <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
           {t('invite')}
         </Button>
       );
@@ -426,24 +433,27 @@ const ProjectViewHeader = memo(() => {
   ]);
 
   // Memoized page header title
-  const pageHeaderTitle = useMemo(() => (
-    <Flex gap={8} align="center">
-      <ArrowLeftOutlined
-        style={{ fontSize: 16 }}
-        onClick={handleNavigateToProjects}
-      />
-      <Typography.Title level={4} style={{ marginBlockEnd: 0, marginInlineStart: 12 }}>
-        {selectedProject?.name}
-      </Typography.Title>
-      {projectAttributes}
-    </Flex>
-  ), [handleNavigateToProjects, selectedProject?.name, projectAttributes]);
+  const pageHeaderTitle = useMemo(
+    () => (
+      <Flex gap={8} align="center">
+        <ArrowLeftOutlined style={{ fontSize: 16 }} onClick={handleNavigateToProjects} />
+        <Typography.Title level={4} style={{ marginBlockEnd: 0, marginInlineStart: 12 }}>
+          {selectedProject?.name}
+        </Typography.Title>
+        {projectAttributes}
+      </Flex>
+    ),
+    [handleNavigateToProjects, selectedProject?.name, projectAttributes]
+  );
 
   // Memoized page header styles
-  const pageHeaderStyle = useMemo(() => ({
-    paddingInline: 0,
-    marginBlockEnd: 12,
-  }), []);
+  const pageHeaderStyle = useMemo(
+    () => ({
+      paddingInline: 0,
+      marginBlockEnd: 12,
+    }),
+    []
+  );
 
   // Cleanup timeout on unmount
   useEffect(() => {

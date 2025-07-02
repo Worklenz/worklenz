@@ -108,7 +108,7 @@ const BoardSectionCardContainer = ({
         {datasource?.map((data: any) => <BoardSectionCard key={data.id} taskGroup={data} />)}
       </SortableContext>
 
-      {(group !== 'priority' && (isOwnerorAdmin || isProjectManager)) && <BoardCreateSectionCard />}
+      {group !== 'priority' && (isOwnerorAdmin || isProjectManager) && <BoardCreateSectionCard />}
     </Flex>
   );
 };

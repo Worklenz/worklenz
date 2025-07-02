@@ -32,7 +32,7 @@ const ProjectTemplatesSettings = () => {
       const res = await projectTemplatesApiService.deleteCustomTemplate(id);
       if (res.done) {
         fetchProjectTemplates();
-      } 
+      }
     } catch (error) {
       logger.error('Failed to delete project template:', error);
     }

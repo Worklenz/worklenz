@@ -5,7 +5,11 @@ import { toQueryString } from '@/utils/toQueryString';
 import { BankOutlined } from '@ant-design/icons';
 import './push-notification-template.css';
 
-const PushNotificationTemplate = ({ notification: notificationData }: { notification: IWorklenzNotification }) => {
+const PushNotificationTemplate = ({
+  notification: notificationData,
+}: {
+  notification: IWorklenzNotification;
+}) => {
   const handleClick = async () => {
     if (notificationData.url) {
       let url = notificationData.url;
@@ -23,23 +27,25 @@ const PushNotificationTemplate = ({ notification: notificationData }: { notifica
   };
 
   return (
-    <div 
-      onClick={handleClick} 
+    <div
+      onClick={handleClick}
       className={`notification-content ${notificationData.url ? 'clickable' : ''}`}
-      style={{ 
+      style={{
         cursor: notificationData.url ? 'pointer' : 'default',
         padding: '8px 0',
-        borderRadius: '8px'
+        borderRadius: '8px',
       }}
     >
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        marginBottom: '8px',
-        color: '#262626',
-        fontSize: '14px',
-        fontWeight: 500
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          marginBottom: '8px',
+          color: '#262626',
+          fontSize: '14px',
+          fontWeight: 500,
+        }}
+      >
         {notificationData.team && (
           <>
             <BankOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
@@ -48,14 +54,14 @@ const PushNotificationTemplate = ({ notification: notificationData }: { notifica
         )}
         {!notificationData.team && 'Worklenz'}
       </div>
-      <div 
-        style={{ 
+      <div
+        style={{
           color: '#595959',
           fontSize: '13px',
           lineHeight: '1.5',
-          marginTop: '4px'
+          marginTop: '4px',
         }}
-        dangerouslySetInnerHTML={{ __html: notificationData.message }} 
+        dangerouslySetInnerHTML={{ __html: notificationData.message }}
       />
     </div>
   );
@@ -66,10 +72,10 @@ let isProcessing = false;
 
 const processNotificationQueue = () => {
   if (isProcessing || notificationQueue.length === 0) return;
-  
+
   isProcessing = true;
   const notificationData = notificationQueue.shift();
-  
+
   if (notificationData) {
     notification.info({
       message: null,
@@ -81,12 +87,12 @@ const processNotificationQueue = () => {
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
         padding: '12px 16px',
         minWidth: '300px',
-        maxWidth: '400px'
+        maxWidth: '400px',
       },
       onClose: () => {
         isProcessing = false;
         processNotificationQueue();
-      }
+      },
     });
   } else {
     isProcessing = false;

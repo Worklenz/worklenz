@@ -1,7 +1,7 @@
 {
-    "configurePhases": "Configurar fases",
-    "phaseLabel": "Etiqueta de fase",
-    "enterPhaseName": "Ingrese un nombre para la etiqueta de fase",
-    "addOption": "Agregar opción",
-    "phaseOptions": "Opciones de fase:"
+  "configurePhases": "Configurar fases",
+  "phaseLabel": "Etiqueta de fase",
+  "enterPhaseName": "Ingrese un nombre para la etiqueta de fase",
+  "addOption": "Agregar opción",
+  "phaseOptions": "Opciones de fase:"
 }

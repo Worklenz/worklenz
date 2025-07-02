@@ -92,7 +92,8 @@ function getRandomTimeTracking() {
 }
 
 function getRandomDueDate(): string | undefined {
-  if (Math.random() < 0.7) { // 70% chance of having a due date
+  if (Math.random() < 0.7) {
+    // 70% chance of having a due date
     const now = new Date();
     const daysToAdd = Math.floor(Math.random() * 30) - 10; // -10 to +20 days from now
     const dueDate = new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
@@ -104,7 +105,7 @@ function getRandomDueDate(): string | undefined {
 export function generateMockTask(index: number): Task {
   const now = new Date();
   const createdAt = new Date(now.getTime() - Math.random() * 30 * 24 * 60 * 60 * 1000); // Up to 30 days ago
-  
+
   return {
     id: nanoid(),
     title: getRandomElement(taskTitles),
@@ -133,10 +134,10 @@ export function generateBalancedMockTasks(count: number = 100): Task[] {
   const tasks: Task[] = [];
   const statusDistribution = { todo: 0.4, doing: 0.4, done: 0.2 };
   const priorityDistribution = { critical: 0.1, high: 0.3, medium: 0.4, low: 0.2 };
-  
+
   for (let i = 0; i < count; i++) {
     const task = generateMockTask(i);
-    
+
     // Distribute statuses
     const statusRand = Math.random();
     if (statusRand < statusDistribution.todo) {
@@ -146,21 +147,24 @@ export function generateBalancedMockTasks(count: number = 100): Task[] {
     } else {
       task.status = 'done';
     }
-    
+
     // Distribute priorities
     const priorityRand = Math.random();
     if (priorityRand < priorityDistribution.critical) {
       task.priority = 'critical';
     } else if (priorityRand < priorityDistribution.critical + priorityDistribution.high) {
       task.priority = 'high';
-    } else if (priorityRand < priorityDistribution.critical + priorityDistribution.high + priorityDistribution.medium) {
+    } else if (
+      priorityRand <
+      priorityDistribution.critical + priorityDistribution.high + priorityDistribution.medium
+    ) {
       task.priority = 'medium';
     } else {
       task.priority = 'low';
     }
-    
+
     tasks.push(task);
   }
-  
+
   return tasks;
-} 
+}

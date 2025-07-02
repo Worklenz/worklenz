@@ -41,4 +41,4 @@ const AppearanceSettings = () => {
   );
 };
 
-export default AppearanceSettings; 
+export default AppearanceSettings;

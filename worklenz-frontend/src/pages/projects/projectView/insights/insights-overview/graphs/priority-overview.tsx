@@ -17,7 +17,6 @@ const PriorityOverview = () => {
   const [loading, setLoading] = useState(false);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
 
-
   const getTaskPriorityCounts = async () => {
     if (!projectId) return;
 

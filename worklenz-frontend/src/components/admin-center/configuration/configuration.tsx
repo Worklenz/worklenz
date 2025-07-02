@@ -39,7 +39,7 @@ const Configuration: React.FC = () => {
   }, []);
 
   const handleSave = async (values: any) => {
-    try {   
+    try {
       setLoading(true);
       const res = await adminCenterApiService.updateBillingConfiguration(values);
       if (res.done) {
@@ -75,11 +75,7 @@ const Configuration: React.FC = () => {
         }
         style={{ marginTop: '16px' }}
       >
-        <Form
-          form={form}
-          initialValues={configuration}
-          onFinish={handleSave}
-        >
+        <Form form={form} initialValues={configuration} onFinish={handleSave}>
           <Row>
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
               <Form.Item
@@ -180,7 +176,6 @@ const Configuration: React.FC = () => {
                   showSearch
                   placeholder="Country"
                   optionFilterProp="label"
-                  
                   allowClear
                   options={countryOptions}
                 />
