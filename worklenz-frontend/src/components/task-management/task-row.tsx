@@ -16,7 +16,7 @@ import {
   UserOutlined,
   type InputRef
 } from './antd-imports';
-import { DownOutlined, RightOutlined, ExpandAltOutlined, DoubleRightOutlined } from '@ant-design/icons';
+import { DownOutlined, RightOutlined, ExpandAltOutlined, DoubleRightOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { Task } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
@@ -685,6 +685,27 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
           </div>
         );
       
+      case 'progress':
+        return (
+          <div key={col.key} className={`flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
+            {task.progress !== undefined && task.progress >= 0 && (
+              task.progress === 100 ? (
+                <div className="flex items-center justify-center">
+                  <CheckCircleOutlined 
+                    className="text-green-500" 
+                    style={{ 
+                      fontSize: '16px',
+                      color: '#52c41a'
+                    }} 
+                  />
+                </div>
+              ) : (
+                <div className={`w-6 h-3 rounded-sm ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+              )
+            )}
+          </div>
+        );
+      
       default:
         // For non-essential columns, show minimal placeholder
         return (
@@ -904,7 +925,19 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(({
         return (
           <div key={col.key} className={`flex items-center justify-center px-2 ${borderClasses}`} style={{ width: col.width }}>
             {task.progress !== undefined && task.progress >= 0 && (
-              <TaskProgress progress={task.progress} isDarkMode={isDarkMode} />
+              task.progress === 100 ? (
+                <div className="flex items-center justify-center">
+                  <CheckCircleOutlined 
+                    className="text-green-500" 
+                    style={{ 
+                      fontSize: '20px',
+                      color: '#52c41a'
+                    }} 
+                  />
+                </div>
+              ) : (
+                <TaskProgress progress={task.progress} isDarkMode={isDarkMode} />
+              )
             )}
           </div>
         );
