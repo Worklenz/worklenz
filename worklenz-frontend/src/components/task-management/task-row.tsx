@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useRef, useEffect, lazy } from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useSelector } from 'react-redux';
@@ -12,20 +12,17 @@ import {
   HolderOutlined,
   MessageOutlined,
   PaperClipOutlined,
-  ClockCircleOutlined,
   UserOutlined,
-  type InputRef
+  type InputRef,
+  Tooltip
 } from './antd-imports';
-import { DownOutlined, RightOutlined, ExpandAltOutlined, DoubleRightOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { DownOutlined, RightOutlined, ExpandAltOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { Task } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
-import { AssigneeSelector, Avatar, AvatarGroup, Button, Checkbox, CustomColordLabel, CustomNumberLabel, LabelsSelector, Progress, Tooltip } from '@/components';
+import { AvatarGroup, Button, Checkbox, CustomColordLabel, CustomNumberLabel, Progress } from '@/components';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import TaskStatusDropdown from './task-status-dropdown';
-import TaskPriorityDropdown from './task-priority-dropdown';
-import TaskPhaseDropdown from './task-phase-dropdown';
 import TaskTimer from '@/components/taskListCommon/task-timer/task-timer';
 import { useTaskTimer } from '@/hooks/useTaskTimer';
 import { 
@@ -34,8 +31,6 @@ import {
   createLabelsAdapter, 
   createAssigneeAdapter,
   PRIORITY_COLORS as UTIL_PRIORITY_COLORS,
-  performanceMonitor,
-  taskPropsEqual
 } from './task-row-utils';
 import './task-row-optimized.css';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -131,21 +126,6 @@ const TaskProgress = React.memo<{ progress: number; isDarkMode: boolean }>(({ pr
     isDarkMode={isDarkMode}
   />
 ));
-
-const TaskPriority = React.memo<{ priority: string; isDarkMode: boolean }>(({ priority, isDarkMode }) => {
-  const color = PRIORITY_COLORS[priority as keyof typeof PRIORITY_COLORS] || '#d9d9d9';
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className="w-2 h-2 rounded-full"
-        style={{ backgroundColor: color }}
-      />
-      <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-        {priority}
-      </span>
-    </div>
-  );
-});
 
 const TaskTimeTracking = React.memo<{ taskId: string; isDarkMode: boolean }>(({ taskId, isDarkMode }) => {
   const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimer(
