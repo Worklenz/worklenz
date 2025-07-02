@@ -194,10 +194,11 @@ const EnhancedKanbanGroup: React.FC<EnhancedKanbanGroupProps> = React.memo(({
   };
 
   const handleBlur = async () => {
+    setIsEditable(false);
+    if (name === editName) return;
     if (name === 'Untitled section') {
       dispatch(fetchEnhancedKanbanGroups(projectId ?? ''));
     }
-    setIsEditable(false);
 
     if (!projectId || !group.id) return;
 
