@@ -22,21 +22,22 @@ const TaskCard: React.FC<{
   onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
   groupId: string;
   isDropIndicator: boolean;
-}> = ({ task, onTaskDragStart, onTaskDragOver, onTaskDrop, groupId, isDropIndicator }) => {
+  idx: number;
+}> = ({ task, onTaskDragStart, onTaskDragOver, onTaskDrop, groupId, isDropIndicator, idx }) => {
   const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
   const background = themeMode === 'dark' ? '#23272f' : '#fff';
   const color = themeMode === 'dark' ? '#fff' : '#23272f';
   return (
     <>
       {isDropIndicator && (
-        <div style={{ height: 32, margin: '8px 0', background: themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0', borderRadius: 6, border: `2px dashed ${themeMode === 'dark' ? '#555' : '#bbb'}` }} />
+        <div style={{ height: 80, margin: '8px 0', background: themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0', borderRadius: 6, border: `5px` }} />
       )}
       <div
         className="enhanced-kanban-task-card"
         draggable
         onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
-        onDragOver={e => onTaskDragOver(e, groupId, -1)}
-        onDrop={e => onTaskDrop(e, groupId, -1)}
+        onDragOver={e => onTaskDragOver(e, groupId, idx)}
+        onDrop={e => onTaskDrop(e, groupId, idx)}
         style={{ background, color }}
       >
         <div className="task-content">
@@ -86,8 +87,8 @@ const KanbanGroup: React.FC<{
         <span className="task-count">{group.tasks.length}</span>
       </div>
       <div className="enhanced-kanban-group-tasks"
-        onDragOver={e => onTaskDragOver(e, group.id, 0)}
-        onDrop={e => onTaskDrop(e, group.id, 0)}
+        // onDragOver={e => onTaskDragOver(e, group.id, 0)}
+        // onDrop={e => onTaskDrop(e, group.id, 0)}
       >
         {/* Drop indicator at the top of the group */}
         {hoveredGroupId === group.id && hoveredTaskIdx === 0 && (
@@ -101,7 +102,8 @@ const KanbanGroup: React.FC<{
               onTaskDragOver={onTaskDragOver}
               onTaskDrop={onTaskDrop}
               groupId={group.id}
-              isDropIndicator={hoveredGroupId === group.id && hoveredTaskIdx === idx + 1}
+              isDropIndicator={hoveredGroupId === group.id && hoveredTaskIdx === idx}
+              idx={idx}
             />
           </React.Fragment>
         ))}
