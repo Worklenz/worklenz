@@ -7,5 +7,7 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 const activityLogsApiRouter = express.Router();
 
 activityLogsApiRouter.get("/:id", idParamValidator, safeControllerFunction(ActivitylogsController.get));
+activityLogsApiRouter.get("/project/:id", idParamValidator, safeControllerFunction(ActivitylogsController.getByProjectId));
+activityLogsApiRouter.get("/project/:id/export", safeControllerFunction(ActivitylogsController.exportProjectActivityLogs));
 
 export default activityLogsApiRouter;
