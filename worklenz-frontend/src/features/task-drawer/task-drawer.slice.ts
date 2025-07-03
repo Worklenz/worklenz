@@ -62,7 +62,7 @@ const taskDrawerSlice = createSlice({
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.status_id = status_id;
         state.taskFormViewModel.task.status_color = color_code;
-        state.taskFormViewModel.task.status_color_dark = color_code_dark
+        state.taskFormViewModel.task.status_color_dark = color_code_dark;
       }
     },
     setStartDate: (state, action: PayloadAction<IProjectTask>) => {
@@ -99,22 +99,28 @@ const taskDrawerSlice = createSlice({
     setTaskSubscribers: (state, action: PayloadAction<InlineMember[]>) => {
       state.subscribers = action.payload;
     },
-    setTimeLogEditing: (state, action: PayloadAction<{
-      isEditing: boolean;
-      logBeingEdited: ITaskLogViewModel | null;
-    }>) => {
+    setTimeLogEditing: (
+      state,
+      action: PayloadAction<{
+        isEditing: boolean;
+        logBeingEdited: ITaskLogViewModel | null;
+      }>
+    ) => {
       state.timeLogEditing = action.payload;
     },
-    setTaskRecurringSchedule: (state, action: PayloadAction<{
-      schedule_id: string;
-      task_id: string;
-    }>) => {
+    setTaskRecurringSchedule: (
+      state,
+      action: PayloadAction<{
+        schedule_id: string;
+        task_id: string;
+      }>
+    ) => {
       const { schedule_id, task_id } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === task_id) {
         state.taskFormViewModel.task.schedule_id = schedule_id;
       }
     },
-    resetTaskDrawer: (state) => {
+    resetTaskDrawer: state => {
       return initialState;
     },
   },
@@ -146,6 +152,7 @@ export const {
   setTaskSubscribers,
   setTimeLogEditing,
   setTaskRecurringSchedule,
-  resetTaskDrawer
+  resetTaskDrawer,
+  setConvertToSubtaskDrawerOpen,
 } = taskDrawerSlice.actions;
 export default taskDrawerSlice.reducer;

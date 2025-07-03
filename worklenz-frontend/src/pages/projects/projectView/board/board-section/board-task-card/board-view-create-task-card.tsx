@@ -62,7 +62,7 @@ const BoardViewCreateTaskCard = ({
 
   const createRequestBody = (): ITaskCreateRequest | null => {
     if (!projectId || !currentSession) return null;
-    
+
     const body: ITaskCreateRequest = {
       project_id: projectId,
       name: newTaskName.trim(),
@@ -108,7 +108,7 @@ const BoardViewCreateTaskCard = ({
       const eventHandler = (task: IProjectTask) => {
         // Set creating task to false
         setCreatingTask(false);
-        
+
         // Add the task to the state at the top of the section
         dispatch(
           addTaskCardToTheTop({
@@ -121,17 +121,17 @@ const BoardViewCreateTaskCard = ({
             },
           })
         );
-        
+
         // Remove the event listener to prevent memory leaks
         socket?.off(SocketEvents.QUICK_TASK.toString(), eventHandler);
-        
+
         // Reset the form
         resetForm();
       };
 
       // Register the event handler before emitting
       socket?.once(SocketEvents.QUICK_TASK.toString(), eventHandler);
-      
+
       // Emit the event
       socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
     } catch (error) {
@@ -152,7 +152,7 @@ const BoardViewCreateTaskCard = ({
       const eventHandler = (task: IProjectTask) => {
         // Set creating task to false
         setCreatingTask(false);
-        
+
         // Add the task to the state at the bottom of the section
         dispatch(
           addTaskCardToTheBottom({
@@ -165,17 +165,17 @@ const BoardViewCreateTaskCard = ({
             },
           })
         );
-        
+
         // Remove the event listener to prevent memory leaks
         socket?.off(SocketEvents.QUICK_TASK.toString(), eventHandler);
-        
+
         // Reset the form
         resetForm();
       };
 
       // Register the event handler before emitting
       socket?.once(SocketEvents.QUICK_TASK.toString(), eventHandler);
-      
+
       // Emit the event
       socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
     } catch (error) {
@@ -225,15 +225,12 @@ const BoardViewCreateTaskCard = ({
       />
       {newTaskName.trim() && (
         <Flex gap={8} justify="flex-end">
-          <Button 
-            size="small" 
-            onClick={() => setShowNewCard(false)}
-          >
+          <Button size="small" onClick={() => setShowNewCard(false)}>
             {t('cancel')}
           </Button>
-          <Button 
-            type="primary" 
-            size="small" 
+          <Button
+            type="primary"
+            size="small"
             onClick={position === 'bottom' ? handleAddTaskToTheBottom : handleAddTaskToTheTop}
             loading={creatingTask}
           >

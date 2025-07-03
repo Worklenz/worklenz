@@ -11,15 +11,15 @@ interface ProgressProps {
   className?: string;
 }
 
-const Progress: React.FC<ProgressProps> = ({ 
-  percent, 
-  type = 'line', 
-  size = 24, 
-  strokeColor = '#1890ff', 
-  strokeWidth = 2, 
+const Progress: React.FC<ProgressProps> = ({
+  percent,
+  type = 'line',
+  size = 24,
+  strokeColor = '#1890ff',
+  strokeWidth = 2,
   showInfo = true,
   isDarkMode = false,
-  className = ''
+  className = '',
 }) => {
   // Ensure percent is between 0 and 100
   const normalizedPercent = Math.min(Math.max(percent, 0), 100);
@@ -29,7 +29,7 @@ const Progress: React.FC<ProgressProps> = ({
     const circumference = radius * 2 * Math.PI;
     const strokeDasharray = circumference;
     const strokeDashoffset = circumference - (normalizedPercent / 100) * circumference;
-    
+
     return (
       <div className={`relative inline-flex items-center justify-center ${className}`}>
         <svg width={size} height={size} className="transform -rotate-90">
@@ -55,21 +55,25 @@ const Progress: React.FC<ProgressProps> = ({
           />
         </svg>
         {showInfo && (
-          <span className={`absolute text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          <span
+            className={`absolute text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
+          >
             {normalizedPercent}%
           </span>
         )}
       </div>
     );
   }
-  
+
   return (
-    <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} ${className}`}>
+    <div
+      className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} ${className}`}
+    >
       <div
         className="h-2 rounded-full transition-all duration-300"
-        style={{ 
-          width: `${normalizedPercent}%`, 
-          backgroundColor: normalizedPercent === 100 ? '#52c41a' : strokeColor 
+        style={{
+          width: `${normalizedPercent}%`,
+          backgroundColor: normalizedPercent === 100 ? '#52c41a' : strokeColor,
         }}
       />
       {showInfo && (
@@ -81,4 +85,4 @@ const Progress: React.FC<ProgressProps> = ({
   );
 };
 
-export default Progress; 
+export default Progress;

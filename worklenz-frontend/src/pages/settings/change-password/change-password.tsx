@@ -20,9 +20,7 @@ const ChangePassword: React.FC = () => {
       return Promise.reject(new Error(t('newPasswordRequired')));
     }
     if (!passwordRegex.test(value)) {
-      return Promise.reject(
-        new Error(t('passwordValidationError'))
-      );
+      return Promise.reject(new Error(t('passwordValidationError')));
     }
     return Promise.resolve();
   };

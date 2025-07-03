@@ -8,7 +8,6 @@ interface ICustomColordLabelProps {
 const CustomColordLabel = ({ label }: ICustomColordLabelProps) => {
   if (!label) return null;
 
-
   return (
     <Tooltip title={label.name}>
       <Tag

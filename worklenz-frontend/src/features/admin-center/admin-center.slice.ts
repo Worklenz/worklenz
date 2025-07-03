@@ -1,5 +1,9 @@
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
-import { IBillingAccountInfo, IBillingAccountStorage, IFreePlanSettings } from '@/types/admin-center/admin-center.types';
+import {
+  IBillingAccountInfo,
+  IBillingAccountStorage,
+  IFreePlanSettings,
+} from '@/types/admin-center/admin-center.types';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 interface adminCenterState {
@@ -27,10 +31,13 @@ export const fetchBillingInfo = createAsyncThunk('adminCenter/fetchBillingInfo',
   return res.body;
 });
 
-export const fetchFreePlanSettings = createAsyncThunk('adminCenter/fetchFreePlanSettings', async () => {
-  const res = await adminCenterApiService.getFreePlanSettings();
-  return res.body;
-});
+export const fetchFreePlanSettings = createAsyncThunk(
+  'adminCenter/fetchFreePlanSettings',
+  async () => {
+    const res = await adminCenterApiService.getFreePlanSettings();
+    return res.body;
+  }
+);
 
 export const fetchStorageInfo = createAsyncThunk('adminCenter/fetchStorageInfo', async () => {
   const res = await adminCenterApiService.getAccountStorage();
@@ -42,10 +49,14 @@ const adminCenterSlice = createSlice({
   initialState,
   reducers: {
     toggleRedeemCodeDrawer: state => {
-      state.isRedeemCodeDrawerOpen ? (state.isRedeemCodeDrawerOpen = false) : (state.isRedeemCodeDrawerOpen = true);
+      state.isRedeemCodeDrawerOpen
+        ? (state.isRedeemCodeDrawerOpen = false)
+        : (state.isRedeemCodeDrawerOpen = true);
     },
     toggleUpgradeModal: state => {
-      state.isUpgradeModalOpen ? (state.isUpgradeModalOpen = false) : (state.isUpgradeModalOpen = true);
+      state.isUpgradeModalOpen
+        ? (state.isUpgradeModalOpen = false)
+        : (state.isUpgradeModalOpen = true);
     },
   },
   extraReducers: builder => {
@@ -77,7 +88,6 @@ const adminCenterSlice = createSlice({
     });
   },
 });
-
 
 export const { toggleRedeemCodeDrawer, toggleUpgradeModal } = adminCenterSlice.actions;
 export default adminCenterSlice.reducer;

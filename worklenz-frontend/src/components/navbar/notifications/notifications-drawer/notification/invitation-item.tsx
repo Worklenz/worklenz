@@ -83,7 +83,10 @@ const InvitationItem: React.FC<InvitationItemProps> = ({ item, isUnreadNotificat
           You have been invited to work with <b>{item.team_name}</b>.
         </div>
         {isUnreadNotifications && (
-          <div className="mt-2" style={{ display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
+          <div
+            className="mt-2"
+            style={{ display: 'flex', gap: '8px', justifyContent: 'space-between' }}
+          >
             <button
               onClick={() => acceptInvite(true)}
               disabled={inProgress()}

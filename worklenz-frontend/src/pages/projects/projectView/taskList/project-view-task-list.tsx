@@ -35,14 +35,14 @@ const ProjectViewTaskList = () => {
 
   // Simplified loading state - only wait for essential data
   // Remove dependency on phases and status categories for initial render
-  const isLoading = useMemo(() => 
-    loadingGroups || !coreDataLoaded,
+  const isLoading = useMemo(
+    () => loadingGroups || !coreDataLoaded,
     [loadingGroups, coreDataLoaded]
   );
 
   // Memoize the empty state check
-  const isEmptyState = useMemo(() => 
-    taskGroups && taskGroups.length === 0 && !isLoading,
+  const isEmptyState = useMemo(
+    () => taskGroups && taskGroups.length === 0 && !isLoading,
     [taskGroups, isLoading]
   );
 
@@ -117,11 +117,8 @@ const ProjectViewTaskList = () => {
       {isEmptyState ? (
         <Empty description="No tasks group found" />
       ) : (
-        <Skeleton active loading={isLoading} className='mt-4 p-4'>
-          <TaskGroupWrapperOptimized 
-            taskGroups={memoizedTaskGroups} 
-            groupBy={groupBy} 
-          />
+        <Skeleton active loading={isLoading} className="mt-4 p-4">
+          <TaskGroupWrapperOptimized taskGroups={memoizedTaskGroups} groupBy={groupBy} />
         </Skeleton>
       )}
     </Flex>

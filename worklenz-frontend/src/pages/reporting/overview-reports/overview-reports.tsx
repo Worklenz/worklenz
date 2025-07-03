@@ -30,26 +30,29 @@ const OverviewReports = () => {
   }, [dispatch]);
 
   // Memoize the header children to prevent unnecessary re-renders
-  const headerChildren = useMemo(() => (
-    <Button type="text" onClick={handleArchiveToggle}>
-      <Checkbox checked={includeArchivedProjects} />
-      <Typography.Text>{t('includeArchivedButton')}</Typography.Text>
-    </Button>
-  ), [handleArchiveToggle, includeArchivedProjects, t]);
+  const headerChildren = useMemo(
+    () => (
+      <Button type="text" onClick={handleArchiveToggle}>
+        <Checkbox checked={includeArchivedProjects} />
+        <Typography.Text>{t('includeArchivedButton')}</Typography.Text>
+      </Button>
+    ),
+    [handleArchiveToggle, includeArchivedProjects, t]
+  );
 
   // Memoize the teams text to prevent unnecessary re-renders
-  const teamsText = useMemo(() => (
-    <Typography.Text strong style={{ fontSize: 16 }}>
-      {t('teamsText')}
-    </Typography.Text>
-  ), [t]);
+  const teamsText = useMemo(
+    () => (
+      <Typography.Text strong style={{ fontSize: 16 }}>
+        {t('teamsText')}
+      </Typography.Text>
+    ),
+    [t]
+  );
 
   return (
     <Flex vertical gap={24}>
-      <CustomPageHeader
-        title={t('overviewTitle')}
-        children={headerChildren}
-      />
+      <CustomPageHeader title={t('overviewTitle')} children={headerChildren} />
 
       <OverviewStats />
 

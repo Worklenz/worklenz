@@ -10,7 +10,10 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useMediaQuery } from 'react-responsive';
 import { useTranslation } from 'react-i18next';
 
-import { fetchBillingInfo, fetchFreePlanSettings } from '@/features/admin-center/admin-center.slice';
+import {
+  fetchBillingInfo,
+  fetchFreePlanSettings,
+} from '@/features/admin-center/admin-center.slice';
 
 import CurrentPlanDetails from './current-plan-details/current-plan-details';
 import AccountStorage from './account-storage/account-storage';
@@ -68,10 +71,7 @@ const CurrentBill: React.FC = () => {
       </div>
 
       <div style={{ marginTop: '1.5rem' }}>
-        <Card
-          title={<span style={titleStyle}>{t('invoices')}</span>}
-          style={{ marginTop: '16px' }}
-        >
+        <Card title={<span style={titleStyle}>{t('invoices')}</span>} style={{ marginTop: '16px' }}>
           <InvoicesTable />
         </Card>
       </div>
@@ -92,7 +92,8 @@ const CurrentBill: React.FC = () => {
       ) : (
         renderMobileView()
       )}
-      {currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE && renderChargesAndInvoices()}
+      {currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE &&
+        renderChargesAndInvoices()}
     </div>
   );
 };

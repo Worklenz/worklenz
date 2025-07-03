@@ -2,7 +2,11 @@ import { Card, ConfigProvider, Tag, Timeline, Typography } from 'antd';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
-import { fetchTask, setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import {
+  fetchTask,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
 import { ISingleMemberLogs } from '@/types/reporting/reporting.types';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 

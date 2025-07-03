@@ -31,17 +31,20 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
       link.as = 'script';
       document.head.appendChild(link);
     };
-    
+
     preloadTinyMCE();
   }, []);
 
   const handleDescriptionChange = () => {
     if (!taskId) return;
-    socket?.emit(SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), JSON.stringify({
-      task_id: taskId,
-      description: content || null,
-      parent_task: parentTaskId,
-    }));
+    socket?.emit(
+      SocketEvents.TASK_DESCRIPTION_CHANGE.toString(),
+      JSON.stringify({
+        task_id: taskId,
+        description: content || null,
+        parent_task: parentTaskId,
+      })
+    );
   };
 
   useEffect(() => {
@@ -51,7 +54,9 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
 
       const isClickedInsideWrapper = wrapper && wrapper.contains(target);
       const isClickedInsideEditor = document.querySelector('.tox-tinymce')?.contains(target);
-      const isClickedInsideToolbarPopup = document.querySelector('.tox-menu, .tox-pop, .tox-collection')?.contains(target);
+      const isClickedInsideToolbarPopup = document
+        .querySelector('.tox-menu, .tox-pop, .tox-collection')
+        ?.contains(target);
 
       if (
         isEditorOpen &&
@@ -96,7 +101,9 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     setIsEditorLoading(true);
   };
 
-  const darkModeStyles = themeMode === 'dark' ? `
+  const darkModeStyles =
+    themeMode === 'dark'
+      ? `
     body { 
       background-color: #1e1e1e !important;
       color: #ffffff !important;
@@ -104,27 +111,33 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     body.mce-content-body[data-mce-placeholder]:not([contenteditable="false"]):before {
       color: #666666 !important;
     }
-  ` : '';
+  `
+      : '';
 
   return (
     <div ref={wrapperRef}>
       {isEditorOpen ? (
-        <div style={{ 
-          minHeight: '200px',
-          backgroundColor: themeMode === 'dark' ? '#1e1e1e' : '#ffffff' 
-        }}>
+        <div
+          style={{
+            minHeight: '200px',
+            backgroundColor: themeMode === 'dark' ? '#1e1e1e' : '#ffffff',
+          }}
+        >
           {isEditorLoading && (
-            <div style={{
-              position: 'absolute',
-              zIndex: 10,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: '100%',
-              height: '200px',
-              backgroundColor: themeMode === 'dark' ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-              color: themeMode === 'dark' ? '#ffffff' : '#000000'
-            }}>
+            <div
+              style={{
+                position: 'absolute',
+                zIndex: 10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%',
+                height: '200px',
+                backgroundColor:
+                  themeMode === 'dark' ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                color: themeMode === 'dark' ? '#ffffff' : '#000000',
+              }}
+            >
               <div>Loading editor...</div>
             </div>
           )}
@@ -138,11 +151,25 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
               menubar: false,
               branding: false,
               plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'code', 'wordcount' // Added wordcount
+                'advlist',
+                'autolink',
+                'lists',
+                'link',
+                'charmap',
+                'preview',
+                'anchor',
+                'searchreplace',
+                'visualblocks',
+                'code',
+                'fullscreen',
+                'insertdatetime',
+                'media',
+                'table',
+                'code',
+                'wordcount', // Added wordcount
               ],
-              toolbar: 'blocks |' +
+              toolbar:
+                'blocks |' +
                 'bold italic underline strikethrough | ' +
                 'bullist numlist | link |  removeformat | help',
               content_style: `
@@ -157,30 +184,34 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
               skin_url: `/tinymce/skins/ui/${themeMode === 'dark' ? 'oxide-dark' : 'oxide'}`,
               content_css_cors: true,
               auto_focus: true,
-              init_instance_callback: (editor) => {
-                editor.dom.setStyle(editor.getBody(), 'backgroundColor', themeMode === 'dark' ? '#1e1e1e' : '#ffffff');
-              }
+              init_instance_callback: editor => {
+                editor.dom.setStyle(
+                  editor.getBody(),
+                  'backgroundColor',
+                  themeMode === 'dark' ? '#1e1e1e' : '#ffffff'
+                );
+              },
             }}
             onEditorChange={handleEditorChange}
           />
         </div>
       ) : (
-        <div 
+        <div
           onClick={handleOpenEditor}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          style={{ 
-            minHeight: '32px', 
+          style={{
+            minHeight: '32px',
             padding: '4px 11px',
             border: `1px solid ${isHovered ? (themeMode === 'dark' ? '#177ddc' : '#40a9ff') : 'transparent'}`,
             borderRadius: '6px',
             cursor: 'pointer',
             color: themeMode === 'dark' ? '#ffffff' : '#000000',
-            transition: 'border-color 0.3s ease'
+            transition: 'border-color 0.3s ease',
           }}
         >
           {content ? (
-            <div 
+            <div
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
               style={{ color: 'inherit' }}
             />

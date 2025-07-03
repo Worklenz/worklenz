@@ -261,12 +261,12 @@ export const fetchTaskListColumns = createAsyncThunk(
   async (projectId: string, { dispatch }) => {
     const [standardColumns, customColumns] = await Promise.all([
       tasksApiService.fetchTaskListColumns(projectId),
-      dispatch(fetchCustomColumns(projectId))
+      dispatch(fetchCustomColumns(projectId)),
     ]);
 
     return {
       standard: standardColumns.body,
-      custom: customColumns.payload
+      custom: customColumns.payload,
     };
   }
 );
@@ -506,11 +506,11 @@ const taskSlice = createSlice({
       if (task.parent_task_id) {
         const parentTask = group.tasks.find(t => t.id === task.parent_task_id);
         // if (parentTask) {
-          // if (!parentTask.sub_tasks) parentTask.sub_tasks = [];
-          // parentTask.sub_tasks.push({ ...task });
-          // parentTask.sub_tasks_count = parentTask.sub_tasks.length; // Update the sub_tasks_count based on the actual length
-          // Ensure sub-tasks are visible when adding a new one
-          // parentTask.show_sub_tasks = true;
+        // if (!parentTask.sub_tasks) parentTask.sub_tasks = [];
+        // parentTask.sub_tasks.push({ ...task });
+        // parentTask.sub_tasks_count = parentTask.sub_tasks.length; // Update the sub_tasks_count based on the actual length
+        // Ensure sub-tasks are visible when adding a new one
+        // parentTask.show_sub_tasks = true;
         // }
       } else {
         // Handle main task addition
@@ -604,7 +604,7 @@ const taskSlice = createSlice({
             task.completed_count = completedCount;
             return true;
           }
-          
+
           // Check subtasks if they exist
           if (task.sub_tasks && task.sub_tasks.length > 0) {
             const found = findAndUpdateTask(task.sub_tasks);
@@ -670,7 +670,8 @@ const taskSlice = createSlice({
     },
 
     updateTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
-      const { id, status_id, color_code, color_code_dark, complete_ratio, statusCategory } =        action.payload;
+      const { id, status_id, color_code, color_code_dark, complete_ratio, statusCategory } =
+        action.payload;
 
       // Find the task in any group
       const taskInfo = findTaskInGroups(state.taskGroups, id);
@@ -916,11 +917,14 @@ const taskSlice = createSlice({
       // Also add to columns array to maintain visibility
       state.columns.push({
         ...action.payload,
-        pinned: true // New columns are visible by default
+        pinned: true, // New columns are visible by default
       });
     },
 
-    updateCustomColumn: (state, action: PayloadAction<{ key: string; column: ITaskListColumn }>) => {
+    updateCustomColumn: (
+      state,
+      action: PayloadAction<{ key: string; column: ITaskListColumn }>
+    ) => {
       const { key, column } = action.payload;
       const index = state.customColumns.findIndex(col => col.key === key);
       if (index !== -1) {
@@ -965,7 +969,7 @@ const taskSlice = createSlice({
       }>
     ) => {
       const { taskId, columnKey, value } = action.payload;
-      
+
       // Update in task groups
       for (const group of state.taskGroups) {
         // Check in main tasks
@@ -977,7 +981,7 @@ const taskSlice = createSlice({
           group.tasks[taskIndex].custom_column_values[columnKey] = value;
           break;
         }
-        
+
         // Check in subtasks
         for (const parentTask of group.tasks) {
           if (parentTask.sub_tasks) {
@@ -992,7 +996,7 @@ const taskSlice = createSlice({
           }
         }
       }
-      
+
       // Also update in the customColumnValues state if needed
       if (!state.customColumnValues[taskId]) {
         state.customColumnValues[taskId] = {};
@@ -1000,7 +1004,10 @@ const taskSlice = createSlice({
       state.customColumnValues[taskId][columnKey] = value;
     },
 
-    updateCustomColumnPinned: (state, action: PayloadAction<{ columnId: string; isVisible: boolean }>) => {
+    updateCustomColumnPinned: (
+      state,
+      action: PayloadAction<{ columnId: string; isVisible: boolean }>
+    ) => {
       const { columnId, isVisible } = action.payload;
       const customColumn = state.customColumns.find(col => col.id === columnId);
       const column = state.columns.find(col => col.id === columnId);
@@ -1015,13 +1022,13 @@ const taskSlice = createSlice({
     },
 
     updateRecurringChange: (state, action: PayloadAction<ITaskRecurringScheduleData>) => {
-      const {id, schedule_type, task_id} = action.payload;
-      const taskInfo = findTaskInGroups(state.taskGroups, task_id as string); 
+      const { id, schedule_type, task_id } = action.payload;
+      const taskInfo = findTaskInGroups(state.taskGroups, task_id as string);
       if (!taskInfo) return;
 
       const { task } = taskInfo;
       task.schedule_id = id;
-    } 
+    },
   },
 
   extraReducers: builder => {
@@ -1035,7 +1042,8 @@ const taskSlice = createSlice({
         state.taskGroups = action.payload && action.payload.groups ? action.payload.groups : [];
         state.allTasks = action.payload && action.payload.allTasks ? action.payload.allTasks : [];
         state.grouping = action.payload && action.payload.grouping ? action.payload.grouping : '';
-        state.totalTasks = action.payload && action.payload.totalTasks ? action.payload.totalTasks : 0;
+        state.totalTasks =
+          action.payload && action.payload.totalTasks ? action.payload.totalTasks : 0;
       })
       .addCase(fetchTaskGroups.rejected, (state, action) => {
         state.loadingGroups = false;
@@ -1186,7 +1194,7 @@ export const {
   updateSubTasks,
   updateCustomColumnValue,
   updateCustomColumnPinned,
-  updateRecurringChange
+  updateRecurringChange,
 } = taskSlice.actions;
 
 export default taskSlice.reducer;

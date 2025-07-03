@@ -123,7 +123,7 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
       clearTimeout(taskCreationTimeout);
       setTaskCreationTimeout(null);
     }
-    
+
     setIsEdit(true);
 
     setTimeout(() => {
@@ -142,12 +142,10 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
     }
   };
 
-
-
   const addInstantTask = async () => {
     // Validation
     if (creatingTask || !projectId || !currentSession) return;
-    
+
     const trimmedTaskName = taskName.trim();
     if (trimmedTaskName === '') {
       setError('Task name cannot be empty');
@@ -158,7 +156,7 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
     try {
       setCreatingTask(true);
       setError('');
-      
+
       const body = createRequestBody();
       if (!body) {
         setError('Failed to create task. Please try again.');
@@ -171,17 +169,17 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
         setCreatingTask(false);
         setError('Task creation timed out. Please try again.');
       }, 10000);
-      
+
       setTaskCreationTimeout(timeout);
 
       socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
-      
+
       // Handle success response - the global socket handler will handle task addition
       socket?.once(SocketEvents.QUICK_TASK.toString(), (task: IProjectTask) => {
         clearTimeout(timeout);
         setTaskCreationTimeout(null);
         setCreatingTask(false);
-        
+
         if (task && task.id) {
           // Just reset the form - the global handler will add the task to Redux
           reset(false);
@@ -204,7 +202,6 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
         const errorMessage = errorData?.message || 'Failed to create task';
         setError(errorMessage);
       });
-
     } catch (error) {
       console.error('Error adding task:', error);
       setCreatingTask(false);
@@ -238,9 +235,9 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
         <div className="add-task-input-container">
           <Input
             className="add-task-input"
-            style={{ 
+            style={{
               borderColor: error ? '#ff4d4f' : colors.skyBlue,
-              paddingRight: creatingTask ? '32px' : '12px'
+              paddingRight: creatingTask ? '32px' : '12px',
             }}
             placeholder={t('addTaskInputPlaceholder')}
             value={taskName}
@@ -252,29 +249,19 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
           />
           {creatingTask && (
             <div className="add-task-loading">
-              <Spin 
-                size="small" 
-                indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />} 
-              />
+              <Spin size="small" indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />} />
             </div>
           )}
-          {error && (
-            <div className="add-task-error">
-              {error}
-            </div>
-          )}
+          {error && <div className="add-task-error">{error}</div>}
         </div>
       ) : (
-        <div
-          className="add-task-label"
-          onClick={() => setIsEdit(true)}
-        >
+        <div className="add-task-label" onClick={() => setIsEdit(true)}>
           <span className="add-task-text">
             {parentTask ? t('addSubTaskText') : t('addTaskText')}
           </span>
         </div>
       )}
-      
+
       <style>{`
         .add-task-row-container {
           width: 100%;

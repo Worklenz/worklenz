@@ -21,11 +21,16 @@ const PerformanceMonitor: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'critical': return 'red';
-      case 'warning': return 'orange';
-      case 'good': return 'blue';
-      case 'excellent': return 'green';
-      default: return 'default';
+      case 'critical':
+        return 'red';
+      case 'warning':
+        return 'orange';
+      case 'good':
+        return 'blue';
+      case 'excellent':
+        return 'green';
+      default:
+        return 'default';
     }
   };
 
@@ -33,15 +38,15 @@ const PerformanceMonitor: React.FC = () => {
   const statusColor = getStatusColor(status);
 
   return (
-    <Card 
-      size="small" 
+    <Card
+      size="small"
       className="performance-monitor"
       title={
         <div className="performance-monitor-header">
           <span>Performance Monitor</span>
-          <Badge 
-            status={statusColor as any} 
-            text={status.toUpperCase()} 
+          <Badge
+            status={statusColor as any}
+            text={status.toUpperCase()}
             className="performance-status"
           />
         </div>
@@ -56,7 +61,7 @@ const PerformanceMonitor: React.FC = () => {
             valueStyle={{ fontSize: '16px' }}
           />
         </Tooltip>
-        
+
         <Tooltip title="Largest group by number of tasks">
           <Statistic
             title="Largest Group"
@@ -65,7 +70,7 @@ const PerformanceMonitor: React.FC = () => {
             valueStyle={{ fontSize: '16px' }}
           />
         </Tooltip>
-        
+
         <Tooltip title="Average tasks per group">
           <Statistic
             title="Average Group"
@@ -74,18 +79,18 @@ const PerformanceMonitor: React.FC = () => {
             valueStyle={{ fontSize: '16px' }}
           />
         </Tooltip>
-        
+
         <Tooltip title="Virtualization is enabled for groups with more than 50 tasks">
           <div className="virtualization-status">
             <span className="status-label">Virtualization:</span>
-            <Badge 
-              status={performanceMetrics.virtualizationEnabled ? 'success' : 'default'} 
-              text={performanceMetrics.virtualizationEnabled ? 'Enabled' : 'Disabled'} 
+            <Badge
+              status={performanceMetrics.virtualizationEnabled ? 'success' : 'default'}
+              text={performanceMetrics.virtualizationEnabled ? 'Enabled' : 'Disabled'}
             />
           </div>
         </Tooltip>
       </div>
-      
+
       {performanceMetrics.totalTasks > 500 && (
         <div className="performance-tips">
           <h4>Performance Tips:</h4>
@@ -100,4 +105,4 @@ const PerformanceMonitor: React.FC = () => {
   );
 };
 
-export default React.memo(PerformanceMonitor); 
+export default React.memo(PerformanceMonitor);

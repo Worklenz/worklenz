@@ -8,21 +8,23 @@ const LicenseExpired = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('license-expired');
   const authService = useAuthService();
-  
+
   // Direct fallback content in case of translation issues
-  const fallbackTitle = "Your Worklenz trial has expired!";
-  const fallbackSubtitle = "Please upgrade now.";
-  const fallbackButton = "Upgrade now";
+  const fallbackTitle = 'Your Worklenz trial has expired!';
+  const fallbackSubtitle = 'Please upgrade now.';
+  const fallbackButton = 'Upgrade now';
 
   return (
-    <div style={{ 
-      marginBlock: 65, 
-      minHeight: '90vh', 
-      padding: '20px',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center'
-    }}>
+    <div
+      style={{
+        marginBlock: 65,
+        minHeight: '90vh',
+        padding: '20px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
       <Result
         status="warning"
         title={t('title') || fallbackTitle}

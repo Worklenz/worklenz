@@ -47,9 +47,7 @@ const LabelsDropdown = ({
 
   // Check if the search text matches any existing label exactly
   const exactMatch = useMemo(() => {
-    return labelsList.some(label => 
-      label.name?.toLowerCase() === createLabelText.toLowerCase()
-    );
+    return labelsList.some(label => label.name?.toLowerCase() === createLabelText.toLowerCase());
   }, [labelsList, createLabelText]);
 
   const isOnApply = () => {
@@ -138,16 +136,13 @@ const LabelsDropdown = ({
           />
           {createLabelText && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {exactMatch 
-                ? t('labelExists') 
-                : t('hitEnterToCreate')
-              }
+              {exactMatch ? t('labelExists') : t('hitEnterToCreate')}
             </Typography.Text>
           )}
-          <Button 
-            type="primary" 
-            size="small" 
-            onClick={isOnApply} 
+          <Button
+            type="primary"
+            size="small"
+            onClick={isOnApply}
             style={{ width: '100%' }}
             disabled={!createLabelText.trim() && selectedLabels.length === 0}
           >

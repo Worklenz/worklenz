@@ -25,16 +25,16 @@ export const useTranslationPreloader = (
     const loadTranslations = async () => {
       try {
         setIsLoading(true);
-        
+
         // Ensure translations are loaded
         await ensureTranslationsLoaded(namespaces);
-        
+
         // Wait for i18next to be ready
         if (!ready) {
           // If i18next is not ready, wait a bit and check again
           await new Promise(resolve => setTimeout(resolve, 100));
         }
-        
+
         if (isMounted) {
           setIsLoaded(true);
           setIsLoading(false);
@@ -74,4 +74,4 @@ export const useBulkActionTranslations = () => {
  */
 export const useTaskManagementTranslations = () => {
   return useTranslationPreloader(['task-management', 'tasks/task-table-bulk-actions']);
-}; 
+};

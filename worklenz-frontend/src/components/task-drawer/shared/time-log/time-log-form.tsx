@@ -19,11 +19,11 @@ interface TimeLogFormProps {
   mode?: 'create' | 'edit';
 }
 
-const TimeLogForm = ({ 
-  onCancel, 
+const TimeLogForm = ({
+  onCancel,
   onSubmitSuccess,
-  initialValues, 
-  mode = 'create' 
+  initialValues,
+  mode = 'create',
 }: TimeLogFormProps) => {
   const currentSession = useAuthService().getCurrentSession();
   const { socket, connected } = useSocket();
@@ -44,23 +44,23 @@ const TimeLogForm = ({
   React.useEffect(() => {
     if (initialValues && mode === 'edit') {
       const createdAt = dayjs(initialValues.created_at);
-      
+
       const startTime = dayjs(initialValues.start_time || initialValues.created_at);
-      
+
       let endTime;
       if (initialValues.time_spent) {
         endTime = dayjs(startTime).add(initialValues.time_spent, 'second');
       } else {
         endTime = dayjs(initialValues.end_time || initialValues.created_at);
       }
-      
+
       form.setFieldsValue({
         date: createdAt,
         startTime: startTime,
         endTime: endTime,
         description: initialValues.description || '',
       });
-      
+
       setFormValues({
         date: createdAt,
         startTime: startTime,
@@ -165,7 +165,7 @@ const TimeLogForm = ({
         await taskTimeLogsApiService.create(requestBody);
       }
       console.log('Received values:', values);
-      
+
       // Call onSubmitSuccess if provided, otherwise just cancel
       if (onSubmitSuccess) {
         onSubmitSuccess();
@@ -194,7 +194,7 @@ const TimeLogForm = ({
         justifySelf: 'flex-end',
         paddingTop: 16,
         paddingBottom: 0,
-        overflow: 'visible'
+        overflow: 'visible',
       }}
     >
       <div

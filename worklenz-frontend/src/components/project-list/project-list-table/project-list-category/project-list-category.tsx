@@ -11,10 +11,8 @@ export const CategoryCell: React.FC<{
   t: TFunction;
 }> = ({ record, t }) => {
   if (!record.category_name) return '-';
-  
-  const { requestParams } = useAppSelector(
-    state => state.projectsReducer
-  );
+
+  const { requestParams } = useAppSelector(state => state.projectsReducer);
   const dispatch = useAppDispatch();
   const newParams: Partial<typeof requestParams> = {};
   const filterByCategory = (categoryId: string | undefined) => {

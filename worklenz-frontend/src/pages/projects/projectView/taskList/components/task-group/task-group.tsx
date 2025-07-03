@@ -37,12 +37,7 @@ interface TaskGroupProps {
   activeId?: string | null;
 }
 
-const TaskGroup: React.FC<TaskGroupProps> = ({ 
-  taskGroup, 
-  groupBy, 
-  color, 
-  activeId 
-}) => {
+const TaskGroup: React.FC<TaskGroupProps> = ({ taskGroup, groupBy, color, activeId }) => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -113,7 +108,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         category_id: category,
         project_id: projectId,
       });
-      
+
       dispatch(fetchStatuses());
       trackMixpanelEvent(evt_project_board_column_setting_click, {
         column_id: taskGroup.id,
@@ -146,7 +141,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         await phasesApiService.updatePhase(phaseData);
         dispatch(fetchPhasesByProjectId(projectId));
       }
-      
+
       setIsRenaming(false);
     } catch (error) {
       logger.error('Error renaming group:', error);
@@ -172,10 +167,12 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
         dispatch(fetchPhasesByProjectId(projectId));
       }
 
-      dispatch(updateTaskGroupColor({
-        groupId: taskGroup.id,
-        color: baseColor,
-      }));
+      dispatch(
+        updateTaskGroupColor({
+          groupId: taskGroup.id,
+          color: baseColor,
+        })
+      );
     } catch (error) {
       logger.error('Error updating group color:', error);
     }
@@ -215,7 +212,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
               </Typography.Text>
             )}
           </Button>
-          
+
           {dropdownItems.length > 0 && !isRenaming && (
             <Dropdown menu={{ items: dropdownItems }} trigger={['click']}>
               <Button icon={<EllipsisOutlined />} className="borderless-icon-btn" />
@@ -238,4 +235,4 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
   );
 };
 
-export default React.memo(TaskGroup); 
+export default React.memo(TaskGroup);

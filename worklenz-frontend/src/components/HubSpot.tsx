@@ -21,4 +21,4 @@ const HubSpot = () => {
   return null;
 };
 
-export default HubSpot; 
+export default HubSpot;

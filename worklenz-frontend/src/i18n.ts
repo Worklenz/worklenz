@@ -9,7 +9,7 @@ const ESSENTIAL_NAMESPACES = [
   'tasks/task-table-bulk-actions',
   'task-management',
   'auth/login',
-  'settings'
+  'settings',
 ];
 
 i18n
@@ -39,31 +39,31 @@ i18n
 // Utility function to ensure translations are loaded
 export const ensureTranslationsLoaded = async (namespaces: string[] = ESSENTIAL_NAMESPACES) => {
   const currentLang = i18n.language || 'en';
-  
+
   try {
     // Load all essential namespaces for the current language
     await Promise.all(
-              namespaces.map(ns => 
-          i18n.loadNamespaces(ns).catch(() => {
-            logger.error(`Failed to load namespace: ${ns}`);
-          })
-        )
+      namespaces.map(ns =>
+        i18n.loadNamespaces(ns).catch(() => {
+          logger.error(`Failed to load namespace: ${ns}`);
+        })
+      )
     );
-    
+
     // Also preload for other languages to prevent delays on language switch
     const otherLangs = ['en', 'es', 'pt', 'alb', 'de'].filter(lang => lang !== currentLang);
     await Promise.all(
       otherLangs.map(lang =>
         Promise.all(
-                      namespaces.map(ns =>
-              i18n.loadNamespaces(ns).catch(() => {
-                logger.error(`Failed to load namespace: ${ns}`);
-              })
-            )
+          namespaces.map(ns =>
+            i18n.loadNamespaces(ns).catch(() => {
+              logger.error(`Failed to load namespace: ${ns}`);
+            })
+          )
         )
       )
     );
-    
+
     return true;
   } catch (error) {
     logger.error('Failed to load translations:', error);

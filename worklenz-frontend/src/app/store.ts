@@ -122,7 +122,7 @@ export const store = configureStore({
     taskListCustomColumnsReducer: taskListCustomColumnsReducer,
     boardReducer: boardReducer,
     projectDrawerReducer: projectDrawerReducer,
-    
+
     projectViewReducer: projectViewReducer,
 
     // Project Lookups
