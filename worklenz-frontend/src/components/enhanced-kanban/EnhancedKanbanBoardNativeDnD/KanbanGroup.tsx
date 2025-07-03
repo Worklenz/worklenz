@@ -122,17 +122,15 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                 )}
 
                 {group.tasks.map((task, idx) => (
-                    <React.Fragment key={task.id}>
-                        <TaskCard
-                            task={task}
-                            onTaskDragStart={onTaskDragStart}
-                            onTaskDragOver={onTaskDragOver}
-                            onTaskDrop={onTaskDrop}
-                            groupId={group.id}
-                            isDropIndicator={hoveredGroupId === group.id && hoveredTaskIdx === idx}
-                            idx={idx}
-                        />
-                    </React.Fragment>
+                    <TaskCard
+                        task={task}
+                        onTaskDragStart={onTaskDragStart}
+                        onTaskDragOver={onTaskDragOver}
+                        onTaskDrop={onTaskDrop}
+                        groupId={group.id}
+                        isDropIndicator={hoveredGroupId === group.id && hoveredTaskIdx === idx}
+                        idx={idx}
+                    />
                 ))}
                 {(isOwnerOrAdmin || isProjectManager) && !showNewCardTop && !showNewCardBottom && group.tasks.length > 0 && (
                     <Button
@@ -160,7 +158,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                     <div className="drop-preview-indicator">
                         <div className="drop-line" />
                     </div>
-                )}  
+                )}
             </div>
         </div>
     );
