@@ -12,7 +12,10 @@ import { deleteStatusToggleDrawer } from '@/features/projects/status/DeleteStatu
 import { Drawer, Alert, Card, Select, Button, Typography, Badge } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
-import { deleteSection, IGroupBy } from '@features/board/board-slice';
+import {
+    deleteSection,
+    IGroupBy,
+} from '@features/enhanced-kanban/enhanced-kanban.slice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import logger from '@/utils/errorLogger';
@@ -28,7 +31,7 @@ const DeleteStatusDrawer: React.FC = () => {
   const { projectView } = useTabSearchParam();
   const [form] = Form.useForm();
   const { t } = useTranslation('task-list-filters');
-  const { editableSectionId, groupBy } = useAppSelector(state => state.boardReducer);
+  const { editableSectionId, groupBy } = useAppSelector(state => state.enhancedKanbanReducer);
   const isDelteStatusDrawerOpen = useAppSelector(
     state => state.deleteStatusReducer.isDeleteStatusDrawerOpen
   );

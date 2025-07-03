@@ -101,6 +101,7 @@ interface EnhancedKanbanState {
   selectedTaskIds: string[];
   expandedSubtasks: Record<string, boolean>;
   columnOrder: string[];
+  editableSectionId: string | null;
 }
 
 const initialState: EnhancedKanbanState = {
@@ -141,6 +142,7 @@ const initialState: EnhancedKanbanState = {
   selectedTaskIds: [],
   expandedSubtasks: {},
   columnOrder: [],
+  editableSectionId: null,
 };
 
 // Performance monitoring utility
@@ -893,6 +895,19 @@ const enhancedKanbanSlice = createSlice({
         state.groupCache[result.groupId] = result.group;
       }
     },
+
+    setEditableSection: (state, action: PayloadAction<string | null>) => {
+      state.editableSectionId = action.payload;
+    },
+
+    deleteSection: (state, action: PayloadAction<{ sectionId: string }>) => {
+      state.taskGroups = state.taskGroups.filter(
+        section => section.id !== action.payload.sectionId
+      );
+      if (state.editableSectionId === action.payload.sectionId) {
+        state.editableSectionId = null;
+      }
+    },
   },
   extraReducers: builder => {
     builder
@@ -1087,6 +1102,8 @@ export const {
   updateEnhancedKanbanTaskStartDate,
   updateEnhancedKanbanSubtask,
   toggleTaskExpansion,
+  setEditableSection,
+  deleteSection,
 } = enhancedKanbanSlice.actions;
 
 export default enhancedKanbanSlice.reducer;
