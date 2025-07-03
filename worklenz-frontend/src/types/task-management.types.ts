@@ -3,13 +3,21 @@ import { EntityState } from '@reduxjs/toolkit';
 
 export interface Task {
   id: string;
-  title: string;
+  title?: string; // Make title optional since it can be empty from database
+  name?: string; // Alternative name field
+  task_key?: string; // Task key field
   description?: string;
   status: string;
   priority: string;
   phase?: string;
   assignee?: string;
+  assignee_names?: InlineMember[]; // Array of assigned members
+  names?: InlineMember[]; // Alternative names field
   due_date?: string;
+  dueDate?: string; // Alternative due date field
+  startDate?: string; // Start date field
+  completedAt?: string; // Completion date
+  updatedAt?: string; // Update timestamp
   created_at: string;
   updated_at: string;
   sub_tasks?: Task[];
@@ -27,6 +35,11 @@ export interface Task {
   has_dependencies?: boolean;
   schedule_id?: string | null;
   order?: number;
+  reporter?: string; // Reporter field
+  timeTracking?: { // Time tracking information
+    logged?: number;
+    estimated?: number;
+  };
   // Add any other task properties as needed
 }
 

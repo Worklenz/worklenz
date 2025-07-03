@@ -1,9 +1,16 @@
 import React from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { HolderOutlined } from '@ant-design/icons';
 import { Task } from '@/types/task-management.types';
+import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import Avatar from '@/components/Avatar';
+import AssigneeSelector from '@/components/AssigneeSelector';
 import { format } from 'date-fns';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { ClockIcon } from '@heroicons/react/24/outline';
+import AvatarGroup from '../AvatarGroup';
+import { DEFAULT_TASK_NAME } from '@/shared/constants';
 
 interface TaskRowProps {
   task: Task;
@@ -14,49 +21,100 @@ interface TaskRowProps {
   }>;
 }
 
+// Utility function to get task display name with fallbacks
+const getTaskDisplayName = (task: Task): string => {
+  // Check each field and only use if it has actual content after trimming
+  if (task.title && task.title.trim()) return task.title.trim();
+  if (task.name && task.name.trim()) return task.name.trim();
+  if (task.task_key && task.task_key.trim()) return task.task_key.trim();
+  return DEFAULT_TASK_NAME;
+};
+
 const TaskRow: React.FC<TaskRowProps> = ({ task, visibleColumns }) => {
+  // Drag and drop functionality
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: task.id,
+    data: {
+      type: 'task',
+      task,
+    },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  // Convert Task to IProjectTask format for AssigneeSelector compatibility
+  const convertTaskToProjectTask = (task: Task) => {
+    return {
+      id: task.id,
+      name: getTaskDisplayName(task),
+      task_key: task.task_key || getTaskDisplayName(task),
+      assignees:
+        task.assignee_names?.map((assignee: InlineMember, index: number) => ({
+          team_member_id: assignee.team_member_id || `assignee-${index}`,
+          id: assignee.team_member_id || `assignee-${index}`,
+          project_member_id: assignee.team_member_id || `assignee-${index}`,
+          name: assignee.name || '',
+        })) || [],
+      parent_task_id: task.parent_task_id,
+      // Add other required fields with defaults
+      status_id: undefined,
+      project_id: undefined,
+      manual_progress: undefined, // Required field
+    };
+  };
+
   const renderColumn = (columnId: string, width: string, isSticky?: boolean, index?: number) => {
     const baseStyle = {
       width,
-      ...(isSticky ? {
-        position: 'sticky' as const,
-        left: index === 0 ? 0 : index === 1 ? 32 : 132,
-        backgroundColor: 'inherit',
-        zIndex: 1,
-      } : {}),
+      // Removed sticky functionality to prevent overlap with group headers
+      // ...(isSticky
+      //   ? {
+      //       position: 'sticky' as const,
+      //       left: index === 0 ? 0 : index === 1 ? 32 : 132,
+      //       backgroundColor: 'inherit',
+      //       zIndex: 1,
+      //     }
+      //   : {}),
     };
 
     switch (columnId) {
       case 'dragHandle':
         return (
           <div 
-            className="cursor-move flex items-center justify-center"
+            className="cursor-grab active:cursor-grabbing flex items-center justify-center" 
             style={baseStyle}
+            {...attributes}
+            {...listeners}
           >
-            <Bars3Icon className="w-4 h-4 text-gray-400" />
+            <HolderOutlined className="text-gray-400 hover:text-gray-600" />
           </div>
         );
 
       case 'taskKey':
         return (
-          <div 
-            className="flex items-center"
-            style={baseStyle}
-          >
+          <div className="flex items-center" style={baseStyle}>
             <span className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
-              {task.task_key}
+              {task.task_key || 'N/A'}
             </span>
           </div>
         );
 
       case 'title':
         return (
-          <div 
-            className="flex items-center"
-            style={baseStyle}
-          >
+          <div className="flex items-center" style={baseStyle}>
             <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
-              {task.title || task.name}
+              {getTaskDisplayName(task)}
             </span>
           </div>
         );
@@ -64,7 +122,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, visibleColumns }) => {
       case 'status':
         return (
           <div style={baseStyle}>
-            <span 
+            <span
               className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
               style={{
                 backgroundColor: task.statusColor ? `${task.statusColor}20` : 'rgb(229, 231, 235)',
@@ -79,29 +137,33 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, visibleColumns }) => {
       case 'assignees':
         return (
           <div className="flex items-center gap-1" style={baseStyle}>
-            {task.assignee_names?.slice(0, 3).map((assignee, index) => (
-              <Avatar
-                key={index}
-                name={assignee.name || ''}
-                size="small"
-                className="ring-2 ring-white dark:ring-gray-900"
+            {/* Show existing assignee avatars */}
+            {
+              <AvatarGroup
+                members={task.assignee_names || []}
+                maxCount={3}
+                isDarkMode={document.documentElement.classList.contains('dark')}
+                size={24}
               />
-            ))}
-            {(task.assignee_names?.length || 0) > 3 && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                +{task.assignee_names!.length - 3}
-              </span>
-            )}
+            }
+            {/* Add AssigneeSelector for adding/managing assignees */}
+            <AssigneeSelector
+              task={convertTaskToProjectTask(task)}
+              groupId={null}
+              isDarkMode={document.documentElement.classList.contains('dark')}
+            />
           </div>
         );
 
       case 'priority':
         return (
           <div style={baseStyle}>
-            <span 
+            <span
               className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
               style={{
-                backgroundColor: task.priorityColor ? `${task.priorityColor}20` : 'rgb(229, 231, 235)',
+                backgroundColor: task.priorityColor
+                  ? `${task.priorityColor}20`
+                  : 'rgb(229, 231, 235)',
                 color: task.priorityColor || 'rgb(31, 41, 55)',
               }}
             >
@@ -183,7 +245,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, visibleColumns }) => {
       case 'estimation':
         return (
           <div style={baseStyle}>
-            {task.timeTracking.estimated && (
+            {task.timeTracking?.estimated && (
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {task.timeTracking.estimated}h
               </span>
@@ -216,9 +278,9 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, visibleColumns }) => {
       case 'createdDate':
         return (
           <div style={baseStyle}>
-            {task.createdAt && (
+            {task.created_at && (
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                {format(new Date(task.createdAt), 'MMM d')}
+                {format(new Date(task.created_at), 'MMM d')}
               </span>
             )}
           </div>
@@ -239,9 +301,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, visibleColumns }) => {
         return (
           <div style={baseStyle}>
             {task.reporter && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {task.reporter}
-              </span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{task.reporter}</span>
             )}
           </div>
         );
@@ -252,10 +312,18 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, visibleColumns }) => {
   };
 
   return (
-    <div className="flex items-center min-w-max px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">
-      {visibleColumns.map((column, index) => renderColumn(column.id, column.width, column.isSticky, index))}
+    <div 
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center min-w-max px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+        isDragging ? 'shadow-lg border border-blue-300' : ''
+      }`}
+    >
+      {visibleColumns.map((column, index) =>
+        renderColumn(column.id, column.width, column.isSticky, index)
+      )}
     </div>
   );
 };
 
-export default TaskRow; 
+export default TaskRow;
