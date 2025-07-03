@@ -14,6 +14,7 @@ import {
   ITaskListV3Response,
 } from '@/api/tasks/tasks.api.service';
 import logger from '@/utils/errorLogger';
+import { DEFAULT_TASK_NAME } from '@/shared/constants';
 
 // Helper function to safely convert time values
 const convertTimeValue = (value: any): number => {
@@ -137,7 +138,7 @@ export const fetchTasks = createAsyncThunk(
         group.tasks.map((task: any) => ({
           id: task.id,
           task_key: task.task_key || '',
-          title: task.name || '',
+          title: (task.title && task.title.trim()) ? task.title.trim() : DEFAULT_TASK_NAME,
           description: task.description || '',
           status: statusIdToNameMap[task.status] || 'todo',
           priority: priorityIdToNameMap[task.priority] || 'medium',
@@ -221,13 +222,17 @@ export const fetchTasksV3 = createAsyncThunk(
 
       // Log raw response for debugging
       console.log('Raw API response:', response.body);
+      console.log('Sample task from backend:', response.body.allTasks?.[0]);
 
       // Ensure tasks are properly normalized
       const tasks = response.body.allTasks.map((task: any) => {
         const now = new Date().toISOString();
+        
+
+        
         return {
           id: task.id,
-          title: task.name || '',
+          title: (task.title && task.title.trim()) ? task.title.trim() : DEFAULT_TASK_NAME,
           description: task.description || '',
           status: task.status || 'todo',
           priority: task.priority || 'medium',

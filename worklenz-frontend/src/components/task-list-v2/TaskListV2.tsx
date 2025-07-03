@@ -1,5 +1,21 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { GroupedVirtuoso } from 'react-virtuoso';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  KeyboardSensor,
+  TouchSensor,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -15,7 +31,6 @@ import {
 import {
   selectCurrentGrouping,
   selectCollapsedGroups,
-  selectIsGroupCollapsed,
   toggleGroupCollapsed,
 } from '@/features/task-management/grouping.slice';
 import {
@@ -36,6 +51,7 @@ import { TaskListField } from '@/types/task-list-field.types';
 import { useParams } from 'react-router-dom';
 import ImprovedTaskFilters from '@/components/task-management/improved-task-filters';
 import { Bars3Icon } from '@heroicons/react/24/outline';
+import { HolderOutlined } from '@ant-design/icons';
 import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
 
 // Base column configuration
@@ -75,10 +91,33 @@ interface TaskListV2Props {
 const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
   const dispatch = useAppDispatch();
   const { projectId: urlProjectId } = useParams();
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  
+  // Drag and drop state
+  const [activeId, setActiveId] = useState<string | null>(null);
+  
+  // Configure sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+  
+  // Using Redux state for collapsedGroups instead of local state
+  const collapsedGroups = useAppSelector(selectCollapsedGroups);
 
   // Selectors
-  const tasks = useAppSelector(selectAllTasksArray);
+  const allTasks = useAppSelector(selectAllTasksArray); // Renamed to allTasks for clarity
   const groups = useAppSelector(selectGroups);
   const grouping = useAppSelector(selectGrouping);
   const loading = useAppSelector(selectLoading);
@@ -114,7 +153,7 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
     if (event.ctrlKey || event.metaKey) {
       dispatch(toggleTaskSelection(taskId));
     } else if (event.shiftKey && lastSelectedTaskId) {
-      const taskIds = tasks.map(t => t.id);
+      const taskIds = allTasks.map(t => t.id); // Use allTasks here
       const startIdx = taskIds.indexOf(lastSelectedTaskId);
       const endIdx = taskIds.indexOf(taskId);
       const rangeIds = taskIds.slice(
@@ -126,58 +165,126 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
       dispatch(clearSelection());
       dispatch(selectTask(taskId));
     }
-  }, [dispatch, lastSelectedTaskId, tasks]);
+  }, [dispatch, lastSelectedTaskId, allTasks]);
 
   const handleGroupCollapse = useCallback((groupId: string) => {
-    setCollapsedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
-      return next;
-    });
+    dispatch(toggleGroupCollapsed(groupId)); // Dispatch Redux action to toggle collapsed state
+  }, [dispatch]);
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
   }, []);
 
-  // Memoized values
-  const groupCounts = useMemo(() => {
-    return groups.map(group => {
-      const visibleTasks = tasks.filter(task => group.taskIds.includes(task.id));
-      return visibleTasks.length;
-    });
-  }, [groups, tasks]);
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
 
-  const visibleGroups = useMemo(() => {
-    return groups.filter(group => !collapsedGroups.has(group.id));
-  }, [groups, collapsedGroups]);
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    // Find the active task
+    const activeTask = allTasks.find(task => task.id === active.id);
+    if (!activeTask) {
+      console.error('Active task not found:', active.id);
+      return;
+    }
+
+    // Find which group the task is being moved to
+    const overTask = allTasks.find(task => task.id === over.id);
+    if (!overTask) {
+      console.error('Over task not found:', over.id);
+      return;
+    }
+
+    // Find the groups for both tasks
+    const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
+    const overGroup = groups.find(group => group.taskIds.includes(overTask.id));
+
+    if (!activeGroup || !overGroup) {
+      console.error('Could not find groups for tasks');
+      return;
+    }
+
+    // Calculate new positions
+    const activeIndex = allTasks.findIndex(task => task.id === active.id);
+    const overIndex = allTasks.findIndex(task => task.id === over.id);
+
+    console.log('Drag operation:', {
+      activeId: active.id,
+      overId: over.id,
+      activeIndex,
+      overIndex,
+      activeGroup: activeGroup.id,
+      overGroup: overGroup.id,
+    });
+
+    // TODO: Implement the actual reordering logic
+    // This would typically involve:
+    // 1. Updating the task order in Redux
+    // 2. Sending the update to the backend
+    // 3. Optimistic UI updates
+
+  }, [allTasks, groups]);
+
+  // Memoized values for GroupedVirtuoso
+  const virtuosoGroups = useMemo(() => {
+    let currentTaskIndex = 0;
+    return groups.map(group => {
+      const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
+      const visibleTasksInGroup = isCurrentGroupCollapsed ? [] : allTasks.filter(task => group.taskIds.includes(task.id));
+      const tasksForVirtuoso = visibleTasksInGroup.map(task => ({
+        ...task,
+        originalIndex: allTasks.indexOf(task),
+      }));
+
+      const groupData = {
+        ...group,
+        tasks: tasksForVirtuoso,
+        startIndex: currentTaskIndex,
+        count: tasksForVirtuoso.length,
+      };
+      currentTaskIndex += tasksForVirtuoso.length;
+      return groupData;
+    });
+  }, [groups, allTasks, collapsedGroups]);
+
+  const virtuosoGroupCounts = useMemo(() => {
+    return virtuosoGroups.map(group => group.count);
+  }, [virtuosoGroups]);
+
+  const virtuosoItems = useMemo(() => {
+    return virtuosoGroups.flatMap(group => group.tasks);
+  }, [virtuosoGroups]);
 
   // Render functions
   const renderGroup = useCallback((groupIndex: number) => {
-    const group = groups[groupIndex];
+    const group = virtuosoGroups[groupIndex];
     return (
       <TaskGroupHeader
         group={{
           id: group.id,
           name: group.title,
-          count: groupCounts[groupIndex],
+          count: group.count,
           color: group.color,
         }}
         isCollapsed={collapsedGroups.has(group.id)}
         onToggle={() => handleGroupCollapse(group.id)}
       />
     );
-  }, [groups, groupCounts, collapsedGroups, handleGroupCollapse]);
+  }, [virtuosoGroups, collapsedGroups, handleGroupCollapse]);
 
   const renderTask = useCallback((taskIndex: number) => {
-    const task = tasks[taskIndex];
+    const task = virtuosoItems[taskIndex]; // Get task from the flattened virtuosoItems
+    if (!task) return null; // Should not happen if logic is correct
     return (
       <TaskRow
         task={task}
         visibleColumns={visibleColumns}
       />
     );
-  }, [tasks, visibleColumns]);
+  }, [virtuosoItems, visibleColumns]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -185,79 +292,99 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
   // Log data for debugging
   console.log('Rendering with:', {
     groups,
-    tasks,
-    groupCounts
+    allTasks,
+    virtuosoGroups,
+    virtuosoGroupCounts,
+    virtuosoItems,
   });
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-gray-900">
-      {/* Task Filters */}
-      <div className="flex-none px-4 py-3">
-        <ImprovedTaskFilters position="list" />
-      </div>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex flex-col h-screen bg-white dark:bg-gray-900">
+        {/* Task Filters */}
+        <div className="flex-none px-4 py-3">
+          <ImprovedTaskFilters position="list" />
+        </div>
 
-      {/* Column Headers */}
-      <div className="overflow-x-auto">
-        <div className="flex-none border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <div className="flex items-center min-w-max px-4 py-2">
-            {visibleColumns.map((column, index) => {
-              const columnStyle: ColumnStyle = {
-                width: column.width,
-                ...(column.isSticky ? {
-                  position: 'sticky',
-                  left: index === 0 ? 0 : index === 1 ? 32 : 132,
-                  backgroundColor: 'inherit',
-                  zIndex: 2,
-                } : {}),
-              };
+        {/* Column Headers */}
+        <div className="overflow-x-auto">
+          <div className="flex-none border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center min-w-max px-4 py-2">
+              {visibleColumns.map((column, index) => {
+                const columnStyle: ColumnStyle = {
+                  width: column.width,
+                  // Removed sticky functionality to prevent overlap with group headers
+                  // ...(column.isSticky ? {
+                  //   position: 'sticky',
+                  //   left: index === 0 ? 0 : index === 1 ? 32 : 132,
+                  //   backgroundColor: 'inherit',
+                  //   zIndex: 2,
+                  // } : {}),
+                };
 
-              return (
-                <div
-                  key={column.id}
-                  className="text-xs font-medium text-gray-500 dark:text-gray-400"
-                  style={columnStyle}
-                >
-                  {column.id === 'dragHandle' ? (
-                    <Bars3Icon className="w-4 h-4 text-gray-400" />
-                  ) : (
-                    column.label
-                  )}
-                </div>
-              );
-            })}
+                return (
+                  <div
+                    key={column.id}
+                    className="text-xs font-medium text-gray-500 dark:text-gray-400"
+                    style={columnStyle}
+                  >
+                    {column.id === 'dragHandle' ? (
+                      <HolderOutlined className="text-gray-400" />
+                    ) : (
+                      column.label
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Task List */}
+          <div className="flex-1 overflow-hidden">
+            <SortableContext
+              items={virtuosoItems.map(task => task.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <GroupedVirtuoso
+                style={{ height: 'calc(100vh - 200px)' }}
+                groupCounts={virtuosoGroupCounts}
+                groupContent={renderGroup}
+                itemContent={renderTask}
+                components={{
+                  // Removed custom Group component as TaskGroupHeader now handles stickiness
+                  List: React.forwardRef<HTMLDivElement, { style?: React.CSSProperties; children?: React.ReactNode }>(({ style, children }, ref) => (
+                    <div
+                      ref={ref}
+                      style={style || {}}
+                      className="virtuoso-list-container" // Add a class for potential debugging/styling
+                    >
+                      {children}
+                    </div>
+                  )),
+                }}
+              />
+            </SortableContext>
           </div>
         </div>
 
-        {/* Task List */}
-        <div className="flex-1 overflow-hidden">
-          <GroupedVirtuoso
-            style={{ height: 'calc(100vh - 200px)' }}
-            groupCounts={groupCounts}
-            groupContent={renderGroup}
-            itemContent={renderTask}
-            components={{
-              Group: ({ children, ...props }) => (
-                <div
-                  {...props}
-                  className="sticky top-0 z-10 bg-white dark:bg-gray-800"
-                >
-                  {children}
-                </div>
-              ),
-              List: React.forwardRef(({ style, children }, ref) => (
-                <div
-                  ref={ref as any}
-                  style={style}
-                  className="divide-y divide-gray-200 dark:divide-gray-700"
-                >
-                  {children}
-                </div>
-              )),
-            }}
-          />
-        </div>
+        {/* Drag Overlay */}
+        <DragOverlay>
+          {activeId ? (
+            <div className="bg-white dark:bg-gray-800 shadow-lg rounded-md border border-blue-300 opacity-90">
+              <div className="px-4 py-2">
+                <span className="text-sm font-medium">
+                  {allTasks.find(task => task.id === activeId)?.name || 'Task'}
+                </span>
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
       </div>
-    </div>
+    </DndContext>
   );
 };
 
