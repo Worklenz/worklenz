@@ -55,7 +55,6 @@ import {
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
 import useDragCursor from '@/hooks/useDragCursor';
-import TaskContextMenu from './task-context-menu/task-context-menu';
 
 interface TaskRowProps {
   task: Task;
@@ -430,9 +429,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
     const addSubtaskInputRef = useRef<InputRef>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    // Context menu state
-    const [showContextMenu, setShowContextMenu] = useState(false);
-    const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+    // Subtask expansion state (managed by Redux)
 
     // PERFORMANCE OPTIMIZATION: Intersection Observer for lazy loading
     useEffect(() => {
@@ -574,11 +571,6 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
       if (!task.id) return;
       onToggleSubtasks?.(task.id);
     }, [task.id, onToggleSubtasks]);
-
-    const handleContextMenu = useCallback((e: React.MouseEvent) => {
-      setShowContextMenu(true);
-      setContextMenuPosition({ x: e.clientX, y: e.clientY });
-    }, []);
 
     // Handle successful subtask creation
     const handleSubtaskCreated = useCallback(
@@ -1015,54 +1007,6 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                               </span>
                             </div>
                           )}
-                          {/* Indicators section */}
-                          {!editTaskName && (
-                            <div className="task-indicators flex items-center gap-2">
-                              {/* Comments indicator */}
-                              {(task as any).comments_count > 0 && (
-                                <Tooltip title={t('taskManagement.comments', 'Comments')}>
-                                  <MessageOutlined
-                                    style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
-                                  />
-                                </Tooltip>
-                              )}
-                              {/* Attachments indicator */}
-                              {(task as any).attachments_count > 0 && (
-                                <Tooltip title={t('taskManagement.attachments', 'Attachments')}>
-                                  <PaperClipOutlined
-                                    style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
-                                  />
-                                </Tooltip>
-                              )}
-                              {/* Dependencies indicator */}
-                              {(task as any).has_dependencies && (
-                                <Tooltip title={t('taskManagement.dependencies', 'Dependencies')}>
-                                  <MinusCircleOutlined
-                                    style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
-                                  />
-                                </Tooltip>
-                              )}
-                              {/* Subscribers indicator */}
-                              {(task as any).has_subscribers && (
-                                <Tooltip title={t('taskManagement.subscribers', 'Subscribers')}>
-                                  <EyeOutlined
-                                    style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
-                                  />
-                                </Tooltip>
-                              )}
-                              {/* Recurring indicator */}
-                              {(task as any).schedule_id && (
-                                <Tooltip title={t('taskManagement.recurringTask', 'Recurring Task')}>
-                                  <RetweetOutlined
-                                    style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
-                                  />
-                                </Tooltip>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
                         </>
                       )}
                     </div>
@@ -1112,8 +1056,6 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                         )}
                       </div>
                     )}
-                        </>
-                      )}
                   </div>
 
                   {/* Right section with open button - CSS hover only */}
@@ -1536,7 +1478,6 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
           data-dnd-dragging={isDragging ? 'true' : 'false'}
           data-task-id={task.id}
           data-group-id={groupId}
-          onContextMenu={handleContextMenu}
         >
           <div className="task-row-container flex h-10 max-h-10 relative">
             {/* All Columns - No Fixed Positioning */}
@@ -1565,14 +1506,6 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
             </div>
           </div>
         </div>
-        {showContextMenu && (
-          <TaskContextMenu
-            task={task}
-            projectId={projectId}
-            position={contextMenuPosition}
-            onClose={() => setShowContextMenu(false)}
-          />
-        )}
       </>
     );
   },
