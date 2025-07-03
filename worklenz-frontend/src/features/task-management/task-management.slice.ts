@@ -3,8 +3,10 @@ import {
   createEntityAdapter,
   PayloadAction,
   createAsyncThunk,
+  EntityState,
+  EntityId,
 } from '@reduxjs/toolkit';
-import { Task, TaskManagementState } from '@/types/task-management.types';
+import { Task, TaskManagementState, TaskGroup, TaskGrouping } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
 import {
   tasksApiService,
@@ -12,6 +14,25 @@ import {
   ITaskListV3Response,
 } from '@/api/tasks/tasks.api.service';
 import logger from '@/utils/errorLogger';
+import { DEFAULT_TASK_NAME } from '@/shared/constants';
+
+// Helper function to safely convert time values
+const convertTimeValue = (value: any): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  if (typeof value === 'object' && value !== null) {
+    // Handle time objects like {hours: 2, minutes: 30}
+    if ('hours' in value || 'minutes' in value) {
+      const hours = Number(value.hours || 0);
+      const minutes = Number(value.minutes || 0);
+      return hours + minutes / 60;
+    }
+  }
+  return 0;
+};
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -21,17 +42,16 @@ export enum IGroupBy {
 }
 
 // Entity adapter for normalized state
-const tasksAdapter = createEntityAdapter<Task>({
-  sortComparer: (a, b) => a.order - b.order,
-});
+const tasksAdapter = createEntityAdapter<Task>();
 
+// Get the initial state from the adapter
 const initialState: TaskManagementState = {
-  entities: {},
   ids: [],
+  entities: {},
   loading: false,
   error: null,
   groups: [],
-  grouping: null,
+  grouping: undefined,
   selectedPriorities: [],
   search: '',
 };
@@ -47,7 +67,7 @@ export const fetchTasks = createAsyncThunk(
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: false,
-        group: currentGrouping,
+        group: currentGrouping || '',
         field: '',
         order: '',
         search: '',
@@ -118,7 +138,7 @@ export const fetchTasks = createAsyncThunk(
         group.tasks.map((task: any) => ({
           id: task.id,
           task_key: task.task_key || '',
-          title: task.name || '',
+          title: (task.title && task.title.trim()) ? task.title.trim() : DEFAULT_TASK_NAME,
           description: task.description || '',
           status: statusIdToNameMap[task.status] || 'todo',
           priority: priorityIdToNameMap[task.priority] || 'medium',
@@ -167,24 +187,18 @@ export const fetchTasksV3 = createAsyncThunk(
 
       // Get selected labels from taskReducer
       const selectedLabels = state.taskReducer.labels
-        ? state.taskReducer.labels
-            .filter(l => l.selected)
-            .map(l => l.id)
-            .join(' ')
-        : '';
+        .filter((l: any) => l.selected && l.id)
+        .map((l: any) => l.id)
+        .join(' ');
 
       // Get selected assignees from taskReducer
       const selectedAssignees = state.taskReducer.taskAssignees
-        ? state.taskReducer.taskAssignees
-            .filter(m => m.selected)
-            .map(m => m.id)
-            .join(' ')
-        : '';
+        .filter((m: any) => m.selected && m.id)
+        .map((m: any) => m.id)
+        .join(' ');
 
-      // Get selected priorities from taskReducer (consistent with other slices)
-      const selectedPriorities = state.taskReducer.priorities
-        ? state.taskReducer.priorities.join(' ')
-        : '';
+      // Get selected priorities from taskReducer
+      const selectedPriorities = state.taskReducer.priorities.join(' ');
 
       // Get search value from taskReducer
       const searchValue = state.taskReducer.search || '';
@@ -192,7 +206,7 @@ export const fetchTasksV3 = createAsyncThunk(
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: false,
-        group: currentGrouping,
+        group: currentGrouping || '',
         field: '',
         order: '',
         search: searchValue,
@@ -206,10 +220,88 @@ export const fetchTasksV3 = createAsyncThunk(
 
       const response = await tasksApiService.getTaskListV3(config);
 
-      // Minimal processing - tasks are already processed by backend
+      // Log raw response for debugging
+      console.log('Raw API response:', response.body);
+      console.log('Sample task from backend:', response.body.allTasks?.[0]);
+      console.log('Task key from backend:', response.body.allTasks?.[0]?.task_key);
+
+      // Ensure tasks are properly normalized
+      const tasks = response.body.allTasks.map((task: any) => {
+        const now = new Date().toISOString();
+        
+
+        
+        return {
+          id: task.id,
+          task_key: task.task_key || task.key || '',
+          title: (task.title && task.title.trim()) ? task.title.trim() : DEFAULT_TASK_NAME,
+          description: task.description || '',
+          status: task.status || 'todo',
+          priority: task.priority || 'medium',
+          phase: task.phase || 'Development',
+          progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
+          assignees: task.assignees?.map((a: { team_member_id: string }) => a.team_member_id) || [],
+          assignee_names: task.assignee_names || task.names || [],
+          labels: task.labels?.map((l: { id: string; label_id: string; name: string; color_code: string; end: boolean; names: string[] }) => ({
+            id: l.id || l.label_id,
+            name: l.name,
+            color: l.color_code || '#1890ff',
+            end: l.end,
+            names: l.names,
+          })) || [],
+          due_date: task.end_date || '',
+          timeTracking: {
+            estimated: convertTimeValue(task.total_time),
+            logged: convertTimeValue(task.time_spent),
+          },
+          created_at: task.created_at || now,
+          updated_at: task.updated_at || now,
+          order: typeof task.sort_order === 'number' ? task.sort_order : 0,
+          sub_tasks: task.sub_tasks || [],
+          sub_tasks_count: task.sub_tasks_count || 0,
+          show_sub_tasks: task.show_sub_tasks || false,
+          parent_task_id: task.parent_task_id || '',
+          weight: task.weight || 0,
+          color: task.color || '',
+          statusColor: task.status_color || '',
+          priorityColor: task.priority_color || '',
+          comments_count: task.comments_count || 0,
+          attachments_count: task.attachments_count || 0,
+          has_dependencies: !!task.has_dependencies,
+          schedule_id: task.schedule_id || null,
+        } as Task;
+      });
+
+      // Map groups to match TaskGroup interface
+      const mappedGroups = response.body.groups.map((group: any) => ({
+        id: group.id,
+        title: group.title,
+        taskIds: group.taskIds || [],
+        type: group.groupType as 'status' | 'priority' | 'phase' | 'members',
+        color: group.color,
+      }));
+
+      // Log normalized data for debugging
+      console.log('Normalized data:', {
+        tasks,
+        groups: mappedGroups,
+        grouping: response.body.grouping,
+        totalTasks: response.body.totalTasks,
+      });
+
+      // Verify task IDs match group taskIds
+      const taskIds = new Set(tasks.map(t => t.id));
+      const groupTaskIds = new Set(mappedGroups.flatMap(g => g.taskIds));
+      console.log('Task ID verification:', {
+        taskIds: Array.from(taskIds),
+        groupTaskIds: Array.from(groupTaskIds),
+        allTaskIdsInGroups: Array.from(groupTaskIds).every(id => taskIds.has(id)),
+        allGroupTaskIdsInTasks: Array.from(taskIds).every(id => groupTaskIds.has(id)),
+      });
+
       return {
-        tasks: response.body.allTasks,
-        groups: response.body.groups,
+        tasks: tasks,
+        groups: mappedGroups,
         grouping: response.body.grouping,
         totalTasks: response.body.totalTasks,
       };
@@ -237,7 +329,7 @@ export const fetchSubTasks = createAsyncThunk(
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: false,
-        group: currentGrouping,
+        group: currentGrouping || '',
         field: '',
         order: '',
         search: '',
@@ -343,327 +435,182 @@ export const moveTaskToGroupWithAPI = createAsyncThunk(
   }
 );
 
+// Add action to update task with subtasks
+export const updateTaskWithSubtasks = createAsyncThunk(
+  'taskManagement/updateTaskWithSubtasks',
+  async ({ taskId, subtasks }: { taskId: string; subtasks: any[] }, { getState }) => {
+    return { taskId, subtasks };
+  }
+);
+
+// Create the slice
 const taskManagementSlice = createSlice({
   name: 'taskManagement',
-  initialState: tasksAdapter.getInitialState(initialState),
+  initialState,
   reducers: {
-    // Basic CRUD operations
     setTasks: (state, action: PayloadAction<Task[]>) => {
-      tasksAdapter.setAll(state, action.payload);
-      state.loading = false;
-      state.error = null;
+      const tasks = action.payload;
+      state.ids = tasks.map(task => task.id);
+      state.entities = tasks.reduce((acc, task) => {
+        acc[task.id] = task;
+        return acc;
+      }, {} as Record<string, Task>);
     },
-
     addTask: (state, action: PayloadAction<Task>) => {
-      tasksAdapter.addOne(state, action.payload);
+      const task = action.payload;
+      state.ids.push(task.id);
+      state.entities[task.id] = task;
     },
-
-    addTaskToGroup: (state, action: PayloadAction<{ task: Task; groupId?: string }>) => {
+    addTaskToGroup: (state, action: PayloadAction<{ task: Task; groupId: string }>) => {
       const { task, groupId } = action.payload;
-
-      // Add to entity adapter
-      tasksAdapter.addOne(state, task);
-
-      // Add to groups array for V3 API compatibility
-      if (state.groups && state.groups.length > 0) {
-        // Find the target group using the provided UUID
-        const targetGroup = state.groups.find(group => {
-          // If a specific groupId (UUID) is provided, use it directly
-          if (groupId && group.id === groupId) {
-            return true;
-          }
-
-          return false;
-        });
-
-        if (targetGroup) {
-          // Add task ID to the end of the group's taskIds array (newest last)
-          targetGroup.taskIds.push(task.id);
-
-          // Also add to the tasks array if it exists (for backward compatibility)
-          if ((targetGroup as any).tasks) {
-            (targetGroup as any).tasks.push(task);
-          }
-        }
+      state.ids.push(task.id);
+      state.entities[task.id] = task;
+      const group = state.groups.find(g => g.id === groupId);
+      if (group) {
+        group.taskIds.push(task.id);
       }
     },
-
-    updateTask: (state, action: PayloadAction<{ id: string; changes: Partial<Task> }>) => {
-      tasksAdapter.updateOne(state, {
-        id: action.payload.id,
-        changes: {
-          ...action.payload.changes,
-          updatedAt: new Date().toISOString(),
-        },
+    updateTask: (state, action: PayloadAction<Task>) => {
+      const task = action.payload;
+      state.entities[task.id] = task;
+    },
+    deleteTask: (state, action: PayloadAction<string>) => {
+      const taskId = action.payload;
+      delete state.entities[taskId];
+      state.ids = state.ids.filter(id => id !== taskId);
+      state.groups = state.groups.map(group => ({
+        ...group,
+        taskIds: group.taskIds.filter(id => id !== taskId),
+      }));
+    },
+    bulkUpdateTasks: (state, action: PayloadAction<Task[]>) => {
+      action.payload.forEach(task => {
+        state.entities[task.id] = task;
       });
     },
-
-    deleteTask: (state, action: PayloadAction<string>) => {
-      tasksAdapter.removeOne(state, action.payload);
-    },
-
-    // Bulk operations
-    bulkUpdateTasks: (state, action: PayloadAction<{ ids: string[]; changes: Partial<Task> }>) => {
-      const { ids, changes } = action.payload;
-      const updates = ids.map(id => ({
-        id,
-        changes: {
-          ...changes,
-          updatedAt: new Date().toISOString(),
-        },
-      }));
-      tasksAdapter.updateMany(state, updates);
-    },
-
     bulkDeleteTasks: (state, action: PayloadAction<string[]>) => {
-      tasksAdapter.removeMany(state, action.payload);
-    },
-
-    // Optimized drag and drop operations
-    reorderTasks: (state, action: PayloadAction<{ taskIds: string[]; newOrder: number[] }>) => {
-      const { taskIds, newOrder } = action.payload;
-
-      // Batch update for better performance
-      const updates = taskIds.map((id, index) => ({
-        id,
-        changes: {
-          order: newOrder[index],
-          updatedAt: new Date().toISOString(),
-        },
+      const taskIds = action.payload;
+      taskIds.forEach(taskId => {
+        delete state.entities[taskId];
+      });
+      state.ids = state.ids.filter(id => !taskIds.includes(id));
+      state.groups = state.groups.map(group => ({
+        ...group,
+        taskIds: group.taskIds.filter(id => !taskIds.includes(id)),
       }));
-
-      tasksAdapter.updateMany(state, updates);
     },
-
-    moveTaskToGroup: (
-      state,
-      action: PayloadAction<{
-        taskId: string;
-        groupType: 'status' | 'priority' | 'phase';
-        groupValue: string;
-      }>
-    ) => {
-      const { taskId, groupType, groupValue } = action.payload;
-      const changes: Partial<Task> = {
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Update the appropriate field based on group type
-      if (groupType === 'status') {
-        changes.status = groupValue as Task['status'];
-      } else if (groupType === 'priority') {
-        changes.priority = groupValue as Task['priority'];
-      } else if (groupType === 'phase') {
-        changes.phase = groupValue;
+    reorderTasks: (state, action: PayloadAction<{ taskIds: string[]; groupId: string }>) => {
+      const { taskIds, groupId } = action.payload;
+      const group = state.groups.find(g => g.id === groupId);
+      if (group) {
+        group.taskIds = taskIds;
       }
-
-      tasksAdapter.updateOne(state, { id: taskId, changes });
     },
-
-    // New action to move task between groups with proper group management
+    moveTaskToGroup: (state, action: PayloadAction<{ taskId: string; groupId: string }>) => {
+      const { taskId, groupId } = action.payload;
+      state.groups = state.groups.map(group => ({
+        ...group,
+        taskIds:
+          group.id === groupId
+            ? [...group.taskIds, taskId]
+            : group.taskIds.filter(id => id !== taskId),
+      }));
+    },
     moveTaskBetweenGroups: (
       state,
       action: PayloadAction<{
         taskId: string;
-        fromGroupId: string;
-        toGroupId: string;
-        taskUpdate: Partial<Task>;
+        sourceGroupId: string;
+        targetGroupId: string;
       }>
     ) => {
-      const { taskId, fromGroupId, toGroupId, taskUpdate } = action.payload;
-
-      // Update the task entity with new values
-      tasksAdapter.updateOne(state, {
-        id: taskId,
-        changes: {
-          ...taskUpdate,
-          updatedAt: new Date().toISOString(),
-        },
-      });
-
-      // Update groups if they exist
-      if (state.groups && state.groups.length > 0) {
-        // Remove task from old group
-        const fromGroup = state.groups.find(group => group.id === fromGroupId);
-        if (fromGroup) {
-          fromGroup.taskIds = fromGroup.taskIds.filter(id => id !== taskId);
-        }
-
-        // Add task to new group
-        const toGroup = state.groups.find(group => group.id === toGroupId);
-        if (toGroup) {
-          // Add to the end of the group (newest last)
-          toGroup.taskIds.push(taskId);
-        }
-      }
+      const { taskId, sourceGroupId, targetGroupId } = action.payload;
+      state.groups = state.groups.map(group => ({
+        ...group,
+        taskIds:
+          group.id === targetGroupId
+            ? [...group.taskIds, taskId]
+            : group.id === sourceGroupId
+            ? group.taskIds.filter(id => id !== taskId)
+            : group.taskIds,
+      }));
     },
-
-    // Optimistic update for drag operations - reduces perceived lag
     optimisticTaskMove: (
-      state,
-      action: PayloadAction<{ taskId: string; newGroupId: string; newIndex: number }>
-    ) => {
-      const { taskId, newGroupId, newIndex } = action.payload;
-      const task = state.entities[taskId];
-
-      if (task) {
-        // Parse group ID to determine new values
-        const [groupType, ...groupValueParts] = newGroupId.split('-');
-        const groupValue = groupValueParts.join('-');
-
-        const changes: Partial<Task> = {
-          order: newIndex,
-          updatedAt: new Date().toISOString(),
-        };
-
-        // Update group-specific field
-        if (groupType === 'status') {
-          changes.status = groupValue as Task['status'];
-        } else if (groupType === 'priority') {
-          changes.priority = groupValue as Task['priority'];
-        } else if (groupType === 'phase') {
-          changes.phase = groupValue;
-        }
-
-        // Update the task entity
-        tasksAdapter.updateOne(state, { id: taskId, changes });
-
-        // Update groups if they exist
-        if (state.groups && state.groups.length > 0) {
-          // Find the target group
-          const targetGroup = state.groups.find(group => group.id === newGroupId);
-          if (targetGroup) {
-            // Remove task from all groups first
-            state.groups.forEach(group => {
-              group.taskIds = group.taskIds.filter(id => id !== taskId);
-            });
-
-            // Add task to target group at the specified index
-            if (newIndex >= targetGroup.taskIds.length) {
-              targetGroup.taskIds.push(taskId);
-            } else {
-              targetGroup.taskIds.splice(newIndex, 0, taskId);
-            }
-          }
-        }
-      }
-    },
-
-    // Proper reorder action that handles both task entities and group arrays
-    reorderTasksInGroup: (
       state,
       action: PayloadAction<{
         taskId: string;
-        fromGroupId: string;
-        toGroupId: string;
-        fromIndex: number;
-        toIndex: number;
-        groupType: 'status' | 'priority' | 'phase';
-        groupValue: string;
+        sourceGroupId: string;
+        targetGroupId: string;
       }>
     ) => {
-      const { taskId, fromGroupId, toGroupId, fromIndex, toIndex, groupType, groupValue } =
-        action.payload;
-
-      // Update the task entity
-      const changes: Partial<Task> = {
-        order: toIndex,
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Update group-specific field
-      if (groupType === 'status') {
-        changes.status = groupValue as Task['status'];
-      } else if (groupType === 'priority') {
-        changes.priority = groupValue as Task['priority'];
-      } else if (groupType === 'phase') {
-        changes.phase = groupValue;
-      }
-
-      tasksAdapter.updateOne(state, { id: taskId, changes });
-
-      // Update groups if they exist
-      if (state.groups && state.groups.length > 0) {
-        // Remove task from source group
-        const fromGroup = state.groups.find(group => group.id === fromGroupId);
-        if (fromGroup) {
-          fromGroup.taskIds = fromGroup.taskIds.filter(id => id !== taskId);
-        }
-
-        // Add task to target group
-        const toGroup = state.groups.find(group => group.id === toGroupId);
-        if (toGroup) {
-          if (toIndex >= toGroup.taskIds.length) {
-            toGroup.taskIds.push(taskId);
-          } else {
-            toGroup.taskIds.splice(toIndex, 0, taskId);
-          }
-        }
+      const { taskId, sourceGroupId, targetGroupId } = action.payload;
+      state.groups = state.groups.map(group => ({
+        ...group,
+        taskIds:
+          group.id === targetGroupId
+            ? [...group.taskIds, taskId]
+            : group.id === sourceGroupId
+            ? group.taskIds.filter(id => id !== taskId)
+            : group.taskIds,
+      }));
+    },
+    reorderTasksInGroup: (
+      state,
+      action: PayloadAction<{ taskIds: string[]; groupId: string }>
+    ) => {
+      const { taskIds, groupId } = action.payload;
+      const group = state.groups.find(g => g.id === groupId);
+      if (group) {
+        group.taskIds = taskIds;
       }
     },
-
-    // Loading states
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
-
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
-      state.loading = false;
     },
-
-    // Filter actions
     setSelectedPriorities: (state, action: PayloadAction<string[]>) => {
       state.selectedPriorities = action.payload;
     },
-
-    // Search action
     setSearch: (state, action: PayloadAction<string>) => {
       state.search = action.payload;
     },
-
-    // Reset action
     resetTaskManagement: state => {
-      return tasksAdapter.getInitialState(initialState);
+      state.loading = false;
+      state.error = null;
+      state.groups = [];
+      state.grouping = undefined;
+      state.selectedPriorities = [];
+      state.search = '';
+      state.ids = [];
+      state.entities = {};
     },
     toggleTaskExpansion: (state, action: PayloadAction<string>) => {
-      const taskId = action.payload;
-      const task = state.entities[taskId];
+      const task = state.entities[action.payload];
       if (task) {
         task.show_sub_tasks = !task.show_sub_tasks;
       }
     },
-    addSubtaskToParent: (state, action: PayloadAction<{ subtask: Task; parentTaskId: string }>) => {
-      const { subtask, parentTaskId } = action.payload;
-      const parentTask = state.entities[parentTaskId];
-      if (parentTask) {
-        if (!parentTask.sub_tasks) {
-          parentTask.sub_tasks = [];
+    addSubtaskToParent: (
+      state,
+      action: PayloadAction<{ parentId: string; subtask: Task }>
+    ) => {
+      const { parentId, subtask } = action.payload;
+      const parent = state.entities[parentId];
+      if (parent) {
+        state.ids.push(subtask.id);
+        state.entities[subtask.id] = subtask;
+        if (!parent.sub_tasks) {
+          parent.sub_tasks = [];
         }
-        parentTask.sub_tasks.push(subtask);
-        parentTask.sub_tasks_count = (parentTask.sub_tasks_count || 0) + 1;
-        // Ensure the parent task is expanded to show the new subtask
-        parentTask.show_sub_tasks = true;
-        // Add the subtask to the main entities as well
-        tasksAdapter.addOne(state, subtask);
+        parent.sub_tasks.push(subtask);
+        parent.sub_tasks_count = (parent.sub_tasks_count || 0) + 1;
       }
     },
   },
   extraReducers: builder => {
     builder
-      .addCase(fetchTasks.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchTasks.fulfilled, (state, action) => {
-        state.loading = false;
-        state.error = null;
-        tasksAdapter.setAll(state, action.payload);
-      })
-      .addCase(fetchTasks.rejected, (state, action) => {
-        state.loading = false;
-        state.error = (action.payload as string) || 'Failed to fetch tasks';
-      })
       .addCase(fetchTasksV3.pending, state => {
         state.loading = true;
         state.error = null;
@@ -671,39 +618,68 @@ const taskManagementSlice = createSlice({
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
-        // Tasks are already processed by backend, minimal setup needed
-        tasksAdapter.setAll(state, action.payload.tasks);
-        state.groups = action.payload.groups;
-        state.grouping = action.payload.grouping;
+
+        // Ensure we have tasks before updating state
+        if (action.payload.tasks && action.payload.tasks.length > 0) {
+          // Update tasks
+          const tasks = action.payload.tasks;
+          state.ids = tasks.map(task => task.id);
+          state.entities = tasks.reduce((acc, task) => {
+            acc[task.id] = task;
+            return acc;
+          }, {} as Record<string, Task>);
+
+          // Update groups
+          state.groups = action.payload.groups;
+          state.grouping = action.payload.grouping;
+
+          // Verify task IDs match group taskIds
+          const taskIds = new Set(Object.keys(state.entities));
+          const groupTaskIds = new Set(state.groups.flatMap(g => g.taskIds));
+
+          // Ensure all tasks have IDs and all group taskIds exist
+          const validTaskIds = new Set(Object.keys(state.entities));
+          state.groups = state.groups.map((group: TaskGroup) => ({
+            ...group,
+            taskIds: group.taskIds.filter((id: string) => validTaskIds.has(id)),
+          }));
+        } else {
+          // Set empty state but don't show error
+          state.ids = [];
+          state.entities = {} as Record<string, Task>;
+          state.groups = [];
+        }
       })
       .addCase(fetchTasksV3.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || 'Failed to fetch tasks';
+        // Provide a more descriptive error message
+        state.error = action.error.message || action.payload || 'An error occurred while fetching tasks. Please try again.';
+        // Clear task data on error to prevent stale state
+        state.ids = [];
+        state.entities = {} as Record<string, Task>;
+        state.groups = [];
+      })
+      .addCase(fetchSubTasks.pending, (state, action) => {
+        // Don't set global loading state for subtasks
+        state.error = null;
       })
       .addCase(fetchSubTasks.fulfilled, (state, action) => {
         const { parentTaskId, subtasks } = action.payload;
         const parentTask = state.entities[parentTaskId];
         if (parentTask) {
           parentTask.sub_tasks = subtasks;
+          parentTask.sub_tasks_count = subtasks.length;
           parentTask.show_sub_tasks = true;
-          // Add subtasks to the main entities as well
-          tasksAdapter.addMany(state, subtasks);
         }
       })
-      .addCase(refreshTaskProgress.pending, state => {
-        // Don't set loading to true for refresh to avoid UI blocking
-        state.error = null;
-      })
-      .addCase(refreshTaskProgress.fulfilled, state => {
-        state.error = null;
-        // Progress refresh completed successfully
-      })
-      .addCase(refreshTaskProgress.rejected, (state, action) => {
-        state.error = (action.payload as string) || 'Failed to refresh task progress';
+      .addCase(fetchSubTasks.rejected, (state, action) => {
+        // Set error but don't clear task data
+        state.error = action.error.message || action.payload || 'Failed to fetch subtasks. Please try again.';
       });
   },
 });
 
+// Export the slice reducer and actions
 export const {
   setTasks,
   addTask,
@@ -726,25 +702,30 @@ export const {
   addSubtaskToParent,
 } = taskManagementSlice.actions;
 
-export default taskManagementSlice.reducer;
+// Export the selectors
+export const selectAllTasks = (state: RootState) => state.taskManagement.entities;
+export const selectAllTasksArray = (state: RootState) => Object.values(state.taskManagement.entities);
+export const selectTaskById = (state: RootState, taskId: string) => state.taskManagement.entities[taskId];
+export const selectTaskIds = (state: RootState) => state.taskManagement.ids;
+export const selectGroups = (state: RootState) => state.taskManagement.groups;
+export const selectGrouping = (state: RootState) => state.taskManagement.grouping;
+export const selectLoading = (state: RootState) => state.taskManagement.loading;
+export const selectError = (state: RootState) => state.taskManagement.error;
+export const selectSelectedPriorities = (state: RootState) => state.taskManagement.selectedPriorities;
+export const selectSearch = (state: RootState) => state.taskManagement.search;
 
-// Selectors
-export const taskManagementSelectors = tasksAdapter.getSelectors<RootState>(
-  state => state.taskManagement
-);
-
-// Enhanced selectors for better performance
+// Memoized selectors
 export const selectTasksByStatus = (state: RootState, status: string) =>
-  taskManagementSelectors.selectAll(state).filter(task => task.status === status);
+  Object.values(state.taskManagement.entities).filter(task => task.status === status);
 
 export const selectTasksByPriority = (state: RootState, priority: string) =>
-  taskManagementSelectors.selectAll(state).filter(task => task.priority === priority);
+  Object.values(state.taskManagement.entities).filter(task => task.priority === priority);
 
 export const selectTasksByPhase = (state: RootState, phase: string) =>
-  taskManagementSelectors.selectAll(state).filter(task => task.phase === phase);
+  Object.values(state.taskManagement.entities).filter(task => task.phase === phase);
 
-export const selectTasksLoading = (state: RootState) => state.taskManagement.loading;
-export const selectTasksError = (state: RootState) => state.taskManagement.error;
+// Export the reducer as default
+export default taskManagementSlice.reducer;
 
 // V3 API selectors - no processing needed, data is pre-processed by backend
 export const selectTaskGroupsV3 = (state: RootState) => state.taskManagement.groups;

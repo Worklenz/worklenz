@@ -20,7 +20,7 @@ import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/tas
 import { useState, useRef, useEffect } from 'react';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { fetchSubTasks } from '@/features/tasks/tasks.slice';
+import { fetchSubTasks } from '@/features/task-management/task-management.slice';
 
 type TaskListTaskCellProps = {
   task: IProjectTask;
