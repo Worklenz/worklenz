@@ -1236,6 +1236,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           --task-selected-border: #1890ff;
           --task-drag-over-bg: #f0f8ff;
           --task-drag-over-border: #40a9ff;
+          --task-border-hover-top: #c0c0c0; /* Slightly darker for visibility */
         }
 
         .dark .task-groups-container-fixed,
@@ -1257,6 +1258,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           --task-selected-border: #1890ff;
           --task-drag-over-bg: #1a2332;
           --task-drag-over-border: #40a9ff;
+          --task-border-hover-top-dark: #505050; /* Slightly darker for visibility in dark mode */
         }
 
         /* Dark mode scrollbar */

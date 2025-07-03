@@ -98,6 +98,8 @@ export {
   CheckCircleOutlined,
   MinusCircleOutlined,
   RetweetOutlined,
+  DoubleRightOutlined,
+  UserAddOutlined,
 } from '@ant-design/icons';
 
 // Re-export all components with React

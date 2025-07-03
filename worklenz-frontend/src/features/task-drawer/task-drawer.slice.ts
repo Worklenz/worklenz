@@ -153,5 +153,6 @@ export const {
   setTimeLogEditing,
   setTaskRecurringSchedule,
   resetTaskDrawer,
+  setConvertToSubtaskDrawerOpen,
 } = taskDrawerSlice.actions;
 export default taskDrawerSlice.reducer;
