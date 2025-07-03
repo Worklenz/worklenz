@@ -47,7 +47,7 @@ const AssigneeSelector = ({ task, groupId = null }: AssigneeSelectorProps) => {
   const dispatch = useAppDispatch();
 
   const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
-  const {loadingAssignees} = useAppSelector(state => state.taskReducer);
+  const { loadingAssignees } = useAppSelector(state => state.taskReducer);
 
   const filteredMembersData = useMemo(() => {
     return teamMembers?.data?.filter(member =>
@@ -102,7 +102,6 @@ const AssigneeSelector = ({ task, groupId = null }: AssigneeSelectorProps) => {
     const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
     return assignees?.includes(memberId);
   };
-  
 
   const membersDropdownContent = (
     <Card className="custom-card" styles={{ body: { padding: 8 } }}>
@@ -144,16 +143,16 @@ const AssigneeSelector = ({ task, groupId = null }: AssigneeSelectorProps) => {
                   />
                 </div>
                 <Flex vertical>
-                    <Typography.Text>{member.name}</Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {member.email}&nbsp;
-                      {member.pending_invitation && (
-                        <Typography.Text type="danger" style={{ fontSize: 10 }}>
-                          ({t('pendingInvitation')})
-                        </Typography.Text>
-                      )}
-                    </Typography.Text>
-                  </Flex>
+                  <Typography.Text>{member.name}</Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {member.email}&nbsp;
+                    {member.pending_invitation && (
+                      <Typography.Text type="danger" style={{ fontSize: 10 }}>
+                        ({t('pendingInvitation')})
+                      </Typography.Text>
+                    )}
+                  </Typography.Text>
+                </Flex>
               </List.Item>
             ))
           ) : (
@@ -202,7 +201,7 @@ const AssigneeSelector = ({ task, groupId = null }: AssigneeSelectorProps) => {
         type="dashed"
         shape="circle"
         size="small"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
         icon={
           <PlusOutlined
             style={{

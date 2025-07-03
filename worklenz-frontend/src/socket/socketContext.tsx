@@ -45,7 +45,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     socket.on('connect', () => {
       logger.info('Socket connected');
       setConnected(true);
-      
+
       // Only show connected message once
       if (!hasShownConnectedMessage.current) {
         messageApi.success(t('connection-restored'));

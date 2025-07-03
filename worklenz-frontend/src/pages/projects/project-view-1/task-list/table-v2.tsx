@@ -13,11 +13,7 @@ import {
   TouchSensor,
   UniqueIdentifier,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -35,28 +31,25 @@ import { evt_project_task_list_drag_and_move } from '@/shared/worklenz-analytics
 interface DraggableRowProps {
   task: IProjectTask;
   visibleColumns: Array<{ key: string; width: number }>;
-  renderCell: (columnKey: string | number, task: IProjectTask, isSubtask?: boolean) => React.ReactNode;
+  renderCell: (
+    columnKey: string | number,
+    task: IProjectTask,
+    isSubtask?: boolean
+  ) => React.ReactNode;
   hoverRow: string | null;
   onRowHover: (taskId: string | null) => void;
   isSubtask?: boolean;
 }
 
-const DraggableRow = ({ 
-  task, 
-  visibleColumns, 
-  renderCell, 
-  hoverRow, 
+const DraggableRow = ({
+  task,
+  visibleColumns,
+  renderCell,
+  hoverRow,
   onRowHover,
-  isSubtask = false 
+  isSubtask = false,
 }: DraggableRowProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id as UniqueIdentifier,
     data: {
       type: 'task',
@@ -119,11 +112,11 @@ const TaskListTable = ({
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const tableRef = useRef<HTMLDivElement | null>(null);
   const parentRef = useRef<HTMLDivElement | null>(null);
-  
+
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { projectId } = useAppSelector(state => state.projectReducer);
   const groupBy = useAppSelector(state => state.taskReducer.groupBy);
-  
+
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
@@ -176,7 +169,7 @@ const TaskListTable = ({
           );
         },
         task: () => (
-          <Flex align="center" className={isSubtask ? "pl-6" : "pl-2"}>
+          <Flex align="center" className={isSubtask ? 'pl-6' : 'pl-2'}>
             {task.name}
           </Flex>
         ),
@@ -195,69 +188,74 @@ const TaskListTable = ({
   }, []);
 
   // Handle drag end with socket integration
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    setActiveId(null);
-    document.body.style.cursor = '';
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
 
-    if (!over || active.id === over.id) {
-      return;
-    }
+      setActiveId(null);
+      document.body.style.cursor = '';
 
-    const activeIndex = mainTasks.findIndex(task => task.id === active.id);
-    const overIndex = mainTasks.findIndex(task => task.id === over.id);
-
-    if (activeIndex !== -1 && overIndex !== -1) {
-      const activeTask = mainTasks[activeIndex];
-      const overTask = mainTasks[overIndex];
-      
-      // Create updated task arrays
-      const updatedTasks = [...mainTasks];
-      updatedTasks.splice(activeIndex, 1);
-      updatedTasks.splice(overIndex, 0, activeTask);
-
-      // Dispatch Redux action for optimistic update
-      dispatch(reorderTasks({
-        activeGroupId: tableId,
-        overGroupId: tableId,
-        fromIndex: activeIndex,
-        toIndex: overIndex,
-        task: activeTask,
-        updatedSourceTasks: updatedTasks,
-        updatedTargetTasks: updatedTasks,
-      }));
-
-      // Emit socket event for backend persistence
-      if (socket && projectId && currentSession?.team_id) {
-        const toPos = overTask?.sort_order || mainTasks[mainTasks.length - 1]?.sort_order || -1;
-        
-        socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
-          project_id: projectId,
-          from_index: activeTask.sort_order,
-          to_index: toPos,
-          to_last_index: overIndex === mainTasks.length - 1,
-          from_group: tableId,
-          to_group: tableId,
-          group_by: groupBy,
-          task: activeTask,
-          team_id: currentSession.team_id,
-        });
-
-        // Track analytics event
-        trackMixpanelEvent(evt_project_task_list_drag_and_move);
+      if (!over || active.id === over.id) {
+        return;
       }
-    }
-  }, [
-    mainTasks, 
-    tableId, 
-    dispatch, 
-    socket, 
-    projectId, 
-    currentSession?.team_id, 
-    groupBy, 
-    trackMixpanelEvent
-  ]);
+
+      const activeIndex = mainTasks.findIndex(task => task.id === active.id);
+      const overIndex = mainTasks.findIndex(task => task.id === over.id);
+
+      if (activeIndex !== -1 && overIndex !== -1) {
+        const activeTask = mainTasks[activeIndex];
+        const overTask = mainTasks[overIndex];
+
+        // Create updated task arrays
+        const updatedTasks = [...mainTasks];
+        updatedTasks.splice(activeIndex, 1);
+        updatedTasks.splice(overIndex, 0, activeTask);
+
+        // Dispatch Redux action for optimistic update
+        dispatch(
+          reorderTasks({
+            activeGroupId: tableId,
+            overGroupId: tableId,
+            fromIndex: activeIndex,
+            toIndex: overIndex,
+            task: activeTask,
+            updatedSourceTasks: updatedTasks,
+            updatedTargetTasks: updatedTasks,
+          })
+        );
+
+        // Emit socket event for backend persistence
+        if (socket && projectId && currentSession?.team_id) {
+          const toPos = overTask?.sort_order || mainTasks[mainTasks.length - 1]?.sort_order || -1;
+
+          socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
+            project_id: projectId,
+            from_index: activeTask.sort_order,
+            to_index: toPos,
+            to_last_index: overIndex === mainTasks.length - 1,
+            from_group: tableId,
+            to_group: tableId,
+            group_by: groupBy,
+            task: activeTask,
+            team_id: currentSession.team_id,
+          });
+
+          // Track analytics event
+          trackMixpanelEvent(evt_project_task_list_drag_and_move);
+        }
+      }
+    },
+    [
+      mainTasks,
+      tableId,
+      dispatch,
+      socket,
+      projectId,
+      currentSession?.team_id,
+      groupBy,
+      trackMixpanelEvent,
+    ]
+  );
 
   // Memoize header rendering
   const TableHeader = useMemo(
@@ -291,15 +289,14 @@ const TaskListTable = ({
   const activeTask = activeId ? flattenedTasks.find(task => task.id === activeId) : null;
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div ref={parentRef} className="h-[400px] overflow-auto" onScroll={handleScroll}>
         {TableHeader}
 
-        <SortableContext items={mainTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={mainTasks.map(task => task.id)}
+          strategy={verticalListSortingStrategy}
+        >
           <div ref={tableRef} style={{ width: '100%' }}>
             {flattenedTasks.map((task, index) => (
               <DraggableRow

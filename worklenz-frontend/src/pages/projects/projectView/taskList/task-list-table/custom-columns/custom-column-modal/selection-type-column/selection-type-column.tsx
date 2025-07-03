@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { nanoid } from "nanoid";
+import { nanoid } from 'nanoid';
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
 import { Button, Flex, Input, Select, Tag, Typography } from 'antd';
 import { CloseCircleOutlined, HolderOutlined } from '@ant-design/icons';
@@ -25,12 +25,14 @@ const SelectionTypeColumn = () => {
   ]);
 
   // Get the custom column modal type and column ID from the store
-  const { customColumnModalType, customColumnId, selectionsList: storeSelectionsList } = useAppSelector(
-    state => state.taskListCustomColumnsReducer
-  );
-  
+  const {
+    customColumnModalType,
+    customColumnId,
+    selectionsList: storeSelectionsList,
+  } = useAppSelector(state => state.taskListCustomColumnsReducer);
+
   // Get the opened column data if in edit mode
-  const openedColumn = useAppSelector(state => 
+  const openedColumn = useAppSelector(state =>
     state.taskReducer.customColumns.find(col => col.key === customColumnId)
   );
 
@@ -39,7 +41,8 @@ const SelectionTypeColumn = () => {
     customColumnId,
     openedColumn,
     storeSelectionsList,
-    'openedColumn?.custom_column_obj?.selectionsList': openedColumn?.custom_column_obj?.selectionsList
+    'openedColumn?.custom_column_obj?.selectionsList':
+      openedColumn?.custom_column_obj?.selectionsList,
   });
 
   // Load existing selections when in edit mode
@@ -47,7 +50,7 @@ const SelectionTypeColumn = () => {
     if (customColumnModalType === 'edit' && openedColumn?.custom_column_obj?.selectionsList) {
       const existingSelections = openedColumn.custom_column_obj.selectionsList;
       console.log('Loading existing selections:', existingSelections);
-      
+
       if (Array.isArray(existingSelections) && existingSelections.length > 0) {
         setSelections(existingSelections);
         dispatch(setSelectionsList(existingSelections));
@@ -86,7 +89,9 @@ const SelectionTypeColumn = () => {
   // update selection name
   const handleUpdateSelectionName = (selectionId: string, selectionName: string) => {
     const updatedSelections = selections.map(selection =>
-      selection.selection_id === selectionId ? { ...selection, selection_name: selectionName } : selection
+      selection.selection_id === selectionId
+        ? { ...selection, selection_name: selectionName }
+        : selection
     );
     setSelections(updatedSelections);
     dispatch(setSelectionsList(updatedSelections)); // update the slice with the new selection name
@@ -95,7 +100,9 @@ const SelectionTypeColumn = () => {
   // update selection color
   const handleUpdateSelectionColor = (selectionId: string, selectionColor: string) => {
     const updatedSelections = selections.map(selection =>
-      selection.selection_id === selectionId ? { ...selection, selection_color: selectionColor } : selection
+      selection.selection_id === selectionId
+        ? { ...selection, selection_color: selectionColor }
+        : selection
     );
     setSelections(updatedSelections);
     dispatch(setSelectionsList(updatedSelections)); // update the slice with the new selection color
@@ -103,7 +110,9 @@ const SelectionTypeColumn = () => {
 
   // remove a selection
   const handleRemoveSelection = (selectionId: string) => {
-    const updatedSelections = selections.filter(selection => selection.selection_id !== selectionId);
+    const updatedSelections = selections.filter(
+      selection => selection.selection_id !== selectionId
+    );
     setSelections(updatedSelections);
     dispatch(setSelectionsList(updatedSelections)); // update the slice after selection removal
   };

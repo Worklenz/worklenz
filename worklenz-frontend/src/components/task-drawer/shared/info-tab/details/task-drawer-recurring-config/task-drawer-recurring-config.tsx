@@ -15,7 +15,12 @@ import {
 import { SettingOutlined } from '@ant-design/icons';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { IRepeatOption, ITaskRecurring, ITaskRecurringSchedule, ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
+import {
+  IRepeatOption,
+  ITaskRecurring,
+  ITaskRecurringSchedule,
+  ITaskRecurringScheduleData,
+} from '@/types/tasks/task-recurring-schedule';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -47,7 +52,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     { label: t('wed'), value: 3, checked: false },
     { label: t('thu'), value: 4, checked: false },
     { label: t('fri'), value: 5, checked: false },
-    { label: t('sat'), value: 6, checked: false }
+    { label: t('sat'), value: 6, checked: false },
   ];
 
   const weekOptions = [
@@ -55,7 +60,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     { label: t('second'), value: 2 },
     { label: t('third'), value: 3 },
     { label: t('fourth'), value: 4 },
-    { label: t('last'), value: 5 }
+    { label: t('last'), value: 5 },
   ];
 
   const dayOptions = daysOfWeek.map(d => ({ label: d.label, value: d.value }));
@@ -91,7 +96,9 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
           if (selected) setRepeatOption(selected);
         }
         dispatch(updateRecurringChange(schedule));
-        dispatch(setTaskRecurringSchedule({ schedule_id: schedule.id as string, task_id: task.id }));
+        dispatch(
+          setTaskRecurringSchedule({ schedule_id: schedule.id as string, task_id: task.id })
+        );
 
         setRecurring(checked);
         if (!checked) setShowConfig(false);
@@ -114,16 +121,16 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
 
   const getSelectedDays = () => {
     return daysOfWeek
-      .filter(day => day.checked)   // Get only the checked days
-      .map(day => day.value);       // Extract their numeric values
-  }
+      .filter(day => day.checked) // Get only the checked days
+      .map(day => day.value); // Extract their numeric values
+  };
 
   const getUpdateBody = () => {
     if (!task.id || !task.schedule_id || !repeatOption.value) return;
 
     const body: ITaskRecurringSchedule = {
       id: task.id,
-      schedule_type: repeatOption.value
+      schedule_type: repeatOption.value,
     };
 
     switch (repeatOption.value) {
@@ -156,7 +163,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
         break;
     }
     return body;
-  }
+  };
 
   const handleSave = async () => {
     if (!task.id || !task.schedule_id) return;
@@ -172,7 +179,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
         configVisibleChange(false);
       }
     } catch (e) {
-      logger.error("handleSave", e);
+      logger.error('handleSave', e);
     } finally {
       setUpdatingData(false);
     }
@@ -207,14 +214,13 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
             updateDaysOfWeek();
           }
         }
-      };
+      }
     } catch (e) {
-      logger.error("getScheduleData", e);
-    }
-    finally {
+      logger.error('getScheduleData', e);
+    } finally {
       setLoadingData(false);
     }
-  }
+  };
 
   const handleResponse = (response: ITaskRecurringScheduleData) => {
     if (!task || !response.task_id) return;
@@ -259,7 +265,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
                         <Checkbox.Group
                           options={daysOfWeek.map(day => ({
                             label: day.label,
-                            value: day.value
+                            value: day.value,
                           }))}
                           value={selectedDays}
                           onChange={handleDayCheckboxChange}

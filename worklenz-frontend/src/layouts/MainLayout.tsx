@@ -33,52 +33,55 @@ const MainLayout = memo(() => {
   }, [verifyAuthStatus]);
 
   // Memoize styles to prevent object recreation on every render
-  const headerStyles = useMemo(() => ({
-    zIndex: 999,
-    position: 'fixed' as const,
-    width: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    padding: 0,
-    borderBottom: themeMode === 'dark' ? '1px solid #303030' : 'none',
-  }), [themeMode]);
+  const headerStyles = useMemo(
+    () => ({
+      zIndex: 999,
+      position: 'fixed' as const,
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      padding: 0,
+      borderBottom: themeMode === 'dark' ? '1px solid #303030' : 'none',
+    }),
+    [themeMode]
+  );
 
-  const contentStyles = useMemo(() => ({
-    paddingInline: isDesktop ? 64 : 24,
-    overflowX: 'hidden' as const,
-  }), [isDesktop]);
+  const contentStyles = useMemo(
+    () => ({
+      paddingInline: isDesktop ? 64 : 24,
+      overflowX: 'hidden' as const,
+    }),
+    [isDesktop]
+  );
 
   // Memoize theme configuration
-  const themeConfig = useMemo(() => ({
-    components: {
-      Layout: {
-        colorBgLayout: themeMode === 'dark' ? colors.darkGray : colors.white,
-        headerBg: themeMode === 'dark' ? colors.darkGray : colors.white,
+  const themeConfig = useMemo(
+    () => ({
+      components: {
+        Layout: {
+          colorBgLayout: themeMode === 'dark' ? colors.darkGray : colors.white,
+          headerBg: themeMode === 'dark' ? colors.darkGray : colors.white,
+        },
       },
-    },
-  }), [themeMode]);
+    }),
+    [themeMode]
+  );
 
   // Memoize header className
-  const headerClassName = useMemo(() => 
-    `shadow-md ${themeMode === 'dark' ? '' : 'shadow-[#18181811]'}`,
+  const headerClassName = useMemo(
+    () => `shadow-md ${themeMode === 'dark' ? '' : 'shadow-[#18181811]'}`,
     [themeMode]
   );
 
   return (
     <ConfigProvider theme={themeConfig}>
       <Layout style={{ minHeight: '100vh' }}>
-        <Layout.Header
-          className={headerClassName}
-          style={headerStyles}
-        >
+        <Layout.Header className={headerClassName} style={headerStyles}>
           <Navbar />
         </Layout.Header>
 
         <Layout.Content>
-          <Col
-            xxl={{ span: 18, offset: 3, flex: '100%' }}
-            style={contentStyles}
-          >
+          <Col xxl={{ span: 18, offset: 3, flex: '100%' }} style={contentStyles}>
             <Outlet />
           </Col>
         </Layout.Content>

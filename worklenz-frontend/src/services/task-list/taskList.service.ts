@@ -27,14 +27,11 @@ export const createTaskListService = (navigate: NavigateFunction): TaskListServi
 
 export const getGroupIdByGroupedColumn = (task: IProjectTask) => {
   const groupBy = getCurrentGroupBoard().value;
-  if (groupBy === GROUP_BY_STATUS_VALUE)
-    return task.status as string;
+  if (groupBy === GROUP_BY_STATUS_VALUE) return task.status as string;
 
-  if (groupBy === GROUP_BY_PRIORITY_VALUE)
-    return task.priority as string;
+  if (groupBy === GROUP_BY_PRIORITY_VALUE) return task.priority as string;
 
-  if (groupBy === GROUP_BY_PHASE_VALUE)
-    return task.phase_id as string;
+  if (groupBy === GROUP_BY_PHASE_VALUE) return task.phase_id as string;
 
   return null;
-}
+};

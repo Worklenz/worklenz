@@ -15,10 +15,7 @@ interface LabelsSelectorProps {
   isDarkMode?: boolean;
 }
 
-const LabelsSelector: React.FC<LabelsSelectorProps> = ({ 
-  task, 
-  isDarkMode = false 
-}) => {
+const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
@@ -31,9 +28,11 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
   const { socket } = useSocket();
 
   const filteredLabels = useMemo(() => {
-    return (labels as ITaskLabel[])?.filter(label =>
-      label.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    return (
+      (labels as ITaskLabel[])?.filter(label =>
+        label.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      ) || []
+    );
   }, [labels, searchQuery]);
 
   // Update dropdown position
@@ -50,8 +49,12 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
   // Close dropdown when clicking outside and handle scroll
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -61,10 +64,12 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
         // Check if the button is still visible in the viewport
         if (buttonRef.current) {
           const rect = buttonRef.current.getBoundingClientRect();
-          const isVisible = rect.top >= 0 && rect.left >= 0 && 
-                           rect.bottom <= window.innerHeight && 
-                           rect.right <= window.innerWidth;
-          
+          const isVisible =
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= window.innerHeight &&
+            rect.right <= window.innerWidth;
+
           if (isVisible) {
             updateDropdownPosition();
           } else {
@@ -85,7 +90,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
       document.addEventListener('mousedown', handleClickOutside);
       window.addEventListener('scroll', handleScroll, true);
       window.addEventListener('resize', handleResize);
-      
+
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
         window.removeEventListener('scroll', handleScroll, true);
@@ -101,7 +106,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
     e.preventDefault();
     e.stopPropagation();
     console.log('Labels dropdown toggle clicked, current state:', isOpen);
-    
+
     if (!isOpen) {
       updateDropdownPosition();
       setIsOpen(true);
@@ -113,8 +118,6 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
       setIsOpen(false);
     }
   };
-
-
 
   const handleLabelToggle = (label: ITaskLabel) => {
     const labelData = {
@@ -129,14 +132,14 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
 
   const handleCreateLabel = () => {
     if (!searchQuery.trim()) return;
-    
+
     const labelData = {
       task_id: task.id,
       label: searchQuery.trim(),
       parent_task: task.parent_task_id,
       team_id: currentSession?.team_id,
     };
-    
+
     socket?.emit(SocketEvents.CREATE_LABEL.toString(), JSON.stringify(labelData));
     setSearchQuery('');
   };
@@ -149,7 +152,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
     const existingLabel = filteredLabels.find(
       label => label.name?.toLowerCase() === searchQuery.toLowerCase()
     );
-    
+
     if (!existingLabel && e.key === 'Enter') {
       handleCreateLabel();
     }
@@ -163,130 +166,132 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({
         className={`
           w-5 h-5 rounded border border-dashed flex items-center justify-center
           transition-colors duration-200
-          ${isOpen 
-            ? isDarkMode 
-              ? 'border-blue-500 bg-blue-900/20 text-blue-400' 
-              : 'border-blue-500 bg-blue-50 text-blue-600'
-            : isDarkMode 
-              ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
-              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
+          ${
+            isOpen
+              ? isDarkMode
+                ? 'border-blue-500 bg-blue-900/20 text-blue-400'
+                : 'border-blue-500 bg-blue-50 text-blue-600'
+              : isDarkMode
+                ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
           }
         `}
       >
         <PlusOutlined className="text-xs" />
       </button>
 
-      {isOpen && createPortal(
-        <div
-          ref={dropdownRef}
-          className={`
+      {isOpen &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className={`
             fixed z-9999 w-72 rounded-md shadow-lg border
-            ${isDarkMode 
-              ? 'bg-gray-800 border-gray-600' 
-              : 'bg-white border-gray-200'
-            }
+            ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'}
           `}
-          style={{
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-          }}
-        >
-          {/* Header */}
-          <div className={`p-2 border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Search labels..."
-              className={`
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+            }}
+          >
+            {/* Header */}
+            <div className={`p-2 border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Search labels..."
+                className={`
                 w-full px-2 py-1 text-xs rounded border
-                ${isDarkMode
-                  ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                ${
+                  isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
                 }
                 focus:outline-none focus:ring-1 focus:ring-blue-500
               `}
-            />
-          </div>
+              />
+            </div>
 
-          {/* Labels List */}
-          <div className="max-h-48 overflow-y-auto">
-            {filteredLabels && filteredLabels.length > 0 ? (
-              filteredLabels.map((label) => (
-                <div
-                  key={label.id}
-                  className={`
+            {/* Labels List */}
+            <div className="max-h-48 overflow-y-auto">
+              {filteredLabels && filteredLabels.length > 0 ? (
+                filteredLabels.map(label => (
+                  <div
+                    key={label.id}
+                    className={`
                     flex items-center gap-2 p-2 cursor-pointer transition-colors
                     ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}
                   `}
-                  onClick={() => handleLabelToggle(label)}
-                >
-                  <Checkbox
-                    checked={checkLabelSelected(label.id || '')}
-                    onChange={() => handleLabelToggle(label)}
-                    isDarkMode={isDarkMode}
-                  />
-                  
-                  <div
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: label.color_code }}
-                  />
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-xs font-medium truncate ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                      {label.name}
+                    onClick={() => handleLabelToggle(label)}
+                  >
+                    <Checkbox
+                      checked={checkLabelSelected(label.id || '')}
+                      onChange={() => handleLabelToggle(label)}
+                      isDarkMode={isDarkMode}
+                    />
+
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: label.color_code }}
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={`text-xs font-medium truncate ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
+                      >
+                        {label.name}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className={`p-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                <div className="text-xs">No labels found</div>
-                {searchQuery.trim() && (
-                  <button
-                    onClick={handleCreateLabel}
-                    className={`
+                ))
+              ) : (
+                <div
+                  className={`p-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                >
+                  <div className="text-xs">No labels found</div>
+                  {searchQuery.trim() && (
+                    <button
+                      onClick={handleCreateLabel}
+                      className={`
                       mt-2 px-3 py-1 text-xs rounded border transition-colors
-                      ${isDarkMode
-                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                        : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                      ${
+                        isDarkMode
+                          ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                          : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                       }
                     `}
-                  >
-                    Create "{searchQuery}"
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+                    >
+                      Create "{searchQuery}"
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
-          {/* Footer */}
-          <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-            <button
-              className={`
+            {/* Footer */}
+            <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+              <button
+                className={`
                 w-full flex items-center justify-center gap-1 px-2 py-1 text-xs rounded
                 transition-colors
-                ${isDarkMode
-                  ? 'text-blue-400 hover:bg-gray-700'
-                  : 'text-blue-600 hover:bg-blue-50'
-                }
+                ${isDarkMode ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}
               `}
-              onClick={() => {
-                // TODO: Implement manage labels functionality
-                console.log('Manage labels clicked');
-              }}
-            >
-              <TagOutlined />
-              Manage labels
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
+                onClick={() => {
+                  // TODO: Implement manage labels functionality
+                  console.log('Manage labels clicked');
+                }}
+              >
+                <TagOutlined />
+                Manage labels
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 };
 
-export default LabelsSelector; 
+export default LabelsSelector;

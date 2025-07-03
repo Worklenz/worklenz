@@ -16,7 +16,7 @@ copyFolderRecursiveSync(sourceDir, path.join(__dirname, '..', 'public'));
 
 function copyFolderRecursiveSync(source, target) {
   const targetFolder = path.join(target, path.basename(source));
-  
+
   // Create target folder if it doesn't exist
   if (!fs.existsSync(targetFolder)) {
     fs.mkdirSync(targetFolder);
@@ -25,7 +25,7 @@ function copyFolderRecursiveSync(source, target) {
   // Copy files
   if (fs.lstatSync(source).isDirectory()) {
     const files = fs.readdirSync(source);
-    files.forEach(function(file) {
+    files.forEach(function (file) {
       const curSource = path.join(source, file);
       if (fs.lstatSync(curSource).isDirectory()) {
         copyFolderRecursiveSync(curSource, targetFolder);
@@ -36,4 +36,4 @@ function copyFolderRecursiveSync(source, target) {
   }
 }
 
-console.log('TinyMCE files copied successfully!'); 
+console.log('TinyMCE files copied successfully!');

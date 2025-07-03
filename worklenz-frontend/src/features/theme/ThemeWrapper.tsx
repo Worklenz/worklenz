@@ -16,37 +16,43 @@ const ThemeWrapper = memo(({ children }: ChildrenProp) => {
   const configRef = useRef<HTMLDivElement>(null);
 
   // Memoize theme configuration to prevent unnecessary re-renders
-  const themeConfig = useMemo(() => ({
-    algorithm: themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
-    components: {
-      Layout: {
-        colorBgLayout: themeMode === 'dark' ? colors.darkGray : colors.white,
-        headerBg: themeMode === 'dark' ? colors.darkGray : colors.white,
+  const themeConfig = useMemo(
+    () => ({
+      algorithm: themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+      components: {
+        Layout: {
+          colorBgLayout: themeMode === 'dark' ? colors.darkGray : colors.white,
+          headerBg: themeMode === 'dark' ? colors.darkGray : colors.white,
+        },
+        Menu: {
+          colorBgContainer: colors.transparent,
+        },
+        Table: {
+          rowHoverBg: themeMode === 'dark' ? '#000' : '#edebf0',
+        },
+        Select: {
+          controlHeight: 32,
+        },
       },
-      Menu: {
-        colorBgContainer: colors.transparent,
+      token: {
+        borderRadius: 4,
       },
-      Table: {
-        rowHoverBg: themeMode === 'dark' ? '#000' : '#edebf0',
-      },
-      Select: {
-        controlHeight: 32,
-      },
-    },
-    token: {
-      borderRadius: 4,
-    },
-  }), [themeMode]);
+    }),
+    [themeMode]
+  );
 
   // Memoize the theme class name
   const themeClassName = useMemo(() => `theme-${themeMode}`, [themeMode]);
 
   // Memoize the media query change handler
-  const handleMediaQueryChange = useCallback((e: MediaQueryListEvent) => {
-    if (!localStorage.getItem('theme')) {
-      dispatch(initializeTheme());
-    }
-  }, [dispatch]);
+  const handleMediaQueryChange = useCallback(
+    (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('theme')) {
+        dispatch(initializeTheme());
+      }
+    },
+    [dispatch]
+  );
 
   // Initialize theme after mount
   useEffect(() => {
@@ -72,9 +78,7 @@ const ThemeWrapper = memo(({ children }: ChildrenProp) => {
 
   return (
     <div ref={configRef} className={themeClassName}>
-      <ConfigProvider theme={themeConfig}>
-        {children}
-      </ConfigProvider>
+      <ConfigProvider theme={themeConfig}>{children}</ConfigProvider>
     </div>
   );
 });

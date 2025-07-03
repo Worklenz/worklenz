@@ -70,7 +70,9 @@ const CategoriesSettings = () => {
     {
       key: 'associatedTask',
       title: t('associatedTaskColumn'),
-      render: (record: IProjectCategoryViewModel) => <Typography.Text>{record.usage}</Typography.Text>,
+      render: (record: IProjectCategoryViewModel) => (
+        <Typography.Text>{record.usage}</Typography.Text>
+      ),
     },
     {
       key: 'actionBtns',

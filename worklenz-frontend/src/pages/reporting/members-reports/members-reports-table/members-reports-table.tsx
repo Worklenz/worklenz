@@ -124,7 +124,9 @@ const MembersReportsTable = () => {
         dataSource={membersList}
         rowKey={record => record.id}
         pagination={{ showSizeChanger: true, defaultPageSize: 10, total: total }}
-        onChange={(pagination, filters, sorter, extra) => handleOnChange(pagination, filters, sorter, extra)}
+        onChange={(pagination, filters, sorter, extra) =>
+          handleOnChange(pagination, filters, sorter, extra)
+        }
         scroll={{ x: 'max-content' }}
         loading={isLoading}
         onRow={record => {

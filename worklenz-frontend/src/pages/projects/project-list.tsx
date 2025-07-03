@@ -85,7 +85,7 @@ const createFilters = (items: { id: string; name: string }[]) =>
 const ProjectList: React.FC = () => {
   const [filteredInfo, setFilteredInfo] = useState<Record<string, FilterValue | null>>({});
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { t } = useTranslation('all-project-list');
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -94,14 +94,14 @@ const ProjectList: React.FC = () => {
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Get view state from Redux
-  const { mode: viewMode, groupBy } = useAppSelector((state) => state.projectViewReducer);
-  const { requestParams, groupedRequestParams, groupedProjects } = useAppSelector(state => state.projectsReducer);
+  const { mode: viewMode, groupBy } = useAppSelector(state => state.projectViewReducer);
+  const { requestParams, groupedRequestParams, groupedProjects } = useAppSelector(
+    state => state.projectsReducer
+  );
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
-  const { filteredCategories, filteredStatuses } = useAppSelector(
-    state => state.projectsReducer
-  );
+  const { filteredCategories, filteredStatuses } = useAppSelector(state => state.projectsReducer);
 
   const {
     data: projectsData,
@@ -175,18 +175,20 @@ const ProjectList: React.FC = () => {
   );
 
   // Memoize category filters to prevent unnecessary recalculations
-  const categoryFilters = useMemo(() => 
-    createFilters(
-      projectCategories.map(category => ({ id: category.id || '', name: category.name || '' }))
-    ), 
+  const categoryFilters = useMemo(
+    () =>
+      createFilters(
+        projectCategories.map(category => ({ id: category.id || '', name: category.name || '' }))
+      ),
     [projectCategories]
   );
 
   // Memoize status filters to prevent unnecessary recalculations
-  const statusFilters = useMemo(() => 
-    createFilters(
-      projectStatuses.map(status => ({ id: status.id || '', name: status.name || '' }))
-    ), 
+  const statusFilters = useMemo(
+    () =>
+      createFilters(
+        projectStatuses.map(status => ({ id: status.id || '', name: status.name || '' }))
+      ),
     [projectStatuses]
   );
 
@@ -221,39 +223,36 @@ const ProjectList: React.FC = () => {
     if (viewMode === ProjectViewType.LIST) {
       return projectsData?.body?.total || 0;
     } else {
-      return groupedProjects.data?.data?.reduce((total, group) => total + group.project_count, 0) || 0;
+      return (
+        groupedProjects.data?.data?.reduce((total, group) => total + group.project_count, 0) || 0
+      );
     }
   }, [viewMode, projectsData?.body?.total, groupedProjects.data?.data]);
 
   // Memoize the grouped projects data transformation
   const transformedGroupedProjects = useMemo(() => {
-    return groupedProjects.data?.data?.map(group => ({
-      groupKey: group.group_key,
-      groupName: group.group_name,
-      groupColor: group.group_color,
-      projects: group.projects,
-      count: group.project_count,
-      totalProgress: 0,
-      totalTasks: 0
-    })) || [];
+    return (
+      groupedProjects.data?.data?.map(group => ({
+        groupKey: group.group_key,
+        groupName: group.group_name,
+        groupColor: group.group_color,
+        projects: group.projects,
+        count: group.project_count,
+        totalProgress: 0,
+        totalTasks: 0,
+      })) || []
+    );
   }, [groupedProjects.data?.data]);
 
   // Memoize the table data source
-  const tableDataSource = useMemo(() => 
-    projectsData?.body?.data || [], 
-    [projectsData?.body?.data]
-  );
+  const tableDataSource = useMemo(() => projectsData?.body?.data || [], [projectsData?.body?.data]);
 
   // Memoize the empty text component
-  const emptyText = useMemo(() => 
-    <Empty description={t('noProjects')} />, 
-    [t]
-  );
+  const emptyText = useMemo(() => <Empty description={t('noProjects')} />, [t]);
 
   // Memoize the pagination show total function
-  const paginationShowTotal = useMemo(() => 
-    (total: number, range: [number, number]) => 
-      `${range[0]}-${range[1]} of ${total} groups`,
+  const paginationShowTotal = useMemo(
+    () => (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} groups`,
     []
   );
 
@@ -291,18 +290,20 @@ const ProjectList: React.FC = () => {
       newParams.size = newPagination.pageSize || DEFAULT_PAGE_SIZE;
 
       dispatch(setRequestParams(newParams));
-      
+
       // Also update grouped request params to keep them in sync
-      dispatch(setGroupedRequestParams({
-        ...groupedRequestParams,
-        statuses: newParams.statuses,
-        categories: newParams.categories,
-        order: newParams.order,
-        field: newParams.field,
-        index: newParams.index,
-        size: newParams.size,
-      }));
-      
+      dispatch(
+        setGroupedRequestParams({
+          ...groupedRequestParams,
+          statuses: newParams.statuses,
+          categories: newParams.categories,
+          order: newParams.order,
+          field: newParams.field,
+          index: newParams.index,
+          size: newParams.size,
+        })
+      );
+
       setFilteredInfo(filters);
     },
     [dispatch, setSortingValues, groupedRequestParams]
@@ -332,24 +333,28 @@ const ProjectList: React.FC = () => {
     (value: IProjectFilter) => {
       const newFilterIndex = filters.indexOf(value);
       setFilterIndex(newFilterIndex);
-      
+
       // Update both request params for consistency
       dispatch(setRequestParams({ filter: newFilterIndex }));
-      dispatch(setGroupedRequestParams({ 
-        ...groupedRequestParams,
-        filter: newFilterIndex,
-        index: 1 // Reset to first page when changing filter
-      }));
-      
+      dispatch(
+        setGroupedRequestParams({
+          ...groupedRequestParams,
+          filter: newFilterIndex,
+          index: 1, // Reset to first page when changing filter
+        })
+      );
+
       // Refresh data based on current view mode
       if (viewMode === ProjectViewType.LIST) {
         refetchProjects();
       } else if (viewMode === ProjectViewType.GROUP && groupBy) {
-        dispatch(fetchGroupedProjects({
-          ...groupedRequestParams,
-          filter: newFilterIndex,
-          index: 1
-        }));
+        dispatch(
+          fetchGroupedProjects({
+            ...groupedRequestParams,
+            filter: newFilterIndex,
+            index: 1,
+          })
+        );
       }
     },
     [filters, setFilterIndex, dispatch, refetchProjects, viewMode, groupBy, groupedRequestParams]
@@ -369,18 +374,18 @@ const ProjectList: React.FC = () => {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const searchValue = e.target.value;
       trackMixpanelEvent(evt_projects_search);
-      
+
       // Update both request params for consistency
       dispatch(setRequestParams({ search: searchValue, index: 1 }));
-      
+
       if (viewMode === ProjectViewType.GROUP) {
         const newGroupedParams = {
           ...groupedRequestParams,
-          search: searchValue, 
-          index: 1 
+          search: searchValue,
+          index: 1,
         };
         dispatch(setGroupedRequestParams(newGroupedParams));
-        
+
         // Trigger debounced search in group mode
         debouncedGroupedSearch(newGroupedParams);
       }
@@ -429,13 +434,16 @@ const ProjectList: React.FC = () => {
     dispatch(setProjectId(null));
   }, [dispatch]);
 
-  const navigateToProject = useCallback((project_id: string | undefined, default_view: string | undefined) => {
-    if (project_id) {
-      navigate(
-        `/worklenz/projects/${project_id}?tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}&pinned_tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}`
-      );
-    }
-  }, [navigate]);
+  const navigateToProject = useCallback(
+    (project_id: string | undefined, default_view: string | undefined) => {
+      if (project_id) {
+        navigate(
+          `/worklenz/projects/${project_id}?tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}&pinned_tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}`
+        );
+      }
+    },
+    [navigate]
+  );
 
   // Preload project view components on hover for smoother navigation
   const handleProjectHover = useCallback((project_id: string | undefined) => {
@@ -444,7 +452,7 @@ const ProjectList: React.FC = () => {
       import('@/pages/projects/projectView/project-view').catch(() => {
         // Silently fail if preload doesn't work
       });
-      
+
       // Also preload critical task management components
       import('@/components/task-management/task-list-board').catch(() => {
         // Silently fail if preload doesn't work
@@ -536,7 +544,17 @@ const ProjectList: React.FC = () => {
         ),
       },
     ],
-    [t, categoryFilters, statusFilters, filteredInfo, filteredCategories, filteredStatuses, navigate, dispatch, isOwnerOrAdmin]
+    [
+      t,
+      categoryFilters,
+      statusFilters,
+      filteredInfo,
+      filteredCategories,
+      filteredStatuses,
+      navigate,
+      dispatch,
+      isOwnerOrAdmin,
+    ]
   );
 
   useEffect(() => {
@@ -551,17 +569,19 @@ const ProjectList: React.FC = () => {
     const filterIndex = getFilterIndex();
     dispatch(setRequestParams({ filter: filterIndex }));
     // Also sync with grouped request params on initial load
-    dispatch(setGroupedRequestParams({ 
-      filter: filterIndex,
-      index: 1,
-      size: DEFAULT_PAGE_SIZE,
-      field: 'name',
-      order: 'ascend',
-      search: '',
-      groupBy: '',
-      statuses: null,
-      categories: null,
-    }));
+    dispatch(
+      setGroupedRequestParams({
+        filter: filterIndex,
+        index: 1,
+        size: DEFAULT_PAGE_SIZE,
+        field: 'name',
+        order: 'ascend',
+        search: '',
+        groupBy: '',
+        statuses: null,
+        categories: null,
+      })
+    );
   }, [dispatch, getFilterIndex]);
 
   useEffect(() => {
@@ -605,11 +625,7 @@ const ProjectList: React.FC = () => {
               defaultValue={filters[getFilterIndex()] ?? filters[0]}
               onChange={handleSegmentChange}
             />
-            <Segmented
-              options={viewToggleOptions}
-              value={viewMode}
-              onChange={handleViewToggle}
-            />
+            <Segmented options={viewToggleOptions} value={viewMode} onChange={handleViewToggle} />
             {viewMode === ProjectViewType.GROUP && (
               <Select
                 value={groupBy}
@@ -658,15 +674,19 @@ const ProjectList: React.FC = () => {
                 loading={groupedProjects.loading}
                 t={t}
               />
-              {!groupedProjects.loading && groupedProjects.data?.data && groupedProjects.data.data.length > 0 && (
-                <div style={{ marginTop: '24px', textAlign: 'center' }}>
-                  <Pagination
-                    {...groupedPaginationConfig}
-                    onChange={(page, pageSize) => handleGroupedTableChange({ current: page, pageSize })}
-                    showTotal={paginationShowTotal}
-                  />
-                </div>
-              )}
+              {!groupedProjects.loading &&
+                groupedProjects.data?.data &&
+                groupedProjects.data.data.length > 0 && (
+                  <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                    <Pagination
+                      {...groupedPaginationConfig}
+                      onChange={(page, pageSize) =>
+                        handleGroupedTableChange({ current: page, pageSize })
+                      }
+                      showTotal={paginationShowTotal}
+                    />
+                  </div>
+                )}
             </div>
           )}
         </Skeleton>

@@ -18,7 +18,6 @@ const TaskCompletedLateTable = ({
   const [lateCompletedTaskList, setLateCompletedTaskList] = useState<IInsightTasks[]>([]);
   const [loading, setLoading] = useState(true);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
-  
 
   const getLateCompletedTasks = async () => {
     try {
@@ -39,7 +38,7 @@ const TaskCompletedLateTable = ({
 
   useEffect(() => {
     getLateCompletedTasks();
-  }, [projectId, includeArchivedTasks,refreshTimestamp]);
+  }, [projectId, includeArchivedTasks, refreshTimestamp]);
 
   // table columns
   const columns: TableProps['columns'] = [

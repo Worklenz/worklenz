@@ -15,7 +15,7 @@ class ReduxPerformanceMonitor {
 
   logMetric(metric: PerformanceMetrics) {
     this.metrics.push(metric);
-    
+
     // Keep only recent metrics
     if (this.metrics.length > this.maxMetrics) {
       this.metrics = this.metrics.slice(-this.maxMetrics);
@@ -49,14 +49,14 @@ class ReduxPerformanceMonitor {
 export const performanceMonitor = new ReduxPerformanceMonitor();
 
 // Redux middleware for performance monitoring
-export const performanceMiddleware: Middleware = (store) => (next) => (action: any) => {
+export const performanceMiddleware: Middleware = store => next => (action: any) => {
   const start = performance.now();
-  
+
   const result = next(action);
-  
+
   const end = performance.now();
   const duration = end - start;
-  
+
   // Calculate approximate state size (in development only)
   let stateSize = 0;
   if (process.env.NODE_ENV === 'development') {
@@ -101,7 +101,7 @@ export function analyzeReduxPerformance() {
 
   // Count action frequencies
   metrics.forEach(m => {
-    analysis.mostFrequentActions[m.actionType] = 
+    analysis.mostFrequentActions[m.actionType] =
       (analysis.mostFrequentActions[m.actionType] || 0) + 1;
   });
 
@@ -109,14 +109,15 @@ export function analyzeReduxPerformance() {
   if (analysis.slowActions > analysis.totalActions * 0.1) {
     analysis.recommendations.push('Consider optimizing selectors with createSelector');
   }
-  
-  if (analysis.largestStateSize > 1000000) { // 1MB
+
+  if (analysis.largestStateSize > 1000000) {
+    // 1MB
     analysis.recommendations.push('State size is large - consider normalizing data');
   }
-  
+
   if (analysis.averageActionTime > 20) {
     analysis.recommendations.push('Average action time is high - check for expensive reducers');
   }
 
   return analysis;
-} 
+}

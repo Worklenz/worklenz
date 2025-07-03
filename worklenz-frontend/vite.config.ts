@@ -7,9 +7,7 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     // **Plugins**
-    plugins: [
-      react(),
-    ],
+    plugins: [react()],
 
     // **Resolve**
     resolve: {
@@ -56,46 +54,50 @@ export default defineConfig(({ command, mode }) => {
 
       // **Minification**
       minify: isProduction ? 'terser' : false,
-      terserOptions: isProduction ? {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_funcs: ['console.log', 'console.info', 'console.debug'],
-          passes: 2, // Multiple passes for better compression
-        },
-        mangle: {
-          safari10: true,
-        },
-        format: {
-          comments: false,
-        },
-      } : undefined,
+      terserOptions: isProduction
+        ? {
+            compress: {
+              drop_console: true,
+              drop_debugger: true,
+              pure_funcs: ['console.log', 'console.info', 'console.debug'],
+              passes: 2, // Multiple passes for better compression
+            },
+            mangle: {
+              safari10: true,
+            },
+            format: {
+              comments: false,
+            },
+          }
+        : undefined,
 
       // **Chunk Size Warnings**
       chunkSizeWarningLimit: 1000,
 
-              // **Rollup Options**
-        rollupOptions: {
-          output: {
-            // **Simplified Chunking Strategy to avoid React context issues**
-            manualChunks: {
-              // Keep React and all React-dependent libraries together
-              'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
-              
-              // Separate chunk for router
-              'react-router': ['react-router-dom'],
-              
-              // Keep Ant Design separate but ensure React is available
-              'antd': ['antd', '@ant-design/icons'],
-            },
-          
+      // **Rollup Options**
+      rollupOptions: {
+        output: {
+          // **Simplified Chunking Strategy to avoid React context issues**
+          manualChunks: {
+            // Keep React and all React-dependent libraries together
+            'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
+
+            // Separate chunk for router
+            'react-router': ['react-router-dom'],
+
+            // Keep Ant Design separate but ensure React is available
+            antd: ['antd', '@ant-design/icons'],
+          },
+
           // **File Naming Strategies**
-          chunkFileNames: (chunkInfo) => {
-            const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
+          chunkFileNames: chunkInfo => {
+            const facadeModuleId = chunkInfo.facadeModuleId
+              ? chunkInfo.facadeModuleId.split('/').pop()
+              : 'chunk';
             return `assets/js/[name]-[hash].js`;
           },
           entryFileNames: 'assets/js/[name]-[hash].js',
-          assetFileNames: (assetInfo) => {
+          assetFileNames: assetInfo => {
             if (!assetInfo.name) return 'assets/[name]-[hash].[ext]';
             const info = assetInfo.name.split('.');
             let extType = info[info.length - 1];
@@ -107,30 +109,24 @@ export default defineConfig(({ command, mode }) => {
             return `assets/${extType}/[name]-[hash].[ext]`;
           },
         },
-        
+
         // **External dependencies (if any should be externalized)**
         external: [],
-        
+
         // **Preserve modules to avoid context issues**
         preserveEntrySignatures: 'strict',
       },
 
       // **Experimental features for better performance**
       reportCompressedSize: false, // Disable to speed up build
-      
+
       // **CSS optimization**
       cssMinify: isProduction,
     },
 
     // **Optimization**
     optimizeDeps: {
-      include: [
-        'react',
-        'react-dom',
-        'react/jsx-runtime',
-        'antd',
-        '@ant-design/icons',
-      ],
+      include: ['react', 'react-dom', 'react/jsx-runtime', 'antd', '@ant-design/icons'],
       exclude: [
         // Add any packages that should not be pre-bundled
       ],

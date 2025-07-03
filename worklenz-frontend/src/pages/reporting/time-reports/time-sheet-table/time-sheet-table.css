@@ -51,7 +51,8 @@
     border-left: none !important;
   }
 
-  .member-name, .total-time {
+  .member-name,
+  .total-time {
     border-bottom: 2px solid var(--border-color, rgba(0, 0, 0, 0.06));
   }
 }

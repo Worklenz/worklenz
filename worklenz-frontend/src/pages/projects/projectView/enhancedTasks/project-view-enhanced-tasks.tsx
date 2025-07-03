@@ -6,11 +6,7 @@ const ProjectViewEnhancedTasks: React.FC = () => {
   const { project } = useAppSelector(state => state.projectReducer);
 
   if (!project?.id) {
-    return (
-      <div className="p-4 text-center text-gray-500">
-        Project not found
-      </div>
-    );
+    return <div className="p-4 text-center text-gray-500">Project not found</div>;
   }
 
   return (
@@ -20,4 +16,4 @@ const ProjectViewEnhancedTasks: React.FC = () => {
   );
 };
 
-export default ProjectViewEnhancedTasks; 
+export default ProjectViewEnhancedTasks;

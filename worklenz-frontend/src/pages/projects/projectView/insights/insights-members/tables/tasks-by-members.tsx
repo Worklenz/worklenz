@@ -41,7 +41,7 @@ const TaskByMembersTable = () => {
 
   useEffect(() => {
     getProjectOverviewMembers();
-  }, [projectId,refreshTimestamp]);
+  }, [projectId, refreshTimestamp]);
 
   // toggle members row expansions
   const toggleRowExpansion = (memberId: string) => {

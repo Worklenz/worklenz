@@ -7,10 +7,10 @@ interface CustomNumberLabelProps {
   isDarkMode?: boolean;
 }
 
-const CustomNumberLabel: React.FC<CustomNumberLabelProps> = ({ 
-  labelList, 
-  namesString, 
-  isDarkMode = false 
+const CustomNumberLabel: React.FC<CustomNumberLabelProps> = ({
+  labelList,
+  namesString,
+  isDarkMode = false,
 }) => {
   return (
     <Tooltip title={labelList.join(', ')}>
@@ -27,4 +27,4 @@ const CustomNumberLabel: React.FC<CustomNumberLabelProps> = ({
   );
 };
 
-export default CustomNumberLabel; 
+export default CustomNumberLabel;

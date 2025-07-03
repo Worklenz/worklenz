@@ -159,4 +159,4 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
   );
 };
 
-export default EnhancedKanbanCreateTaskCard; 
+export default EnhancedKanbanCreateTaskCard;

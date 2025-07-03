@@ -24,11 +24,12 @@ const TaskGroupWrapperOptimized = ({ taskGroups, groupBy }: TaskGroupWrapperOpti
   useTaskSocketHandlers();
 
   // Memoize task groups with colors
-  const taskGroupsWithColors = useMemo(() => 
-    taskGroups?.map(taskGroup => ({
-      ...taskGroup,
-      displayColor: themeMode === 'dark' ? taskGroup.color_code_dark : taskGroup.color_code,
-    })) || [],
+  const taskGroupsWithColors = useMemo(
+    () =>
+      taskGroups?.map(taskGroup => ({
+        ...taskGroup,
+        displayColor: themeMode === 'dark' ? taskGroup.color_code_dark : taskGroup.color_code,
+      })) || [],
     [taskGroups, themeMode]
   );
 
@@ -69,8 +70,6 @@ const TaskGroupWrapperOptimized = ({ taskGroups, groupBy }: TaskGroupWrapperOpti
         />
       ))}
 
-
-
       {createPortal(
         <TaskTemplateDrawer showDrawer={false} selectedTemplateId="" onClose={() => {}} />,
         document.body,
@@ -80,4 +79,4 @@ const TaskGroupWrapperOptimized = ({ taskGroups, groupBy }: TaskGroupWrapperOpti
   );
 };
 
-export default React.memo(TaskGroupWrapperOptimized); 
+export default React.memo(TaskGroupWrapperOptimized);

@@ -16,6 +16,7 @@ import { ITaskPhaseChangeResponse } from '@/types/tasks/task-phase-change-respon
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
+import { Task } from '@/types/task-management.types';
 
 import {
   fetchTaskAssignees,
@@ -34,13 +35,14 @@ import {
   updateTaskProgress,
 } from '@/features/tasks/tasks.slice';
 import {
-  addTask, 
+  addTask,
   addTaskToGroup,
-  updateTask, 
+  updateTask,
   moveTaskToGroup,
   moveTaskBetweenGroups,
   selectCurrentGroupingV3,
-  fetchTasksV3
+  fetchTasksV3,
+  addSubtaskToParent,
 } from '@/features/task-management/task-management.slice';
 import {
   updateEnhancedKanbanSubtask,
@@ -52,7 +54,7 @@ import {
   updateEnhancedKanbanTaskProgress,
   updateEnhancedKanbanTaskName,
   updateEnhancedKanbanTaskEndDate,
-  updateEnhancedKanbanTaskStartDate
+  updateEnhancedKanbanTaskStartDate,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
@@ -71,7 +73,7 @@ export const useTaskSocketHandlers = () => {
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
-  
+
   const { loadingAssignees, taskGroups } = useAppSelector((state: any) => state.taskReducer);
   const { projectId } = useAppSelector((state: any) => state.projectReducer);
   const currentGroupingV3 = useAppSelector(selectCurrentGroupingV3);
@@ -81,21 +83,24 @@ export const useTaskSocketHandlers = () => {
     (data: ITaskAssigneesUpdateResponse) => {
       if (!data) return;
 
-      const updatedAssignees = data.assignees?.map(assignee => ({
-        ...assignee,
-        selected: true,
-      })) || [];
+      const updatedAssignees =
+        data.assignees?.map(assignee => ({
+          ...assignee,
+          selected: true,
+        })) || [];
 
       // REAL-TIME UPDATES: Update the task-management slice for immediate UI updates
       if (data.id) {
-        dispatch(updateTask({
-          id: data.id,
-          changes: {
-            assignees: data.assignees?.map(a => a.team_member_id) || [],
-            assignee_names: data.names || [],
-            updatedAt: new Date().toISOString(),
-          }
-        }));
+        dispatch(
+          updateTask({
+            id: data.id,
+            changes: {
+              assignees: data.assignees?.map(a => a.team_member_id) || [],
+              assignee_names: data.names || [],
+              updatedAt: new Date().toISOString(),
+            },
+          })
+        );
       }
 
       // Update the old task slice (for backward compatibility)
@@ -103,7 +108,8 @@ export const useTaskSocketHandlers = () => {
         group.tasks?.some(
           (task: IProjectTask) =>
             task.id === data.id ||
-            (task.sub_tasks && task.sub_tasks.some((subtask: IProjectTask) => subtask.id === data.id))
+            (task.sub_tasks &&
+              task.sub_tasks.some((subtask: IProjectTask) => subtask.id === data.id))
         )
       )?.id;
 
@@ -122,7 +128,7 @@ export const useTaskSocketHandlers = () => {
             manual_progress: false,
           } as IProjectTask)
         );
-        
+
         // Update enhanced kanban slice
         dispatch(updateEnhancedKanbanTaskAssignees(data));
 
@@ -138,24 +144,27 @@ export const useTaskSocketHandlers = () => {
   const handleLabelsChange = useCallback(
     async (labels: ILabelsChangeResponse) => {
       if (!labels) return;
-      
+
       // REAL-TIME UPDATES: Update the task-management slice for immediate UI updates
       if (labels.id) {
-        dispatch(updateTask({
-          id: labels.id,
-          changes: {
-            labels: labels.labels?.map(l => ({
-              id: l.id || '',
-              name: l.name || '',
-              color: l.color_code || '#1890ff',
-              end: l.end,
-              names: l.names
-            })) || [],
-            updatedAt: new Date().toISOString(),
-          }
-        }));
+        dispatch(
+          updateTask({
+            id: labels.id,
+            changes: {
+              labels:
+                labels.labels?.map(l => ({
+                  id: l.id || '',
+                  name: l.name || '',
+                  color: l.color_code || '#1890ff',
+                  end: l.end,
+                  names: l.names,
+                })) || [],
+              updatedAt: new Date().toISOString(),
+            },
+          })
+        );
       }
-      
+
       // Update the old task slice and other related slices (for backward compatibility)
       // Only update existing data, don't refetch from server
       await Promise.all([
@@ -165,7 +174,7 @@ export const useTaskSocketHandlers = () => {
         // dispatch(fetchLabels()),
         // projectId && dispatch(fetchLabelsByProject(projectId)),
       ]);
-      
+
       // Update enhanced kanban slice
       dispatch(updateEnhancedKanbanTaskLabels(labels));
     },
@@ -187,7 +196,7 @@ export const useTaskSocketHandlers = () => {
       // Update the old task slice (for backward compatibility)
       dispatch(updateTaskStatus(response));
       dispatch(deselectAll());
-      
+
       // Update enhanced kanban slice
       dispatch(updateEnhancedKanbanTaskStatus(response));
 
@@ -195,18 +204,16 @@ export const useTaskSocketHandlers = () => {
       const state = store.getState();
       const groups = state.taskManagement.groups;
       const currentTask = state.taskManagement.entities[response.id];
-      
-      
+
       if (groups && groups.length > 0 && currentTask && response.status_id) {
         // Find current group containing the task
         const currentGroup = groups.find(group => group.taskIds.includes(response.id));
-        
+
         // Find target group based on new status ID
         // The status_id from response is the UUID of the new status
         const targetGroup = groups.find(group => group.id === response.status_id);
-        
+
         if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-          
           // Determine the new status value based on status category
           let newStatusValue: 'todo' | 'doing' | 'done' = 'todo';
           if (response.statusCategory) {
@@ -218,17 +225,19 @@ export const useTaskSocketHandlers = () => {
               newStatusValue = 'todo';
             }
           }
-          
+
           // Use the new action to move task between groups
-          dispatch(moveTaskBetweenGroups({
-            taskId: response.id,
-            fromGroupId: currentGroup.id,
-            toGroupId: targetGroup.id,
-            taskUpdate: {
-              status: newStatusValue,
-              progress: response.complete_ratio || currentTask.progress,
-            }
-          }));
+          dispatch(
+            moveTaskBetweenGroups({
+              taskId: response.id,
+              fromGroupId: currentGroup.id,
+              toGroupId: targetGroup.id,
+              taskUpdate: {
+                status: newStatusValue,
+                progress: response.complete_ratio || currentTask.progress,
+              },
+            })
+          );
         } else if (!currentGroup || !targetGroup) {
           // Remove unnecessary refetch that causes data thrashing
           // if (projectId) {
@@ -264,23 +273,27 @@ export const useTaskSocketHandlers = () => {
       // For the task management slice, update task progress
       const taskId = data.parent_task || data.id;
       if (taskId) {
-        dispatch(updateTask({
-          id: taskId,
-          changes: {
-            progress: data.complete_ratio,
-            updatedAt: new Date().toISOString(),
-          }
-        }));
+        dispatch(
+          updateTask({
+            id: taskId,
+            changes: {
+              progress: data.complete_ratio,
+              updatedAt: new Date().toISOString(),
+            },
+          })
+        );
       }
-      
+
       // Update enhanced kanban slice
-      dispatch(updateEnhancedKanbanTaskProgress({
-        id: data.id,
-        complete_ratio: data.complete_ratio,
-        completed_count: data.completed_count,
-        total_tasks_count: data.total_tasks_count,
-        parent_task: data.parent_task,
-      }));
+      dispatch(
+        updateEnhancedKanbanTaskProgress({
+          id: data.id,
+          complete_ratio: data.complete_ratio,
+          completed_count: data.completed_count,
+          total_tasks_count: data.total_tasks_count,
+          parent_task: data.parent_task,
+        })
+      );
     },
     [dispatch]
   );
@@ -293,19 +306,19 @@ export const useTaskSocketHandlers = () => {
       dispatch(updateTaskPriority(response));
       dispatch(setTaskPriority(response));
       dispatch(deselectAll());
-      
+
       // Update enhanced kanban slice
       dispatch(updateEnhancedKanbanTaskPriority(response));
 
       // For the task management slice, always update the task entity first
       const state = store.getState();
       const currentTask = state.taskManagement.entities[response.id];
-      
+
       if (currentTask) {
         // Get priority list to map priority_id to priority name
         const priorityList = state.priorityReducer?.priorities || [];
         const priority = priorityList.find(p => p.id === response.priority_id);
-        
+
         let newPriorityValue: 'critical' | 'high' | 'medium' | 'low' = 'medium';
         if (priority?.name) {
           const priorityName = priority.name.toLowerCase();
@@ -315,37 +328,40 @@ export const useTaskSocketHandlers = () => {
         }
 
         // Update the task entity
-        dispatch(updateTask({
-          id: response.id,
-          changes: {
-            priority: newPriorityValue,
-            updatedAt: new Date().toISOString(),
-          }
-        }));
+        dispatch(
+          updateTask({
+            id: response.id,
+            changes: {
+              priority: newPriorityValue,
+              updatedAt: new Date().toISOString(),
+            },
+          })
+        );
 
         // Handle group movement ONLY if grouping by priority
         const groups = state.taskManagement.groups;
         const currentGrouping = state.taskManagement.grouping;
-        
+
         if (groups && groups.length > 0 && currentGrouping === 'priority') {
           // Find current group containing the task
           const currentGroup = groups.find(group => group.taskIds.includes(response.id));
-          
+
           // Find target group based on new priority value
-          const targetGroup = groups.find(group => 
-            group.groupValue.toLowerCase() === newPriorityValue.toLowerCase()
+          const targetGroup = groups.find(
+            group => group.groupValue.toLowerCase() === newPriorityValue.toLowerCase()
           );
-          
+
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-            
-            dispatch(moveTaskBetweenGroups({
-              taskId: response.id,
-              fromGroupId: currentGroup.id,
-              toGroupId: targetGroup.id,
-              taskUpdate: {
-                priority: newPriorityValue,
-              }
-            }));
+            dispatch(
+              moveTaskBetweenGroups({
+                taskId: response.id,
+                fromGroupId: currentGroup.id,
+                toGroupId: targetGroup.id,
+                taskUpdate: {
+                  priority: newPriorityValue,
+                },
+              })
+            );
           } else {
             console.log('🔧 No group movement needed for priority change');
           }
@@ -358,11 +374,7 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleEndDateChange = useCallback(
-    (task: {
-      id: string;
-      parent_task: string | null;
-      end_date: string;
-    }) => {
+    (task: { id: string; parent_task: string | null; end_date: string }) => {
       if (!task) return;
 
       const taskWithProgress = {
@@ -372,7 +384,7 @@ export const useTaskSocketHandlers = () => {
 
       dispatch(updateTaskEndDate({ task: taskWithProgress }));
       dispatch(setTaskEndDate(taskWithProgress));
-      
+
       // Update enhanced kanban slice
       dispatch(updateEnhancedKanbanTaskEndDate({ task: taskWithProgress }));
     },
@@ -382,21 +394,23 @@ export const useTaskSocketHandlers = () => {
   const handleTaskNameChange = useCallback(
     (data: { id: string; parent_task: string; name: string }) => {
       if (!data) return;
-      
+
       // Update the old task slice (for backward compatibility)
       dispatch(updateTaskName(data));
 
       // For the task management slice, update task name
       if (data.id) {
-        dispatch(updateTask({
-          id: data.id,
-          changes: {
-            title: data.name,
-            updatedAt: new Date().toISOString(),
-          }
-        }));
+        dispatch(
+          updateTask({
+            id: data.id,
+            changes: {
+              title: data.name,
+              updatedAt: new Date().toISOString(),
+            },
+          })
+        );
       }
-      
+
       // Update enhanced kanban slice
       dispatch(updateEnhancedKanbanTaskName({ task: data }));
     },
@@ -406,7 +420,7 @@ export const useTaskSocketHandlers = () => {
   const handlePhaseChange = useCallback(
     (data: ITaskPhaseChangeResponse) => {
       if (!data) return;
-      
+
       // Update the old task slice (for backward compatibility)
       dispatch(updateTaskPhase(data));
       dispatch(deselectAll());
@@ -414,72 +428,78 @@ export const useTaskSocketHandlers = () => {
       // For the task management slice, always update the task entity first
       const state = store.getState();
       const taskId = data.task_id;
-      
+
       if (taskId) {
         const currentTask = state.taskManagement.entities[taskId];
-        
+
         if (currentTask) {
-        // Get phase list to map phase_id to phase name
-        const phaseList = state.phaseReducer?.phaseList || [];
-        let newPhaseValue = '';
-        
-        if (data.id) {
-          // data.id is the phase_id
-          const phase = phaseList.find(p => p.id === data.id);
-          newPhaseValue = phase?.name || '';
-        } else {
-          // No phase selected (cleared)
-          newPhaseValue = '';
-        }
+          // Get phase list to map phase_id to phase name
+          const phaseList = state.phaseReducer?.phaseList || [];
+          let newPhaseValue = '';
 
-        // Update the task entity
-        dispatch(updateTask({
-          id: taskId,
-          changes: {
-            phase: newPhaseValue,
-            updatedAt: new Date().toISOString(),
-          }
-        }));
-
-        // Handle group movement ONLY if grouping by phase
-        const groups = state.taskManagement.groups;
-        const currentGrouping = state.taskManagement.grouping;
-        
-        if (groups && groups.length > 0 && currentGrouping === 'phase') {
-          // Find current group containing the task
-          const currentGroup = groups.find(group => group.taskIds.includes(taskId));
-          
-          // Find target group based on new phase value
-          let targetGroup: any = null;
-          
-          if (newPhaseValue) {
-            // Find group by phase name
-            targetGroup = groups.find(group => 
-              group.groupValue === newPhaseValue || group.title === newPhaseValue
-            );
+          if (data.id) {
+            // data.id is the phase_id
+            const phase = phaseList.find(p => p.id === data.id);
+            newPhaseValue = phase?.name || '';
           } else {
-            // Find "No Phase" or similar group
-            targetGroup = groups.find(group => 
-              group.groupValue === '' || group.title.toLowerCase().includes('no phase') || group.title.toLowerCase().includes('unassigned')
-            );
+            // No phase selected (cleared)
+            newPhaseValue = '';
           }
-          
-          if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-            
-            dispatch(moveTaskBetweenGroups({
-              taskId: taskId,
-              fromGroupId: currentGroup.id,
-              toGroupId: targetGroup.id,
-              taskUpdate: {
+
+          // Update the task entity
+          dispatch(
+            updateTask({
+              id: taskId,
+              changes: {
                 phase: newPhaseValue,
-              }
-            }));
+                updatedAt: new Date().toISOString(),
+              },
+            })
+          );
+
+          // Handle group movement ONLY if grouping by phase
+          const groups = state.taskManagement.groups;
+          const currentGrouping = state.taskManagement.grouping;
+
+          if (groups && groups.length > 0 && currentGrouping === 'phase') {
+            // Find current group containing the task
+            const currentGroup = groups.find(group => group.taskIds.includes(taskId));
+
+            // Find target group based on new phase value
+            let targetGroup: any = null;
+
+            if (newPhaseValue) {
+              // Find group by phase name
+              targetGroup = groups.find(
+                group => group.groupValue === newPhaseValue || group.title === newPhaseValue
+              );
+            } else {
+              // Find "No Phase" or similar group
+              targetGroup = groups.find(
+                group =>
+                  group.groupValue === '' ||
+                  group.title.toLowerCase().includes('no phase') ||
+                  group.title.toLowerCase().includes('unassigned')
+              );
+            }
+
+            if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+              dispatch(
+                moveTaskBetweenGroups({
+                  taskId: taskId,
+                  fromGroupId: currentGroup.id,
+                  toGroupId: targetGroup.id,
+                  taskUpdate: {
+                    phase: newPhaseValue,
+                  },
+                })
+              );
+            } else {
+              console.log('🔧 No group movement needed for phase change');
+            }
           } else {
-            console.log('🔧 No group movement needed for phase change');
+            console.log('🔧 Not grouped by phase, skipping group movement');
           }
-        } else {
-          console.log('🔧 Not grouped by phase, skipping group movement');
-        }
         }
       }
     },
@@ -487,11 +507,7 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleStartDateChange = useCallback(
-    (task: {
-      id: string;
-      parent_task: string | null;
-      start_date: string;
-    }) => {
+    (task: { id: string; parent_task: string | null; start_date: string }) => {
       if (!task) return;
 
       const taskWithProgress = {
@@ -514,11 +530,7 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleEstimationChange = useCallback(
-    (task: {
-      id: string;
-      parent_task: string | null;
-      estimation: number;
-    }) => {
+    (task: { id: string; parent_task: string | null; estimation: number }) => {
       if (!task) return;
 
       const taskWithProgress = {
@@ -532,11 +544,7 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleTaskDescriptionChange = useCallback(
-    (data: {
-      id: string;
-      parent_task: string;
-      description: string;
-    }) => {
+    (data: { id: string; parent_task: string; description: string }) => {
       if (!data) return;
       dispatch(updateTaskDescription(data));
     },
@@ -548,14 +556,59 @@ export const useTaskSocketHandlers = () => {
       if (!data) return;
       if (data.parent_task_id) {
         // Handle subtask creation
-        dispatch(updateSubTasks(data));
-        
+        const subtask: Task = {
+          id: data.id || '',
+          task_key: data.task_key || '',
+          title: data.name || '',
+          description: data.description || '',
+          status: (data.status_category?.is_todo
+            ? 'todo'
+            : data.status_category?.is_doing
+              ? 'doing'
+              : data.status_category?.is_done
+                ? 'done'
+                : 'todo') as 'todo' | 'doing' | 'done',
+          priority: (data.priority_value === 3
+            ? 'critical'
+            : data.priority_value === 2
+              ? 'high'
+              : data.priority_value === 1
+                ? 'medium'
+                : 'low') as 'critical' | 'high' | 'medium' | 'low',
+          phase: data.phase_name || 'Development',
+          progress: data.complete_ratio || 0,
+          assignees: data.assignees?.map(a => a.team_member_id) || [],
+          assignee_names: data.names || [],
+          labels:
+            data.labels?.map(l => ({
+              id: l.id || '',
+              name: l.name || '',
+              color: l.color_code || '#1890ff',
+              end: l.end,
+              names: l.names,
+            })) || [],
+          dueDate: data.end_date,
+          timeTracking: {
+            estimated: (data.total_hours || 0) + (data.total_minutes || 0) / 60,
+            logged: (data.time_spent?.hours || 0) + (data.time_spent?.minutes || 0) / 60,
+          },
+          customFields: {},
+          createdAt: data.created_at || new Date().toISOString(),
+          updatedAt: data.updated_at || new Date().toISOString(),
+          order: data.sort_order || 0,
+          parent_task_id: data.parent_task_id,
+          is_sub_task: true,
+        };
+        dispatch(addSubtaskToParent({ subtask, parentTaskId: data.parent_task_id }));
+
         // Also update enhanced kanban slice for subtask creation
-        dispatch(updateEnhancedKanbanSubtask({ 
-          sectionId: '', 
-          subtask: data, 
-          mode: 'add' 
-        }));
+        dispatch(
+          updateEnhancedKanbanSubtask({
+            sectionId: '',
+            subtask: data,
+            mode: 'add',
+          })
+        );
       } else {
         // Handle regular task creation - transform to Task format and add
         const task = {
@@ -563,41 +616,50 @@ export const useTaskSocketHandlers = () => {
           task_key: data.task_key || '',
           title: data.name || '',
           description: data.description || '',
-          status: (data.status_category?.is_todo ? 'todo' : 
-                   data.status_category?.is_doing ? 'doing' : 
-                   data.status_category?.is_done ? 'done' : 'todo') as 'todo' | 'doing' | 'done',
-          priority: (data.priority_value === 3 ? 'critical' :
-                     data.priority_value === 2 ? 'high' :
-                     data.priority_value === 1 ? 'medium' : 'low') as 'critical' | 'high' | 'medium' | 'low',
+          status: (data.status_category?.is_todo
+            ? 'todo'
+            : data.status_category?.is_doing
+              ? 'doing'
+              : data.status_category?.is_done
+                ? 'done'
+                : 'todo') as 'todo' | 'doing' | 'done',
+          priority: (data.priority_value === 3
+            ? 'critical'
+            : data.priority_value === 2
+              ? 'high'
+              : data.priority_value === 1
+                ? 'medium'
+                : 'low') as 'critical' | 'high' | 'medium' | 'low',
           phase: data.phase_name || 'Development',
           progress: data.complete_ratio || 0,
           assignees: data.assignees?.map(a => a.team_member_id) || [],
           assignee_names: data.names || [],
-          labels: data.labels?.map(l => ({
-            id: l.id || '',
-            name: l.name || '',
-            color: l.color_code || '#1890ff',
-            end: l.end,
-            names: l.names
-          })) || [],
+          labels:
+            data.labels?.map(l => ({
+              id: l.id || '',
+              name: l.name || '',
+              color: l.color_code || '#1890ff',
+              end: l.end,
+              names: l.names,
+            })) || [],
           dueDate: data.end_date,
           timeTracking: {
-            estimated: (data.total_hours || 0) + ((data.total_minutes || 0) / 60),
-            logged: ((data.time_spent?.hours || 0) + ((data.time_spent?.minutes || 0) / 60)),
+            estimated: (data.total_hours || 0) + (data.total_minutes || 0) / 60,
+            logged: (data.time_spent?.hours || 0) + (data.time_spent?.minutes || 0) / 60,
           },
           customFields: {},
           createdAt: data.created_at || new Date().toISOString(),
           updatedAt: data.updated_at || new Date().toISOString(),
           order: data.sort_order || 0,
         };
-        
+
         // Extract the group UUID from the backend response based on current grouping
         let groupId: string | undefined;
-        
+
         // Select the correct UUID based on current grouping
         // If currentGroupingV3 is null, default to 'status' since that's the most common grouping
         const grouping = currentGroupingV3 || 'status';
-        
+
         if (grouping === 'status') {
           // For status grouping, use status field (which contains the status UUID)
           groupId = data.status;
@@ -608,26 +670,24 @@ export const useTaskSocketHandlers = () => {
           // For phase grouping, use phase_id
           groupId = data.phase_id;
         }
-        
+
         // Use addTaskToGroup with the actual group UUID
         dispatch(addTaskToGroup({ task, groupId }));
-        
+
         // Also update enhanced kanban slice for regular task creation
-        dispatch(addEnhancedKanbanTaskToGroup({ 
-          sectionId: groupId || '', 
-          task: data 
-        }));
+        dispatch(
+          addEnhancedKanbanTaskToGroup({
+            sectionId: groupId || '',
+            task: data,
+          })
+        );
       }
     },
     [dispatch]
   );
 
   const handleTaskProgressUpdated = useCallback(
-    (data: {
-      task_id: string;
-      progress_value?: number;
-      weight?: number;
-    }) => {
+    (data: { task_id: string; progress_value?: number; weight?: number }) => {
       if (!data || !taskGroups) return;
 
       if (data.progress_value !== undefined) {
@@ -651,16 +711,13 @@ export const useTaskSocketHandlers = () => {
   );
 
   // Handler for TASK_ASSIGNEES_CHANGE (fallback event with limited data)
-  const handleTaskAssigneesChange = useCallback(
-    (data: { assigneeIds: string[] }) => {
-      if (!data || !data.assigneeIds) return;
-      
-      // This event only provides assignee IDs, so we update what we can
-      // The full assignee data will come from QUICK_ASSIGNEES_UPDATE
-      // console.log('🔄 Task assignees change (limited data):', data);
-    },
-    []
-  );
+  const handleTaskAssigneesChange = useCallback((data: { assigneeIds: string[] }) => {
+    if (!data || !data.assigneeIds) return;
+
+    // This event only provides assignee IDs, so we update what we can
+    // The full assignee data will come from QUICK_ASSIGNEES_UPDATE
+    // console.log('🔄 Task assignees change (limited data):', data);
+  }, []);
 
   // Register socket event listeners
   useEffect(() => {
@@ -678,9 +735,18 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.TASK_NAME_CHANGE.toString(), handler: handleTaskNameChange },
       { event: SocketEvents.TASK_PHASE_CHANGE.toString(), handler: handlePhaseChange },
       { event: SocketEvents.TASK_START_DATE_CHANGE.toString(), handler: handleStartDateChange },
-      { event: SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), handler: handleTaskSubscribersChange },
-      { event: SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(), handler: handleEstimationChange },
-      { event: SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), handler: handleTaskDescriptionChange },
+      {
+        event: SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(),
+        handler: handleTaskSubscribersChange,
+      },
+      {
+        event: SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(),
+        handler: handleEstimationChange,
+      },
+      {
+        event: SocketEvents.TASK_DESCRIPTION_CHANGE.toString(),
+        handler: handleTaskDescriptionChange,
+      },
       { event: SocketEvents.QUICK_TASK.toString(), handler: handleNewTaskReceived },
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgressUpdated },
     ];
@@ -714,4 +780,4 @@ export const useTaskSocketHandlers = () => {
     handleNewTaskReceived,
     handleTaskProgressUpdated,
   ]);
-}; 
+};

@@ -14,7 +14,7 @@ interface TaskDrawerPhaseSelectorProps {
 
 const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps) => {
   const { socket, connected } = useSocket();
-  
+
   const phaseMenuItems = phases?.map(phase => ({
     key: phase.id,
     value: phase.id,
@@ -25,7 +25,7 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
     socket?.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
       task_id: task.id,
       phase_id: value,
-      parent_task: task.parent_task_id || null
+      parent_task: task.parent_task_id || null,
     });
 
     // socket?.once(SocketEvents.TASK_PHASE_CHANGE.toString(), () => {

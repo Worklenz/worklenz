@@ -13,10 +13,7 @@ type MembersReportsTasksTableProps = {
   loading: boolean;
 };
 
-const MembersReportsTasksTable = ({
-  tasksData,
-  loading,
-}: MembersReportsTasksTableProps) => {
+const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTableProps) => {
   // localization
   const { t } = useTranslation('reporting-members-drawer');
 

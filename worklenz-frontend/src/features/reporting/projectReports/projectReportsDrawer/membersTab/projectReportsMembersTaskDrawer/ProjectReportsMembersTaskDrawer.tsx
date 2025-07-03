@@ -27,7 +27,6 @@ const ProjectReportsMembersTaskDrawer = () => {
 
   const handleAfterOpenChange = (open: boolean) => {
     if (open) {
-      
     }
   };
 
@@ -61,9 +60,7 @@ const ProjectReportsMembersTaskDrawer = () => {
           setSearchQuery={setSearchQuery}
         />
 
-        <ProjectReportsMembersTasksTable
-          tasksData={filteredTaskData}
-        />
+        <ProjectReportsMembersTasksTable tasksData={filteredTaskData} />
       </Flex>
     </Drawer>
   );

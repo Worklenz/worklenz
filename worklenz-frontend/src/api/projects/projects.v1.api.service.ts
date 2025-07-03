@@ -20,7 +20,7 @@ export const projectsApi = createApi({
       if (!token) {
         token = await refreshCsrfToken();
       }
-      
+
       if (token) {
         headers.set('X-CSRF-Token', token);
       }

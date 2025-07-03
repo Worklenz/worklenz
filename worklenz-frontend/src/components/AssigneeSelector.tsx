@@ -22,10 +22,10 @@ interface AssigneeSelectorProps {
   isDarkMode?: boolean;
 }
 
-const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({ 
-  task, 
-  groupId = null, 
-  isDarkMode = false 
+const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
+  task,
+  groupId = null,
+  isDarkMode = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,8 +63,12 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   // Close dropdown when clicking outside and handle scroll
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -74,10 +78,12 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         // Check if the button is still visible in the viewport
         if (buttonRef.current) {
           const rect = buttonRef.current.getBoundingClientRect();
-          const isVisible = rect.top >= 0 && rect.left >= 0 && 
-                           rect.bottom <= window.innerHeight && 
-                           rect.right <= window.innerWidth;
-          
+          const isVisible =
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= window.innerHeight &&
+            rect.right <= window.innerWidth;
+
           if (isVisible) {
             updateDropdownPosition();
           } else {
@@ -98,7 +104,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       document.addEventListener('mousedown', handleClickOutside);
       window.addEventListener('scroll', handleScroll, true);
       window.addEventListener('resize', handleResize);
-      
+
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
         window.removeEventListener('scroll', handleScroll, true);
@@ -113,10 +119,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const handleDropdownToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isOpen) {
       updateDropdownPosition();
-      
+
       // Prepare team members data when opening
       const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
       const membersData = (members?.data || []).map(member => ({
@@ -125,7 +131,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       }));
       const sortedMembers = sortTeamMembers(membersData);
       setTeamMembers({ data: sortedMembers });
-      
+
       setIsOpen(true);
       // Focus search input after opening
       setTimeout(() => {
@@ -160,11 +166,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     // Update local team members state for dropdown UI
     setTeamMembers(prev => ({
       ...prev,
-      data: (prev.data || []).map(member => 
-        member.id === memberId 
-          ? { ...member, selected: checked }
-          : member
-      )
+      data: (prev.data || []).map(member =>
+        member.id === memberId ? { ...member, selected: checked } : member
+      ),
     }));
 
     const body = {
@@ -178,12 +182,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
     // Emit socket event - the socket handler will update Redux with proper types
     socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
-    socket?.once(
-      SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
-      (data: any) => {
-        dispatch(updateEnhancedKanbanTaskAssignees(data));
-      }
-    );
+    socket?.once(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), (data: any) => {
+      dispatch(updateEnhancedKanbanTaskAssignees(data));
+    });
 
     // Remove from pending changes after a short delay (optimistic)
     setTimeout(() => {
@@ -198,9 +199,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const checkMemberSelected = (memberId: string) => {
     if (!memberId) return false;
     // Use optimistic assignees if available, otherwise fall back to task assignees
-    const assignees = optimisticAssignees.length > 0 
-      ? optimisticAssignees 
-      : task?.assignees?.map(assignee => assignee.team_member_id) || [];
+    const assignees =
+      optimisticAssignees.length > 0
+        ? optimisticAssignees
+        : task?.assignees?.map(assignee => assignee.team_member_id) || [];
     return assignees.includes(memberId);
   };
 
@@ -217,149 +219,159 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         className={`
           w-5 h-5 rounded-full border border-dashed flex items-center justify-center
           transition-colors duration-200
-          ${isOpen 
-            ? isDarkMode 
-              ? 'border-blue-500 bg-blue-900/20 text-blue-400' 
-              : 'border-blue-500 bg-blue-50 text-blue-600'
-            : isDarkMode 
-              ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
-              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
+          ${
+            isOpen
+              ? isDarkMode
+                ? 'border-blue-500 bg-blue-900/20 text-blue-400'
+                : 'border-blue-500 bg-blue-50 text-blue-600'
+              : isDarkMode
+                ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
           }
         `}
       >
         <PlusOutlined className="text-xs" />
       </button>
 
-      {isOpen && createPortal(
-        <div
-          ref={dropdownRef}
-          onClick={e => e.stopPropagation()}
-          className={`
+      {isOpen &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            onClick={e => e.stopPropagation()}
+            className={`
             fixed z-9999 w-72 rounded-md shadow-lg border
-            ${isDarkMode 
-              ? 'bg-gray-800 border-gray-600' 
-              : 'bg-white border-gray-200'
-            }
+            ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'}
           `}
-          style={{
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-          }}
-        >
-          {/* Header */}
-          <div className={`p-2 border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search members..."
-              className={`
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+            }}
+          >
+            {/* Header */}
+            <div className={`p-2 border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search members..."
+                className={`
                 w-full px-2 py-1 text-xs rounded border
-                ${isDarkMode
-                  ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                ${
+                  isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
                 }
                 focus:outline-none focus:ring-1 focus:ring-blue-500
               `}
-            />
-          </div>
+              />
+            </div>
 
-          {/* Members List */}
-          <div className="max-h-48 overflow-y-auto">
-            {filteredMembers && filteredMembers.length > 0 ? (
-              filteredMembers.map((member) => (
-                <div
-                  key={member.id}
-                  className={`
+            {/* Members List */}
+            <div className="max-h-48 overflow-y-auto">
+              {filteredMembers && filteredMembers.length > 0 ? (
+                filteredMembers.map(member => (
+                  <div
+                    key={member.id}
+                    className={`
                     flex items-center gap-2 p-2 cursor-pointer transition-colors
-                    ${member.pending_invitation 
-                      ? 'opacity-50 cursor-not-allowed' 
-                      : isDarkMode 
-                        ? 'hover:bg-gray-700' 
-                        : 'hover:bg-gray-50'
+                    ${
+                      member.pending_invitation
+                        ? 'opacity-50 cursor-not-allowed'
+                        : isDarkMode
+                          ? 'hover:bg-gray-700'
+                          : 'hover:bg-gray-50'
                     }
                   `}
-                  onClick={() => {
-                    if (!member.pending_invitation) {
-                      const isSelected = checkMemberSelected(member.id || '');
-                      handleMemberToggle(member.id || '', !isSelected);
-                    }
-                  }}
-                  style={{
-                    // Add visual feedback for immediate response
-                    transition: 'all 0.15s ease-in-out',
-                  }}
-                >
-                  <div className="relative">
-                    <span onClick={e => e.stopPropagation()}>
-                      <Checkbox
-                        checked={checkMemberSelected(member.id || '')}
-                        onChange={(checked) => handleMemberToggle(member.id || '', checked)}
-                        disabled={member.pending_invitation || pendingChanges.has(member.id || '')}
-                        isDarkMode={isDarkMode}
-                      />
-                    </span>
-                    {pendingChanges.has(member.id || '') && (
-                      <div className={`absolute inset-0 flex items-center justify-center ${
-                        isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'
-                      }`}>
-                        <div className={`w-3 h-3 border border-t-transparent rounded-full animate-spin ${
-                          isDarkMode ? 'border-blue-400' : 'border-blue-600'
-                        }`} />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <Avatar
-                    src={member.avatar_url}
-                    name={member.name || ''}
-                    size={24}
-                    isDarkMode={isDarkMode}
-                  />
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-xs font-medium truncate ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                      {member.name}
-                    </div>
-                    <div className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {member.email}
-                      {member.pending_invitation && (
-                        <span className="text-red-400 ml-1">(Pending)</span>
+                    onClick={() => {
+                      if (!member.pending_invitation) {
+                        const isSelected = checkMemberSelected(member.id || '');
+                        handleMemberToggle(member.id || '', !isSelected);
+                      }
+                    }}
+                    style={{
+                      // Add visual feedback for immediate response
+                      transition: 'all 0.15s ease-in-out',
+                    }}
+                  >
+                    <div className="relative">
+                      <span onClick={e => e.stopPropagation()}>
+                        <Checkbox
+                          checked={checkMemberSelected(member.id || '')}
+                          onChange={checked => handleMemberToggle(member.id || '', checked)}
+                          disabled={
+                            member.pending_invitation || pendingChanges.has(member.id || '')
+                          }
+                          isDarkMode={isDarkMode}
+                        />
+                      </span>
+                      {pendingChanges.has(member.id || '') && (
+                        <div
+                          className={`absolute inset-0 flex items-center justify-center ${
+                            isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'
+                          }`}
+                        >
+                          <div
+                            className={`w-3 h-3 border border-t-transparent rounded-full animate-spin ${
+                              isDarkMode ? 'border-blue-400' : 'border-blue-600'
+                            }`}
+                          />
+                        </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className={`p-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                <div className="text-xs">No members found</div>
-              </div>
-            )}
-          </div>
 
-          {/* Footer */}
-          <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-            <button
-              className={`
+                    <Avatar
+                      src={member.avatar_url}
+                      name={member.name || ''}
+                      size={24}
+                      isDarkMode={isDarkMode}
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={`text-xs font-medium truncate ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
+                      >
+                        {member.name}
+                      </div>
+                      <div
+                        className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                      >
+                        {member.email}
+                        {member.pending_invitation && (
+                          <span className="text-red-400 ml-1">(Pending)</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div
+                  className={`p-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                >
+                  <div className="text-xs">No members found</div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+              <button
+                className={`
                 w-full flex items-center justify-center gap-1 px-2 py-1 text-xs rounded
                 transition-colors
-                ${isDarkMode
-                  ? 'text-blue-400 hover:bg-gray-700'
-                  : 'text-blue-600 hover:bg-blue-50'
-                }
+                ${isDarkMode ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}
               `}
-              onClick={handleInviteProjectMemberDrawer}
-            >
-              <UserAddOutlined />
-              Invite member
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
+                onClick={handleInviteProjectMemberDrawer}
+              >
+                <UserAddOutlined />
+                Invite member
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 };
 
-export default AssigneeSelector; 
+export default AssigneeSelector;

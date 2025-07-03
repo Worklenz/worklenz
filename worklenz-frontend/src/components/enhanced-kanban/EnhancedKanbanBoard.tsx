@@ -16,10 +16,7 @@ import {
   pointerWithin,
   rectIntersection,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { RootState } from '@/app/store';
 import {
   fetchEnhancedKanbanGroups,
@@ -49,7 +46,9 @@ import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { useAuthService } from '@/hooks/useAuth';
 
 // Import the TaskListFilters component
-const TaskListFilters = React.lazy(() => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters'));
+const TaskListFilters = React.lazy(
+  () => import('@/pages/projects/projectView/taskList/task-list-filters/task-list-filters')
+);
 interface EnhancedKanbanBoardProps {
   projectId: string;
   className?: string;
@@ -57,24 +56,22 @@ interface EnhancedKanbanBoardProps {
 
 const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, className = '' }) => {
   const dispatch = useDispatch();
-  const {
-    taskGroups,
-    loadingGroups,
-    error,
-    dragState,
-    performanceMetrics
-  } = useSelector((state: RootState) => state.enhancedKanbanReducer);
+  const { taskGroups, loadingGroups, error, dragState, performanceMetrics } = useSelector(
+    (state: RootState) => state.enhancedKanbanReducer
+  );
   const { socket } = useSocket();
   const authService = useAuthService();
   const teamId = authService.getCurrentSession()?.team_id;
   const groupBy = useSelector((state: RootState) => state.enhancedKanbanReducer.groupBy);
   const project = useAppSelector((state: RootState) => state.projectReducer.project);
-  const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);
+  const { statusCategories, status: existingStatuses } = useAppSelector(
+    state => state.taskStatusReducer
+  );
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   // Load filter data
   useFilterDataLoader();
-  
+
   // Set up socket event handlers for real-time updates
   useTaskSocketHandlers();
 
@@ -106,22 +103,18 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   }, [dispatch, projectId]);
 
   // Get all task IDs for sortable context
-  const allTaskIds = useMemo(() =>
-    taskGroups.flatMap(group => group.tasks.map(task => task.id!)),
+  const allTaskIds = useMemo(
+    () => taskGroups.flatMap(group => group.tasks.map(task => task.id!)),
     [taskGroups]
   );
-  const allGroupIds = useMemo(() =>
-    taskGroups.map(group => group.id),
-    [taskGroups]
-  );
+  const allGroupIds = useMemo(() => taskGroups.map(group => group.id), [taskGroups]);
 
   // Enhanced collision detection
   const collisionDetectionStrategy = (args: any) => {
     // First, let's see if we're colliding with any droppable areas
     const pointerIntersections = pointerWithin(args);
-    const intersections = pointerIntersections.length > 0
-      ? pointerIntersections
-      : rectIntersection(args);
+    const intersections =
+      pointerIntersections.length > 0 ? pointerIntersections : rectIntersection(args);
 
     let overId = getFirstCollision(intersections, 'id');
 
@@ -162,11 +155,13 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
       setActiveGroup(foundGroup);
       setActiveTask(null);
 
-      dispatch(setDragState({
-        activeTaskId: null,
-        activeGroupId: activeId,
-        isDragging: true,
-      }));
+      dispatch(
+        setDragState({
+          activeTaskId: null,
+          activeGroupId: activeId,
+          isDragging: true,
+        })
+      );
     } else {
       // Dragging a task
       let foundTask = null;
@@ -184,11 +179,13 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
       setActiveTask(foundTask);
       setActiveGroup(null);
 
-      dispatch(setDragState({
-        activeTaskId: activeId,
-        activeGroupId: foundGroup?.id || null,
-        isDragging: true,
-      }));
+      dispatch(
+        setDragState({
+          activeTaskId: activeId,
+          activeGroupId: foundGroup?.id || null,
+          isDragging: true,
+        })
+      );
     }
   };
 
@@ -220,12 +217,14 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
     setOverId(null);
 
     // Reset Redux drag state
-    dispatch(setDragState({
-      activeTaskId: null,
-      activeGroupId: null,
-      overId: null,
-      isDragging: false,
-    }));
+    dispatch(
+      setDragState({
+        activeTaskId: null,
+        activeGroupId: null,
+        overId: null,
+        isDragging: false,
+      })
+    );
 
     if (!over) return;
 
@@ -258,7 +257,7 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
         // Call API to update status order
         try {
           const requestBody: ITaskStatusCreateRequest = {
-            status_order: columnOrder
+            status_order: columnOrder,
           };
 
           const response = await statusApiService.updateStatusOrder(requestBody, projectId);
@@ -267,7 +266,13 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
             const revertedGroups = [...reorderedGroups];
             const [movedBackGroup] = revertedGroups.splice(toIndex, 1);
             revertedGroups.splice(fromIndex, 0, movedBackGroup);
-            dispatch(reorderGroups({ fromIndex: toIndex, toIndex: fromIndex, reorderedGroups: revertedGroups }));
+            dispatch(
+              reorderGroups({
+                fromIndex: toIndex,
+                toIndex: fromIndex,
+                reorderedGroups: revertedGroups,
+              })
+            );
             alertService.error('Failed to update column order', 'Please try again');
           }
         } catch (error) {
@@ -275,7 +280,13 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
           const revertedGroups = [...reorderedGroups];
           const [movedBackGroup] = revertedGroups.splice(toIndex, 1);
           revertedGroups.splice(fromIndex, 0, movedBackGroup);
-          dispatch(reorderGroups({ fromIndex: toIndex, toIndex: fromIndex, reorderedGroups: revertedGroups }));
+          dispatch(
+            reorderGroups({
+              fromIndex: toIndex,
+              toIndex: fromIndex,
+              reorderedGroups: revertedGroups,
+            })
+          );
           alertService.error('Failed to update column order', 'Please try again');
           logger.error('Failed to update column order', error);
         }
@@ -338,24 +349,28 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
     }
 
     // Synchronous UI update
-    dispatch(reorderTasks({
-      activeGroupId: sourceGroup.id,
-      overGroupId: targetGroup.id,
-      fromIndex: sourceIndex,
-      toIndex: targetIndex,
-      task: movedTask,
-      updatedSourceTasks,
-      updatedTargetTasks,
-    }));
-    dispatch(reorderEnhancedKanbanTasks({
-      activeGroupId: sourceGroup.id,
-      overGroupId: targetGroup.id,
-      fromIndex: sourceIndex,
-      toIndex: targetIndex,
-      task: movedTask,
-      updatedSourceTasks,
-      updatedTargetTasks,
-    }) as any);
+    dispatch(
+      reorderTasks({
+        activeGroupId: sourceGroup.id,
+        overGroupId: targetGroup.id,
+        fromIndex: sourceIndex,
+        toIndex: targetIndex,
+        task: movedTask,
+        updatedSourceTasks,
+        updatedTargetTasks,
+      })
+    );
+    dispatch(
+      reorderEnhancedKanbanTasks({
+        activeGroupId: sourceGroup.id,
+        overGroupId: targetGroup.id,
+        fromIndex: sourceIndex,
+        toIndex: targetIndex,
+        task: movedTask,
+        updatedSourceTasks,
+        updatedTargetTasks,
+      }) as any
+    );
 
     // --- Socket emit for task sort order ---
     if (socket && projectId && movedTask) {
@@ -368,7 +383,10 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
         toSortOrder = -1;
         toLastIndex = true;
       } else if (targetGroup.tasks[targetIndex]) {
-        toSortOrder = typeof targetGroup.tasks[targetIndex].sort_order === 'number' ? targetGroup.tasks[targetIndex].sort_order! : -1;
+        toSortOrder =
+          typeof targetGroup.tasks[targetIndex].sort_order === 'number'
+            ? targetGroup.tasks[targetIndex].sort_order!
+            : -1;
         toLastIndex = false;
       } else if (targetGroup.tasks.length > 0) {
         const lastSortOrder = targetGroup.tasks[targetGroup.tasks.length - 1].sort_order;
@@ -490,4 +508,4 @@ const EnhancedKanbanBoard: React.FC<EnhancedKanbanBoardProps> = ({ projectId, cl
   );
 };
 
-export default EnhancedKanbanBoard; 
+export default EnhancedKanbanBoard;

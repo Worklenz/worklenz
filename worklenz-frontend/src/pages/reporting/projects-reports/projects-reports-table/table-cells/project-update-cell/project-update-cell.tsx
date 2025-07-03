@@ -12,7 +12,7 @@ const ProjectUpdateCell = ({ updates }: ProjectUpdateCellProps) => {
       ellipsis={{ expanded: false }}
       className="group-hover:text-[#1890ff]"
     >
-      <div dangerouslySetInnerHTML={{__html: updates}} />
+      <div dangerouslySetInnerHTML={{ __html: updates }} />
     </Typography.Text>
   );
 };

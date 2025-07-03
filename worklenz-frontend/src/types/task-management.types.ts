@@ -139,4 +139,4 @@ export interface BulkAction {
   type: 'status' | 'priority' | 'phase' | 'assignee' | 'label' | 'delete';
   value?: any;
   taskIds: string[];
-} 
+}

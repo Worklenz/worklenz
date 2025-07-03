@@ -340,10 +340,7 @@ const TeamMembersSettings = () => {
         />
       </Card>
       {createPortal(
-        <UpdateMemberDrawer
-          selectedMemberId={selectedMemberId}
-          onRoleUpdate={handleRoleUpdate}
-        />,
+        <UpdateMemberDrawer selectedMemberId={selectedMemberId} onRoleUpdate={handleRoleUpdate} />,
         document.body
       )}
     </div>

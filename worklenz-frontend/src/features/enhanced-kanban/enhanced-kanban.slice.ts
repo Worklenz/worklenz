@@ -183,7 +183,9 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
         id: projectId,
         archived: enhancedKanbanReducer.archived,
         group: enhancedKanbanReducer.groupBy,
-        field: enhancedKanbanReducer.fields.map(field => `${field.key} ${field.sort_order}`).join(','),
+        field: enhancedKanbanReducer.fields
+          .map(field => `${field.key} ${field.sort_order}`)
+          .join(','),
         order: '',
         search: enhancedKanbanReducer.search || '',
         statuses: '',
@@ -415,7 +417,7 @@ const enhancedKanbanSlice = createSlice({
       state.selectedTaskIds = state.selectedTaskIds.filter(id => id !== action.payload);
     },
 
-    clearSelection: (state) => {
+    clearSelection: state => {
       state.selectedTaskIds = [];
     },
 
@@ -443,7 +445,7 @@ const enhancedKanbanSlice = createSlice({
       state.groupCache[action.payload.id] = action.payload.group;
     },
 
-    clearCaches: (state) => {
+    clearCaches: state => {
       state.taskCache = {};
       state.groupCache = {};
     },
@@ -514,8 +516,18 @@ const enhancedKanbanSlice = createSlice({
     },
 
     // Enhanced Kanban external status update (for use in task drawer dropdown)
-    updateEnhancedKanbanTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
-      const { id: task_id, status_id, color_code, color_code_dark, complete_ratio, statusCategory } = action.payload;
+    updateEnhancedKanbanTaskStatus: (
+      state,
+      action: PayloadAction<ITaskListStatusChangeResponse>
+    ) => {
+      const {
+        id: task_id,
+        status_id,
+        color_code,
+        color_code_dark,
+        complete_ratio,
+        statusCategory,
+      } = action.payload;
       let oldGroupId: string | null = null;
       let foundTask: IProjectTask | null = null;
       // Find the task and its group
@@ -528,14 +540,14 @@ const enhancedKanbanSlice = createSlice({
         }
       }
       if (!foundTask) return;
-      
+
       // Update the task properties
       foundTask.status_color = color_code;
       foundTask.status_color_dark = color_code_dark;
       foundTask.complete_ratio = +complete_ratio;
       foundTask.status = status_id;
       foundTask.status_category = statusCategory;
-      
+
       // If grouped by status and the group changes, move the task
       if (state.groupBy === IGroupBy.STATUS && oldGroupId && oldGroupId !== status_id) {
         // Remove from old group
@@ -558,7 +570,10 @@ const enhancedKanbanSlice = createSlice({
     },
 
     // Enhanced Kanban priority update (for use in task drawer dropdown)
-    updateEnhancedKanbanTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
+    updateEnhancedKanbanTaskPriority: (
+      state,
+      action: PayloadAction<ITaskListPriorityChangeResponse>
+    ) => {
       const { id, priority_id, color_code, color_code_dark } = action.payload;
 
       // Find the task in any group
@@ -573,11 +588,7 @@ const enhancedKanbanSlice = createSlice({
       task.priority_color_dark = color_code_dark;
 
       // If grouped by priority and not a subtask, move the task to the new priority group
-      if (
-        state.groupBy === IGroupBy.PRIORITY &&
-        !task.is_sub_task &&
-        groupId !== priority_id
-      ) {
+      if (state.groupBy === IGroupBy.PRIORITY && !task.is_sub_task && groupId !== priority_id) {
         // Remove from current group
         deleteTaskFromGroup(state.taskGroups, task, groupId);
 
@@ -588,15 +599,18 @@ const enhancedKanbanSlice = createSlice({
           state.groupCache[priority_id] = newGroup;
         }
       }
-      
+
       // Update cache
       state.taskCache[id] = task;
     },
 
     // Enhanced Kanban assignee update (for use in task drawer dropdown)
-    updateEnhancedKanbanTaskAssignees: (state, action: PayloadAction<ITaskAssigneesUpdateResponse>) => {
+    updateEnhancedKanbanTaskAssignees: (
+      state,
+      action: PayloadAction<ITaskAssigneesUpdateResponse>
+    ) => {
       const { id, assignees, names } = action.payload;
-      
+
       // Find the task in any group
       const taskInfo = findTaskInAllGroups(state.taskGroups, id);
       if (!taskInfo) return;
@@ -606,7 +620,7 @@ const enhancedKanbanSlice = createSlice({
       // Update the task properties
       task.assignees = assignees as ITaskAssignee[];
       task.names = names as InlineMember[];
-      
+
       // Update cache
       state.taskCache[id] = task;
     },
@@ -642,7 +656,8 @@ const enhancedKanbanSlice = createSlice({
         parent_task: string;
       }>
     ) => {
-      const { id, complete_ratio, completed_count, total_tasks_count, parent_task } = action.payload;
+      const { id, complete_ratio, completed_count, total_tasks_count, parent_task } =
+        action.payload;
 
       // Find the task in any group
       const taskInfo = findTaskInAllGroups(state.taskGroups, parent_task || id);
@@ -656,7 +671,7 @@ const enhancedKanbanSlice = createSlice({
       task.complete_ratio = +complete_ratio;
       task.completed_count = completed_count;
       task.total_tasks_count = total_tasks_count;
-      
+
       // Update cache
       state.taskCache[parent_task || id] = task;
     },
@@ -709,20 +724,23 @@ const enhancedKanbanSlice = createSlice({
     },
 
     // Reset state
-    resetState: (state) => {
+    resetState: state => {
       return { ...initialState, groupBy: state.groupBy };
     },
 
     // Synchronous reorder for tasks
-    reorderTasks: (state, action: PayloadAction<{
-      activeGroupId: string;
-      overGroupId: string;
-      fromIndex: number;
-      toIndex: number;
-      task: IProjectTask;
-      updatedSourceTasks: IProjectTask[];
-      updatedTargetTasks: IProjectTask[];
-    }>) => {
+    reorderTasks: (
+      state,
+      action: PayloadAction<{
+        activeGroupId: string;
+        overGroupId: string;
+        fromIndex: number;
+        toIndex: number;
+        task: IProjectTask;
+        updatedSourceTasks: IProjectTask[];
+        updatedTargetTasks: IProjectTask[];
+      }>
+    ) => {
       const { activeGroupId, overGroupId, updatedSourceTasks, updatedTargetTasks } = action.payload;
       const sourceGroupIndex = state.taskGroups.findIndex(group => group.id === activeGroupId);
       const targetGroupIndex = state.taskGroups.findIndex(group => group.id === overGroupId);
@@ -737,17 +755,23 @@ const enhancedKanbanSlice = createSlice({
     },
 
     // Synchronous reorder for groups
-    reorderGroups: (state, action: PayloadAction<{
-      fromIndex: number;
-      toIndex: number;
-      reorderedGroups: ITaskListGroup[];
-    }>) => {
+    reorderGroups: (
+      state,
+      action: PayloadAction<{
+        fromIndex: number;
+        toIndex: number;
+        reorderedGroups: ITaskListGroup[];
+      }>
+    ) => {
       const { reorderedGroups } = action.payload;
       state.taskGroups = reorderedGroups;
-      state.groupCache = reorderedGroups.reduce((cache, group) => {
-        cache[group.id] = group;
-        return cache;
-      }, {} as Record<string, ITaskListGroup>);
+      state.groupCache = reorderedGroups.reduce(
+        (cache, group) => {
+          cache[group.id] = group;
+          return cache;
+        },
+        {} as Record<string, ITaskListGroup>
+      );
       state.columnOrder = reorderedGroups.map(group => group.id);
     },
 
@@ -844,7 +868,7 @@ const enhancedKanbanSlice = createSlice({
           task.sub_tasks = task.sub_tasks.filter(t => t.id !== subtask.id);
           task.sub_tasks_count = Math.max(0, (task.sub_tasks_count || 1) - 1);
         }
-        
+
         // Update cache
         state.taskCache[task.id!] = task;
         return true;
@@ -885,9 +909,9 @@ const enhancedKanbanSlice = createSlice({
       }
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
-      .addCase(fetchEnhancedKanbanGroups.pending, (state) => {
+      .addCase(fetchEnhancedKanbanGroups.pending, state => {
         state.loadingGroups = true;
         state.error = null;
       })
@@ -915,7 +939,7 @@ const enhancedKanbanSlice = createSlice({
             if (task.sub_tasks_count === undefined) {
               task.sub_tasks_count = 0;
             }
-            
+
             state.taskCache[task.id!] = task;
           });
         });
@@ -930,7 +954,8 @@ const enhancedKanbanSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(reorderEnhancedKanbanTasks.fulfilled, (state, action) => {
-        const { activeGroupId, overGroupId, updatedSourceTasks, updatedTargetTasks } = action.payload;
+        const { activeGroupId, overGroupId, updatedSourceTasks, updatedTargetTasks } =
+          action.payload;
 
         // Update groups
         const sourceGroupIndex = state.taskGroups.findIndex(group => group.id === activeGroupId);
@@ -951,16 +976,19 @@ const enhancedKanbanSlice = createSlice({
 
         // Update groups
         state.taskGroups = reorderedGroups;
-        state.groupCache = reorderedGroups.reduce((cache, group) => {
-          cache[group.id] = group;
-          return cache;
-        }, {} as Record<string, ITaskListGroup>);
+        state.groupCache = reorderedGroups.reduce(
+          (cache, group) => {
+            cache[group.id] = group;
+            return cache;
+          },
+          {} as Record<string, ITaskListGroup>
+        );
 
         // Update column order
         state.columnOrder = reorderedGroups.map(group => group.id);
       })
       // Fetch Task Assignees
-      .addCase(fetchEnhancedKanbanTaskAssignees.pending, (state) => {
+      .addCase(fetchEnhancedKanbanTaskAssignees.pending, state => {
         state.loadingAssignees = true;
         state.error = null;
       })
@@ -975,7 +1003,7 @@ const enhancedKanbanSlice = createSlice({
         state.error = action.payload as string;
       })
       // Fetch Labels
-      .addCase(fetchEnhancedKanbanLabels.pending, (state) => {
+      .addCase(fetchEnhancedKanbanLabels.pending, state => {
         state.loadingLabels = true;
         state.error = null;
       })
@@ -1004,18 +1032,18 @@ const enhancedKanbanSlice = createSlice({
       .addCase(fetchBoardSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[]>) => {
         const taskId = (action as any).meta?.arg?.taskId;
         const result = findTaskInAllGroups(state.taskGroups, taskId);
-        
+
         if (result) {
           result.task.sub_tasks_loading = false;
           result.task.sub_tasks = action.payload;
           result.task.show_sub_tasks = true;
-          
+
           // Only update the count if we don't have a count yet or if the API returned a different count
           // This preserves the original count from the initial data load
           if (!result.task.sub_tasks_count || result.task.sub_tasks_count === 0) {
             result.task.sub_tasks_count = action.payload.length;
           }
-          
+
           // Update cache
           state.taskCache[taskId] = result.task;
         }
@@ -1078,4 +1106,4 @@ export const {
   deleteSection,
 } = enhancedKanbanSlice.actions;
 
-export default enhancedKanbanSlice.reducer; 
+export default enhancedKanbanSlice.reducer;

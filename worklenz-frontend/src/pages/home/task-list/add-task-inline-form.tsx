@@ -60,7 +60,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
   const calculateEndDate = (dueDate: string): string | undefined => {
     const today = new Date();
     let targetDate: Date;
-    
+
     switch (dueDate) {
       case 'Today':
         targetDate = new Date(today);
@@ -80,7 +80,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
       default:
         return undefined;
     }
-    
+
     return targetDate.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
   };
 
@@ -93,10 +93,10 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
   ];
 
   const handleTaskSubmit = (values: { name: string; project: string; dueDate: string }) => {
-    const endDate = calendarView 
-      ? homeTasksConfig.selected_date?.format('YYYY-MM-DD') 
+    const endDate = calendarView
+      ? homeTasksConfig.selected_date?.format('YYYY-MM-DD')
       : calculateEndDate(values.dueDate);
-      
+
     const newTask = {
       name: values.name,
       project_id: values.project,

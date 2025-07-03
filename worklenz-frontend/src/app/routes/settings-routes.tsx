@@ -4,7 +4,13 @@ import SettingsLayout from '@/layouts/SettingsLayout';
 import { settingsItems } from '@/lib/settings/settings-constants';
 import { useAuthService } from '@/hooks/useAuth';
 
-const SettingsGuard = ({ children, adminRequired }: { children: React.ReactNode; adminRequired: boolean }) => {
+const SettingsGuard = ({
+  children,
+  adminRequired,
+}: {
+  children: React.ReactNode;
+  adminRequired: boolean;
+}) => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
 
   if (adminRequired && !isOwnerOrAdmin) {
@@ -20,11 +26,7 @@ const settingsRoutes: RouteObject[] = [
     element: <SettingsLayout />,
     children: settingsItems.map(item => ({
       path: item.endpoint,
-      element: (
-        <SettingsGuard adminRequired={!!item.adminOnly}>
-          {item.element}
-        </SettingsGuard>
-      ),
+      element: <SettingsGuard adminRequired={!!item.adminOnly}>{item.element}</SettingsGuard>,
     })),
   },
 ];

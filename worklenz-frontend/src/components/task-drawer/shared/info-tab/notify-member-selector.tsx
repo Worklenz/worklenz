@@ -98,12 +98,9 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
         mode: checked ? 0 : 1,
       };
       socket?.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), body);
-      socket?.once(
-            SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(),
-            (data: InlineMember[]) => {
-              dispatch(setTaskSubscribers(data));
-            }
-          );
+      socket?.once(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), (data: InlineMember[]) => {
+        dispatch(setTaskSubscribers(data));
+      });
     } catch (error) {
       logger.error('Error notifying member:', error);
     }

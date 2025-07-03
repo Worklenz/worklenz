@@ -1,8 +1,7 @@
 {
-    "title": "Project Members",
-    "searchLabel": "Add members by adding their name or email",
-    "searchPlaceholder": "Type name or email",
-    "inviteAsAMember": "Invite as a member",
-    "inviteNewMemberByEmail": "Invite new member by email"
-
+  "title": "Project Members",
+  "searchLabel": "Add members by adding their name or email",
+  "searchPlaceholder": "Type name or email",
+  "inviteAsAMember": "Invite as a member",
+  "inviteNewMemberByEmail": "Invite new member by email"
 }

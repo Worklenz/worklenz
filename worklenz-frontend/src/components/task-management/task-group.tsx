@@ -2,13 +2,13 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSelector } from 'react-redux';
-import { 
-  Button, 
+import {
+  Button,
   Typography,
   taskManagementAntdConfig,
-  PlusOutlined, 
-  RightOutlined, 
-  DownOutlined 
+  PlusOutlined,
+  RightOutlined,
+  DownOutlined,
 } from '@/shared/antd-imports';
 import { TaskGroup as TaskGroupType, Task } from '@/types/task-management.types';
 import { taskManagementSelectors } from '@/features/task-management/task-management.slice';
@@ -47,309 +47,314 @@ const GROUP_COLORS = {
   default: '#d9d9d9',
 } as const;
 
+const TaskGroup: React.FC<TaskGroupProps> = React.memo(
+  ({
+    group,
+    projectId,
+    currentGrouping,
+    selectedTaskIds,
+    onAddTask,
+    onToggleCollapse,
+    onSelectTask,
+    onToggleSubtasks,
+  }) => {
+    const [isCollapsed, setIsCollapsed] = useState(group.collapsed || false);
 
-
-const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
-  group,
-  projectId,
-  currentGrouping,
-  selectedTaskIds,
-  onAddTask,
-  onToggleCollapse,
-  onSelectTask,
-  onToggleSubtasks,
-}) => {
-  const [isCollapsed, setIsCollapsed] = useState(group.collapsed || false);
-
-  const { setNodeRef, isOver } = useDroppable({
-    id: group.id,
-    data: {
-      type: 'group',
-      groupId: group.id,
-    },
-  });
-
-  // Get all tasks from the store
-  const allTasks = useSelector(taskManagementSelectors.selectAll);
-  
-  // Get theme from Redux store
-  const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
-  
-  // Get field visibility from taskListFields slice
-  const taskListFields = useSelector((state: RootState) => state.taskManagementFields) as TaskListField[];
-
-
-
-  // Define all possible columns
-  const allFixedColumns = [
-    { key: 'drag', label: '', width: 40, alwaysVisible: true },
-    { key: 'select', label: '', width: 40, alwaysVisible: true },
-    { key: 'key', label: 'KEY', width: 80, fieldKey: 'KEY' },
-    { key: 'task', label: 'TASK', width: 220, alwaysVisible: true },
-  ];
-
-  const allScrollableColumns = [
-    { key: 'description', label: 'Description', width: 200, fieldKey: 'DESCRIPTION' },
-    { key: 'progress', label: 'Progress', width: 90, fieldKey: 'PROGRESS' },
-    { key: 'status', label: 'Status', width: 100, fieldKey: 'STATUS' },
-    { key: 'members', label: 'Members', width: 150, fieldKey: 'ASSIGNEES' },
-    { key: 'labels', label: 'Labels', width: 200, fieldKey: 'LABELS' },
-    { key: 'phase', label: 'Phase', width: 100, fieldKey: 'PHASE' },
-    { key: 'priority', label: 'Priority', width: 100, fieldKey: 'PRIORITY' },
-    { key: 'timeTracking', label: 'Time Tracking', width: 120, fieldKey: 'TIME_TRACKING' },
-    { key: 'estimation', label: 'Estimation', width: 100, fieldKey: 'ESTIMATION' },
-    { key: 'startDate', label: 'Start Date', width: 120, fieldKey: 'START_DATE' },
-    { key: 'dueDate', label: 'Due Date', width: 120, fieldKey: 'DUE_DATE' },
-    { key: 'dueTime', label: 'Due Time', width: 100, fieldKey: 'DUE_TIME' },
-    { key: 'completedDate', label: 'Completed Date', width: 130, fieldKey: 'COMPLETED_DATE' },
-    { key: 'createdDate', label: 'Created Date', width: 120, fieldKey: 'CREATED_DATE' },
-    { key: 'lastUpdated', label: 'Last Updated', width: 130, fieldKey: 'LAST_UPDATED' },
-    { key: 'reporter', label: 'Reporter', width: 100, fieldKey: 'REPORTER' },
-  ];
-
-  // Filter columns based on field visibility
-  const visibleFixedColumns = useMemo(() => {
-    return allFixedColumns.filter(col => {
-      // Always show columns marked as alwaysVisible
-      if (col.alwaysVisible) return true;
-      
-      // For other columns, check field visibility
-      if (col.fieldKey) {
-        const field = taskListFields.find(f => f.key === col.fieldKey);
-        return field?.visible ?? false;
-      }
-      
-      return false;
+    const { setNodeRef, isOver } = useDroppable({
+      id: group.id,
+      data: {
+        type: 'group',
+        groupId: group.id,
+      },
     });
-  }, [taskListFields, allFixedColumns]);
 
-  const visibleScrollableColumns = useMemo(() => {
-    return allScrollableColumns.filter(col => {
-      // For scrollable columns, check field visibility
-      if (col.fieldKey) {
-        const field = taskListFields.find(f => f.key === col.fieldKey);
-        return field?.visible ?? false;
+    // Get all tasks from the store
+    const allTasks = useSelector(taskManagementSelectors.selectAll);
+
+    // Get theme from Redux store
+    const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
+
+    // Get field visibility from taskListFields slice
+    const taskListFields = useSelector(
+      (state: RootState) => state.taskManagementFields
+    ) as TaskListField[];
+
+    // Define all possible columns
+    const allFixedColumns = [
+      { key: 'drag', label: '', width: 40, alwaysVisible: true },
+      { key: 'select', label: '', width: 40, alwaysVisible: true },
+      { key: 'key', label: 'KEY', width: 80, fieldKey: 'KEY' },
+      { key: 'task', label: 'TASK', width: 220, alwaysVisible: true },
+    ];
+
+    const allScrollableColumns = [
+      { key: 'description', label: 'Description', width: 200, fieldKey: 'DESCRIPTION' },
+      { key: 'progress', label: 'Progress', width: 90, fieldKey: 'PROGRESS' },
+      { key: 'status', label: 'Status', width: 100, fieldKey: 'STATUS' },
+      { key: 'members', label: 'Members', width: 150, fieldKey: 'ASSIGNEES' },
+      { key: 'labels', label: 'Labels', width: 200, fieldKey: 'LABELS' },
+      { key: 'phase', label: 'Phase', width: 100, fieldKey: 'PHASE' },
+      { key: 'priority', label: 'Priority', width: 100, fieldKey: 'PRIORITY' },
+      { key: 'timeTracking', label: 'Time Tracking', width: 120, fieldKey: 'TIME_TRACKING' },
+      { key: 'estimation', label: 'Estimation', width: 100, fieldKey: 'ESTIMATION' },
+      { key: 'startDate', label: 'Start Date', width: 120, fieldKey: 'START_DATE' },
+      { key: 'dueDate', label: 'Due Date', width: 120, fieldKey: 'DUE_DATE' },
+      { key: 'dueTime', label: 'Due Time', width: 100, fieldKey: 'DUE_TIME' },
+      { key: 'completedDate', label: 'Completed Date', width: 130, fieldKey: 'COMPLETED_DATE' },
+      { key: 'createdDate', label: 'Created Date', width: 120, fieldKey: 'CREATED_DATE' },
+      { key: 'lastUpdated', label: 'Last Updated', width: 130, fieldKey: 'LAST_UPDATED' },
+      { key: 'reporter', label: 'Reporter', width: 100, fieldKey: 'REPORTER' },
+    ];
+
+    // Filter columns based on field visibility
+    const visibleFixedColumns = useMemo(() => {
+      return allFixedColumns.filter(col => {
+        // Always show columns marked as alwaysVisible
+        if (col.alwaysVisible) return true;
+
+        // For other columns, check field visibility
+        if (col.fieldKey) {
+          const field = taskListFields.find(f => f.key === col.fieldKey);
+          return field?.visible ?? false;
+        }
+
+        return false;
+      });
+    }, [taskListFields, allFixedColumns]);
+
+    const visibleScrollableColumns = useMemo(() => {
+      return allScrollableColumns.filter(col => {
+        // For scrollable columns, check field visibility
+        if (col.fieldKey) {
+          const field = taskListFields.find(f => f.key === col.fieldKey);
+          return field?.visible ?? false;
+        }
+
+        return false;
+      });
+    }, [taskListFields, allScrollableColumns]);
+
+    // Get tasks for this group using memoization for performance
+    const groupTasks = useMemo(() => {
+      return group.taskIds
+        .map(taskId => allTasks.find(task => task.id === taskId))
+        .filter((task): task is Task => task !== undefined);
+    }, [group.taskIds, allTasks]);
+
+    // Calculate group statistics - memoized
+    const { completedTasks, totalTasks, completionRate } = useMemo(() => {
+      const completed = groupTasks.filter(task => task.progress === 100).length;
+      const total = groupTasks.length;
+      const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      return {
+        completedTasks: completed,
+        totalTasks: total,
+        completionRate: rate,
+      };
+    }, [groupTasks]);
+
+    // Calculate selection state for the group checkbox
+    const { isAllSelected, isIndeterminate } = useMemo(() => {
+      if (groupTasks.length === 0) {
+        return { isAllSelected: false, isIndeterminate: false };
       }
-      
-      return false;
-    });
-  }, [taskListFields, allScrollableColumns]);
 
-  // Get tasks for this group using memoization for performance
-  const groupTasks = useMemo(() => {
-    return group.taskIds
-      .map(taskId => allTasks.find(task => task.id === taskId))
-      .filter((task): task is Task => task !== undefined);
-  }, [group.taskIds, allTasks]);
+      const selectedTasksInGroup = groupTasks.filter(task => selectedTaskIds.includes(task.id));
+      const isAllSelected = selectedTasksInGroup.length === groupTasks.length;
+      const isIndeterminate =
+        selectedTasksInGroup.length > 0 && selectedTasksInGroup.length < groupTasks.length;
 
-  // Calculate group statistics - memoized
-  const { completedTasks, totalTasks, completionRate } = useMemo(() => {
-    const completed = groupTasks.filter(task => task.progress === 100).length;
-    const total = groupTasks.length;
-    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
-    return {
-      completedTasks: completed,
-      totalTasks: total,
-      completionRate: rate,
-    };
-  }, [groupTasks]);
+      return { isAllSelected, isIndeterminate };
+    }, [groupTasks, selectedTaskIds]);
 
-  // Calculate selection state for the group checkbox
-  const { isAllSelected, isIndeterminate } = useMemo(() => {
-    if (groupTasks.length === 0) {
-      return { isAllSelected: false, isIndeterminate: false };
-    }
-    
-    const selectedTasksInGroup = groupTasks.filter(task => selectedTaskIds.includes(task.id));
-    const isAllSelected = selectedTasksInGroup.length === groupTasks.length;
-    const isIndeterminate = selectedTasksInGroup.length > 0 && selectedTasksInGroup.length < groupTasks.length;
-    
-    return { isAllSelected, isIndeterminate };
-  }, [groupTasks, selectedTaskIds]);
+    // Get group color based on grouping type - memoized
+    const groupColor = useMemo(() => {
+      if (group.color) return group.color;
 
+      // Fallback colors based on group value
+      switch (currentGrouping) {
+        case 'status':
+          return (
+            GROUP_COLORS.status[group.groupValue as keyof typeof GROUP_COLORS.status] ||
+            GROUP_COLORS.default
+          );
+        case 'priority':
+          return (
+            GROUP_COLORS.priority[group.groupValue as keyof typeof GROUP_COLORS.priority] ||
+            GROUP_COLORS.default
+          );
+        case 'phase':
+          return GROUP_COLORS.phase;
+        default:
+          return GROUP_COLORS.default;
+      }
+    }, [group.color, group.groupValue, currentGrouping]);
 
+    // Memoized event handlers
+    const handleToggleCollapse = useCallback(() => {
+      setIsCollapsed(!isCollapsed);
+      onToggleCollapse?.(group.id);
+    }, [isCollapsed, onToggleCollapse, group.id]);
 
-  // Get group color based on grouping type - memoized
-  const groupColor = useMemo(() => {
-    if (group.color) return group.color;
+    const handleAddTask = useCallback(() => {
+      onAddTask?.(group.id);
+    }, [onAddTask, group.id]);
 
-    // Fallback colors based on group value
-    switch (currentGrouping) {
-      case 'status':
-        return GROUP_COLORS.status[group.groupValue as keyof typeof GROUP_COLORS.status] || GROUP_COLORS.default;
-      case 'priority':
-        return GROUP_COLORS.priority[group.groupValue as keyof typeof GROUP_COLORS.priority] || GROUP_COLORS.default;
-      case 'phase':
-        return GROUP_COLORS.phase;
-      default:
-        return GROUP_COLORS.default;
-    }
-  }, [group.color, group.groupValue, currentGrouping]);
-
-  // Memoized event handlers
-  const handleToggleCollapse = useCallback(() => {
-    setIsCollapsed(!isCollapsed);
-    onToggleCollapse?.(group.id);
-  }, [isCollapsed, onToggleCollapse, group.id]);
-
-  const handleAddTask = useCallback(() => {
-    onAddTask?.(group.id);
-  }, [onAddTask, group.id]);
-
-  // Handle select all tasks in group
-  const handleSelectAllInGroup = useCallback((checked: boolean) => {
-    if (checked) {
-      // Select all tasks in the group
-      groupTasks.forEach(task => {
-        if (!selectedTaskIds.includes(task.id)) {
-          onSelectTask?.(task.id, true);
+    // Handle select all tasks in group
+    const handleSelectAllInGroup = useCallback(
+      (checked: boolean) => {
+        if (checked) {
+          // Select all tasks in the group
+          groupTasks.forEach(task => {
+            if (!selectedTaskIds.includes(task.id)) {
+              onSelectTask?.(task.id, true);
+            }
+          });
+        } else {
+          // Deselect all tasks in the group
+          groupTasks.forEach(task => {
+            if (selectedTaskIds.includes(task.id)) {
+              onSelectTask?.(task.id, false);
+            }
+          });
         }
-      });
-    } else {
-      // Deselect all tasks in the group
-      groupTasks.forEach(task => {
-        if (selectedTaskIds.includes(task.id)) {
-          onSelectTask?.(task.id, false);
-        }
-      });
-    }
-  }, [groupTasks, selectedTaskIds, onSelectTask]);
+      },
+      [groupTasks, selectedTaskIds, onSelectTask]
+    );
 
-  // Memoized style object
-  const containerStyle = useMemo(() => ({
-    backgroundColor: isOver 
-      ? (isDarkMode ? '#1a2332' : '#f0f8ff') 
-      : undefined,
-  }), [isOver, isDarkMode]);
+    // Memoized style object
+    const containerStyle = useMemo(
+      () => ({
+        backgroundColor: isOver ? (isDarkMode ? '#1a2332' : '#f0f8ff') : undefined,
+      }),
+      [isOver, isDarkMode]
+    );
 
-  return (
-    <div
-      className={`task-group`}
-      style={{ ...containerStyle, overflowX: 'unset' }}
-    >
-      <div className="task-group-scroll-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
-        <div style={{ minWidth: visibleFixedColumns.reduce((sum, col) => sum + col.width, 0) + visibleScrollableColumns.reduce((sum, col) => sum + col.width, 0) }}>
-          {/* Group Header Row */}
-          <div className="task-group-header">
-            <div className="task-group-header-row">
-              <div 
-                className="task-group-header-content"
-                style={{ backgroundColor: groupColor }}
+    return (
+      <div className={`task-group`} style={{ ...containerStyle, overflowX: 'unset' }}>
+        <div className="task-group-scroll-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
+          <div
+            style={{
+              minWidth:
+                visibleFixedColumns.reduce((sum, col) => sum + col.width, 0) +
+                visibleScrollableColumns.reduce((sum, col) => sum + col.width, 0),
+            }}
+          >
+            {/* Group Header Row */}
+            <div className="task-group-header">
+              <div className="task-group-header-row">
+                <div className="task-group-header-content" style={{ backgroundColor: groupColor }}>
+                  <Button
+                    {...taskManagementAntdConfig.taskButtonDefaults}
+                    icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
+                    onClick={handleToggleCollapse}
+                    className="task-group-header-button"
+                  />
+                  <Text strong className="task-group-header-text">
+                    {group.title} ({totalTasks})
+                  </Text>
+                </div>
+              </div>
+            </div>
+
+            {/* Column Headers */}
+            {!isCollapsed && totalTasks > 0 && (
+              <div
+                className="task-group-column-headers"
+                style={{ borderLeft: `4px solid ${groupColor}` }}
               >
-                <Button
-                  {...taskManagementAntdConfig.taskButtonDefaults}
-                  icon={isCollapsed ? <RightOutlined /> : <DownOutlined />}
-                  onClick={handleToggleCollapse}
-                  className="task-group-header-button"
-                />
-                <Text strong className="task-group-header-text">
-                  {group.title} ({totalTasks})
-                </Text>
-              </div>
-            </div>
-          </div>
-
-          {/* Column Headers */}
-          {!isCollapsed && totalTasks > 0 && (
-            <div 
-              className="task-group-column-headers"
-              style={{ borderLeft: `4px solid ${groupColor}` }}
-            >
-              <div className="task-group-column-headers-row">
-                <div className="task-table-fixed-columns">
-                  {visibleFixedColumns.map(col => (
-                    <div
-                      key={col.key}
-                      className="task-table-cell task-table-header-cell"
-                      style={{ width: col.width }}
-                    >
-                      {col.key === 'select' ? (
-                        <div className="flex items-center justify-center h-full">
-                          <Checkbox
-                            checked={isAllSelected}
-                            onChange={handleSelectAllInGroup}
-                            isDarkMode={isDarkMode}
-                            indeterminate={isIndeterminate}
-                          />
-                        </div>
-                      ) : (
-                        col.label && <Text className="column-header-text">{col.label}</Text>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="task-table-scrollable-columns">
-                  {visibleScrollableColumns.map(col => (
-                    <div
-                      key={col.key}
-                      className="task-table-cell task-table-header-cell"
-                      style={{ width: col.width }}
-                    >
-                      <Text className="column-header-text">{col.label}</Text>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tasks List */}
-          {!isCollapsed && (
-            <div 
-              className="task-group-body"
-              style={{ borderLeft: `4px solid ${groupColor}` }}
-            >
-              {groupTasks.length === 0 ? (
-                <div className="task-group-empty">
+                <div className="task-group-column-headers-row">
                   <div className="task-table-fixed-columns">
-                    <div style={{ width: '380px', padding: '20px 12px' }}>
-                      <div className="text-center text-gray-500">
-                        <Text type="secondary">No tasks in this group</Text>
-                        <br />
-                        <Button
-                          {...taskManagementAntdConfig.taskButtonDefaults}
-                          icon={<PlusOutlined />}
-                          onClick={handleAddTask}
-                          className="mt-2"
-                        >
-                          Add first task
-                        </Button>
+                    {visibleFixedColumns.map(col => (
+                      <div
+                        key={col.key}
+                        className="task-table-cell task-table-header-cell"
+                        style={{ width: col.width }}
+                      >
+                        {col.key === 'select' ? (
+                          <div className="flex items-center justify-center h-full">
+                            <Checkbox
+                              checked={isAllSelected}
+                              onChange={handleSelectAllInGroup}
+                              isDarkMode={isDarkMode}
+                              indeterminate={isIndeterminate}
+                            />
+                          </div>
+                        ) : (
+                          col.label && <Text className="column-header-text">{col.label}</Text>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="task-table-scrollable-columns">
+                    {visibleScrollableColumns.map(col => (
+                      <div
+                        key={col.key}
+                        className="task-table-cell task-table-header-cell"
+                        style={{ width: col.width }}
+                      >
+                        <Text className="column-header-text">{col.label}</Text>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tasks List */}
+            {!isCollapsed && (
+              <div className="task-group-body" style={{ borderLeft: `4px solid ${groupColor}` }}>
+                {groupTasks.length === 0 ? (
+                  <div className="task-group-empty">
+                    <div className="task-table-fixed-columns">
+                      <div style={{ width: '380px', padding: '20px 12px' }}>
+                        <div className="text-center text-gray-500">
+                          <Text type="secondary">No tasks in this group</Text>
+                          <br />
+                          <Button
+                            {...taskManagementAntdConfig.taskButtonDefaults}
+                            icon={<PlusOutlined />}
+                            onClick={handleAddTask}
+                            className="mt-2"
+                          >
+                            Add first task
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
-                  <div className="task-group-tasks">
-                    {groupTasks.map((task, index) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        projectId={projectId}
-                        groupId={group.id}
-                        currentGrouping={currentGrouping}
-                        isSelected={selectedTaskIds.includes(task.id)}
-                        index={index}
-                        onSelect={onSelectTask}
-                        onToggleSubtasks={onToggleSubtasks}
-                        fixedColumns={visibleFixedColumns}
-                        scrollableColumns={visibleScrollableColumns}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              )}
+                ) : (
+                  <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
+                    <div className="task-group-tasks">
+                      {groupTasks.map((task, index) => (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          projectId={projectId}
+                          groupId={group.id}
+                          currentGrouping={currentGrouping}
+                          isSelected={selectedTaskIds.includes(task.id)}
+                          index={index}
+                          onSelect={onSelectTask}
+                          onToggleSubtasks={onToggleSubtasks}
+                          fixedColumns={visibleFixedColumns}
+                          scrollableColumns={visibleScrollableColumns}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                )}
 
-              {/* Add Task Row - Always show when not collapsed */}
-              <div className="task-group-add-task">
-                <AddTaskListRow groupId={group.id} />
+                {/* Add Task Row - Always show when not collapsed */}
+                <div className="task-group-add-task">
+                  <AddTaskListRow groupId={group.id} />
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-      <style>{`
+        <style>{`
         .task-group {
           border: 1px solid var(--task-border-primary, #e8e8e8);
           border-radius: 8px;
@@ -622,19 +627,21 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
           box-shadow: 0 1px 3px var(--task-shadow, rgba(0, 0, 0, 0.3));
         }
       `}</style>
-    </div>
-  );
-}, (prevProps, nextProps) => {
-  // More comprehensive comparison to detect task movements
-  return (
-    prevProps.group.id === nextProps.group.id &&
-    prevProps.group.taskIds.length === nextProps.group.taskIds.length &&
-    prevProps.group.taskIds.every((id, index) => id === nextProps.group.taskIds[index]) &&
-    prevProps.group.collapsed === nextProps.group.collapsed &&
-    prevProps.selectedTaskIds.length === nextProps.selectedTaskIds.length &&
-    prevProps.currentGrouping === nextProps.currentGrouping
-  );
-});
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    // More comprehensive comparison to detect task movements
+    return (
+      prevProps.group.id === nextProps.group.id &&
+      prevProps.group.taskIds.length === nextProps.group.taskIds.length &&
+      prevProps.group.taskIds.every((id, index) => id === nextProps.group.taskIds[index]) &&
+      prevProps.group.collapsed === nextProps.group.collapsed &&
+      prevProps.selectedTaskIds.length === nextProps.selectedTaskIds.length &&
+      prevProps.currentGrouping === nextProps.currentGrouping
+    );
+  }
+);
 
 TaskGroup.displayName = 'TaskGroup';
 

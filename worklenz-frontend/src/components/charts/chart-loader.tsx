@@ -2,8 +2,12 @@ import React, { Suspense } from 'react';
 import { Spin } from 'antd';
 
 // Lazy load chart components to reduce initial bundle size
-const LazyBar = React.lazy(() => import('react-chartjs-2').then(module => ({ default: module.Bar })));
-const LazyDoughnut = React.lazy(() => import('react-chartjs-2').then(module => ({ default: module.Doughnut })));
+const LazyBar = React.lazy(() =>
+  import('react-chartjs-2').then(module => ({ default: module.Bar }))
+);
+const LazyDoughnut = React.lazy(() =>
+  import('react-chartjs-2').then(module => ({ default: module.Doughnut }))
+);
 
 interface ChartLoaderProps {
   type: 'bar' | 'doughnut';
@@ -14,7 +18,7 @@ interface ChartLoaderProps {
 
 const ChartLoader: React.FC<ChartLoaderProps> = ({ type, ...props }) => {
   const ChartComponent = type === 'bar' ? LazyBar : LazyDoughnut;
-  
+
   return (
     <Suspense fallback={<Spin size="large" />}>
       <ChartComponent {...props} />
@@ -22,4 +26,4 @@ const ChartLoader: React.FC<ChartLoaderProps> = ({ type, ...props }) => {
   );
 };
 
-export default ChartLoader; 
+export default ChartLoader;

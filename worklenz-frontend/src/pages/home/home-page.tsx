@@ -32,7 +32,7 @@ const HomePage = memo(() => {
   const dispatch = useAppDispatch();
   const isDesktop = useMediaQuery({ query: `(min-width: ${DESKTOP_MIN_WIDTH}px)` });
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  
+
   useDocumentTitle('Home');
 
   // Memoize fetch function to prevent recreation on every render
@@ -55,20 +55,26 @@ const HomePage = memo(() => {
   const handleProjectDrawerClose = useCallback(() => {}, []);
 
   // Memoize desktop flex styles to prevent object recreation
-  const desktopFlexStyle = useMemo(() => ({ 
-    minWidth: TASK_LIST_MIN_WIDTH, 
-    width: '100%' 
-  }), []);
+  const desktopFlexStyle = useMemo(
+    () => ({
+      minWidth: TASK_LIST_MIN_WIDTH,
+      width: '100%',
+    }),
+    []
+  );
 
-  const sidebarFlexStyle = useMemo(() => ({ 
-    width: '100%', 
-    maxWidth: SIDEBAR_MAX_WIDTH 
-  }), []);
+  const sidebarFlexStyle = useMemo(
+    () => ({
+      width: '100%',
+      maxWidth: SIDEBAR_MAX_WIDTH,
+    }),
+    []
+  );
 
   // Memoize components to prevent unnecessary re-renders
   const CreateProjectButtonComponent = useMemo(() => {
     if (!isOwnerOrAdmin) return null;
-    
+
     return isDesktop ? (
       <div className="absolute right-0 top-1/2 -translate-y-1/2">
         <CreateProjectButton />
@@ -106,15 +112,15 @@ const HomePage = memo(() => {
       </Col>
 
       {MainContent}
-      
+
       {/* Use Suspense for lazy-loaded components */}
       <Suspense fallback={null}>
         {createPortal(<TaskDrawer />, document.body, 'home-task-drawer')}
       </Suspense>
-      
+
       {createPortal(
-        <ProjectDrawer onClose={handleProjectDrawerClose} />, 
-        document.body, 
+        <ProjectDrawer onClose={handleProjectDrawerClose} />,
+        document.body,
         'project-drawer'
       )}
     </div>

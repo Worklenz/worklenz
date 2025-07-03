@@ -93,9 +93,9 @@
     width: 100%;
     margin-bottom: 16px;
   }
-  
+
   .performance-metrics {
     grid-template-columns: 1fr;
     gap: 8px;
   }
-} 
+}

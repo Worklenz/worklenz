@@ -69,8 +69,16 @@ export const statusApiService = {
     return response.data;
   },
 
-  deleteStatus: async (statusId: string, projectId: string, replacingStatusId: string): Promise<IServerResponse<void>> => {
-    const q = toQueryString({ project: projectId, current_project_id: projectId, replace: replacingStatusId || null });
+  deleteStatus: async (
+    statusId: string,
+    projectId: string,
+    replacingStatusId: string
+  ): Promise<IServerResponse<void>> => {
+    const q = toQueryString({
+      project: projectId,
+      current_project_id: projectId,
+      replace: replacingStatusId || null,
+    });
     const response = await apiClient.delete<IServerResponse<void>>(`${rootUrl}/${statusId}${q}`);
     return response.data;
   },

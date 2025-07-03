@@ -38,7 +38,7 @@ const AddSubTaskListRow: React.FC<AddSubTaskListRowProps> = ({
   };
 
   return (
-    <tr className={`add-subtask-row${customBorderColor}`}> 
+    <tr className={`add-subtask-row${customBorderColor}`}>
       {visibleColumns.map(col => (
         <td key={col.key} style={{ padding: 0, background: 'inherit' }}>
           {col.key === taskColumnKey ? (

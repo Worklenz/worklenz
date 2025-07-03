@@ -40,50 +40,62 @@ const OverviewReportsTable = memo(() => {
     getTeams();
   }, [getTeams]);
 
-  const handleDrawerOpen = useCallback((team: IRPTTeam) => {
-    setSelectedTeam(team);
-    dispatch(toggleOverViewTeamDrawer());
-  }, [dispatch]);
+  const handleDrawerOpen = useCallback(
+    (team: IRPTTeam) => {
+      setSelectedTeam(team);
+      dispatch(toggleOverViewTeamDrawer());
+    },
+    [dispatch]
+  );
 
   // Memoize table columns to prevent recreation on every render
-  const columns: TableColumnsType<IRPTTeam> = useMemo(() => [
-    {
-      key: 'name',
-      title: <CustomTableTitle title={t('nameColumn')} />,
-      className: 'group-hover:text-[#1890ff]',
-      dataIndex: 'name',
-    },
-    {
-      key: 'projects',
-      title: <CustomTableTitle title={t('projectsColumn')} />,
-      className: 'group-hover:text-[#1890ff]',
-      dataIndex: 'projects_count',
-    },
-    {
-      key: 'members',
-      title: <CustomTableTitle title={t('membersColumn')} />,
-      render: (record: IRPTTeam) => <Avatars members={record.members} maxCount={3} />,
-    },
-  ], [t]);
+  const columns: TableColumnsType<IRPTTeam> = useMemo(
+    () => [
+      {
+        key: 'name',
+        title: <CustomTableTitle title={t('nameColumn')} />,
+        className: 'group-hover:text-[#1890ff]',
+        dataIndex: 'name',
+      },
+      {
+        key: 'projects',
+        title: <CustomTableTitle title={t('projectsColumn')} />,
+        className: 'group-hover:text-[#1890ff]',
+        dataIndex: 'projects_count',
+      },
+      {
+        key: 'members',
+        title: <CustomTableTitle title={t('membersColumn')} />,
+        render: (record: IRPTTeam) => <Avatars members={record.members} maxCount={3} />,
+      },
+    ],
+    [t]
+  );
 
   // Memoize table configuration
-  const tableConfig = useMemo(() => ({
-    theme: {
-      components: {
-        Table: {
-          cellPaddingBlock: 8,
-          cellPaddingInline: 10,
+  const tableConfig = useMemo(
+    () => ({
+      theme: {
+        components: {
+          Table: {
+            cellPaddingBlock: 8,
+            cellPaddingInline: 10,
+          },
         },
       },
-    },
-  }), []);
+    }),
+    []
+  );
 
   // Memoize row props generator
-  const getRowProps = useCallback((record: IRPTTeam) => ({
-    onClick: () => handleDrawerOpen(record),
-    style: { height: 48, cursor: 'pointer' },
-    className: 'group even:bg-[#4e4e4e10]',
-  }), [handleDrawerOpen]);
+  const getRowProps = useCallback(
+    (record: IRPTTeam) => ({
+      onClick: () => handleDrawerOpen(record),
+      style: { height: 48, cursor: 'pointer' },
+      className: 'group even:bg-[#4e4e4e10]',
+    }),
+    [handleDrawerOpen]
+  );
 
   return (
     <ConfigProvider {...tableConfig}>

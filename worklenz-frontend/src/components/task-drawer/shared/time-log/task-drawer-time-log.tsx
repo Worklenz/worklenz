@@ -49,7 +49,7 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
 
     for (const log of logs) {
       const timeSpentInSeconds = Number(log.time_spent || '0');
-      
+
       // Calculate hours, minutes, seconds for individual time log
       const hours = Math.floor(timeSpentInSeconds / 3600);
       const minutes = Math.floor((timeSpentInSeconds % 3600) / 60);

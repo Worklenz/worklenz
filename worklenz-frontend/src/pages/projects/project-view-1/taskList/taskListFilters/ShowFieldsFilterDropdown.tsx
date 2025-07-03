@@ -24,7 +24,7 @@ const ShowFieldsFilterDropdown = () => {
       key: col.key,
       columnHeader: col.custom_column_obj.columnHeader,
       isCustomColumn: col.custom_column,
-    }))
+    })),
   ];
 
   const columnsVisibility = useAppSelector(
@@ -77,7 +77,7 @@ const ShowFieldsFilterDropdown = () => {
                 }
               />
               {col.custom_column
-                ? col.columnHeader 
+                ? col.columnHeader
                 : t(col.key === 'phases' ? 'phasesText' : `${col.columnHeader}Text`)}
             </Space>
           </List.Item>

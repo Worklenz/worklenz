@@ -23,7 +23,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   const { t } = useTranslation('navbar');
   const authService = useAuthService();
   const currentSession = useAppSelector((state: RootState) => state.userReducer);
-  
+
   const role = getRole();
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
 
@@ -49,13 +49,24 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
                 <Flex vertical style={{ flex: 1, minWidth: 0 }}>
                   <Typography.Text
                     ellipsis={{ tooltip: currentSession?.name }} // Show tooltip on hover
-                    style={{ width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    style={{
+                      width: '100%',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
                   >
                     {currentSession?.name}
                   </Typography.Text>
                   <Typography.Text
                     ellipsis={{ tooltip: currentSession?.email }} // Show tooltip on hover
-                    style={{ fontSize: 12, width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    style={{
+                      fontSize: 12,
+                      width: '100%',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
                   >
                     {currentSession?.email}
                   </Typography.Text>

@@ -4,7 +4,7 @@ import { Skeleton } from 'antd';
 // Lightweight loading component with skeleton animation
 export const SuspenseFallback = memo(() => {
   return (
-    <div 
+    <div
       style={{
         position: 'fixed',
         top: 0,
@@ -20,8 +20,8 @@ export const SuspenseFallback = memo(() => {
       }}
     >
       <div style={{ width: '100%', maxWidth: '400px' }}>
-        <Skeleton 
-          active 
+        <Skeleton
+          active
           paragraph={{ rows: 3, width: ['100%', '80%', '60%'] }}
           title={{ width: '70%' }}
         />
@@ -33,7 +33,7 @@ export const SuspenseFallback = memo(() => {
 // Lightweight fallback for internal components that doesn't cover the screen
 export const InlineSuspenseFallback = memo(() => {
   return (
-    <div 
+    <div
       style={{
         padding: '40px 20px',
         display: 'flex',
@@ -43,11 +43,7 @@ export const InlineSuspenseFallback = memo(() => {
       }}
     >
       <div style={{ width: '100%', maxWidth: '300px' }}>
-        <Skeleton 
-          active 
-          paragraph={{ rows: 2, width: ['100%', '70%'] }}
-          title={{ width: '60%' }}
-        />
+        <Skeleton active paragraph={{ rows: 2, width: ['100%', '70%'] }} title={{ width: '60%' }} />
       </div>
     </div>
   );

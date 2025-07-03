@@ -11,12 +11,12 @@ const LOCAL_STORAGE_KEY = 'project_view_preferences';
 
 const loadInitialState = (): ProjectViewState => {
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-  return saved 
+  return saved
     ? JSON.parse(saved)
     : {
         mode: ProjectViewType.LIST,
         groupBy: ProjectGroupBy.CATEGORY,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       };
 };
 
@@ -39,8 +39,8 @@ export const projectViewSlice = createSlice({
     resetViewState: () => {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
       return loadInitialState();
-    }
-  }
+    },
+  },
 });
 
 export const { setViewMode, setGroupBy, resetViewState } = projectViewSlice.actions;
