@@ -25,6 +25,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   const authService = useAuthService();
   const { socket } = useSocket();
   const project = useAppSelector((state: RootState) => state.projectReducer.project);
+  const groupBy = useSelector((state: RootState) => state.enhancedKanbanReducer.groupBy);
   const teamId = authService.getCurrentSession()?.team_id;
   const {
     taskGroups,
@@ -230,7 +231,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         to_last_index: toLastIndex,
         from_group: sourceGroup.id,
         to_group: targetGroup.id,
-        group_by: 'status',
+        group_by: groupBy || 'status',
         task: movedTask,
         team_id: teamId,
       });
