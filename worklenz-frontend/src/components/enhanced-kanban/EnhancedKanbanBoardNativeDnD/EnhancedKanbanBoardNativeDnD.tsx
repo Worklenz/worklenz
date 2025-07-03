@@ -12,6 +12,7 @@ import { reorderGroups, reorderEnhancedKanbanGroups, reorderTasks, reorderEnhanc
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import KanbanGroup from './KanbanGroup';
+import EnhancedKanbanCreateSection from '../EnhancedKanbanCreateSection';
 
 
 
@@ -222,6 +223,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
                 hoveredGroupId={hoveredGroupId}
               />
             ))}
+            <EnhancedKanbanCreateSection />
           </div>
         )}
       </div>
