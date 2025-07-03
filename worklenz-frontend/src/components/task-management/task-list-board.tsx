@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useTranslation } from 'react-i18next';
+import { useTaskManagementTranslations } from '@/hooks/useTranslationPreloader';
 import {
   DndContext,
   DragOverlay,
@@ -21,6 +21,7 @@ import {
   reorderTasks,
   moveTaskToGroup,
   optimisticTaskMove,
+  reorderTasksInGroup,
   setLoading,
   fetchTasks,
   fetchTasksV3,
@@ -37,8 +38,15 @@ import {
   toggleTaskSelection,
   clearSelection,
 } from '@/features/task-management/selection.slice';
+import {
+  selectTaskIds,
+  selectTasks,
+  deselectAll as deselectAllBulk,
+} from '@/features/projects/bulkActions/bulkActionSlice';
 import { Task } from '@/types/task-management.types';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 import TaskRow from './task-row';
 // import BulkActionBar from './bulk-action-bar';
 import OptimizedBulkActionBar from './optimized-bulk-action-bar';
@@ -46,7 +54,6 @@ import OptimizedBulkActionBar from './optimized-bulk-action-bar';
 import VirtualizedTaskList from './virtualized-task-list';
 import { AppDispatch } from '@/app/store';
 import { shallowEqual } from 'react-redux';
-import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
@@ -70,6 +77,7 @@ import { ITaskPriority } from '@/types/tasks/taskPriority.types';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
@@ -121,7 +129,7 @@ const throttle = <T extends (...args: any[]) => void>(func: T, delay: number): T
 
 const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = '' }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { t } = useTranslation('task-management');
+  const { t, ready, isLoading } = useTaskManagementTranslations();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [dragState, setDragState] = useState<DragState>({
     activeTask: null,
@@ -136,7 +144,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const renderCountRef = useRef(0);
   const [shouldThrottle, setShouldThrottle] = useState(false);
 
-
   // Refs for performance optimization
   const dragOverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -144,14 +151,19 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   // Enable real-time socket updates for task changes
   useTaskSocketHandlers();
 
+  // Socket connection for drag and drop
+  const { socket, connected } = useSocket();
+
   // Redux selectors using V3 API (pre-processed data, minimal loops)
   const tasks = useSelector(taskManagementSelectors.selectAll);
   const taskGroups = useSelector(selectTaskGroupsV3, shallowEqual);
   const currentGrouping = useSelector(selectCurrentGroupingV3, shallowEqual);
-  const selectedTaskIds = useSelector(selectSelectedTaskIds);
+  // Use bulk action slice for selected tasks instead of selection slice
+  const selectedTaskIds = useSelector((state: RootState) => state.bulkActionReducer.selectedTaskIdsList);
+  const selectedTasks = useSelector((state: RootState) => state.bulkActionReducer.selectedTasks);
   const loading = useSelector((state: RootState) => state.taskManagement.loading, shallowEqual);
   const error = useSelector((state: RootState) => state.taskManagement.error);
-  
+
   // Bulk action selectors
   const statusList = useSelector((state: RootState) => state.taskStatusReducer.status);
   const priorityList = useSelector((state: RootState) => state.priorityReducer.priorities);
@@ -221,7 +233,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   // Memoized calculations - optimized
   const totalTasks = useMemo(() => {
     const total = taskGroups.reduce((sum, g) => sum + g.taskIds.length, 0);
-    console.log(`[TASK-LIST-BOARD] Total tasks in groups: ${total}, Total tasks in store: ${tasks.length}, Groups: ${taskGroups.length}`);
     return total;
   }, [taskGroups, tasks.length]);
 
@@ -235,8 +246,12 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     [dispatch]
   );
 
+  // Add isDragging state
+  const [isDragging, setIsDragging] = useState(false);
+
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
+      setIsDragging(true);
       const { active } = event;
       const taskId = active.id as string;
 
@@ -245,13 +260,12 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       let activeGroupId: string | null = null;
 
       if (activeTask) {
-        // Determine group ID based on current grouping
-        if (currentGrouping === 'status') {
-          activeGroupId = `status-${activeTask.status}`;
-        } else if (currentGrouping === 'priority') {
-          activeGroupId = `priority-${activeTask.priority}`;
-        } else if (currentGrouping === 'phase') {
-          activeGroupId = `phase-${activeTask.phase}`;
+        // Find which group contains this task by looking through all groups
+        for (const group of taskGroups) {
+          if (group.taskIds.includes(taskId)) {
+            activeGroupId = group.id;
+            break;
+          }
         }
       }
 
@@ -260,7 +274,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         activeGroupId,
       });
     },
-    [tasks, currentGrouping]
+    [tasks, currentGrouping, taskGroups]
   );
 
   // Throttled drag over handler for smoother performance
@@ -271,15 +285,14 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       if (!over || !dragState.activeTask) return;
 
       const activeTaskId = active.id as string;
-      const overContainer = over.id as string;
+      const overId = over.id as string;
 
-      // PERFORMANCE OPTIMIZATION: Immediate response for instant UX
-      // Only update if we're hovering over a different container
-      const targetTask = tasks.find(t => t.id === overContainer);
-      let targetGroupId = overContainer;
+      // Check if we're hovering over a task or a group container
+      const targetTask = tasks.find(t => t.id === overId);
+      let targetGroupId = overId;
 
       if (targetTask) {
-        // PERFORMANCE OPTIMIZATION: Use switch instead of multiple if statements
+        // We're hovering over a task, determine its group
         switch (currentGrouping) {
           case 'status':
             targetGroupId = `status-${targetTask.status}`;
@@ -292,29 +305,13 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
             break;
         }
       }
-
-      if (targetGroupId !== dragState.activeGroupId) {
-        // PERFORMANCE OPTIMIZATION: Use findIndex for better performance
-        const targetGroupIndex = taskGroups.findIndex(g => g.id === targetGroupId);
-        if (targetGroupIndex !== -1) {
-          const targetGroup = taskGroups[targetGroupIndex];
-          dispatch(
-            optimisticTaskMove({
-              taskId: activeTaskId,
-              newGroupId: targetGroupId,
-              newIndex: targetGroup.taskIds.length,
-            })
-          );
-        }
-      }
     }, 16), // 60fps throttling for smooth performance
-    [dragState, tasks, taskGroups, currentGrouping, dispatch]
+    [dragState, tasks, taskGroups, currentGrouping]
   );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
-      const { active, over } = event;
-
+      setIsDragging(false);
       // Clear any pending drag over timeouts
       if (dragOverTimeoutRef.current) {
         clearTimeout(dragOverTimeoutRef.current);
@@ -328,36 +325,27 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         activeGroupId: null,
       });
 
-      if (!over || !currentDragState.activeTask || !currentDragState.activeGroupId) {
+      if (!event.over || !currentDragState.activeTask || !currentDragState.activeGroupId) {
         return;
       }
 
+      const { active, over } = event;
       const activeTaskId = active.id as string;
-      const overContainer = over.id as string;
+      const overId = over.id as string;
 
-      // Parse the group ID to get group type and value - optimized
-      const parseGroupId = (groupId: string) => {
-        const [groupType, ...groupValueParts] = groupId.split('-');
-        return {
-          groupType: groupType as 'status' | 'priority' | 'phase',
-          groupValue: groupValueParts.join('-'),
-        };
-      };
-
-      // Determine target group
-      let targetGroupId = overContainer;
+      // Determine target group and position
+      let targetGroupId = overId;
       let targetIndex = -1;
 
       // Check if dropping on a task or a group
-      const targetTask = tasks.find(t => t.id === overContainer);
+      const targetTask = tasks.find(t => t.id === overId);
       if (targetTask) {
-        // Dropping on a task, determine its group
-        if (currentGrouping === 'status') {
-          targetGroupId = `status-${targetTask.status}`;
-        } else if (currentGrouping === 'priority') {
-          targetGroupId = `priority-${targetTask.priority}`;
-        } else if (currentGrouping === 'phase') {
-          targetGroupId = `phase-${targetTask.phase}`;
+        // Dropping on a task, find which group contains this task
+        for (const group of taskGroups) {
+          if (group.taskIds.includes(targetTask.id)) {
+            targetGroupId = group.id;
+            break;
+          }
         }
 
         // Find the index of the target task within its group
@@ -365,23 +353,15 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         if (targetGroup) {
           targetIndex = targetGroup.taskIds.indexOf(targetTask.id);
         }
+      } else {
+        // Dropping on a group container, add to the end
+        const targetGroup = taskGroups.find(g => g.id === targetGroupId);
+        if (targetGroup) {
+          targetIndex = targetGroup.taskIds.length;
+        }
       }
 
-      const sourceGroupInfo = parseGroupId(currentDragState.activeGroupId);
-      const targetGroupInfo = parseGroupId(targetGroupId);
-
-      // If moving between different groups, update the task's group property
-      if (currentDragState.activeGroupId !== targetGroupId) {
-        dispatch(
-          moveTaskToGroup({
-            taskId: activeTaskId,
-            groupType: targetGroupInfo.groupType,
-            groupValue: targetGroupInfo.groupValue,
-          })
-        );
-      }
-
-      // Handle reordering within the same group or between groups
+      // Find source and target groups
       const sourceGroup = taskGroups.find(g => g.id === currentDragState.activeGroupId);
       const targetGroup = taskGroups.find(g => g.id === targetGroupId);
 
@@ -391,34 +371,92 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
         // Only reorder if actually moving to a different position
         if (sourceGroup.id !== targetGroup.id || sourceIndex !== finalTargetIndex) {
-          // Calculate new order values - simplified
-          const allTasksInTargetGroup = targetGroup.taskIds.map(
-            (id: string) => tasks.find((t: any) => t.id === id)!
-          );
-          const newOrder = allTasksInTargetGroup.map((task, index) => {
-            if (index < finalTargetIndex) return task.order;
-            if (index === finalTargetIndex) return currentDragState.activeTask!.order;
-            return task.order + 1;
-          });
-
-          // Dispatch reorder action
+          // Use the new reorderTasksInGroup action that properly handles group arrays
           dispatch(
-            reorderTasks({
-              taskIds: [activeTaskId, ...allTasksInTargetGroup.map((t: any) => t.id)],
-              newOrder: [currentDragState.activeTask!.order, ...newOrder],
+            reorderTasksInGroup({
+              taskId: activeTaskId,
+              fromGroupId: currentDragState.activeGroupId,
+              toGroupId: targetGroupId,
+              fromIndex: sourceIndex,
+              toIndex: finalTargetIndex,
+              groupType: targetGroup.groupType,
+              groupValue: targetGroup.groupValue,
             })
           );
+
+          // Emit socket event to backend
+          if (connected && socket && currentDragState.activeTask) {
+            const currentSession = JSON.parse(localStorage.getItem('session') || '{}');
+            
+            const socketData = {
+              from_index: sourceIndex,
+              to_index: finalTargetIndex,
+              to_last_index: finalTargetIndex >= targetGroup.taskIds.length,
+              from_group: currentDragState.activeGroupId,
+              to_group: targetGroupId,
+              group_by: currentGrouping,
+              project_id: projectId,
+              task: currentDragState.activeTask,
+              team_id: currentSession.team_id,
+            };
+
+            socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), socketData);
+          }
         }
       }
     },
-    [dragState, tasks, taskGroups, currentGrouping, dispatch]
+    [dragState, tasks, taskGroups, currentGrouping, dispatch, connected, socket, projectId]
   );
 
   const handleSelectTask = useCallback(
     (taskId: string, selected: boolean) => {
-      dispatch(toggleTaskSelection(taskId));
+      if (selected) {
+        // Add task to bulk selection
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          // Convert Task to IProjectTask format for bulk actions
+          const projectTask: IProjectTask = {
+            id: task.id,
+            name: task.title, // Always use title as the name
+            task_key: task.task_key,
+            status: task.status,
+            status_id: task.status,
+            priority: task.priority,
+            phase_id: task.phase,
+            phase_name: task.phase,
+            description: task.description,
+            start_date: task.startDate,
+            end_date: task.dueDate,
+            total_hours: task.timeTracking.estimated || 0,
+            total_minutes: task.timeTracking.logged || 0,
+            progress: task.progress,
+            sub_tasks_count: task.sub_tasks_count || 0,
+            assignees: task.assignees.map(assigneeId => ({
+              id: assigneeId,
+              name: '',
+              email: '',
+              avatar_url: '',
+              team_member_id: assigneeId,
+              project_member_id: assigneeId,
+            })),
+            labels: task.labels,
+            manual_progress: false, // Default value for Task type
+            created_at: task.createdAt,
+            updated_at: task.updatedAt,
+            sort_order: task.order,
+          };
+          dispatch(selectTasks([...selectedTasks, projectTask]));
+          dispatch(selectTaskIds([...selectedTaskIds, taskId]));
+        }
+      } else {
+        // Remove task from bulk selection
+        const updatedTasks = selectedTasks.filter(t => t.id !== taskId);
+        const updatedTaskIds = selectedTaskIds.filter(id => id !== taskId);
+        dispatch(selectTasks(updatedTasks));
+        dispatch(selectTaskIds(updatedTaskIds));
+      }
     },
-    [dispatch]
+    [dispatch, selectedTasks, selectedTaskIds, tasks]
   );
 
   const handleToggleSubtasks = useCallback((taskId: string) => {
@@ -443,7 +481,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Bulk action handlers - implementing real functionality from task-list-bulk-actions-bar
   const handleClearSelection = useCallback(() => {
-    dispatch(deselectAll());
+    dispatch(deselectAllBulk());
     dispatch(clearSelection());
   }, [dispatch]);
 
@@ -481,7 +519,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.changeStatus(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_change_status);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -503,7 +541,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.changePriority(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_change_priority);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -525,7 +563,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.changePhase(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_change_phase);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -544,7 +582,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.assignToMe(body);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_assign_me);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -576,7 +614,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.assignTasks(body);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_assign_members);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -601,7 +639,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.assignLabels(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_update_labels);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
         dispatch(fetchLabels());
@@ -621,7 +659,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.archiveTasks(body, archived);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_archive);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -640,7 +678,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const res = await taskListBulkActionsApiService.deleteTasks(body, projectId);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_delete);
-        dispatch(deselectAll());
+        dispatch(deselectAllBulk());
         dispatch(clearSelection());
         dispatch(fetchTasksV3(projectId));
       }
@@ -652,17 +690,14 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   // Additional handlers for new actions
   const handleBulkDuplicate = useCallback(async () => {
     // This would need to be implemented in the API service
-    console.log('Bulk duplicate not yet implemented in API:', selectedTaskIds);
   }, [selectedTaskIds]);
 
   const handleBulkExport = useCallback(async () => {
     // This would need to be implemented in the API service
-    console.log('Bulk export not yet implemented in API:', selectedTaskIds);
   }, [selectedTaskIds]);
 
   const handleBulkSetDueDate = useCallback(async (date: string) => {
     // This would need to be implemented in the API service
-    console.log('Bulk set due date not yet implemented in API:', date, selectedTaskIds);
   }, [selectedTaskIds]);
 
   // Cleanup effect
@@ -673,6 +708,17 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       }
     };
   }, []);
+
+  // Don't render until translations are ready to prevent Suspense
+  if (!ready || isLoading) {
+    return (
+      <Card className={className}>
+        <div className="flex justify-center items-center py-8">
+          <Spin size="large" />
+        </div>
+      </Card>
+    );
+  }
 
   if (error) {
     return (
@@ -690,24 +736,19 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
+        autoScroll={false}
       >
-
-
-
-
         {/* Task Filters */}
         <div className="mb-4">
           <ImprovedTaskFilters position="list" />
         </div>
-
         {/* Performance Analysis - Only show in development */}
         {/* {process.env.NODE_ENV === 'development' && (
           <PerformanceAnalysis projectId={projectId} />
         )} */}
-
         {/* Fixed Height Task Groups Container - Asana Style */}
         <div className="task-groups-container-fixed">
-          <div className="task-groups-scrollable">
+          <div className={`task-groups-scrollable${isDragging ? ' lock-scroll' : ''}`}>
             {loading ? (
               <div className="loading-container">
                 <div className="flex justify-center items-center py-8">
@@ -776,14 +817,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
         <DragOverlay
           adjustScale={false}
-          dropAnimation={{
-            duration: 200,
-            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-          }}
-          style={{
-            cursor: 'grabbing',
-            zIndex: 9999,
-          }}
+          dropAnimation={null}
         >
           {dragOverlayContent}
         </DragOverlay>
@@ -815,7 +849,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           min-height: 400px;
           max-height: calc(100vh - 120px);
           position: relative;
-          border: 1px solid var(--task-border-primary, #e8e8e8);
           border-radius: 8px;
           background: var(--task-bg-primary, white);
           overflow: hidden;
@@ -939,7 +972,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
         .task-group-header-text {
           color: white !important;
-          font-size: 13px !important;
+          font-size: 14px !important;
           font-weight: 600 !important;
           margin: 0 !important;
         }
@@ -1278,6 +1311,10 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
         .react-window-list-item {
           contain: layout style;
+        }
+
+        .task-groups-scrollable.lock-scroll {
+          overflow: hidden !important;
         }
       `}</style>
     </div>

@@ -12,160 +12,130 @@ import { assignMemberIfNot } from "./on-quick-assign-or-remove";
 interface ChangeRequest {
   from_index: number; // from sort_order
   to_index: number; // to sort_order
-  to_last_index: boolean;
+  project_id: string;
   from_group: string;
   to_group: string;
   group_by: string;
-  project_id: string;
-  task: any;
+  to_last_index: boolean;
+  task: {
+    id: string;
+    project_id: string;
+    status: string;
+    priority: string;
+  };
   team_id: string;
 }
 
-// PERFORMANCE OPTIMIZATION: Connection pooling for better database performance
-const dbPool = {
-  query: async (text: string, params?: any[]) => {
-    return await db.query(text, params);
+interface Config {
+  from_index: number;
+  to_index: number;
+  task_id: string;
+  from_group: string | null;
+  to_group: string | null;
+  project_id: string;
+  group_by: string;
+  to_last_index: boolean;
+}
+
+function notifyStatusChange(socket: Socket, config: Config) {
+  const userId = getLoggedInUserIdFromSocket(socket);
+  if (userId && config.to_group) {
+    void TasksController.notifyStatusChange(userId, config.task_id, config.to_group);
   }
-};
+}
 
-// PERFORMANCE OPTIMIZATION: Cache for dependency checks to reduce database queries
-const dependencyCache = new Map<string, { result: boolean; timestamp: number }>();
-const CACHE_TTL = 5000; // 5 seconds cache
+async function emitSortOrderChange(data: ChangeRequest, socket: Socket) {
+  const q = `
+    SELECT id, sort_order, completed_at
+    FROM tasks
+    WHERE project_id = $1
+    ORDER BY sort_order;
+  `;
+  const tasks = await db.query(q, [data.project_id]);
+  socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), tasks.rows);
+}
 
-const clearExpiredCache = () => {
-  const now = Date.now();
-  for (const [key, value] of dependencyCache.entries()) {
-    if (now - value.timestamp > CACHE_TTL) {
-      dependencyCache.delete(key);
-    }
-  }
-};
+function updateUnmappedStatus(config: Config) {
+  if (config.to_group === UNMAPPED)
+    config.to_group = null;
+  if (config.from_group === UNMAPPED)
+    config.from_group = null;
+}
 
-// Clear expired cache entries every 10 seconds
-setInterval(clearExpiredCache, 10000);
-
-const onTaskSortOrderChange = async (io: Server, socket: Socket, data: ChangeRequest) => {
+export async function on_task_sort_order_change(_io: Server, socket: Socket, data: ChangeRequest) {
   try {
-    const userId = getLoggedInUserIdFromSocket(socket);
-    if (!userId) {
-      socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), { error: "User not authenticated" });
-      return;
-    }
+    const q = `SELECT handle_task_list_sort_order_change($1);`;
 
-    const {
-      from_index,
-      to_index,
-      to_last_index,
-      from_group,
-      to_group,
-      group_by,
-      project_id,
-      task,
-      team_id
-    } = data;
-
-    // PERFORMANCE OPTIMIZATION: Validate input data early to avoid expensive operations
-    if (!project_id || !task?.id || !team_id) {
-      socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), { error: "Missing required data" });
-      return;
-    }
-
-    // PERFORMANCE OPTIMIZATION: Use cached dependency check if available
-    const cacheKey = `${project_id}-${userId}-${team_id}`;
-    const cachedDependency = dependencyCache.get(cacheKey);
-
-    let hasAccess = false;
-    if (cachedDependency && (Date.now() - cachedDependency.timestamp) < CACHE_TTL) {
-      hasAccess = cachedDependency.result;
-    } else {
-      // PERFORMANCE OPTIMIZATION: Optimized dependency check query
-      const dependencyResult = await dbPool.query(`
-        SELECT EXISTS(
-          SELECT 1 FROM project_members pm
-                  INNER JOIN projects p ON p.id = pm.project_id
-         INNER JOIN team_members tm ON pm.team_member_id = tm.id
-WHERE pm.project_id = $1
-  AND tm.user_id = $2
-  AND p.team_id = $3
-        ) as has_access
-      `, [project_id, userId, team_id]);
-
-      hasAccess = dependencyResult.rows[0]?.has_access || false;
-
-      // Cache the result
-      dependencyCache.set(cacheKey, { result: hasAccess, timestamp: Date.now() });
-    }
-
-    if (!hasAccess) {
-      socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), { error: "Access denied" });
-      return;
-    }
-
-    // PERFORMANCE OPTIMIZATION: Execute database operation directly
-    await dbPool.query(`SELECT handle_task_list_sort_order_change($1)`, [JSON.stringify({
-      project_id,
-      task_id: task.id,
-      from_index,
-      to_index,
-      to_last_index,
-      from_group,
-      to_group,
-      group_by
-    })]);
-
-    // PERFORMANCE OPTIMIZATION: Optimized project updates notification
-    const projectUpdateData = {
-      project_id,
-      team_id,
-      user_id: userId,
-      update_type: "task_sort_order_change",
-      task_id: task.id,
-      from_group,
-      to_group,
-      group_by
+    const config: Config = {
+      from_index: data.from_index,
+      to_index: data.to_index,
+      task_id: data.task.id,
+      from_group: data.from_group,
+      to_group: data.to_group,
+      project_id: data.project_id,
+      group_by: data.group_by,
+      to_last_index: Boolean(data.to_last_index)
     };
 
-    // Emit to all users in the project room
-    io.to(`project_${project_id}`).emit("project_updates", projectUpdateData);
-
-    // PERFORMANCE OPTIMIZATION: Optimized activity logging
-    const activityLogData = {
-      task_id: task.id,
-      socket,
-      new_value: to_group,
-      old_value: from_group
-    };
-
-    // Log activity asynchronously to avoid blocking the response
-    setImmediate(async () => {
-      try {
-        if (group_by === "phase") {
-          await logPhaseChange(activityLogData);
-        } else if (group_by === "status") {
-          await logStatusChange(activityLogData);
-        } else if (group_by === "priority") {
-          await logPriorityChange(activityLogData);
-        }
-      } catch (error) {
-        log_error(error);
+    if ((config.group_by === GroupBy.STATUS) && config.to_group) {
+      const canContinue = await TasksControllerV2.checkForCompletedDependencies(config.task_id, config?.to_group);
+      if (!canContinue) {
+        return socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
+          completed_deps: canContinue
+        });
       }
-    });
 
-    // Send success response
-    socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
-      success: true,
-      task_id: task.id,
-      from_group,
-      to_group,
-      group_by
-    });
+      notifyStatusChange(socket, config);
+    }
 
+    if (config.group_by === GroupBy.PHASE) {
+      updateUnmappedStatus(config);
+    }
+
+    await db.query(q, [JSON.stringify(config)]);
+    await emitSortOrderChange(data, socket);
+
+    if (config.group_by === GroupBy.STATUS) {
+      const userId = getLoggedInUserIdFromSocket(socket);
+      const isAlreadyAssigned = await TasksControllerV2.checkUserAssignedToTask(data.task.id, userId as string, data.team_id);
+
+      if (!isAlreadyAssigned) {
+        await assignMemberIfNot(data.task.id, userId as string, data.team_id, _io, socket);
+      }
+    }
+
+    if (config.group_by === GroupBy.PHASE) {
+      void logPhaseChange({
+        task_id: data.task.id,
+        socket,
+        new_value: data.to_group,
+        old_value: data.from_group
+      });
+    }
+
+    if (config.group_by === GroupBy.STATUS) {
+      void logStatusChange({
+        task_id: data.task.id,
+        socket,
+        new_value: data.to_group,
+        old_value: data.from_group
+      });
+    }
+
+    if (config.group_by === GroupBy.PRIORITY) {
+      void logPriorityChange({
+        task_id: data.task.id,
+        socket,
+        new_value: data.to_group,
+        old_value: data.from_group
+      });
+    }
+
+    void notifyProjectUpdates(socket, config.task_id);
+    return;
   } catch (error) {
     log_error(error);
-    socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
-      error: "Internal server error"
-    });
   }
-};
 
-export default onTaskSortOrderChange;
+  socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), []);
+}

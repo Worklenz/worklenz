@@ -9,7 +9,7 @@ import {
   PlusOutlined, 
   RightOutlined, 
   DownOutlined 
-} from './antd-imports';
+} from '@/shared/antd-imports';
 import { TaskGroup as TaskGroupType, Task } from '@/types/task-management.types';
 import { taskManagementSelectors } from '@/features/task-management/task-management.slice';
 import { RootState } from '@/app/store';
@@ -409,7 +409,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(({
 
         .task-group-header-text {
           color: white !important;
-          font-size: 13px !important;
+          font-size: 14px !important;
           font-weight: 600 !important;
           margin: 0 !important;
         }

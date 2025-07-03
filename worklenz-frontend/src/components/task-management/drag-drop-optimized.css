@@ -1,149 +1,40 @@
-/* DRAG AND DROP PERFORMANCE OPTIMIZATIONS */
+/* MINIMAL DRAG AND DROP CSS - SHOW ONLY TASK NAME */
 
-/* Force GPU acceleration for all drag operations */
-[data-dnd-draggable],
-[data-dnd-drag-handle],
-[data-dnd-overlay] {
-  transform: translateZ(0);
-  will-change: transform;
-  backface-visibility: hidden;
-  perspective: 1000px;
-}
-
-/* Optimize drag handle for instant response */
+/* Basic drag handle styling */
 .drag-handle-optimized {
   cursor: grab;
-  user-select: none;
-  touch-action: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.drag-handle-optimized:hover {
+  opacity: 1;
 }
 
 .drag-handle-optimized:active {
   cursor: grabbing;
 }
 
-/* Disable all transitions during drag for instant response */
-[data-dnd-dragging="true"] *,
-[data-dnd-dragging="true"] {
-  transition: none !important;
-  animation: none !important;
-}
-
-/* Optimize drag overlay for smooth movement */
+/* Simple drag overlay - just show task name */
 [data-dnd-overlay] {
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   pointer-events: none;
-  position: fixed !important;
   z-index: 9999;
-  transform: translateZ(0);
-  will-change: transform;
-  backface-visibility: hidden;
 }
 
-/* Reduce layout thrashing during drag */
-.task-row-dragging {
-  contain: layout style paint;
-  will-change: transform;
-  transform: translateZ(0);
+/* Dark mode support for drag overlay */
+.dark [data-dnd-overlay],
+[data-theme="dark"] [data-dnd-overlay] {
+  background: #1f1f1f;
+  border-color: #404040;
+  color: white;
 }
 
-/* Optimize virtualized lists during drag */
-.react-window-list {
-  contain: layout style;
-  will-change: scroll-position;
-}
-
-.react-window-list-item {
-  contain: layout style;
-  will-change: transform;
-}
-
-/* Disable hover effects during drag */
-[data-dnd-dragging="true"] .task-row:hover {
-  background-color: inherit !important;
-}
-
-/* Optimize cursor changes */
-.task-row {
-  cursor: default;
-}
-
-.task-row[data-dnd-dragging="true"] {
-  cursor: grabbing;
-}
-
-/* Performance optimizations for large lists */
-.virtualized-task-container {
-  contain: layout style paint;
-  will-change: scroll-position;
-  transform: translateZ(0);
-}
-
-/* Reduce repaints during scroll */
-.task-groups-container {
-  contain: layout style;
-  will-change: scroll-position;
-}
-
-/* Optimize sortable context */
-[data-dnd-sortable-context] {
-  contain: layout style;
-}
-
-/* Disable animations during drag operations */
-[data-dnd-context] [data-dnd-dragging="true"] * {
-  transition: none !important;
-  animation: none !important;
-}
-
-/* Optimize drop indicators */
-.drop-indicator {
-  contain: layout style;
-  will-change: opacity;
-  transition: opacity 0.1s ease;
-}
-
-/* Performance optimizations for touch devices */
-@media (pointer: coarse) {
-  .drag-handle-optimized {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* Dark mode optimizations */
-.dark [data-dnd-dragging="true"],
-[data-theme="dark"] [data-dnd-dragging="true"] {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-/* Reduce memory usage during drag */
-[data-dnd-dragging="true"] img,
-[data-dnd-dragging="true"] svg {
-  contain: layout style paint;
-}
-
-/* Optimize for high DPI displays */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  [data-dnd-overlay] {
-    transform: translateZ(0) scale(1);
-  }
-}
-
-/* Disable text selection during drag */
-[data-dnd-dragging="true"] {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-/* Optimize for reduced motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  [data-dnd-overlay],
-  [data-dnd-dragging="true"] {
-    transition: none !important;
-    animation: none !important;
-  }
+/* Hide drag handle during drag */
+[data-dnd-dragging="true"] .drag-handle-optimized {
+  opacity: 0;
 } 
