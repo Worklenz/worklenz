@@ -87,7 +87,17 @@ export {
   TableOutlined,
   BarChartOutlined,
   FileOutlined,
-  MessageOutlined
+  MessageOutlined,
+  FlagOutlined,
+  GroupOutlined,
+  EyeOutlined,
+  InboxOutlined,
+  PaperClipOutlined,
+  HolderOutlined,
+  ExpandAltOutlined,
+  CheckCircleOutlined,
+  MinusCircleOutlined,
+  RetweetOutlined,
 } from '@ant-design/icons';
 
 // Re-export all components with React
@@ -196,4 +206,48 @@ export default {
   config: antdConfig,
   message: appMessage,
   notification: appNotification,
-}; 
+};
+
+// Commonly used Ant Design configurations for task management
+export const taskManagementAntdConfig = {
+  // DatePicker default props for consistency
+  datePickerDefaults: {
+    format: 'MMM DD, YYYY',
+    placeholder: 'Set Date',
+    suffixIcon: null,
+    size: 'small' as const,
+  },
+
+  // Button default props for task actions
+  taskButtonDefaults: {
+    size: 'small' as const,
+    type: 'text' as const,
+  },
+
+  // Input default props for task editing
+  taskInputDefaults: {
+    size: 'small' as const,
+    variant: 'borderless' as const,
+  },
+
+  // Select default props for dropdowns
+  taskSelectDefaults: {
+    size: 'small' as const,
+    variant: 'borderless' as const,
+    showSearch: true,
+    optionFilterProp: 'label' as const,
+  },
+
+  // Tooltip default props
+  tooltipDefaults: {
+    placement: 'top' as const,
+    mouseEnterDelay: 0.5,
+    mouseLeaveDelay: 0.1,
+  },
+
+  // Dropdown default props
+  dropdownDefaults: {
+    trigger: ['click'] as const,
+    placement: 'bottomLeft' as const,
+  },
+};
