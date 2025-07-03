@@ -13,11 +13,19 @@ import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSli
 import { useAppSelector } from '@/hooks/useAppSelector';
 import KanbanGroup from './KanbanGroup';
 import EnhancedKanbanCreateSection from '../EnhancedKanbanCreateSection';
-
-
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
+import { useAuthService } from '@/hooks/useAuth';
+import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
+import alertService from '@/services/alerts/alertService';
+import logger from '@/utils/errorLogger';
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const dispatch = useDispatch();
+  const authService = useAuthService();
+  const { socket } = useSocket();
+  const project = useAppSelector((state: RootState) => state.projectReducer.project);
+  const teamId = authService.getCurrentSession()?.team_id;
   const {
     taskGroups,
     loadingGroups,
@@ -62,7 +70,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     if (dragType !== 'group') return;
     e.preventDefault();
   };
-  const handleGroupDrop = (e: React.DragEvent, targetGroupId: string) => {
+  const handleGroupDrop = async (e: React.DragEvent, targetGroupId: string) => {
     if (dragType !== 'group') return;
     e.preventDefault();
     if (!draggedGroupId || draggedGroupId === targetGroupId) return;
@@ -75,6 +83,30 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     reorderedGroups.splice(toIdx, 0, moved);
     dispatch(reorderGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }));
     dispatch(reorderEnhancedKanbanGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }) as any);
+
+    // API call for group order
+    try {
+      const columnOrder = reorderedGroups.map(group => group.id);
+      const requestBody = { status_order: columnOrder };
+      const response = await statusApiService.updateStatusOrder(requestBody, projectId);
+      if (!response.done) {
+        // Revert the change if API call fails
+        const revertedGroups = [...reorderedGroups];
+        const [movedBackGroup] = revertedGroups.splice(toIdx, 1);
+        revertedGroups.splice(fromIdx, 0, movedBackGroup);
+        dispatch(reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups }));
+        alertService.error('Failed to update column order', 'Please try again');
+      }
+    } catch (error) {
+      // Revert the change if API call fails
+      const revertedGroups = [...reorderedGroups];
+      const [movedBackGroup] = revertedGroups.splice(toIdx, 1);
+      revertedGroups.splice(fromIdx, 0, movedBackGroup);
+      dispatch(reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups }));
+      alertService.error('Failed to update column order', 'Please try again');
+      logger.error('Failed to update column order', error);
+    }
+
     setDraggedGroupId(null);
     setDragType(null);
   };
@@ -173,7 +205,37 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         updatedTargetTasks,
       }) as any);
     }
-    
+
+    // Socket emit for task order
+    if (socket && projectId && teamId && movedTask) {
+      let toSortOrder = -1;
+      let toLastIndex = false;
+      if (insertIdx === targetGroup.tasks.length) {
+        toSortOrder = -1;
+        toLastIndex = true;
+      } else if (targetGroup.tasks[insertIdx]) {
+        toSortOrder = typeof targetGroup.tasks[insertIdx].sort_order === 'number'
+          ? targetGroup.tasks[insertIdx].sort_order
+          : -1;
+        toLastIndex = false;
+      } else if (targetGroup.tasks.length > 0) {
+        const lastSortOrder = targetGroup.tasks[targetGroup.tasks.length - 1].sort_order;
+        toSortOrder = typeof lastSortOrder === 'number' ? lastSortOrder : -1;
+        toLastIndex = false;
+      }
+      socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
+        project_id: projectId,
+        from_index: movedTask.sort_order,
+        to_index: toSortOrder,
+        to_last_index: toLastIndex,
+        from_group: sourceGroup.id,
+        to_group: targetGroup.id,
+        group_by: 'status',
+        task: movedTask,
+        team_id: teamId,
+      });
+    }
+
     setDraggedTaskId(null);
     setDraggedTaskGroupId(null);
     setHoveredGroupId(null);
