@@ -414,14 +414,26 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   const handleSelectTask = useCallback(
     (taskId: string, selected: boolean) => {
+      // Create a new Set from existing selections for efficient lookup and modification
+      const currentSelectedIds = new Set(selectedTaskIds);
+
+      // Update the selection state based on the checkbox action
       if (selected) {
-        // Add task to bulk selection
-        const task = tasks.find(t => t.id === taskId);
-        if (task) {
-          // Convert Task to IProjectTask format for bulk actions
-          const projectTask: IProjectTask = {
+        currentSelectedIds.add(taskId);
+      } else {
+        currentSelectedIds.delete(taskId);
+      }
+
+      // Convert Set back to array for Redux state
+      const newSelectedIds = Array.from(currentSelectedIds);
+
+      // Map selected tasks to the required format
+      const newSelectedTasks = tasks
+        .filter((t) => newSelectedIds.includes(t.id))
+        .map(
+          (task): IProjectTask => ({
             id: task.id,
-            name: task.title, // Always use title as the name
+            name: task.title,
             task_key: task.task_key,
             status: task.status,
             status_id: task.status,
@@ -435,7 +447,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
             total_minutes: task.timeTracking.logged || 0,
             progress: task.progress,
             sub_tasks_count: task.sub_tasks_count || 0,
-            assignees: task.assignees.map(assigneeId => ({
+            assignees: task.assignees.map((assigneeId) => ({
               id: assigneeId,
               name: '',
               email: '',
@@ -444,23 +456,18 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
               project_member_id: assigneeId,
             })),
             labels: task.labels,
-            manual_progress: false, // Default value for Task type
+            manual_progress: false,
             created_at: task.createdAt,
             updated_at: task.updatedAt,
             sort_order: task.order,
-          };
-          dispatch(selectTasks([...selectedTasks, projectTask]));
-          dispatch(selectTaskIds([...selectedTaskIds, taskId]));
-        }
-      } else {
-        // Remove task from bulk selection
-        const updatedTasks = selectedTasks.filter(t => t.id !== taskId);
-        const updatedTaskIds = selectedTaskIds.filter(id => id !== taskId);
-        dispatch(selectTasks(updatedTasks));
-        dispatch(selectTaskIds(updatedTaskIds));
-      }
+          })
+        );
+
+      // Dispatch both actions to update the Redux state
+      dispatch(selectTasks(newSelectedTasks));
+      dispatch(selectTaskIds(newSelectedIds));
     },
-    [dispatch, selectedTasks, selectedTaskIds, tasks]
+    [dispatch, selectedTaskIds, tasks]
   );
 
   const handleToggleSubtasks = useCallback(
