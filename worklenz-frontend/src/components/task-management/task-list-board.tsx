@@ -27,6 +27,8 @@ import {
   fetchTasksV3,
   selectTaskGroupsV3,
   selectCurrentGroupingV3,
+  fetchSubTasks,
+  toggleTaskExpansion,
 } from '@/features/task-management/task-management.slice';
 import {
   selectTaskGroups,

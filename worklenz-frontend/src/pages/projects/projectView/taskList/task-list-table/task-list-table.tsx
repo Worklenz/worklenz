@@ -32,7 +32,7 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
-import { DragEndEvent } from '@dnd-kit/core';
+import { DragOverEvent } from '@dnd-kit/core';
 import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from 'antd';
 import dayjs from 'dayjs';
 
@@ -90,6 +90,7 @@ interface TaskListTableProps {
   tableId: string;
   activeId?: string | null;
   groupBy?: string;
+  isOver?: boolean; // Add this line
 }
 
 interface DraggableRowProps {
@@ -1291,6 +1292,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
 
   // Add drag state
   const [dragActiveId, setDragActiveId] = useState<string | null>(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState<number | null>(null);
 
   // Configure sensors for drag and drop
   const sensors = useSensors(
@@ -1640,6 +1642,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setDragActiveId(null);
+    setPlaceholderIndex(null); // Reset placeholder index
 
     if (!over || !active || active.id === over.id) {
       return;
@@ -1794,6 +1797,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
         sensors={sensors}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver} // Add this line
         autoScroll={false} // Disable auto-scroll animations
       >
         <SortableContext
@@ -1858,12 +1862,22 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                 {displayTasks && displayTasks.length > 0 ? (
                   displayTasks
                     .filter(task => task?.id) // Filter out tasks without valid IDs
-                    .map(task => {
+                    .map((task, index) => {
                       const updatedTask = findTaskInGroups(task.id || '') || task;
+                      const isDraggingCurrent = dragActiveId === updatedTask.id;
 
                       return (
                         <React.Fragment key={updatedTask.id}>
-                          {renderTaskRow(updatedTask)}
+                          {placeholderIndex === index && (
+                            <tr className="placeholder-row">
+                              <td colSpan={visibleColumns.length + 2}>
+                                <div className="h-10 border-2 border-dashed border-blue-400 rounded-md flex items-center justify-center text-blue-500">
+                                  Drop task here
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                          {!isDraggingCurrent && renderTaskRow(updatedTask)}
                           {updatedTask.show_sub_tasks && (
                             <>
                               {updatedTask?.sub_tasks?.map(subtask =>
@@ -1907,6 +1921,15 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                   <tr>
                     <td colSpan={visibleColumns.length + 1} className="ps-2 py-2">
                       {t('noTasksAvailable', 'No tasks available')}
+                    </td>
+                  </tr>
+                )}
+                {placeholderIndex === displayTasks.length && (
+                  <tr className="placeholder-row">
+                    <td colSpan={visibleColumns.length + 2}>
+                      <div className="h-10 border-2 border-dashed border-blue-400 rounded-md flex items-center justify-center text-blue-500">
+                        Drop task here
+                      </div>
                     </td>
                   </tr>
                 )}
