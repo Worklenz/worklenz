@@ -19,6 +19,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
+import Skeleton from 'antd/es/skeleton/Skeleton';
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const dispatch = useDispatch();
@@ -294,7 +295,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         {loadingGroups ? (
           <Card>
             <div className="flex justify-center items-center py-8">
-              <Spin size="large" />
+              <Skeleton active />
             </div>
           </Card>
         ) : taskGroups.length === 0 ? (
