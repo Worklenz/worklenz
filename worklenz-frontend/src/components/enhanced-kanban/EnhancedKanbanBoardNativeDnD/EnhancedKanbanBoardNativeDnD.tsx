@@ -244,6 +244,37 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setDragType(null);
   };
 
+  useEffect(() => {
+    if (!socket) return;
+
+    // Handler for new task received via socket
+    const handleNewTaskReceived = (data: any) => {
+      if (!data) return;
+      if (data.parent_task_id) {
+        // Subtask: update subtasks in the correct group
+        dispatch({
+          type: 'enhancedKanbanReducer/updateEnhancedKanbanSubtask',
+          payload: { sectionId: '', subtask: data, mode: 'add' }
+        });
+      } else {
+        // Regular task: add to the correct group
+        let sectionId = '';
+        if (groupBy === 'status') sectionId = data.status;
+        else if (groupBy === 'priority') sectionId = data.priority;
+        else if (groupBy === 'phase') sectionId = data.phase_id;
+        dispatch({
+          type: 'enhancedKanbanReducer/addTaskToGroup',
+          payload: { sectionId, task: data }
+        });
+      }
+    };
+
+    socket.on(SocketEvents.QUICK_TASK.toString(), handleNewTaskReceived);
+    return () => {
+      socket.off(SocketEvents.QUICK_TASK.toString(), handleNewTaskReceived);
+    };
+  }, [socket, groupBy, dispatch]);
+
   if (error) {
     return (
       <Card>
