@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/store';
-import { ITaskListGroup } from '@/types/tasks/taskList.types';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import '../EnhancedKanbanBoard.css';
 import '../EnhancedKanbanGroup.css';
 import '../EnhancedKanbanTaskCard.css';
@@ -13,108 +11,9 @@ import Empty from 'antd/es/empty';
 import { reorderGroups, reorderEnhancedKanbanGroups, reorderTasks, reorderEnhancedKanbanTasks, fetchEnhancedKanbanLabels, fetchEnhancedKanbanGroups, fetchEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import KanbanGroup from './KanbanGroup';
 
-// Minimal task card for prototype (reuse your styles)
-const TaskCard: React.FC<{
-  task: IProjectTask;
-  onTaskDragStart: (e: React.DragEvent, taskId: string, groupId: string) => void;
-  onTaskDragOver: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
-  onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
-  groupId: string;
-  isDropIndicator: boolean;
-  idx: number;
-}> = ({ task, onTaskDragStart, onTaskDragOver, onTaskDrop, groupId, isDropIndicator, idx }) => {
-  const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
-  const background = themeMode === 'dark' ? '#23272f' : '#fff';
-  const color = themeMode === 'dark' ? '#fff' : '#23272f';
-  return (
-    <>
-      {isDropIndicator && (
-        <div style={{ height: 80, margin: '8px 0', background: themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0', borderRadius: 6, border: `5px` }} />
-      )}
-      <div
-        className="enhanced-kanban-task-card"
-        draggable
-        onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
-        onDragOver={e => onTaskDragOver(e, groupId, idx)}
-        onDrop={e => onTaskDrop(e, groupId, idx)}
-        style={{ background, color }}
-      >
-        <div className="task-content">
-          <div className="task-title">{task.name}</div>
-          <div className="task-key">{task.task_key}</div>
-          <div className="task-assignees">
-            {task.assignees?.map(a => a.name).join(', ')}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-};
 
-// Minimal group column for prototype
-const KanbanGroup: React.FC<{
-  group: ITaskListGroup;
-  onGroupDragStart: (e: React.DragEvent, groupId: string) => void;
-  onGroupDragOver: (e: React.DragEvent) => void;
-  onGroupDrop: (e: React.DragEvent, groupId: string) => void;
-  onTaskDragStart: (e: React.DragEvent, taskId: string, groupId: string) => void;
-  onTaskDragOver: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
-  onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
-  hoveredTaskIdx: number | null;
-  hoveredGroupId: string | null;
-}> = ({ group, onGroupDragStart, onGroupDragOver, onGroupDrop, onTaskDragStart, onTaskDragOver, onTaskDrop, hoveredTaskIdx, hoveredGroupId }) => {
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const headerBackgroundColor = useMemo(() => {
-    if (themeMode === 'dark') {
-      return group.color_code_dark || group.color_code || '#1e1e1e';
-    }
-    return group.color_code || '#f5f5f5';
-  }, [themeMode, group.color_code, group.color_code_dark]);
-  return (
-    <div className="enhanced-kanban-group">
-      <div
-        className="enhanced-kanban-group-header"
-        style={{
-          backgroundColor: headerBackgroundColor,
-        }}
-        draggable
-        onDragStart={e => onGroupDragStart(e, group.id)}
-        onDragOver={onGroupDragOver}
-        onDrop={e => onGroupDrop(e, group.id)}
-      >
-        <h3>{group.name}</h3>
-        <span className="task-count">{group.tasks.length}</span>
-      </div>
-      <div className="enhanced-kanban-group-tasks"
-        // onDragOver={e => onTaskDragOver(e, group.id, 0)}
-        // onDrop={e => onTaskDrop(e, group.id, 0)}
-      >
-        {/* Drop indicator at the top of the group */}
-        {hoveredGroupId === group.id && hoveredTaskIdx === 0 && (
-          <div className="drop-preview-indicator"><div className="drop-line" /></div>
-        )}
-        {group.tasks.map((task, idx) => (
-          <React.Fragment key={task.id}>
-            <TaskCard
-              task={task}
-              onTaskDragStart={onTaskDragStart}
-              onTaskDragOver={onTaskDragOver}
-              onTaskDrop={onTaskDrop}
-              groupId={group.id}
-              isDropIndicator={hoveredGroupId === group.id && hoveredTaskIdx === idx}
-              idx={idx}
-            />
-          </React.Fragment>
-        ))}
-        {/* Drop indicator at the end of the group */}
-        {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
-          <div className="drop-preview-indicator"><div className="drop-line" /></div>
-        )}
-      </div>
-    </div>
-  )
-};
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const dispatch = useDispatch();
