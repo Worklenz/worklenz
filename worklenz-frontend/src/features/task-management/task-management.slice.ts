@@ -223,6 +223,7 @@ export const fetchTasksV3 = createAsyncThunk(
       // Log raw response for debugging
       console.log('Raw API response:', response.body);
       console.log('Sample task from backend:', response.body.allTasks?.[0]);
+      console.log('Task key from backend:', response.body.allTasks?.[0]?.task_key);
 
       // Ensure tasks are properly normalized
       const tasks = response.body.allTasks.map((task: any) => {
@@ -232,6 +233,7 @@ export const fetchTasksV3 = createAsyncThunk(
         
         return {
           id: task.id,
+          task_key: task.task_key || task.key || '',
           title: (task.title && task.title.trim()) ? task.title.trim() : DEFAULT_TASK_NAME,
           description: task.description || '',
           status: task.status || 'todo',
@@ -327,7 +329,7 @@ export const fetchSubTasks = createAsyncThunk(
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: false,
-        group: currentGrouping,
+        group: currentGrouping || '',
         field: '',
         order: '',
         search: '',
@@ -644,7 +646,7 @@ const taskManagementSlice = createSlice({
         } else {
           // Set empty state but don't show error
           state.ids = [];
-          state.entities = {};
+          state.entities = {} as Record<string, Task>;
           state.groups = [];
         }
       })
@@ -654,7 +656,7 @@ const taskManagementSlice = createSlice({
         state.error = action.error.message || action.payload || 'An error occurred while fetching tasks. Please try again.';
         // Clear task data on error to prevent stale state
         state.ids = [];
-        state.entities = {};
+        state.entities = {} as Record<string, Task>;
         state.groups = [];
       })
       .addCase(fetchSubTasks.pending, (state, action) => {
