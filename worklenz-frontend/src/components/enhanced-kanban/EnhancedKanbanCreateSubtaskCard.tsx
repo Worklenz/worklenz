@@ -166,7 +166,7 @@ const EnhancedKanbanCreateSubtaskCard = ({
         onKeyUp={e => e.stopPropagation()}
         onKeyPress={e => e.stopPropagation()}
         onBlur={handleInputBlur}
-        placeholder={t('kanbanBoard.addSubTaskPlaceholder')}
+        placeholder={t('newSubtaskNamePlaceholder')}
         className={`enhanced-kanban-create-subtask-input ${themeMode === 'dark' ? 'dark' : ''}`}
         disabled={creatingTask}
         autoFocus
