@@ -96,6 +96,9 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                     </div>
 
                     <div className="task-assignees-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <div className="task-due-date" style={{ fontSize: 10, color: '#888', marginRight: 8, whiteSpace: 'nowrap' }}>
+                            {task.end_date ? format(new Date(task.end_date), 'MMM d, yyyy') : ''}
+                        </div>
                         <div className="task-assignees" style={{ display: 'flex', alignItems: 'center' }}>
                             <AvatarGroup
                                 members={task.names || []}
@@ -104,9 +107,6 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                 size={24}
                             />
                             <LazyAssigneeSelectorWrapper task={task} groupId={groupId} isDarkMode={themeMode === 'dark'} />
-                        </div>
-                        <div className="task-due-date" style={{ fontSize: 10, color: '#888', marginLeft: 8, whiteSpace: 'nowrap' }}>
-                            {task.end_date ? format(new Date(task.end_date), 'MMM d, yyyy') : ''}
                         </div>
                     </div>
                 </div>
