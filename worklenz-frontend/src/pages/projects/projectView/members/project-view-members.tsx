@@ -37,7 +37,7 @@ import logger from '@/utils/errorLogger';
 // Components
 import EmptyListPlaceholder from '../../../../components/EmptyListPlaceholder';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { evt_project_members_visit } from '@/shared/worklenz-analytics-events';
+import { evt_project_members_visit, evt_people_delete } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 interface PaginationType {
@@ -60,7 +60,7 @@ const ProjectViewMembers = () => {
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
-  
+
   // State
   const [isLoading, setIsLoading] = useState(false);
   const [members, setMembers] = useState<IProjectMembersViewModel>();
@@ -104,6 +104,11 @@ const ProjectViewMembers = () => {
     try {
       const res = await projectMembersApiService.deleteProjectMember(memberId, projectId);
       if (res.done) {
+        trackMixpanelEvent(evt_people_delete, {
+          project_id: projectId,
+          member_id: memberId,
+        });
+
         void getProjectMembers();
       }
     } catch (error) {
@@ -138,7 +143,14 @@ const ProjectViewMembers = () => {
   // Effects
   useEffect(() => {
     void getProjectMembers();
-  }, [refreshTimestamp, projectId, pagination.current, pagination.pageSize, pagination.field, pagination.order]);
+  }, [
+    refreshTimestamp,
+    projectId,
+    pagination.current,
+    pagination.pageSize,
+    pagination.field,
+    pagination.order,
+  ]);
 
   useEffect(() => {
     trackMixpanelEvent(evt_project_members_visit);
@@ -151,9 +163,13 @@ const ProjectViewMembers = () => {
       title: t('nameColumn'),
       dataIndex: 'name',
       sorter: true,
-      sortOrder: pagination.order === 'ascend' && pagination.field === 'name' ? 'ascend' : 
-                 pagination.order === 'descend' && pagination.field === 'name' ? 'descend' : null,
-      render: (_,record: IProjectMemberViewModel) => (
+      sortOrder:
+        pagination.order === 'ascend' && pagination.field === 'name'
+          ? 'ascend'
+          : pagination.order === 'descend' && pagination.field === 'name'
+            ? 'descend'
+            : null,
+      render: (_, record: IProjectMemberViewModel) => (
         <Flex gap={8} align="center">
           <Avatar size={28} src={record.avatar_url}>
             {record.name?.charAt(0)}
@@ -167,8 +183,12 @@ const ProjectViewMembers = () => {
       title: t('jobTitleColumn'),
       dataIndex: 'job_title',
       sorter: true,
-      sortOrder: pagination.order === 'ascend' && pagination.field === 'job_title' ? 'ascend' : 
-                 pagination.order === 'descend' && pagination.field === 'job_title' ? 'descend' : null,
+      sortOrder:
+        pagination.order === 'ascend' && pagination.field === 'job_title'
+          ? 'ascend'
+          : pagination.order === 'descend' && pagination.field === 'job_title'
+            ? 'descend'
+            : null,
       render: (_, record: IProjectMemberViewModel) => (
         <Typography.Text style={{ marginInlineStart: 12 }}>
           {record?.job_title || '-'}
@@ -180,8 +200,12 @@ const ProjectViewMembers = () => {
       title: t('emailColumn'),
       dataIndex: 'email',
       sorter: true,
-      sortOrder: pagination.order === 'ascend' && pagination.field === 'email' ? 'ascend' : 
-                 pagination.order === 'descend' && pagination.field === 'email' ? 'descend' : null,
+      sortOrder:
+        pagination.order === 'ascend' && pagination.field === 'email'
+          ? 'ascend'
+          : pagination.order === 'descend' && pagination.field === 'email'
+            ? 'descend'
+            : null,
       render: (_, record: IProjectMemberViewModel) => (
         <Typography.Text>{record.email}</Typography.Text>
       ),
@@ -210,8 +234,12 @@ const ProjectViewMembers = () => {
       title: t('accessColumn'),
       dataIndex: 'access',
       sorter: true,
-      sortOrder: pagination.order === 'ascend' && pagination.field === 'access' ? 'ascend' : 
-                 pagination.order === 'descend' && pagination.field === 'access' ? 'descend' : null,
+      sortOrder:
+        pagination.order === 'ascend' && pagination.field === 'access'
+          ? 'ascend'
+          : pagination.order === 'descend' && pagination.field === 'access'
+            ? 'descend'
+            : null,
       render: (_, record: IProjectMemberViewModel) => (
         <Typography.Text style={{ textTransform: 'capitalize' }}>{record.access}</Typography.Text>
       ),

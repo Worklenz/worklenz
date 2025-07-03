@@ -8,6 +8,8 @@ import logger from '@/utils/errorLogger';
 import { ITaskTemplateGetResponse } from '@/types/settings/task-templates.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { setSelectedTasks } from '@/features/project/project.slice';
+import { evt_project_task_create } from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 interface TaskTemplateDrawerProps {
   showDrawer: boolean;
@@ -21,6 +23,7 @@ const TaskTemplateDrawer = ({
   onClose,
 }: TaskTemplateDrawerProps) => {
   const dispatch = useAppDispatch();
+  const {trackMixpanelEvent} = useMixpanelTracking();
   const { t } = useTranslation('task-template-drawer');
   const [form] = Form.useForm();
   const [templateData, setTemplateData] = useState<ITaskTemplateGetResponse>({});
@@ -75,6 +78,8 @@ const TaskTemplateDrawer = ({
     const values = form.getFieldsValue();
     if (!values.name || !templateData.tasks) return;
     try {
+      trackMixpanelEvent(evt_project_task_create);
+
       setCreatingTemplate(true);
       const res = await taskTemplatesApiService.createTemplate({
         name: values.name || '',

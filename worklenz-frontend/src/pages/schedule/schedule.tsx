@@ -1,5 +1,5 @@
 import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SettingOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { setDate, setType, toggleSettingsDrawer } from '@/features/schedule/scheduleSlice';
@@ -11,6 +11,8 @@ import ScheduleDrawer from '@/features/schedule/ScheduleDrawer';
 import GranttChart from '@/components/schedule/grant-chart/grantt-chart';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
+import { evt_schedule_page_visit } from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const { Option } = Select;
 
@@ -31,6 +33,7 @@ const Schedule: React.FC = () => {
   const dispatch = useDispatch();
   const granttChartRef = useRef<any>(null);
   const { date, type } = useAppSelector(state => state.scheduleReducer);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle('Schedule');
 
@@ -52,6 +55,10 @@ const Schedule: React.FC = () => {
     granttChartRef.current?.scrollToToday();
     console.log('Today:', today);
   };
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_schedule_page_visit);
+  }, []);
 
   return (
     <div style={{ marginBlockStart: 65, minHeight: '90vh' }}>

@@ -19,6 +19,11 @@ import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service
 import CustomColorLabel from '@components/task-list-common/labelsSelector/custom-color-label';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
+import {
+  evt_settings_labels_visit,
+  evt_settings_labels_delete,
+} from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const LabelsSettings = () => {
   const { t } = useTranslation('settings/labels');
@@ -27,6 +32,7 @@ const LabelsSettings = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [labels, setLabels] = useState<ITaskLabel[]>([]);
   const [loading, setLoading] = useState(false);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const filteredData = useMemo(
     () =>
@@ -50,11 +56,17 @@ const LabelsSettings = () => {
   }, []);
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_labels_visit);
+  }, [trackMixpanelEvent]);
+
+  useEffect(() => {
     getLabels();
   }, [getLabels]);
 
   const deleteLabel = async (id: string) => {
     try {
+      trackMixpanelEvent(evt_settings_labels_delete, { labelId: id });
+      
       const response = await labelsApiService.deleteById(id);
       if (response.done) {
         getLabels();

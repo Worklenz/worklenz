@@ -11,10 +11,16 @@ import { ITaskTemplatesGetResponse } from '@/types/settings/task-templates.types
 import logger from '@/utils/errorLogger';
 import { taskTemplatesApiService } from '@/api/task-templates/task-templates.api.service';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
+import {
+  evt_settings_task_templates_visit,
+  evt_settings_task_templates_delete,
+} from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const TaskTemplatesSettings = () => {
   const { t } = useTranslation('settings/task-templates');
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [taskTemplates, setTaskTemplates] = useState<ITaskTemplatesGetResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,11 +41,17 @@ const TaskTemplatesSettings = () => {
   };
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_task_templates_visit);
+  }, [trackMixpanelEvent]);
+
+  useEffect(() => {
     fetchTaskTemplates();
   }, []);
 
   const handleDeleteTemplate = async (id: string) => {
     try {
+      trackMixpanelEvent(evt_settings_task_templates_delete, { templateId: id });
+
       setIsLoading(true);
       await taskTemplatesApiService.deleteTemplate(id);
       await fetchTaskTemplates();
@@ -111,10 +123,10 @@ const TaskTemplatesSettings = () => {
       <Table
         loading={isLoading}
         size="small"
-        pagination={{ 
+        pagination={{
           size: 'small',
           showSizeChanger: true,
-          showTotal: (total) => t('totalItems', { total })
+          showTotal: total => t('totalItems', { total }),
         }}
         columns={columns}
         dataSource={taskTemplates}

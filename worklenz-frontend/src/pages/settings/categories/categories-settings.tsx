@@ -20,6 +20,11 @@ import { categoriesApiService } from '@/api/settings/categories/categories.api.s
 import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import {
+  evt_settings_categories_visit,
+  evt_settings_category_delete,
+} from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const CategoriesSettings = () => {
   // localization
@@ -28,6 +33,7 @@ const CategoriesSettings = () => {
   useDocumentTitle('Manage Categories');
 
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
   // get currently hover row
   const [hoverRow, setHoverRow] = useState<string | null>(null);
   const [categories, setCategories] = useState<IProjectCategoryViewModel[]>([]);
@@ -57,6 +63,10 @@ const CategoriesSettings = () => {
   }, []);
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_categories_visit);
+  }, [trackMixpanelEvent]);
+
+  useEffect(() => {
     getCategories();
   }, [getCategories]);
 
@@ -70,7 +80,9 @@ const CategoriesSettings = () => {
     {
       key: 'associatedTask',
       title: t('associatedTaskColumn'),
-      render: (record: IProjectCategoryViewModel) => <Typography.Text>{record.usage}</Typography.Text>,
+      render: (record: IProjectCategoryViewModel) => (
+        <Typography.Text>{record.usage}</Typography.Text>
+      ),
     },
     {
       key: 'actionBtns',
@@ -82,7 +94,10 @@ const CategoriesSettings = () => {
             icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
             okText={t('deleteConfirmationOk')}
             cancelText={t('deleteConfirmationCancel')}
-            onConfirm={() => record.id && dispatch(deleteCategory(record.id))}
+            onConfirm={() => {
+              trackMixpanelEvent(evt_settings_category_delete, { categoryId: record.id });
+              record.id && dispatch(deleteCategory(record.id));
+            }}
           >
             <Tooltip title="Delete">
               <Button shape="default" icon={<DeleteOutlined />} size="small" />

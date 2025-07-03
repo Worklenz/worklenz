@@ -6,6 +6,8 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { NewTaskType, updateTaskDate } from '@features/roadmap/roadmap-slice';
 import { colors } from '@/styles/colors';
 import RoadmapTaskCell from './roadmap-task-cell';
+import { evt_roadmap_drag_change_date } from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const RoadmapTable = () => {
   // Get task list and expanded tasks from roadmap slice
@@ -15,10 +17,17 @@ const RoadmapTable = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // function to handle date changes
   const handleDateChange = (taskId: string, dateType: 'start' | 'end', date: Dayjs) => {
     const updatedDate = date.toDate();
+
+    trackMixpanelEvent(evt_roadmap_drag_change_date, {
+      task_id: taskId,
+      date_type: dateType,
+      new_date: updatedDate.toISOString(),
+    });
 
     dispatch(
       updateTaskDate({
