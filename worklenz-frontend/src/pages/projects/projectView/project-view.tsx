@@ -119,7 +119,7 @@ const ProjectView = React.memo(() => {
     return () => {
       resetAllProjectData();
     };
-  }, []); // Empty dependency array - only runs on mount/unmount
+  }, [resetAllProjectData]);
 
   // Effect for handling route changes (when navigating away from project view)
   useEffect(() => {
@@ -358,10 +358,10 @@ const ProjectView = React.memo(() => {
           minHeight: '36px',
         }}
         tabBarGutter={0}
-        destroyInactiveTabPane={true} // Destroy inactive tabs to save memory
+        destroyInactiveTabPane={true}
         animated={{
           inkBar: true,
-          tabPane: false, // Disable content animation for better performance
+          tabPane: false,
         }}
         size="small"
         type="card"

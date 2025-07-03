@@ -1,11 +1,11 @@
-import React, { ReactNode } from 'react';
-import OverviewReports from '@/pages/reporting/overview-reports/overview-reports';
-import ProjectsReports from '@/pages/reporting/projects-reports/projects-reports';
-import MembersReports from '@/pages/reporting/members-reports/members-reports';
-import OverviewTimeReports from '@/pages/reporting/timeReports/overview-time-reports';
-import ProjectsTimeReports from '@/pages/reporting/timeReports/projects-time-reports';
-import MembersTimeReports from '@/pages/reporting/timeReports/members-time-reports';
-import EstimatedVsActualTimeReports from '@/pages/reporting/timeReports/estimated-vs-actual-time-reports';
+import React, { ReactNode, lazy } from 'react';
+const OverviewReports = lazy(() => import('@/pages/reporting/overview-reports/overview-reports'));
+const ProjectsReports = lazy(() => import('@/pages/reporting/projects-reports/projects-reports'));
+const MembersReports = lazy(() => import('@/pages/reporting/members-reports/members-reports'));
+const OverviewTimeReports = lazy(() => import('@/pages/reporting/timeReports/overview-time-reports'));
+const ProjectsTimeReports = lazy(() => import('@/pages/reporting/timeReports/projects-time-reports'));
+const MembersTimeReports = lazy(() => import('@/pages/reporting/timeReports/members-time-reports'));
+const EstimatedVsActualTimeReports = lazy(() => import('@/pages/reporting/timeReports/estimated-vs-actual-time-reports'));
 
 // Type definition for a menu item
 export type ReportingMenuItems = {
