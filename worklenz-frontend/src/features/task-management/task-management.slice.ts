@@ -343,6 +343,14 @@ export const moveTaskToGroupWithAPI = createAsyncThunk(
   }
 );
 
+// Add action to update task with subtasks
+export const updateTaskWithSubtasks = createAsyncThunk(
+  'taskManagement/updateTaskWithSubtasks',
+  async ({ taskId, subtasks }: { taskId: string; subtasks: any[] }, { getState }) => {
+    return { taskId, subtasks };
+  }
+);
+
 const taskManagementSlice = createSlice({
   name: 'taskManagement',
   initialState: tasksAdapter.getInitialState(initialState),
@@ -627,8 +635,7 @@ const taskManagementSlice = createSlice({
       return tasksAdapter.getInitialState(initialState);
     },
     toggleTaskExpansion: (state, action: PayloadAction<string>) => {
-      const taskId = action.payload;
-      const task = state.entities[taskId];
+      const task = state.entities[action.payload];
       if (task) {
         task.show_sub_tasks = !task.show_sub_tasks;
       }
@@ -700,6 +707,14 @@ const taskManagementSlice = createSlice({
       })
       .addCase(refreshTaskProgress.rejected, (state, action) => {
         state.error = (action.payload as string) || 'Failed to refresh task progress';
+      })
+      .addCase(updateTaskWithSubtasks.fulfilled, (state, action) => {
+        const { taskId, subtasks } = action.payload;
+        const task = state.entities[taskId];
+        if (task) {
+          task.sub_tasks = subtasks;
+          task.show_sub_tasks = true;
+        }
       });
   },
 });

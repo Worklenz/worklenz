@@ -266,6 +266,7 @@ const TaskListTableWrapper = ({
               tableId={tableId}
               activeId={activeId}
               groupBy={groupBy}
+              isOver={isOver}
             />
           </Collapsible>
         </Flex>

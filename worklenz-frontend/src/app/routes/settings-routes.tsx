@@ -1,8 +1,10 @@
 import { RouteObject } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
+import { Suspense } from 'react';
 import SettingsLayout from '@/layouts/SettingsLayout';
 import { settingsItems } from '@/lib/settings/settings-constants';
 import { useAuthService } from '@/hooks/useAuth';
+import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
 const SettingsGuard = ({
   children,
@@ -26,7 +28,11 @@ const settingsRoutes: RouteObject[] = [
     element: <SettingsLayout />,
     children: settingsItems.map(item => ({
       path: item.endpoint,
-      element: <SettingsGuard adminRequired={!!item.adminOnly}>{item.element}</SettingsGuard>,
+      element: (
+        <Suspense fallback={<SuspenseFallback />}>
+          <SettingsGuard adminRequired={!!item.adminOnly}>{item.element}</SettingsGuard>
+        </Suspense>
+      ),
     })),
   },
 ];
