@@ -15,6 +15,8 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { updateTask } from '@/features/task-management/task-management.slice';
 import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { updateTaskAssignees } from '@/features/task-management/task-management.slice';
+import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 
 interface AssigneeSelectorProps {
   task: IProjectTask;
@@ -33,6 +35,12 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [optimisticAssignees, setOptimisticAssignees] = useState<string[]>([]); // For optimistic updates
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set()); // Track pending member changes
+
+  // Initialize optimistic assignees from task data on mount or when task changes
+  useEffect(() => {
+    const currentAssigneeIds = task?.assignees?.map(a => a.team_member_id) || [];
+    setOptimisticAssignees(currentAssigneeIds);
+  }, [task?.assignees]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -123,11 +131,14 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     if (!isOpen) {
       updateDropdownPosition();
 
-      // Prepare team members data when opening
-      const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
-      const membersData = (members?.data || []).map(member => ({
+      // Prepare team members data when opening - use optimistic assignees for current state
+      const currentAssigneeIds = optimisticAssignees.length > 0 
+        ? optimisticAssignees 
+        : task?.assignees?.map(assignee => assignee.team_member_id) || [];
+      
+      const membersData: (ITeamMembersViewModel & { selected?: boolean })[] = (members?.data || []).map(member => ({
         ...member,
-        selected: assignees?.includes(member.id),
+        selected: currentAssigneeIds.includes(member.id),
       }));
       const sortedMembers = sortTeamMembers(membersData);
       setTeamMembers({ data: sortedMembers });
@@ -148,16 +159,20 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     // Add to pending changes for visual feedback
     setPendingChanges(prev => new Set(prev).add(memberId));
 
-    // OPTIMISTIC UPDATE: Update local state immediately for instant UI feedback
-    const currentAssignees = task?.assignees?.map(a => a.team_member_id) || [];
+    // Get the current list of assignees, prioritizing optimistic updates for immediate feedback
+    const currentAssigneeIds = optimisticAssignees.length > 0 
+      ? optimisticAssignees 
+      : task?.assignees?.map(a => a.team_member_id) || [];
+
     let newAssigneeIds: string[];
 
     if (checked) {
-      // Adding assignee
-      newAssigneeIds = [...currentAssignees, memberId];
+      // Adding assignee: ensure no duplicates
+      const uniqueIds = new Set([...currentAssigneeIds, memberId]);
+      newAssigneeIds = Array.from(uniqueIds);
     } else {
       // Removing assignee
-      newAssigneeIds = currentAssignees.filter(id => id !== memberId);
+      newAssigneeIds = currentAssigneeIds.filter(id => id !== memberId);
     }
 
     // Update optimistic state for immediate UI feedback in dropdown
@@ -183,13 +198,31 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     // Emit socket event - the socket handler will update Redux with proper types
     socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
     socket?.once(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), (data: any) => {
-      dispatch(updateEnhancedKanbanTaskAssignees(data));
+      // Instead of updating enhancedKanbanSlice, update the main taskManagementSlice
+      // Filter members to get the actual InlineMember objects for the new assignees
+      const updatedAssigneeNames: InlineMember[] = (members?.data || [])
+        .filter((member): member is ITeamMemberViewModel & { id: string; name: string } => {
+          return typeof member.id === 'string' && typeof member.name === 'string' && newAssigneeIds.includes(member.id);
+        })
+        .map(member => ({
+          name: member.name || '',
+          id: member.id || '',
+          team_member_id: member.id || '',
+          avatar_url: member.avatar_url || '',
+          color_code: member.color_code || '',
+        }));
+
+      dispatch(updateTaskAssignees({
+        taskId: task.id || '',
+        assigneeIds: newAssigneeIds,
+        assigneeNames: updatedAssigneeNames,
+      }));
     });
 
     // Remove from pending changes after a short delay (optimistic)
     setTimeout(() => {
       setPendingChanges(prev => {
-        const newSet = new Set(prev);
+        const newSet = new Set<string>(Array.from(prev));
         newSet.delete(memberId);
         return newSet;
       });
@@ -198,12 +231,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
   const checkMemberSelected = (memberId: string) => {
     if (!memberId) return false;
-    // Use optimistic assignees if available, otherwise fall back to task assignees
-    const assignees =
-      optimisticAssignees.length > 0
-        ? optimisticAssignees
-        : task?.assignees?.map(assignee => assignee.team_member_id) || [];
-    return assignees.includes(memberId);
+    // Always use optimistic assignees for dropdown display
+    return optimisticAssignees.includes(memberId);
   };
 
   const handleInviteProjectMemberDrawer = () => {

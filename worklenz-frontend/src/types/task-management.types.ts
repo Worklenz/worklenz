@@ -11,6 +11,7 @@ export interface Task {
   priority: string;
   phase?: string;
   assignee?: string;
+  assignees?: string[]; // Array of assigned member IDs
   assignee_names?: InlineMember[]; // Array of assigned members
   names?: InlineMember[]; // Alternative names field
   due_date?: string;
