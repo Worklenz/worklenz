@@ -198,44 +198,82 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     if (dragType !== 'task') return;
     e.preventDefault();
     if (!draggedTaskId || !draggedTaskGroupId || hoveredGroupId === null || hoveredTaskIdx === null) return;
+    
     // Calculate new order and dispatch
     const sourceGroup = taskGroups.find(g => g.id === draggedTaskGroupId);
     const targetGroup = taskGroups.find(g => g.id === targetGroupId);
     if (!sourceGroup || !targetGroup) return;
+    
     const taskIdx = sourceGroup.tasks.findIndex(t => t.id === draggedTaskId);
     if (taskIdx === -1) return;
+    
     const movedTask = sourceGroup.tasks[taskIdx];
-    // Prepare updated task arrays
-    const updatedSourceTasks = [...sourceGroup.tasks];
-    updatedSourceTasks.splice(taskIdx, 1);
-    let insertIdx = targetTaskIdx;
-    if (sourceGroup.id === targetGroup.id && taskIdx < insertIdx) {
-      insertIdx--;
+    let insertIdx = hoveredTaskIdx;
+    
+    // Handle same group reordering
+    if (sourceGroup.id === targetGroup.id) {
+      // Create a single updated array for the same group
+      const updatedTasks = [...sourceGroup.tasks];
+      updatedTasks.splice(taskIdx, 1); // Remove from original position
+      
+      // Adjust insert index if moving forward in the same array
+      if (taskIdx < insertIdx) {
+        insertIdx--;
+      }
+      
+      if (insertIdx < 0) insertIdx = 0;
+      if (insertIdx > updatedTasks.length) insertIdx = updatedTasks.length;
+      
+      updatedTasks.splice(insertIdx, 0, movedTask); // Insert at new position
+      
+      dispatch(reorderTasks({
+        activeGroupId: sourceGroup.id,
+        overGroupId: targetGroup.id,
+        fromIndex: taskIdx,
+        toIndex: insertIdx,
+        task: movedTask,
+        updatedSourceTasks: updatedTasks,
+        updatedTargetTasks: updatedTasks,
+      }));
+      dispatch(reorderEnhancedKanbanTasks({
+        activeGroupId: sourceGroup.id,
+        overGroupId: targetGroup.id,
+        fromIndex: taskIdx,
+        toIndex: insertIdx,
+        task: movedTask,
+        updatedSourceTasks: updatedTasks,
+        updatedTargetTasks: updatedTasks,
+      }) as any);
+    } else {
+      // Handle cross-group reordering
+      const updatedSourceTasks = [...sourceGroup.tasks];
+      updatedSourceTasks.splice(taskIdx, 1);
+      
+      const updatedTargetTasks = [...targetGroup.tasks];
+      if (insertIdx < 0) insertIdx = 0;
+      if (insertIdx > updatedTargetTasks.length) insertIdx = updatedTargetTasks.length;
+      updatedTargetTasks.splice(insertIdx, 0, movedTask);
+      
+      dispatch(reorderTasks({
+        activeGroupId: sourceGroup.id,
+        overGroupId: targetGroup.id,
+        fromIndex: taskIdx,
+        toIndex: insertIdx,
+        task: movedTask,
+        updatedSourceTasks,
+        updatedTargetTasks,
+      }));
+      dispatch(reorderEnhancedKanbanTasks({
+        activeGroupId: sourceGroup.id,
+        overGroupId: targetGroup.id,
+        fromIndex: taskIdx,
+        toIndex: insertIdx,
+        task: movedTask,
+        updatedSourceTasks,
+        updatedTargetTasks,
+      }) as any);
     }
-    if (insertIdx < 0) insertIdx = 0;
-    if (insertIdx > targetGroup.tasks.length) insertIdx = targetGroup.tasks.length;
-    const updatedTargetTasks = sourceGroup.id === targetGroup.id
-      ? [...updatedSourceTasks]
-      : [...targetGroup.tasks];
-    updatedTargetTasks.splice(insertIdx, 0, movedTask);
-    dispatch(reorderTasks({
-      activeGroupId: sourceGroup.id,
-      overGroupId: targetGroup.id,
-      fromIndex: taskIdx,
-      toIndex: insertIdx,
-      task: movedTask,
-      updatedSourceTasks,
-      updatedTargetTasks,
-    }));
-    dispatch(reorderEnhancedKanbanTasks({
-      activeGroupId: sourceGroup.id,
-      overGroupId: targetGroup.id,
-      fromIndex: taskIdx,
-      toIndex: insertIdx,
-      task: movedTask,
-      updatedSourceTasks,
-      updatedTargetTasks,
-    }) as any);
+    
     setDraggedTaskId(null);
     setDraggedTaskGroupId(null);
     setHoveredGroupId(null);
