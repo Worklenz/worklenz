@@ -54,6 +54,7 @@ import { RootState } from '@/app/store';
 import { TaskListField } from '@/types/task-list-field.types';
 import { useParams } from 'react-router-dom';
 import ImprovedTaskFilters from '@/components/task-management/improved-task-filters';
+import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-action-bar';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { HolderOutlined } from '@ant-design/icons';
 import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
@@ -61,6 +62,7 @@ import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
 // Base column configuration
 const BASE_COLUMNS = [
   { id: 'dragHandle', label: '', width: '32px', isSticky: true, key: 'dragHandle' },
+  { id: 'checkbox', label: '', width: '40px', isSticky: true, key: 'checkbox' },
   { id: 'taskKey', label: 'Key', width: '100px', key: COLUMN_KEYS.KEY },
   { id: 'title', label: 'Title', width: '300px', isSticky: true, key: COLUMN_KEYS.NAME },
   { id: 'status', label: 'Status', width: '120px', key: COLUMN_KEYS.STATUS },
@@ -86,6 +88,7 @@ type ColumnStyle = {
   left?: number;
   backgroundColor?: string;
   zIndex?: number;
+  flexShrink?: number;
 };
 
 interface TaskListV2Props {
@@ -336,6 +339,66 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
 
   }, [allTasks, groups]);
 
+  // Bulk action handlers
+  const handleClearSelection = useCallback(() => {
+    dispatch(clearSelection());
+  }, [dispatch]);
+
+  const handleBulkStatusChange = useCallback(async (statusId: string) => {
+    // TODO: Implement bulk status change
+    console.log('Bulk status change:', statusId);
+  }, []);
+
+  const handleBulkPriorityChange = useCallback(async (priorityId: string) => {
+    // TODO: Implement bulk priority change
+    console.log('Bulk priority change:', priorityId);
+  }, []);
+
+  const handleBulkPhaseChange = useCallback(async (phaseId: string) => {
+    // TODO: Implement bulk phase change
+    console.log('Bulk phase change:', phaseId);
+  }, []);
+
+  const handleBulkAssignToMe = useCallback(async () => {
+    // TODO: Implement bulk assign to me
+    console.log('Bulk assign to me');
+  }, []);
+
+  const handleBulkAssignMembers = useCallback(async (memberIds: string[]) => {
+    // TODO: Implement bulk assign members
+    console.log('Bulk assign members:', memberIds);
+  }, []);
+
+  const handleBulkAddLabels = useCallback(async (labelIds: string[]) => {
+    // TODO: Implement bulk add labels
+    console.log('Bulk add labels:', labelIds);
+  }, []);
+
+  const handleBulkArchive = useCallback(async () => {
+    // TODO: Implement bulk archive
+    console.log('Bulk archive');
+  }, []);
+
+  const handleBulkDelete = useCallback(async () => {
+    // TODO: Implement bulk delete
+    console.log('Bulk delete');
+  }, []);
+
+  const handleBulkDuplicate = useCallback(async () => {
+    // TODO: Implement bulk duplicate
+    console.log('Bulk duplicate');
+  }, []);
+
+  const handleBulkExport = useCallback(async () => {
+    // TODO: Implement bulk export
+    console.log('Bulk export');
+  }, []);
+
+  const handleBulkSetDueDate = useCallback(async (date: string) => {
+    // TODO: Implement bulk set due date
+    console.log('Bulk set due date:', date);
+  }, []);
+
   // Memoized values for GroupedVirtuoso
   const virtuosoGroups = useMemo(() => {
     let currentTaskIndex = 0;
@@ -375,10 +438,11 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
 
   // Memoize column headers to prevent unnecessary re-renders
   const columnHeaders = useMemo(() => (
-    <div className="flex items-center min-w-max px-4 py-2">
+    <div className="flex items-center px-4 py-2" style={{ minWidth: 'max-content' }}>
       {visibleColumns.map((column) => {
         const columnStyle: ColumnStyle = {
           width: column.width,
+          flexShrink: 0, // Prevent columns from shrinking
         };
 
         return (
@@ -389,6 +453,8 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
           >
             {column.id === 'dragHandle' ? (
               <HolderOutlined className="text-gray-400" />
+            ) : column.id === 'checkbox' ? (
+              <span></span> // Empty for checkbox column header
             ) : (
               column.label
             )}
@@ -430,7 +496,7 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
     if (!task) return null; // Should not happen if logic is correct
     return (
       <TaskRow
-        task={task}
+        taskId={task.id}
         visibleColumns={visibleColumns}
       />
     );
@@ -453,37 +519,39 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
           <ImprovedTaskFilters position="list" />
         </div>
 
-        {/* Column Headers */}
-        <div className="overflow-x-auto">
-          <div className="flex-none border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-            {columnHeaders}
-          </div>
+        {/* Table Container with synchronized horizontal scrolling */}
+        <div className="flex-1 overflow-x-auto">
+          <div className="min-w-max flex flex-col h-full">
+            {/* Column Headers - Fixed at top */}
+            <div className="flex-none border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              {columnHeaders}
+            </div>
 
-          {/* Task List */}
-          <div className="flex-1 overflow-hidden">
-            <SortableContext
-              items={virtuosoItems.map(task => task.id).filter((id): id is string => id !== undefined)}
-              strategy={verticalListSortingStrategy}
-            >
-              <GroupedVirtuoso
-                style={{ height: 'calc(100vh - 200px)' }}
-                groupCounts={virtuosoGroupCounts}
-                groupContent={renderGroup}
-                itemContent={renderTask}
-                components={{
-                  // Removed custom Group component as TaskGroupHeader now handles stickiness
-                  List: React.forwardRef<HTMLDivElement, { style?: React.CSSProperties; children?: React.ReactNode }>(({ style, children }, ref) => (
-                    <div
-                      ref={ref}
-                      style={style || {}}
-                      className="virtuoso-list-container" // Add a class for potential debugging/styling
-                    >
-                      {children}
-                    </div>
-                  )),
-                }}
-              />
-            </SortableContext>
+            {/* Task List - Scrollable content */}
+            <div className="flex-1">
+              <SortableContext
+                items={virtuosoItems.map(task => task.id).filter((id): id is string => id !== undefined)}
+                strategy={verticalListSortingStrategy}
+              >
+                <GroupedVirtuoso
+                  style={{ height: 'calc(100vh - 200px)' }}
+                  groupCounts={virtuosoGroupCounts}
+                  groupContent={renderGroup}
+                  itemContent={renderTask}
+                  components={{
+                    List: React.forwardRef<HTMLDivElement, { style?: React.CSSProperties; children?: React.ReactNode }>(({ style, children }, ref) => (
+                      <div
+                        ref={ref}
+                        style={style || {}}
+                        className="virtuoso-list-container"
+                      >
+                        {children}
+                      </div>
+                    )),
+                  }}
+                />
+              </SortableContext>
+            </div>
           </div>
         </div>
 
@@ -509,6 +577,27 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
             </div>
           ) : null}
         </DragOverlay>
+
+        {/* Bulk Action Bar */}
+        {selectedTaskIds.length > 0 && (
+          <OptimizedBulkActionBar
+            selectedTaskIds={selectedTaskIds}
+            totalSelected={selectedTaskIds.length}
+            projectId={projectId}
+            onClearSelection={handleClearSelection}
+            onBulkStatusChange={handleBulkStatusChange}
+            onBulkPriorityChange={handleBulkPriorityChange}
+            onBulkPhaseChange={handleBulkPhaseChange}
+            onBulkAssignToMe={handleBulkAssignToMe}
+            onBulkAssignMembers={handleBulkAssignMembers}
+            onBulkAddLabels={handleBulkAddLabels}
+            onBulkArchive={handleBulkArchive}
+            onBulkDelete={handleBulkDelete}
+            onBulkDuplicate={handleBulkDuplicate}
+            onBulkExport={handleBulkExport}
+            onBulkSetDueDate={handleBulkSetDueDate}
+          />
+        )}
       </div>
     </DndContext>
   );

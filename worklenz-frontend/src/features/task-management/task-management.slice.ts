@@ -15,6 +15,7 @@ import {
 } from '@/api/tasks/tasks.api.service';
 import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
+import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 
 // Helper function to safely convert time values
 const convertTimeValue = (value: any): number => {
@@ -163,6 +164,19 @@ export const fetchTasks = createAsyncThunk(
           createdAt: task.created_at || new Date().toISOString(),
           updatedAt: task.updated_at || new Date().toISOString(),
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
+          // Ensure all Task properties are mapped, even if undefined in API response
+          sub_tasks: task.sub_tasks || [],
+          sub_tasks_count: task.sub_tasks_count || 0,
+          show_sub_tasks: task.show_sub_tasks || false,
+          parent_task_id: task.parent_task_id || undefined,
+          weight: task.weight || 0,
+          color: task.color || undefined,
+          statusColor: task.statusColor || undefined,
+          priorityColor: task.priorityColor || undefined,
+          comments_count: task.comments_count || 0,
+          attachments_count: task.attachments_count || 0,
+          has_dependencies: task.has_dependencies || false,
+          schedule_id: task.schedule_id || null,
         }))
       );
 
@@ -226,10 +240,8 @@ export const fetchTasksV3 = createAsyncThunk(
       console.log('Task key from backend:', response.body.allTasks?.[0]?.task_key);
 
       // Ensure tasks are properly normalized
-      const tasks = response.body.allTasks.map((task: any) => {
+      const tasks: Task[] = response.body.allTasks.map((task: any) => {
         const now = new Date().toISOString();
-        
-
         
         return {
           id: task.id,
@@ -249,59 +261,33 @@ export const fetchTasksV3 = createAsyncThunk(
             end: l.end,
             names: l.names,
           })) || [],
-          due_date: task.end_date || '',
+          dueDate: task.end_date,
           timeTracking: {
             estimated: convertTimeValue(task.total_time),
             logged: convertTimeValue(task.time_spent),
           },
-          created_at: task.created_at || now,
-          updated_at: task.updated_at || now,
+          customFields: {},
+          createdAt: task.created_at || now,
+          updatedAt: task.updated_at || now,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           sub_tasks: task.sub_tasks || [],
           sub_tasks_count: task.sub_tasks_count || 0,
           show_sub_tasks: task.show_sub_tasks || false,
-          parent_task_id: task.parent_task_id || '',
+          parent_task_id: task.parent_task_id || undefined,
           weight: task.weight || 0,
-          color: task.color || '',
-          statusColor: task.status_color || '',
-          priorityColor: task.priority_color || '',
+          color: task.color || undefined,
+          statusColor: task.statusColor || undefined,
+          priorityColor: task.priorityColor || undefined,
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
-          has_dependencies: !!task.has_dependencies,
+          has_dependencies: task.has_dependencies || false,
           schedule_id: task.schedule_id || null,
-        } as Task;
-      });
-
-      // Map groups to match TaskGroup interface
-      const mappedGroups = response.body.groups.map((group: any) => ({
-        id: group.id,
-        title: group.title,
-        taskIds: group.taskIds || [],
-        type: group.groupType as 'status' | 'priority' | 'phase' | 'members',
-        color: group.color,
-      }));
-
-      // Log normalized data for debugging
-      console.log('Normalized data:', {
-        tasks,
-        groups: mappedGroups,
-        grouping: response.body.grouping,
-        totalTasks: response.body.totalTasks,
-      });
-
-      // Verify task IDs match group taskIds
-      const taskIds = new Set(tasks.map(t => t.id));
-      const groupTaskIds = new Set(mappedGroups.flatMap(g => g.taskIds));
-      console.log('Task ID verification:', {
-        taskIds: Array.from(taskIds),
-        groupTaskIds: Array.from(groupTaskIds),
-        allTaskIdsInGroups: Array.from(groupTaskIds).every(id => taskIds.has(id)),
-        allGroupTaskIdsInTasks: Array.from(taskIds).every(id => groupTaskIds.has(id)),
+        };
       });
 
       return {
-        tasks: tasks,
-        groups: mappedGroups,
+        allTasks: tasks,
+        groups: response.body.groups,
         grouping: response.body.grouping,
         totalTasks: response.body.totalTasks,
       };
@@ -310,7 +296,7 @@ export const fetchTasksV3 = createAsyncThunk(
       if (error instanceof Error) {
         return rejectWithValue(error.message);
       }
-      return rejectWithValue('Failed to fetch tasks');
+      return rejectWithValue('Failed to fetch tasks V3');
     }
   }
 );
@@ -471,8 +457,24 @@ const taskManagementSlice = createSlice({
       }
     },
     updateTask: (state, action: PayloadAction<Task>) => {
-      const task = action.payload;
-      state.entities[task.id] = task;
+      tasksAdapter.upsertOne(state as EntityState<Task, string>, action.payload);
+      // Additionally, update the task within its group if necessary (e.g., if status changed)
+      const updatedTask = action.payload;
+      const oldTask = state.entities[updatedTask.id];
+  
+      if (oldTask && state.grouping?.id === IGroupBy.STATUS && oldTask.status !== updatedTask.status) {
+        // Remove from old status group
+        const oldGroup = state.groups.find(group => group.id === oldTask.status);
+        if (oldGroup) {
+          oldGroup.taskIds = oldGroup.taskIds.filter(id => id !== updatedTask.id);
+        }
+  
+        // Add to new status group
+        const newGroup = state.groups.find(group => group.id === updatedTask.status);
+        if (newGroup) {
+          newGroup.taskIds.push(updatedTask.id);
+        }
+      }
     },
     deleteTask: (state, action: PayloadAction<string>) => {
       const taskId = action.payload;
@@ -556,13 +558,101 @@ const taskManagementSlice = createSlice({
     },
     reorderTasksInGroup: (
       state,
-      action: PayloadAction<{ taskIds: string[]; groupId: string }>
+      action: PayloadAction<{
+        sourceTaskId: string;
+        destinationTaskId: string;
+        sourceGroupId: string;
+        destinationGroupId: string;
+      }>
     ) => {
-      const { taskIds, groupId } = action.payload;
-      const group = state.groups.find(g => g.id === groupId);
-      if (group) {
-        group.taskIds = taskIds;
+      const { sourceTaskId, destinationTaskId, sourceGroupId, destinationGroupId } = action.payload;
+  
+      // Get a mutable copy of entities for updates
+      const newEntities = { ...state.entities };
+  
+      const sourceTask = newEntities[sourceTaskId];
+      const destinationTask = newEntities[destinationTaskId];
+  
+      if (!sourceTask || !destinationTask) return;
+  
+      if (sourceGroupId === destinationGroupId) {
+        // Reordering within the same group
+        const group = state.groups.find(g => g.id === sourceGroupId);
+        if (group) {
+          const newTasks = Array.from(group.taskIds);
+          const [removed] = newTasks.splice(newTasks.indexOf(sourceTaskId), 1);
+          newTasks.splice(newTasks.indexOf(destinationTaskId), 0, removed);
+          group.taskIds = newTasks;
+  
+          // Update order for affected tasks. Assuming simple reordering affects order.
+          // This might need more sophisticated logic based on how `order` is used.
+          newTasks.forEach((id, index) => {
+            if (newEntities[id]) {
+              newEntities[id] = { ...newEntities[id], order: index };
+            }
+          });
+        }
+      } else {
+        // Moving between different groups
+        const sourceGroup = state.groups.find(g => g.id === sourceGroupId);
+        const destinationGroup = state.groups.find(g => g.id === destinationGroupId);
+  
+        if (sourceGroup && destinationGroup) {
+          // Remove from source group
+          sourceGroup.taskIds = sourceGroup.taskIds.filter(id => id !== sourceTaskId);
+  
+          // Add to destination group at the correct position relative to destinationTask
+          const destinationIndex = destinationGroup.taskIds.indexOf(destinationTaskId);
+          if (destinationIndex !== -1) {
+            destinationGroup.taskIds.splice(destinationIndex, 0, sourceTaskId);
+          } else {
+            destinationGroup.taskIds.push(sourceTaskId); // Add to end if destination task not found
+          }
+  
+          // Update task's grouping field to reflect new group (e.g., status, priority, phase)
+          // This assumes the group ID directly corresponds to the task's field value
+          if (sourceTask) {
+            let updatedTask = { ...sourceTask };
+            switch (state.grouping?.id) {
+              case IGroupBy.STATUS:
+                updatedTask.status = destinationGroup.id;
+                break;
+              case IGroupBy.PRIORITY:
+                updatedTask.priority = destinationGroup.id;
+                break;
+              case IGroupBy.PHASE:
+                updatedTask.phase = destinationGroup.id;
+                break;
+              case IGroupBy.MEMBERS:
+                // If moving to a member group, ensure task is assigned to that member
+                // This assumes the group ID is the member ID
+                if (!updatedTask.assignees) {
+                  updatedTask.assignees = [];
+                }
+                if (!updatedTask.assignees.includes(destinationGroup.id)) {
+                  updatedTask.assignees.push(destinationGroup.id);
+                }
+                // If moving from a member group, and the task is no longer in any member group,
+                // consider removing the assignment (more complex logic might be needed here)
+                break;
+              default:
+                break;
+            }
+            newEntities[sourceTaskId] = updatedTask;
+          }
+  
+          // Update order for affected tasks in both groups if necessary
+          sourceGroup.taskIds.forEach((id, index) => {
+            if (newEntities[id]) newEntities[id] = { ...newEntities[id], order: index };
+          });
+          destinationGroup.taskIds.forEach((id, index) => {
+            if (newEntities[id]) newEntities[id] = { ...newEntities[id], order: index };
+          });
+        }
       }
+  
+      // Update the state's entities after all modifications
+      state.entities = newEntities;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -608,6 +698,22 @@ const taskManagementSlice = createSlice({
         parent.sub_tasks_count = (parent.sub_tasks_count || 0) + 1;
       }
     },
+    updateTaskAssignees: (state, action: PayloadAction<{
+      taskId: string;
+      assigneeIds: string[];
+      assigneeNames: InlineMember[];
+    }>) => {
+      const { taskId, assigneeIds, assigneeNames } = action.payload;
+      const existingTask = state.entities[taskId];
+  
+      if (existingTask) {
+        state.entities[taskId] = {
+          ...existingTask,
+          assignees: assigneeIds,
+          assignee_names: assigneeNames,
+        };
+      }
+    },
   },
   extraReducers: builder => {
     builder
@@ -617,46 +723,17 @@ const taskManagementSlice = createSlice({
       })
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
         state.loading = false;
-        state.error = null;
-
-        // Ensure we have tasks before updating state
-        if (action.payload.tasks && action.payload.tasks.length > 0) {
-          // Update tasks
-          const tasks = action.payload.tasks;
-          state.ids = tasks.map(task => task.id);
-          state.entities = tasks.reduce((acc, task) => {
-            acc[task.id] = task;
-            return acc;
-          }, {} as Record<string, Task>);
-
-          // Update groups
-          state.groups = action.payload.groups;
-          state.grouping = action.payload.grouping;
-
-          // Verify task IDs match group taskIds
-          const taskIds = new Set(Object.keys(state.entities));
-          const groupTaskIds = new Set(state.groups.flatMap(g => g.taskIds));
-
-          // Ensure all tasks have IDs and all group taskIds exist
-          const validTaskIds = new Set(Object.keys(state.entities));
-          state.groups = state.groups.map((group: TaskGroup) => ({
-            ...group,
-            taskIds: group.taskIds.filter((id: string) => validTaskIds.has(id)),
-          }));
-        } else {
-          // Set empty state but don't show error
-          state.ids = [];
-          state.entities = {} as Record<string, Task>;
-          state.groups = [];
-        }
+        const { allTasks, groups, grouping } = action.payload;
+        tasksAdapter.setAll(state as EntityState<Task, string>, allTasks || []); // Ensure allTasks is an array
+        state.ids = (allTasks || []).map(task => task.id); // Also update ids
+        state.groups = groups;
+        state.grouping = grouping;
       })
       .addCase(fetchTasksV3.rejected, (state, action) => {
         state.loading = false;
-        // Provide a more descriptive error message
-        state.error = action.error.message || action.payload || 'An error occurred while fetching tasks. Please try again.';
-        // Clear task data on error to prevent stale state
+        state.error = action.error?.message || (action.payload as string) || 'Failed to load tasks (V3)';
         state.ids = [];
-        state.entities = {} as Record<string, Task>;
+        state.entities = {};
         state.groups = [];
       })
       .addCase(fetchSubTasks.pending, (state, action) => {
@@ -675,6 +752,24 @@ const taskManagementSlice = createSlice({
       .addCase(fetchSubTasks.rejected, (state, action) => {
         // Set error but don't clear task data
         state.error = action.error.message || action.payload || 'Failed to fetch subtasks. Please try again.';
+      })
+      .addCase(fetchTasks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTasks.fulfilled, (state, action) => {
+        state.loading = false;
+        tasksAdapter.setAll(state as EntityState<Task, string>, action.payload || []); // Ensure payload is an array
+        state.ids = (action.payload || []).map(task => task.id); // Also update ids
+        state.groups = []; // Assuming no groups when using old fetchTasks
+        state.grouping = undefined; // Assuming no grouping when using old fetchTasks
+      })
+      .addCase(fetchTasks.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error?.message || (action.payload as string) || 'Failed to load tasks';
+        state.ids = [];
+        state.entities = {};
+        state.groups = [];
       });
   },
 });
@@ -700,6 +795,7 @@ export const {
   resetTaskManagement,
   toggleTaskExpansion,
   addSubtaskToParent,
+  updateTaskAssignees,
 } = taskManagementSlice.actions;
 
 // Export the selectors
