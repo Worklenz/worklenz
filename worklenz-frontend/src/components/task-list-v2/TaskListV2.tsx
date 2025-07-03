@@ -55,6 +55,7 @@ import { TaskListField } from '@/types/task-list-field.types';
 import { useParams } from 'react-router-dom';
 import ImprovedTaskFilters from '@/components/task-management/improved-task-filters';
 import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-action-bar';
+import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { HolderOutlined } from '@ant-design/icons';
 import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
@@ -136,6 +137,9 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
   const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
 
   const fields = useAppSelector(state => state.taskManagementFields) || [];
+
+  // Enable real-time updates via socket handlers
+  useTaskSocketHandlers();
 
   // Filter visible columns based on fields
   const visibleColumns = useMemo(() => {
@@ -497,6 +501,7 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
     return (
       <TaskRow
         taskId={task.id}
+        projectId={projectId}
         visibleColumns={visibleColumns}
       />
     );

@@ -13,6 +13,8 @@ import { ClockIcon } from '@heroicons/react/24/outline';
 import AvatarGroup from '../AvatarGroup';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import TaskProgress from '@/pages/projects/project-view-1/taskList/taskListTable/taskListTableCells/TaskProgress';
+import TaskStatusDropdown from '@/components/task-management/task-status-dropdown';
+import TaskPriorityDropdown from '@/components/task-management/task-priority-dropdown';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { selectTaskById } from '@/features/task-management/task-management.slice';
@@ -20,6 +22,7 @@ import { selectIsTaskSelected, toggleTaskSelection } from '@/features/task-manag
 
 interface TaskRowProps {
   taskId: string;
+  projectId: string;
   visibleColumns: Array<{
     id: string;
     width: string;
@@ -47,7 +50,7 @@ const formatDate = (dateString: string): string => {
 
 // Memoized date formatter to avoid repeated date parsing
 
-const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, visibleColumns }) => {
+const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumns }) => {
   const dispatch = useAppDispatch();
   const task = useAppSelector(state => selectTaskById(state, taskId));
   const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
@@ -207,12 +210,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, visibleColumns }) => {
       case 'status':
         return (
           <div style={baseStyle}>
-            <span
-              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-              style={statusStyle}
-            >
-              {task.status}
-            </span>
+            <TaskStatusDropdown
+              task={task}
+              projectId={projectId}
+              isDarkMode={isDarkMode}
+            />
           </div>
         );
 
@@ -236,12 +238,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, visibleColumns }) => {
       case 'priority':
         return (
           <div style={baseStyle}>
-            <span
-              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-              style={priorityStyle}
-            >
-              {task.priority}
-            </span>
+            <TaskPriorityDropdown
+              task={task}
+              projectId={projectId}
+              isDarkMode={isDarkMode}
+            />
           </div>
         );
 
