@@ -2,6 +2,7 @@ import React, { memo, useMemo, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CheckCircleOutlined, HolderOutlined } from '@ant-design/icons';
+import { Checkbox } from 'antd';
 import { Task } from '@/types/task-management.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import Avatar from '@/components/Avatar';
@@ -13,9 +14,12 @@ import AvatarGroup from '../AvatarGroup';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import TaskProgress from '@/pages/projects/project-view-1/taskList/taskListTable/taskListTableCells/TaskProgress';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { selectTaskById } from '@/features/task-management/task-management.slice';
+import { selectIsTaskSelected, toggleTaskSelection } from '@/features/task-management/selection.slice';
 
 interface TaskRowProps {
-  task: Task;
+  taskId: string;
   visibleColumns: Array<{
     id: string;
     width: string;
@@ -43,7 +47,15 @@ const formatDate = (dateString: string): string => {
 
 // Memoized date formatter to avoid repeated date parsing
 
-const TaskRow: React.FC<TaskRowProps> = memo(({ task, visibleColumns }) => {
+const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, visibleColumns }) => {
+  const dispatch = useAppDispatch();
+  const task = useAppSelector(state => selectTaskById(state, taskId));
+  const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
+
+  if (!task) {
+    return null; // Don't render if task is not found in store
+  }
+
   // Drag and drop functionality
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -111,6 +123,17 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ task, visibleColumns }) => {
     [task.updatedAt]
   );
 
+  // Debugging: Log assignee_names whenever the task prop changes
+  React.useEffect(() => {
+    console.log(`Task ${task.id} assignees:`, task.assignee_names);
+  }, [task.id, task.assignee_names]);
+
+  // Handle checkbox change
+  const handleCheckboxChange = useCallback((e: any) => {
+    e.stopPropagation(); // Prevent row click when clicking checkbox
+    dispatch(toggleTaskSelection(taskId));
+  }, [dispatch, taskId]);
+
   // Memoize status style
   const statusStyle = useMemo(() => ({
     backgroundColor: task.statusColor ? `${task.statusColor}20` : 'rgb(229, 231, 235)',
@@ -149,6 +172,17 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ task, visibleColumns }) => {
             {...listeners}
           >
             <HolderOutlined className="text-gray-400 hover:text-gray-600" />
+          </div>
+        );
+
+      case 'checkbox':
+        return (
+          <div className="flex items-center justify-center" style={baseStyle}>
+            <Checkbox
+              checked={isSelected}
+              onChange={handleCheckboxChange}
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         );
 
@@ -383,13 +417,15 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ task, visibleColumns }) => {
     labelsDisplay,
     isDarkMode,
     convertedTask,
+    isSelected,
+    handleCheckboxChange,
   ]);
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center min-w-max px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+      className={`flex items-center min-w-max px-4 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 ${
         isDragging ? 'shadow-lg border border-blue-300' : ''
       }`}
     >
