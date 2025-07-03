@@ -17,35 +17,50 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Card, Spin, Empty, Alert } from 'antd';
 import { RootState } from '@/app/store';
 import {
-  taskManagementSelectors,
+  selectAllTasks,
+  selectGroups,
+  selectGrouping,
+  selectLoading,
+  selectError,
+  selectSelectedPriorities,
+  selectSearch,
   reorderTasks,
   moveTaskToGroup,
+  moveTaskBetweenGroups,
   optimisticTaskMove,
   reorderTasksInGroup,
   setLoading,
-  fetchTasks,
-  fetchTasksV3,
-  selectTaskGroupsV3,
-  selectCurrentGroupingV3,
-  fetchSubTasks,
+  setError,
+  setSelectedPriorities,
+  setSearch,
+  resetTaskManagement,
   toggleTaskExpansion,
+  addSubtaskToParent,
+  fetchTasksV3,
 } from '@/features/task-management/task-management.slice';
 import {
-  selectTaskGroups,
   selectCurrentGrouping,
-  setCurrentGrouping,
+  selectCollapsedGroups,
+  selectIsGroupCollapsed,
+  toggleGroupCollapsed,
+  expandAllGroups,
+  collapseAllGroups,
 } from '@/features/task-management/grouping.slice';
 import {
   selectSelectedTaskIds,
+  selectLastSelectedTaskId,
+  selectIsTaskSelected,
+  selectTask,
+  deselectTask,
   toggleTaskSelection,
+  selectRange,
   clearSelection,
 } from '@/features/task-management/selection.slice';
 import {
-  selectTaskIds,
   selectTasks,
   deselectAll as deselectAllBulk,
 } from '@/features/projects/bulkActions/bulkActionSlice';
-import { Task } from '@/types/task-management.types';
+import { Task, TaskGroup } from '@/types/task-management.types';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -157,16 +172,19 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const { socket, connected } = useSocket();
 
   // Redux selectors using V3 API (pre-processed data, minimal loops)
-  const tasks = useSelector(taskManagementSelectors.selectAll);
+  const tasks = useSelector(selectAllTasks);
+  const groups = useSelector(selectGroups);
+  const grouping = useSelector(selectGrouping);
+  const loading = useSelector(selectLoading);
+  const error = useSelector(selectError);
+  const selectedPriorities = useSelector(selectSelectedPriorities);
+  const searchQuery = useSelector(selectSearch);
   const taskGroups = useSelector(selectTaskGroupsV3, shallowEqual);
-  const currentGrouping = useSelector(selectCurrentGroupingV3, shallowEqual);
-  // Use bulk action slice for selected tasks instead of selection slice
-  const selectedTaskIds = useSelector(
-    (state: RootState) => state.bulkActionReducer.selectedTaskIdsList
-  );
+  const currentGrouping = useSelector(selectCurrentGrouping);
+  const collapsedGroups = useSelector(selectCollapsedGroups);
+  const selectedTaskIds = useSelector(selectSelectedTaskIds);
+  const lastSelectedTaskId = useSelector(selectLastSelectedTaskId);
   const selectedTasks = useSelector((state: RootState) => state.bulkActionReducer.selectedTasks);
-  const loading = useSelector((state: RootState) => state.taskManagement.loading, shallowEqual);
-  const error = useSelector((state: RootState) => state.taskManagement.error);
 
   // Bulk action selectors
   const statusList = useSelector((state: RootState) => state.taskStatusReducer.status);

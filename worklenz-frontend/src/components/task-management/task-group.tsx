@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   Button,
   Typography,
@@ -11,12 +11,15 @@ import {
   DownOutlined,
 } from '@/shared/antd-imports';
 import { TaskGroup as TaskGroupType, Task } from '@/types/task-management.types';
-import { taskManagementSelectors } from '@/features/task-management/task-management.slice';
+import { taskManagementSelectors, selectAllTasks } from '@/features/task-management/task-management.slice';
 import { RootState } from '@/app/store';
 import TaskRow from './task-row';
 import AddTaskListRow from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-rows/add-task-list-row';
 import { TaskListField } from '@/features/task-management/taskListFields.slice';
 import { Checkbox } from '@/components';
+import { selectIsGroupCollapsed, toggleGroupCollapsed } from '@/features/task-management/grouping.slice';
+import { selectIsTaskSelected } from '@/features/task-management/selection.slice';
+import { Draggable } from 'react-beautiful-dnd';
 
 const { Text } = Typography;
 
@@ -58,6 +61,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(
     onSelectTask,
     onToggleSubtasks,
   }) => {
+    const dispatch = useDispatch();
     const [isCollapsed, setIsCollapsed] = useState(group.collapsed || false);
 
     const { setNodeRef, isOver } = useDroppable({
@@ -69,7 +73,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(
     });
 
     // Get all tasks from the store
-    const allTasks = useSelector(taskManagementSelectors.selectAll);
+    const allTasks = useSelector(selectAllTasks);
 
     // Get theme from Redux store
     const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
@@ -328,19 +332,29 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(
                   <SortableContext items={group.taskIds} strategy={verticalListSortingStrategy}>
                     <div className="task-group-tasks">
                       {groupTasks.map((task, index) => (
-                        <TaskRow
-                          key={task.id}
-                          task={task}
-                          projectId={projectId}
-                          groupId={group.id}
-                          currentGrouping={currentGrouping}
-                          isSelected={selectedTaskIds.includes(task.id)}
-                          index={index}
-                          onSelect={onSelectTask}
-                          onToggleSubtasks={onToggleSubtasks}
-                          fixedColumns={visibleFixedColumns}
-                          scrollableColumns={visibleScrollableColumns}
-                        />
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`task-row-wrapper ${snapshot.isDragging ? 'dragging' : ''}`}
+                            >
+                              <TaskRow
+                                task={task}
+                                projectId={projectId}
+                                groupId={group.id}
+                                currentGrouping={currentGrouping}
+                                isSelected={selectedTaskIds.includes(task.id)}
+                                index={index}
+                                onSelect={onSelectTask}
+                                onToggleSubtasks={onToggleSubtasks}
+                                fixedColumns={visibleFixedColumns}
+                                scrollableColumns={visibleScrollableColumns}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
                       ))}
                     </div>
                   </SortableContext>
