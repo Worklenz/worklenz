@@ -13,6 +13,13 @@ import {
 } from '@/api/tasks/tasks.api.service';
 import logger from '@/utils/errorLogger';
 
+export enum IGroupBy {
+  STATUS = 'status',
+  PRIORITY = 'priority',
+  PHASE = 'phase',
+  MEMBERS = 'members',
+}
+
 // Entity adapter for normalized state
 const tasksAdapter = createEntityAdapter<Task>({
   sortComparer: (a, b) => a.order - b.order,
@@ -616,7 +623,7 @@ const taskManagementSlice = createSlice({
     },
 
     // Reset action
-    resetTaskManagement: (state) => {
+    resetTaskManagement: state => {
       return tasksAdapter.getInitialState(initialState);
     },
     toggleTaskExpansion: (state, action: PayloadAction<string>) => {

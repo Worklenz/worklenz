@@ -16,6 +16,7 @@ import { ITaskPhaseChangeResponse } from '@/types/tasks/task-phase-change-respon
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
+import { Task } from '@/types/task-management.types';
 
 import {
   fetchTaskAssignees,
@@ -41,6 +42,7 @@ import {
   moveTaskBetweenGroups,
   selectCurrentGroupingV3,
   fetchTasksV3,
+  addSubtaskToParent,
 } from '@/features/task-management/task-management.slice';
 import {
   updateEnhancedKanbanSubtask,

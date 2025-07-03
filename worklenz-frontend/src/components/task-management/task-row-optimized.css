@@ -94,8 +94,9 @@
 
 /* SIMPLIFIED HOVER STATE: Remove complex containment and transforms */
 .task-row-optimized:hover {
-  /* Remove transform that was causing GPU conflicts */
-  /* Remove complex containment rules */
+  background-color: var(--task-hover-bg, #fafafa);
+  border-color: var(--task-border-primary, #e8e8e8);
+  border-top-color: var(--task-border-hover-top, #c0c0c0); /* Ensure top border is visible */
 }
 
 /* OPTIMIZED HOVER BUTTONS: Use opacity only, no visibility changes */
@@ -284,16 +285,27 @@
 }
 
 /* Dark mode optimizations */
+:root {
+  /* ... existing variables ... */
+  --task-border-hover-top: #c0c0c0; /* Slightly darker for visibility */
+}
+
 .dark .task-row-optimized {
-  contain: layout style;
-  background: var(--task-bg-primary, #1f1f1f);
-  color: var(--task-text-primary, #fff);
-  border-color: var(--task-border-primary, #303030);
+  /* ... existing variables ... */
+}
+
+.dark {
+  /* ... existing variables ... */
+  --task-border-hover-top-dark: #505050; /* Slightly darker for visibility in dark mode */
 }
 
 .dark .task-row-optimized:hover {
-  contain: layout style;
-  /* Remove complex containment rules */
+  background-color: var(--task-hover-bg, #2a2a2a);
+  border-color: var(--task-border-primary, #303030);
+  border-top-color: var(
+    --task-border-hover-top-dark,
+    #505050
+  ); /* Ensure top border is visible in dark mode */
 }
 
 /* Animation performance */
