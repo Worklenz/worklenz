@@ -1,10 +1,22 @@
 import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
-import { GroupingState, TaskGroup } from '@/types/task-management.types';
+import { GroupingState, TaskGroup, TaskGrouping } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
-import { taskManagementSelectors } from './task-management.slice';
+import { selectAllTasks } from './task-management.slice';
+
+interface GroupingState {
+  currentGrouping: TaskGrouping | null;
+  customPhases: string[];
+  groupOrder: {
+    status: string[];
+    priority: string[];
+    phase: string[];
+  };
+  groupStates: Record<string, { collapsed: boolean }>;
+  collapsedGroups: Set<string>;
+}
 
 const initialState: GroupingState = {
-  currentGrouping: 'status',
+  currentGrouping: null,
   customPhases: ['Planning', 'Development', 'Testing', 'Deployment'],
   groupOrder: {
     status: ['todo', 'doing', 'done'],
@@ -12,13 +24,14 @@ const initialState: GroupingState = {
     phase: ['Planning', 'Development', 'Testing', 'Deployment'],
   },
   groupStates: {},
+  collapsedGroups: new Set(),
 };
 
 const groupingSlice = createSlice({
   name: 'grouping',
   initialState,
   reducers: {
-    setCurrentGrouping: (state, action: PayloadAction<'status' | 'priority' | 'phase'>) => {
+    setCurrentGrouping: (state, action: PayloadAction<TaskGrouping | null>) => {
       state.currentGrouping = action.payload;
     },
 
@@ -48,10 +61,13 @@ const groupingSlice = createSlice({
 
     toggleGroupCollapsed: (state, action: PayloadAction<string>) => {
       const groupId = action.payload;
-      if (!state.groupStates[groupId]) {
-        state.groupStates[groupId] = { collapsed: false };
+      const collapsedGroups = new Set(state.collapsedGroups);
+      if (collapsedGroups.has(groupId)) {
+        collapsedGroups.delete(groupId);
+      } else {
+        collapsedGroups.add(groupId);
       }
-      state.groupStates[groupId].collapsed = !state.groupStates[groupId].collapsed;
+      state.collapsedGroups = collapsedGroups;
     },
 
     setGroupCollapsed: (state, action: PayloadAction<{ groupId: string; collapsed: boolean }>) => {
@@ -62,16 +78,12 @@ const groupingSlice = createSlice({
       state.groupStates[groupId].collapsed = collapsed;
     },
 
-    collapseAllGroups: state => {
-      Object.keys(state.groupStates).forEach(groupId => {
-        state.groupStates[groupId].collapsed = true;
-      });
+    collapseAllGroups: (state, action: PayloadAction<string[]>) => {
+      state.collapsedGroups = new Set(action.payload);
     },
 
     expandAllGroups: state => {
-      Object.keys(state.groupStates).forEach(groupId => {
-        state.groupStates[groupId].collapsed = false;
-      });
+      state.collapsedGroups = new Set();
     },
 
     resetGrouping: () => initialState,
@@ -96,6 +108,9 @@ export const selectCurrentGrouping = (state: RootState) => state.grouping.curren
 export const selectCustomPhases = (state: RootState) => state.grouping.customPhases;
 export const selectGroupOrder = (state: RootState) => state.grouping.groupOrder;
 export const selectGroupStates = (state: RootState) => state.grouping.groupStates;
+export const selectCollapsedGroups = (state: RootState) => state.grouping.collapsedGroups;
+export const selectIsGroupCollapsed = (state: RootState, groupId: string) =>
+  state.grouping.collapsedGroups.has(groupId);
 
 // Complex selectors using createSelector for memoization
 export const selectCurrentGroupOrder = createSelector(
@@ -104,12 +119,7 @@ export const selectCurrentGroupOrder = createSelector(
 );
 
 export const selectTaskGroups = createSelector(
-  [
-    taskManagementSelectors.selectAll,
-    selectCurrentGrouping,
-    selectCurrentGroupOrder,
-    selectGroupStates,
-  ],
+  [selectAllTasks, selectCurrentGrouping, selectCurrentGroupOrder, selectGroupStates],
   (tasks, currentGrouping, groupOrder, groupStates) => {
     const groups: TaskGroup[] = [];
 
@@ -154,7 +164,7 @@ export const selectTaskGroups = createSelector(
 );
 
 export const selectTasksByCurrentGrouping = createSelector(
-  [taskManagementSelectors.selectAll, selectCurrentGrouping],
+  [selectAllTasks, selectCurrentGrouping],
   (tasks, currentGrouping) => {
     const grouped: Record<string, typeof tasks> = {};
 

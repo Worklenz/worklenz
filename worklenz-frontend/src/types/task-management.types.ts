@@ -1,43 +1,44 @@
 import { InlineMember } from './teamMembers/inlineMember.types';
+import { EntityState } from '@reduxjs/toolkit';
 
 export interface Task {
   id: string;
-  task_key: string;
   title: string;
   description?: string;
-  status: 'todo' | 'doing' | 'done';
-  priority: 'critical' | 'high' | 'medium' | 'low';
-  phase: string; // Custom phases like 'planning', 'development', 'testing', 'deployment'
-  progress: number; // 0-100
-  assignees: string[];
-  assignee_names?: InlineMember[];
-  labels: Label[];
-  startDate?: string; // Start date for the task
-  dueDate?: string; // Due date for the task
-  completedAt?: string; // When the task was completed
-  reporter?: string; // Who reported/created the task
-  timeTracking: {
-    estimated?: number;
-    logged: number;
-  };
-  customFields: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-  order: number;
-  // Subtask-related properties
+  status: string;
+  priority: string;
+  phase?: string;
+  assignee?: string;
+  due_date?: string;
+  created_at: string;
+  updated_at: string;
+  sub_tasks?: Task[];
   sub_tasks_count?: number;
   show_sub_tasks?: boolean;
-  sub_tasks?: Task[];
+  parent_task_id?: string;
+  progress?: number;
+  weight?: number;
+  color?: string;
+  statusColor?: string;
+  priorityColor?: string;
+  labels?: { id: string; name: string; color: string }[];
+  comments_count?: number;
+  attachments_count?: number;
+  has_dependencies?: boolean;
+  schedule_id?: string | null;
+  order?: number;
+  // Add any other task properties as needed
 }
 
 export interface TaskGroup {
   id: string;
   title: string;
-  groupType: 'status' | 'priority' | 'phase';
-  groupValue: string; // The actual value for the group (e.g., 'todo', 'high', 'development')
-  collapsed: boolean;
   taskIds: string[];
-  color?: string; // For visual distinction
+  type?: 'status' | 'priority' | 'phase' | 'members';
+  color?: string;
+  collapsed?: boolean;
+  groupValue?: string;
+  // Add any other group properties as needed
 }
 
 export interface GroupingConfig {
@@ -73,14 +74,14 @@ export interface Label {
 
 // Redux State Interfaces
 export interface TaskManagementState {
-  entities: Record<string, Task>;
   ids: string[];
+  entities: Record<string, Task>;
   loading: boolean;
   error: string | null;
-  groups: TaskGroup[]; // Pre-processed groups from V3 API
-  grouping: string | null; // Current grouping from V3 API
-  selectedPriorities: string[]; // Selected priority filters
-  search: string; // Search query for filtering tasks
+  groups: TaskGroup[];
+  grouping: string | undefined;
+  selectedPriorities: string[];
+  search: string;
 }
 
 export interface TaskGroupsState {
@@ -89,15 +90,20 @@ export interface TaskGroupsState {
 }
 
 export interface GroupingState {
-  currentGrouping: 'status' | 'priority' | 'phase';
-  customPhases: string[];
-  groupOrder: Record<string, string[]>;
-  groupStates: Record<string, { collapsed: boolean }>; // Persist group states
+  currentGrouping: TaskGrouping | null;
+  collapsedGroups: Set<string>;
 }
 
-export interface SelectionState {
+export interface TaskGrouping {
+  id: string;
+  name: string;
+  field: string;
+  collapsed?: boolean;
+}
+
+export interface TaskSelection {
   selectedTaskIds: string[];
-  lastSelectedId: string | null;
+  lastSelectedTaskId: string | null;
 }
 
 export interface ColumnsState {

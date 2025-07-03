@@ -4,6 +4,7 @@ import { InlineSuspenseFallback } from '@/components/suspense-fallback/suspense-
 // Import core components synchronously to avoid suspense in main tabs
 import ProjectViewEnhancedTasks from '@/pages/projects/projectView/enhancedTasks/project-view-enhanced-tasks';
 import ProjectViewEnhancedBoard from '@/pages/projects/projectView/enhancedBoard/project-view-enhanced-board';
+import TaskListV2 from '@/components/task-list-v2/TaskListV2';
 
 // Lazy load less critical components
 const ProjectViewInsights = React.lazy(
@@ -35,7 +36,7 @@ export const tabItems: TabItems[] = [
     key: 'tasks-list',
     label: 'Task List',
     isPinned: true,
-    element: React.createElement(ProjectViewEnhancedTasks),
+    element: React.createElement(TaskListV2),
   },
   {
     index: 1,
