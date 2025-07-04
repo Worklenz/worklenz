@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+// @ts-ignore: Heroicons module types
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Checkbox } from 'antd';
 import { getContrastColor } from '@/utils/colorUtils';
@@ -78,7 +79,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
   return (
     <div
       ref={setNodeRef}
-      className={`flex items-center px-4 py-2 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-b border-gray-200 dark:border-gray-700 ${
+      className={`inline-flex w-max items-center px-4 py-2 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-b border-gray-200 dark:border-gray-700 rounded-t-md ${
         isOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
       }`}
       style={{
@@ -127,15 +128,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
         {/* Color indicator (removed as full header is colored) */}
         
         {/* Group name and count */}
-        <div className="flex items-center justify-between flex-1">
+        <div className="flex items-center flex-1">
           <span className="text-sm font-medium">
-            {group.name}
-          </span>
-          <span 
-            className="text-xs font-medium px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: getContrastColor(headerTextColor) === '#000000' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)', color: headerTextColor }}
-          >
-            {group.count}
+            {group.name} ({group.count})
           </span>
         </div>
       </div>
