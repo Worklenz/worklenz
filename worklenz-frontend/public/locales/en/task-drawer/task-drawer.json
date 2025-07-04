@@ -43,7 +43,7 @@
     },
     "subTasks": {
       "title": "Sub Tasks",
-      "addSubTask": "+ Add Sub Task",
+      "addSubTask": "Add Sub Task",
       "addSubTaskInputPlaceholder": "Type your task and hit enter",
       "refreshSubTasks": "Refresh Sub Tasks",
       "edit": "Edit",
