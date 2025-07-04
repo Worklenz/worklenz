@@ -59,5 +59,11 @@
     "convertToTask": "Shndërro në Detyrë",
     "delete": "Fshi",
     "searchByNameInputPlaceholder": "Kërko sipas emrit"
-  }
+  },
+  "setDueDate": "Cakto datën e afatit",
+  "setStartDate": "Cakto datën e fillimit",
+  "clearDueDate": "Pastro datën e afatit",
+  "clearStartDate": "Pastro datën e fillimit",
+  "dueDatePlaceholder": "Data e afatit",
+  "startDatePlaceholder": "Data e fillimit"
 }

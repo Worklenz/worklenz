@@ -387,6 +387,16 @@ export const useTaskSocketHandlers = () => {
 
       // Update enhanced kanban slice
       dispatch(updateEnhancedKanbanTaskEndDate({ task: taskWithProgress }));
+
+      // Update task-management slice for task-list-v2 components
+      const currentTask = store.getState().taskManagement.entities[task.id];
+      if (currentTask) {
+        dispatch(updateTask({
+          ...currentTask,
+          dueDate: task.end_date,
+          updatedAt: new Date().toISOString(),
+        }));
+      }
     },
     [dispatch]
   );
@@ -517,6 +527,16 @@ export const useTaskSocketHandlers = () => {
 
       dispatch(updateTaskStartDate({ task: taskWithProgress }));
       dispatch(setStartDate(taskWithProgress));
+
+      // Update task-management slice for task-list-v2 components
+      const currentTask = store.getState().taskManagement.entities[task.id];
+      if (currentTask) {
+        dispatch(updateTask({
+          ...currentTask,
+          startDate: task.start_date,
+          updatedAt: new Date().toISOString(),
+        }));
+      }
     },
     [dispatch]
   );
