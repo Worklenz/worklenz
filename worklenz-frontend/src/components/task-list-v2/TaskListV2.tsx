@@ -18,6 +18,7 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -63,23 +64,23 @@ import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
 const BASE_COLUMNS = [
   { id: 'dragHandle', label: '', width: '32px', isSticky: true, key: 'dragHandle' },
   { id: 'checkbox', label: '', width: '40px', isSticky: true, key: 'checkbox' },
-  { id: 'taskKey', label: 'Key', width: '100px', key: COLUMN_KEYS.KEY },
-  { id: 'title', label: 'Title', width: '470px', isSticky: true, key: COLUMN_KEYS.NAME },
-  { id: 'status', label: 'Status', width: '120px', key: COLUMN_KEYS.STATUS },
-  { id: 'assignees', label: 'Assignees', width: '150px', key: COLUMN_KEYS.ASSIGNEES },
-  { id: 'priority', label: 'Priority', width: '120px', key: COLUMN_KEYS.PRIORITY },
-  { id: 'dueDate', label: 'Due Date', width: '120px', key: COLUMN_KEYS.DUE_DATE },
-  { id: 'progress', label: 'Progress', width: '120px', key: COLUMN_KEYS.PROGRESS },
-  { id: 'labels', label: 'Labels', width: 'auto', key: COLUMN_KEYS.LABELS },
-  { id: 'phase', label: 'Phase', width: '120px', key: COLUMN_KEYS.PHASE },
-  { id: 'timeTracking', label: 'Time Tracking', width: '120px', key: COLUMN_KEYS.TIME_TRACKING },
-  { id: 'estimation', label: 'Estimation', width: '120px', key: COLUMN_KEYS.ESTIMATION },
-  { id: 'startDate', label: 'Start Date', width: '120px', key: COLUMN_KEYS.START_DATE },
-  { id: 'dueTime', label: 'Due Time', width: '120px', key: COLUMN_KEYS.DUE_TIME },
-  { id: 'completedDate', label: 'Completed Date', width: '120px', key: COLUMN_KEYS.COMPLETED_DATE },
-  { id: 'createdDate', label: 'Created Date', width: '120px', key: COLUMN_KEYS.CREATED_DATE },
-  { id: 'lastUpdated', label: 'Last Updated', width: '120px', key: COLUMN_KEYS.LAST_UPDATED },
-  { id: 'reporter', label: 'Reporter', width: '120px', key: COLUMN_KEYS.REPORTER },
+  { id: 'taskKey', label: 'keyColumn', width: '100px', key: COLUMN_KEYS.KEY },
+  { id: 'title', label: 'taskColumn', width: '470px', isSticky: true, key: COLUMN_KEYS.NAME },
+  { id: 'status', label: 'statusColumn', width: '120px', key: COLUMN_KEYS.STATUS },
+  { id: 'assignees', label: 'assigneesColumn', width: '150px', key: COLUMN_KEYS.ASSIGNEES },
+  { id: 'priority', label: 'priorityColumn', width: '120px', key: COLUMN_KEYS.PRIORITY },
+  { id: 'dueDate', label: 'dueDateColumn', width: '120px', key: COLUMN_KEYS.DUE_DATE },
+  { id: 'progress', label: 'progressColumn', width: '120px', key: COLUMN_KEYS.PROGRESS },
+  { id: 'labels', label: 'labelsColumn', width: 'auto', key: COLUMN_KEYS.LABELS },
+  { id: 'phase', label: 'phaseColumn', width: '120px', key: COLUMN_KEYS.PHASE },
+  { id: 'timeTracking', label: 'timeTrackingColumn', width: '120px', key: COLUMN_KEYS.TIME_TRACKING },
+  { id: 'estimation', label: 'estimationColumn', width: '120px', key: COLUMN_KEYS.ESTIMATION },
+  { id: 'startDate', label: 'startDateColumn', width: '120px', key: COLUMN_KEYS.START_DATE },
+  { id: 'dueTime', label: 'dueTimeColumn', width: '120px', key: COLUMN_KEYS.DUE_TIME },
+  { id: 'completedDate', label: 'completedDateColumn', width: '120px', key: COLUMN_KEYS.COMPLETED_DATE },
+  { id: 'createdDate', label: 'createdDateColumn', width: '120px', key: COLUMN_KEYS.CREATED_DATE },
+  { id: 'lastUpdated', label: 'lastUpdatedColumn', width: '120px', key: COLUMN_KEYS.LAST_UPDATED },
+  { id: 'reporter', label: 'reporterColumn', width: '120px', key: COLUMN_KEYS.REPORTER },
 ];
 
 type ColumnStyle = {
@@ -94,6 +95,7 @@ type ColumnStyle = {
 const TaskListV2: React.FC = () => {
   const dispatch = useAppDispatch();
   const { projectId: urlProjectId } = useParams();
+  const { t } = useTranslation('task-list-table');
 
   // Drag and drop state
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -423,6 +425,8 @@ const TaskListV2: React.FC = () => {
         tasks: tasksForVirtuoso,
         startIndex: currentTaskIndex,
         count: tasksForVirtuoso.length,
+        // Add actual task count for display purposes (regardless of collapsed state)
+        actualCount: group.taskIds.length,
       };
       currentTaskIndex += tasksForVirtuoso.length;
       return groupData;
@@ -461,18 +465,18 @@ const TaskListV2: React.FC = () => {
               style={columnStyle}
             >
               {column.id === 'dragHandle' ? (
-                <HolderOutlined className="text-gray-400" />
+                <span></span> // Empty space for drag handle column header
               ) : column.id === 'checkbox' ? (
                 <span></span> // Empty for checkbox column header
               ) : (
-                column.label
+                t(column.label)
               )}
             </div>
           );
         })}
       </div>
     ),
-    [visibleColumns]
+    [visibleColumns, t]
   );
 
   // Render functions
@@ -487,7 +491,7 @@ const TaskListV2: React.FC = () => {
             group={{
               id: group.id,
               name: group.title,
-              count: group.count,
+              count: group.actualCount, // Use actualCount instead of count for display
               color: group.color,
             }}
             isCollapsed={collapsedGroups.has(group.id)}
