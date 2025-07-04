@@ -39,10 +39,24 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   const updateDropdownPosition = useCallback(() => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 2,
-        left: rect.left + window.scrollX,
-      });
+      const dropdownHeight = 300; // Approximate height of dropdown (max-height + padding)
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // Position dropdown above button if there's not enough space below
+      const shouldPositionAbove = spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
+      
+      if (shouldPositionAbove) {
+        setDropdownPosition({
+          top: rect.top + window.scrollY - dropdownHeight - 2,
+          left: rect.left + window.scrollX,
+        });
+      } else {
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 2,
+          left: rect.left + window.scrollX,
+        });
+      }
     }
   }, []);
 
@@ -59,23 +73,11 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
       }
     };
 
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
       if (isOpen) {
-        // Check if the button is still visible in the viewport
-        if (buttonRef.current) {
-          const rect = buttonRef.current.getBoundingClientRect();
-          const isVisible =
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= window.innerHeight &&
-            rect.right <= window.innerWidth;
-
-          if (isVisible) {
-            updateDropdownPosition();
-          } else {
-            // Hide dropdown if button is not visible
-            setIsOpen(false);
-          }
+        // Only close dropdown if scrolling happens outside the dropdown
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
         }
       }
     };

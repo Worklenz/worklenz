@@ -200,49 +200,57 @@ export const useTaskSocketHandlers = () => {
       // Update enhanced kanban slice
       dispatch(updateEnhancedKanbanTaskStatus(response));
 
-      // For the task management slice, move task between groups without resetting
+      // For the task management slice, update the task entity and handle group movement
       const state = store.getState();
       const groups = state.taskManagement.groups;
       const currentTask = state.taskManagement.entities[response.id];
+      const currentGrouping = state.taskManagement.grouping;
 
-      if (groups && groups.length > 0 && currentTask && response.status_id) {
-        // Find current group containing the task
-        const currentGroup = groups.find(group => group.taskIds.includes(response.id));
-
-        // Find target group based on new status ID
-        // The status_id from response is the UUID of the new status
-        const targetGroup = groups.find(group => group.id === response.status_id);
-
-        if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-          // Determine the new status value based on status category
-          let newStatusValue: 'todo' | 'doing' | 'done' = 'todo';
-          if (response.statusCategory) {
-            if (response.statusCategory.is_done) {
-              newStatusValue = 'done';
-            } else if (response.statusCategory.is_doing) {
-              newStatusValue = 'doing';
-            } else {
-              newStatusValue = 'todo';
-            }
+      if (currentTask) {
+        // Determine the new status value based on status category
+        let newStatusValue: 'todo' | 'doing' | 'done' = 'todo';
+        if (response.statusCategory) {
+          if (response.statusCategory.is_done) {
+            newStatusValue = 'done';
+          } else if (response.statusCategory.is_doing) {
+            newStatusValue = 'doing';
+          } else {
+            newStatusValue = 'todo';
           }
+        }
 
-          // Use the new action to move task between groups
-          dispatch(
-            moveTaskBetweenGroups({
-              taskId: response.id,
-              fromGroupId: currentGroup.id,
-              toGroupId: targetGroup.id,
-              taskUpdate: {
-                status: newStatusValue,
-                progress: response.complete_ratio || currentTask.progress,
-              },
-            })
-          );
-        } else if (!currentGroup || !targetGroup) {
-          // Remove unnecessary refetch that causes data thrashing
-          // if (projectId) {
-          //   dispatch(fetchTasksV3(projectId));
-          // }
+        // Update the task entity first
+        dispatch(
+          updateTask({
+            ...currentTask,
+            status: newStatusValue,
+            progress: response.complete_ratio || currentTask.progress,
+            updatedAt: new Date().toISOString(),
+          })
+        );
+
+        // Handle group movement ONLY if grouping by status
+        if (groups && groups.length > 0 && currentGrouping === 'status') {
+          // Find current group containing the task
+          const currentGroup = groups.find(group => group.taskIds.includes(response.id));
+
+          // Find target group based on new status value (not UUID)
+          const targetGroup = groups.find(group => group.groupValue === newStatusValue);
+
+          if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+            // Use the action to move task between groups
+            dispatch(
+              moveTaskBetweenGroups({
+                taskId: response.id,
+                sourceGroupId: currentGroup.id,
+                targetGroupId: targetGroup.id,
+              })
+            );
+          } else {
+            console.log('🔧 No group movement needed for status change');
+          }
+        } else {
+          console.log('🔧 Not grouped by status, skipping group movement');
         }
       }
     },
@@ -310,9 +318,10 @@ export const useTaskSocketHandlers = () => {
       // Update enhanced kanban slice
       dispatch(updateEnhancedKanbanTaskPriority(response));
 
-      // For the task management slice, always update the task entity first
+      // For the task management slice, update the task entity and handle group movement
       const state = store.getState();
       const currentTask = state.taskManagement.entities[response.id];
+      const currentGrouping = state.taskManagement.grouping;
 
       if (currentTask) {
         // Get priority list to map priority_id to priority name
@@ -327,20 +336,17 @@ export const useTaskSocketHandlers = () => {
           }
         }
 
-        // Update the task entity
+        // Update the task entity first
         dispatch(
           updateTask({
-            id: response.id,
-            changes: {
-              priority: newPriorityValue,
-              updatedAt: new Date().toISOString(),
-            },
+            ...currentTask,
+            priority: newPriorityValue,
+            updatedAt: new Date().toISOString(),
           })
         );
 
         // Handle group movement ONLY if grouping by priority
         const groups = state.taskManagement.groups;
-        const currentGrouping = state.taskManagement.grouping;
 
         if (groups && groups.length > 0 && currentGrouping === 'priority') {
           // Find current group containing the task
@@ -348,18 +354,15 @@ export const useTaskSocketHandlers = () => {
 
           // Find target group based on new priority value
           const targetGroup = groups.find(
-            group => group.groupValue.toLowerCase() === newPriorityValue.toLowerCase()
+            group => group.groupValue?.toLowerCase() === newPriorityValue.toLowerCase()
           );
 
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
             dispatch(
               moveTaskBetweenGroups({
                 taskId: response.id,
-                fromGroupId: currentGroup.id,
-                toGroupId: targetGroup.id,
-                taskUpdate: {
-                  priority: newPriorityValue,
-                },
+                sourceGroupId: currentGroup.id,
+                targetGroupId: targetGroup.id,
               })
             );
           } else {
@@ -387,6 +390,16 @@ export const useTaskSocketHandlers = () => {
 
       // Update enhanced kanban slice
       dispatch(updateEnhancedKanbanTaskEndDate({ task: taskWithProgress }));
+
+      // Update task-management slice for task-list-v2 components
+      const currentTask = store.getState().taskManagement.entities[task.id];
+      if (currentTask) {
+        dispatch(updateTask({
+          ...currentTask,
+          dueDate: task.end_date,
+          updatedAt: new Date().toISOString(),
+        }));
+      }
     },
     [dispatch]
   );
@@ -517,6 +530,16 @@ export const useTaskSocketHandlers = () => {
 
       dispatch(updateTaskStartDate({ task: taskWithProgress }));
       dispatch(setStartDate(taskWithProgress));
+
+      // Update task-management slice for task-list-v2 components
+      const currentTask = store.getState().taskManagement.entities[task.id];
+      if (currentTask) {
+        dispatch(updateTask({
+          ...currentTask,
+          startDate: task.start_date,
+          updatedAt: new Date().toISOString(),
+        }));
+      }
     },
     [dispatch]
   );
@@ -599,7 +622,7 @@ export const useTaskSocketHandlers = () => {
           parent_task_id: data.parent_task_id,
           is_sub_task: true,
         };
-        dispatch(addSubtaskToParent({ subtask, parentTaskId: data.parent_task_id }));
+        dispatch(addSubtaskToParent({ parentId: data.parent_task_id, subtask }));
 
         // Also update enhanced kanban slice for subtask creation
         dispatch(

@@ -47,7 +47,7 @@ import {
   selectRange,
   clearSelection,
 } from '@/features/task-management/selection.slice';
-import TaskRow from './TaskRow';
+import TaskRowWithSubtasks from './TaskRowWithSubtasks';
 import TaskGroupHeader from './TaskGroupHeader';
 import { Task, TaskGroup } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
@@ -64,13 +64,13 @@ const BASE_COLUMNS = [
   { id: 'dragHandle', label: '', width: '32px', isSticky: true, key: 'dragHandle' },
   { id: 'checkbox', label: '', width: '40px', isSticky: true, key: 'checkbox' },
   { id: 'taskKey', label: 'Key', width: '100px', key: COLUMN_KEYS.KEY },
-  { id: 'title', label: 'Title', width: '300px', isSticky: true, key: COLUMN_KEYS.NAME },
+  { id: 'title', label: 'Title', width: '470px', isSticky: true, key: COLUMN_KEYS.NAME },
   { id: 'status', label: 'Status', width: '120px', key: COLUMN_KEYS.STATUS },
   { id: 'assignees', label: 'Assignees', width: '150px', key: COLUMN_KEYS.ASSIGNEES },
   { id: 'priority', label: 'Priority', width: '120px', key: COLUMN_KEYS.PRIORITY },
   { id: 'dueDate', label: 'Due Date', width: '120px', key: COLUMN_KEYS.DUE_DATE },
   { id: 'progress', label: 'Progress', width: '120px', key: COLUMN_KEYS.PROGRESS },
-  { id: 'labels', label: 'Labels', width: '150px', key: COLUMN_KEYS.LABELS },
+  { id: 'labels', label: 'Labels', width: 'auto', key: COLUMN_KEYS.LABELS },
   { id: 'phase', label: 'Phase', width: '120px', key: COLUMN_KEYS.PHASE },
   { id: 'timeTracking', label: 'Time Tracking', width: '120px', key: COLUMN_KEYS.TIME_TRACKING },
   { id: 'estimation', label: 'Estimation', width: '120px', key: COLUMN_KEYS.ESTIMATION },
@@ -91,17 +91,13 @@ type ColumnStyle = {
   flexShrink?: number;
 };
 
-interface TaskListV2Props {
-  projectId: string;
-}
-
-const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
+const TaskListV2: React.FC = () => {
   const dispatch = useAppDispatch();
   const { projectId: urlProjectId } = useParams();
-  
+
   // Drag and drop state
   const [activeId, setActiveId] = useState<string | null>(null);
-  
+
   // Configure sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -119,7 +115,7 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
       },
     })
   );
-  
+
   // Using Redux state for collapsedGroups instead of local state
   const collapsedGroups = useAppSelector(selectCollapsedGroups);
 
@@ -159,176 +155,190 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
   }, [dispatch, urlProjectId]);
 
   // Handlers
-  const handleTaskSelect = useCallback((taskId: string, event: React.MouseEvent) => {
-    if (event.ctrlKey || event.metaKey) {
-      dispatch(toggleTaskSelection(taskId));
-    } else if (event.shiftKey && lastSelectedTaskId) {
-      const taskIds = allTasks.map(t => t.id); // Use allTasks here
-      const startIdx = taskIds.indexOf(lastSelectedTaskId);
-      const endIdx = taskIds.indexOf(taskId);
-      const rangeIds = taskIds.slice(
-        Math.min(startIdx, endIdx),
-        Math.max(startIdx, endIdx) + 1
-      );
-      dispatch(selectRange(rangeIds));
-    } else {
-      dispatch(clearSelection());
-      dispatch(selectTask(taskId));
-    }
-  }, [dispatch, lastSelectedTaskId, allTasks]);
+  const handleTaskSelect = useCallback(
+    (taskId: string, event: React.MouseEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        dispatch(toggleTaskSelection(taskId));
+      } else if (event.shiftKey && lastSelectedTaskId) {
+        const taskIds = allTasks.map(t => t.id); // Use allTasks here
+        const startIdx = taskIds.indexOf(lastSelectedTaskId);
+        const endIdx = taskIds.indexOf(taskId);
+        const rangeIds = taskIds.slice(Math.min(startIdx, endIdx), Math.max(startIdx, endIdx) + 1);
+        dispatch(selectRange(rangeIds));
+      } else {
+        dispatch(clearSelection());
+        dispatch(selectTask(taskId));
+      }
+    },
+    [dispatch, lastSelectedTaskId, allTasks]
+  );
 
-  const handleGroupCollapse = useCallback((groupId: string) => {
-    dispatch(toggleGroupCollapsed(groupId)); // Dispatch Redux action to toggle collapsed state
-  }, [dispatch]);
+  const handleGroupCollapse = useCallback(
+    (groupId: string) => {
+      dispatch(toggleGroupCollapsed(groupId)); // Dispatch Redux action to toggle collapsed state
+    },
+    [dispatch]
+  );
 
   // Drag and drop handlers
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   }, []);
 
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event;
-    
-    if (!over) return;
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      const { active, over } = event;
 
-    const activeId = active.id;
-    const overId = over.id;
+      if (!over) return;
 
-    // Find the active task and the item being dragged over
-    const activeTask = allTasks.find(task => task.id === activeId);
-    if (!activeTask) return;
+      const activeId = active.id;
+      const overId = over.id;
 
-    // Check if we're dragging over a task or a group
-    const overTask = allTasks.find(task => task.id === overId);
-    const overGroup = groups.find(group => group.id === overId);
+      // Find the active task and the item being dragged over
+      const activeTask = allTasks.find(task => task.id === activeId);
+      if (!activeTask) return;
 
-    // Find the groups
-    const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
-    let targetGroup = overGroup;
+      // Check if we're dragging over a task or a group
+      const overTask = allTasks.find(task => task.id === overId);
+      const overGroup = groups.find(group => group.id === overId);
 
-    if (overTask) {
-      targetGroup = groups.find(group => group.taskIds.includes(overTask.id));
-    }
+      // Find the groups
+      const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
+      let targetGroup = overGroup;
 
-    if (!activeGroup || !targetGroup) return;
-
-    // If dragging to a different group, we need to handle cross-group movement
-    if (activeGroup.id !== targetGroup.id) {
-      console.log('Cross-group drag detected:', {
-        activeTask: activeTask.id,
-        fromGroup: activeGroup.id,
-        toGroup: targetGroup.id,
-      });
-    }
-  }, [allTasks, groups]);
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const activeId = active.id;
-    const overId = over.id;
-
-    // Find the active task
-    const activeTask = allTasks.find(task => task.id === activeId);
-    if (!activeTask) {
-      console.error('Active task not found:', activeId);
-      return;
-    }
-
-    // Find the groups
-    const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
-    if (!activeGroup) {
-      console.error('Could not find active group for task:', activeId);
-      return;
-    }
-
-    // Check if we're dropping on a task or a group
-    const overTask = allTasks.find(task => task.id === overId);
-    const overGroup = groups.find(group => group.id === overId);
-
-    let targetGroup = overGroup;
-    let insertIndex = 0;
-
-    if (overTask) {
-      // Dropping on a task
-      targetGroup = groups.find(group => group.taskIds.includes(overTask.id));
-      if (targetGroup) {
-        insertIndex = targetGroup.taskIds.indexOf(overTask.id);
+      if (overTask) {
+        targetGroup = groups.find(group => group.taskIds.includes(overTask.id));
       }
-    } else if (overGroup) {
-      // Dropping on a group (at the end)
-      targetGroup = overGroup;
-      insertIndex = targetGroup.taskIds.length;
-    }
 
-    if (!targetGroup) {
-      console.error('Could not find target group');
-      return;
-    }
+      if (!activeGroup || !targetGroup) return;
 
-    const isCrossGroup = activeGroup.id !== targetGroup.id;
-    const activeIndex = activeGroup.taskIds.indexOf(activeTask.id);
-
-    console.log('Drag operation:', {
-      activeId,
-      overId,
-      activeTask: activeTask.name || activeTask.title,
-      activeGroup: activeGroup.id,
-      targetGroup: targetGroup.id,
-      activeIndex,
-      insertIndex,
-      isCrossGroup,
-    });
-
-    if (isCrossGroup) {
-      // Moving task between groups
-      console.log('Moving task between groups:', {
-        task: activeTask.name || activeTask.title,
-        from: activeGroup.title,
-        to: targetGroup.title,
-        newPosition: insertIndex,
-      });
-
-      // Move task to the target group
-      dispatch(moveTaskBetweenGroups({
-        taskId: activeId as string,
-        sourceGroupId: activeGroup.id,
-        targetGroupId: targetGroup.id,
-      }));
-
-      // Reorder task within target group at drop position
-      dispatch(reorderTasksInGroup({
-        sourceTaskId: activeId as string,
-        destinationTaskId: over.id as string,
-        sourceGroupId: activeGroup.id,
-        destinationGroupId: targetGroup.id,
-      }));
-    } else {
-      // Reordering within the same group
-      console.log('Reordering task within same group:', {
-        task: activeTask.name || activeTask.title,
-        group: activeGroup.title,
-        from: activeIndex,
-        to: insertIndex,
-      });
-
-      if (activeIndex !== insertIndex) {
-        // Reorder task within same group at drop position
-        dispatch(reorderTasksInGroup({
-          sourceTaskId: activeId as string,
-          destinationTaskId: over.id as string,
-          sourceGroupId: activeGroup.id,
-          destinationGroupId: activeGroup.id,
-        }));
+      // If dragging to a different group, we need to handle cross-group movement
+      if (activeGroup.id !== targetGroup.id) {
+        console.log('Cross-group drag detected:', {
+          activeTask: activeTask.id,
+          fromGroup: activeGroup.id,
+          toGroup: targetGroup.id,
+        });
       }
-    }
+    },
+    [allTasks, groups]
+  );
 
-  }, [allTasks, groups]);
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveId(null);
+
+      if (!over || active.id === over.id) {
+        return;
+      }
+
+      const activeId = active.id;
+      const overId = over.id;
+
+      // Find the active task
+      const activeTask = allTasks.find(task => task.id === activeId);
+      if (!activeTask) {
+        console.error('Active task not found:', activeId);
+        return;
+      }
+
+      // Find the groups
+      const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
+      if (!activeGroup) {
+        console.error('Could not find active group for task:', activeId);
+        return;
+      }
+
+      // Check if we're dropping on a task or a group
+      const overTask = allTasks.find(task => task.id === overId);
+      const overGroup = groups.find(group => group.id === overId);
+
+      let targetGroup = overGroup;
+      let insertIndex = 0;
+
+      if (overTask) {
+        // Dropping on a task
+        targetGroup = groups.find(group => group.taskIds.includes(overTask.id));
+        if (targetGroup) {
+          insertIndex = targetGroup.taskIds.indexOf(overTask.id);
+        }
+      } else if (overGroup) {
+        // Dropping on a group (at the end)
+        targetGroup = overGroup;
+        insertIndex = targetGroup.taskIds.length;
+      }
+
+      if (!targetGroup) {
+        console.error('Could not find target group');
+        return;
+      }
+
+      const isCrossGroup = activeGroup.id !== targetGroup.id;
+      const activeIndex = activeGroup.taskIds.indexOf(activeTask.id);
+
+      console.log('Drag operation:', {
+        activeId,
+        overId,
+        activeTask: activeTask.name || activeTask.title,
+        activeGroup: activeGroup.id,
+        targetGroup: targetGroup.id,
+        activeIndex,
+        insertIndex,
+        isCrossGroup,
+      });
+
+      if (isCrossGroup) {
+        // Moving task between groups
+        console.log('Moving task between groups:', {
+          task: activeTask.name || activeTask.title,
+          from: activeGroup.title,
+          to: targetGroup.title,
+          newPosition: insertIndex,
+        });
+
+        // Move task to the target group
+        dispatch(
+          moveTaskBetweenGroups({
+            taskId: activeId as string,
+            sourceGroupId: activeGroup.id,
+            targetGroupId: targetGroup.id,
+          })
+        );
+
+        // Reorder task within target group at drop position
+        dispatch(
+          reorderTasksInGroup({
+            sourceTaskId: activeId as string,
+            destinationTaskId: over.id as string,
+            sourceGroupId: activeGroup.id,
+            destinationGroupId: targetGroup.id,
+          })
+        );
+      } else {
+        // Reordering within the same group
+        console.log('Reordering task within same group:', {
+          task: activeTask.name || activeTask.title,
+          group: activeGroup.title,
+          from: activeIndex,
+          to: insertIndex,
+        });
+
+        if (activeIndex !== insertIndex) {
+          // Reorder task within same group at drop position
+          dispatch(
+            reorderTasksInGroup({
+              sourceTaskId: activeId as string,
+              destinationTaskId: over.id as string,
+              sourceGroupId: activeGroup.id,
+              destinationGroupId: activeGroup.id,
+            })
+          );
+        }
+      }
+    },
+    [allTasks, groups]
+  );
 
   // Bulk action handlers
   const handleClearSelection = useCallback(() => {
@@ -395,14 +405,14 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
     let currentTaskIndex = 0;
     return groups.map(group => {
       const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
-      
+
       // Order tasks according to group.taskIds array to maintain proper order
-      const visibleTasksInGroup = isCurrentGroupCollapsed 
-        ? [] 
+      const visibleTasksInGroup = isCurrentGroupCollapsed
+        ? []
         : group.taskIds
             .map(taskId => allTasks.find(task => task.id === taskId))
             .filter((task): task is Task => task !== undefined); // Type guard to filter out undefined tasks
-      
+
       const tasksForVirtuoso = visibleTasksInGroup.map(task => ({
         ...task,
         originalIndex: allTasks.indexOf(task),
@@ -428,71 +438,87 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
   }, [virtuosoGroups]);
 
   // Memoize column headers to prevent unnecessary re-renders
-  const columnHeaders = useMemo(() => (
-    <div className="flex items-center px-4 py-2" style={{ minWidth: 'max-content' }}>
-      {visibleColumns.map((column) => {
-        const columnStyle: ColumnStyle = {
-          width: column.width,
-          flexShrink: 0, // Prevent columns from shrinking
-        };
+  const columnHeaders = useMemo(
+    () => (
+      <div className="flex items-center px-4 py-2" style={{ minWidth: 'max-content' }}>
+        {visibleColumns.map(column => {
+          const columnStyle: ColumnStyle = {
+            width: column.width,
+            flexShrink: 0, // Prevent columns from shrinking
+            // Add specific styling for labels column with auto width
+            ...(column.id === 'labels' && column.width === 'auto'
+              ? {
+                  minWidth: '200px', // Ensure minimum width for labels
+                  flexGrow: 1, // Allow it to grow
+                }
+              : {}),
+          };
 
-        return (
-          <div
-            key={column.id}
-            className="text-xs font-medium text-gray-500 dark:text-gray-400"
-            style={columnStyle}
-          >
-            {column.id === 'dragHandle' ? (
-              <HolderOutlined className="text-gray-400" />
-            ) : column.id === 'checkbox' ? (
-              <span></span> // Empty for checkbox column header
-            ) : (
-              column.label
-            )}
-          </div>
-        );
-      })}
-    </div>
-  ), [visibleColumns]);
+          return (
+            <div
+              key={column.id}
+              className="text-xs font-medium text-gray-500 dark:text-gray-400"
+              style={columnStyle}
+            >
+              {column.id === 'dragHandle' ? (
+                <HolderOutlined className="text-gray-400" />
+              ) : column.id === 'checkbox' ? (
+                <span></span> // Empty for checkbox column header
+              ) : (
+                column.label
+              )}
+            </div>
+          );
+        })}
+      </div>
+    ),
+    [visibleColumns]
+  );
 
   // Render functions
-  const renderGroup = useCallback((groupIndex: number) => {
-    const group = virtuosoGroups[groupIndex];
-    const isGroupEmpty = group.count === 0;
-    
-    return (
-      <div className={groupIndex > 0 ? 'mt-2' : ''}>
-        <TaskGroupHeader
-          group={{
-            id: group.id,
-            name: group.title,
-            count: group.count,
-            color: group.color,
-          }}
-          isCollapsed={collapsedGroups.has(group.id)}
-          onToggle={() => handleGroupCollapse(group.id)}
-        />
-        {/* Empty group drop zone */}
-        {isGroupEmpty && !collapsedGroups.has(group.id) && (
-          <div className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-transparent hover:border-blue-300 transition-colors">
-            <div className="text-sm">Drop tasks here</div>
-          </div>
-        )}
-      </div>
-    );
-  }, [virtuosoGroups, collapsedGroups, handleGroupCollapse]);
+  const renderGroup = useCallback(
+    (groupIndex: number) => {
+      const group = virtuosoGroups[groupIndex];
+      const isGroupEmpty = group.count === 0;
 
-  const renderTask = useCallback((taskIndex: number) => {
-    const task = virtuosoItems[taskIndex]; // Get task from the flattened virtuosoItems
-    if (!task) return null; // Should not happen if logic is correct
-    return (
-      <TaskRow
-        taskId={task.id}
-        projectId={projectId}
-        visibleColumns={visibleColumns}
-      />
-    );
-  }, [virtuosoItems, visibleColumns]);
+      return (
+        <div className={groupIndex > 0 ? 'mt-2' : ''}>
+          <TaskGroupHeader
+            group={{
+              id: group.id,
+              name: group.title,
+              count: group.count,
+              color: group.color,
+            }}
+            isCollapsed={collapsedGroups.has(group.id)}
+            onToggle={() => handleGroupCollapse(group.id)}
+          />
+          {/* Empty group drop zone */}
+          {isGroupEmpty && !collapsedGroups.has(group.id) && (
+            <div className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-transparent hover:border-blue-300 transition-colors">
+              <div className="text-sm">Drop tasks here</div>
+            </div>
+          )}
+        </div>
+      );
+    },
+    [virtuosoGroups, collapsedGroups, handleGroupCollapse]
+  );
+
+  const renderTask = useCallback(
+    (taskIndex: number) => {
+      const task = virtuosoItems[taskIndex]; // Get task from the flattened virtuosoItems
+      if (!task || !urlProjectId) return null; // Should not happen if logic is correct
+      return (
+        <TaskRowWithSubtasks
+          taskId={task.id}
+          projectId={urlProjectId}
+          visibleColumns={visibleColumns}
+        />
+      );
+    },
+    [virtuosoItems, visibleColumns]
+  );
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -522,7 +548,10 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
             {/* Task List - Scrollable content */}
             <div className="flex-1">
               <SortableContext
-                items={virtuosoItems.map(task => task.id).filter((id): id is string => id !== undefined)}
+                items={virtuosoItems
+                  .filter(task => !task.parent_task_id)
+                  .map(task => task.id)
+                  .filter((id): id is string => id !== undefined)}
                 strategy={verticalListSortingStrategy}
               >
                 <GroupedVirtuoso
@@ -531,12 +560,11 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
                   groupContent={renderGroup}
                   itemContent={renderTask}
                   components={{
-                    List: React.forwardRef<HTMLDivElement, { style?: React.CSSProperties; children?: React.ReactNode }>(({ style, children }, ref) => (
-                      <div
-                        ref={ref}
-                        style={style || {}}
-                        className="virtuoso-list-container"
-                      >
+                    List: React.forwardRef<
+                      HTMLDivElement,
+                      { style?: React.CSSProperties; children?: React.ReactNode }
+                    >(({ style, children }, ref) => (
+                      <div ref={ref} style={style || {}} className="virtuoso-list-container">
                         {children}
                       </div>
                     )),
@@ -556,9 +584,9 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
                   <HolderOutlined className="text-blue-500" />
                   <div>
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {allTasks.find(task => task.id === activeId)?.name || 
-                       allTasks.find(task => task.id === activeId)?.title || 
-                       'Task'}
+                      {allTasks.find(task => task.id === activeId)?.name ||
+                        allTasks.find(task => task.id === activeId)?.title ||
+                        'Task'}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {allTasks.find(task => task.id === activeId)?.task_key}
@@ -571,11 +599,11 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
         </DragOverlay>
 
         {/* Bulk Action Bar */}
-        {selectedTaskIds.length > 0 && (
+        {selectedTaskIds.length > 0 && urlProjectId && (
           <OptimizedBulkActionBar
             selectedTaskIds={selectedTaskIds}
             totalSelected={selectedTaskIds.length}
-            projectId={projectId}
+            projectId={urlProjectId}
             onClearSelection={handleClearSelection}
             onBulkStatusChange={handleBulkStatusChange}
             onBulkPriorityChange={handleBulkPriorityChange}
@@ -595,4 +623,4 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
   );
 };
 
-export default TaskListV2; 
+export default TaskListV2;
