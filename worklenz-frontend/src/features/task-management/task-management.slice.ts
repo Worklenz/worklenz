@@ -151,11 +151,12 @@ export const fetchTasks = createAsyncThunk(
             task.labels?.map((l: any) => ({
               id: l.id || l.label_id,
               name: l.name,
-              color: l.color_code || '#1890ff',
+              color: l.color || '#1890ff',
               end: l.end,
               names: l.names,
             })) || [],
-          dueDate: task.end_date,
+          dueDate: task.dueDate,
+          startDate: task.startDate,
           timeTracking: {
             estimated: convertTimeValue(task.total_time),
             logged: convertTimeValue(task.time_spent),
@@ -163,6 +164,8 @@ export const fetchTasks = createAsyncThunk(
           customFields: {},
           createdAt: task.created_at || new Date().toISOString(),
           updatedAt: task.updated_at || new Date().toISOString(),
+          created_at: task.created_at || new Date().toISOString(),
+          updated_at: task.updated_at || new Date().toISOString(),
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           // Ensure all Task properties are mapped, even if undefined in API response
           sub_tasks: task.sub_tasks || [],
@@ -234,16 +237,13 @@ export const fetchTasksV3 = createAsyncThunk(
 
       const response = await tasksApiService.getTaskListV3(config);
 
-      // Log raw response for debugging
-      console.log('Raw API response:', response.body);
-      console.log('Sample task from backend:', response.body.allTasks?.[0]);
-      console.log('Task key from backend:', response.body.allTasks?.[0]?.task_key);
+
 
       // Ensure tasks are properly normalized
       const tasks: Task[] = response.body.allTasks.map((task: any) => {
         const now = new Date().toISOString();
         
-        return {
+        const transformedTask = {
           id: task.id,
           task_key: task.task_key || task.key || '',
           title: (task.title && task.title.trim()) ? task.title.trim() : DEFAULT_TASK_NAME,
@@ -257,11 +257,12 @@ export const fetchTasksV3 = createAsyncThunk(
           labels: task.labels?.map((l: { id: string; label_id: string; name: string; color_code: string; end: boolean; names: string[] }) => ({
             id: l.id || l.label_id,
             name: l.name,
-            color: l.color_code || '#1890ff',
+            color: l.color || '#1890ff',
             end: l.end,
             names: l.names,
           })) || [],
-          dueDate: task.end_date,
+          dueDate: task.dueDate,
+          startDate: task.startDate,
           timeTracking: {
             estimated: convertTimeValue(task.total_time),
             logged: convertTimeValue(task.time_spent),
@@ -269,6 +270,8 @@ export const fetchTasksV3 = createAsyncThunk(
           customFields: {},
           createdAt: task.created_at || now,
           updatedAt: task.updated_at || now,
+          created_at: task.created_at || now,
+          updated_at: task.updated_at || now,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           sub_tasks: task.sub_tasks || [],
           sub_tasks_count: task.sub_tasks_count || 0,
@@ -283,6 +286,8 @@ export const fetchTasksV3 = createAsyncThunk(
           has_dependencies: task.has_dependencies || false,
           schedule_id: task.schedule_id || null,
         };
+        
+        return transformedTask;
       });
 
       return {

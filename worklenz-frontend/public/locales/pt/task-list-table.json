@@ -59,5 +59,11 @@
     "convertToTask": "Converter em Tarefa",
     "delete": "Excluir",
     "searchByNameInputPlaceholder": "Buscar por nome"
-  }
+  },
+  "setDueDate": "Definir data de vencimento",
+  "setStartDate": "Definir data de início",
+  "clearDueDate": "Limpar data de vencimento",
+  "clearStartDate": "Limpar data de início",
+  "dueDatePlaceholder": "Data de vencimento",
+  "startDatePlaceholder": "Data de início"
 }

@@ -24,6 +24,7 @@ import {
   EyeOutlined,
   RetweetOutlined,
   DownOutlined, // Added DownOutlined for expand/collapse
+  CloseOutlined, // Added CloseOutlined for clear button
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { Task } from '@/types/task-management.types';
@@ -752,7 +753,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                 className={`flex items-center px-2 ${borderClasses}`}
                 style={{ width: col.width }}
               >
-                <TaskKey taskKey={task.task_key} isDarkMode={isDarkMode} />
+                <TaskKey taskKey={task.task_key || ''} isDarkMode={isDarkMode} />
               </div>
             );
 
@@ -892,7 +893,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                 className={`flex items-center px-2 ${borderClasses}`}
                 style={{ width: col.width }}
               >
-                <TaskKey taskKey={task.task_key} isDarkMode={isDarkMode} />
+                <TaskKey taskKey={task.task_key || ''} isDarkMode={isDarkMode} />
               </div>
             );
 
@@ -1316,13 +1317,35 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                 className={`flex items-center px-2 ${borderClasses}`}
                 style={{ width: col.width }}
               >
-                <DatePicker
-                  {...taskManagementAntdConfig.datePickerDefaults}
-                  className="w-full bg-transparent border-none shadow-none"
-                  value={dateValues.start}
-                  onChange={date => handleDateChange(date, 'startDate')}
-                  placeholder="Start Date"
-                />
+                <div className="w-full relative group">
+                  <DatePicker
+                    {...taskManagementAntdConfig.datePickerDefaults}
+                    className="w-full bg-transparent border-none shadow-none"
+                    value={dateValues.start}
+                    onChange={date => handleDateChange(date, 'startDate')}
+                    placeholder="Start Date"
+                    allowClear={false} // We'll handle clear manually
+                    suffixIcon={null}
+                  />
+                  {/* Custom clear button - only show when there's a value */}
+                  {dateValues.start && (
+                    <button
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDateChange(null, 'startDate');
+                      }}
+                      className={`absolute right-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-4 h-4 flex items-center justify-center rounded-full text-xs ${
+                        isDarkMode 
+                          ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' 
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                      title="Clear start date"
+                    >
+                      <CloseOutlined style={{ fontSize: '10px' }} />
+                    </button>
+                  )}
+                </div>
               </div>
             );
 
@@ -1333,13 +1356,35 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                 className={`flex items-center px-2 ${borderClasses}`}
                 style={{ width: col.width }}
               >
-                <DatePicker
-                  {...taskManagementAntdConfig.datePickerDefaults}
-                  className="w-full bg-transparent border-none shadow-none"
-                  value={dateValues.due}
-                  onChange={date => handleDateChange(date, 'dueDate')}
-                  placeholder="Due Date"
-                />
+                <div className="w-full relative group">
+                  <DatePicker
+                    {...taskManagementAntdConfig.datePickerDefaults}
+                    className="w-full bg-transparent border-none shadow-none"
+                    value={dateValues.due}
+                    onChange={date => handleDateChange(date, 'dueDate')}
+                    placeholder="Due Date"
+                    allowClear={false} // We'll handle clear manually
+                    suffixIcon={null}
+                  />
+                  {/* Custom clear button - only show when there's a value */}
+                  {dateValues.due && (
+                    <button
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDateChange(null, 'dueDate');
+                      }}
+                      className={`absolute right-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-4 h-4 flex items-center justify-center rounded-full text-xs ${
+                        isDarkMode 
+                          ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' 
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                      title="Clear due date"
+                    >
+                      <CloseOutlined style={{ fontSize: '10px' }} />
+                    </button>
+                  )}
+                </div>
               </div>
             );
 
