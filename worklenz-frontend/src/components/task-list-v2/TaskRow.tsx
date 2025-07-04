@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CheckCircleOutlined, HolderOutlined, CloseOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined } from '@ant-design/icons';
 import { Checkbox, DatePicker } from 'antd';
 import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
@@ -15,8 +15,9 @@ import TaskStatusDropdown from '@/components/task-management/task-status-dropdow
 import TaskPriorityDropdown from '@/components/task-management/task-priority-dropdown';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { selectTaskById } from '@/features/task-management/task-management.slice';
+import { selectTaskById, toggleTaskExpansion, fetchSubTasks } from '@/features/task-management/task-management.slice';
 import { selectIsTaskSelected, toggleTaskSelection } from '@/features/task-management/selection.slice';
+import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +34,7 @@ interface TaskRowProps {
     width: string;
     isSticky?: boolean;
   }>;
+  isSubtask?: boolean;
 }
 
 interface TaskLabelsCellProps {
@@ -89,7 +91,7 @@ const formatDate = (dateString: string): string => {
   }
 };
 
-const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumns }) => {
+const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumns, isSubtask = false }) => {
   const dispatch = useAppDispatch();
   const task = useAppSelector(state => selectTaskById(state, taskId));
   const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
@@ -103,13 +105,14 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     return null; // Don't render if task is not found in store
   }
 
-  // Drag and drop functionality
+  // Drag and drop functionality - only enable for parent tasks
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: {
       type: 'task',
       task,
     },
+    disabled: isSubtask, // Disable drag and drop for subtasks
   });
 
   // Memoize style object to prevent unnecessary re-renders
@@ -189,6 +192,19 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     dispatch(toggleTaskSelection(taskId));
   }, [dispatch, taskId]);
 
+  // Handle task expansion toggle
+  const handleToggleExpansion = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Always try to fetch subtasks when expanding, regardless of count
+    if (!task.show_sub_tasks && (!task.sub_tasks || task.sub_tasks.length === 0)) {
+      dispatch(fetchSubTasks({ taskId: task.id, projectId }));
+    }
+    
+    // Toggle expansion state
+    dispatch(toggleTaskExpansion(task.id));
+  }, [dispatch, task.id, task.sub_tasks, task.show_sub_tasks, projectId]);
+
   // Handle date change
   const handleDateChange = useCallback(
     (date: dayjs.Dayjs | null, field: 'startDate' | 'dueDate') => {
@@ -239,12 +255,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
       case 'dragHandle':
         return (
           <div
-            className="cursor-grab active:cursor-grabbing flex items-center justify-center"
+            className={`flex items-center justify-center ${isSubtask ? '' : 'cursor-grab active:cursor-grabbing'}`}
             style={baseStyle}
-            {...attributes}
-            {...listeners}
+            {...(isSubtask ? {} : { ...attributes, ...listeners })}
           >
-            <HolderOutlined className="text-gray-400 hover:text-gray-600" />
+            {!isSubtask && <HolderOutlined className="text-gray-400 hover:text-gray-600" />}
           </div>
         );
 
@@ -270,10 +285,63 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'title':
         return (
-          <div className="flex items-center" style={baseStyle}>
-            <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
-              {taskDisplayName}
-            </span>
+          <div className="flex items-center justify-between group" style={baseStyle}>
+            <div className="flex items-center flex-1">
+              {/* Indentation for subtasks - increased padding */}
+              {isSubtask && <div className="w-8" />}
+              
+              {/* Expand/Collapse button - only show for parent tasks */}
+              {!isSubtask && (
+                <button
+                  onClick={handleToggleExpansion}
+                  className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-2 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${
+                    task.sub_tasks_count && task.sub_tasks_count > 0 
+                      ? 'opacity-100' 
+                      : 'opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  {task.sub_tasks_count && task.sub_tasks_count > 0 ? (
+                    task.show_sub_tasks ? (
+                      <DownOutlined className="text-gray-600 dark:text-gray-400" />
+                    ) : (
+                      <RightOutlined className="text-gray-600 dark:text-gray-400" />
+                    )
+                  ) : (
+                    <RightOutlined className="text-gray-600 dark:text-gray-400" />
+                  )}
+                </button>
+              )}
+              
+              {/* Additional indentation for subtasks after the expand button space */}
+              {isSubtask && <div className="w-4" />}
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                  {taskDisplayName}
+                </span>
+                
+                {/* Subtask count indicator */}
+                {!isSubtask && task.sub_tasks_count && task.sub_tasks_count > 0 && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                      {task.sub_tasks_count}
+                    </span>
+                    <DoubleRightOutlined className="text-xs text-blue-600 dark:text-blue-400" />
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <button
+              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2 px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border-none bg-transparent cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch(setSelectedTaskId(task.id));
+                dispatch(setShowTaskDrawer(true));
+              }}
+            >
+              {t('openButton')}
+            </button>
           </div>
         );
 

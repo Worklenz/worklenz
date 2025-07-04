@@ -36,8 +36,8 @@
   "selectText": "Seleccionar",
   "labelsSelectorInputTip": "¡Presiona enter para crear!",
 
-  "addTaskText": "+ Agregar tarea",
-  "addSubTaskText": "+ Agregar subtarea",
+  "addTaskText": "Agregar tarea",
+  "addSubTaskText": "Agregar subtarea",
   "addTaskInputPlaceholder": "Escribe tu tarea y presiona enter",
 
   "openButton": "Abrir",

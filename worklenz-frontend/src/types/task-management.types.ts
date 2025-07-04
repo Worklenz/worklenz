@@ -96,6 +96,7 @@ export interface TaskManagementState {
   grouping: string | undefined;
   selectedPriorities: string[];
   search: string;
+  loadingSubtasks: Record<string, boolean>; // Track loading state for individual tasks
 }
 
 export interface TaskGroupsState {
