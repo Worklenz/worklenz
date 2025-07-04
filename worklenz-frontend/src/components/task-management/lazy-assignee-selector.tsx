@@ -11,6 +11,7 @@ interface LazyAssigneeSelectorProps {
   task: IProjectTask;
   groupId?: string | null;
   isDarkMode?: boolean;
+  kanbanMode?: boolean; // <-- Add this prop
 }
 
 // Lightweight loading placeholder
@@ -34,6 +35,7 @@ const LazyAssigneeSelectorWrapper: React.FC<LazyAssigneeSelectorProps> = ({
   task,
   groupId = null,
   isDarkMode = false,
+  kanbanMode = false, // <-- Default to false
 }) => {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [showComponent, setShowComponent] = useState(false);
@@ -74,7 +76,7 @@ const LazyAssigneeSelectorWrapper: React.FC<LazyAssigneeSelectorProps> = ({
   // Once loaded, show the full component
   return (
     <Suspense fallback={<LoadingPlaceholder isDarkMode={isDarkMode} />}>
-      <LazyAssigneeSelector task={task} groupId={groupId} isDarkMode={isDarkMode} />
+      <LazyAssigneeSelector task={task} groupId={groupId} isDarkMode={isDarkMode} kanbanMode={kanbanMode} />
     </Suspense>
   );
 };
