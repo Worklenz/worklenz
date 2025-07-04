@@ -21,5 +21,10 @@
   "newTaskNamePlaceholder": "Escribe un nombre de tarea",
   "newSubtaskNamePlaceholder": "Escribe un nombre de subtarea",
   "untitledSection": "Sección sin título",
-  "unmapped": "Sin asignar"
+  "unmapped": "Sin asignar",
+  "clickToChangeDate": "Haz clic para cambiar la fecha",
+  "noDueDate": "Sin fecha de vencimiento",
+  "save": "Guardar",
+  "clear": "Limpiar",
+  "nextWeek": "Próxima semana"
 }
