@@ -22,12 +22,14 @@ interface AssigneeSelectorProps {
   task: IProjectTask;
   groupId?: string | null;
   isDarkMode?: boolean;
+  kanbanMode?: boolean; // <-- Add this prop
 }
 
 const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   task,
   groupId = null,
   isDarkMode = false,
+  kanbanMode = false, // <-- Default to false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -212,6 +214,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         assigneeIds: newAssigneeIds,
         assigneeNames: updatedAssigneeNames,
       }));
+      if (kanbanMode) {
+        dispatch(updateEnhancedKanbanTaskAssignees(data));
+      }
     });
 
     // Remove from pending changes after a short delay (optimistic)

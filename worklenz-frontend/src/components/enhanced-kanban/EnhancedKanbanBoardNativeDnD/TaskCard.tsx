@@ -381,7 +381,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                     isDarkMode={themeMode === 'dark'}
                                     size={24}
                                 />
-                                <LazyAssigneeSelectorWrapper task={task} groupId={groupId} isDarkMode={themeMode === 'dark'} />
+                                <LazyAssigneeSelectorWrapper task={task} groupId={groupId} isDarkMode={themeMode === 'dark'} kanbanMode={true} />
                                 {(task.sub_tasks_count ?? 0) > 0 && (
                                     <button
                                         type="button"
