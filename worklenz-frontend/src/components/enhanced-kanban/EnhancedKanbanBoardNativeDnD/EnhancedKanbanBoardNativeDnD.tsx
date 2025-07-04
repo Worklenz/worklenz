@@ -216,18 +216,17 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         toSortOrder = -1;
         toLastIndex = true;
       } else if (targetGroup.tasks[insertIdx]) {
-        toSortOrder = typeof targetGroup.tasks[insertIdx].sort_order === 'number'
-          ? targetGroup.tasks[insertIdx].sort_order
-          : -1;
+        const sortOrder = targetGroup.tasks[insertIdx].sort_order;
+        toSortOrder = typeof sortOrder === 'number' ? sortOrder : 0;
         toLastIndex = false;
       } else if (targetGroup.tasks.length > 0) {
         const lastSortOrder = targetGroup.tasks[targetGroup.tasks.length - 1].sort_order;
-        toSortOrder = typeof lastSortOrder === 'number' ? lastSortOrder : -1;
+        toSortOrder = typeof lastSortOrder === 'number' ? lastSortOrder : 0;
         toLastIndex = false;
       }
       socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
         project_id: projectId,
-        from_index: movedTask.sort_order,
+        from_index: movedTask.sort_order ?? 0,
         to_index: toSortOrder,
         to_last_index: toLastIndex,
         from_group: sourceGroup.id,
