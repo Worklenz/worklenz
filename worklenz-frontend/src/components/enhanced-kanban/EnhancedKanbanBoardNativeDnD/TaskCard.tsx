@@ -68,6 +68,10 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         return new Date(d.getFullYear(), d.getMonth(), 1);
     });
 
+    useEffect(() => {
+        setSelectedDate(task.end_date ? new Date(task.end_date) : null);
+    }, [task.end_date]);
+
     // Close date picker when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -207,10 +211,10 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                 style={{
                                     backgroundColor: label.color_code,
                                     display: 'inline-block',
-                                    borderRadius: '4px',
-                                    padding: '2px 8px',
-                                    color: '#fff',
-                                    fontSize: 8,
+                                    borderRadius: '2px',
+                                    padding: '0px 4px',
+                                    color: themeMode === 'dark' ? '#181818' : '#fff',
+                                    fontSize: 10,
                                     marginRight: 4,
                                     whiteSpace: 'nowrap',
                                     minWidth: 0
