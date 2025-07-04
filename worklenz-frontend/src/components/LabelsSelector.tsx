@@ -73,10 +73,12 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
       }
     };
 
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
       if (isOpen) {
-        // Close dropdown when scrolling to prevent it from moving with the content
-        setIsOpen(false);
+        // Only close dropdown if scrolling happens outside the dropdown
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
       }
     };
 
