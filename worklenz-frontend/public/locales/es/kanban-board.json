@@ -19,5 +19,7 @@
   "archive": "Archivar",
 
   "newTaskNamePlaceholder": "Escribe un nombre de tarea",
-  "newSubtaskNamePlaceholder": "Escribe un nombre de subtarea"
+  "newSubtaskNamePlaceholder": "Escribe un nombre de subtarea",
+  "untitledSection": "Sección sin título",
+  "unmapped": "Sin asignar"
 }

@@ -125,7 +125,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
     const handleBlur = async () => {
         setIsEditable(false);
         if (name === editName) return;
-        if (name === 'Untitled section') {
+        if (name === t('untitledSection')) {
             dispatch(fetchEnhancedKanbanGroups(projectId ?? ''));
         }
 
@@ -249,7 +249,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                         className="flex items-center gap-2 cursor-pointer"
                         onClick={e => {
                             e.stopPropagation();
-                            if ((isProjectManager || isOwnerOrAdmin) && group.name !== 'Unmapped')
+                            if ((isProjectManager || isOwnerOrAdmin) && group.name !== t('unmapped'))
                                 setIsEditable(true);
                         }}
                         onMouseDown={e => {
@@ -312,7 +312,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                             </svg>
                         </button>
 
-                        {(isOwnerOrAdmin || isProjectManager) && name !== 'Unmapped' && (
+                        {(isOwnerOrAdmin || isProjectManager) && name !== t('unmapped') && (
                             <div className="relative" ref={dropdownRef}>
                                 <button
                                     type="button"
@@ -341,7 +341,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                                             {groupBy === IGroupBy.STATUS && statusCategories && (
                                                 <div className="border-t border-gray-200 dark:border-gray-700">
                                                     <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                                        Change category
+                                                        {t('changeCategory')}
                                                     </div>
                                                     {statusCategories.map(status => (
                                                         <button
