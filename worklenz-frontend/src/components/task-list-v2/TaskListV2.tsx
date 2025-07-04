@@ -70,7 +70,7 @@ const BASE_COLUMNS = [
   { id: 'priority', label: 'Priority', width: '120px', key: COLUMN_KEYS.PRIORITY },
   { id: 'dueDate', label: 'Due Date', width: '120px', key: COLUMN_KEYS.DUE_DATE },
   { id: 'progress', label: 'Progress', width: '120px', key: COLUMN_KEYS.PROGRESS },
-  { id: 'labels', label: 'Labels', width: '150px', key: COLUMN_KEYS.LABELS },
+  { id: 'labels', label: 'Labels', width: 'auto', key: COLUMN_KEYS.LABELS },
   { id: 'phase', label: 'Phase', width: '120px', key: COLUMN_KEYS.PHASE },
   { id: 'timeTracking', label: 'Time Tracking', width: '120px', key: COLUMN_KEYS.TIME_TRACKING },
   { id: 'estimation', label: 'Estimation', width: '120px', key: COLUMN_KEYS.ESTIMATION },
@@ -434,6 +434,11 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
         const columnStyle: ColumnStyle = {
           width: column.width,
           flexShrink: 0, // Prevent columns from shrinking
+          // Add specific styling for labels column with auto width
+          ...(column.id === 'labels' && column.width === 'auto' ? {
+            minWidth: '200px', // Ensure minimum width for labels
+            flexGrow: 1, // Allow it to grow
+          } : {}),
         };
 
         return (

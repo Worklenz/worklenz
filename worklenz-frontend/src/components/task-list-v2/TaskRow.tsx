@@ -1,15 +1,15 @@
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CheckCircleOutlined, HolderOutlined } from '@ant-design/icons';
-import { Checkbox } from 'antd';
+import { CheckCircleOutlined, HolderOutlined, CloseOutlined } from '@ant-design/icons';
+import { Checkbox, DatePicker } from 'antd';
+import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import Avatar from '@/components/Avatar';
 import AssigneeSelector from '@/components/AssigneeSelector';
 import { format } from 'date-fns';
 import { Bars3Icon } from '@heroicons/react/24/outline';
-import { ClockIcon } from '@heroicons/react/24/outline';
 import AvatarGroup from '../AvatarGroup';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import TaskProgress from '@/pages/projects/project-view-1/taskList/taskListTable/taskListTableCells/TaskProgress';
@@ -19,6 +19,12 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { selectTaskById } from '@/features/task-management/task-management.slice';
 import { selectIsTaskSelected, toggleTaskSelection } from '@/features/task-management/selection.slice';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
+import { useTranslation } from 'react-i18next';
+import TaskTimeTracking from './TaskTimeTracking';
+import { CustomNumberLabel, CustomColordLabel } from '@/components';
+import LabelsSelector from '@/components/LabelsSelector';
 
 interface TaskRowProps {
   taskId: string;
@@ -42,18 +48,21 @@ const getTaskDisplayName = (task: Task): string => {
 // Memoized date formatter to avoid repeated date parsing
 const formatDate = (dateString: string): string => {
   try {
-    return format(new Date(dateString), 'MMM d');
+    return format(new Date(dateString), 'MMM d, yyyy');
   } catch {
     return '';
   }
 };
 
-// Memoized date formatter to avoid repeated date parsing
-
 const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumns }) => {
   const dispatch = useAppDispatch();
   const task = useAppSelector(state => selectTaskById(state, taskId));
   const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
+  const { socket, connected } = useSocket();
+  const { t } = useTranslation('task-list-table');
+
+  // State for tracking which date picker is open
+  const [activeDatePicker, setActiveDatePicker] = useState<string | null>(null);
 
   if (!task) {
     return null; // Don't render if task is not found in store
@@ -101,14 +110,23 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
   }), [task.id, taskDisplayName, task.task_key, task.assignee_names, task.parent_task_id]);
 
   // Memoize formatted dates
-  const formattedDueDate = useMemo(() => 
-    task.dueDate ? formatDate(task.dueDate) : null, 
-    [task.dueDate]
-  );
+  const formattedDueDate = useMemo(() => {
+    const dateValue = task.dueDate || task.due_date;
+    return dateValue ? formatDate(dateValue) : null;
+  }, [task.dueDate, task.due_date]);
   
   const formattedStartDate = useMemo(() => 
     task.startDate ? formatDate(task.startDate) : null, 
     [task.startDate]
+  );
+
+  // Memoize date values for DatePicker
+  const dateValues = useMemo(
+    () => ({
+      start: task.startDate ? dayjs(task.startDate) : undefined,
+      due: (task.dueDate || task.due_date) ? dayjs(task.dueDate || task.due_date) : undefined,
+    }),
+    [task.startDate, task.dueDate, task.due_date]
   );
   
   const formattedCompletedDate = useMemo(() => 
@@ -126,16 +144,40 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     [task.updatedAt]
   );
 
-  // Debugging: Log assignee_names whenever the task prop changes
-  React.useEffect(() => {
-    console.log(`Task ${task.id} assignees:`, task.assignee_names);
-  }, [task.id, task.assignee_names]);
+
 
   // Handle checkbox change
   const handleCheckboxChange = useCallback((e: any) => {
     e.stopPropagation(); // Prevent row click when clicking checkbox
     dispatch(toggleTaskSelection(taskId));
   }, [dispatch, taskId]);
+
+  // Handle date change
+  const handleDateChange = useCallback(
+    (date: dayjs.Dayjs | null, field: 'startDate' | 'dueDate') => {
+      if (!connected || !socket) return;
+
+      const eventType =
+        field === 'startDate'
+          ? SocketEvents.TASK_START_DATE_CHANGE
+          : SocketEvents.TASK_END_DATE_CHANGE;
+      const dateField = field === 'startDate' ? 'start_date' : 'end_date';
+
+      socket.emit(
+        eventType.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          [dateField]: date?.format('YYYY-MM-DD'),
+          parent_task: null,
+          time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        })
+      );
+
+      // Close the date picker after selection
+      setActiveDatePicker(null);
+    },
+    [connected, socket, task.id]
+  );
 
   // Memoize status style
   const statusStyle = useMemo(() => ({
@@ -149,18 +191,23 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     color: task.priorityColor || 'rgb(31, 41, 55)',
   }), [task.priorityColor]);
 
-  // Memoize labels display
-  const labelsDisplay = useMemo(() => {
-    if (!task.labels || task.labels.length === 0) return null;
-    
-    const visibleLabels = task.labels.slice(0, 2);
-    const remainingCount = task.labels.length - 2;
-    
-    return {
-      visibleLabels,
-      remainingCount: remainingCount > 0 ? remainingCount : null,
-    };
-  }, [task.labels]);
+  // Create labels adapter for LabelsSelector
+  const labelsAdapter = useMemo(() => ({
+    id: task.id,
+    name: task.title || task.name,
+    parent_task_id: task.parent_task_id,
+    manual_progress: false,
+    all_labels: task.labels?.map(label => ({
+      id: label.id,
+      name: label.name,
+      color_code: label.color,
+    })) || [],
+    labels: task.labels?.map(label => ({
+      id: label.id,
+      name: label.name,
+      color_code: label.color,
+    })) || [],
+  }), [task.id, task.title, task.name, task.parent_task_id, task.labels]);
 
   const renderColumn = useCallback((columnId: string, width: string, isSticky?: boolean, index?: number) => {
     const baseStyle = { width };
@@ -248,11 +295,62 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'dueDate':
         return (
-          <div style={baseStyle}>
-            {formattedDueDate && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {formattedDueDate}
-              </span>
+          <div style={baseStyle} className="relative group">
+            {activeDatePicker === 'dueDate' ? (
+              <div className="w-full relative">
+                <DatePicker
+                  {...taskManagementAntdConfig.datePickerDefaults}
+                  className="w-full bg-transparent border-none shadow-none"
+                  value={dateValues.due}
+                  onChange={date => handleDateChange(date, 'dueDate')}
+                  placeholder={t('dueDatePlaceholder')}
+                  allowClear={false}
+                  suffixIcon={null}
+                  open={true}
+                  onOpenChange={(open) => {
+                    if (!open) {
+                      setActiveDatePicker(null);
+                    }
+                  }}
+                  autoFocus
+                />
+                {/* Custom clear button */}
+                {dateValues.due && (
+                  <button
+                    onClick={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDateChange(null, 'dueDate');
+                    }}
+                    className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full text-xs ${
+                      isDarkMode 
+                        ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title={t('clearDueDate')}
+                  >
+                    <CloseOutlined style={{ fontSize: '10px' }} />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div 
+                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDatePicker('dueDate');
+                }}
+              >
+                {formattedDueDate ? (
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {formattedDueDate}
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-400 dark:text-gray-500">
+                    {t('setDueDate')}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         );
@@ -282,25 +380,28 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         );
 
       case 'labels':
+        if (task.labels) console.log('task.labels', task.labels);
         return (
-          <div className="flex items-center gap-1" style={baseStyle}>
-            {labelsDisplay?.visibleLabels.map((label, index) => (
-              <span
-                key={`${label.id}-${index}`}
-                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                style={{
-                  backgroundColor: label.color ? `${label.color}20` : 'rgb(229, 231, 235)',
-                  color: label.color || 'rgb(31, 41, 55)',
-                }}
-              >
-                {label.name}
-              </span>
-            ))}
-            {labelsDisplay?.remainingCount && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                +{labelsDisplay.remainingCount}
-              </span>
-            )}
+          <div className="flex items-center gap-1 flex-wrap min-w-0" style={{ ...baseStyle, minWidth: '200px' }}>
+            {task.labels?.map((label, index) => {
+              const extendedLabel = label as any; // Type assertion for extended properties
+              return extendedLabel.end && extendedLabel.names && extendedLabel.name ? (
+                <CustomNumberLabel
+                  key={`${label.id}-${index}`}
+                  labelList={extendedLabel.names}
+                  namesString={extendedLabel.name}
+                  isDarkMode={isDarkMode}
+                  color={label.color}
+                />
+              ) : (
+                <CustomColordLabel
+                  key={`${label.id}-${index}`}
+                  label={label}
+                  isDarkMode={isDarkMode}
+                />
+              );
+            })}
+            <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
           </div>
         );
 
@@ -315,16 +416,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'timeTracking':
         return (
-          <div className="flex items-center gap-1" style={baseStyle}>
-            <ClockIcon className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {task.timeTracking?.logged || 0}h
-            </span>
-            {task.timeTracking?.estimated && (
-              <span className="text-sm text-gray-400 dark:text-gray-500">
-                /{task.timeTracking.estimated}h
-              </span>
-            )}
+          <div style={baseStyle}>
+            <TaskTimeTracking taskId={task.id || ''} isDarkMode={isDarkMode} />
           </div>
         );
 
@@ -341,11 +434,62 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'startDate':
         return (
-          <div style={baseStyle}>
-            {formattedStartDate && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {formattedStartDate}
-              </span>
+          <div style={baseStyle} className="relative group">
+            {activeDatePicker === 'startDate' ? (
+              <div className="w-full relative">
+                <DatePicker
+                  {...taskManagementAntdConfig.datePickerDefaults}
+                  className="w-full bg-transparent border-none shadow-none"
+                  value={dateValues.start}
+                  onChange={date => handleDateChange(date, 'startDate')}
+                  placeholder={t('startDatePlaceholder')}
+                  allowClear={false}
+                  suffixIcon={null}
+                  open={true}
+                  onOpenChange={(open) => {
+                    if (!open) {
+                      setActiveDatePicker(null);
+                    }
+                  }}
+                  autoFocus
+                />
+                {/* Custom clear button */}
+                {dateValues.start && (
+                  <button
+                    onClick={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDateChange(null, 'startDate');
+                    }}
+                    className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full text-xs ${
+                      isDarkMode 
+                        ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title={t('clearStartDate')}
+                  >
+                    <CloseOutlined style={{ fontSize: '10px' }} />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div 
+                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDatePicker('startDate');
+                }}
+              >
+                {formattedStartDate ? (
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {formattedStartDate}
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-400 dark:text-gray-500">
+                    {t('setStartDate')}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         );
@@ -404,7 +548,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     task.phase,
     task.reporter,
     task.assignee_names,
-    task.timeTracking,
+
     task.progress,
     task.sub_tasks,
     taskDisplayName,
@@ -415,11 +559,14 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     formattedCompletedDate,
     formattedCreatedDate,
     formattedUpdatedDate,
-    labelsDisplay,
+    labelsAdapter,
     isDarkMode,
     convertedTask,
     isSelected,
     handleCheckboxChange,
+    activeDatePicker,
+    dateValues,
+    handleDateChange,
   ]);
 
   return (
