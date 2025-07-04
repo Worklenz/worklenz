@@ -59,5 +59,11 @@
     "convertToTask": "Convert to Task",
     "delete": "Delete",
     "searchByNameInputPlaceholder": "Search by name"
-  }
+  },
+  "setDueDate": "Set due date",
+  "setStartDate": "Set start date",
+  "clearDueDate": "Clear due date",
+  "clearStartDate": "Clear start date",
+  "dueDatePlaceholder": "Due Date",
+  "startDatePlaceholder": "Start Date"
 }

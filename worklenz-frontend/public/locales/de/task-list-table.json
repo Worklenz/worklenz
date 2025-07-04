@@ -59,5 +59,11 @@
     "convertToTask": "In Aufgabe umwandeln",
     "delete": "Löschen",
     "searchByNameInputPlaceholder": "Nach Namen suchen"
-  }
+  },
+  "setDueDate": "Fälligkeitsdatum festlegen",
+  "setStartDate": "Startdatum festlegen",
+  "clearDueDate": "Fälligkeitsdatum löschen",
+  "clearStartDate": "Startdatum löschen",
+  "dueDatePlaceholder": "Fälligkeitsdatum",
+  "startDatePlaceholder": "Startdatum"
 }

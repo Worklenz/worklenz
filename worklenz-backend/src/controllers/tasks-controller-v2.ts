@@ -1031,6 +1031,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       }
     }
 
+
+
     // Transform tasks with all necessary data preprocessing
     const transformStartTime = performance.now();
     const transformedTasks = tasks.map((task, index) => {
@@ -1076,7 +1078,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
           end: l.end,
           names: l.names
         })) || [],
-        dueDate: task.end_date,
+        dueDate: task.end_date || task.END_DATE,
+        startDate: task.start_date,
         timeTracking: {
           estimated: convertTimeValue(task.total_time),
           logged: convertTimeValue(task.time_spent),
