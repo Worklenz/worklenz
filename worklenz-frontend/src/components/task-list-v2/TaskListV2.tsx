@@ -1317,24 +1317,65 @@ const TaskListV2: React.FC = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col h-screen bg-white dark:bg-gray-900">
+      <div className="flex flex-col bg-white dark:bg-gray-900" style={{ height: '100vh', overflow: 'hidden' }}>
         {/* Task Filters */}
-        <div className="flex-none px-4 py-3">
+        <div className="flex-none px-4 py-3" style={{ height: '66px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
         </div>
 
-        {/* Table Container with synchronized horizontal scrolling */}
-        <div className="flex-1 overflow-x-auto" style={{ height: 'calc(100vh - 140px)' }}>
-          <div className="min-w-max flex flex-col h-full">
-            {/* Column Headers - Fixed at top */}
-            <div className="flex-none border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 sticky top-0 z-30 w-full">
-              <div className="bg-gray-50 dark:bg-gray-800 w-full min-w-max">
-                {columnHeaders}
+        {/* Table Container with fixed height and horizontal scroll */}
+        <div 
+          className="flex-1 overflow-auto border border-gray-200 dark:border-gray-700" 
+          style={{ 
+            height: '600px',
+            maxHeight: '600px'
+          }}
+        >
+          <div style={{ minWidth: 'max-content' }}>
+            {/* Column Headers - Sticky at top */}
+            <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center px-4 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
+                {visibleColumns.map(column => {
+                  const columnStyle: ColumnStyle = {
+                    width: column.width,
+                    flexShrink: 0,
+                    ...(column.id === 'labels' && column.width === 'auto'
+                      ? {
+                          minWidth: '200px',
+                          flexGrow: 1,
+                        }
+                      : {}),
+                  };
+
+                  return (
+                    <div
+                      key={column.id}
+                      className="text-sm font-semibold text-gray-600 dark:text-gray-300"
+                      style={columnStyle}
+                    >
+                      {column.id === 'dragHandle' ? (
+                        <span></span>
+                      ) : column.id === 'checkbox' ? (
+                        <span></span>
+                      ) : (column as any).isCustom ? (
+                        <CustomColumnHeader
+                          column={column}
+                          onSettingsClick={handleCustomColumnSettings}
+                        />
+                      ) : (
+                        t(column.label || '')
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-center" style={{ width: '60px', flexShrink: 0 }}>
+                  <AddCustomColumnButton />
+                </div>
               </div>
             </div>
 
-            {/* Task List - Scrollable content */}
-            <div className="flex-1">
+            {/* Task List Content */}
+            <div className="bg-white dark:bg-gray-900">
               <SortableContext
                 items={virtuosoItems
                   .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
@@ -1343,7 +1384,7 @@ const TaskListV2: React.FC = () => {
                 strategy={verticalListSortingStrategy}
               >
                 <GroupedVirtuoso
-                  style={{ height: 'calc(100vh - 150px)' }}
+                  style={{ height: '550px' }}
                   groupCounts={virtuosoGroupCounts}
                   groupContent={renderGroup}
                   itemContent={renderTask}
@@ -1386,25 +1427,27 @@ const TaskListV2: React.FC = () => {
           ) : null}
         </DragOverlay>
 
-        {/* Bulk Action Bar */}
+        {/* Bulk Action Bar - Positioned absolutely to not affect layout */}
         {selectedTaskIds.length > 0 && urlProjectId && (
-          <OptimizedBulkActionBar
-            selectedTaskIds={selectedTaskIds}
-            totalSelected={selectedTaskIds.length}
-            projectId={urlProjectId}
-            onClearSelection={handleClearSelection}
-            onBulkStatusChange={handleBulkStatusChange}
-            onBulkPriorityChange={handleBulkPriorityChange}
-            onBulkPhaseChange={handleBulkPhaseChange}
-            onBulkAssignToMe={handleBulkAssignToMe}
-            onBulkAssignMembers={handleBulkAssignMembers}
-            onBulkAddLabels={handleBulkAddLabels}
-            onBulkArchive={handleBulkArchive}
-            onBulkDelete={handleBulkDelete}
-            onBulkDuplicate={handleBulkDuplicate}
-            onBulkExport={handleBulkExport}
-            onBulkSetDueDate={handleBulkSetDueDate}
-          />
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+            <OptimizedBulkActionBar
+              selectedTaskIds={selectedTaskIds}
+              totalSelected={selectedTaskIds.length}
+              projectId={urlProjectId}
+              onClearSelection={handleClearSelection}
+              onBulkStatusChange={handleBulkStatusChange}
+              onBulkPriorityChange={handleBulkPriorityChange}
+              onBulkPhaseChange={handleBulkPhaseChange}
+              onBulkAssignToMe={handleBulkAssignToMe}
+              onBulkAssignMembers={handleBulkAssignMembers}
+              onBulkAddLabels={handleBulkAddLabels}
+              onBulkArchive={handleBulkArchive}
+              onBulkDelete={handleBulkDelete}
+              onBulkDuplicate={handleBulkDuplicate}
+              onBulkExport={handleBulkExport}
+              onBulkSetDueDate={handleBulkSetDueDate}
+            />
+          </div>
         )}
 
         {/* Custom Column Modal */}
