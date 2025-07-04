@@ -253,7 +253,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                             {showDatePicker && dropdownPosition && (
                                 <Portal>
                                     <div
-                                        className="w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-[9999] p-3"
+                                        className="w-52 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-[9999] p-1"
                                         style={{
                                             position: 'absolute',
                                             top: dropdownPosition.top,
@@ -262,26 +262,26 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                         ref={datePickerRef}
                                         onClick={e => e.stopPropagation()}
                                     >
-                                        <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center justify-between mb-0.5">
                                             <button
-                                                className="px-2 py-1 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                className="px-0.5 py-0.5 text-[10px] rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                                                 onClick={() => setCalendarMonth(new Date(year, month - 1, 1))}
                                                 type="button"
                                             >
                                                 &lt;
                                             </button>
-                                            <span className="font-semibold text-base text-gray-800 dark:text-gray-100">
+                                            <span className="font-semibold text-xs text-gray-800 dark:text-gray-100">
                                                 {calendarMonth.toLocaleString('default', { month: 'long' })} {year}
                                             </span>
                                             <button
-                                                className="px-2 py-1 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                className="px-0.5 py-0.5 text-[10px] rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                                                 onClick={() => setCalendarMonth(new Date(year, month + 1, 1))}
                                                 type="button"
                                             >
                                                 &gt;
                                             </button>
                                         </div>
-                                        <div className="grid grid-cols-7 gap-1 mb-2 text-xs text-center">
+                                        <div className="grid grid-cols-7 gap-0.5 mb-0.5 text-[10px] text-center">
                                             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
                                                 <div key={d} className="font-medium text-gray-500 dark:text-gray-400">{d}</div>
                                             ))}
@@ -294,7 +294,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                                             <button
                                                                 key={j}
                                                                 className={
-                                                                    'w-8 h-8 rounded-full flex items-center justify-center ' +
+                                                                    'w-5 h-5 rounded-full flex items-center justify-center text-[10px] ' +
                                                                     (isSelected
                                                                         ? 'bg-blue-600 text-white'
                                                                         : isToday
@@ -313,33 +313,33 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                                 </React.Fragment>
                                             ))}
                                         </div>
-                                        <div className="flex gap-2 mt-3">
+                                        <div className="flex gap-0.5 mt-1">
                                             <button
                                                 type="button"
-                                                className="flex-1 px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                                className="flex-1 px-0.5 py-0.5 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                                                 onClick={handleToday}
                                             >
                                                 {t('today')}
                                             </button>
                                             <button
                                                 type="button"
-                                                className="px-2 py-1 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                className="px-1 py-0.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                                                 onClick={handleClearDate}
                                             >
                                                 {t('clear')}
                                             </button>
                                         </div>
-                                        <div className="flex gap-2 mt-2">
+                                        <div className="flex gap-1 mt-1">
                                             <button
                                                 type="button"
-                                                className="flex-1 px-2 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                                className="flex-1 px-1 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                                 onClick={handleTomorrow}
                                             >
                                                 {t('tomorrow')}
                                             </button>
                                             <button
                                                 type="button"
-                                                className="flex-1 px-2 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                                className="flex-1 px-1 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                                 onClick={handleNextWeek}
                                             >
                                                 {t('nextWeek')}
