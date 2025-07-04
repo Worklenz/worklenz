@@ -214,7 +214,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                     onDrop={e => onTaskDrop(e, groupId, idx)}
                 />
             )}
-            <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block'}} >
+            <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block' }} >
                 <div
                     draggable
                     onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
@@ -246,10 +246,10 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                             ))}
                         </div>
                         <div className="task-content" style={{ display: 'flex', alignItems: 'center' }}>
-                            <div
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: task.priority_color || '#d9d9d9' }}
-                            />
+                            <span
+                                className="w-2 h-2 rounded-full inline-block"
+                                style={{ backgroundColor: themeMode === 'dark' ? (task.priority_color_dark || task.priority_color || '#d9d9d9') : (task.priority_color || '#d9d9d9') }}
+                            ></span>
                             <div className="task-title" style={{ marginLeft: 8 }}>{task.name}</div>
                         </div>
 
@@ -408,11 +408,11 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                             <path d="M6 5v10" strokeLinecap="round" />
                                         </svg>
                                         <span style={{
-                                        fontSize: 10,
-                                        color: '#888',
-                                        whiteSpace: 'nowrap',
-                                        display: 'inline-block',
-                                    }}>{task.sub_tasks_count ?? 0}</span>
+                                            fontSize: 10,
+                                            color: '#888',
+                                            whiteSpace: 'nowrap',
+                                            display: 'inline-block',
+                                        }}>{task.sub_tasks_count ?? 0}</span>
                                         {/* Caret icon */}
                                         {task.show_sub_tasks ? (
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 20 20">
@@ -439,8 +439,19 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                         {!task.sub_tasks_loading && Array.isArray(task.sub_tasks) && task.sub_tasks.length > 0 && (
                             <ul className="space-y-1">
                                 {task.sub_tasks.map(sub => (
-                                    <li key={sub.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                                    <li key={sub.id} onClick={e => handleCardClick(e, sub.id!)} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        {sub.priority_color || sub.priority_color_dark ? (
+                                            <span
+                                                className="w-2 h-2 rounded-full inline-block"
+                                                style={{ backgroundColor: themeMode === 'dark' ? (sub.priority_color_dark || sub.priority_color || '#d9d9d9') : (sub.priority_color || '#d9d9d9') }}
+                                            ></span>
+                                        ) : null}
                                         <span className="flex-1 truncate text-xs text-gray-800 dark:text-gray-100">{sub.name}</span>
+                                        <span
+                                            className="task-due-date ml-2 text-[10px] text-gray-500 dark:text-gray-400"
+                                        >
+                                            {sub.end_date ? format(new Date(sub.end_date), 'MMM d, yyyy') : ''}
+                                        </span>
                                         {sub.names && sub.names.length > 0 && (
                                             <AvatarGroup
                                                 members={sub.names}
