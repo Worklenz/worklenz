@@ -1,8 +1,8 @@
 import { Flex } from 'antd';
-import CustomColordLabel from '@/components/taskListCommon/labelsSelector/CustomColordLabel';
 import CustomNumberLabel from '@/components/taskListCommon/labelsSelector/CustomNumberLabel';
 import LabelsSelector from '@/components/taskListCommon/labelsSelector/LabelsSelector';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import { CustomColordLabel } from '@/components';
 
 interface TaskListLabelsCellProps {
   task: IProjectTask;

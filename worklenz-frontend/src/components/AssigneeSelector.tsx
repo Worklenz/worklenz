@@ -61,9 +61,16 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const updateDropdownPosition = useCallback(() => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const dropdownHeight = 280; // More accurate height: header(40) + max-height(192) + footer(40) + padding
+      
+      // Check if dropdown would go below viewport
+      const spaceBelow = viewportHeight - rect.bottom;
+      const shouldShowAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+      
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 2,
-        left: rect.left + window.scrollX,
+        top: shouldShowAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+        left: rect.left,
       });
     }
   }, []);
@@ -81,23 +88,11 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       }
     };
 
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
       if (isOpen) {
-        // Check if the button is still visible in the viewport
-        if (buttonRef.current) {
-          const rect = buttonRef.current.getBoundingClientRect();
-          const isVisible =
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= window.innerHeight &&
-            rect.right <= window.innerWidth;
-
-          if (isVisible) {
-            updateDropdownPosition();
-          } else {
-            // Hide dropdown if button is not visible
-            setIsOpen(false);
-          }
+        // Only close dropdown if scrolling happens outside the dropdown
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
         }
       }
     };
