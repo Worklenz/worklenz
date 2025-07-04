@@ -19,5 +19,7 @@
   "archive": "Archivieren",
 
   "newTaskNamePlaceholder": "Aufgabenname eingeben",
-  "newSubtaskNamePlaceholder": "Unteraufgabenname eingeben"
+  "newSubtaskNamePlaceholder": "Unteraufgabenname eingeben",
+  "untitledSection": "Unbenannter Abschnitt",
+  "unmapped": "Nicht zugeordnet"
 }
