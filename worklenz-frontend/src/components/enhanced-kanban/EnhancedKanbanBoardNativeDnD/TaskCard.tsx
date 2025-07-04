@@ -13,6 +13,8 @@ import { createPortal } from 'react-dom';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
+import { themeWiseColor } from '@/utils/themeWiseColor';
+import { toggleTaskExpansion, fetchBoardSubTasks } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 // Simple Portal component
 const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -54,7 +56,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
     const color = themeMode === 'dark' ? '#fff' : '#23272f';
     const dispatch = useAppDispatch();
     const { t } = useTranslation('kanban-board');
-    
+
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(
         task.end_date ? new Date(task.end_date) : null
@@ -67,6 +69,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         const d = selectedDate || new Date();
         return new Date(d.getFullYear(), d.getMonth(), 1);
     });
+    const [showSubtasks, setShowSubtasks] = useState(false);
 
     useEffect(() => {
         setSelectedDate(task.end_date ? new Date(task.end_date) : null);
@@ -157,6 +160,24 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         handleDateChange(nextWeek);
     }, [handleDateChange]);
 
+    const handleSubTaskExpand = useCallback(() => {
+        if (task && task.id && projectId) {
+            if (task.sub_tasks && task.sub_tasks.length > 0 && task.sub_tasks_count && task.sub_tasks_count > 0) {
+                dispatch(toggleTaskExpansion(task.id));
+            } else if (task.sub_tasks_count && task.sub_tasks_count > 0) {
+                dispatch(toggleTaskExpansion(task.id));
+                dispatch(fetchBoardSubTasks({ taskId: task.id, projectId }));
+            } else {
+                dispatch(toggleTaskExpansion(task.id));
+            }
+        }
+    }, [task, projectId, dispatch]);
+
+    const handleSubtaskButtonClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        handleSubTaskExpand();
+    }, [handleSubTaskExpand]);
+
     // Calendar rendering helpers
     const year = calendarMonth.getFullYear();
     const month = calendarMonth.getMonth();
@@ -193,177 +214,251 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                     onDrop={e => onTaskDrop(e, groupId, idx)}
                 />
             )}
-            <div
-                className="enhanced-kanban-task-card"
-                draggable
-                onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
-                onDragOver={e => onTaskDragOver(e, groupId, idx)}
-                onDrop={e => onTaskDrop(e, groupId, idx)}
-                style={{ background, color }}
-                onClick={e => handleCardClick(e, task.id!)}
-            >
-                <div className="task-content">
-                    <div className="task_labels" style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-                        {task.labels?.map(label => (
-                            <div
-                                key={label.id}
-                                className="task-label"
-                                style={{
-                                    backgroundColor: label.color_code,
-                                    display: 'inline-block',
-                                    borderRadius: '2px',
-                                    padding: '0px 4px',
-                                    color: themeMode === 'dark' ? '#181818' : '#fff',
-                                    fontSize: 10,
-                                    marginRight: 4,
-                                    whiteSpace: 'nowrap',
-                                    minWidth: 0
-                                }}
-                            >
-                                {label.name}
-                            </div>
-                        ))}
-                    </div>
-                    <div className="task-content" style={{ display: 'flex', alignItems: 'center' }}>
-                        <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: task.priority_color || '#d9d9d9' }}
-                        />
-                        <div className="task-title" style={{ marginLeft: 8 }}>{task.name}</div>
-                    </div>
+            <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block'}} >
+                <div
+                    draggable
+                    onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
+                    onDragOver={e => onTaskDragOver(e, groupId, idx)}
+                    onDrop={e => onTaskDrop(e, groupId, idx)}
 
-                    <div className="task-assignees-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <div className="relative">
+                    onClick={e => handleCardClick(e, task.id!)}
+                >
+                    <div className="task-content">
+                        <div className="task_labels" style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+                            {task.labels?.map(label => (
+                                <div
+                                    key={label.id}
+                                    className="task-label"
+                                    style={{
+                                        backgroundColor: label.color_code,
+                                        display: 'inline-block',
+                                        borderRadius: '2px',
+                                        padding: '0px 4px',
+                                        color: themeMode === 'dark' ? '#181818' : '#fff',
+                                        fontSize: 10,
+                                        marginRight: 4,
+                                        whiteSpace: 'nowrap',
+                                        minWidth: 0
+                                    }}
+                                >
+                                    {label.name}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="task-content" style={{ display: 'flex', alignItems: 'center' }}>
                             <div
-                                ref={dateButtonRef}
-                                className="task-due-date cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-1 py-0.5 transition-colors"
-                                style={{
-                                    fontSize: 10,
-                                    color: '#888',
-                                    marginRight: 8,
-                                    whiteSpace: 'nowrap',
-                                    display: 'inline-block',
-                                }}
-                                onClick={handleDateClick}
-                                title={t('clickToChangeDate')}
-                            >
-                                {isUpdating ? (
-                                    <div className="w-3 h-3 border border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                                ) : (
-                                    selectedDate ? format(selectedDate, 'MMM d, yyyy') : t('noDueDate')
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: task.priority_color || '#d9d9d9' }}
+                            />
+                            <div className="task-title" style={{ marginLeft: 8 }}>{task.name}</div>
+                        </div>
+
+                        <div className="task-assignees-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                            <div className="relative">
+                                <div
+                                    ref={dateButtonRef}
+                                    className="task-due-date cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-1 py-0.5 transition-colors"
+                                    style={{
+                                        fontSize: 10,
+                                        color: '#888',
+                                        marginRight: 8,
+                                        whiteSpace: 'nowrap',
+                                        display: 'inline-block',
+                                    }}
+                                    onClick={handleDateClick}
+                                    title={t('clickToChangeDate')}
+                                >
+                                    {isUpdating ? (
+                                        <div className="w-3 h-3 border border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                                    ) : (
+                                        selectedDate ? format(selectedDate, 'MMM d, yyyy') : t('noDueDate')
+                                    )}
+                                </div>
+                                {/* Custom Calendar Popup */}
+                                {showDatePicker && dropdownPosition && (
+                                    <Portal>
+                                        <div
+                                            className="w-52 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-[9999] p-1"
+                                            style={{
+                                                position: 'absolute',
+                                                top: dropdownPosition.top,
+                                                left: dropdownPosition.left,
+                                            }}
+                                            ref={datePickerRef}
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            <div className="flex items-center justify-between mb-0.5">
+                                                <button
+                                                    className="px-0.5 py-0.5 text-[10px] rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    onClick={() => setCalendarMonth(new Date(year, month - 1, 1))}
+                                                    type="button"
+                                                >
+                                                    &lt;
+                                                </button>
+                                                <span className="font-semibold text-xs text-gray-800 dark:text-gray-100">
+                                                    {calendarMonth.toLocaleString('default', { month: 'long' })} {year}
+                                                </span>
+                                                <button
+                                                    className="px-0.5 py-0.5 text-[10px] rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    onClick={() => setCalendarMonth(new Date(year, month + 1, 1))}
+                                                    type="button"
+                                                >
+                                                    &gt;
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-7 gap-0.5 mb-0.5 text-[10px] text-center">
+                                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+                                                    <div key={d} className="font-medium text-gray-500 dark:text-gray-400">{d}</div>
+                                                ))}
+                                                {weeks.map((week, i) => (
+                                                    <React.Fragment key={i}>
+                                                        {week.map((date, j) => {
+                                                            const isSelected = date && selectedDate && date.toDateString() === selectedDate.toDateString();
+                                                            const isToday = date && date.toDateString() === today.toDateString();
+                                                            return (
+                                                                <button
+                                                                    key={j}
+                                                                    className={
+                                                                        'w-5 h-5 rounded-full flex items-center justify-center text-[10px] ' +
+                                                                        (isSelected
+                                                                            ? 'bg-blue-600 text-white'
+                                                                            : isToday
+                                                                                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                                                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100')
+                                                                    }
+                                                                    style={{ outline: 'none' }}
+                                                                    disabled={!date}
+                                                                    onClick={() => date && handleDateChange(date)}
+                                                                    type="button"
+                                                                >
+                                                                    {date ? date.getDate() : ''}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </React.Fragment>
+                                                ))}
+                                            </div>
+                                            <div className="flex gap-0.5 mt-1">
+                                                <button
+                                                    type="button"
+                                                    className="flex-1 px-0.5 py-0.5 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                                    onClick={handleToday}
+                                                >
+                                                    {t('today')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="px-1 py-0.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                    onClick={handleClearDate}
+                                                >
+                                                    {t('clear')}
+                                                </button>
+                                            </div>
+                                            <div className="flex gap-1 mt-1">
+                                                <button
+                                                    type="button"
+                                                    className="flex-1 px-1 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                                    onClick={handleTomorrow}
+                                                >
+                                                    {t('tomorrow')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="flex-1 px-1 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                                    onClick={handleNextWeek}
+                                                >
+                                                    {t('nextWeek')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </Portal>
                                 )}
                             </div>
-                            {/* Custom Calendar Popup */}
-                            {showDatePicker && dropdownPosition && (
-                                <Portal>
-                                    <div
-                                        className="w-52 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-[9999] p-1"
+                            <div className="task-assignees" style={{ display: 'flex', alignItems: 'center' }}>
+                                <AvatarGroup
+                                    members={task.names || []}
+                                    maxCount={3}
+                                    isDarkMode={themeMode === 'dark'}
+                                    size={24}
+                                />
+                                <LazyAssigneeSelectorWrapper task={task} groupId={groupId} isDarkMode={themeMode === 'dark'} />
+                                {(task.sub_tasks_count ?? 0) > 0 && (
+                                    <button
+                                        type="button"
+                                        className={
+                                            "ml-2 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs font-medium transition-colors " +
+                                            (task.show_sub_tasks
+                                                ? "bg-gray-100 dark:bg-gray-800"
+                                                : "bg-white dark:bg-[#1e1e1e] hover:bg-gray-50 dark:hover:bg-gray-700")
+                                        }
                                         style={{
-                                            position: 'absolute',
-                                            top: dropdownPosition.top,
-                                            left: dropdownPosition.left,
+                                            backgroundColor: themeWiseColor('white', '#1e1e1e', themeMode),
+                                            border: "none",
+                                            outline: "none",
                                         }}
-                                        ref={datePickerRef}
-                                        onClick={e => e.stopPropagation()}
+                                        onClick={handleSubtaskButtonClick}
+                                        title={task.show_sub_tasks ? t('hideSubtasks') || 'Hide Subtasks' : t('showSubtasks') || 'Show Subtasks'}
                                     >
-                                        <div className="flex items-center justify-between mb-0.5">
-                                            <button
-                                                className="px-0.5 py-0.5 text-[10px] rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                onClick={() => setCalendarMonth(new Date(year, month - 1, 1))}
-                                                type="button"
-                                            >
-                                                &lt;
-                                            </button>
-                                            <span className="font-semibold text-xs text-gray-800 dark:text-gray-100">
-                                                {calendarMonth.toLocaleString('default', { month: 'long' })} {year}
-                                            </span>
-                                            <button
-                                                className="px-0.5 py-0.5 text-[10px] rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                onClick={() => setCalendarMonth(new Date(year, month + 1, 1))}
-                                                type="button"
-                                            >
-                                                &gt;
-                                            </button>
-                                        </div>
-                                        <div className="grid grid-cols-7 gap-0.5 mb-0.5 text-[10px] text-center">
-                                            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-                                                <div key={d} className="font-medium text-gray-500 dark:text-gray-400">{d}</div>
-                                            ))}
-                                            {weeks.map((week, i) => (
-                                                <React.Fragment key={i}>
-                                                    {week.map((date, j) => {
-                                                        const isSelected = date && selectedDate && date.toDateString() === selectedDate.toDateString();
-                                                        const isToday = date && date.toDateString() === today.toDateString();
-                                                        return (
-                                                            <button
-                                                                key={j}
-                                                                className={
-                                                                    'w-5 h-5 rounded-full flex items-center justify-center text-[10px] ' +
-                                                                    (isSelected
-                                                                        ? 'bg-blue-600 text-white'
-                                                                        : isToday
-                                                                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
-                                                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100')
-                                                                }
-                                                                style={{ outline: 'none' }}
-                                                                disabled={!date}
-                                                                onClick={() => date && handleDateChange(date)}
-                                                                type="button"
-                                                            >
-                                                                {date ? date.getDate() : ''}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </React.Fragment>
-                                            ))}
-                                        </div>
-                                        <div className="flex gap-0.5 mt-1">
-                                            <button
-                                                type="button"
-                                                className="flex-1 px-0.5 py-0.5 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                                onClick={handleToday}
-                                            >
-                                                {t('today')}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="px-1 py-0.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                                                onClick={handleClearDate}
-                                            >
-                                                {t('clear')}
-                                            </button>
-                                        </div>
-                                        <div className="flex gap-1 mt-1">
-                                            <button
-                                                type="button"
-                                                className="flex-1 px-1 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                                                onClick={handleTomorrow}
-                                            >
-                                                {t('tomorrow')}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="flex-1 px-1 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                                                onClick={handleNextWeek}
-                                            >
-                                                {t('nextWeek')}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </Portal>
-                            )}
-                        </div>
-                        <div className="task-assignees" style={{ display: 'flex', alignItems: 'center' }}>
-                            <AvatarGroup
-                                members={task.names || []}
-                                maxCount={3}
-                                isDarkMode={themeMode === 'dark'}
-                                size={24}
-                            />
-                            <LazyAssigneeSelectorWrapper task={task} groupId={groupId} isDarkMode={themeMode === 'dark'} />
+                                        {/* Fork/branch icon */}
+                                        <svg style={{ color: '#888' }} className="w-2 h-2" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 20 20">
+                                            <path d="M6 3v2a2 2 0 002 2h4a2 2 0 012 2v2" strokeLinecap="round" />
+                                            <circle cx="6" cy="3" r="2" fill="currentColor" />
+                                            <circle cx="16" cy="9" r="2" fill="currentColor" />
+                                            <circle cx="6" cy="17" r="2" fill="currentColor" />
+                                            <path d="M6 5v10" strokeLinecap="round" />
+                                        </svg>
+                                        <span style={{
+                                        fontSize: 10,
+                                        color: '#888',
+                                        whiteSpace: 'nowrap',
+                                        display: 'inline-block',
+                                    }}>{task.sub_tasks_count ?? 0}</span>
+                                        {/* Caret icon */}
+                                        {task.show_sub_tasks ? (
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 20 20">
+                                                <path d="M6 8l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 20 20">
+                                                <path d="M8 6l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
+                {task.show_sub_tasks && (
+                    <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
+                        {/* Loading state */}
+                        {task.sub_tasks_loading && (
+                            <div className="py-2 text-xs text-gray-400 dark:text-gray-500">Loading...</div>
+                        )}
+                        {/* Loaded subtasks */}
+                        {!task.sub_tasks_loading && Array.isArray(task.sub_tasks) && task.sub_tasks.length > 0 && (
+                            <ul className="space-y-1">
+                                {task.sub_tasks.map(sub => (
+                                    <li key={sub.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        <span className="flex-1 truncate text-xs text-gray-800 dark:text-gray-100">{sub.name}</span>
+                                        {sub.names && sub.names.length > 0 && (
+                                            <AvatarGroup
+                                                members={sub.names}
+                                                maxCount={2}
+                                                isDarkMode={themeMode === 'dark'}
+                                                size={18}
+                                            />
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {/* Empty state */}
+                        {!task.sub_tasks_loading && (!Array.isArray(task.sub_tasks) || task.sub_tasks.length === 0) && (
+                            <div className="py-2 text-xs text-gray-400 dark:text-gray-500">{t('noSubtasks', 'No subtasks')}</div>
+                        )}
+                    </div>
+                )}
             </div>
         </>
     );
