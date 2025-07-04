@@ -38,6 +38,7 @@
 
   "addTaskText": "Agregar tarea",
   "addSubTaskText": "Agregar subtarea",
+  "noTasksInGroup": "No hay tareas en este grupo",
   "addTaskInputPlaceholder": "Escribe tu tarea y presiona enter",
 
   "openButton": "Abrir",
@@ -65,5 +66,47 @@
   "clearDueDate": "Limpiar fecha de vencimiento",
   "clearStartDate": "Limpiar fecha de inicio",
   "dueDatePlaceholder": "Fecha de vencimiento",
-  "startDatePlaceholder": "Fecha de inicio"
+  "startDatePlaceholder": "Fecha de inicio",
+
+  "customColumns": {
+    "addCustomColumn": "Agregar una columna personalizada",
+    "customColumnHeader": "Columna Personalizada",
+    "customColumnSettings": "Configuración de columna personalizada",
+    "noCustomValue": "Sin valor",
+    "peopleField": "Campo de personas",
+    "noDate": "Sin fecha",
+    "unsupportedField": "Tipo de campo no compatible",
+    
+    "modal": {
+      "addFieldTitle": "Agregar campo",
+      "editFieldTitle": "Editar campo",
+      "fieldTitle": "Título del campo",
+      "fieldTitleRequired": "El título del campo es obligatorio",
+      "columnTitlePlaceholder": "Título de la columna",
+      "type": "Tipo",
+      "deleteConfirmTitle": "¿Está seguro de que desea eliminar esta columna personalizada?",
+      "deleteConfirmDescription": "Esta acción no se puede deshacer. Todos los datos asociados con esta columna se eliminarán permanentemente.",
+      "deleteButton": "Eliminar",
+      "cancelButton": "Cancelar",
+      "createButton": "Crear",
+      "updateButton": "Actualizar",
+      "createSuccessMessage": "Columna personalizada creada exitosamente",
+      "updateSuccessMessage": "Columna personalizada actualizada exitosamente",
+      "deleteSuccessMessage": "Columna personalizada eliminada exitosamente",
+      "deleteErrorMessage": "Error al eliminar la columna personalizada",
+      "createErrorMessage": "Error al crear la columna personalizada",
+      "updateErrorMessage": "Error al actualizar la columna personalizada"
+    },
+    
+    "fieldTypes": {
+      "people": "Personas",
+      "number": "Número",
+      "date": "Fecha",
+      "selection": "Selección",
+      "checkbox": "Casilla de verificación",
+      "labels": "Etiquetas",
+      "key": "Clave",
+      "formula": "Fórmula"
+    }
+  }
 }

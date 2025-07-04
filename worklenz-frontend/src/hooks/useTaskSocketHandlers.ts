@@ -481,18 +481,18 @@ export const useTaskSocketHandlers = () => {
             // Find target group based on new phase value
             let targetGroup: any = null;
 
-            if (newPhaseValue) {
+            if (newPhaseValue && newPhaseValue.trim() !== '') {
               // Find group by phase name
               targetGroup = groups.find(
                 group => group.groupValue === newPhaseValue || group.title === newPhaseValue
               );
             } else {
-              // Find "No Phase" or similar group
+              // Find "Unmapped" group for tasks without a phase or with default phase
               targetGroup = groups.find(
                 group =>
-                  group.groupValue === '' ||
-                  group.title.toLowerCase().includes('no phase') ||
-                  group.title.toLowerCase().includes('unassigned')
+                  group.groupValue === 'Unmapped' ||
+                  group.title === 'Unmapped' ||
+                  group.title.toLowerCase().includes('unmapped')
               );
             }
 

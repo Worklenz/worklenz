@@ -19,6 +19,7 @@ interface TaskRowWithSubtasksProps {
     width: string;
     isSticky?: boolean;
   }>;
+  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
 }
 
 interface AddSubtaskRowProps {
@@ -140,7 +141,8 @@ AddSubtaskRow.displayName = 'AddSubtaskRow';
 const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({ 
   taskId, 
   projectId, 
-  visibleColumns 
+  visibleColumns,
+  updateTaskCustomColumnValue
 }) => {
   const task = useAppSelector(state => selectTaskById(state, taskId));
   const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
@@ -162,6 +164,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
         taskId={taskId}
         projectId={projectId}
         visibleColumns={visibleColumns}
+        updateTaskCustomColumnValue={updateTaskCustomColumnValue}
       />
       
       {/* Subtasks and add subtask row when expanded */}
@@ -182,6 +185,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
                 projectId={projectId}
                 visibleColumns={visibleColumns}
                 isSubtask={true}
+                updateTaskCustomColumnValue={updateTaskCustomColumnValue}
               />
             </div>
           ))}

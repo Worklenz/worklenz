@@ -100,6 +100,7 @@ export {
   RetweetOutlined,
   DoubleRightOutlined,
   UserAddOutlined,
+  ArrowsAltOutlined,
 } from '@ant-design/icons';
 
 // Re-export all components with React

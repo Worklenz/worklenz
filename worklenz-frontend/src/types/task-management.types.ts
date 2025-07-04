@@ -1,5 +1,6 @@
 import { InlineMember } from './teamMembers/inlineMember.types';
 import { EntityState } from '@reduxjs/toolkit';
+import { ITaskListColumn } from './tasks/taskList.types';
 
 export interface Task {
   id: string;
@@ -25,12 +26,13 @@ export interface Task {
   sub_tasks_count?: number;
   show_sub_tasks?: boolean;
   parent_task_id?: string;
+  is_sub_task?: boolean; // Add this property
   progress?: number;
   weight?: number;
   color?: string;
   statusColor?: string;
   priorityColor?: string;
-  labels?: { id: string; name: string; color: string }[];
+  labels?: { id: string; name: string; color: string; end?: boolean; names?: string[] }[];
   comments_count?: number;
   attachments_count?: number;
   has_dependencies?: boolean;
@@ -97,6 +99,9 @@ export interface TaskManagementState {
   selectedPriorities: string[];
   search: string;
   loadingSubtasks: Record<string, boolean>; // Track loading state for individual tasks
+  loadingColumns: boolean;
+  columns: ITaskListColumn[];
+  customColumns: ITaskListColumn[];
 }
 
 export interface TaskGroupsState {

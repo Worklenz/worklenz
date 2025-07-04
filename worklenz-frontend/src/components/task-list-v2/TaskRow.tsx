@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined, ArrowsAltOutlined } from '@ant-design/icons';
 import { Checkbox, DatePicker } from 'antd';
 import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
@@ -35,6 +35,7 @@ interface TaskRowProps {
     isSticky?: boolean;
   }>;
   isSubtask?: boolean;
+  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
 }
 
 interface TaskLabelsCellProps {
@@ -91,7 +92,7 @@ const formatDate = (dateString: string): string => {
   }
 };
 
-const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumns, isSubtask = false }) => {
+const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumns, isSubtask = false, updateTaskCustomColumnValue }) => {
   const dispatch = useAppDispatch();
   const task = useAppSelector(state => selectTaskById(state, taskId));
   const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
@@ -277,7 +278,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
       case 'taskKey':
         return (
           <div className="flex items-center" style={baseStyle}>
-            <span className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+            <span className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap badge badge-primary">
               {task.task_key || 'N/A'}
             </span>
           </div>
@@ -294,21 +295,21 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
               {!isSubtask && (
                 <button
                   onClick={handleToggleExpansion}
-                  className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-2 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${
+                  className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-2 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out ${
                     task.sub_tasks_count && task.sub_tasks_count > 0 
                       ? 'opacity-100' 
                       : 'opacity-0 group-hover:opacity-100'
                   }`}
                 >
-                  {task.sub_tasks_count && task.sub_tasks_count > 0 ? (
-                    task.show_sub_tasks ? (
-                      <DownOutlined className="text-gray-600 dark:text-gray-400" />
-                    ) : (
-                      <RightOutlined className="text-gray-600 dark:text-gray-400" />
-                    )
-                  ) : (
+                  <div 
+                    className="transition-transform duration-300 ease-out"
+                    style={{ 
+                      transform: task.show_sub_tasks ? 'rotate(90deg)' : 'rotate(0deg)',
+                      transformOrigin: 'center'
+                    }}
+                  >
                     <RightOutlined className="text-gray-600 dark:text-gray-400" />
-                  )}
+                  </div>
                 </button>
               )}
               
@@ -333,13 +334,14 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
             </div>
             
             <button
-              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2 px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border-none bg-transparent cursor-pointer"
+              className="opacity-0 group-hover:opacity-100 transition-all duration-200 ml-2 mr-2 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1"
               onClick={(e) => {
                 e.stopPropagation();
                 dispatch(setSelectedTaskId(task.id));
                 dispatch(setShowTaskDrawer(true));
               }}
             >
+              <ArrowsAltOutlined />
               {t('openButton')}
             </button>
           </div>
@@ -642,9 +644,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         isDragging ? 'shadow-lg border border-blue-300' : ''
       }`}
     >
-      {visibleColumns.map((column, index) =>
-        renderColumn(column.id, column.width, column.isSticky, index)
-      )}
+      {visibleColumns.map((column, index) => (
+        <React.Fragment key={column.id}>
+          {renderColumn(column.id, column.width, column.isSticky, index)}
+        </React.Fragment>
+      ))}
     </div>
   );
 });
