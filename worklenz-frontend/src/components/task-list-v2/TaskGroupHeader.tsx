@@ -79,7 +79,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
   return (
     <div
       ref={setNodeRef}
-      className={`inline-flex w-max items-center px-4 py-2 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-b border-gray-200 dark:border-gray-700 rounded-t-md ${
+      className={`inline-flex w-max items-center px-4 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-b border-gray-200 dark:border-gray-700 rounded-t-md ${
         isOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
       }`}
       style={{
@@ -87,7 +87,10 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
         color: headerTextColor,
         position: 'sticky',
         top: 0,
-        zIndex: 20 // Higher than sticky columns (zIndex: 1) and column headers (zIndex: 2)
+        zIndex: 25, // Higher than task rows but lower than column headers (z-30)
+        height: '36px',
+        minHeight: '36px',
+        maxHeight: '36px'
       }}
       onClick={onToggle}
     >
@@ -95,18 +98,22 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
       <div style={{ width: '32px' }} className="flex items-center justify-center">
         {/* Chevron button */}
         <button 
-          className="p-1 rounded-md hover:bg-opacity-20 transition-colors"
-          style={{ backgroundColor: headerBackgroundColor, color: headerTextColor, borderColor: headerTextColor, border: '1px solid' }}
+          className="p-1 rounded-md hover:shadow-lg hover:scale-105 transition-all duration-300 ease-out"
+          style={{ backgroundColor: 'transparent', color: headerTextColor }}
           onClick={(e) => {
             e.stopPropagation();
             onToggle();
           }}
         >
-          {isCollapsed ? (
-            <ChevronRightIcon className="h-4 w-4" style={{ color: headerTextColor }} />
-          ) : (
-            <ChevronDownIcon className="h-4 w-4" style={{ color: headerTextColor }} />
-          )}
+          <div 
+            className="transition-transform duration-300 ease-out"
+            style={{ 
+              transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)',
+              transformOrigin: 'center'
+            }}
+          >
+            <ChevronRightIcon className="h-3.5 w-3.5" style={{ color: headerTextColor }} />
+          </div>
         </button>
       </div>
 
@@ -124,12 +131,12 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
       </div>
 
       {/* Group indicator and name */}
-      <div className="ml-2 flex items-center gap-3 flex-1">
+      <div className="ml-1 flex items-center gap-2 flex-1">
         {/* Color indicator (removed as full header is colored) */}
         
         {/* Group name and count */}
         <div className="flex items-center flex-1">
-          <span className="text-sm font-medium">
+          <span className="text-sm font-semibold">
             {group.name} ({group.count})
           </span>
         </div>

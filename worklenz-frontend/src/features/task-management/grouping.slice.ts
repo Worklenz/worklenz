@@ -137,6 +137,14 @@ export const selectTaskGroups = createSelector(
             tasks.map(task => {
               if (currentGrouping === 'status') return task.status;
               if (currentGrouping === 'priority') return task.priority;
+              if (currentGrouping === 'phase') {
+                // For phase grouping, use 'Unmapped' for tasks without a phase
+                if (!task.phase || task.phase.trim() === '') {
+                  return 'Unmapped';
+                } else {
+                  return task.phase;
+                }
+              }
               return task.phase;
             })
           ));
@@ -148,6 +156,13 @@ export const selectTaskGroups = createSelector(
         .filter(task => {
           if (currentGrouping === 'status') return task.status === value;
           if (currentGrouping === 'priority') return task.priority === value;
+          if (currentGrouping === 'phase') {
+            if (value === 'Unmapped') {
+              return !task.phase || task.phase.trim() === '';
+            } else {
+              return task.phase === value;
+            }
+          }
           return task.phase === value;
         })
         .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -178,9 +193,20 @@ export const selectTasksByCurrentGrouping = createSelector(
 
     tasks.forEach(task => {
       let key: string;
-      if (currentGrouping === 'status') key = task.status;
-      else if (currentGrouping === 'priority') key = task.priority;
-      else key = task.phase || 'Development';
+      if (currentGrouping === 'status') {
+        key = task.status;
+      } else if (currentGrouping === 'priority') {
+        key = task.priority;
+      } else if (currentGrouping === 'phase') {
+        // For phase grouping, use 'Unmapped' for tasks without a phase
+        if (!task.phase || task.phase.trim() === '') {
+          key = 'Unmapped';
+        } else {
+          key = task.phase;
+        }
+      } else {
+        key = task.phase || 'Development';
+      }
 
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(task);
@@ -214,6 +240,7 @@ const getGroupColor = (groupType: GroupingType, value: string): string => {
       Development: '#1890ff',
       Testing: '#faad14',
       Deployment: '#52c41a',
+      Unmapped: '#fbc84c69',
     },
   };
 

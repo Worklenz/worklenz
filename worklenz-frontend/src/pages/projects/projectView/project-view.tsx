@@ -351,20 +351,12 @@ const ProjectView = React.memo(() => {
         activeKey={activeTab}
         onChange={handleTabChange}
         items={tabMenuItems}
-        tabBarStyle={{
-          paddingInline: 0,
-          marginBottom: 8,
-          background: 'transparent',
-          minHeight: '36px',
-        }}
-        tabBarGutter={0}
-        destroyInactiveTabPane={true}
+        destroyOnHidden={true}
         animated={{
           inkBar: true,
           tabPane: false,
         }}
         size="small"
-        type="card"
       />
 
       {portalElements}

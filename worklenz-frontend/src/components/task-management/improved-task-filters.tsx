@@ -443,11 +443,11 @@ const FilterDropdown: React.FC<{
           ${
             selectedCount > 0
               ? isDarkMode
-                ? 'bg-blue-600 text-white border-blue-500'
+                ? 'bg-gray-600 text-white border-gray-500'
                 : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold'
               : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={isOpen}
@@ -456,7 +456,7 @@ const FilterDropdown: React.FC<{
         <IconComponent className="w-3.5 h-3.5" />
         <span>{section.label}</span>
         {selectedCount > 0 && (
-          <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-blue-500 rounded-full">
+          <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-gray-500 rounded-full">
             {selectedCount}
           </span>
         )}
@@ -518,7 +518,7 @@ const FilterDropdown: React.FC<{
                         ${
                           isSelected
                             ? isDarkMode
-                              ? 'bg-blue-600 text-white'
+                              ? 'bg-gray-600 text-white'
                               : 'bg-blue-50 text-blue-800 font-semibold'
                             : `${themeClasses.optionText} ${themeClasses.optionHover}`
                         }
@@ -530,7 +530,7 @@ const FilterDropdown: React.FC<{
                         flex items-center justify-center w-3.5 h-3.5 border rounded
                         ${
                           isSelected
-                            ? 'bg-blue-500 border-blue-500 text-white'
+                            ? 'bg-gray-600 border-gray-800 text-white'
                             : 'border-gray-300 dark:border-gray-600'
                         }
                       `}
@@ -730,7 +730,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
           ${
             visibleCount > 0
               ? isDarkMode
-                ? 'bg-blue-600 text-white border-blue-500'
+                ? 'bg-gray-600 text-white border-gray-500'
                 : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold'
               : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
@@ -743,7 +743,9 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
         <EyeOutlined className="w-3.5 h-3.5" />
         <span>Fields</span>
         {visibleCount > 0 && (
-          <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-blue-500 rounded-full">
+          <span
+            className={`inline-flex items-center justify-center w-4 h-4 text-xs font-bold ${isDarkMode ? 'text-white bg-gray-500' : 'text-gray-800 bg-gray-300'} rounded-full`}
+          >
             {visibleCount}
           </span>
         )}
@@ -778,8 +780,8 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                         ${
                           isSelected
                             ? isDarkMode
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-blue-50 text-blue-800 font-semibold'
+                              ? 'text-white font-semibold'
+                              : 'text-gray-800 font-semibold'
                             : `${themeClasses.optionText} ${themeClasses.optionHover}`
                         }
                       `}
@@ -790,7 +792,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                         flex items-center justify-center w-3.5 h-3.5 border rounded
                         ${
                           isSelected
-                            ? 'bg-blue-500 border-blue-500 text-white'
+                            ? 'bg-gray-600 border-gray-600 text-white'
                             : 'border-gray-300 dark:border-gray-600'
                         }
                       `}

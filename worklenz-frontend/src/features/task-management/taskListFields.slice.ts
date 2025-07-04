@@ -59,13 +59,21 @@ const taskListFieldsSlice = createSlice({
       const field = state.find(f => f.key === action.payload);
       if (field) {
         field.visible = !field.visible;
+        // Save to localStorage immediately after toggle
+        saveFields(state);
       }
     },
     setFields(state, action: PayloadAction<TaskListField[]>) {
-      return action.payload;
+      const newState = action.payload;
+      // Save to localStorage when fields are set
+      saveFields(newState);
+      return newState;
     },
     resetFields() {
-      return DEFAULT_FIELDS;
+      const defaultFields = DEFAULT_FIELDS;
+      // Save to localStorage when fields are reset
+      saveFields(defaultFields);
+      return defaultFields;
     },
   },
 });

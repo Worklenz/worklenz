@@ -39,6 +39,7 @@
   "addTaskText": "Add Task",
   "addSubTaskText": "Add Sub Task",
   "addTaskInputPlaceholder": "Type your task and hit enter",
+  "noTasksInGroup": "No tasks in this group",
 
   "openButton": "Open",
   "okButton": "Ok",
@@ -65,5 +66,47 @@
   "clearDueDate": "Clear due date",
   "clearStartDate": "Clear start date",
   "dueDatePlaceholder": "Due Date",
-  "startDatePlaceholder": "Start Date"
+  "startDatePlaceholder": "Start Date",
+
+  "customColumns": {
+    "addCustomColumn": "Add a custom column",
+    "customColumnHeader": "Custom Column",
+    "customColumnSettings": "Custom column settings",
+    "noCustomValue": "No value",
+    "peopleField": "People field",
+    "noDate": "No date",
+    "unsupportedField": "Unsupported field type",
+    
+    "modal": {
+      "addFieldTitle": "Add field",
+      "editFieldTitle": "Edit field",
+      "fieldTitle": "Field title",
+      "fieldTitleRequired": "Field title is required",
+      "columnTitlePlaceholder": "Column title",
+      "type": "Type",
+      "deleteConfirmTitle": "Are you sure you want to delete this custom column?",
+      "deleteConfirmDescription": "This action cannot be undone. All data associated with this column will be permanently deleted.",
+      "deleteButton": "Delete",
+      "cancelButton": "Cancel",
+      "createButton": "Create",
+      "updateButton": "Update",
+      "createSuccessMessage": "Custom column created successfully",
+      "updateSuccessMessage": "Custom column updated successfully",
+      "deleteSuccessMessage": "Custom column deleted successfully",
+      "deleteErrorMessage": "Failed to delete custom column",
+      "createErrorMessage": "Failed to create custom column",
+      "updateErrorMessage": "Failed to update custom column"
+    },
+    
+    "fieldTypes": {
+      "people": "People",
+      "number": "Number",
+      "date": "Date",
+      "selection": "Selection",
+      "checkbox": "Checkbox",
+      "labels": "Labels",
+      "key": "Key",
+      "formula": "Formula"
+    }
+  }
 }

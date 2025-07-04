@@ -39,6 +39,7 @@
   "addTaskText": "Aufgabe hinzufügen",
   "addSubTaskText": "+ Unteraufgabe hinzufügen",
   "addTaskInputPlaceholder": "Aufgabe eingeben und Enter drücken",
+  "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
 
   "openButton": "Öffnen",
   "okButton": "OK",
@@ -65,5 +66,47 @@
   "clearDueDate": "Fälligkeitsdatum löschen",
   "clearStartDate": "Startdatum löschen",
   "dueDatePlaceholder": "Fälligkeitsdatum",
-  "startDatePlaceholder": "Startdatum"
+  "startDatePlaceholder": "Startdatum",
+
+  "customColumns": {
+    "addCustomColumn": "Benutzerdefinierte Spalte hinzufügen",
+    "customColumnHeader": "Benutzerdefinierte Spalte",
+    "customColumnSettings": "Einstellungen für benutzerdefinierte Spalte",
+    "noCustomValue": "Kein Wert",
+    "peopleField": "Personenfeld",
+    "noDate": "Kein Datum",
+    "unsupportedField": "Nicht unterstützter Feldtyp",
+    
+    "modal": {
+      "addFieldTitle": "Feld hinzufügen",
+      "editFieldTitle": "Feld bearbeiten",
+      "fieldTitle": "Feldtitel",
+      "fieldTitleRequired": "Feldtitel ist erforderlich",
+      "columnTitlePlaceholder": "Spaltentitel",
+      "type": "Typ",
+      "deleteConfirmTitle": "Sind Sie sicher, dass Sie diese benutzerdefinierte Spalte löschen möchten?",
+      "deleteConfirmDescription": "Diese Aktion kann nicht rückgängig gemacht werden. Alle mit dieser Spalte verbundenen Daten werden dauerhaft gelöscht.",
+      "deleteButton": "Löschen",
+      "cancelButton": "Abbrechen",
+      "createButton": "Erstellen",
+      "updateButton": "Aktualisieren",
+      "createSuccessMessage": "Benutzerdefinierte Spalte erfolgreich erstellt",
+      "updateSuccessMessage": "Benutzerdefinierte Spalte erfolgreich aktualisiert",
+      "deleteSuccessMessage": "Benutzerdefinierte Spalte erfolgreich gelöscht",
+      "deleteErrorMessage": "Fehler beim Löschen der benutzerdefinierten Spalte",
+      "createErrorMessage": "Fehler beim Erstellen der benutzerdefinierten Spalte",
+      "updateErrorMessage": "Fehler beim Aktualisieren der benutzerdefinierten Spalte"
+    },
+    
+    "fieldTypes": {
+      "people": "Personen",
+      "number": "Zahl",
+      "date": "Datum",
+      "selection": "Auswahl",
+      "checkbox": "Kontrollkästchen",
+      "labels": "Etiketten",
+      "key": "Schlüssel",
+      "formula": "Formel"
+    }
+  }
 }
