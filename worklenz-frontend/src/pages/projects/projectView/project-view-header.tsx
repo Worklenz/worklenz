@@ -22,8 +22,17 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
-import { setProject, setImportTaskTemplateDrawerOpen, setRefreshTimestamp } from '@features/project/project.slice';
-import { addTask, fetchTaskGroups, fetchTaskListColumns, IGroupBy } from '@features/tasks/tasks.slice';
+import {
+  setProject,
+  setImportTaskTemplateDrawerOpen,
+  setRefreshTimestamp,
+} from '@features/project/project.slice';
+import {
+  addTask,
+  fetchTaskGroups,
+  fetchTaskListColumns,
+  IGroupBy,
+} from '@features/tasks/tasks.slice';
 import ProjectStatusIcon from '@/components/common/project-status-icon/project-status-icon';
 import { formatDate } from '@/utils/timeUtils';
 import { toggleSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
@@ -49,6 +58,14 @@ import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 
+import {
+  evt_project_task_create,
+  evt_project_refresh_click,
+  evt_project_settings_click,
+  evt_project_import_tasks_click,
+} from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+
 const ProjectViewHeader = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('project-view/project-view-header');
@@ -56,24 +73,29 @@ const ProjectViewHeader = () => {
   const currentSession = useAuthService().getCurrentSession();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
+  const { trackMixpanelEvent } = useMixpanelTracking();
   const { tab } = useTabSearchParam();
 
   const { socket } = useSocket();
 
-  const {
-    project: selectedProject,
-    projectId,
-  } = useAppSelector(state => state.projectReducer);
+  const { project: selectedProject, projectId } = useAppSelector(state => state.projectReducer);
   const { loadingGroups, groupBy } = useAppSelector(state => state.taskReducer);
 
   const [creatingTask, setCreatingTask] = useState(false);
 
   const handleRefresh = () => {
     if (!projectId) return;
+
+    trackMixpanelEvent(evt_project_refresh_click, {
+      project_id: projectId,
+      tab: tab,
+      project_name: selectedProject?.name,
+    });
+
     switch (tab) {
       case 'tasks-list':
         dispatch(fetchTaskListColumns(projectId));
-        dispatch(fetchPhasesByProjectId(projectId))
+        dispatch(fetchPhasesByProjectId(projectId));
         dispatch(fetchTaskGroups(projectId));
         break;
       case 'board':
@@ -113,6 +135,11 @@ const ProjectViewHeader = () => {
 
   const handleSettingsClick = () => {
     if (selectedProject?.id) {
+      trackMixpanelEvent(evt_project_settings_click, {
+        project_id: selectedProject.id,
+        project_name: selectedProject.name,
+      });
+
       dispatch(setProjectId(selectedProject.id));
       dispatch(fetchProjectData(selectedProject.id));
       dispatch(toggleProjectDrawer());
@@ -122,6 +149,14 @@ const ProjectViewHeader = () => {
   const handleCreateTask = () => {
     try {
       setCreatingTask(true);
+
+      trackMixpanelEvent(evt_project_task_create, {
+        project_id: selectedProject?.id,
+        project_name: selectedProject?.name,
+        reporter_id: currentSession?.id,
+        team_id: currentSession?.team_id,
+        creation_method: 'quick_create',
+      });
 
       const body: ITaskCreateRequest = {
         name: DEFAULT_TASK_NAME,
@@ -155,6 +190,11 @@ const ProjectViewHeader = () => {
   };
 
   const handleImportTaskTemplate = () => {
+    trackMixpanelEvent(evt_project_import_tasks_click, {
+      project_id: selectedProject?.id,
+      project_name: selectedProject?.name,
+    });
+
     dispatch(setImportTaskTemplateDrawerOpen(true));
   };
 
@@ -221,7 +261,7 @@ const ProjectViewHeader = () => {
         />
       </Tooltip>
 
-      {(isOwnerOrAdmin) && (
+      {isOwnerOrAdmin && (
         <Tooltip title="Save as template">
           <Button
             shape="circle"
@@ -298,10 +338,9 @@ const ProjectViewHeader = () => {
         style={{ paddingInline: 0, marginBlockEnd: 12 }}
         extra={renderHeaderActions()}
       />
-      {createPortal(<ProjectDrawer onClose={() => { }} />, document.body, 'project-drawer')}
+      {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
-
     </>
   );
 };

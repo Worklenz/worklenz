@@ -27,6 +27,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import JobTitleDrawer from './job-titles-drawer';
 import logger from '@/utils/errorLogger';
+import {
+  evt_settings_job_titles_visit,
+  evt_settings_job_titles_create,
+} from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 interface PaginationType {
   current: number;
@@ -42,6 +47,7 @@ const JobTitlesSettings = () => {
   const { t } = useTranslation('settings/job-titles');
   const dispatch = useAppDispatch();
   useDocumentTitle('Manage Job Titles');
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -74,6 +80,10 @@ const JobTitlesSettings = () => {
   }, [pagination.current, pagination.pageSize, pagination.field, pagination.order, searchQuery]);
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_job_titles_visit);
+  }, [trackMixpanelEvent]);
+
+  useEffect(() => {
     getJobTitles();
   }, [getJobTitles]);
 
@@ -83,6 +93,8 @@ const JobTitlesSettings = () => {
   };
 
   const handleCreateClick = () => {
+    trackMixpanelEvent(evt_settings_job_titles_create);
+
     setSelectedJobId(null);
     setShowDrawer(true);
   };

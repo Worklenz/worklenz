@@ -37,11 +37,15 @@ import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { colors } from '@/styles/colors';
 
+import { evt_people_refresh_click, evt_people_delete, evt_settings_teams_visit } from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+
 const TeamMembersSettings = () => {
   const { t } = useTranslation('settings/team-members');
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers); // Listen to refresh flag
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -96,6 +100,11 @@ const TeamMembersSettings = () => {
       setIsLoading(true);
       const res = await teamMembersApiService.delete(record.id);
       if (res.done) {
+        trackMixpanelEvent(evt_people_delete, {
+          member_id: record.id,
+          member_name: record.name,
+        });
+
         await getTeamMembers();
       }
     } finally {
@@ -114,6 +123,9 @@ const TeamMembersSettings = () => {
 
   const handleRefresh = useCallback(() => {
     setIsLoading(true);
+
+    trackMixpanelEvent(evt_people_refresh_click);
+
     getTeamMembers().finally(() => setIsLoading(false));
   }, [getTeamMembers]);
 
@@ -152,6 +164,8 @@ const TeamMembersSettings = () => {
   }, [refreshTeamMembers, handleRefresh]);
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_teams_visit);
+    
     getTeamMembers();
   }, [getTeamMembers]);
 
@@ -340,10 +354,7 @@ const TeamMembersSettings = () => {
         />
       </Card>
       {createPortal(
-        <UpdateMemberDrawer
-          selectedMemberId={selectedMemberId}
-          onRoleUpdate={handleRoleUpdate}
-        />,
+        <UpdateMemberDrawer selectedMemberId={selectedMemberId} onRoleUpdate={handleRoleUpdate} />,
         document.body
       )}
     </div>

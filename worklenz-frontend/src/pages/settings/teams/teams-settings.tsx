@@ -11,6 +11,9 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { ITeamGetResponse } from '@/types/teams/team.type';
 
+import { evt_settings_teams_visit } from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+
 const TeamsSettings = () => {
   useDocumentTitle('Teams');
 
@@ -18,8 +21,11 @@ const TeamsSettings = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { teamsList } = useAppSelector(state => state.teamReducer);
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_teams_visit);
+    
     dispatch(fetchTeams());
   }, [dispatch]);
 

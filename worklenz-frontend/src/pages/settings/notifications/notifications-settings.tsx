@@ -6,16 +6,23 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { INotificationSettings } from '@/types/settings/notifications.types';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import logger from '@/utils/errorLogger';
+import { evt_settings_notifications_visit } from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const NotificationsSettings = () => {
   const { t } = useTranslation('settings/notifications');
   const [form] = Form.useForm();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const [notificationsSettings, setNotificationsSettings] = useState<INotificationSettings>({});
   const [isLoading, setIsLoading] = useState(false);
 
   useDocumentTitle(t('title'));
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_settings_notifications_visit);
+  }, [trackMixpanelEvent]);
 
   const fetchNotificationsSettings = async () => {
     try {

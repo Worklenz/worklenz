@@ -12,11 +12,14 @@ import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSli
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { Empty } from 'antd';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { evt_project_task_list_visit } from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const ProjectViewTaskList = () => {
   const dispatch = useAppDispatch();
   const { projectView } = useTabSearchParam();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { taskGroups, loadingGroups, groupBy, archived, fields, search } = useAppSelector(
@@ -38,6 +41,8 @@ const ProjectViewTaskList = () => {
   }, [projectView, searchParams, setSearchParams]);
 
   useEffect(() => {
+    trackMixpanelEvent(evt_project_task_list_visit);
+
     if (projectId && groupBy) {
       if (!loadingColumns) dispatch(fetchTaskListColumns(projectId));
       if (!loadingPhases) dispatch(fetchPhasesByProjectId(projectId));
@@ -54,10 +59,10 @@ const ProjectViewTaskList = () => {
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
       <TaskListFilters position="list" />
 
-      {(taskGroups.length === 0 && !loadingGroups) ? (
+      {taskGroups.length === 0 && !loadingGroups ? (
         <Empty description="No tasks group found" />
       ) : (
-        <Skeleton active loading={loadingGroups} className='mt-4 p-4'>
+        <Skeleton active loading={loadingGroups} className="mt-4 p-4">
           <TaskGroupWrapper taskGroups={taskGroups} groupBy={groupBy} />
         </Skeleton>
       )}

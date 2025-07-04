@@ -23,12 +23,15 @@ import { fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { setImportTaskTemplateDrawerOpen } from '@/features/project/project.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
+import { evt_project_import_tasks } from '@/shared/worklenz-analytics-events';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const ImportTaskTemplate = () => {
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
   const { t } = useTranslation('project-view/import-task-templates');
   const { tab } = useTabSearchParam();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { importTaskTemplateDrawerOpen, projectId } = useAppSelector(state => state.projectReducer);
   const [templates, setTemplates] = useState<ITaskTemplatesGetResponse[]>([]);
@@ -86,6 +89,7 @@ const ImportTaskTemplate = () => {
     if (!projectId || tasks.length === 0) return;
 
     try {
+      trackMixpanelEvent(evt_project_import_tasks);
       setImporting(true);
       const res = await taskTemplatesApiService.importTemplate(projectId, tasks);
       if (res.done) {
@@ -117,7 +121,12 @@ const ImportTaskTemplate = () => {
       footer={
         <Flex justify="end" gap={10}>
           <Button onClick={handleClose}>{t('cancel')}</Button>
-          <Button type="primary" onClick={handleImport} loading={importing} disabled={tasks.length === 0}>
+          <Button
+            type="primary"
+            onClick={handleImport}
+            loading={importing}
+            disabled={tasks.length === 0}
+          >
             {t('import')}
           </Button>
         </Flex>
