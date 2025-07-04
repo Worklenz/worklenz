@@ -55,7 +55,7 @@ import { TaskListField } from '@/types/task-list-field.types';
 import { useParams } from 'react-router-dom';
 import ImprovedTaskFilters from '@/components/task-management/improved-task-filters';
 import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-action-bar';
-import { Bars3Icon } from '@heroicons/react/24/outline';
+import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { HolderOutlined } from '@ant-design/icons';
 import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
 
@@ -136,6 +136,9 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
   const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
 
   const fields = useAppSelector(state => state.taskManagementFields) || [];
+
+  // Enable real-time updates via socket handlers
+  useTaskSocketHandlers();
 
   // Filter visible columns based on fields
   const visibleColumns = useMemo(() => {
@@ -298,22 +301,13 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
         targetGroupId: targetGroup.id,
       }));
 
-      // If we need to insert at a specific position (not at the end)
-      if (insertIndex < targetGroup.taskIds.length) {
-        const newTaskIds = [...targetGroup.taskIds];
-        // Remove the task if it was already added at the end
-        const taskIndex = newTaskIds.indexOf(activeId as string);
-        if (taskIndex > -1) {
-          newTaskIds.splice(taskIndex, 1);
-        }
-        // Insert at the correct position
-        newTaskIds.splice(insertIndex, 0, activeId as string);
-        
-        dispatch(reorderTasksInGroup({
-          taskIds: newTaskIds,
-          groupId: targetGroup.id,
-        }));
-      }
+      // Reorder task within target group at drop position
+      dispatch(reorderTasksInGroup({
+        sourceTaskId: activeId as string,
+        destinationTaskId: over.id as string,
+        sourceGroupId: activeGroup.id,
+        destinationGroupId: targetGroup.id,
+      }));
     } else {
       // Reordering within the same group
       console.log('Reordering task within same group:', {
@@ -324,15 +318,12 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
       });
 
       if (activeIndex !== insertIndex) {
-        const newTaskIds = [...activeGroup.taskIds];
-        // Remove task from old position
-        newTaskIds.splice(activeIndex, 1);
-        // Insert at new position
-        newTaskIds.splice(insertIndex, 0, activeId as string);
-        
+        // Reorder task within same group at drop position
         dispatch(reorderTasksInGroup({
-          taskIds: newTaskIds,
-          groupId: activeGroup.id,
+          sourceTaskId: activeId as string,
+          destinationTaskId: over.id as string,
+          sourceGroupId: activeGroup.id,
+          destinationGroupId: activeGroup.id,
         }));
       }
     }
@@ -470,7 +461,7 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
     const isGroupEmpty = group.count === 0;
     
     return (
-      <div>
+      <div className={groupIndex > 0 ? 'mt-2' : ''}>
         <TaskGroupHeader
           group={{
             id: group.id,
@@ -497,6 +488,7 @@ const TaskListV2: React.FC<TaskListV2Props> = ({ projectId }) => {
     return (
       <TaskRow
         taskId={task.id}
+        projectId={projectId}
         visibleColumns={visibleColumns}
       />
     );

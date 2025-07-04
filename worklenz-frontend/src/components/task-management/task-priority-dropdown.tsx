@@ -66,11 +66,18 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
     };
 
     if (isOpen && buttonRef.current) {
-      // Calculate position
+      // Calculate position with better handling of scrollable containers
       const rect = buttonRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const dropdownHeight = 200; // Estimated dropdown height
+      
+      // Check if dropdown would go below viewport
+      const spaceBelow = viewportHeight - rect.bottom;
+      const shouldShowAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+      
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
+        top: shouldShowAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+        left: rect.left,
       });
 
       document.addEventListener('mousedown', handleClickOutside);
