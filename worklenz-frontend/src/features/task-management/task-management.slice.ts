@@ -55,6 +55,7 @@ const initialState: TaskManagementState = {
   grouping: undefined,
   selectedPriorities: [],
   search: '',
+  loadingSubtasks: {},
 };
 
 // Async thunk to fetch tasks from API
@@ -703,6 +704,68 @@ const taskManagementSlice = createSlice({
         parent.sub_tasks_count = (parent.sub_tasks_count || 0) + 1;
       }
     },
+    createSubtask: (
+      state,
+      action: PayloadAction<{ parentTaskId: string; name: string; projectId: string }>
+    ) => {
+      const { parentTaskId, name, projectId } = action.payload;
+      const parent = state.entities[parentTaskId];
+      if (parent) {
+        // Create a temporary subtask - the real one will come from the socket
+        const tempId = `temp-${Date.now()}`;
+        const tempSubtask: Task = {
+          id: tempId,
+          task_key: '',
+          title: name,
+          name: name,
+          description: '',
+          status: 'todo',
+          priority: 'low',
+          phase: 'Development',
+          progress: 0,
+          assignees: [],
+          assignee_names: [],
+          labels: [],
+          dueDate: undefined,
+          due_date: undefined,
+          startDate: undefined,
+          timeTracking: {
+            estimated: 0,
+            logged: 0,
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          order: 0,
+          parent_task_id: parentTaskId,
+          is_sub_task: true,
+          sub_tasks_count: 0,
+          show_sub_tasks: false,
+          isTemporary: true, // Mark as temporary
+        };
+        
+        // Add temporary subtask for immediate UI feedback
+        if (!parent.sub_tasks) {
+          parent.sub_tasks = [];
+        }
+        parent.sub_tasks.push(tempSubtask);
+        parent.sub_tasks_count = (parent.sub_tasks_count || 0) + 1;
+        state.entities[tempId] = tempSubtask;
+        state.ids.push(tempId);
+      }
+    },
+    removeTemporarySubtask: (
+      state,
+      action: PayloadAction<{ parentTaskId: string; tempId: string }>
+    ) => {
+      const { parentTaskId, tempId } = action.payload;
+      const parent = state.entities[parentTaskId];
+      if (parent && parent.sub_tasks) {
+        parent.sub_tasks = parent.sub_tasks.filter(subtask => subtask.id !== tempId);
+        parent.sub_tasks_count = Math.max((parent.sub_tasks_count || 0) - 1, 0);
+        delete state.entities[tempId];
+        state.ids = state.ids.filter(id => id !== tempId);
+      }
+    },
     updateTaskAssignees: (state, action: PayloadAction<{
       taskId: string;
       assigneeIds: string[];
@@ -719,6 +782,7 @@ const taskManagementSlice = createSlice({
         };
       }
     },
+    
   },
   extraReducers: builder => {
     builder
@@ -742,20 +806,66 @@ const taskManagementSlice = createSlice({
         state.groups = [];
       })
       .addCase(fetchSubTasks.pending, (state, action) => {
-        // Don't set global loading state for subtasks
+        // Set loading state for specific task
+        const { taskId } = action.meta.arg;
+        state.loadingSubtasks[taskId] = true;
         state.error = null;
       })
       .addCase(fetchSubTasks.fulfilled, (state, action) => {
         const { parentTaskId, subtasks } = action.payload;
         const parentTask = state.entities[parentTaskId];
-        if (parentTask) {
-          parentTask.sub_tasks = subtasks;
-          parentTask.sub_tasks_count = subtasks.length;
-          parentTask.show_sub_tasks = true;
+        // Clear loading state
+        state.loadingSubtasks[parentTaskId] = false;
+        if (parentTask && subtasks) {
+          // Convert subtasks to the proper format
+          const convertedSubtasks = subtasks.map(subtask => ({
+            id: subtask.id || '',
+            task_key: subtask.task_key || '',
+            title: subtask.name || subtask.title || '',
+            name: subtask.name || subtask.title || '',
+            description: subtask.description || '',
+            status: subtask.status || 'todo',
+            priority: subtask.priority || 'low',
+            phase: subtask.phase_name || subtask.phase || 'Development',
+            progress: subtask.complete_ratio || subtask.progress || 0,
+            assignees: subtask.assignees || [],
+            assignee_names: subtask.assignee_names || subtask.names || [],
+            labels: subtask.labels || [],
+            dueDate: subtask.end_date || subtask.dueDate,
+            due_date: subtask.end_date || subtask.due_date,
+            startDate: subtask.start_date || subtask.startDate,
+            timeTracking: subtask.timeTracking || {
+              estimated: 0,
+              logged: 0,
+            },
+            createdAt: subtask.created_at || subtask.createdAt || new Date().toISOString(),
+            created_at: subtask.created_at || subtask.createdAt || new Date().toISOString(),
+            updatedAt: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
+            updated_at: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
+            order: subtask.sort_order || subtask.order || 0,
+            parent_task_id: parentTaskId,
+            is_sub_task: true,
+            sub_tasks_count: 0,
+            show_sub_tasks: false,
+          }));
+
+          // Update parent task with subtasks
+          parentTask.sub_tasks = convertedSubtasks;
+          parentTask.sub_tasks_count = convertedSubtasks.length;
+          
+          // Add subtasks to entities so they can be accessed by ID
+          convertedSubtasks.forEach(subtask => {
+            state.entities[subtask.id] = subtask;
+            if (!state.ids.includes(subtask.id)) {
+              state.ids.push(subtask.id);
+            }
+          });
         }
       })
       .addCase(fetchSubTasks.rejected, (state, action) => {
-        // Set error but don't clear task data
+        // Clear loading state and set error
+        const { taskId } = action.meta.arg;
+        state.loadingSubtasks[taskId] = false;
         state.error = action.error.message || action.payload || 'Failed to fetch subtasks. Please try again.';
       })
       .addCase(fetchTasks.pending, (state) => {
@@ -801,6 +911,8 @@ export const {
   toggleTaskExpansion,
   addSubtaskToParent,
   updateTaskAssignees,
+  createSubtask,
+  removeTemporarySubtask,
 } = taskManagementSlice.actions;
 
 // Export the selectors
@@ -814,6 +926,7 @@ export const selectLoading = (state: RootState) => state.taskManagement.loading;
 export const selectError = (state: RootState) => state.taskManagement.error;
 export const selectSelectedPriorities = (state: RootState) => state.taskManagement.selectedPriorities;
 export const selectSearch = (state: RootState) => state.taskManagement.search;
+export const selectSubtaskLoading = (state: RootState, taskId: string) => state.taskManagement.loadingSubtasks[taskId] || false;
 
 // Memoized selectors
 export const selectTasksByStatus = (state: RootState, status: string) =>
