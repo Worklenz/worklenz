@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import TaskTimeTracking from './TaskTimeTracking';
 import { CustomNumberLabel, CustomColordLabel } from '@/components';
 import LabelsSelector from '@/components/LabelsSelector';
+import TaskPhaseDropdown from '@/components/task-management/task-phase-dropdown';
 
 interface TaskRowProps {
   taskId: string;
@@ -408,9 +409,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
       case 'phase':
         return (
           <div style={baseStyle}>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-              {task.phase}
-            </span>
+            <TaskPhaseDropdown
+              task={task}
+              projectId={projectId}
+              isDarkMode={isDarkMode}
+            />
           </div>
         );
 
