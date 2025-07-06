@@ -100,6 +100,7 @@ export interface TaskManagementState {
   grouping: string | undefined;
   selectedPriorities: string[];
   search: string;
+  archived: boolean;
   loadingSubtasks: Record<string, boolean>; // Track loading state for individual tasks
   loadingColumns: boolean;
   columns: ITaskListColumn[];

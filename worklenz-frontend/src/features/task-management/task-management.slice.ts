@@ -57,6 +57,7 @@ const initialState: TaskManagementState = {
   grouping: undefined,
   selectedPriorities: [],
   search: '',
+  archived: false,
   loadingSubtasks: {},
   // Add column-related state
   loadingColumns: false,
@@ -227,9 +228,12 @@ export const fetchTasksV3 = createAsyncThunk(
       // Get search value from taskReducer
       const searchValue = state.taskReducer.search || '';
 
+      // Get archived state from task management slice
+      const archivedState = state.taskManagement.archived;
+
       const config: ITaskListConfigV2 = {
         id: projectId,
-        archived: false,
+        archived: archivedState,
         group: currentGrouping || '',
         field: '',
         order: '',
@@ -240,12 +244,10 @@ export const fetchTasksV3 = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: selectedPriorities,
-        customColumns: true, // Include custom columns in the response
+        customColumns: true,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
-
-
 
       // Ensure tasks are properly normalized
       const tasks: Task[] = response.body.allTasks.map((task: any) => {
@@ -276,7 +278,7 @@ export const fetchTasksV3 = createAsyncThunk(
             logged: convertTimeValue(task.time_spent),
           },
           customFields: {},
-          custom_column_values: task.custom_column_values || {}, // Include custom column values
+          custom_column_values: task.custom_column_values || {},
           createdAt: task.created_at || now,
           updatedAt: task.updated_at || now,
           created_at: task.created_at || now,
@@ -738,6 +740,12 @@ const taskManagementSlice = createSlice({
     setSearch: (state, action: PayloadAction<string>) => {
       state.search = action.payload;
     },
+    setArchived: (state, action: PayloadAction<boolean>) => {
+      state.archived = action.payload;
+    },
+    toggleArchived: (state) => {
+      state.archived = !state.archived;
+    },
     resetTaskManagement: state => {
       state.loading = false;
       state.error = null;
@@ -745,6 +753,7 @@ const taskManagementSlice = createSlice({
       state.grouping = undefined;
       state.selectedPriorities = [];
       state.search = '';
+      state.archived = false;
       state.ids = [];
       state.entities = {};
     },
@@ -1077,6 +1086,8 @@ export const {
   setError,
   setSelectedPriorities,
   setSearch,
+  setArchived,
+  toggleArchived,
   resetTaskManagement,
   toggleTaskExpansion,
   addSubtaskToParent,
@@ -1113,6 +1124,9 @@ export const selectTasksByPriority = (state: RootState, priority: string) =>
 
 export const selectTasksByPhase = (state: RootState, phase: string) =>
   Object.values(state.taskManagement.entities).filter(task => task.phase === phase);
+
+// Add archived selector
+export const selectArchived = (state: RootState) => state.taskManagement.archived;
 
 // Export the reducer as default
 export default taskManagementSlice.reducer;

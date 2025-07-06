@@ -26,6 +26,9 @@ import { toggleField } from '@/features/task-management/taskListFields.slice';
 import {
   fetchTasksV3,
   setSearch as setTaskManagementSearch,
+  setArchived as setTaskManagementArchived,
+  toggleArchived as toggleTaskManagementArchived,
+  selectArchived,
 } from '@/features/task-management/task-management.slice';
 import {
   setCurrentGrouping,
@@ -828,13 +831,17 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   // Enhanced Kanban state
   const kanbanState = useAppSelector((state: RootState) => state.enhancedKanbanReducer);
 
+  // Get archived state from the appropriate slice based on position
+  const taskManagementArchived = useAppSelector(selectArchived);
+  const taskReducerArchived = useAppSelector(state => state.taskReducer.archived);
+  const showArchived = position === 'list' ? taskManagementArchived : taskReducerArchived;
+
   // Use the filter data loader hook
   useFilterDataLoader();
 
   // Local state for filter sections
   const [filterSections, setFilterSections] = useState<FilterSection[]>([]);
   const [searchValue, setSearchValue] = useState('');
-  const [showArchived, setShowArchived] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   const [clearingFilters, setClearingFilters] = useState(false);
@@ -1079,7 +1086,6 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
       const batchUpdates = () => {
         // Clear local state immediately for UI feedback
         setSearchValue('');
-        setShowArchived(false);
 
         // Update local filter sections state immediately
         setFilterSections(prev =>
@@ -1118,6 +1124,13 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
 
         // Clear priority filters
         dispatch(setPriorities([]));
+
+        // Clear archived state based on position
+        if (position === 'list') {
+          dispatch(setTaskManagementArchived(false));
+        } else {
+          dispatch(setKanbanArchived(false));
+        }
       };
 
       // Execute Redux updates
@@ -1139,14 +1152,17 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   }, [projectId, projectView, dispatch, currentTaskLabels, currentTaskAssignees, clearingFilters]);
 
   const toggleArchived = useCallback(() => {
-    setShowArchived(!showArchived);
     if (position === 'board') {
       dispatch(setKanbanArchived(!showArchived));
       if (projectId) {
         dispatch(fetchEnhancedKanbanGroups(projectId));
       }
     } else {
-      // ... existing logic ...
+      // For TaskListV2, use the task management slice
+      dispatch(toggleTaskManagementArchived());
+      if (projectId) {
+        dispatch(fetchTasksV3(projectId));
+      }
     }
   }, [dispatch, projectId, position, showArchived]);
 
