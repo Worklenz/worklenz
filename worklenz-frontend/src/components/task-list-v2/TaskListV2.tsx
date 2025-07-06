@@ -271,10 +271,9 @@ const TaskListV2: React.FC = () => {
 
   // Add callback for task added
   const handleTaskAdded = useCallback(() => {
-    if (urlProjectId) {
-      dispatch(fetchTasksV3(urlProjectId));
-    }
-  }, [dispatch, urlProjectId]);
+    // Task is now added in real-time via socket, no need to refetch
+    // The global socket handler will handle the real-time update
+  }, []);
 
   // Memoized values for GroupedVirtuoso
   const virtuosoGroups = useMemo(() => {
