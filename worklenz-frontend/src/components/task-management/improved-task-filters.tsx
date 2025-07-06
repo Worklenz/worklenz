@@ -20,7 +20,8 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
-import { toggleField } from '@/features/task-management/taskListFields.slice';
+import { toggleField, syncFieldWithDatabase } from '@/features/task-management/taskListFields.slice';
+import { selectColumns } from '@/features/task-management/task-management.slice';
 
 // Import Redux actions
 import {
@@ -698,8 +699,10 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   isDarkMode,
 }) => {
   const { t } = useTranslation('task-list-filters');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
+  const columns = useSelector(selectColumns);
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
   const fields = Array.isArray(fieldsRaw) ? fieldsRaw : [];
   const sortedFields = useMemo(() => [...fields].sort((a, b) => a.order - b.order), [fields]);
 
@@ -792,7 +795,20 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                   return (
                     <button
                       key={field.key}
-                      onClick={() => dispatch(toggleField(field.key))}
+                      onClick={() => {
+                        // Toggle field locally first
+                        dispatch(toggleField(field.key));
+                        
+                        // Sync with database if projectId is available
+                        if (projectId) {
+                          dispatch(syncFieldWithDatabase({
+                            projectId,
+                            fieldKey: field.key,
+                            visible: !field.visible,
+                            columns
+                          }));
+                        }
+                      }}
                       className={`
                         w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
                         transition-colors duration-150 text-left
