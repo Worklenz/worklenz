@@ -10,6 +10,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
+import { useAuthService } from '@/hooks/useAuth';
 
 interface TaskRowWithSubtasksProps {
   taskId: string;
@@ -19,6 +20,7 @@ interface TaskRowWithSubtasksProps {
     width: string;
     isSticky?: boolean;
   }>;
+  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
 }
 
 interface AddSubtaskRowProps {
@@ -43,9 +45,12 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
   const { socket, connected } = useSocket();
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
+  
+  // Get session data for reporter_id and team_id
+  const currentSession = useAuthService().getCurrentSession();
 
   const handleAddSubtask = useCallback(() => {
-    if (!subtaskName.trim()) return;
+    if (!subtaskName.trim() || !currentSession) return;
 
     // Create optimistic subtask immediately for better UX
     dispatch(createSubtask({ 
@@ -62,6 +67,8 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
           name: subtaskName.trim(),
           project_id: projectId,
           parent_task_id: parentTaskId,
+          reporter_id: currentSession.id,
+          team_id: currentSession.team_id,
         })
       );
     }
@@ -69,7 +76,7 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
     setSubtaskName('');
     setIsAdding(false);
     onSubtaskAdded();
-  }, [subtaskName, dispatch, parentTaskId, projectId, connected, socket, onSubtaskAdded]);
+  }, [subtaskName, dispatch, parentTaskId, projectId, connected, socket, currentSession, onSubtaskAdded]);
 
   const handleCancel = useCallback(() => {
     setSubtaskName('');
@@ -90,8 +97,9 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
         return (
           <div className="flex items-center h-full" style={baseStyle}>
             <div className="flex items-center w-full h-full">
-              {/* Match subtask indentation pattern - same as TaskRow for subtasks */}
-              <div className="w-8" />
+              {/* Match subtask indentation pattern - tighter spacing */}
+              <div className="w-4" />
+              <div className="w-2" />
               
               {!isAdding ? (
                 <button
@@ -127,7 +135,7 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
   }, [isAdding, subtaskName, handleAddSubtask, handleCancel, t]);
 
   return (
-    <div className="flex items-center min-w-max px-4 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[42px]">
+    <div className="flex items-center min-w-max px-1 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[42px]">
       {visibleColumns.map((column) =>
         renderColumn(column.id, column.width)
       )}
@@ -140,7 +148,8 @@ AddSubtaskRow.displayName = 'AddSubtaskRow';
 const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({ 
   taskId, 
   projectId, 
-  visibleColumns 
+  visibleColumns,
+  updateTaskCustomColumnValue
 }) => {
   const task = useAppSelector(state => selectTaskById(state, taskId));
   const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
@@ -162,6 +171,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
         taskId={taskId}
         projectId={projectId}
         visibleColumns={visibleColumns}
+        updateTaskCustomColumnValue={updateTaskCustomColumnValue}
       />
       
       {/* Subtasks and add subtask row when expanded */}
@@ -182,6 +192,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
                 projectId={projectId}
                 visibleColumns={visibleColumns}
                 isSubtask={true}
+                updateTaskCustomColumnValue={updateTaskCustomColumnValue}
               />
             </div>
           ))}

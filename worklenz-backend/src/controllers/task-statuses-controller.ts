@@ -135,6 +135,25 @@ export default class TaskStatusesController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async updateCategory(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const hasMoreCategories = await TaskStatusesController.hasMoreCategories(req.params.id, req.query.current_project_id as string);
+
+    if (!hasMoreCategories)
+      return res.status(200).send(new ServerResponse(false, null, existsErrorMessage).withTitle("Status category update failed!"));
+
+    const q = `
+      UPDATE task_statuses
+      SET category_id = $2
+      WHERE id = $1
+        AND project_id = $3
+      RETURNING (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id), (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id);
+    `;
+    const result = await db.query(q, [req.params.id, req.body.category_id, req.query.current_project_id]);
+    const [data] = result.rows;
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
   public static async updateStatusOrder(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `SELECT update_status_order($1);`;
     const result = await db.query(q, [JSON.stringify(req.body.status_order)]);

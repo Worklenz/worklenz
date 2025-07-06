@@ -7,12 +7,14 @@ import {
   EntityId,
 } from '@reduxjs/toolkit';
 import { Task, TaskManagementState, TaskGroup, TaskGrouping } from '@/types/task-management.types';
+import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
 import {
   tasksApiService,
   ITaskListConfigV2,
   ITaskListV3Response,
 } from '@/api/tasks/tasks.api.service';
+import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
@@ -55,7 +57,12 @@ const initialState: TaskManagementState = {
   grouping: undefined,
   selectedPriorities: [],
   search: '',
+  archived: false,
   loadingSubtasks: {},
+  // Add column-related state
+  loadingColumns: false,
+  columns: [],
+  customColumns: [],
 };
 
 // Async thunk to fetch tasks from API
@@ -221,9 +228,12 @@ export const fetchTasksV3 = createAsyncThunk(
       // Get search value from taskReducer
       const searchValue = state.taskReducer.search || '';
 
+      // Get archived state from task management slice
+      const archivedState = state.taskManagement.archived;
+
       const config: ITaskListConfigV2 = {
         id: projectId,
-        archived: false,
+        archived: archivedState,
         group: currentGrouping || '',
         field: '',
         order: '',
@@ -234,11 +244,10 @@ export const fetchTasksV3 = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: selectedPriorities,
+        customColumns: true,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
-
-
 
       // Ensure tasks are properly normalized
       const tasks: Task[] = response.body.allTasks.map((task: any) => {
@@ -258,7 +267,7 @@ export const fetchTasksV3 = createAsyncThunk(
           labels: task.labels?.map((l: { id: string; label_id: string; name: string; color_code: string; end: boolean; names: string[] }) => ({
             id: l.id || l.label_id,
             name: l.name,
-            color: l.color || '#1890ff',
+            color: l.color_code || '#1890ff',
             end: l.end,
             names: l.names,
           })) || [],
@@ -269,6 +278,7 @@ export const fetchTasksV3 = createAsyncThunk(
             logged: convertTimeValue(task.time_spent),
           },
           customFields: {},
+          custom_column_values: task.custom_column_values || {},
           createdAt: task.created_at || now,
           updatedAt: task.updated_at || now,
           created_at: task.created_at || now,
@@ -432,6 +442,59 @@ export const updateTaskWithSubtasks = createAsyncThunk(
   'taskManagement/updateTaskWithSubtasks',
   async ({ taskId, subtasks }: { taskId: string; subtasks: any[] }, { getState }) => {
     return { taskId, subtasks };
+  }
+);
+
+// Add async thunk to fetch task list columns
+export const fetchTaskListColumns = createAsyncThunk(
+  'taskManagement/fetchTaskListColumns',
+  async (projectId: string, { dispatch }) => {
+    const [standardColumns, customColumns] = await Promise.all([
+      tasksApiService.fetchTaskListColumns(projectId),
+      dispatch(fetchCustomColumns(projectId)),
+    ]);
+
+    return {
+      standard: standardColumns.body,
+      custom: customColumns.payload,
+    };
+  }
+);
+
+// Add async thunk to fetch custom columns
+export const fetchCustomColumns = createAsyncThunk(
+  'taskManagement/fetchCustomColumns',
+  async (projectId: string, { rejectWithValue }) => {
+    try {
+      const response = await tasksCustomColumnsService.getCustomColumns(projectId);
+      return response.body;
+    } catch (error) {
+      logger.error('Fetch Custom Columns', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch custom columns');
+    }
+  }
+);
+
+// Add async thunk to update column visibility
+export const updateColumnVisibility = createAsyncThunk(
+  'taskManagement/updateColumnVisibility',
+  async (
+    { projectId, item }: { projectId: string; item: ITaskListColumn },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await tasksApiService.toggleColumnVisibility(projectId, item);
+      return response.body;
+    } catch (error) {
+      logger.error('Update Column Visibility', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to update column visibility');
+    }
   }
 );
 
@@ -627,7 +690,12 @@ const taskManagementSlice = createSlice({
                 updatedTask.priority = destinationGroup.id;
                 break;
               case IGroupBy.PHASE:
-                updatedTask.phase = destinationGroup.id;
+                // Handle unmapped group specially
+                if (destinationGroup.id === 'Unmapped' || destinationGroup.title === 'Unmapped') {
+                  updatedTask.phase = ''; // Clear phase for unmapped group
+                } else {
+                  updatedTask.phase = destinationGroup.id;
+                }
                 break;
               case IGroupBy.MEMBERS:
                 // If moving to a member group, ensure task is assigned to that member
@@ -672,6 +740,12 @@ const taskManagementSlice = createSlice({
     setSearch: (state, action: PayloadAction<string>) => {
       state.search = action.payload;
     },
+    setArchived: (state, action: PayloadAction<boolean>) => {
+      state.archived = action.payload;
+    },
+    toggleArchived: (state) => {
+      state.archived = !state.archived;
+    },
     resetTaskManagement: state => {
       state.loading = false;
       state.error = null;
@@ -679,6 +753,7 @@ const taskManagementSlice = createSlice({
       state.grouping = undefined;
       state.selectedPriorities = [];
       state.search = '';
+      state.archived = false;
       state.ids = [];
       state.entities = {};
     },
@@ -782,7 +857,57 @@ const taskManagementSlice = createSlice({
         };
       }
     },
-    
+    // Add column-related reducers
+    toggleColumnVisibility: (state, action: PayloadAction<string>) => {
+      const column = state.columns.find(col => col.key === action.payload);
+      if (column) {
+        column.pinned = !column.pinned;
+      }
+    },
+    addCustomColumn: (state, action: PayloadAction<ITaskListColumn>) => {
+      state.customColumns.push(action.payload);
+      // Also add to columns array to maintain visibility
+      state.columns.push({
+        ...action.payload,
+        pinned: true, // New columns are visible by default
+      });
+    },
+    updateCustomColumn: (
+      state,
+      action: PayloadAction<{ key: string; column: ITaskListColumn }>
+    ) => {
+      const { key, column } = action.payload;
+      const index = state.customColumns.findIndex(col => col.key === key);
+      if (index !== -1) {
+        state.customColumns[index] = column;
+        // Update in columns array as well
+        const colIndex = state.columns.findIndex(col => col.key === key);
+        if (colIndex !== -1) {
+          state.columns[colIndex] = { ...column, pinned: state.columns[colIndex].pinned };
+        }
+      }
+    },
+    deleteCustomColumn: (state, action: PayloadAction<string>) => {
+      const key = action.payload;
+      state.customColumns = state.customColumns.filter(col => col.key !== key);
+      // Remove from columns array as well
+      state.columns = state.columns.filter(col => col.key !== key);
+    },
+    // Add action to sync backend columns with local fields
+    syncColumnsWithFields: (state, action: PayloadAction<{ projectId: string; fields: any[] }>) => {
+      const { fields } = action.payload;
+      // Update columns based on local fields
+      state.columns = state.columns.map(column => {
+        const field = fields.find(f => f.key === column.key);
+        if (field) {
+          return {
+            ...column,
+            pinned: field.visible
+          };
+        }
+        return column;
+      });
+    },
   },
   extraReducers: builder => {
     builder
@@ -885,6 +1010,60 @@ const taskManagementSlice = createSlice({
         state.ids = [];
         state.entities = {};
         state.groups = [];
+      })
+      // Add column-related extraReducers
+      .addCase(fetchTaskListColumns.pending, state => {
+        state.loadingColumns = true;
+        state.error = null;
+      })
+      .addCase(fetchTaskListColumns.fulfilled, (state, action) => {
+        state.loadingColumns = false;
+
+        // Process standard columns
+        const standardColumns = action.payload.standard;
+        standardColumns.splice(1, 0, {
+          key: 'TASK',
+          name: 'Task',
+          index: 1,
+          pinned: true,
+        });
+        // Process custom columns
+        const customColumns = (action.payload as { custom: any[] }).custom.map((col: any) => ({
+          ...col,
+          isCustom: true,
+        }));
+
+        // Merge columns
+        state.columns = [...standardColumns, ...customColumns];
+        state.customColumns = customColumns;
+      })
+      .addCase(fetchTaskListColumns.rejected, (state, action) => {
+        state.loadingColumns = false;
+        state.error = action.error.message || 'Failed to fetch task list columns';
+      })
+      .addCase(fetchCustomColumns.pending, state => {
+        state.loadingColumns = true;
+        state.error = null;
+      })
+      .addCase(fetchCustomColumns.fulfilled, (state, action) => {
+        state.loadingColumns = false;
+        state.customColumns = action.payload;
+        // Add custom columns to the columns array
+        const customColumnsForVisibility = action.payload;
+        state.columns = [...state.columns, ...customColumnsForVisibility];
+      })
+      .addCase(fetchCustomColumns.rejected, (state, action) => {
+        state.loadingColumns = false;
+        state.error = action.error.message || 'Failed to fetch custom columns';
+      })
+      .addCase(updateColumnVisibility.fulfilled, (state, action) => {
+        const column = state.columns.find(col => col.key === action.payload.key);
+        if (column) {
+          column.pinned = action.payload.pinned;
+        }
+      })
+      .addCase(updateColumnVisibility.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
   },
 });
@@ -907,12 +1086,20 @@ export const {
   setError,
   setSelectedPriorities,
   setSearch,
+  setArchived,
+  toggleArchived,
   resetTaskManagement,
   toggleTaskExpansion,
   addSubtaskToParent,
   updateTaskAssignees,
   createSubtask,
   removeTemporarySubtask,
+  // Add column-related actions
+  toggleColumnVisibility,
+  addCustomColumn,
+  updateCustomColumn,
+  deleteCustomColumn,
+  syncColumnsWithFields,
 } = taskManagementSlice.actions;
 
 // Export the selectors
@@ -938,9 +1125,33 @@ export const selectTasksByPriority = (state: RootState, priority: string) =>
 export const selectTasksByPhase = (state: RootState, phase: string) =>
   Object.values(state.taskManagement.entities).filter(task => task.phase === phase);
 
+// Add archived selector
+export const selectArchived = (state: RootState) => state.taskManagement.archived;
+
 // Export the reducer as default
 export default taskManagementSlice.reducer;
 
 // V3 API selectors - no processing needed, data is pre-processed by backend
 export const selectTaskGroupsV3 = (state: RootState) => state.taskManagement.groups;
 export const selectCurrentGroupingV3 = (state: RootState) => state.taskManagement.grouping;
+
+// Column-related selectors
+export const selectColumns = (state: RootState) => state.taskManagement.columns;
+export const selectCustomColumns = (state: RootState) => state.taskManagement.customColumns;
+export const selectLoadingColumns = (state: RootState) => state.taskManagement.loadingColumns;
+
+// Helper selector to check if columns are in sync with local fields
+export const selectColumnsInSync = (state: RootState) => {
+  const columns = state.taskManagement.columns;
+  const fields = state.taskManagementFields || [];
+  
+  if (columns.length === 0 || fields.length === 0) return true;
+  
+  return !fields.some(field => {
+    const backendColumn = columns.find(c => c.key === field.key);
+    if (backendColumn) {
+      return (backendColumn.pinned ?? false) !== field.visible;
+    }
+    return false;
+  });
+};
