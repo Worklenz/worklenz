@@ -1,13 +1,25 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 // @ts-ignore: Heroicons module types
-import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { Checkbox } from 'antd';
+import { ChevronDownIcon, ChevronRightIcon, EllipsisHorizontalIcon, PencilIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { Checkbox, Dropdown, Menu, Input, Modal, Badge, Flex } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { getContrastColor } from '@/utils/colorUtils';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { selectSelectedTaskIds, selectTask, deselectTask } from '@/features/task-management/selection.slice';
-import { selectGroups } from '@/features/task-management/task-management.slice';
+import { selectGroups, fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
+import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
+import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
+import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { useAuthService } from '@/hooks/useAuth';
+import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
+import { ITaskPhase } from '@/types/tasks/taskPhase.types';
+import logger from '@/utils/errorLogger';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_project_board_column_setting_click } from '@/shared/worklenz-analytics-events';
 
 interface TaskGroupHeaderProps {
   group: {
@@ -18,12 +30,25 @@ interface TaskGroupHeaderProps {
   };
   isCollapsed: boolean;
   onToggle: () => void;
+  projectId: string;
 }
 
-const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, onToggle }) => {
+const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, onToggle, projectId }) => {
+  const { t } = useTranslation('task-management');
   const dispatch = useAppDispatch();
   const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
   const groups = useAppSelector(selectGroups);
+  const currentGrouping = useAppSelector(selectCurrentGrouping);
+  const { statusCategories } = useAppSelector(state => state.taskStatusReducer);
+  const { trackMixpanelEvent } = useMixpanelTracking();
+  const { isOwnerOrAdmin } = useAuthService();
+  
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [isChangingCategory, setIsChangingCategory] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState(group.name);
   
   const headerBackgroundColor = group.color || '#F0F0F0'; // Default light gray if no color
   const headerTextColor = getContrastColor(headerBackgroundColor);
@@ -66,6 +91,139 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
       });
     }
   }, [dispatch, isAllSelected, tasksInGroup]);
+
+  // Handle inline name editing
+  const handleNameSave = useCallback(async () => {
+    if (!editingName.trim() || editingName.trim() === group.name || isRenaming) return;
+
+    setIsRenaming(true);
+    try {
+      if (currentGrouping === 'status') {
+        // Extract status ID from group ID (format: "status-{statusId}")
+        const statusId = group.id.replace('status-', '');
+        const body: ITaskStatusUpdateModel = {
+          name: editingName.trim(),
+          project_id: projectId,
+        };
+        
+        await statusApiService.updateNameOfStatus(statusId, body, projectId);
+        trackMixpanelEvent(evt_project_board_column_setting_click, { Rename: 'Status' });
+        dispatch(fetchStatuses(projectId));
+        
+      } else if (currentGrouping === 'phase') {
+        // Extract phase ID from group ID (format: "phase-{phaseId}")
+        const phaseId = group.id.replace('phase-', '');
+        const body = { id: phaseId, name: editingName.trim() };
+        
+        await phasesApiService.updateNameOfPhase(phaseId, body as ITaskPhase, projectId);
+        trackMixpanelEvent(evt_project_board_column_setting_click, { Rename: 'Phase' });
+        dispatch(fetchPhasesByProjectId(projectId));
+      }
+      
+      // Refresh task list to get updated group names
+      dispatch(fetchTasksV3(projectId));
+      setIsEditingName(false);
+      
+    } catch (error) {
+      logger.error('Error renaming group:', error);
+      setEditingName(group.name);
+    } finally {
+      setIsRenaming(false);
+    }
+  }, [editingName, group.name, group.id, currentGrouping, projectId, dispatch, trackMixpanelEvent, isRenaming]);
+
+  const handleNameClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isOwnerOrAdmin) return;
+    setIsEditingName(true);
+    setEditingName(group.name);
+  }, [group.name, isOwnerOrAdmin]);
+
+  const handleNameKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleNameSave();
+    } else if (e.key === 'Escape') {
+      setIsEditingName(false);
+      setEditingName(group.name);
+    }
+    e.stopPropagation();
+  }, [group.name, handleNameSave]);
+
+  const handleNameBlur = useCallback(() => {
+    setIsEditingName(false);
+    setEditingName(group.name);
+  }, [group.name]);
+
+  // Handle dropdown menu actions
+  const handleRenameGroup = useCallback(() => {
+    setDropdownVisible(false);
+    setIsEditingName(true);
+    setEditingName(group.name);
+  }, [group.name]);
+
+  const handleChangeCategory = useCallback(() => {
+    setDropdownVisible(false);
+    setCategoryModalVisible(true);
+  }, []);
+
+
+
+  // Handle category change
+  const handleCategoryChange = useCallback(async (categoryId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (isChangingCategory) return;
+
+    setIsChangingCategory(true);
+    try {
+      // Extract status ID from group ID (format: "status-{statusId}")
+      const statusId = group.id.replace('status-', '');
+      
+      await statusApiService.updateStatusCategory(statusId, categoryId, projectId);
+      trackMixpanelEvent(evt_project_board_column_setting_click, { 'Change category': 'Status' });
+      
+      // Refresh status list and tasks
+      dispatch(fetchStatuses(projectId));
+      dispatch(fetchTasksV3(projectId));
+      setCategoryModalVisible(false);
+      
+    } catch (error) {
+      logger.error('Error changing category:', error);
+    } finally {
+      setIsChangingCategory(false);
+    }
+  }, [group.id, projectId, dispatch, trackMixpanelEvent, isChangingCategory]);
+
+  // Create dropdown menu items
+  const menuItems = useMemo(() => {
+    if (!isOwnerOrAdmin) return [];
+
+    const items = [
+      {
+        key: 'rename',
+        icon: <PencilIcon className="h-4 w-4" />,
+        label: currentGrouping === 'status' ? t('renameStatus') : currentGrouping === 'phase' ? t('renamePhase') : t('renameGroup'),
+        onClick: (e: any) => {
+          e?.domEvent?.stopPropagation();
+          handleRenameGroup();
+        },
+      },
+    ];
+
+    // Only show "Change Category" when grouped by status
+    if (currentGrouping === 'status') {
+      items.push({
+        key: 'changeCategory',
+        icon: <ArrowPathIcon className="h-4 w-4" />,
+        label: t('changeCategory'),
+        onClick: (e: any) => {
+          e?.domEvent?.stopPropagation();
+          handleChangeCategory();
+        },
+      });
+    }
+
+    return items;
+  }, [currentGrouping, handleRenameGroup, handleChangeCategory, isOwnerOrAdmin]);
 
   // Make the group header droppable
   const { isOver, setNodeRef } = useDroppable({
@@ -133,12 +291,108 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
       {/* Group indicator and name - no gap at all */}
       <div className="flex items-center flex-1 ml-1">
         {/* Group name and count */}
-        <div className="flex items-center flex-1">
-          <span className="text-sm font-semibold">
-            {group.name} ({group.count})
+        <div className="flex items-center">
+          {isEditingName && isOwnerOrAdmin ? (
+            <Input
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              onKeyDown={handleNameKeyDown}
+              onBlur={handleNameBlur}
+              className="text-sm font-semibold px-2 py-1 rounded-md transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              style={{ 
+                color: headerTextColor,
+                fontSize: '14px',
+                fontWeight: 600,
+                width: `${Math.max(editingName.length * 8 + 16, 80)}px`,
+                minWidth: '80px',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: `1px solid ${headerTextColor}40`,
+                backdropFilter: 'blur(4px)'
+              }}
+              styles={{
+                input: {
+                  color: headerTextColor,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  padding: '0'
+                }
+              }}
+              autoFocus
+              disabled={isRenaming}
+              placeholder={t('enterGroupName')}
+            />
+          ) : (
+            <span 
+              className={`text-sm font-semibold ${isOwnerOrAdmin ? 'cursor-pointer hover:bg-black hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded px-2 py-1 transition-all duration-200 hover:shadow-sm' : ''}`}
+              onClick={handleNameClick}
+              style={{ color: headerTextColor }}
+              title={isOwnerOrAdmin ? t('clickToEditGroupName') : ''}
+            >
+              {group.name}
+            </span>
+          )}
+          <span className="text-sm font-semibold ml-1" style={{ color: headerTextColor }}>
+            ({group.count})
           </span>
         </div>
+        
+        {/* Three dots menu */}
+        <div className="flex items-center justify-center ml-2">
+          <Dropdown
+            menu={{ items: menuItems }}
+            trigger={['click']}
+            open={dropdownVisible}
+            onOpenChange={setDropdownVisible}
+            placement="bottomLeft"
+          >
+            <button
+              className="p-1 rounded-sm hover:bg-black hover:bg-opacity-10 transition-all duration-200 ease-out"
+              style={{ color: headerTextColor }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDropdownVisible(!dropdownVisible);
+              }}
+            >
+              <EllipsisHorizontalIcon className="h-4 w-4" />
+            </button>
+          </Dropdown>
+        </div>
       </div>
+
+
+
+      {/* Change Category Modal */}
+      <Modal
+        title="Change Category"
+        open={categoryModalVisible}
+        onCancel={() => setCategoryModalVisible(false)}
+        footer={null}
+        width={400}
+      >
+        <div className="py-4">
+          <div className="space-y-2">
+            {statusCategories?.map((category) => (
+              <div
+                key={category.id}
+                className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                onClick={(e) => category.id && handleCategoryChange(category.id, e)}
+              >
+                <Flex align="center" gap={12}>
+                  <Badge color={category.color_code} />
+                  <span className="font-medium">{category.name}</span>
+                </Flex>
+                {isChangingCategory && (
+                  <div className="text-blue-500">
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
