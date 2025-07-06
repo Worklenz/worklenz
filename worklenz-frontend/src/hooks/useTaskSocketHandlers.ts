@@ -615,9 +615,8 @@ export const useTaskSocketHandlers = () => {
             estimated: (data.total_hours || 0) + (data.total_minutes || 0) / 60,
             logged: (data.time_spent?.hours || 0) + (data.time_spent?.minutes || 0) / 60,
           },
-          customFields: {},
-          createdAt: data.created_at || new Date().toISOString(),
-          updatedAt: data.updated_at || new Date().toISOString(),
+          created_at: data.created_at || new Date().toISOString(),
+          updated_at: data.updated_at || new Date().toISOString(),
           order: data.sort_order || 0,
           parent_task_id: data.parent_task_id,
           is_sub_task: true,
@@ -634,7 +633,7 @@ export const useTaskSocketHandlers = () => {
         );
       } else {
         // Handle regular task creation - transform to Task format and add
-        const task = {
+        const task: Task = {
           id: data.id || '',
           task_key: data.task_key || '',
           title: data.name || '',
@@ -666,14 +665,17 @@ export const useTaskSocketHandlers = () => {
               names: l.names,
             })) || [],
           dueDate: data.end_date,
+          startDate: data.start_date,
           timeTracking: {
             estimated: (data.total_hours || 0) + (data.total_minutes || 0) / 60,
             logged: (data.time_spent?.hours || 0) + (data.time_spent?.minutes || 0) / 60,
           },
-          customFields: {},
-          createdAt: data.created_at || new Date().toISOString(),
-          updatedAt: data.updated_at || new Date().toISOString(),
+          created_at: data.created_at || new Date().toISOString(),
+          updated_at: data.updated_at || new Date().toISOString(),
           order: data.sort_order || 0,
+          sub_tasks: [],
+          sub_tasks_count: 0,
+          show_sub_tasks: false,
         };
 
         // Extract the group UUID from the backend response based on current grouping

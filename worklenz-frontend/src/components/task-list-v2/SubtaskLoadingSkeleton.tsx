@@ -19,16 +19,16 @@ const SubtaskLoadingSkeleton: React.FC<SubtaskLoadingSkeletonProps> = ({ visible
         return <div style={baseStyle} />;
       case 'taskKey':
         return (
-          <div style={baseStyle} className="flex items-center">
-            <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div style={baseStyle} className="flex items-center pl-3">
+            <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse border border-gray-300 dark:border-gray-600" />
           </div>
         );
       case 'title':
         return (
           <div style={baseStyle} className="flex items-center">
-            {/* Subtask indentation */}
-            <div className="w-8" />
-            <div className="w-8" />
+            {/* Subtask indentation - tighter spacing */}
+            <div className="w-4" />
+            <div className="w-2" />
             <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           </div>
         );
