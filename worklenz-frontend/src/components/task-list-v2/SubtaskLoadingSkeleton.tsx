@@ -32,6 +32,12 @@ const SubtaskLoadingSkeleton: React.FC<SubtaskLoadingSkeletonProps> = ({ visible
             <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           </div>
         );
+      case 'description':
+        return (
+          <div style={baseStyle} className="flex items-center px-2">
+            <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </div>
+        );
       case 'status':
         return (
           <div style={baseStyle} className="flex items-center">
