@@ -11,5 +11,11 @@
   "attachments": "attachments",
   "enterSubtaskName": "Enter subtask name...",
   "add": "Add",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "renameGroup": "Rename Group",
+  "renameStatus": "Rename Status",
+  "renamePhase": "Rename Phase",
+  "changeCategory": "Change Category",
+  "clickToEditGroupName": "Click to edit group name",
+  "enterGroupName": "Enter group name"
 }

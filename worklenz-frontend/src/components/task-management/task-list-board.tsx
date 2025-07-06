@@ -18,43 +18,21 @@ import { Card, Spin, Empty, Alert } from 'antd';
 import { RootState } from '@/app/store';
 import {
   selectAllTasks,
-  selectGroups,
-  selectGrouping,
   selectLoading,
   selectError,
-  selectSelectedPriorities,
-  selectSearch,
-  reorderTasks,
-  moveTaskToGroup,
-  moveTaskBetweenGroups,
-  optimisticTaskMove,
   reorderTasksInGroup,
-  setLoading,
-  setError,
-  setSelectedPriorities,
-  setSearch,
-  resetTaskManagement,
   toggleTaskExpansion,
-  addSubtaskToParent,
   fetchTasksV3,
+  selectTaskGroupsV3,
+  fetchSubTasks,
 } from '@/features/task-management/task-management.slice';
 import {
   selectCurrentGrouping,
-  selectCollapsedGroups,
-  selectIsGroupCollapsed,
-  toggleGroupCollapsed,
-  expandAllGroups,
-  collapseAllGroups,
 } from '@/features/task-management/grouping.slice';
 import {
   selectSelectedTaskIds,
-  selectLastSelectedTaskId,
-  selectIsTaskSelected,
-  selectTask,
-  deselectTask,
-  toggleTaskSelection,
-  selectRange,
   clearSelection,
+  selectTask,
 } from '@/features/task-management/selection.slice';
 import {
   selectTasks,
@@ -89,18 +67,11 @@ import {
   IBulkTasksPriorityChangeRequest,
   IBulkTasksStatusChangeRequest,
 } from '@/types/tasks/bulk-action-bar.types';
-import { ITaskStatus } from '@/types/tasks/taskStatus.types';
-import { ITaskPriority } from '@/types/tasks/taskPriority.types';
-import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { ITaskLabel } from '@/types/tasks/taskLabel.types';
-import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
-import { performanceMonitor } from '@/utils/performance-monitor';
-import debugPerformance from '@/utils/debug-performance';
 
 // Import the improved TaskListFilters component synchronously to avoid suspense
 import ImprovedTaskFilters from './improved-task-filters';
@@ -173,18 +144,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Redux selectors using V3 API (pre-processed data, minimal loops)
   const tasks = useSelector(selectAllTasks);
-  const groups = useSelector(selectGroups);
-  const grouping = useSelector(selectGrouping);
   const loading = useSelector(selectLoading);
   const error = useSelector(selectError);
-  const selectedPriorities = useSelector(selectSelectedPriorities);
-  const searchQuery = useSelector(selectSearch);
   const taskGroups = useSelector(selectTaskGroupsV3, shallowEqual);
   const currentGrouping = useSelector(selectCurrentGrouping);
-  const collapsedGroups = useSelector(selectCollapsedGroups);
   const selectedTaskIds = useSelector(selectSelectedTaskIds);
-  const lastSelectedTaskId = useSelector(selectLastSelectedTaskId);
-  const selectedTasks = useSelector((state: RootState) => state.bulkActionReducer.selectedTasks);
 
   // Bulk action selectors
   const statusList = useSelector((state: RootState) => state.taskStatusReducer.status);
@@ -202,9 +166,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const tasksById = useMemo(() => {
     const map: Record<string, Task> = {};
     // Cache all tasks for full functionality - performance optimizations are handled at the virtualization level
-    tasks.forEach(task => {
-      map[task.id] = task;
-    });
+    if (Array.isArray(tasks)) {
+      tasks.forEach((task: Task) => {
+        map[task.id] = task;
+      });
+    }
     return map;
   }, [tasks]);
 
@@ -262,14 +228,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   const hasAnyTasks = useMemo(() => totalTasks > 0, [totalTasks]);
 
-  // Memoized handlers for better performance
-  const handleGroupingChange = useCallback(
-    (newGroupBy: 'status' | 'priority' | 'phase') => {
-      dispatch(setCurrentGrouping(newGroupBy));
-    },
-    [dispatch]
-  );
-
   // Add isDragging state
   const [isDragging, setIsDragging] = useState(false);
 
@@ -280,7 +238,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const taskId = active.id as string;
 
       // Find the task and its group
-      const activeTask = tasks.find(t => t.id === taskId) || null;
+      const activeTask = Array.isArray(tasks) ? tasks.find((t: Task) => t.id === taskId) || null : null;
       let activeGroupId: string | null = null;
 
       if (activeTask) {
@@ -312,7 +270,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const overId = over.id as string;
 
       // Check if we're hovering over a task or a group container
-      const targetTask = tasks.find(t => t.id === overId);
+      const targetTask = Array.isArray(tasks) ? tasks.find((t: Task) => t.id === overId) : undefined;
       let targetGroupId = overId;
 
       if (targetTask) {
@@ -362,7 +320,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       let targetIndex = -1;
 
       // Check if dropping on a task or a group
-      const targetTask = tasks.find(t => t.id === overId);
+      const targetTask = Array.isArray(tasks) ? tasks.find((t: Task) => t.id === overId) : undefined;
       if (targetTask) {
         // Dropping on a task, find which group contains this task
         for (const group of taskGroups) {
@@ -398,13 +356,10 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           // Use the new reorderTasksInGroup action that properly handles group arrays
           dispatch(
             reorderTasksInGroup({
-              taskId: activeTaskId,
-              fromGroupId: currentDragState.activeGroupId,
-              toGroupId: targetGroupId,
-              fromIndex: sourceIndex,
-              toIndex: finalTargetIndex,
-              groupType: targetGroup.groupType,
-              groupValue: targetGroup.groupValue,
+              sourceTaskId: activeTaskId,
+              destinationTaskId: targetTask?.id || '',
+              sourceGroupId: currentDragState.activeGroupId,
+              destinationGroupId: targetGroupId,
             })
           );
 
@@ -448,10 +403,10 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const newSelectedIds = Array.from(currentSelectedIds);
 
       // Map selected tasks to the required format
-      const newSelectedTasks = tasks
-        .filter((t) => newSelectedIds.includes(t.id))
+      const newSelectedTasks = Array.isArray(tasks) ? tasks
+        .filter((t: Task) => newSelectedIds.includes(t.id))
         .map(
-          (task): IProjectTask => ({
+          (task: Task): IProjectTask => ({
             id: task.id,
             name: task.title,
             task_key: task.task_key,
@@ -463,11 +418,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
             description: task.description,
             start_date: task.startDate,
             end_date: task.dueDate,
-            total_hours: task.timeTracking.estimated || 0,
-            total_minutes: task.timeTracking.logged || 0,
+            total_hours: task.timeTracking?.estimated || 0,
+            total_minutes: task.timeTracking?.logged || 0,
             progress: task.progress,
             sub_tasks_count: task.sub_tasks_count || 0,
-            assignees: task.assignees.map((assigneeId) => ({
+            assignees: task.assignees?.map((assigneeId: string) => ({
               id: assigneeId,
               name: '',
               email: '',
@@ -477,15 +432,16 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
             })),
             labels: task.labels,
             manual_progress: false,
-            created_at: task.createdAt,
-            updated_at: task.updatedAt,
+            created_at: (task as any).createdAt || (task as any).created_at,
+            updated_at: (task as any).updatedAt || (task as any).updated_at,
             sort_order: task.order,
           })
-        );
+        ) : [];
 
       // Dispatch both actions to update the Redux state
       dispatch(selectTasks(newSelectedTasks));
-      dispatch(selectTaskIds(newSelectedIds));
+      // Update selection state with the new task IDs
+      newSelectedIds.forEach(taskId => dispatch(selectTask(taskId)));
     },
     [dispatch, selectedTaskIds, tasks]
   );

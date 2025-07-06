@@ -1,11 +1,8 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import { GroupedVirtuoso } from 'react-virtuoso';
 import {
   DndContext,
-  DragEndEvent,
-  DragOverEvent,
   DragOverlay,
-  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
@@ -18,6 +15,13 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
+import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
+import { createPortal } from 'react-dom';
+import { Skeleton } from 'antd';
+import { HolderOutlined } from '@ant-design/icons';
+
+// Redux hooks and selectors
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -26,11 +30,12 @@ import {
   selectGrouping,
   selectLoading,
   selectError,
-  selectSelectedPriorities,
-  selectSearch,
   fetchTasksV3,
-  reorderTasksInGroup,
-  moveTaskBetweenGroups,
+  fetchTaskListColumns,
+  selectColumns,
+  selectCustomColumns,
+  selectLoadingColumns,
+  updateColumnVisibility,
 } from '@/features/task-management/task-management.slice';
 import {
   selectCurrentGrouping,
@@ -40,63 +45,60 @@ import {
 import {
   selectSelectedTaskIds,
   selectLastSelectedTaskId,
-  selectIsTaskSelected,
   selectTask,
-  deselectTask,
   toggleTaskSelection,
   selectRange,
   clearSelection,
 } from '@/features/task-management/selection.slice';
+import {
+  setCustomColumnModalAttributes,
+  toggleCustomColumnModalOpen,
+} from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+
+// Components
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
 import TaskGroupHeader from './TaskGroupHeader';
-import { Task, TaskGroup } from '@/types/task-management.types';
-import { RootState } from '@/app/store';
-import { TaskListField } from '@/types/task-list-field.types';
-import { useParams } from 'react-router-dom';
 import ImprovedTaskFilters from '@/components/task-management/improved-task-filters';
 import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-action-bar';
+import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
+import AddTaskRow from './components/AddTaskRow';
+import {
+  AddCustomColumnButton,
+  CustomColumnHeader,
+} from './components/CustomColumnComponents';
+
+// Hooks and utilities
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
-import { HolderOutlined } from '@ant-design/icons';
-import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
+import { useSocket } from '@/socket/socketContext';
+import { useDragAndDrop } from './hooks/useDragAndDrop';
+import { useBulkActions } from './hooks/useBulkActions';
 
-// Base column configuration
-const BASE_COLUMNS = [
-  { id: 'dragHandle', label: '', width: '32px', isSticky: true, key: 'dragHandle' },
-  { id: 'checkbox', label: '', width: '40px', isSticky: true, key: 'checkbox' },
-  { id: 'taskKey', label: 'Key', width: '100px', key: COLUMN_KEYS.KEY },
-  { id: 'title', label: 'Title', width: '470px', isSticky: true, key: COLUMN_KEYS.NAME },
-  { id: 'status', label: 'Status', width: '120px', key: COLUMN_KEYS.STATUS },
-  { id: 'assignees', label: 'Assignees', width: '150px', key: COLUMN_KEYS.ASSIGNEES },
-  { id: 'priority', label: 'Priority', width: '120px', key: COLUMN_KEYS.PRIORITY },
-  { id: 'dueDate', label: 'Due Date', width: '120px', key: COLUMN_KEYS.DUE_DATE },
-  { id: 'progress', label: 'Progress', width: '120px', key: COLUMN_KEYS.PROGRESS },
-  { id: 'labels', label: 'Labels', width: 'auto', key: COLUMN_KEYS.LABELS },
-  { id: 'phase', label: 'Phase', width: '120px', key: COLUMN_KEYS.PHASE },
-  { id: 'timeTracking', label: 'Time Tracking', width: '120px', key: COLUMN_KEYS.TIME_TRACKING },
-  { id: 'estimation', label: 'Estimation', width: '120px', key: COLUMN_KEYS.ESTIMATION },
-  { id: 'startDate', label: 'Start Date', width: '120px', key: COLUMN_KEYS.START_DATE },
-  { id: 'dueTime', label: 'Due Time', width: '120px', key: COLUMN_KEYS.DUE_TIME },
-  { id: 'completedDate', label: 'Completed Date', width: '120px', key: COLUMN_KEYS.COMPLETED_DATE },
-  { id: 'createdDate', label: 'Created Date', width: '120px', key: COLUMN_KEYS.CREATED_DATE },
-  { id: 'lastUpdated', label: 'Last Updated', width: '120px', key: COLUMN_KEYS.LAST_UPDATED },
-  { id: 'reporter', label: 'Reporter', width: '120px', key: COLUMN_KEYS.REPORTER },
-];
-
-type ColumnStyle = {
-  width: string;
-  position?: 'static' | 'relative' | 'absolute' | 'sticky' | 'fixed';
-  left?: number;
-  backgroundColor?: string;
-  zIndex?: number;
-  flexShrink?: number;
-};
+// Constants and types
+import { BASE_COLUMNS, ColumnStyle } from './constants/columns';
+import { Task } from '@/types/task-management.types';
+import { SocketEvents } from '@/shared/socket-events';
 
 const TaskListV2: React.FC = () => {
   const dispatch = useAppDispatch();
   const { projectId: urlProjectId } = useParams();
+  const { t } = useTranslation('task-list-table');
+  const { socket, connected } = useSocket();
 
-  // Drag and drop state
-  const [activeId, setActiveId] = useState<string | null>(null);
+  // Redux state selectors
+  const allTasks = useAppSelector(selectAllTasksArray);
+  const groups = useAppSelector(selectGroups);
+  const grouping = useAppSelector(selectGrouping);
+  const loading = useAppSelector(selectLoading);
+  const error = useAppSelector(selectError);
+  const currentGrouping = useAppSelector(selectCurrentGrouping);
+  const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
+  const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
+  const collapsedGroups = useAppSelector(selectCollapsedGroups);
+
+  const fields = useAppSelector(state => state.taskManagementFields) || [];
+  const columns = useAppSelector(selectColumns);
+  const customColumns = useAppSelector(selectCustomColumns);
+  const loadingColumns = useAppSelector(selectLoadingColumns);
 
   // Configure sensors for drag and drop
   const sensors = useSensors(
@@ -116,51 +118,110 @@ const TaskListV2: React.FC = () => {
     })
   );
 
-  // Using Redux state for collapsedGroups instead of local state
-  const collapsedGroups = useAppSelector(selectCollapsedGroups);
-
-  // Selectors
-  const allTasks = useAppSelector(selectAllTasksArray); // Renamed to allTasks for clarity
-  const groups = useAppSelector(selectGroups);
-  const grouping = useAppSelector(selectGrouping);
-  const loading = useAppSelector(selectLoading);
-  const error = useAppSelector(selectError);
-  const selectedPriorities = useAppSelector(selectSelectedPriorities);
-  const searchQuery = useAppSelector(selectSearch);
-  const currentGrouping = useAppSelector(selectCurrentGrouping);
-  const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
-  const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
-
-  const fields = useAppSelector(state => state.taskManagementFields) || [];
+  // Custom hooks
+  const { activeId, handleDragStart, handleDragOver, handleDragEnd } = useDragAndDrop(allTasks, groups);
+  const bulkActions = useBulkActions();
 
   // Enable real-time updates via socket handlers
   useTaskSocketHandlers();
 
-  // Filter visible columns based on fields
+  // Filter visible columns based on local fields (primary) and backend columns (fallback)
   const visibleColumns = useMemo(() => {
-    return BASE_COLUMNS.filter(column => {
+    // Start with base columns
+    const baseVisibleColumns = BASE_COLUMNS.filter(column => {
       // Always show drag handle and title (sticky columns)
       if (column.isSticky) return true;
-      // Check if field is visible for all other columns (including task key)
+      
+      // Primary: Check local fields configuration
       const field = fields.find(f => f.key === column.key);
-      return field?.visible ?? false;
+      if (field) {
+        return field.visible;
+      }
+      
+      // Fallback: Check backend column configuration if local field not found
+      const backendColumn = columns.find(c => c.key === column.key);
+      if (backendColumn) {
+        return backendColumn.pinned ?? false;
+      }
+      
+      // Default: hide if neither local field nor backend column found
+      return false;
     });
-  }, [fields]);
+
+    // Add visible custom columns
+    const visibleCustomColumns = customColumns
+      ?.filter(column => column.pinned)
+      ?.map(column => {
+        // Give selection columns more width for dropdown content
+        const fieldType = column.custom_column_obj?.fieldType;
+        let defaultWidth = 160;
+        if (fieldType === 'selection') {
+          defaultWidth = 180; // Extra width for selection dropdowns
+        } else if (fieldType === 'people') {
+          defaultWidth = 170; // Extra width for people with avatars
+        }
+        
+        return {
+          id: column.key || column.id || 'unknown',
+          label: column.name || t('customColumns.customColumnHeader'),
+          width: `${(column as any).width || defaultWidth}px`,
+          key: column.key || column.id || 'unknown',
+          custom_column: true,
+          custom_column_obj: column.custom_column_obj || (column as any).configuration,
+          isCustom: true,
+          name: column.name,
+          uuid: column.id,
+        };
+      }) || [];
+
+    return [...baseVisibleColumns, ...visibleCustomColumns];
+  }, [fields, columns, customColumns, t]);
+
+  // Sync local field changes with backend column configuration (debounced)
+  useEffect(() => {
+    if (!urlProjectId || columns.length === 0 || fields.length === 0) return;
+
+    const timeoutId = setTimeout(() => {
+      const changedFields = fields.filter(field => {
+        const backendColumn = columns.find(c => c.key === field.key);
+        if (backendColumn) {
+          return (backendColumn.pinned ?? false) !== field.visible;
+        }
+        return false;
+      });
+
+      changedFields.forEach(field => {
+        const backendColumn = columns.find(c => c.key === field.key);
+        if (backendColumn) {
+          dispatch(updateColumnVisibility({
+            projectId: urlProjectId,
+            item: {
+              ...backendColumn,
+              pinned: field.visible
+            }
+          }));
+        }
+      });
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [fields, columns, urlProjectId, dispatch]);
 
   // Effects
   useEffect(() => {
     if (urlProjectId) {
       dispatch(fetchTasksV3(urlProjectId));
+      dispatch(fetchTaskListColumns(urlProjectId));
     }
   }, [dispatch, urlProjectId]);
 
-  // Handlers
+  // Event handlers
   const handleTaskSelect = useCallback(
     (taskId: string, event: React.MouseEvent) => {
       if (event.ctrlKey || event.metaKey) {
         dispatch(toggleTaskSelection(taskId));
       } else if (event.shiftKey && lastSelectedTaskId) {
-        const taskIds = allTasks.map(t => t.id); // Use allTasks here
+        const taskIds = allTasks.map(t => t.id);
         const startIdx = taskIds.indexOf(lastSelectedTaskId);
         const endIdx = taskIds.indexOf(taskId);
         const rangeIds = taskIds.slice(Math.min(startIdx, endIdx), Math.max(startIdx, endIdx) + 1);
@@ -175,259 +236,98 @@ const TaskListV2: React.FC = () => {
 
   const handleGroupCollapse = useCallback(
     (groupId: string) => {
-      dispatch(toggleGroupCollapsed(groupId)); // Dispatch Redux action to toggle collapsed state
+      dispatch(toggleGroupCollapsed(groupId));
     },
     [dispatch]
   );
 
-  // Drag and drop handlers
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  }, []);
-
-  const handleDragOver = useCallback(
-    (event: DragOverEvent) => {
-      const { active, over } = event;
-
-      if (!over) return;
-
-      const activeId = active.id;
-      const overId = over.id;
-
-      // Find the active task and the item being dragged over
-      const activeTask = allTasks.find(task => task.id === activeId);
-      if (!activeTask) return;
-
-      // Check if we're dragging over a task or a group
-      const overTask = allTasks.find(task => task.id === overId);
-      const overGroup = groups.find(group => group.id === overId);
-
-      // Find the groups
-      const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
-      let targetGroup = overGroup;
-
-      if (overTask) {
-        targetGroup = groups.find(group => group.taskIds.includes(overTask.id));
-      }
-
-      if (!activeGroup || !targetGroup) return;
-
-      // If dragging to a different group, we need to handle cross-group movement
-      if (activeGroup.id !== targetGroup.id) {
-        console.log('Cross-group drag detected:', {
-          activeTask: activeTask.id,
-          fromGroup: activeGroup.id,
-          toGroup: targetGroup.id,
-        });
-      }
-    },
-    [allTasks, groups]
-  );
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      setActiveId(null);
-
-      if (!over || active.id === over.id) {
+  // Function to update custom column values
+  const updateTaskCustomColumnValue = useCallback((taskId: string, columnKey: string, value: string) => {
+    try {
+      if (!urlProjectId) {
+        console.error('Project ID is missing');
         return;
       }
 
-      const activeId = active.id;
-      const overId = over.id;
+      const body = {
+        task_id: taskId,
+        column_key: columnKey,
+        value: value,
+        project_id: urlProjectId,
+      };
 
-      // Find the active task
-      const activeTask = allTasks.find(task => task.id === activeId);
-      if (!activeTask) {
-        console.error('Active task not found:', activeId);
-        return;
-      }
-
-      // Find the groups
-      const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
-      if (!activeGroup) {
-        console.error('Could not find active group for task:', activeId);
-        return;
-      }
-
-      // Check if we're dropping on a task or a group
-      const overTask = allTasks.find(task => task.id === overId);
-      const overGroup = groups.find(group => group.id === overId);
-
-      let targetGroup = overGroup;
-      let insertIndex = 0;
-
-      if (overTask) {
-        // Dropping on a task
-        targetGroup = groups.find(group => group.taskIds.includes(overTask.id));
-        if (targetGroup) {
-          insertIndex = targetGroup.taskIds.indexOf(overTask.id);
-        }
-      } else if (overGroup) {
-        // Dropping on a group (at the end)
-        targetGroup = overGroup;
-        insertIndex = targetGroup.taskIds.length;
-      }
-
-      if (!targetGroup) {
-        console.error('Could not find target group');
-        return;
-      }
-
-      const isCrossGroup = activeGroup.id !== targetGroup.id;
-      const activeIndex = activeGroup.taskIds.indexOf(activeTask.id);
-
-      console.log('Drag operation:', {
-        activeId,
-        overId,
-        activeTask: activeTask.name || activeTask.title,
-        activeGroup: activeGroup.id,
-        targetGroup: targetGroup.id,
-        activeIndex,
-        insertIndex,
-        isCrossGroup,
-      });
-
-      if (isCrossGroup) {
-        // Moving task between groups
-        console.log('Moving task between groups:', {
-          task: activeTask.name || activeTask.title,
-          from: activeGroup.title,
-          to: targetGroup.title,
-          newPosition: insertIndex,
-        });
-
-        // Move task to the target group
-        dispatch(
-          moveTaskBetweenGroups({
-            taskId: activeId as string,
-            sourceGroupId: activeGroup.id,
-            targetGroupId: targetGroup.id,
-          })
-        );
-
-        // Reorder task within target group at drop position
-        dispatch(
-          reorderTasksInGroup({
-            sourceTaskId: activeId as string,
-            destinationTaskId: over.id as string,
-            sourceGroupId: activeGroup.id,
-            destinationGroupId: targetGroup.id,
-          })
-        );
+      if (socket && connected) {
+        socket.emit(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), JSON.stringify(body));
       } else {
-        // Reordering within the same group
-        console.log('Reordering task within same group:', {
-          task: activeTask.name || activeTask.title,
-          group: activeGroup.title,
-          from: activeIndex,
-          to: insertIndex,
-        });
-
-        if (activeIndex !== insertIndex) {
-          // Reorder task within same group at drop position
-          dispatch(
-            reorderTasksInGroup({
-              sourceTaskId: activeId as string,
-              destinationTaskId: over.id as string,
-              sourceGroupId: activeGroup.id,
-              destinationGroupId: activeGroup.id,
-            })
-          );
-        }
+        console.warn('Socket not connected, unable to emit TASK_CUSTOM_COLUMN_UPDATE event');
       }
-    },
-    [allTasks, groups]
-  );
+    } catch (error) {
+      console.error('Error updating custom column value:', error);
+    }
+  }, [urlProjectId, socket, connected]);
 
-  // Bulk action handlers
-  const handleClearSelection = useCallback(() => {
-    dispatch(clearSelection());
-  }, [dispatch]);
+  // Custom column settings handler
+  const handleCustomColumnSettings = useCallback((columnKey: string) => {
+    if (!columnKey) return;
+    
+    const columnData = visibleColumns.find(col => col.key === columnKey || col.id === columnKey);
+    
+    dispatch(setCustomColumnModalAttributes({ 
+      modalType: 'edit', 
+      columnId: columnKey,
+      columnData: columnData
+    }));
+    dispatch(toggleCustomColumnModalOpen(true));
+  }, [dispatch, visibleColumns]);
 
-  const handleBulkStatusChange = useCallback(async (statusId: string) => {
-    // TODO: Implement bulk status change
-    console.log('Bulk status change:', statusId);
-  }, []);
-
-  const handleBulkPriorityChange = useCallback(async (priorityId: string) => {
-    // TODO: Implement bulk priority change
-    console.log('Bulk priority change:', priorityId);
-  }, []);
-
-  const handleBulkPhaseChange = useCallback(async (phaseId: string) => {
-    // TODO: Implement bulk phase change
-    console.log('Bulk phase change:', phaseId);
-  }, []);
-
-  const handleBulkAssignToMe = useCallback(async () => {
-    // TODO: Implement bulk assign to me
-    console.log('Bulk assign to me');
-  }, []);
-
-  const handleBulkAssignMembers = useCallback(async (memberIds: string[]) => {
-    // TODO: Implement bulk assign members
-    console.log('Bulk assign members:', memberIds);
-  }, []);
-
-  const handleBulkAddLabels = useCallback(async (labelIds: string[]) => {
-    // TODO: Implement bulk add labels
-    console.log('Bulk add labels:', labelIds);
-  }, []);
-
-  const handleBulkArchive = useCallback(async () => {
-    // TODO: Implement bulk archive
-    console.log('Bulk archive');
-  }, []);
-
-  const handleBulkDelete = useCallback(async () => {
-    // TODO: Implement bulk delete
-    console.log('Bulk delete');
-  }, []);
-
-  const handleBulkDuplicate = useCallback(async () => {
-    // TODO: Implement bulk duplicate
-    console.log('Bulk duplicate');
-  }, []);
-
-  const handleBulkExport = useCallback(async () => {
-    // TODO: Implement bulk export
-    console.log('Bulk export');
-  }, []);
-
-  const handleBulkSetDueDate = useCallback(async (date: string) => {
-    // TODO: Implement bulk set due date
-    console.log('Bulk set due date:', date);
+  // Add callback for task added
+  const handleTaskAdded = useCallback(() => {
+    // Task is now added in real-time via socket, no need to refetch
+    // The global socket handler will handle the real-time update
   }, []);
 
   // Memoized values for GroupedVirtuoso
   const virtuosoGroups = useMemo(() => {
     let currentTaskIndex = 0;
+
     return groups.map(group => {
       const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
 
-      // Order tasks according to group.taskIds array to maintain proper order
       const visibleTasksInGroup = isCurrentGroupCollapsed
         ? []
         : group.taskIds
             .map(taskId => allTasks.find(task => task.id === taskId))
-            .filter((task): task is Task => task !== undefined); // Type guard to filter out undefined tasks
+            .filter((task): task is Task => task !== undefined);
 
       const tasksForVirtuoso = visibleTasksInGroup.map(task => ({
         ...task,
         originalIndex: allTasks.indexOf(task),
       }));
 
+      const itemsWithAddTask = !isCurrentGroupCollapsed ? [
+        ...tasksForVirtuoso,
+        {
+          id: `add-task-${group.id}`,
+          isAddTaskRow: true,
+          groupId: group.id,
+          groupType: currentGrouping || 'status',
+          groupValue: group.id, // Use the actual database ID from backend
+          projectId: urlProjectId,
+        }
+      ] : tasksForVirtuoso;
+
       const groupData = {
         ...group,
-        tasks: tasksForVirtuoso,
+        tasks: itemsWithAddTask,
         startIndex: currentTaskIndex,
-        count: tasksForVirtuoso.length,
+        count: itemsWithAddTask.length,
+        actualCount: group.taskIds.length,
+        groupValue: group.groupValue || group.title,
       };
-      currentTaskIndex += tasksForVirtuoso.length;
+      currentTaskIndex += itemsWithAddTask.length;
       return groupData;
     });
-  }, [groups, allTasks, collapsedGroups]);
+  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId]);
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
@@ -437,49 +337,12 @@ const TaskListV2: React.FC = () => {
     return virtuosoGroups.flatMap(group => group.tasks);
   }, [virtuosoGroups]);
 
-  // Memoize column headers to prevent unnecessary re-renders
-  const columnHeaders = useMemo(
-    () => (
-      <div className="flex items-center px-4 py-2" style={{ minWidth: 'max-content' }}>
-        {visibleColumns.map(column => {
-          const columnStyle: ColumnStyle = {
-            width: column.width,
-            flexShrink: 0, // Prevent columns from shrinking
-            // Add specific styling for labels column with auto width
-            ...(column.id === 'labels' && column.width === 'auto'
-              ? {
-                  minWidth: '200px', // Ensure minimum width for labels
-                  flexGrow: 1, // Allow it to grow
-                }
-              : {}),
-          };
-
-          return (
-            <div
-              key={column.id}
-              className="text-xs font-medium text-gray-500 dark:text-gray-400"
-              style={columnStyle}
-            >
-              {column.id === 'dragHandle' ? (
-                <HolderOutlined className="text-gray-400" />
-              ) : column.id === 'checkbox' ? (
-                <span></span> // Empty for checkbox column header
-              ) : (
-                column.label
-              )}
-            </div>
-          );
-        })}
-      </div>
-    ),
-    [visibleColumns]
-  );
-
   // Render functions
   const renderGroup = useCallback(
     (groupIndex: number) => {
       const group = virtuosoGroups[groupIndex];
-      const isGroupEmpty = group.count === 0;
+      const isGroupCollapsed = collapsedGroups.has(group.id);
+      const isGroupEmpty = group.actualCount === 0;
 
       return (
         <div className={groupIndex > 0 ? 'mt-2' : ''}>
@@ -487,40 +350,114 @@ const TaskListV2: React.FC = () => {
             group={{
               id: group.id,
               name: group.title,
-              count: group.count,
+              count: group.actualCount,
               color: group.color,
             }}
-            isCollapsed={collapsedGroups.has(group.id)}
+            isCollapsed={isGroupCollapsed}
             onToggle={() => handleGroupCollapse(group.id)}
+            projectId={urlProjectId || ''}
           />
-          {/* Empty group drop zone */}
-          {isGroupEmpty && !collapsedGroups.has(group.id) && (
-            <div className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-transparent hover:border-blue-300 transition-colors">
-              <div className="text-sm">Drop tasks here</div>
+          {isGroupEmpty && !isGroupCollapsed && (
+            <div className="relative w-full">
+              <div className="flex items-center min-w-max px-1 py-3">
+                {visibleColumns.map((column) => (
+                  <div
+                    key={`empty-${column.id}`}
+                    style={{ width: column.width, flexShrink: 0 }}
+                  />
+                ))}
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-sm italic text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 px-4 py-1 rounded-md border border-gray-200 dark:border-gray-700">
+                  {t('noTasksInGroup')}
+                </div>
+              </div>
             </div>
           )}
         </div>
       );
     },
-    [virtuosoGroups, collapsedGroups, handleGroupCollapse]
+    [virtuosoGroups, collapsedGroups, handleGroupCollapse, visibleColumns, t]
   );
 
   const renderTask = useCallback(
     (taskIndex: number) => {
-      const task = virtuosoItems[taskIndex]; // Get task from the flattened virtuosoItems
-      if (!task || !urlProjectId) return null; // Should not happen if logic is correct
+      const item = virtuosoItems[taskIndex];
+      if (!item || !urlProjectId) return null;
+      
+      if ('isAddTaskRow' in item && item.isAddTaskRow) {
+        return (
+          <AddTaskRow
+            groupId={item.groupId}
+            groupType={item.groupType}
+            groupValue={item.groupValue}
+            projectId={urlProjectId}
+            visibleColumns={visibleColumns}
+            onTaskAdded={handleTaskAdded}
+          />
+        );
+      }
+      
       return (
         <TaskRowWithSubtasks
-          taskId={task.id}
+          taskId={item.id}
           projectId={urlProjectId}
           visibleColumns={visibleColumns}
+          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
         />
       );
     },
-    [virtuosoItems, visibleColumns]
+    [virtuosoItems, visibleColumns, urlProjectId, handleTaskAdded, updateTaskCustomColumnValue]
   );
 
-  if (loading) return <div>Loading...</div>;
+  // Render column headers
+  const renderColumnHeaders = useCallback(() => (
+            <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center px-1 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
+                {visibleColumns.map(column => {
+                  const columnStyle: ColumnStyle = {
+                    width: column.width,
+                    flexShrink: 0,
+                    ...(column.id === 'labels' && column.width === 'auto'
+                      ? {
+                          minWidth: '200px',
+                          flexGrow: 1,
+                        }
+                      : {}),
+                    ...((column as any).minWidth && { minWidth: (column as any).minWidth }),
+                    ...((column as any).maxWidth && { maxWidth: (column as any).maxWidth }),
+                  };
+
+                  return (
+                    <div
+                      key={column.id}
+                      className={`text-sm font-semibold text-gray-600 dark:text-gray-300 ${
+                        column.id === 'taskKey' ? 'pl-3' : ''
+                      }`}
+                      style={columnStyle}
+                    >
+              {column.id === 'dragHandle' || column.id === 'checkbox' ? (
+                        <span></span>
+                      ) : (column as any).isCustom ? (
+                        <CustomColumnHeader
+                          column={column}
+                          onSettingsClick={handleCustomColumnSettings}
+                        />
+                      ) : (
+                        t(column.label || '')
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-center" style={{ width: '60px', flexShrink: 0 }}>
+                  <AddCustomColumnButton />
+                </div>
+              </div>
+            </div>
+  ), [visibleColumns, t, handleCustomColumnSettings]);
+
+  // Loading and error states
+  if (loading || loadingColumns) return <Skeleton active />;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -531,31 +468,35 @@ const TaskListV2: React.FC = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col h-screen bg-white dark:bg-gray-900">
+      <div className="flex flex-col bg-white dark:bg-gray-900" style={{ height: '100vh', overflow: 'hidden' }}>
         {/* Task Filters */}
-        <div className="flex-none px-4 py-3">
+        <div className="flex-none px-4 py-3" style={{ height: '66px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
         </div>
 
-        {/* Table Container with synchronized horizontal scrolling */}
-        <div className="flex-1 overflow-x-auto">
-          <div className="min-w-max flex flex-col h-full">
-            {/* Column Headers - Fixed at top */}
-            <div className="flex-none border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              {columnHeaders}
-            </div>
+        {/* Table Container */}
+        <div 
+          className="flex-1 overflow-auto border border-gray-200 dark:border-gray-700" 
+          style={{ 
+            height: '600px',
+            maxHeight: '600px'
+          }}
+        >
+          <div style={{ minWidth: 'max-content' }}>
+            {/* Column Headers */}
+            {renderColumnHeaders()}
 
-            {/* Task List - Scrollable content */}
-            <div className="flex-1">
+            {/* Task List Content */}
+            <div className="bg-white dark:bg-gray-900">
               <SortableContext
                 items={virtuosoItems
-                  .filter(task => !task.parent_task_id)
-                  .map(task => task.id)
+                  .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
+                  .map(item => item.id)
                   .filter((id): id is string => id !== undefined)}
                 strategy={verticalListSortingStrategy}
               >
                 <GroupedVirtuoso
-                  style={{ height: 'calc(100vh - 200px)' }}
+                  style={{ height: '550px' }}
                   groupCounts={virtuosoGroupCounts}
                   groupContent={renderGroup}
                   itemContent={renderTask}
@@ -564,7 +505,7 @@ const TaskListV2: React.FC = () => {
                       HTMLDivElement,
                       { style?: React.CSSProperties; children?: React.ReactNode }
                     >(({ style, children }, ref) => (
-                      <div ref={ref} style={style || {}} className="virtuoso-list-container">
+                      <div ref={ref} style={style || {}} className="virtuoso-list-container bg-white dark:bg-gray-900">
                         {children}
                       </div>
                     )),
@@ -600,24 +541,29 @@ const TaskListV2: React.FC = () => {
 
         {/* Bulk Action Bar */}
         {selectedTaskIds.length > 0 && urlProjectId && (
-          <OptimizedBulkActionBar
-            selectedTaskIds={selectedTaskIds}
-            totalSelected={selectedTaskIds.length}
-            projectId={urlProjectId}
-            onClearSelection={handleClearSelection}
-            onBulkStatusChange={handleBulkStatusChange}
-            onBulkPriorityChange={handleBulkPriorityChange}
-            onBulkPhaseChange={handleBulkPhaseChange}
-            onBulkAssignToMe={handleBulkAssignToMe}
-            onBulkAssignMembers={handleBulkAssignMembers}
-            onBulkAddLabels={handleBulkAddLabels}
-            onBulkArchive={handleBulkArchive}
-            onBulkDelete={handleBulkDelete}
-            onBulkDuplicate={handleBulkDuplicate}
-            onBulkExport={handleBulkExport}
-            onBulkSetDueDate={handleBulkSetDueDate}
-          />
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+            <OptimizedBulkActionBar
+              selectedTaskIds={selectedTaskIds}
+              totalSelected={selectedTaskIds.length}
+              projectId={urlProjectId}
+              onClearSelection={bulkActions.handleClearSelection}
+              onBulkStatusChange={(statusId) => bulkActions.handleBulkStatusChange(statusId, selectedTaskIds)}
+              onBulkPriorityChange={(priorityId) => bulkActions.handleBulkPriorityChange(priorityId, selectedTaskIds)}
+              onBulkPhaseChange={(phaseId) => bulkActions.handleBulkPhaseChange(phaseId, selectedTaskIds)}
+              onBulkAssignToMe={() => bulkActions.handleBulkAssignToMe(selectedTaskIds)}
+              onBulkAssignMembers={(memberIds) => bulkActions.handleBulkAssignMembers(memberIds, selectedTaskIds)}
+              onBulkAddLabels={(labelIds) => bulkActions.handleBulkAddLabels(labelIds, selectedTaskIds)}
+              onBulkArchive={() => bulkActions.handleBulkArchive(selectedTaskIds)}
+              onBulkDelete={() => bulkActions.handleBulkDelete(selectedTaskIds)}
+              onBulkDuplicate={() => bulkActions.handleBulkDuplicate(selectedTaskIds)}
+              onBulkExport={() => bulkActions.handleBulkExport(selectedTaskIds)}
+              onBulkSetDueDate={(date) => bulkActions.handleBulkSetDueDate(date, selectedTaskIds)}
+            />
+          </div>
         )}
+
+        {/* Custom Column Modal */}
+        {createPortal(<CustomColumnModal />, document.body, 'custom-column-modal')}
       </div>
     </DndContext>
   );

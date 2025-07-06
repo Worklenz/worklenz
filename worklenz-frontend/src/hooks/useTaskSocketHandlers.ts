@@ -481,18 +481,18 @@ export const useTaskSocketHandlers = () => {
             // Find target group based on new phase value
             let targetGroup: any = null;
 
-            if (newPhaseValue) {
+            if (newPhaseValue && newPhaseValue.trim() !== '') {
               // Find group by phase name
               targetGroup = groups.find(
                 group => group.groupValue === newPhaseValue || group.title === newPhaseValue
               );
             } else {
-              // Find "No Phase" or similar group
+              // Find "Unmapped" group for tasks without a phase or with default phase
               targetGroup = groups.find(
                 group =>
-                  group.groupValue === '' ||
-                  group.title.toLowerCase().includes('no phase') ||
-                  group.title.toLowerCase().includes('unassigned')
+                  group.groupValue === 'Unmapped' ||
+                  group.title === 'Unmapped' ||
+                  group.title.toLowerCase().includes('unmapped')
               );
             }
 
@@ -575,7 +575,9 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleNewTaskReceived = useCallback(
-    (data: IProjectTask) => {
+    (response: any) => {
+      // Handle array format response [index, taskData]
+      const data = Array.isArray(response) ? response[1] : response;
       if (!data) return;
       if (data.parent_task_id) {
         // Handle subtask creation
@@ -600,10 +602,10 @@ export const useTaskSocketHandlers = () => {
                 : 'low') as 'critical' | 'high' | 'medium' | 'low',
           phase: data.phase_name || 'Development',
           progress: data.complete_ratio || 0,
-          assignees: data.assignees?.map(a => a.team_member_id) || [],
+          assignees: data.assignees?.map((a: any) => a.team_member_id) || [],
           assignee_names: data.names || [],
           labels:
-            data.labels?.map(l => ({
+            data.labels?.map((l: any) => ({
               id: l.id || '',
               name: l.name || '',
               color: l.color_code || '#1890ff',
@@ -615,9 +617,8 @@ export const useTaskSocketHandlers = () => {
             estimated: (data.total_hours || 0) + (data.total_minutes || 0) / 60,
             logged: (data.time_spent?.hours || 0) + (data.time_spent?.minutes || 0) / 60,
           },
-          customFields: {},
-          createdAt: data.created_at || new Date().toISOString(),
-          updatedAt: data.updated_at || new Date().toISOString(),
+          created_at: data.created_at || new Date().toISOString(),
+          updated_at: data.updated_at || new Date().toISOString(),
           order: data.sort_order || 0,
           parent_task_id: data.parent_task_id,
           is_sub_task: true,
@@ -634,7 +635,7 @@ export const useTaskSocketHandlers = () => {
         );
       } else {
         // Handle regular task creation - transform to Task format and add
-        const task = {
+        const task: Task = {
           id: data.id || '',
           task_key: data.task_key || '',
           title: data.name || '',
@@ -655,10 +656,10 @@ export const useTaskSocketHandlers = () => {
                 : 'low') as 'critical' | 'high' | 'medium' | 'low',
           phase: data.phase_name || 'Development',
           progress: data.complete_ratio || 0,
-          assignees: data.assignees?.map(a => a.team_member_id) || [],
+          assignees: data.assignees?.map((a: any) => a.team_member_id) || [],
           assignee_names: data.names || [],
           labels:
-            data.labels?.map(l => ({
+            data.labels?.map((l: any) => ({
               id: l.id || '',
               name: l.name || '',
               color: l.color_code || '#1890ff',
@@ -666,14 +667,17 @@ export const useTaskSocketHandlers = () => {
               names: l.names,
             })) || [],
           dueDate: data.end_date,
+          startDate: data.start_date,
           timeTracking: {
             estimated: (data.total_hours || 0) + (data.total_minutes || 0) / 60,
             logged: (data.time_spent?.hours || 0) + (data.time_spent?.minutes || 0) / 60,
           },
-          customFields: {},
-          createdAt: data.created_at || new Date().toISOString(),
-          updatedAt: data.updated_at || new Date().toISOString(),
+          created_at: data.created_at || new Date().toISOString(),
+          updated_at: data.updated_at || new Date().toISOString(),
           order: data.sort_order || 0,
+          sub_tasks: [],
+          sub_tasks_count: 0,
+          show_sub_tasks: false,
         };
 
         // Extract the group UUID from the backend response based on current grouping
@@ -695,7 +699,7 @@ export const useTaskSocketHandlers = () => {
         }
 
         // Use addTaskToGroup with the actual group UUID
-        dispatch(addTaskToGroup({ task, groupId }));
+        dispatch(addTaskToGroup({ task, groupId: groupId || '' }));
 
         // Also update enhanced kanban slice for regular task creation
         dispatch(
@@ -731,6 +735,30 @@ export const useTaskSocketHandlers = () => {
       }
     },
     [dispatch, taskGroups]
+  );
+
+  const handleCustomColumnUpdate = useCallback(
+    (data: { task_id: string; column_key: string; value: string }) => {
+      if (!data || !data.task_id || !data.column_key) return;
+
+      // Update the task-management slice for task-list-v2 components
+      const currentTask = store.getState().taskManagement.entities[data.task_id];
+      if (currentTask) {
+        const updatedCustomColumnValues = {
+          ...currentTask.custom_column_values,
+          [data.column_key]: data.value,
+        };
+
+        const updatedTask: Task = {
+          ...currentTask,
+          custom_column_values: updatedCustomColumnValues,
+          updated_at: new Date().toISOString(),
+        };
+
+        dispatch(updateTask(updatedTask));
+      }
+    },
+    [dispatch]
   );
 
   // Handler for TASK_ASSIGNEES_CHANGE (fallback event with limited data)
@@ -772,6 +800,7 @@ export const useTaskSocketHandlers = () => {
       },
       { event: SocketEvents.QUICK_TASK.toString(), handler: handleNewTaskReceived },
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgressUpdated },
+      { event: SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), handler: handleCustomColumnUpdate },
     ];
 
     // Register all event listeners
@@ -802,5 +831,6 @@ export const useTaskSocketHandlers = () => {
     handleTaskDescriptionChange,
     handleNewTaskReceived,
     handleTaskProgressUpdated,
+    handleCustomColumnUpdate,
   ]);
 };

@@ -1085,6 +1085,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           logged: convertTimeValue(task.time_spent),
         },
         customFields: {},
+        custom_column_values: task.custom_column_values || {}, // Include custom column values
         createdAt: task.created_at || new Date().toISOString(),
         updatedAt: task.updated_at || new Date().toISOString(),
         order: typeof task.sort_order === "number" ? task.sort_order : 0,
@@ -1135,21 +1136,60 @@ export default class TasksControllerV2 extends TasksControllerBase {
     });
 
     // Distribute tasks into groups
+    const unmappedTasks: any[] = [];
+    
     transformedTasks.forEach(task => {
       let groupKey: string;
+      let taskAssigned = false;
+      
       if (groupBy === GroupBy.STATUS) {
         groupKey = task.status;
+        if (groupedResponse[groupKey]) {
+          groupedResponse[groupKey].tasks.push(task);
+          groupedResponse[groupKey].taskIds.push(task.id);
+          taskAssigned = true;
+        }
       } else if (groupBy === GroupBy.PRIORITY) {
         groupKey = task.priority;
-      } else {
-        groupKey = task.phase.toLowerCase().replace(/\s+/g, "_");
-      }
-
-      if (groupedResponse[groupKey]) {
-        groupedResponse[groupKey].tasks.push(task);
-        groupedResponse[groupKey].taskIds.push(task.id);
+        if (groupedResponse[groupKey]) {
+          groupedResponse[groupKey].tasks.push(task);
+          groupedResponse[groupKey].taskIds.push(task.id);
+          taskAssigned = true;
+        }
+      } else if (groupBy === GroupBy.PHASE) {
+        // For phase grouping, check if task has a valid phase
+        if (task.phase && task.phase.trim() !== "") {
+          groupKey = task.phase.toLowerCase().replace(/\s+/g, "_");
+          if (groupedResponse[groupKey]) {
+            groupedResponse[groupKey].tasks.push(task);
+            groupedResponse[groupKey].taskIds.push(task.id);
+            taskAssigned = true;
+          }
+        }
+        // If task doesn't have a valid phase, add to unmapped
+        if (!taskAssigned) {
+          unmappedTasks.push(task);
+        }
       }
     });
+
+    // Create unmapped group if there are tasks without proper phase assignment
+    if (unmappedTasks.length > 0 && groupBy === GroupBy.PHASE) {
+      groupedResponse[UNMAPPED.toLowerCase()] = {
+        id: UNMAPPED,
+        title: UNMAPPED,
+        groupType: groupBy,
+        groupValue: UNMAPPED.toLowerCase(),
+        collapsed: false,
+        tasks: unmappedTasks,
+        taskIds: unmappedTasks.map(task => task.id),
+        color: "#fbc84c69", // Orange color with transparency
+        category_id: null,
+        start_date: null,
+        end_date: null,
+        sort_index: 999, // Put unmapped group at the end
+      };
+    }
 
     // Sort tasks within each group by order
     Object.values(groupedResponse).forEach((group: any) => {
@@ -1168,6 +1208,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
         return groupedResponse[groupKey];
       })
       .filter(group => group && (group.tasks.length > 0 || req.query.include_empty === "true"));
+
+    // Add unmapped group to the end if it exists
+    if (groupedResponse[UNMAPPED.toLowerCase()]) {
+      responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
+    }
     
     const groupingEndTime = performance.now();
 
@@ -1183,15 +1228,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       groups: responseGroups,
       allTasks: transformedTasks,
       grouping: groupBy,
-      totalTasks: transformedTasks.length,
-      performanceMetrics: {
-        totalTime: Math.round(totalTime),
-        queryTime: Math.round(queryEndTime - queryStartTime),
-        transformTime: Math.round(transformEndTime - transformStartTime),
-        groupingTime: Math.round(groupingEndTime - groupingStartTime),
-        progressRefreshTime: shouldRefreshProgress ? Math.round(queryStartTime - startTime) : 0,
-        taskCount: transformedTasks.length
-      }
+      totalTasks: transformedTasks.length
     }));
   }
 
@@ -1213,6 +1250,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         development: "#1890ff",
         testing: "#faad14",
         deployment: "#52c41a",
+        unmapped: "#fbc84c69",
       },
     };
     
