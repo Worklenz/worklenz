@@ -93,6 +93,8 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
         return <div style={baseStyle} />;
       case 'taskKey':
         return <div style={baseStyle} />;
+      case 'description':
+        return <div style={baseStyle} />;
       case 'title':
         return (
           <div className="flex items-center h-full" style={baseStyle}>

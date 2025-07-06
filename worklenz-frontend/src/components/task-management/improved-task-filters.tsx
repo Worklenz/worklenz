@@ -372,6 +372,7 @@ const FilterDropdown: React.FC<{
   isDarkMode,
   className = '',
 }) => {
+  const { t } = useTranslation('task-list-filters');
   // Add permission checks for groupBy section
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
@@ -440,14 +441,14 @@ const FilterDropdown: React.FC<{
       {/* Trigger Button */}
       <button
         onClick={onToggle}
-        className={`
+                  className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
           ${
             selectedCount > 0
               ? isDarkMode
                 ? 'bg-gray-600 text-white border-gray-500'
-                : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold'
+                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
               : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
           hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
@@ -458,7 +459,14 @@ const FilterDropdown: React.FC<{
       >
         <IconComponent className="w-3.5 h-3.5" />
         <span>{section.label}</span>
-        {selectedCount > 0 && (
+        {/* Show selected option for single-select (group by) */}
+        {section.id === 'groupBy' && selectedCount > 0 && (
+          <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            {section.options.find(opt => opt.value === section.selectedValues[0])?.label}
+          </span>
+        )}
+        {/* Show count for multi-select filters */}
+        {section.id !== 'groupBy' && selectedCount > 0 && (
           <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-gray-500 rounded-full">
             {selectedCount}
           </span>
@@ -489,7 +497,7 @@ const FilterDropdown: React.FC<{
                 <input
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  placeholder={`Search ${section.label.toLowerCase()}...`}
+                  placeholder={`${t('searchPlaceholder')} ${section.label.toLowerCase()}...`}
                   className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
                     isDarkMode
                       ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
@@ -504,7 +512,7 @@ const FilterDropdown: React.FC<{
           <div className="max-h-48 overflow-y-auto">
             {filteredOptions.length === 0 ? (
               <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
-                No options found
+                {t('noOptionsFound')}
               </div>
             ) : (
               <div className="p-0.5">
@@ -522,24 +530,26 @@ const FilterDropdown: React.FC<{
                           isSelected
                             ? isDarkMode
                               ? 'bg-gray-600 text-white'
-                              : 'bg-blue-50 text-blue-800 font-semibold'
+                              : 'bg-gray-200 text-gray-800 font-semibold'
                             : `${themeClasses.optionText} ${themeClasses.optionHover}`
                         }
                       `}
                     >
-                      {/* Checkbox/Radio indicator */}
-                      <div
-                        className={`
-                        flex items-center justify-center w-3.5 h-3.5 border rounded
-                        ${
-                          isSelected
-                            ? 'bg-gray-600 border-gray-800 text-white'
-                            : 'border-gray-300 dark:border-gray-600'
-                        }
-                      `}
-                      >
-                        {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
-                      </div>
+                      {/* Checkbox/Radio indicator - hide for group by */}
+                      {section.id !== 'groupBy' && (
+                        <div
+                          className={`
+                          flex items-center justify-center w-3.5 h-3.5 border rounded
+                          ${
+                            isSelected
+                              ? 'bg-gray-600 border-gray-800 text-white'
+                              : 'border-gray-300 dark:border-gray-600'
+                          }
+                        `}
+                        >
+                          {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
+                        </div>
+                      )}
 
                       {/* Color indicator */}
                       {option.color && (
@@ -588,7 +598,8 @@ const SearchFilter: React.FC<{
   placeholder?: string;
   themeClasses: any;
   className?: string;
-}> = ({ value, onChange, placeholder = 'Search tasks...', themeClasses, className = '' }) => {
+}> = ({ value, onChange, placeholder, themeClasses, className = '' }) => {
+  const { t } = useTranslation('task-list-filters');
   const [isExpanded, setIsExpanded] = useState(false);
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -622,14 +633,14 @@ const SearchFilter: React.FC<{
       {!isExpanded ? (
         <button
           onClick={handleToggle}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
             themeClasses.containerBg === 'bg-gray-800'
               ? 'focus:ring-offset-gray-900'
               : 'focus:ring-offset-white'
           }`}
         >
           <SearchOutlined className="w-3.5 h-3.5" />
-          <span>Search</span>
+          <span>{t('search')}</span>
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="flex items-center gap-1.5">
@@ -640,12 +651,12 @@ const SearchFilter: React.FC<{
               type="text"
               value={localValue}
               onChange={e => setLocalValue(e.target.value)}
-              placeholder={placeholder}
-              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
-                isDarkMode
-                  ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                  : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-              }`}
+              placeholder={placeholder || t('searchTasks')}
+                                className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
+                    isDarkMode
+                      ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                      : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+                  }`}
             />
             {localValue && (
               <button
@@ -659,17 +670,21 @@ const SearchFilter: React.FC<{
           </div>
           <button
             type="submit"
-            className="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
-          >
-            Search
-          </button>
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 ${
+              isDarkMode
+                ? 'text-white bg-gray-600 hover:bg-gray-700'
+                : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
+            }`}
+                      >
+              {t('search')}
+            </button>
           <button
             type="button"
             onClick={() => setIsExpanded(false)}
             className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${themeClasses.secondaryText} hover:${themeClasses.optionText}`}
-          >
-            Cancel
-          </button>
+                      >
+              {t('cancel')}
+            </button>
         </form>
       )}
     </div>
@@ -682,6 +697,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   themeClasses,
   isDarkMode,
 }) => {
+  const { t } = useTranslation('task-list-filters');
   const dispatch = useDispatch();
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
   const fields = Array.isArray(fieldsRaw) ? fieldsRaw : [];
@@ -734,17 +750,17 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
             visibleCount > 0
               ? isDarkMode
                 ? 'bg-gray-600 text-white border-gray-500'
-                : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold'
+                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
               : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={open}
         aria-haspopup="true"
       >
         <EyeOutlined className="w-3.5 h-3.5" />
-        <span>Fields</span>
+        <span>{t('fieldsText')}</span>
         {visibleCount > 0 && (
           <span
             className={`inline-flex items-center justify-center w-4 h-4 text-xs font-bold ${isDarkMode ? 'text-white bg-gray-500' : 'text-gray-800 bg-gray-300'} rounded-full`}
@@ -765,9 +781,9 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
           {/* Options List */}
           <div className="max-h-48 overflow-y-auto">
             {sortedFields.length === 0 ? (
-              <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
-                No fields available
-              </div>
+                          <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
+              {t('noOptionsFound')}
+            </div>
             ) : (
               <div className="p-0.5">
                 {sortedFields.map(field => {
@@ -881,7 +897,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   const { projectView } = useTabSearchParam();
 
   // Theme-aware class names - memoize to prevent unnecessary re-renders
-  // Using task list row colors for consistency: --task-bg-primary: #1f1f1f, --task-bg-secondary: #141414
+  // Using greyish colors for both dark and light modes
   const themeClasses = useMemo(
     () => ({
       containerBg: isDarkMode ? 'bg-[#1f1f1f]' : 'bg-white',
@@ -897,8 +913,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
       dividerBorder: isDarkMode ? 'border-[#404040]' : 'border-gray-200',
       pillBg: isDarkMode ? 'bg-[#141414]' : 'bg-gray-100',
       pillText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
-      pillActiveBg: isDarkMode ? 'bg-blue-600' : 'bg-blue-100',
-      pillActiveText: isDarkMode ? 'text-white' : 'text-blue-800',
+      pillActiveBg: isDarkMode ? 'bg-gray-600' : 'bg-gray-200',
+      pillActiveText: isDarkMode ? 'text-white' : 'text-gray-800',
       searchBg: isDarkMode ? 'bg-[#141414]' : 'bg-gray-50',
       searchBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-300',
       searchText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-900',
@@ -1196,12 +1212,12 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
             ))
           ) : (
             // Loading state
-            <div
-              className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}
-            >
-              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-blue-500"></div>
-              <span>Loading filters...</span>
-            </div>
+                          <div
+                className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}
+              >
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-500"></div>
+                <span>{t('loadingFilters')}</span>
+              </div>
           )}
         </div>
 
@@ -1211,20 +1227,20 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-1.5">
               <span className={`text-xs ${themeClasses.secondaryText}`}>
-                {activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} active
+                {activeFiltersCount} {activeFiltersCount !== 1 ? t('filtersActive') : t('filterActive')}
               </span>
               <button
                 onClick={clearAllFilters}
                 disabled={clearingFilters}
                 className={`text-xs font-medium transition-colors duration-150 ${
                   clearingFilters
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : isDarkMode
-                      ? 'text-blue-400 hover:text-blue-300'
-                      : 'text-blue-600 hover:text-blue-700'
+                    ?                   'text-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'text-gray-400 hover:text-gray-300'
+                    : 'text-gray-600 hover:text-gray-700'
                 }`}
               >
-                {clearingFilters ? 'Clearing...' : 'Clear all'}
+                {clearingFilters ? t('clearing') : t('clearAll')}
               </button>
             </div>
           )}
@@ -1236,13 +1252,13 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                 type="checkbox"
                 checked={showArchived}
                 onChange={toggleArchived}
-                className={`w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500 transition-colors duration-150 ${
+                className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${
                   isDarkMode
                     ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
                     : 'border-gray-300 bg-white focus:ring-offset-white'
                 }`}
               />
-              <span className={`text-xs ${themeClasses.optionText}`}>Show archived</span>
+              <span className={`text-xs ${themeClasses.optionText}`}>{t('showArchivedText')}</span>
               <InboxOutlined className={`w-3.5 h-3.5 ${themeClasses.secondaryText}`} />
             </label>
           )}
@@ -1284,9 +1300,9 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                     }
                   }
                 }}
-                className={`ml-1 rounded-full p-0.5 transition-colors duration-150 ${
-                  isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-200'
-                }`}
+                                        className={`ml-1 rounded-full p-0.5 transition-colors duration-150 ${
+                          isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
+                        }`}
               >
                 <CloseOutlined className="w-2.5 h-2.5" />
               </button>

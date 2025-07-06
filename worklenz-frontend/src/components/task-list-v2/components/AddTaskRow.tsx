@@ -92,6 +92,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({
       case 'dragHandle':
       case 'checkbox':
       case 'taskKey':
+      case 'description':
         return <div style={baseStyle} />;
       case 'title':
         return (

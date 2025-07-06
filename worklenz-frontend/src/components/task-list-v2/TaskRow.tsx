@@ -352,6 +352,24 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
           </div>
         );
 
+      case 'description':
+        return (
+          <div style={baseStyle} className="px-2">
+            <div
+              className="text-sm text-gray-600 dark:text-gray-400 truncate"
+              style={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxHeight: '24px',
+                lineHeight: '24px',
+              }}
+              title={task.description || ''}
+              dangerouslySetInnerHTML={{ __html: task.description || '' }}
+            />
+          </div>
+        );
+
       case 'status':
         return (
           <div style={baseStyle}>
