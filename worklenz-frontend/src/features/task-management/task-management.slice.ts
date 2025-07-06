@@ -240,6 +240,7 @@ export const fetchTasksV3 = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: selectedPriorities,
+        customColumns: true, // Include custom columns in the response
       };
 
       const response = await tasksApiService.getTaskListV3(config);
@@ -264,7 +265,7 @@ export const fetchTasksV3 = createAsyncThunk(
           labels: task.labels?.map((l: { id: string; label_id: string; name: string; color_code: string; end: boolean; names: string[] }) => ({
             id: l.id || l.label_id,
             name: l.name,
-            color: l.color || '#1890ff',
+            color: l.color_code || '#1890ff',
             end: l.end,
             names: l.names,
           })) || [],
@@ -275,6 +276,7 @@ export const fetchTasksV3 = createAsyncThunk(
             logged: convertTimeValue(task.time_spent),
           },
           customFields: {},
+          custom_column_values: task.custom_column_values || {}, // Include custom column values
           createdAt: task.created_at || now,
           updatedAt: task.updated_at || now,
           created_at: task.created_at || now,

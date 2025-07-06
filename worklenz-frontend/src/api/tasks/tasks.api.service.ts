@@ -29,6 +29,7 @@ export interface ITaskListConfigV2 {
   group?: string;
   isSubtasksInclude: boolean;
   include_empty?: string; // Include empty groups in response
+  customColumns?: boolean; // Include custom column values in response
 }
 
 export interface ITaskListV3Response {

@@ -737,6 +737,30 @@ export const useTaskSocketHandlers = () => {
     [dispatch, taskGroups]
   );
 
+  const handleCustomColumnUpdate = useCallback(
+    (data: { task_id: string; column_key: string; value: string }) => {
+      if (!data || !data.task_id || !data.column_key) return;
+
+      // Update the task-management slice for task-list-v2 components
+      const currentTask = store.getState().taskManagement.entities[data.task_id];
+      if (currentTask) {
+        const updatedCustomColumnValues = {
+          ...currentTask.custom_column_values,
+          [data.column_key]: data.value,
+        };
+
+        const updatedTask: Task = {
+          ...currentTask,
+          custom_column_values: updatedCustomColumnValues,
+          updated_at: new Date().toISOString(),
+        };
+
+        dispatch(updateTask(updatedTask));
+      }
+    },
+    [dispatch]
+  );
+
   // Handler for TASK_ASSIGNEES_CHANGE (fallback event with limited data)
   const handleTaskAssigneesChange = useCallback((data: { assigneeIds: string[] }) => {
     if (!data || !data.assigneeIds) return;
@@ -776,6 +800,7 @@ export const useTaskSocketHandlers = () => {
       },
       { event: SocketEvents.QUICK_TASK.toString(), handler: handleNewTaskReceived },
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgressUpdated },
+      { event: SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), handler: handleCustomColumnUpdate },
     ];
 
     // Register all event listeners
@@ -806,5 +831,6 @@ export const useTaskSocketHandlers = () => {
     handleTaskDescriptionChange,
     handleNewTaskReceived,
     handleTaskProgressUpdated,
+    handleCustomColumnUpdate,
   ]);
 };
