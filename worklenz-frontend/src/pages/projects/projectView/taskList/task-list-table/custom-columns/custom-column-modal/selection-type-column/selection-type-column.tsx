@@ -35,20 +35,12 @@ const SelectionTypeColumn = () => {
   // Use the current column data passed from TaskListV2
   const openedColumn = currentColumnData;
 
-  console.log('SelectionTypeColumn render:', {
-    customColumnModalType,
-    customColumnId,
-    openedColumn,
-    storeSelectionsList,
-    'openedColumn?.custom_column_obj?.selectionsList':
-      openedColumn?.custom_column_obj?.selectionsList,
-  });
+
 
   // Load existing selections when in edit mode
   useEffect(() => {
     if (customColumnModalType === 'edit' && openedColumn?.custom_column_obj?.selectionsList) {
       const existingSelections = openedColumn.custom_column_obj.selectionsList;
-      console.log('Loading existing selections:', existingSelections);
 
       if (Array.isArray(existingSelections) && existingSelections.length > 0) {
         setSelections(existingSelections);

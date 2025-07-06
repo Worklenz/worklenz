@@ -49,6 +49,7 @@ interface TaskLabelsCellProps {
 }
 
 const TaskLabelsCell: React.FC<TaskLabelsCellProps> = memo(({ labels, isDarkMode }) => {
+  console.log('labels', labels);
   if (!labels) {
     return null;
   }
@@ -190,7 +191,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
       name: label.name,
       color_code: label.color,
     })) || [],
-  }), [task.id, task.title, task.name, task.parent_task_id, task.labels]);
+  }), [task.id, task.title, task.name, task.parent_task_id, task.labels, task.labels?.length]);
 
   // Handle checkbox change
   const handleCheckboxChange = useCallback((e: any) => {
@@ -654,8 +655,10 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     isDarkMode,
     projectId,
     
-    // Task data
+    // Task data - include specific fields that might update via socket
     task,
+    task.labels, // Explicit dependency for labels updates
+    task.phase, // Explicit dependency for phase updates
     taskDisplayName,
     convertedTask,
     
