@@ -21,7 +21,7 @@ const CreateStatusButton = () => {
         onClick={() => dispatch(toggleDrawer())}
         icon={
           <SettingOutlined
-            style={{ color: themeMode === 'dark' ? colors.white : colors.midBlue }}
+            style={{ color: themeMode === 'dark' ? colors.white : 'black' }}
           />
         }
       />

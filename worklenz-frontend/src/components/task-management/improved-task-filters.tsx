@@ -1275,7 +1275,6 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                 }`}
               />
               <span className={`text-xs ${themeClasses.optionText}`}>{t('showArchivedText')}</span>
-              <InboxOutlined className={`w-3.5 h-3.5 ${themeClasses.secondaryText}`} />
             </label>
           )}
 

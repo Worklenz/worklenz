@@ -29,7 +29,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
       <button
         onClick={handleModalOpen}
         className={`
-          group relative w-8 h-8 rounded-lg border-2 border-dashed transition-all duration-200
+          group relative w-9 h-9 rounded-lg border-2 border-dashed transition-all duration-200
           flex items-center justify-center
           ${isDarkMode 
             ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400' 
@@ -37,7 +37,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
           }
         `}
       >
-        <PlusOutlined className="text-xs transition-transform duration-200 group-hover:scale-110" />
+        <PlusOutlined className="text-sm transition-transform duration-200 group-hover:scale-110" />
         
         {/* Subtle glow effect on hover */}
         <div className={`

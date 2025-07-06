@@ -491,7 +491,7 @@ const TaskListV2: React.FC = () => {
             </div>
           );
         })}
-        <div className="flex items-center justify-center" style={{ width: '60px', flexShrink: 0 }}>
+        <div className="flex items-center justify-center" style={{ width: '70px', flexShrink: 0, paddingRight: '8px' }}>
           <AddCustomColumnButton />
         </div>
       </div>

@@ -235,7 +235,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
   return (
     <div
       ref={setNodeRef}
-      className={`inline-flex w-max items-center px-1 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-b border-gray-200 dark:border-gray-700 rounded-t-md ${
+      className={`inline-flex w-max items-center px-1 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-t border-b border-gray-200 dark:border-gray-700 rounded-t-md pr-2 ${
         isOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
       }`}
       style={{
@@ -291,7 +291,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
         {/* Group name and count */}
         <div className="flex items-center">
           <span 
-            className="text-sm font-semibold"
+            className="text-sm font-semibold pr-2"
             style={{ color: headerTextColor }}
           >
             {group.name}

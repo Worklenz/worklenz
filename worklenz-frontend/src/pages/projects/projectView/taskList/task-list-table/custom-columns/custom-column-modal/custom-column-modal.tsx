@@ -91,15 +91,7 @@ const CustomColumnModal = () => {
   // Use the column data passed from TaskListV2
   const openedColumn = currentColumnData;
 
-  // Debug logging
-  console.log('Modal Debug Info:', {
-    customColumnId,
-    customColumnModalType,
-    currentColumnData,
-    openedColumn,
-    openedColumnFound: !!openedColumn,
-    openedColumnId: openedColumn?.id
-  });
+
 
   // Function to reset all form and Redux state
   const resetModalData = () => {
@@ -110,14 +102,6 @@ const CustomColumnModal = () => {
 
   // Function to handle deleting a custom column
   const handleDeleteColumn = async () => {
-    console.log('Delete function called with:', {
-      customColumnId,
-      openedColumn,
-      openedColumnId: openedColumn?.id,
-      openedColumnKey: openedColumn?.key,
-      fullColumnData: openedColumn
-    });
-
     // The customColumnId should now be the UUID passed from TaskListV2
     // But also check the column data as a fallback, prioritizing uuid over id
     const columnUUID = customColumnId || 
@@ -126,26 +110,12 @@ const CustomColumnModal = () => {
                       openedColumn?.custom_column_obj?.uuid ||
                       openedColumn?.custom_column_obj?.id;
 
-    console.log('Extracted UUID candidates:', {
-      'openedColumn?.id': openedColumn?.id,
-      'openedColumn?.uuid': openedColumn?.uuid,
-      'openedColumn?.custom_column_obj?.id': openedColumn?.custom_column_obj?.id,
-      'openedColumn?.custom_column_obj?.uuid': openedColumn?.custom_column_obj?.uuid,
-      'finalColumnUUID': columnUUID
-    });
-
     if (!customColumnId || !columnUUID) {
-      console.error('Missing required data for deletion:', {
-        customColumnId,
-        columnUUID,
-        openedColumn
-      });
       message.error('Cannot delete column: Missing UUID');
       return;
     }
 
     try {
-      console.log('Attempting to delete column with UUID:', columnUUID);
       // Make API request to delete the custom column using the service
       await tasksCustomColumnsService.deleteCustomColumn(columnUUID);
 
@@ -442,16 +412,11 @@ const CustomColumnModal = () => {
           } else if (openedColumn.custom_column_obj?.fieldType === 'selection') {
             // Directly set the selections list in the Redux store
             if (Array.isArray(openedColumn.custom_column_obj?.selectionsList)) {
-              console.log(
-                'Setting selections list:',
-                openedColumn.custom_column_obj.selectionsList
-              );
               dispatch(setSelectionsList(openedColumn.custom_column_obj.selectionsList));
             }
           } else if (openedColumn.custom_column_obj?.fieldType === 'labels') {
             // Directly set the labels list in the Redux store
             if (Array.isArray(openedColumn.custom_column_obj?.labelsList)) {
-              console.log('Setting labels list:', openedColumn.custom_column_obj.labelsList);
               dispatch(setLabelsList(openedColumn.custom_column_obj.labelsList));
             }
           }
