@@ -575,7 +575,9 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleNewTaskReceived = useCallback(
-    (data: IProjectTask) => {
+    (response: any) => {
+      // Handle array format response [index, taskData]
+      const data = Array.isArray(response) ? response[1] : response;
       if (!data) return;
       if (data.parent_task_id) {
         // Handle subtask creation
@@ -600,10 +602,10 @@ export const useTaskSocketHandlers = () => {
                 : 'low') as 'critical' | 'high' | 'medium' | 'low',
           phase: data.phase_name || 'Development',
           progress: data.complete_ratio || 0,
-          assignees: data.assignees?.map(a => a.team_member_id) || [],
+          assignees: data.assignees?.map((a: any) => a.team_member_id) || [],
           assignee_names: data.names || [],
           labels:
-            data.labels?.map(l => ({
+            data.labels?.map((l: any) => ({
               id: l.id || '',
               name: l.name || '',
               color: l.color_code || '#1890ff',
@@ -654,10 +656,10 @@ export const useTaskSocketHandlers = () => {
                 : 'low') as 'critical' | 'high' | 'medium' | 'low',
           phase: data.phase_name || 'Development',
           progress: data.complete_ratio || 0,
-          assignees: data.assignees?.map(a => a.team_member_id) || [],
+          assignees: data.assignees?.map((a: any) => a.team_member_id) || [],
           assignee_names: data.names || [],
           labels:
-            data.labels?.map(l => ({
+            data.labels?.map((l: any) => ({
               id: l.id || '',
               name: l.name || '',
               color: l.color_code || '#1890ff',
@@ -697,7 +699,7 @@ export const useTaskSocketHandlers = () => {
         }
 
         // Use addTaskToGroup with the actual group UUID
-        dispatch(addTaskToGroup({ task, groupId }));
+        dispatch(addTaskToGroup({ task, groupId: groupId || '' }));
 
         // Also update enhanced kanban slice for regular task creation
         dispatch(
