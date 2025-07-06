@@ -79,7 +79,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
   return (
     <div
       ref={setNodeRef}
-      className={`inline-flex w-max items-center px-4 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-b border-gray-200 dark:border-gray-700 rounded-t-md ${
+      className={`inline-flex w-max items-center px-1 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-b border-gray-200 dark:border-gray-700 rounded-t-md ${
         isOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
       }`}
       style={{
@@ -94,11 +94,11 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
       }}
       onClick={onToggle}
     >
-      {/* Drag Handle Space */}
-      <div style={{ width: '32px' }} className="flex items-center justify-center">
+      {/* Drag Handle Space - ultra minimal width */}
+      <div style={{ width: '20px' }} className="flex items-center justify-center">
         {/* Chevron button */}
         <button 
-          className="p-1 rounded-md hover:shadow-lg hover:scale-105 transition-all duration-300 ease-out"
+          className="p-0 rounded-sm hover:shadow-lg hover:scale-105 transition-all duration-300 ease-out"
           style={{ backgroundColor: 'transparent', color: headerTextColor }}
           onClick={(e) => {
             e.stopPropagation();
@@ -112,13 +112,13 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
               transformOrigin: 'center'
             }}
           >
-            <ChevronRightIcon className="h-3.5 w-3.5" style={{ color: headerTextColor }} />
+            <ChevronRightIcon className="h-3 w-3" style={{ color: headerTextColor }} />
           </div>
         </button>
       </div>
 
-      {/* Select All Checkbox Space */}
-      <div style={{ width: '40px' }} className="flex items-center justify-center">
+      {/* Select All Checkbox Space - ultra minimal width */}
+      <div style={{ width: '28px' }} className="flex items-center justify-center">
         <Checkbox
           checked={isAllSelected}
           indeterminate={isPartiallySelected}
@@ -130,10 +130,8 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
         />
       </div>
 
-      {/* Group indicator and name */}
-      <div className="ml-1 flex items-center gap-2 flex-1">
-        {/* Color indicator (removed as full header is colored) */}
-        
+      {/* Group indicator and name - no gap at all */}
+      <div className="flex items-center flex-1 ml-1">
         {/* Group name and count */}
         <div className="flex items-center flex-1">
           <span className="text-sm font-semibold">

@@ -277,8 +277,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'taskKey':
         return (
-          <div className="flex items-center" style={baseStyle}>
-            <span className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap badge badge-primary">
+          <div className="flex items-center pl-3" style={baseStyle}>
+            <span className="text-xs font-medium px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 whitespace-nowrap border border-gray-200 dark:border-gray-600">
               {task.task_key || 'N/A'}
             </span>
           </div>
@@ -288,15 +288,15 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         return (
           <div className="flex items-center justify-between group" style={baseStyle}>
             <div className="flex items-center flex-1">
-              {/* Indentation for subtasks - increased padding */}
-              {isSubtask && <div className="w-8" />}
+              {/* Indentation for subtasks - tighter spacing */}
+              {isSubtask && <div className="w-4" />}
               
               {/* Expand/Collapse button - only show for parent tasks */}
               {!isSubtask && (
                 <button
                   onClick={handleToggleExpansion}
-                  className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-2 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out ${
-                    task.sub_tasks_count && task.sub_tasks_count > 0 
+                  className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out ${
+                    task.sub_tasks_count && Number(task.sub_tasks_count) > 0 
                       ? 'opacity-100' 
                       : 'opacity-0 group-hover:opacity-100'
                   }`}
@@ -314,7 +314,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
               )}
               
               {/* Additional indentation for subtasks after the expand button space */}
-              {isSubtask && <div className="w-4" />}
+              {isSubtask && <div className="w-2" />}
               
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
@@ -322,7 +322,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                 </span>
                 
                 {/* Subtask count indicator */}
-                {!isSubtask && task.sub_tasks_count && task.sub_tasks_count > 0 && (
+                {!isSubtask && task.sub_tasks_count && Number(task.sub_tasks_count) > 0 && (
                   <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-md">
                     <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                       {task.sub_tasks_count}
@@ -640,7 +640,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center min-w-max px-4 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+      className={`flex items-center min-w-max px-1 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 ${
         isDragging ? 'shadow-lg border border-blue-300' : ''
       }`}
     >
