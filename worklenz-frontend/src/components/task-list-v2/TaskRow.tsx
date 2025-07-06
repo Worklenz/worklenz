@@ -25,6 +25,7 @@ import TaskTimeTracking from './TaskTimeTracking';
 import { CustomNumberLabel, CustomColordLabel } from '@/components';
 import LabelsSelector from '@/components/LabelsSelector';
 import TaskPhaseDropdown from '@/components/task-management/task-phase-dropdown';
+import { CustomColumnCell } from './components/CustomColumnComponents';
 
 interface TaskRowProps {
   taskId: string;
@@ -33,6 +34,10 @@ interface TaskRowProps {
     id: string;
     width: string;
     isSticky?: boolean;
+    key?: string;
+    custom_column?: boolean;
+    custom_column_obj?: any;
+    isCustom?: boolean;
   }>;
   isSubtask?: boolean;
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
@@ -606,6 +611,19 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         );
 
       default:
+        // Handle custom columns
+        const column = visibleColumns.find(col => col.id === columnId);
+        if (column && (column.custom_column || column.isCustom) && updateTaskCustomColumnValue) {
+          return (
+            <div style={baseStyle}>
+              <CustomColumnCell
+                column={column}
+                task={task}
+                updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+              />
+            </div>
+          );
+        }
         return null;
     }
   }, [
@@ -634,6 +652,10 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     
     // Translation
     t,
+    
+    // Custom columns
+    visibleColumns,
+    updateTaskCustomColumnValue,
   ]);
 
   return (

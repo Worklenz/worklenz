@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo, memo } from 'react';
-import { Button, Tooltip, Flex, Dropdown, DatePicker } from 'antd';
+import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
+import { Button, Tooltip, Flex, Dropdown, DatePicker, Input } from 'antd';
 import { PlusOutlined, SettingOutlined, UsergroupAddOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -9,11 +9,14 @@ import {
   toggleCustomColumnModalOpen,
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
+import PeopleDropdown from '@/components/common/people-dropdown/PeopleDropdown';
+import AvatarGroup from '@/components/AvatarGroup';
 import dayjs from 'dayjs';
 
 // Add Custom Column Button Component
 export const AddCustomColumnButton: React.FC = memo(() => {
   const dispatch = useAppDispatch();
+  const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
   const { t } = useTranslation('task-list-table');
 
   const handleModalOpen = useCallback(() => {
@@ -22,19 +25,29 @@ export const AddCustomColumnButton: React.FC = memo(() => {
   }, [dispatch]);
 
   return (
-    <Tooltip title={t('customColumns.addCustomColumn')}>
-      <Button
-        icon={<PlusOutlined />}
-        type="text"
-        size="small"
+    <Tooltip title={t('customColumns.addCustomColumn')} placement="top">
+      <button
         onClick={handleModalOpen}
-        className="hover:bg-gray-100 dark:hover:bg-gray-700"
-        style={{
-          background: 'transparent',
-          border: 'none',
-          boxShadow: 'none',
-        }}
-      />
+        className={`
+          group relative w-8 h-8 rounded-lg border-2 border-dashed transition-all duration-200
+          flex items-center justify-center
+          ${isDarkMode 
+            ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400' 
+            : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-400 hover:text-blue-600'
+          }
+        `}
+      >
+        <PlusOutlined className="text-xs transition-transform duration-200 group-hover:scale-110" />
+        
+        {/* Subtle glow effect on hover */}
+        <div className={`
+          absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200
+          ${isDarkMode 
+            ? 'bg-blue-500/5 shadow-lg shadow-blue-500/20' 
+            : 'bg-blue-500/5 shadow-lg shadow-blue-500/10'
+          }
+        `} />
+      </button>
     </Tooltip>
   );
 });
@@ -55,7 +68,7 @@ export const CustomColumnHeader: React.FC<{
                      t('customColumns.customColumnHeader');
 
   return (
-    <Flex align="center" justify="space-between" className="w-full">
+    <Flex align="center" justify="space-between" className="w-full px-2">
       <span title={displayName}>{displayName}</span>
       <Tooltip title={t('customColumns.customColumnSettings')}>
         <SettingOutlined
@@ -126,7 +139,7 @@ export const CustomColumnCell: React.FC<{
         />
       );
     default:
-      return <span className="text-sm text-gray-400">{t('customColumns.unsupportedField')}</span>;
+      return <span className="text-sm text-gray-400 px-2">{t('customColumns.unsupportedField')}</span>;
   }
 });
 
@@ -139,13 +152,15 @@ export const PeopleCustomColumnCell: React.FC<{
   customValue: any;
   updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
 }> = memo(({ task, columnKey, customValue, updateTaskCustomColumnValue }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const dispatch = useAppDispatch();
-  const { t } = useTranslation('task-list-table');
+  const [isLoading, setIsLoading] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
+  const [optimisticSelectedIds, setOptimisticSelectedIds] = useState<string[]>([]);
   
   const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const isDarkMode = themeMode === 'dark';
   
+  // Parse selected member IDs from custom value
   const selectedMemberIds = useMemo(() => {
     try {
       return customValue ? JSON.parse(customValue) : [];
@@ -154,125 +169,90 @@ export const PeopleCustomColumnCell: React.FC<{
     }
   }, [customValue]);
 
-  const filteredMembers = useMemo(() => {
-    return members?.data?.filter(member =>
-      member.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
-  }, [members, searchQuery]);
+  // Use optimistic updates when there are pending changes, otherwise use actual value
+  const displayedMemberIds = useMemo(() => {
+    // If we have pending changes, use optimistic state
+    if (pendingChanges.size > 0) {
+      return optimisticSelectedIds;
+    }
+    // Otherwise use the actual value from the server
+    return selectedMemberIds;
+  }, [pendingChanges.size, optimisticSelectedIds, selectedMemberIds]);
+
+  // Initialize optimistic state and update when actual value changes (from socket updates)
+  useEffect(() => {
+    // Only update optimistic state if there are no pending changes
+    // This prevents the socket update from overriding our optimistic state
+    if (pendingChanges.size === 0) {
+      setOptimisticSelectedIds(selectedMemberIds);
+    }
+  }, [selectedMemberIds, pendingChanges.size]);
 
   const selectedMembers = useMemo(() => {
-    if (!members?.data || !selectedMemberIds.length) return [];
-    return members.data.filter(member => selectedMemberIds.includes(member.id));
-  }, [members, selectedMemberIds]);
+    if (!members?.data || !displayedMemberIds.length) return [];
+    return members.data.filter(member => displayedMemberIds.includes(member.id));
+  }, [members, displayedMemberIds]);
 
-  const handleMemberSelection = (memberId: string) => {
-    const newSelectedIds = selectedMemberIds.includes(memberId)
-      ? selectedMemberIds.filter((id: string) => id !== memberId)
-      : [...selectedMemberIds, memberId];
+  const handleMemberToggle = useCallback((memberId: string, checked: boolean) => {
+    // Add to pending changes for visual feedback
+    setPendingChanges(prev => new Set(prev).add(memberId));
+
+    const newSelectedIds = checked
+      ? [...selectedMemberIds, memberId]
+      : selectedMemberIds.filter((id: string) => id !== memberId);
+
+    // Update optimistic state immediately for instant UI feedback
+    setOptimisticSelectedIds(newSelectedIds);
 
     if (task.id) {
       updateTaskCustomColumnValue(task.id, columnKey, JSON.stringify(newSelectedIds));
     }
-  };
 
-  const handleInviteProjectMember = () => {
-    dispatch(toggleProjectMemberDrawer());
-  };
+    // Remove from pending changes after socket update is processed
+    // Use a longer timeout to ensure the socket update has been received and processed
+    setTimeout(() => {
+      setPendingChanges(prev => {
+        const newSet = new Set<string>(Array.from(prev));
+        newSet.delete(memberId);
+        return newSet;
+      });
+    }, 1500); // Even longer delay to ensure socket update is fully processed
+  }, [selectedMemberIds, task.id, columnKey, updateTaskCustomColumnValue]);
 
-  const dropdownContent = (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 w-80">
-      <div className="flex flex-col gap-2">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder={t('searchInputPlaceholder')}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        
-        <div className="max-h-60 overflow-y-auto">
-          {filteredMembers.length > 0 ? (
-            filteredMembers.map(member => (
-              <div
-                key={member.id}
-                onClick={() => member.id && handleMemberSelection(member.id)}
-                className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={member.id ? selectedMemberIds.includes(member.id) : false}
-                  onChange={() => member.id && handleMemberSelection(member.id)}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {member.avatar_url ? (
-                    <img src={member.avatar_url} alt={member.name} className="w-8 h-8 rounded-full" />
-                  ) : (
-                    member.name?.charAt(0).toUpperCase()
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{member.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{member.email}</div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
-              {t('noMembersFound')}
-            </div>
-          )}
-        </div>
-        
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
-          <button
-            onClick={handleInviteProjectMember}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
-          >
-            <UsergroupAddOutlined className="w-4 h-4" />
-            {t('assigneeSelectorInviteButton')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const loadMembers = useCallback(async () => {
+    if (members?.data?.length === 0) {
+      setIsLoading(true);
+      // The members are loaded through Redux, so we just need to wait
+      setTimeout(() => setIsLoading(false), 500);
+    }
+  }, [members]);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 px-2 relative custom-column-cell">
       {selectedMembers.length > 0 && (
-        <div className="flex -space-x-1">
-          {selectedMembers.slice(0, 3).map((member) => (
-            <div
-              key={member.id}
-              className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300 border-2 border-white dark:border-gray-800"
-              title={member.name}
-            >
-              {member.avatar_url ? (
-                <img src={member.avatar_url} alt={member.name} className="w-6 h-6 rounded-full" />
-              ) : (
-                member.name?.charAt(0).toUpperCase()
-              )}
-            </div>
-          ))}
-          {selectedMembers.length > 3 && (
-            <div className="w-6 h-6 rounded-full bg-gray-400 dark:bg-gray-500 flex items-center justify-center text-xs font-medium text-white border-2 border-white dark:border-gray-800">
-              +{selectedMembers.length - 3}
-            </div>
-          )}
-        </div>
+        <AvatarGroup
+          members={selectedMembers.map(member => ({
+            id: member.id,
+            team_member_id: member.id,
+            name: member.name,
+            avatar_url: member.avatar_url,
+            color_code: member.color_code,
+          }))}
+          maxCount={3}
+          size={24}
+          isDarkMode={isDarkMode}
+        />
       )}
       
-      <Dropdown
-        open={isDropdownOpen}
-        onOpenChange={setIsDropdownOpen}
-        dropdownRender={() => dropdownContent}
-        trigger={['click']}
-        placement="bottomLeft"
-      >
-        <button className="w-6 h-6 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
-          <PlusOutlined className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-        </button>
-      </Dropdown>
+      <PeopleDropdown
+        selectedMemberIds={displayedMemberIds}
+        onMemberToggle={handleMemberToggle}
+        isDarkMode={isDarkMode}
+        isLoading={isLoading}
+        loadMembers={loadMembers}
+        pendingChanges={pendingChanges}
+        buttonClassName="w-6 h-6"
+      />
     </div>
   );
 });
@@ -286,22 +266,46 @@ export const DateCustomColumnCell: React.FC<{
   customValue: any;
   updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
 }> = memo(({ task, columnKey, customValue, updateTaskCustomColumnValue }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const dateValue = customValue ? dayjs(customValue) : null;
+  const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
+
+  const handleDateChange = (date: dayjs.Dayjs | null) => {
+    if (task.id) {
+      updateTaskCustomColumnValue(task.id, columnKey, date ? date.toISOString() : '');
+    }
+    setIsOpen(false);
+  };
 
   return (
-    <DatePicker
-      value={dateValue}
-      onChange={date => {
-        if (task.id) {
-          updateTaskCustomColumnValue(task.id, columnKey, date ? date.toISOString() : '');
-        }
-      }}
-      placeholder="Set Date"
-      format="MMM DD, YYYY"
-      suffixIcon={null}
-      className="w-full border-none bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
-      inputReadOnly
-    />
+    <div className={`px-2 relative custom-column-cell ${isOpen ? 'focused' : ''}`}>
+      <div className="relative">
+        <DatePicker
+          open={isOpen}
+          onOpenChange={setIsOpen}
+          value={dateValue}
+          onChange={handleDateChange}
+          placeholder={dateValue ? "" : "Click to set date"}
+          format="MMM DD, YYYY"
+          suffixIcon={null}
+          size="small"
+          variant="borderless"
+          className={`
+            w-full text-sm transition-colors duration-200 custom-column-date-picker
+            ${isDarkMode ? 'dark-mode' : 'light-mode'}
+          `}
+          popupClassName={isDarkMode ? 'dark-date-picker' : 'light-date-picker'}
+          inputReadOnly
+          getPopupContainer={(trigger) => trigger.parentElement || document.body}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            boxShadow: 'none',
+            width: '100%',
+          }}
+        />
+      </div>
+    </div>
   );
 });
 
@@ -315,13 +319,19 @@ export const NumberCustomColumnCell: React.FC<{
   columnObj: any;
   updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
 }> = memo(({ task, columnKey, customValue, columnObj, updateTaskCustomColumnValue }) => {
-  const [inputValue, setInputValue] = useState(customValue || '');
+  const [inputValue, setInputValue] = useState(String(customValue || ''));
   const [isEditing, setIsEditing] = useState(false);
+  const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
   
   const numberType = columnObj?.numberType || 'formatted';
   const decimals = columnObj?.decimals || 0;
   const label = columnObj?.label || '';
   const labelPosition = columnObj?.labelPosition || 'left';
+
+  // Sync inputValue with customValue to prevent NaN issues
+  useEffect(() => {
+    setInputValue(String(customValue || ''));
+  }, [customValue]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -331,10 +341,22 @@ export const NumberCustomColumnCell: React.FC<{
     }
   };
 
+  const handleFocus = () => {
+    setIsEditing(true);
+  };
+
   const handleBlur = () => {
     setIsEditing(false);
+    // Only update if there's a valid value and it's different from the current value
     if (task.id && inputValue !== customValue) {
-      updateTaskCustomColumnValue(task.id, columnKey, inputValue);
+      // Safely convert inputValue to string to avoid .trim() errors
+      const stringValue = String(inputValue || '');
+      // Don't save empty values or invalid numbers
+      if (stringValue.trim() === '' || isNaN(parseFloat(stringValue))) {
+        setInputValue(customValue || ''); // Reset to original value
+      } else {
+        updateTaskCustomColumnValue(task.id, columnKey, stringValue);
+      }
     }
   };
 
@@ -351,10 +373,12 @@ export const NumberCustomColumnCell: React.FC<{
   const getDisplayValue = () => {
     if (isEditing) return inputValue;
     
-    if (!inputValue) return '';
+    // Safely convert inputValue to string to avoid .trim() errors
+    const stringValue = String(inputValue || '');
+    if (!stringValue || stringValue.trim() === '') return '';
     
-    const numValue = parseFloat(inputValue);
-    if (isNaN(numValue)) return inputValue;
+    const numValue = parseFloat(stringValue);
+    if (isNaN(numValue)) return ''; // Return empty string instead of showing NaN
     
     switch (numberType) {
       case 'formatted':
@@ -364,28 +388,36 @@ export const NumberCustomColumnCell: React.FC<{
       case 'withLabel':
         return labelPosition === 'left' ? `${label} ${numValue.toFixed(decimals)}` : `${numValue.toFixed(decimals)} ${label}`;
       default:
-        return inputValue;
+        return numValue.toString();
     }
   };
 
+  const addonBefore = numberType === 'withLabel' && labelPosition === 'left' ? label : undefined;
+  const addonAfter = numberType === 'withLabel' && labelPosition === 'right' ? label : undefined;
+
   return (
-    <div className="flex items-center gap-1">
-      {numberType === 'withLabel' && labelPosition === 'left' && (
-        <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
-      )}
-      <input
-        type="text"
+    <div className="px-2">
+      <Input
         value={getDisplayValue()}
         onChange={handleInputChange}
-        onFocus={() => setIsEditing(true)}
+        onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="w-full bg-transparent border-none text-sm text-right focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-700 px-1 py-0.5 rounded"
-        placeholder="0"
+        placeholder={numberType === 'percentage' ? '0%' : '0'}
+        size="small"
+        variant="borderless"
+        addonBefore={addonBefore}
+        addonAfter={addonAfter}
+        style={{
+          textAlign: 'right',
+          width: '100%',
+          minWidth: 0,
+        }}
+        className={`
+          custom-column-number-input
+          ${isDarkMode ? 'dark-mode' : 'light-mode'}
+        `}
       />
-      {numberType === 'withLabel' && labelPosition === 'right' && (
-        <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
-      )}
     </div>
   );
 });
@@ -401,60 +433,152 @@ export const SelectionCustomColumnCell: React.FC<{
   updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
 }> = memo(({ task, columnKey, customValue, columnObj, updateTaskCustomColumnValue }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
   const selectionsList = columnObj?.selectionsList || [];
   
   const selectedOption = selectionsList.find((option: any) => option.selection_name === customValue);
 
+  const handleOptionSelect = async (option: any) => {
+    setIsLoading(true);
+    try {
+      if (task.id) {
+        updateTaskCustomColumnValue(task.id, columnKey, option.selection_name);
+      }
+      setIsDropdownOpen(false);
+    } finally {
+      // Small delay to show loading state
+      setTimeout(() => setIsLoading(false), 200);
+    }
+  };
+
   const dropdownContent = (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 min-w-[150px]">
-      {selectionsList.map((option: any) => (
-        <div
-          key={option.selection_id}
-          onClick={() => {
-            if (task.id) {
-              updateTaskCustomColumnValue(task.id, columnKey, option.selection_name);
-            }
-            setIsDropdownOpen(false);
-          }}
-          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer"
-        >
+    <div className={`
+      rounded-lg shadow-xl border min-w-[180px] max-h-64 overflow-y-auto custom-column-dropdown
+      ${isDarkMode 
+        ? 'bg-gray-800 border-gray-600' 
+        : 'bg-white border-gray-200'
+      }
+    `}>
+      {/* Header */}
+      <div className={`
+        px-3 py-2 border-b text-xs font-medium
+        ${isDarkMode 
+          ? 'border-gray-600 text-gray-300 bg-gray-750' 
+          : 'border-gray-200 text-gray-600 bg-gray-50'
+        }
+      `}>
+        Select an option
+      </div>
+      
+      {/* Options */}
+      <div className="p-1">
+        {selectionsList.map((option: any) => (
           <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: option.selection_color || '#6b7280' }}
-          />
-          <span className="text-sm text-gray-900 dark:text-gray-100">{option.selection_name}</span>
-        </div>
-      ))}
-      {selectionsList.length === 0 && (
-        <div className="text-center py-2 text-gray-500 dark:text-gray-400 text-sm">
-          No options available
-        </div>
-      )}
+            key={option.selection_id}
+            onClick={() => handleOptionSelect(option)}
+            className={`
+              flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200
+              ${selectedOption?.selection_id === option.selection_id
+                ? isDarkMode
+                  ? 'bg-blue-900/50 text-blue-200'
+                  : 'bg-blue-50 text-blue-700'
+                : isDarkMode
+                  ? 'hover:bg-gray-700 text-gray-200'
+                  : 'hover:bg-gray-100 text-gray-900'
+              }
+            `}
+          >
+            <div
+              className="w-3 h-3 rounded-full border border-white/20 shadow-sm"
+              style={{ backgroundColor: option.selection_color || '#6b7280' }}
+            />
+            <span className="text-sm font-medium flex-1">{option.selection_name}</span>
+            {selectedOption?.selection_id === option.selection_id && (
+              <div className={`
+                w-4 h-4 rounded-full flex items-center justify-center
+                ${isDarkMode ? 'bg-blue-600' : 'bg-blue-500'}
+              `}>
+                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
+          </div>
+        ))}
+        
+        {selectionsList.length === 0 && (
+          <div className={`
+            text-center py-8 text-sm
+            ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}
+          `}>
+            <div className="mb-2">📋</div>
+            <div>No options available</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 
   return (
-    <Dropdown
-      open={isDropdownOpen}
-      onOpenChange={setIsDropdownOpen}
-      dropdownRender={() => dropdownContent}
-      trigger={['click']}
-      placement="bottomLeft"
-    >
-      <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-1 rounded min-h-[24px]">
-        {selectedOption ? (
-          <>
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: selectedOption.selection_color || '#6b7280' }}
-            />
-            <span className="text-sm text-gray-900 dark:text-gray-100">{selectedOption.selection_name}</span>
-          </>
-        ) : (
-          <span className="text-sm text-gray-400 dark:text-gray-500">Select option</span>
-        )}
-      </div>
-    </Dropdown>
+    <div className={`px-2 relative custom-column-cell ${isDropdownOpen ? 'focused' : ''}`}>
+      <Dropdown
+        open={isDropdownOpen}
+        onOpenChange={setIsDropdownOpen}
+        dropdownRender={() => dropdownContent}
+        trigger={['click']}
+        placement="bottomLeft"
+        overlayClassName="custom-selection-dropdown"
+        getPopupContainer={(trigger) => trigger.parentElement || document.body}
+      >
+        <div className={`
+          flex items-center gap-2 cursor-pointer rounded-md px-2 py-1 min-h-[28px] transition-all duration-200 relative
+          ${isDropdownOpen
+            ? isDarkMode
+              ? 'bg-gray-700 ring-1 ring-blue-500/50'
+              : 'bg-gray-100 ring-1 ring-blue-500/50'
+            : isDarkMode
+              ? 'hover:bg-gray-700/50'
+              : 'hover:bg-gray-100/50'
+          }
+        `}>
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <div className={`
+                w-3 h-3 rounded-full animate-spin border-2 border-transparent
+                ${isDarkMode ? 'border-t-gray-400' : 'border-t-gray-600'}
+              `} />
+              <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Updating...
+              </span>
+            </div>
+          ) : selectedOption ? (
+            <>
+              <div
+                className="w-3 h-3 rounded-full border border-white/20 shadow-sm"
+                style={{ backgroundColor: selectedOption.selection_color || '#6b7280' }}
+              />
+              <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                {selectedOption.selection_name}
+              </span>
+              <svg className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </>
+          ) : (
+            <>
+              <div className={`w-3 h-3 rounded-full border-2 border-dashed ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`} />
+              <span className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                Select option
+              </span>
+              <svg className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </>
+          )}
+        </div>
+      </Dropdown>
+    </div>
   );
 });
 

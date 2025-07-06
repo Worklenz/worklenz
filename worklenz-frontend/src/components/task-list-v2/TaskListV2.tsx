@@ -151,17 +151,28 @@ const TaskListV2: React.FC = () => {
     // Add visible custom columns
     const visibleCustomColumns = customColumns
       ?.filter(column => column.pinned)
-      ?.map(column => ({
-        id: column.key || column.id || 'unknown',
-        label: column.name || t('customColumns.customColumnHeader'),
-        width: `${(column as any).width || 120}px`,
-        key: column.key || column.id || 'unknown',
-        custom_column: true,
-        custom_column_obj: column.custom_column_obj || (column as any).configuration,
-        isCustom: true,
-        name: column.name,
-        uuid: column.id,
-      })) || [];
+      ?.map(column => {
+        // Give selection columns more width for dropdown content
+        const fieldType = column.custom_column_obj?.fieldType;
+        let defaultWidth = 160;
+        if (fieldType === 'selection') {
+          defaultWidth = 180; // Extra width for selection dropdowns
+        } else if (fieldType === 'people') {
+          defaultWidth = 170; // Extra width for people with avatars
+        }
+        
+        return {
+          id: column.key || column.id || 'unknown',
+          label: column.name || t('customColumns.customColumnHeader'),
+          width: `${(column as any).width || defaultWidth}px`,
+          key: column.key || column.id || 'unknown',
+          custom_column: true,
+          custom_column_obj: column.custom_column_obj || (column as any).configuration,
+          isCustom: true,
+          name: column.name,
+          uuid: column.id,
+        };
+      }) || [];
 
     return [...baseVisibleColumns, ...visibleCustomColumns];
   }, [fields, columns, customColumns, t]);

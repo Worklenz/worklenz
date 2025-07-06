@@ -1,53 +1,56 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useSelector } from 'react-redux';
 import { PlusOutlined, UserAddOutlined } from '@ant-design/icons';
-import { RootState } from '@/app/store';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
-import { useSocket } from '@/socket/socketContext';
-import { SocketEvents } from '@/shared/socket-events';
-import { useAuthService } from '@/hooks/useAuth';
-import { Avatar, Checkbox } from '@/components';
-import { sortTeamMembers } from '@/utils/sort-team-members';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
-import { updateTaskAssignees } from '@/features/task-management/task-management.slice';
-import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
+import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
+import { sortTeamMembers } from '@/utils/sort-team-members';
+import { Avatar, Checkbox } from '@/components';
 
-interface AssigneeSelectorProps {
-  task: IProjectTask;
-  groupId?: string | null;
+interface PeopleDropdownProps {
+  selectedMemberIds: string[];
+  onMemberToggle: (memberId: string, checked: boolean) => void;
+  onInviteClick?: () => void;
   isDarkMode?: boolean;
+  className?: string;
+  buttonClassName?: string;
+  isLoading?: boolean;
+  loadMembers?: () => void;
+  pendingChanges?: Set<string>;
 }
 
-const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
-  task,
-  groupId = null,
+const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
+  selectedMemberIds,
+  onMemberToggle,
+  onInviteClick,
   isDarkMode = false,
+  className = '',
+  buttonClassName = '',
+  isLoading = false,
+  loadMembers,
+  pendingChanges = new Set(),
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [teamMembers, setTeamMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
-  const [optimisticAssignees, setOptimisticAssignees] = useState<string[]>([]); // For optimistic updates
-  const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set()); // Track pending member changes
+  const [hasLoadedMembers, setHasLoadedMembers] = useState(false);
 
-  // Initialize optimistic assignees from task data on mount or when task changes
-  useEffect(() => {
-    const currentAssigneeIds = task?.assignees?.map(a => a.team_member_id) || [];
-    setOptimisticAssignees(currentAssigneeIds);
-  }, [task?.assignees]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const { projectId } = useSelector((state: RootState) => state.projectReducer);
-  const members = useSelector((state: RootState) => state.teamMembersReducer.teamMembers);
-  const currentSession = useAuthService().getCurrentSession();
-  const { socket } = useSocket();
   const dispatch = useAppDispatch();
+  const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
+
+  // Load members on demand when dropdown opens
+  useEffect(() => {
+    if (!hasLoadedMembers && loadMembers && isOpen) {
+      loadMembers();
+      setHasLoadedMembers(true);
+    }
+  }, [hasLoadedMembers, loadMembers, isOpen]);
 
   const filteredMembers = useMemo(() => {
     return teamMembers?.data?.filter(member =>
@@ -124,14 +127,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     if (!isOpen) {
       updateDropdownPosition();
 
-      // Prepare team members data when opening - use optimistic assignees for current state
-      const currentAssigneeIds = optimisticAssignees.length > 0 
-        ? optimisticAssignees 
-        : task?.assignees?.map(assignee => assignee.team_member_id) || [];
-      
-      const membersData: (ITeamMembersViewModel & { selected?: boolean })[] = (members?.data || []).map(member => ({
+      // Prepare team members data when opening
+      const membersData = (members?.data || []).map(member => ({
         ...member,
-        selected: currentAssigneeIds.includes(member.id),
+        selected: selectedMemberIds.includes(member.id || ''),
       }));
       const sortedMembers = sortTeamMembers(membersData);
       setTeamMembers({ data: sortedMembers });
@@ -147,29 +146,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   };
 
   const handleMemberToggle = (memberId: string, checked: boolean) => {
-    if (!memberId || !projectId || !task?.id || !currentSession?.id) return;
-
-    // Add to pending changes for visual feedback
-    setPendingChanges(prev => new Set(prev).add(memberId));
-
-    // Get the current list of assignees, prioritizing optimistic updates for immediate feedback
-    const currentAssigneeIds = optimisticAssignees.length > 0 
-      ? optimisticAssignees 
-      : task?.assignees?.map(a => a.team_member_id) || [];
-
-    let newAssigneeIds: string[];
-
-    if (checked) {
-      // Adding assignee: ensure no duplicates
-      const uniqueIds = new Set([...currentAssigneeIds, memberId]);
-      newAssigneeIds = Array.from(uniqueIds);
-    } else {
-      // Removing assignee
-      newAssigneeIds = currentAssigneeIds.filter(id => id !== memberId);
-    }
-
-    // Update optimistic state for immediate UI feedback in dropdown
-    setOptimisticAssignees(newAssigneeIds);
+    if (!memberId) return;
+    onMemberToggle(memberId, checked);
 
     // Update local team members state for dropdown UI
     setTeamMembers(prev => ({
@@ -178,59 +156,20 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         member.id === memberId ? { ...member, selected: checked } : member
       ),
     }));
-
-    const body = {
-      team_member_id: memberId,
-      project_id: projectId,
-      task_id: task.id,
-      reporter_id: currentSession.id,
-      mode: checked ? 0 : 1,
-      parent_task: task.parent_task_id,
-    };
-
-    // Emit socket event - the socket handler will update Redux with proper types
-    socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
-    socket?.once(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), (data: any) => {
-      // Instead of updating enhancedKanbanSlice, update the main taskManagementSlice
-      // Filter members to get the actual InlineMember objects for the new assignees
-      const updatedAssigneeNames: InlineMember[] = (members?.data || [])
-        .filter((member): member is ITeamMemberViewModel & { id: string; name: string } => {
-          return typeof member.id === 'string' && typeof member.name === 'string' && newAssigneeIds.includes(member.id);
-        })
-        .map(member => ({
-          name: member.name || '',
-          id: member.id || '',
-          team_member_id: member.id || '',
-          avatar_url: member.avatar_url || '',
-          color_code: member.color_code || '',
-        }));
-
-      dispatch(updateTaskAssignees({
-        taskId: task.id || '',
-        assigneeIds: newAssigneeIds,
-        assigneeNames: updatedAssigneeNames,
-      }));
-    });
-
-    // Remove from pending changes after a short delay (optimistic)
-    setTimeout(() => {
-      setPendingChanges(prev => {
-        const newSet = new Set<string>(Array.from(prev));
-        newSet.delete(memberId);
-        return newSet;
-      });
-    }, 500); // Remove pending state after 500ms
   };
 
   const checkMemberSelected = (memberId: string) => {
     if (!memberId) return false;
-    // Always use optimistic assignees for dropdown display
-    return optimisticAssignees.includes(memberId);
+    return selectedMemberIds.includes(memberId);
   };
 
   const handleInviteProjectMemberDrawer = () => {
-    setIsOpen(false); // Close the assignee dropdown first
-    dispatch(toggleProjectMemberDrawer()); // Then open the invite drawer
+    setIsOpen(false); // Close the dropdown first
+    if (onInviteClick) {
+      onInviteClick();
+    } else {
+      dispatch(toggleProjectMemberDrawer()); // Then open the invite drawer
+    }
   };
 
   return (
@@ -241,6 +180,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         className={`
           w-5 h-5 rounded-full border border-dashed flex items-center justify-center
           transition-colors duration-200
+          ${buttonClassName}
           ${
             isOpen
               ? isDarkMode
@@ -261,7 +201,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
             ref={dropdownRef}
             onClick={e => e.stopPropagation()}
             className={`
-            fixed z-9999 w-72 rounded-md shadow-lg border
+            fixed w-72 rounded-md shadow-lg border people-dropdown-portal ${className}
             ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'}
           `}
             style={{
@@ -370,7 +310,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                 <div
                   className={`p-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
                 >
-                  <div className="text-xs">No members found</div>
+                  <div className="text-xs">
+                    {isLoading ? 'Loading members...' : 'No members found'}
+                  </div>
                 </div>
               )}
             </div>
@@ -396,4 +338,4 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   );
 };
 
-export default AssigneeSelector;
+export default PeopleDropdown; 

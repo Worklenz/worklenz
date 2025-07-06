@@ -1085,6 +1085,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           logged: convertTimeValue(task.time_spent),
         },
         customFields: {},
+        custom_column_values: task.custom_column_values || {}, // Include custom column values
         createdAt: task.created_at || new Date().toISOString(),
         updatedAt: task.updated_at || new Date().toISOString(),
         order: typeof task.sort_order === "number" ? task.sort_order : 0,
