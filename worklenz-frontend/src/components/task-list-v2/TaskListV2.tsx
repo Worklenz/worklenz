@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useEffect, useState, useRef } from 'react';
 import { GroupedVirtuoso } from 'react-virtuoso';
 import {
   DndContext,
@@ -100,6 +100,13 @@ const TaskListV2: React.FC = () => {
   const customColumns = useAppSelector(selectCustomColumns);
   const loadingColumns = useAppSelector(selectLoadingColumns);
 
+  // Refs for scroll synchronization
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const contentScrollRef = useRef<HTMLDivElement>(null);
+
+  // State hooks
+  const [initializedFromDatabase, setInitializedFromDatabase] = useState(false);
+
   // Configure sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -161,13 +168,32 @@ const TaskListV2: React.FC = () => {
           defaultWidth = 170; // Extra width for people with avatars
         }
         
+        // Map the configuration data structure to the expected format
+        const customColumnObj = column.custom_column_obj || (column as any).configuration;
+        
+        // Transform configuration format to custom_column_obj format if needed
+        let transformedColumnObj = customColumnObj;
+        if (customColumnObj && !customColumnObj.fieldType && customColumnObj.field_type) {
+          transformedColumnObj = {
+            ...customColumnObj,
+            fieldType: customColumnObj.field_type,
+            numberType: customColumnObj.number_type,
+            labelPosition: customColumnObj.label_position,
+            previewValue: customColumnObj.preview_value,
+            firstNumericColumn: customColumnObj.first_numeric_column_key,
+            secondNumericColumn: customColumnObj.second_numeric_column_key,
+            selectionsList: customColumnObj.selections_list || customColumnObj.selectionsList || [],
+            labelsList: customColumnObj.labels_list || customColumnObj.labelsList || [],
+          };
+        }
+        
         return {
           id: column.key || column.id || 'unknown',
           label: column.name || t('customColumns.customColumnHeader'),
           width: `${(column as any).width || defaultWidth}px`,
           key: column.key || column.id || 'unknown',
           custom_column: true,
-          custom_column_obj: column.custom_column_obj || (column as any).configuration,
+          custom_column_obj: transformedColumnObj,
           isCustom: true,
           name: column.name,
           uuid: column.id,
@@ -186,7 +212,6 @@ const TaskListV2: React.FC = () => {
   }, [dispatch, urlProjectId]);
 
   // Initialize field visibility from database when columns are loaded (only once)
-  const [initializedFromDatabase, setInitializedFromDatabase] = useState(false);
   useEffect(() => {
     if (columns.length > 0 && fields.length > 0 && !initializedFromDatabase) {
       // Update local fields to match database state only on initial load
@@ -274,9 +299,13 @@ const TaskListV2: React.FC = () => {
     
     const columnData = visibleColumns.find(col => col.key === columnKey || col.id === columnKey);
     
+    // Use the UUID for API calls, not the key (nanoid)
+    // For custom columns, prioritize the uuid field over id field
+    const columnId = (columnData as any)?.uuid || columnData?.id || columnKey;
+    
     dispatch(setCustomColumnModalAttributes({ 
       modalType: 'edit', 
-      columnId: columnKey,
+      columnId: columnId,
       columnData: columnData
     }));
     dispatch(toggleCustomColumnModalOpen(true));
@@ -286,6 +315,13 @@ const TaskListV2: React.FC = () => {
   const handleTaskAdded = useCallback(() => {
     // Task is now added in real-time via socket, no need to refetch
     // The global socket handler will handle the real-time update
+  }, []);
+
+  // Handle scroll synchronization
+  const handleContentScroll = useCallback(() => {
+    if (headerScrollRef.current && contentScrollRef.current) {
+      headerScrollRef.current.scrollLeft = contentScrollRef.current.scrollLeft;
+    }
   }, []);
 
   // Memoized values for GroupedVirtuoso
@@ -346,6 +382,8 @@ const TaskListV2: React.FC = () => {
       const isGroupCollapsed = collapsedGroups.has(group.id);
       const isGroupEmpty = group.actualCount === 0;
 
+
+
       return (
         <div className={groupIndex > 0 ? 'mt-2' : ''}>
           <TaskGroupHeader
@@ -385,6 +423,8 @@ const TaskListV2: React.FC = () => {
   const renderTask = useCallback(
     (taskIndex: number) => {
       const item = virtuosoItems[taskIndex];
+
+      
       if (!item || !urlProjectId) return null;
       
       if ('isAddTaskRow' in item && item.isAddTaskRow) {
@@ -458,9 +498,32 @@ const TaskListV2: React.FC = () => {
     </div>
   ), [visibleColumns, t, handleCustomColumnSettings]);
 
+
+
   // Loading and error states
   if (loading || loadingColumns) return <Skeleton active />;
   if (error) return <div>Error: {error}</div>;
+  
+  // Show message when no data
+  if (groups.length === 0 && !loading) {
+    return (
+      <div className="flex flex-col bg-white dark:bg-gray-900 h-full">
+        <div className="flex-none px-6 py-4" style={{ height: '74px', flexShrink: 0 }}>
+          <ImprovedTaskFilters position="list" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              No task groups found
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Tasks will appear here when they are created or when filters are applied.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DndContext
@@ -470,7 +533,7 @@ const TaskListV2: React.FC = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col bg-white dark:bg-gray-900" style={{ height: '100vh', overflow: 'hidden' }}>
+      <div className="flex flex-col bg-white dark:bg-gray-900" style={{ overflow: 'hidden' }}>
         {/* Task Filters */}
         <div className="flex-none px-6 py-4" style={{ height: '74px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
@@ -481,43 +544,63 @@ const TaskListV2: React.FC = () => {
 
         {/* Table Container */}
         <div 
-          className="flex-1 overflow-auto border border-gray-200 dark:border-gray-700 mx-6 rounded-lg" 
+          className="flex-1 border border-gray-200 dark:border-gray-700 mx-6 rounded-lg" 
           style={{ 
             height: '600px',
-            maxHeight: '600px'
+            maxHeight: '600px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
           }}
         >
-          <div style={{ minWidth: 'max-content' }}>
-            {/* Column Headers */}
-            {renderColumnHeaders()}
-
-            {/* Task List Content */}
-            <div className="bg-white dark:bg-gray-900">
-              <SortableContext
-                items={virtuosoItems
-                  .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
-                  .map(item => item.id)
-                  .filter((id): id is string => id !== undefined)}
-                strategy={verticalListSortingStrategy}
-              >
-                <GroupedVirtuoso
-                  style={{ height: '550px' }}
-                  groupCounts={virtuosoGroupCounts}
-                  groupContent={renderGroup}
-                  itemContent={renderTask}
-                  components={{
-                    List: React.forwardRef<
-                      HTMLDivElement,
-                      { style?: React.CSSProperties; children?: React.ReactNode }
-                    >(({ style, children }, ref) => (
-                      <div ref={ref} style={style || {}} className="virtuoso-list-container bg-white dark:bg-gray-900">
-                        {children}
-                      </div>
-                    )),
-                  }}
-                />
-              </SortableContext>
+          {/* Column Headers */}
+          <div className="flex-none">
+            <div 
+              ref={headerScrollRef}
+              className="overflow-hidden"
+              style={{ overflowX: 'hidden', overflowY: 'hidden' }}
+            >
+              {renderColumnHeaders()}
             </div>
+          </div>
+
+          {/* Task List Content */}
+          <div 
+            ref={contentScrollRef}
+            className="flex-1 bg-white dark:bg-gray-900" 
+            style={{ overflow: 'auto' }}
+            onScroll={handleContentScroll}
+          >
+            <SortableContext
+              items={virtuosoItems
+                .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
+                .map(item => item.id)
+                .filter((id): id is string => id !== undefined)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div style={{ minWidth: 'max-content' }}>
+                {/* Render groups manually for debugging */}
+                {virtuosoGroups.map((group, groupIndex) => (
+                  <div key={group.id}>
+                    {/* Group Header */}
+                    {renderGroup(groupIndex)}
+                    
+                    {/* Group Tasks */}
+                    {!collapsedGroups.has(group.id) && group.tasks.map((task, taskIndex) => {
+                      const globalTaskIndex = virtuosoGroups
+                        .slice(0, groupIndex)
+                        .reduce((sum, g) => sum + g.count, 0) + taskIndex;
+                      
+                      return (
+                        <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
+                          {renderTask(globalTaskIndex)}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </SortableContext>
           </div>
         </div>
 

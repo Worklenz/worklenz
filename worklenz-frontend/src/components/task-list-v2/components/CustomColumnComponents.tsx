@@ -60,6 +60,7 @@ export const CustomColumnHeader: React.FC<{
   onSettingsClick: (columnId: string) => void;
 }> = ({ column, onSettingsClick }) => {
   const { t } = useTranslation('task-list-table');
+  const [isHovered, setIsHovered] = useState(false);
 
   const displayName = column.name || 
                      column.label || 
@@ -68,15 +69,20 @@ export const CustomColumnHeader: React.FC<{
                      t('customColumns.customColumnHeader');
 
   return (
-    <Flex align="center" justify="space-between" className="w-full px-2">
-      <span title={displayName}>{displayName}</span>
+    <Flex 
+      align="center" 
+      justify="space-between" 
+      className="w-full px-2 group cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => onSettingsClick(column.key || column.id)}
+    >
+      <span title={displayName} className="truncate flex-1 mr-2">{displayName}</span>
       <Tooltip title={t('customColumns.customColumnSettings')}>
         <SettingOutlined
-          className="cursor-pointer hover:text-primary"
-          onClick={e => {
-            e.stopPropagation();
-            onSettingsClick(column.key || column.id);
-          }}
+          className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 flex-shrink-0 ${
+            isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}
         />
       </Tooltip>
     </Flex>

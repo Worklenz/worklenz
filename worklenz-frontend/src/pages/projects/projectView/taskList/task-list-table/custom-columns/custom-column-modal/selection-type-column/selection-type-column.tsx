@@ -28,13 +28,12 @@ const SelectionTypeColumn = () => {
   const {
     customColumnModalType,
     customColumnId,
+    currentColumnData,
     selectionsList: storeSelectionsList,
   } = useAppSelector(state => state.taskListCustomColumnsReducer);
 
-  // Get the opened column data if in edit mode
-  const openedColumn = useAppSelector(state =>
-    state.taskReducer.customColumns.find(col => col.key === customColumnId)
-  );
+  // Use the current column data passed from TaskListV2
+  const openedColumn = currentColumnData;
 
   console.log('SelectionTypeColumn render:', {
     customColumnModalType,

@@ -9,7 +9,7 @@ import {
   Select,
   Typography,
   Popconfirm,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import SelectionTypeColumn from './selection-type-column/selection-type-column';
 import NumberTypeColumn from './number-type-column/number-type-column';
@@ -118,11 +118,13 @@ const CustomColumnModal = () => {
       fullColumnData: openedColumn
     });
 
-    // Try to get UUID from different possible locations in the column data
-    const columnUUID = openedColumn?.id || 
+    // The customColumnId should now be the UUID passed from TaskListV2
+    // But also check the column data as a fallback, prioritizing uuid over id
+    const columnUUID = customColumnId || 
                       openedColumn?.uuid || 
-                      openedColumn?.custom_column_obj?.id ||
-                      openedColumn?.custom_column_obj?.uuid;
+                      openedColumn?.id || 
+                      openedColumn?.custom_column_obj?.uuid ||
+                      openedColumn?.custom_column_obj?.id;
 
     console.log('Extracted UUID candidates:', {
       'openedColumn?.id': openedColumn?.id,
@@ -328,7 +330,14 @@ const CustomColumnModal = () => {
             }
           : null;
 
-        if (updatedColumn && openedColumn?.id) {
+        // Get the correct UUID for the update operation, prioritizing uuid over id
+        const updateColumnUUID = customColumnId || 
+                                openedColumn?.uuid || 
+                                openedColumn?.id || 
+                                openedColumn?.custom_column_obj?.uuid ||
+                                openedColumn?.custom_column_obj?.id;
+
+        if (updatedColumn && updateColumnUUID) {
           try {
             // Prepare the configuration object
             const configuration = {
@@ -363,7 +372,7 @@ const CustomColumnModal = () => {
             };
 
             // Make API request to update custom column using the service
-            await tasksCustomColumnsService.updateCustomColumn(openedColumn.id, {
+            await tasksCustomColumnsService.updateCustomColumn(updateColumnUUID, {
               name: value.fieldTitle,
               field_type: value.fieldType,
               width: 150,
