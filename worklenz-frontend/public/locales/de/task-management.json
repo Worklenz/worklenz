@@ -11,5 +11,11 @@
   "attachments": "Anhänge",
   "enterSubtaskName": "Unteraufgabenname eingeben...",
   "add": "Hinzufügen",
-  "cancel": "Abbrechen"
+  "cancel": "Abbrechen",
+  "renameGroup": "Gruppe umbenennen",
+  "renameStatus": "Status umbenennen",
+  "renamePhase": "Phase umbenennen",
+  "changeCategory": "Kategorie ändern",
+  "clickToEditGroupName": "Klicken Sie, um den Gruppennamen zu bearbeiten",
+  "enterGroupName": "Gruppennamen eingeben"
 }

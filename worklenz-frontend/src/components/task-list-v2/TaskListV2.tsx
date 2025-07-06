@@ -344,6 +344,7 @@ const TaskListV2: React.FC = () => {
             }}
             isCollapsed={isGroupCollapsed}
             onToggle={() => handleGroupCollapse(group.id)}
+            projectId={urlProjectId || ''}
           />
           {isGroupEmpty && !isGroupCollapsed && (
             <div className="relative w-full">

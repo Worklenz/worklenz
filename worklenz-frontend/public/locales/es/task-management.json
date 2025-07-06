@@ -11,5 +11,11 @@
   "attachments": "adjuntos",
   "enterSubtaskName": "Ingresa el nombre de la subtarea...",
   "add": "Añadir",
-  "cancel": "Cancelar"
+  "cancel": "Cancelar",
+  "renameGroup": "Renombrar Grupo",
+  "renameStatus": "Renombrar Estado",
+  "renamePhase": "Renombrar Fase",
+  "changeCategory": "Cambiar Categoría",
+  "clickToEditGroupName": "Haz clic para editar el nombre del grupo",
+  "enterGroupName": "Ingresa el nombre del grupo"
 }
