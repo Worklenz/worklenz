@@ -547,17 +547,17 @@ const TaskListV2: React.FC = () => {
               totalSelected={selectedTaskIds.length}
               projectId={urlProjectId}
               onClearSelection={bulkActions.handleClearSelection}
-              onBulkStatusChange={bulkActions.handleBulkStatusChange}
-              onBulkPriorityChange={bulkActions.handleBulkPriorityChange}
-              onBulkPhaseChange={bulkActions.handleBulkPhaseChange}
-              onBulkAssignToMe={bulkActions.handleBulkAssignToMe}
-              onBulkAssignMembers={bulkActions.handleBulkAssignMembers}
-              onBulkAddLabels={bulkActions.handleBulkAddLabels}
-              onBulkArchive={bulkActions.handleBulkArchive}
-              onBulkDelete={bulkActions.handleBulkDelete}
-              onBulkDuplicate={bulkActions.handleBulkDuplicate}
-              onBulkExport={bulkActions.handleBulkExport}
-              onBulkSetDueDate={bulkActions.handleBulkSetDueDate}
+              onBulkStatusChange={(statusId) => bulkActions.handleBulkStatusChange(statusId, selectedTaskIds)}
+              onBulkPriorityChange={(priorityId) => bulkActions.handleBulkPriorityChange(priorityId, selectedTaskIds)}
+              onBulkPhaseChange={(phaseId) => bulkActions.handleBulkPhaseChange(phaseId, selectedTaskIds)}
+              onBulkAssignToMe={() => bulkActions.handleBulkAssignToMe(selectedTaskIds)}
+              onBulkAssignMembers={(memberIds) => bulkActions.handleBulkAssignMembers(memberIds, selectedTaskIds)}
+              onBulkAddLabels={(labelIds) => bulkActions.handleBulkAddLabels(labelIds, selectedTaskIds)}
+              onBulkArchive={() => bulkActions.handleBulkArchive(selectedTaskIds)}
+              onBulkDelete={() => bulkActions.handleBulkDelete(selectedTaskIds)}
+              onBulkDuplicate={() => bulkActions.handleBulkDuplicate(selectedTaskIds)}
+              onBulkExport={() => bulkActions.handleBulkExport(selectedTaskIds)}
+              onBulkSetDueDate={(date) => bulkActions.handleBulkSetDueDate(date, selectedTaskIds)}
             />
           </div>
         )}
