@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { GroupedVirtuoso } from 'react-virtuoso';
 import {
   DndContext,
@@ -156,7 +156,7 @@ const TaskListV2: React.FC = () => {
         const fieldType = column.custom_column_obj?.fieldType;
         let defaultWidth = 160;
         if (fieldType === 'selection') {
-          defaultWidth = 180; // Extra width for selection dropdowns
+          defaultWidth = 150; // Reduced width for selection dropdowns
         } else if (fieldType === 'people') {
           defaultWidth = 170; // Extra width for people with avatars
         }
@@ -177,36 +177,6 @@ const TaskListV2: React.FC = () => {
     return [...baseVisibleColumns, ...visibleCustomColumns];
   }, [fields, columns, customColumns, t]);
 
-  // Sync local field changes with backend column configuration (debounced)
-  useEffect(() => {
-    if (!urlProjectId || columns.length === 0 || fields.length === 0) return;
-
-    const timeoutId = setTimeout(() => {
-      const changedFields = fields.filter(field => {
-        const backendColumn = columns.find(c => c.key === field.key);
-        if (backendColumn) {
-          return (backendColumn.pinned ?? false) !== field.visible;
-        }
-        return false;
-      });
-
-      changedFields.forEach(field => {
-        const backendColumn = columns.find(c => c.key === field.key);
-        if (backendColumn) {
-          dispatch(updateColumnVisibility({
-            projectId: urlProjectId,
-            item: {
-              ...backendColumn,
-              pinned: field.visible
-            }
-          }));
-        }
-      });
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [fields, columns, urlProjectId, dispatch]);
-
   // Effects
   useEffect(() => {
     if (urlProjectId) {
@@ -214,6 +184,38 @@ const TaskListV2: React.FC = () => {
       dispatch(fetchTaskListColumns(urlProjectId));
     }
   }, [dispatch, urlProjectId]);
+
+  // Initialize field visibility from database when columns are loaded (only once)
+  const [initializedFromDatabase, setInitializedFromDatabase] = useState(false);
+  useEffect(() => {
+    if (columns.length > 0 && fields.length > 0 && !initializedFromDatabase) {
+      // Update local fields to match database state only on initial load
+      import('@/features/task-management/taskListFields.slice').then(({ setFields }) => {
+        // Create updated fields based on database column state
+        const updatedFields = fields.map(field => {
+          const backendColumn = columns.find(c => c.key === field.key);
+          if (backendColumn) {
+            return {
+              ...field,
+              visible: backendColumn.pinned ?? field.visible
+            };
+          }
+          return field;
+        });
+        
+        // Only update if there are actual changes
+        const hasChanges = updatedFields.some((field, index) => 
+          field.visible !== fields[index].visible
+        );
+        
+        if (hasChanges) {
+          dispatch(setFields(updatedFields));
+        }
+        
+        setInitializedFromDatabase(true);
+      });
+    }
+  }, [columns, fields, dispatch, initializedFromDatabase]);
 
   // Event handlers
   const handleTaskSelect = useCallback(
@@ -360,7 +362,7 @@ const TaskListV2: React.FC = () => {
           {isGroupEmpty && !isGroupCollapsed && (
             <div className="relative w-full">
               <div className="flex items-center min-w-max px-1 py-3">
-                {visibleColumns.map((column) => (
+                {visibleColumns.map((column, index) => (
                   <div
                     key={`empty-${column.id}`}
                     style={{ width: column.width, flexShrink: 0 }}
@@ -412,48 +414,48 @@ const TaskListV2: React.FC = () => {
 
   // Render column headers
   const renderColumnHeaders = useCallback(() => (
-            <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center px-1 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
-                {visibleColumns.map(column => {
-                  const columnStyle: ColumnStyle = {
-                    width: column.width,
-                    flexShrink: 0,
-                    ...(column.id === 'labels' && column.width === 'auto'
-                      ? {
-                          minWidth: '200px',
-                          flexGrow: 1,
-                        }
-                      : {}),
-                    ...((column as any).minWidth && { minWidth: (column as any).minWidth }),
-                    ...((column as any).maxWidth && { maxWidth: (column as any).maxWidth }),
-                  };
+    <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center px-3 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
+        {visibleColumns.map((column, index) => {
+          const columnStyle: ColumnStyle = {
+            width: column.width,
+            flexShrink: 0,
+            ...(column.id === 'labels' && column.width === 'auto'
+              ? {
+                  minWidth: '200px',
+                  flexGrow: 1,
+                }
+              : {}),
+            ...((column as any).minWidth && { minWidth: (column as any).minWidth }),
+            ...((column as any).maxWidth && { maxWidth: (column as any).maxWidth }),
+          };
 
-                  return (
-                    <div
-                      key={column.id}
-                      className={`text-sm font-semibold text-gray-600 dark:text-gray-300 ${
-                        column.id === 'taskKey' ? 'pl-3' : ''
-                      }`}
-                      style={columnStyle}
-                    >
+          return (
+            <div
+              key={column.id}
+              className={`text-sm font-semibold text-gray-600 dark:text-gray-300 ${
+                column.id === 'taskKey' ? 'pl-3' : ''
+              }`}
+              style={columnStyle}
+            >
               {column.id === 'dragHandle' || column.id === 'checkbox' ? (
-                        <span></span>
-                      ) : (column as any).isCustom ? (
-                        <CustomColumnHeader
-                          column={column}
-                          onSettingsClick={handleCustomColumnSettings}
-                        />
-                      ) : (
-                        t(column.label || '')
-                      )}
-                    </div>
-                  );
-                })}
-                <div className="flex items-center justify-center" style={{ width: '60px', flexShrink: 0 }}>
-                  <AddCustomColumnButton />
-                </div>
-              </div>
+                <span></span>
+              ) : (column as any).isCustom ? (
+                <CustomColumnHeader
+                  column={column}
+                  onSettingsClick={handleCustomColumnSettings}
+                />
+              ) : (
+                t(column.label || '')
+              )}
             </div>
+          );
+        })}
+        <div className="flex items-center justify-center" style={{ width: '60px', flexShrink: 0 }}>
+          <AddCustomColumnButton />
+        </div>
+      </div>
+    </div>
   ), [visibleColumns, t, handleCustomColumnSettings]);
 
   // Loading and error states
@@ -470,13 +472,16 @@ const TaskListV2: React.FC = () => {
     >
       <div className="flex flex-col bg-white dark:bg-gray-900" style={{ height: '100vh', overflow: 'hidden' }}>
         {/* Task Filters */}
-        <div className="flex-none px-4 py-3" style={{ height: '66px', flexShrink: 0 }}>
+        <div className="flex-none px-6 py-4" style={{ height: '74px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
         </div>
 
+        {/* Spacing between filters and table */}
+        <div className="flex-none h-4" style={{ flexShrink: 0 }}></div>
+
         {/* Table Container */}
         <div 
-          className="flex-1 overflow-auto border border-gray-200 dark:border-gray-700" 
+          className="flex-1 overflow-auto border border-gray-200 dark:border-gray-700 mx-6 rounded-lg" 
           style={{ 
             height: '600px',
             maxHeight: '600px'

@@ -261,7 +261,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
       case 'dragHandle':
         return (
           <div
-            className={`flex items-center justify-center ${isSubtask ? '' : 'cursor-grab active:cursor-grabbing'}`}
+            className="flex items-center justify-center"
             style={baseStyle}
             {...(isSubtask ? {} : { ...attributes, ...listeners })}
           >

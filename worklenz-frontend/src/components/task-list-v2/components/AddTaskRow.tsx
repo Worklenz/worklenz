@@ -135,9 +135,11 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({
 
   return (
     <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px] border-b border-gray-200 dark:border-gray-700">
-      {visibleColumns.map((column) =>
-        renderColumn(column.id, column.width)
-      )}
+      {visibleColumns.map((column, index) => (
+        <React.Fragment key={column.id}>
+          {renderColumn(column.id, column.width)}
+        </React.Fragment>
+      ))}
     </div>
   );
 });

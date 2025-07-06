@@ -285,7 +285,7 @@ export const DateCustomColumnCell: React.FC<{
           onOpenChange={setIsOpen}
           value={dateValue}
           onChange={handleDateChange}
-          placeholder={dateValue ? "" : "Click to set date"}
+          placeholder={dateValue ? "" : "Set date"}
           format="MMM DD, YYYY"
           suffixIcon={null}
           size="small"
@@ -468,7 +468,7 @@ export const SelectionCustomColumnCell: React.FC<{
           : 'border-gray-200 text-gray-600 bg-gray-50'
         }
       `}>
-        Select an option
+        Select option
       </div>
       
       {/* Options */}
@@ -569,7 +569,7 @@ export const SelectionCustomColumnCell: React.FC<{
             <>
               <div className={`w-3 h-3 rounded-full border-2 border-dashed ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`} />
               <span className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Select option
+                Select
               </span>
               <svg className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
