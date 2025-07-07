@@ -271,6 +271,11 @@ export const fetchTasksV3 = createAsyncThunk(
             end: l.end,
             names: l.names,
           })) || [],
+          all_labels: task.all_labels?.map((l: { id: string; label_id: string; name: string; color_code: string }) => ({
+            id: l.id || l.label_id,
+            name: l.name,
+            color_code: l.color_code || '#1890ff',
+          })) || [],
           dueDate: task.dueDate,
           startDate: task.startDate,
           timeTracking: {

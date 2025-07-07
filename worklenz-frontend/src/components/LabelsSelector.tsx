@@ -223,16 +223,21 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                   <div
                     key={label.id}
                     className={`
-                    flex items-center gap-2 p-2 cursor-pointer transition-colors
+                    flex items-center gap-2 px-2 py-1 cursor-pointer transition-colors
                     ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}
                   `}
-                    onClick={() => handleLabelToggle(label)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLabelToggle(label);
+                    }}
                   >
-                    <Checkbox
-                      checked={checkLabelSelected(label.id || '')}
-                      onChange={() => handleLabelToggle(label)}
-                      isDarkMode={isDarkMode}
-                    />
+                    <div style={{ pointerEvents: 'none' }}>
+                      <Checkbox
+                        checked={checkLabelSelected(label.id || '')}
+                        onChange={() => {}} // Empty handler since we handle click on the div
+                        isDarkMode={isDarkMode}
+                      />
+                    </div>
 
                     <div
                       className="w-3 h-3 rounded-full shrink-0"

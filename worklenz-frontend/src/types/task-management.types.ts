@@ -33,6 +33,7 @@ export interface Task {
   statusColor?: string;
   priorityColor?: string;
   labels?: { id: string; name: string; color: string; end?: boolean; names?: string[] }[];
+  all_labels?: { id: string; name: string; color_code: string }[]; // Complete list of labels for selection logic
   comments_count?: number;
   attachments_count?: number;
   has_dependencies?: boolean;
