@@ -195,12 +195,12 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
                 <ClockCircleOutlined /> {task.time_spent_string}
               </span>
             )}
-            {task.comments_count && task.comments_count > 0 && (
+            {task.comments_count && task.comments_count > 1 && (
               <span className="kanban-task-indicator">
                 <MessageOutlined /> {task.comments_count}
               </span>
             )}
-            {task.attachments_count && task.attachments_count > 0 && (
+            {task.attachments_count && task.attachments_count > 1 && (
               <span className="kanban-task-indicator">
                 <PaperClipOutlined /> {task.attachments_count}
               </span>

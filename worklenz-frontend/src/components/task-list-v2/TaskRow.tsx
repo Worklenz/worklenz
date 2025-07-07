@@ -1,8 +1,8 @@
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined, ArrowsAltOutlined } from '@ant-design/icons';
-import { Checkbox, DatePicker } from 'antd';
+import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@ant-design/icons';
+import { Checkbox, DatePicker, Tooltip } from 'antd';
 import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
@@ -49,7 +49,6 @@ interface TaskLabelsCellProps {
 }
 
 const TaskLabelsCell: React.FC<TaskLabelsCellProps> = memo(({ labels, isDarkMode }) => {
-  console.log('labels', labels);
   if (!labels) {
     return null;
   }
@@ -302,7 +301,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                 <button
                   onClick={handleToggleExpansion}
                   className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out ${
-                    task.sub_tasks_count && Number(task.sub_tasks_count) > 0 
+                    task.sub_tasks_count != null && Number(task.sub_tasks_count) > 0 
                       ? 'opacity-100' 
                       : 'opacity-0 group-hover:opacity-100'
                   }`}
@@ -327,8 +326,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                   {taskDisplayName}
                 </span>
                 
-                {/* Subtask count indicator */}
-                {!isSubtask && task.sub_tasks_count && Number(task.sub_tasks_count) > 0 && (
+                {/* Subtask count indicator - only show if count > 1 */}
+                {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count !== 0 && (
                   <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-md">
                     <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                       {task.sub_tasks_count}
@@ -336,6 +335,55 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                     <DoubleRightOutlined className="text-xs text-blue-600 dark:text-blue-400" />
                   </div>
                 )}
+
+                {/* Task indicators */}
+                <div className="flex items-center gap-1 ml-2">
+                  {/* Comments count indicator - only show if count > 1 */}
+                  {task.comments_count != null && task.comments_count !== 0 && (
+                    <div className="flex items-center gap-1">
+                      <CommentOutlined 
+                        className="text-gray-500 dark:text-gray-400" 
+                        style={{ fontSize: 14 }} 
+                      />
+                    </div>
+                  )}
+
+                  {/* Subscribers indicator */}
+                  {task.has_subscribers && (
+                    <EyeOutlined 
+                      className="text-gray-500 dark:text-gray-400" 
+                      style={{ fontSize: 14 }} 
+                    />
+                  )}
+
+                  {/* Attachments count indicator - only show if count > 1 */}
+                  {task.attachments_count != null && task.attachments_count !== 0 && (
+                    <div className="flex items-center gap-1">
+                      <PaperClipOutlined 
+                        className="text-gray-500 dark:text-gray-400" 
+                        style={{ fontSize: 14 }} 
+                      />
+                    </div>
+                  )}
+
+                  {/* Dependencies indicator */}
+                  {task.has_dependencies && (
+                    <MinusCircleOutlined 
+                      className="text-gray-500 dark:text-gray-400" 
+                      style={{ fontSize: 14 }} 
+                    />
+                  )}
+
+                  {/* Recurring task indicator */}
+                  {task.schedule_id && (
+                    <Tooltip title="Recurring Task">
+                      <RetweetOutlined 
+                        className="text-gray-500 dark:text-gray-400" 
+                        style={{ fontSize: 14 }} 
+                      />
+                    </Tooltip>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -659,6 +707,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     task,
     task.labels, // Explicit dependency for labels updates
     task.phase, // Explicit dependency for phase updates
+    task.comments_count, // Explicit dependency for comments count updates
+    task.has_subscribers, // Explicit dependency for subscribers updates
+    task.attachments_count, // Explicit dependency for attachments count updates
+    task.has_dependencies, // Explicit dependency for dependencies updates
+    task.schedule_id, // Explicit dependency for recurring task updates
     taskDisplayName,
     convertedTask,
     
