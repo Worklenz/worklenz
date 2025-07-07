@@ -292,15 +292,15 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
       case 'title':
         return (
           <div className="flex items-center justify-between group" style={baseStyle}>
-            <div className="flex items-center flex-1">
+            <div className="flex items-center flex-1 min-w-0">
               {/* Indentation for subtasks - tighter spacing */}
-              {isSubtask && <div className="w-4" />}
+              {isSubtask && <div className="w-4 flex-shrink-0" />}
               
               {/* Expand/Collapse button - only show for parent tasks */}
               {!isSubtask && (
                 <button
                   onClick={handleToggleExpansion}
-                  className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out ${
+                  className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out flex-shrink-0 ${
                     task.sub_tasks_count != null && Number(task.sub_tasks_count) > 0 
                       ? 'opacity-100' 
                       : 'opacity-0 group-hover:opacity-100'
@@ -319,87 +319,81 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
               )}
               
               {/* Additional indentation for subtasks after the expand button space */}
-              {isSubtask && <div className="w-2" />}
+              {isSubtask && <div className="w-2 flex-shrink-0" />}
               
-              <div className="flex items-center gap-2">
-                <Tooltip title={taskDisplayName}>
-                  <span 
-                    className="text-sm text-gray-700 dark:text-gray-300 truncate cursor-pointer"
-                    style={{
-                      maxWidth: '200px',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {taskDisplayName}
-                  </span>
-                </Tooltip>
-                
-                {/* Subtask count indicator - only show if count > 1 */}
-                {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count !== 0 && (
-                  <Tooltip title={t(`indicators.tooltips.subtasks${task.sub_tasks_count === 1 ? '' : '_plural'}`, { count: task.sub_tasks_count })}>
-                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-                      <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                        {task.sub_tasks_count}
-                      </span>
-                      <DoubleRightOutlined className="text-xs text-blue-600 dark:text-blue-400" />
-                    </div>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {/* Task name with dynamic width */}
+                <div className="flex-1 min-w-0">
+                  <Tooltip title={taskDisplayName}>
+                    <span 
+                      className="text-sm text-gray-700 dark:text-gray-300 truncate cursor-pointer block"
+                      style={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {taskDisplayName}
+                    </span>
                   </Tooltip>
-                )}
-
-                {/* Task indicators */}
-                <div className="flex items-center gap-1 ml-2">
-                  {/* Comments count indicator - only show if count > 1 */}
-                  {task.comments_count != null && task.comments_count !== 0 && (
-                    <Tooltip title={t(`indicators.tooltips.comments${task.comments_count === 1 ? '' : '_plural'}`, { count: task.comments_count })}>
-                      <div className="flex items-center gap-1">
-                        <CommentOutlined 
-                          className="text-gray-500 dark:text-gray-400" 
-                          style={{ fontSize: 14 }} 
-                        />
+                </div>
+                
+                {/* Indicators container - flex-shrink-0 to prevent compression */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Subtask count indicator - only show if count > 0 */}
+                  {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count !== 0 && (
+                    <Tooltip title={t(`indicators.tooltips.subtasks${task.sub_tasks_count === 1 ? '' : '_plural'}`, { count: task.sub_tasks_count })}>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                        <span className="text-blue-600 dark:text-blue-400 font-medium">
+                          {task.sub_tasks_count}
+                        </span>
+                        <DoubleRightOutlined className="text-blue-600 dark:text-blue-400" style={{ fontSize: 10 }} />
                       </div>
                     </Tooltip>
                   )}
 
-                  {/* Subscribers indicator */}
+                  {/* Task indicators - compact layout */}
+                  {task.comments_count != null && task.comments_count !== 0 && (
+                    <Tooltip title={t(`indicators.tooltips.comments${task.comments_count === 1 ? '' : '_plural'}`, { count: task.comments_count })}>
+                      <CommentOutlined 
+                        className="text-gray-500 dark:text-gray-400" 
+                        style={{ fontSize: 12 }} 
+                      />
+                    </Tooltip>
+                  )}
+
                   {task.has_subscribers && (
                     <Tooltip title={t('indicators.tooltips.subscribers')}>
                       <EyeOutlined 
                         className="text-gray-500 dark:text-gray-400" 
-                        style={{ fontSize: 14 }} 
+                        style={{ fontSize: 12 }} 
                       />
                     </Tooltip>
                   )}
 
-                  {/* Attachments count indicator - only show if count > 1 */}
                   {task.attachments_count != null && task.attachments_count !== 0 && (
                     <Tooltip title={t(`indicators.tooltips.attachments${task.attachments_count === 1 ? '' : '_plural'}`, { count: task.attachments_count })}>
-                      <div className="flex items-center gap-1">
-                        <PaperClipOutlined 
-                          className="text-gray-500 dark:text-gray-400" 
-                          style={{ fontSize: 14 }} 
-                        />
-                      </div>
+                      <PaperClipOutlined 
+                        className="text-gray-500 dark:text-gray-400" 
+                        style={{ fontSize: 12 }} 
+                      />
                     </Tooltip>
                   )}
 
-                  {/* Dependencies indicator */}
                   {task.has_dependencies && (
                     <Tooltip title={t('indicators.tooltips.dependencies')}>
                       <MinusCircleOutlined 
                         className="text-gray-500 dark:text-gray-400" 
-                        style={{ fontSize: 14 }} 
+                        style={{ fontSize: 12 }} 
                       />
                     </Tooltip>
                   )}
 
-                  {/* Recurring task indicator */}
                   {task.schedule_id && (
                     <Tooltip title={t('indicators.tooltips.recurring')}>
                       <RetweetOutlined 
                         className="text-gray-500 dark:text-gray-400" 
-                        style={{ fontSize: 14 }} 
+                        style={{ fontSize: 12 }} 
                       />
                     </Tooltip>
                   )}
@@ -408,7 +402,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
             </div>
             
             <button
-              className="opacity-0 group-hover:opacity-100 transition-all duration-200 ml-2 mr-2 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1"
+              className="opacity-0 group-hover:opacity-100 transition-all duration-200 ml-2 mr-2 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 flex-shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
                 dispatch(setSelectedTaskId(task.id));
