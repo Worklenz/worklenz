@@ -8,6 +8,7 @@ import { ServerResponse } from "../models/server-response";
 import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../shared/constants";
 import { getColor, log_error } from "../shared/utils";
 import TasksControllerBase, { GroupBy, ITaskGroup } from "./tasks-controller-base";
+import { redisClient } from "../redis/client";
 
 export class TaskListGroup implements ITaskGroup {
   name: string;
@@ -131,31 +132,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Returns statuses of each task as a json array if filterBy === "member"
     const statusesQuery = TasksControllerV2.getStatusesQuery(options.filterBy as string);
     
-    // Custom columns data query
+    // Custom columns data query - optimized with LEFT JOIN
     const customColumnsQuery = options.customColumns 
-      ? `, (SELECT COALESCE(
-            jsonb_object_agg(
-              custom_cols.key, 
-              custom_cols.value
-            ), 
-            '{}'::JSONB
-          )
-          FROM (
-            SELECT 
-              cc.key,
-              CASE 
-                WHEN ccv.text_value IS NOT NULL THEN to_jsonb(ccv.text_value)
-                WHEN ccv.number_value IS NOT NULL THEN to_jsonb(ccv.number_value)
-                WHEN ccv.boolean_value IS NOT NULL THEN to_jsonb(ccv.boolean_value)
-                WHEN ccv.date_value IS NOT NULL THEN to_jsonb(ccv.date_value)
-                WHEN ccv.json_value IS NOT NULL THEN ccv.json_value
-                ELSE NULL::JSONB
-              END AS value
-            FROM cc_column_values ccv
-            JOIN cc_custom_columns cc ON ccv.column_id = cc.id
-            WHERE ccv.task_id = t.id
-          ) AS custom_cols
-          WHERE custom_cols.value IS NOT NULL) AS custom_column_values`
+      ? `, COALESCE(cc_data.custom_column_values, '{}'::JSONB) AS custom_column_values`
       : "";
 
     const archivedFilter = options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
@@ -179,94 +158,171 @@ export default class TasksControllerV2 extends TasksControllerBase {
       projectsFilter
     ].filter(i => !!i).join(" AND ");
 
+    // PERFORMANCE OPTIMIZED QUERY - Using CTEs and JOINs instead of correlated subqueries
     return `
-      SELECT id,
-             name,
-             CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key,
-             (SELECT name FROM projects WHERE id = t.project_id) AS project_name,
-             t.project_id AS project_id,
-             t.parent_task_id,
-             t.parent_task_id IS NOT NULL AS is_sub_task,
-             (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
-             (SELECT COUNT(*)
-              FROM tasks
-              WHERE parent_task_id = t.id)::INT AS sub_tasks_count,
-
-             t.status_id AS status,
-             t.archived,
-             t.description,
-             t.sort_order,
-             t.progress_value,
-             t.manual_progress,
-             t.weight,
-             (SELECT use_manual_progress FROM projects WHERE id = t.project_id) AS project_use_manual_progress,
-             (SELECT use_weighted_progress FROM projects WHERE id = t.project_id) AS project_use_weighted_progress,
-             (SELECT use_time_progress FROM projects WHERE id = t.project_id) AS project_use_time_progress,
-             (SELECT get_task_complete_ratio(t.id)->>'ratio') AS complete_ratio,
-
-             (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
-             (SELECT name
-              FROM project_phases
-              WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_name,
-              (SELECT color_code
-                FROM project_phases
-                WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_color_code,
-
-             (EXISTS(SELECT 1 FROM task_subscribers WHERE task_id = t.id)) AS has_subscribers,
-             (EXISTS(SELECT 1 FROM task_dependencies td WHERE td.task_id = t.id)) AS has_dependencies,
-             (SELECT start_time
-              FROM task_timers
-              WHERE task_id = t.id
-                AND user_id = '${userId}') AS timer_start_time,
-
-             (SELECT color_code
-              FROM sys_task_status_categories
-              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
-
-             (SELECT color_code_dark
-              FROM sys_task_status_categories
-              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color_dark,
-
-             (SELECT COALESCE(ROW_TO_JSON(r), '{}'::JSON)
-              FROM (SELECT is_done, is_doing, is_todo
-                    FROM sys_task_status_categories
-                    WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) r) AS status_category,
-
-             (SELECT COUNT(*) FROM task_comments WHERE task_id = t.id) AS comments_count,
-             (SELECT COUNT(*) FROM task_attachments WHERE task_id = t.id) AS attachments_count,
-             (CASE
-                WHEN EXISTS(SELECT 1
-                            FROM tasks_with_status_view
-                            WHERE tasks_with_status_view.task_id = t.id
-                              AND is_done IS TRUE) THEN 1
-                ELSE 0 END) AS parent_task_completed,
-             (SELECT get_task_assignees(t.id)) AS assignees,
-             (SELECT COUNT(*)
-              FROM tasks_with_status_view tt
-              WHERE tt.parent_task_id = t.id
-                AND tt.is_done IS TRUE)::INT
-               AS completed_sub_tasks,
-
-             (SELECT COALESCE(JSON_AGG(r), '[]'::JSON)
-              FROM (SELECT task_labels.label_id AS id,
-                           (SELECT name FROM team_labels WHERE id = task_labels.label_id),
-                           (SELECT color_code FROM team_labels WHERE id = task_labels.label_id)
-                    FROM task_labels
-                    WHERE task_id = t.id) r) AS labels,
-             (SELECT is_completed(status_id, project_id)) AS is_complete,
-             (SELECT name FROM users WHERE id = t.reporter_id) AS reporter,
-             (SELECT id FROM task_priorities WHERE id = t.priority_id) AS priority,
-             (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
-             total_minutes,
-             (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent,
-             created_at,
-             updated_at,
-             completed_at,
-             start_date,
-             billable,
-             schedule_id,
-             END_DATE ${customColumnsQuery} ${statusesQuery}
+      WITH task_aggregates AS (
+        SELECT 
+          t.id,
+          COUNT(DISTINCT sub.id) AS sub_tasks_count,
+          COUNT(DISTINCT CASE WHEN sub_status.is_done THEN sub.id END) AS completed_sub_tasks,
+          COUNT(DISTINCT tc.id) AS comments_count,
+          COUNT(DISTINCT ta.id) AS attachments_count,
+          COUNT(DISTINCT twl.id) AS work_log_count,
+          COALESCE(SUM(twl.time_spent), 0) AS total_minutes_spent,
+          MAX(CASE WHEN ts.id IS NOT NULL THEN 1 ELSE 0 END) AS has_subscribers,
+          MAX(CASE WHEN td.id IS NOT NULL THEN 1 ELSE 0 END) AS has_dependencies
+        FROM tasks t
+        LEFT JOIN tasks sub ON t.id = sub.parent_task_id AND sub.archived = FALSE
+        LEFT JOIN task_statuses sub_ts ON sub.status_id = sub_ts.id
+        LEFT JOIN sys_task_status_categories sub_status ON sub_ts.category_id = sub_status.id
+        LEFT JOIN task_comments tc ON t.id = tc.task_id
+        LEFT JOIN task_attachments ta ON t.id = ta.task_id
+        LEFT JOIN task_work_log twl ON t.id = twl.task_id
+        LEFT JOIN task_subscribers ts ON t.id = ts.task_id
+        LEFT JOIN task_dependencies td ON t.id = td.task_id
+        WHERE t.project_id = $1 AND t.archived = FALSE
+        GROUP BY t.id
+      ),
+      task_assignees AS (
+        SELECT 
+          ta.task_id,
+                     JSON_AGG(JSON_BUILD_OBJECT(
+            "team_member_id", ta.team_member_id,
+            "project_member_id", ta.project_member_id,
+            "name", COALESCE(tmiv.name, ""),
+            "avatar_url", COALESCE(tmiv.avatar_url, ""),
+            "email", COALESCE(tmiv.email, ""),
+            "user_id", tmiv.user_id,
+            "socket_id", COALESCE(u.socket_id, ""),
+            "team_id", tmiv.team_id,
+            "email_notifications_enabled", COALESCE(ns.email_notifications_enabled, false)
+          )) AS assignees,
+                     STRING_AGG(COALESCE(tmiv.name, \"\"), \", \") AS assignee_names,
+           STRING_AGG(COALESCE(tmiv.name, \"\"), \", \") AS names
+        FROM tasks_assignees ta
+        LEFT JOIN team_member_info_view tmiv ON ta.team_member_id = tmiv.team_member_id
+        LEFT JOIN users u ON tmiv.user_id = u.id
+        LEFT JOIN notification_settings ns ON ns.user_id = u.id AND ns.team_id = tmiv.team_id
+        GROUP BY ta.task_id
+      ),
+      task_labels AS (
+        SELECT 
+          tl.task_id,
+                   JSON_AGG(JSON_BUILD_OBJECT(
+           "id", tl.label_id,
+           "label_id", tl.label_id,
+           "name", team_l.name,
+           "color_code", team_l.color_code
+         )) AS labels,
+         JSON_AGG(JSON_BUILD_OBJECT(
+           "id", tl.label_id,
+           "label_id", tl.label_id,
+           "name", team_l.name,
+           "color_code", team_l.color_code
+         )) AS all_labels
+        FROM task_labels tl
+        JOIN team_labels team_l ON tl.label_id = team_l.id
+        GROUP BY tl.task_id
+      )
+      ${options.customColumns ? `,
+      custom_columns_data AS (
+        SELECT 
+          ccv.task_id,
+          JSONB_OBJECT_AGG(
+            cc.key, 
+            CASE 
+              WHEN ccv.text_value IS NOT NULL THEN to_jsonb(ccv.text_value)
+              WHEN ccv.number_value IS NOT NULL THEN to_jsonb(ccv.number_value)
+              WHEN ccv.boolean_value IS NOT NULL THEN to_jsonb(ccv.boolean_value)
+              WHEN ccv.date_value IS NOT NULL THEN to_jsonb(ccv.date_value)
+              WHEN ccv.json_value IS NOT NULL THEN ccv.json_value
+              ELSE NULL::JSONB
+            END
+          ) AS custom_column_values
+        FROM cc_column_values ccv
+        JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+        GROUP BY ccv.task_id
+      )` : ""}
+      SELECT 
+        t.id,
+        t.name,
+        CONCAT(p.key, '-', t.task_no) AS task_key,
+        p.name AS project_name,
+        t.project_id,
+        t.parent_task_id,
+        t.parent_task_id IS NOT NULL AS is_sub_task,
+        parent_task.name AS parent_task_name,
+        t.status_id AS status,
+        t.archived,
+        t.description,
+        t.sort_order,
+        t.progress_value,
+        t.manual_progress,
+        t.weight,
+        p.use_manual_progress AS project_use_manual_progress,
+        p.use_weighted_progress AS project_use_weighted_progress,
+        p.use_time_progress AS project_use_time_progress,
+        -- Use stored progress value instead of expensive function call
+        COALESCE(t.progress_value, 0) AS complete_ratio,
+        -- Phase information via JOINs
+        tp.phase_id,
+        pp.name AS phase_name,
+        pp.color_code AS phase_color_code,
+        -- Status information via JOINs
+        stsc.color_code AS status_color,
+        stsc.color_code_dark AS status_color_dark,
+        JSON_BUILD_OBJECT(
+          "is_done", stsc.is_done,
+          "is_doing", stsc.is_doing,
+          "is_todo", stsc.is_todo
+        ) AS status_category,
+        -- Aggregated counts
+        COALESCE(agg.sub_tasks_count, 0) AS sub_tasks_count,
+        COALESCE(agg.completed_sub_tasks, 0) AS completed_sub_tasks,
+        COALESCE(agg.comments_count, 0) AS comments_count,
+        COALESCE(agg.attachments_count, 0) AS attachments_count,
+        COALESCE(agg.total_minutes_spent, 0) AS total_minutes_spent,
+        CASE WHEN agg.has_subscribers > 0 THEN true ELSE false END AS has_subscribers,
+        CASE WHEN agg.has_dependencies > 0 THEN true ELSE false END AS has_dependencies,
+        -- Task completion status
+        CASE WHEN stsc.is_done THEN 1 ELSE 0 END AS parent_task_completed,
+        -- Assignees and labels via JOINs
+        COALESCE(assignees.assignees, "[]"::JSON) AS assignees,
+        COALESCE(assignees.assignee_names, "") AS assignee_names,
+        COALESCE(assignees.names, "") AS names,
+        COALESCE(labels.labels, "[]"::JSON) AS labels,
+        COALESCE(labels.all_labels, "[]"::JSON) AS all_labels,
+        -- Other fields
+        stsc.is_done AS is_complete,
+        reporter.name AS reporter,
+        t.priority_id AS priority,
+        tp_priority.value AS priority_value,
+        t.total_minutes,
+        t.created_at,
+        t.updated_at,
+        t.completed_at,
+        t.start_date,
+        t.billable,
+        t.schedule_id,
+        t.END_DATE,
+        -- Timer information
+        tt.start_time AS timer_start_time
+        ${customColumnsQuery}
+        ${statusesQuery}
       FROM tasks t
+      JOIN projects p ON t.project_id = p.id
+      JOIN task_statuses ts ON t.status_id = ts.id
+      JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+      LEFT JOIN tasks parent_task ON t.parent_task_id = parent_task.id
+      LEFT JOIN task_phase tp ON t.id = tp.task_id
+      LEFT JOIN project_phases pp ON tp.phase_id = pp.id
+      LEFT JOIN task_priorities tp_priority ON t.priority_id = tp_priority.id
+      LEFT JOIN users reporter ON t.reporter_id = reporter.id
+      LEFT JOIN task_timers tt ON t.id = tt.task_id AND tt.user_id = "${userId}"
+      LEFT JOIN task_aggregates agg ON t.id = agg.id
+      LEFT JOIN task_assignees assignees ON t.id = assignees.task_id
+      LEFT JOIN task_labels labels ON t.id = labels.task_id
+      ${options.customColumns ? "LEFT JOIN custom_columns_data cc_data ON t.id = cc_data.task_id" : ""}
       WHERE ${filters} ${searchQuery}
       ORDER BY ${sortFields}
     `;
@@ -995,11 +1051,42 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Only refresh if explicitly requested via refresh_progress=true query parameter
     // This dramatically improves initial load performance (from ~2-5s to ~200-500ms)
     const shouldRefreshProgress = req.query.refresh_progress === "true";
+
+    // CACHING OPTIMIZATION: Cache results for frequently accessed data
+    const cacheKey = `tasks_v3_${req.params.id}_${groupBy}_${JSON.stringify({
+      parent_task: req.query.parent_task,
+      archived: req.query.archived,
+      search: req.query.search,
+      statuses: req.query.statuses,
+      priorities: req.query.priorities,
+      labels: req.query.labels,
+      members: req.query.members,
+      projects: req.query.projects,
+      filterBy: req.query.filterBy,
+      customColumns: req.query.customColumns,
+      isSubtasksInclude: req.query.isSubtasksInclude
+    })}`;
+
+    // Try to get cached result first (only if not refreshing progress)
+    if (!shouldRefreshProgress) {
+      try {
+        const cachedResult = await redisClient.get(cacheKey);
+        if (cachedResult) {
+          const parsedResult = JSON.parse(cachedResult);
+          console.log(`[PERFORMANCE] Cache hit for project ${req.params.id} - returned in ${(performance.now() - startTime).toFixed(2)}ms`);
+          return res.status(200).send(parsedResult);
+        }
+      } catch (cacheError) {
+        console.warn("[CACHE WARNING] Redis cache read failed:", cacheError);
+        // Continue with normal query if cache fails
+      }
+    }
     
     if (shouldRefreshProgress && req.params.id) {
       const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
       const progressEndTime = performance.now();
+      console.log(`[PERFORMANCE] Progress refresh completed in ${(progressEndTime - progressStartTime).toFixed(2)}ms`);
     }
 
     const queryStartTime = performance.now();
@@ -1009,11 +1096,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const result = await db.query(q, params);
     const tasks = [...result.rows];
     const queryEndTime = performance.now();
+    console.log(`[PERFORMANCE] Main query completed in ${(queryEndTime - queryStartTime).toFixed(2)}ms for ${tasks.length} tasks`);
 
     // Get groups metadata dynamically from database
     const groupsStartTime = performance.now();
     const groups = await this.getGroups(groupBy, req.params.id);
     const groupsEndTime = performance.now();
+    console.log(`[PERFORMANCE] Groups query completed in ${(groupsEndTime - groupsStartTime).toFixed(2)}ms`);
 
     // Create priority value to name mapping
     const priorityMap: Record<string, string> = {
@@ -1030,8 +1119,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
         statusCategoryMap[group.id] = group.name.toLowerCase().replace(/\s+/g, "_");
       }
     }
-
-
 
     // Transform tasks with all necessary data preprocessing
     const transformStartTime = performance.now();
@@ -1229,12 +1316,26 @@ export default class TasksControllerV2 extends TasksControllerBase {
       console.warn(`[PERFORMANCE WARNING] Slow request detected: ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
     }
 
-    return res.status(200).send(new ServerResponse(true, {
+    const responseData = new ServerResponse(true, {
       groups: responseGroups,
       allTasks: transformedTasks,
       grouping: groupBy,
       totalTasks: transformedTasks.length
-    }));
+    });
+
+    // Cache the result for 5 minutes (300 seconds) - only cache successful results
+    if (transformedTasks.length > 0) {
+      try {
+        await redisClient.setEx(cacheKey, 300, JSON.stringify(responseData));
+        console.log(`[PERFORMANCE] Cached result for project ${req.params.id} with ${transformedTasks.length} tasks`);
+      } catch (cacheError) {
+        console.warn("[CACHE WARNING] Redis cache write failed:", cacheError);
+        // Continue even if cache write fails
+      }
+    }
+
+    console.log(`[PERFORMANCE] getTasksV3 completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
+    return res.status(200).send(responseData);
   }
 
   private static getDefaultGroupColor(groupBy: string, groupValue: string): string {
@@ -1330,6 +1431,23 @@ export default class TasksControllerV2 extends TasksControllerBase {
     } catch (error) {
       console.error("Error getting task progress status:", error);
       return res.status(500).send(new ServerResponse(false, null, "Failed to get task progress status"));
+    }
+  }
+
+  // Helper method to invalidate cache when tasks are modified
+  public static async invalidateTasksCache(projectId: string): Promise<void> {
+    try {
+      // Get all cache keys for this project
+      const pattern = `tasks_v3_${projectId}_*`;
+      const keys = await redisClient.keys(pattern);
+      
+      if (keys.length > 0) {
+        await redisClient.del(keys);
+        console.log(`[CACHE] Invalidated ${keys.length} cache entries for project ${projectId}`);
+      }
+    } catch (error) {
+      console.warn("[CACHE WARNING] Cache invalidation failed:", error);
+      // Don't throw error - cache invalidation failure shouldn't break the operation
     }
   }
 }
