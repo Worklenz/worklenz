@@ -28,7 +28,6 @@ interface TaskCardProps {
     onTaskDragOver: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
     onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
     groupId: string;
-    isDropIndicator: boolean;
     idx: number;
 }
 
@@ -46,7 +45,6 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
     onTaskDragOver,
     onTaskDrop,
     groupId,
-    isDropIndicator,
     idx
 }) => {
     const { socket } = useSocket();
@@ -198,29 +196,22 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         while (week.length < 7) week.push(null);
         weeks.push(week);
     }
+    const [isDown, setIsDown] = useState(false);
 
     return (
         <>
-            {isDropIndicator && (
-                <div
-                    
-                    onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
-                    onDragOver={e => onTaskDragOver(e, groupId, idx)}
-                    onDrop={e => onTaskDrop(e, groupId, idx)}
-                >
-                    <div className="w-full h-full bg-red-500"style={{
-                        height: 80,
-                        background: themeMode === 'dark' ? '#2a2a2a' : '#E2EAF4',
-                        borderRadius: 6,
-                        border: `5px`
-                    }}></div>
-                </div>
-            )}
             <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block' }} >
                 <div
                     draggable
                     onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
-                    onDragOver={e => onTaskDragOver(e, groupId, idx)}
+                    onDragOver={e => {
+                        e.preventDefault();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const offsetY = e.clientY - rect.top;
+                        const isDown = offsetY > rect.height / 2;
+                        setIsDown(isDown);
+                        onTaskDragOver(e, groupId, isDown ? idx + 1 : idx);
+                    }}
                     onDrop={e => onTaskDrop(e, groupId, idx)}
 
                     onClick={e => handleCardClick(e, task.id!)}

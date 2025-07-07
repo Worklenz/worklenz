@@ -517,17 +517,29 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                     )}
 
                     {group.tasks.map((task, idx) => (
-                        <TaskCard
-                            key={task.id}
-                            task={task}
-                            onTaskDragStart={onTaskDragStart}
-                            onTaskDragOver={onTaskDragOver}
-                            onTaskDrop={onTaskDrop}
-                            groupId={group.id}
-                            isDropIndicator={hoveredGroupId === group.id && hoveredTaskIdx === idx}
-                            idx={idx}
-                        />
+                        <React.Fragment key={task.id}>
+                            {/* Drop indicator before this card */}
+                            {hoveredGroupId === group.id && hoveredTaskIdx === idx && (
+                                <div className="drop-preview-indicator" style={{height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px 0'}}>
+                                    <div className="drop-line" style={{width: '90%', height: 4, background: '#1976d2', borderRadius: 2, boxShadow: '0 0 4px #1976d2'}} />
+                                </div>
+                            )}
+                            <TaskCard
+                                task={task}
+                                onTaskDragStart={onTaskDragStart}
+                                onTaskDragOver={onTaskDragOver}
+                                onTaskDrop={onTaskDrop}
+                                groupId={group.id}
+                                idx={idx}
+                            />
+                        </React.Fragment>
                     ))}
+                    {/* Drop indicator at the end of the group */}
+                    {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
+                        <div className="drop-preview-indicator" style={{height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px 0'}}>
+                            <div className="drop-line" style={{width: '90%', height: 4, background: '#1976d2', borderRadius: 2, boxShadow: '0 0 4px #1976d2'}} />
+                        </div>
+                    )}
 
                     {/* Create card at bottom */}
                     {showNewCardBottom && (
