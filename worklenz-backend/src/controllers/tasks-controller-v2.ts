@@ -1041,61 +1041,62 @@ export default class TasksControllerV2 extends TasksControllerBase {
   @HandleExceptions()
   public static async getTasksV3(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
-    const isSubTasks = !!req.query.parent_task;
-    const groupBy = (req.query.group || GroupBy.STATUS) as string;
-    const archived = req.query.archived === "true";
-
+    console.log(`[PERFORMANCE] getTasksV3 method called for project ${req.params.id}`);
+    
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
     // Progress values are already calculated and stored in the database
     // Only refresh if explicitly requested via refresh_progress=true query parameter
-    // This dramatically improves initial load performance (from ~2-5s to ~200-500ms)
-    const shouldRefreshProgress = req.query.refresh_progress === "true";
-    
-    if (shouldRefreshProgress && req.params.id) {
+    if (req.query.refresh_progress === "true" && req.params.id) {
+      console.log(`[PERFORMANCE] Starting progress refresh for project ${req.params.id} (getTasksV3)`);
       const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
       const progressEndTime = performance.now();
       console.log(`[PERFORMANCE] Progress refresh completed in ${(progressEndTime - progressStartTime).toFixed(2)}ms`);
     }
 
-    const queryStartTime = performance.now();
+    const isSubTasks = !!req.query.parent_task;
+    const groupBy = (req.query.group || GroupBy.STATUS) as string;
+    
+    // Add customColumns flag to query params (same as getList)
+    req.query.customColumns = "true";
+
+    // Use the exact same database query as getList method
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
     const params = isSubTasks ? [req.params.id || null, req.query.parent_task, req.user?.id] : [req.params.id || null, req.user?.id];
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
-    const queryEndTime = performance.now();
-    console.log(`[PERFORMANCE] Main query completed in ${(queryEndTime - queryStartTime).toFixed(2)}ms for ${tasks.length} tasks`);
 
-    // Get groups metadata dynamically from database
-    const groupsStartTime = performance.now();
+    // Use the same groups query as getList method
     const groups = await this.getGroups(groupBy, req.params.id);
-    const groupsEndTime = performance.now();
-    console.log(`[PERFORMANCE] Groups query completed in ${(groupsEndTime - groupsStartTime).toFixed(2)}ms`);
+    const map = groups.reduce((g: { [x: string]: ITaskGroup }, group) => {
+      if (group.id)
+        g[group.id] = new TaskListGroup(group);
+      return g;
+    }, {});
 
-    // Create priority value to name mapping
+    // Use the same updateMapByGroup method as getList
+    await this.updateMapByGroup(tasks, groupBy, map);
+
+    // Calculate progress for groups (same as getList)
+    const updatedGroups = Object.keys(map).map(key => {
+      const group = map[key];
+      TasksControllerV2.updateTaskProgresses(group);
+      return {
+        id: key,
+        ...group
+      };
+    });
+
+    // Transform to V3 response format while maintaining the same data processing
     const priorityMap: Record<string, string> = {
       "0": "low",
       "1": "medium", 
       "2": "high"
     };
 
-    // Create status category mapping based on actual status names from database
-    const statusCategoryMap: Record<string, string> = {};
-    for (const group of groups) {
-      if (groupBy === GroupBy.STATUS && group.id) {
-        // Use the actual status name from database, convert to lowercase for consistency
-        statusCategoryMap[group.id] = group.name.toLowerCase().replace(/\s+/g, "_");
-      }
-    }
-
-    // Transform tasks with all necessary data preprocessing
-    const transformStartTime = performance.now();
+    // Transform all tasks to V3 format
     const transformedTasks = tasks.map((task, index) => {
-      // Update task with calculated values (lightweight version)
-      TasksControllerV2.updateTaskViewModel(task);
-      task.index = index;
-
       // Convert time values
       const convertTimeValue = (value: any): number => {
         if (typeof value === "number") return value;
@@ -1118,11 +1119,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         task_key: task.task_key || "",
         title: task.name || "",
         description: task.description || "",
-        // Use dynamic status mapping from database
-        status: statusCategoryMap[task.status] || task.status,
-        // Pre-processed priority using mapping  
+        status: task.status || "todo",
         priority: priorityMap[task.priority_value?.toString()] || "medium",
-        // Use actual phase name from database
         phase: task.phase_name || "Development",
         progress: typeof task.complete_ratio === "number" ? task.complete_ratio : 0,
         assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
@@ -1146,7 +1144,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           logged: convertTimeValue(task.time_spent),
         },
         customFields: {},
-        custom_column_values: task.custom_column_values || {}, // Include custom column values
+        custom_column_values: task.custom_column_values || {},
         createdAt: task.created_at || new Date().toISOString(),
         updatedAt: task.updated_at || new Date().toISOString(),
         order: typeof task.sort_order === "number" ? task.sort_order : 0,
@@ -1165,128 +1163,55 @@ export default class TasksControllerV2 extends TasksControllerBase {
         schedule_id: task.schedule_id || null,
       };
     });
-    const transformEndTime = performance.now();
 
-    // Create groups based on dynamic data from database
-    const groupingStartTime = performance.now();
-    const groupedResponse: Record<string, any> = {};
-    
-    // Initialize groups from database data
-    groups.forEach(group => {
-      const groupKey = groupBy === GroupBy.STATUS 
-        ? group.name.toLowerCase().replace(/\s+/g, "_")
-        : groupBy === GroupBy.PRIORITY
-        ? priorityMap[(group as any).value?.toString()] || group.name.toLowerCase()
-        : group.name.toLowerCase().replace(/\s+/g, "_");
-      
-      groupedResponse[groupKey] = {
-        id: group.id,
-        title: group.name,
-        groupType: groupBy,
-        groupValue: groupKey,
-        collapsed: false,
-        tasks: [],
-        taskIds: [],
-        color: group.color_code || this.getDefaultGroupColor(groupBy, groupKey),
-        // Include additional metadata from database
-        category_id: group.category_id,
-        start_date: group.start_date,
-        end_date: group.end_date,
-        sort_index: (group as any).sort_index,
-      };
-    });
+    // Transform groups to V3 format while preserving the getList logic
+    const responseGroups = updatedGroups.map(group => {
+             // Create status category mapping for consistent group naming
+       let groupValue = group.name;
+       if (groupBy === GroupBy.STATUS) {
+         groupValue = group.name.toLowerCase().replace(/\s+/g, "_");
+       } else if (groupBy === GroupBy.PRIORITY) {
+         groupValue = group.name.toLowerCase();
+       } else if (groupBy === GroupBy.PHASE) {
+         groupValue = group.name.toLowerCase().replace(/\s+/g, "_");
+       }
 
-    // Distribute tasks into groups
-    const unmappedTasks: any[] = [];
-    
-    transformedTasks.forEach(task => {
-      let groupKey: string;
-      let taskAssigned = false;
-      
-      if (groupBy === GroupBy.STATUS) {
-        groupKey = task.status;
-        if (groupedResponse[groupKey]) {
-          groupedResponse[groupKey].tasks.push(task);
-          groupedResponse[groupKey].taskIds.push(task.id);
-          taskAssigned = true;
-        }
-      } else if (groupBy === GroupBy.PRIORITY) {
-        groupKey = task.priority;
-        if (groupedResponse[groupKey]) {
-          groupedResponse[groupKey].tasks.push(task);
-          groupedResponse[groupKey].taskIds.push(task.id);
-          taskAssigned = true;
-        }
-      } else if (groupBy === GroupBy.PHASE) {
-        // For phase grouping, check if task has a valid phase
-        if (task.phase && task.phase.trim() !== "") {
-          groupKey = task.phase.toLowerCase().replace(/\s+/g, "_");
-          if (groupedResponse[groupKey]) {
-            groupedResponse[groupKey].tasks.push(task);
-            groupedResponse[groupKey].taskIds.push(task.id);
-            taskAssigned = true;
-          }
-        }
-        // If task doesn't have a valid phase, add to unmapped
-        if (!taskAssigned) {
-          unmappedTasks.push(task);
-        }
-      }
-    });
+      // Transform tasks in this group to V3 format
+      const groupTasks = group.tasks.map(task => {
+        const foundTask = transformedTasks.find(t => t.id === task.id);
+        return foundTask || task;
+      });
 
-    // Create unmapped group if there are tasks without proper phase assignment
-    if (unmappedTasks.length > 0 && groupBy === GroupBy.PHASE) {
-      groupedResponse[UNMAPPED.toLowerCase()] = {
-        id: UNMAPPED,
-        title: UNMAPPED,
-        groupType: groupBy,
-        groupValue: UNMAPPED.toLowerCase(),
-        collapsed: false,
-        tasks: unmappedTasks,
-        taskIds: unmappedTasks.map(task => task.id),
-        color: "#fbc84c69", // Orange color with transparency
-        category_id: null,
-        start_date: null,
-        end_date: null,
-        sort_index: 999, // Put unmapped group at the end
-      };
-    }
-
-    // Sort tasks within each group by order
-    Object.values(groupedResponse).forEach((group: any) => {
-      group.tasks.sort((a: any, b: any) => a.order - b.order);
-    });
-
-    // Convert to array format expected by frontend, maintaining database order
-    const responseGroups = groups
-      .map(group => {
-        const groupKey = groupBy === GroupBy.STATUS 
-          ? group.name.toLowerCase().replace(/\s+/g, "_")
-          : groupBy === GroupBy.PRIORITY
-          ? priorityMap[(group as any).value?.toString()] || group.name.toLowerCase()
-          : group.name.toLowerCase().replace(/\s+/g, "_");
-        
-        return groupedResponse[groupKey];
-      })
-      .filter(group => group && (group.tasks.length > 0 || req.query.include_empty === "true"));
-
-    // Add unmapped group to the end if it exists
-    if (groupedResponse[UNMAPPED.toLowerCase()]) {
-      responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
-    }
-    
-    const groupingEndTime = performance.now();
+             return {
+         id: group.id,
+         title: group.name,
+         groupType: groupBy,
+         groupValue,
+         collapsed: false,
+         tasks: groupTasks,
+         taskIds: groupTasks.map((task: any) => task.id),
+         color: group.color_code || this.getDefaultGroupColor(groupBy, groupValue),
+         // Include additional metadata from database
+         category_id: group.category_id,
+         start_date: group.start_date,
+         end_date: group.end_date,
+         sort_index: (group as any).sort_index,
+         // Include progress information from getList logic
+         todo_progress: group.todo_progress,
+         doing_progress: group.doing_progress,
+         done_progress: group.done_progress,
+       };
+    }).filter(group => group.tasks.length > 0 || req.query.include_empty === "true");
 
     const endTime = performance.now();
     const totalTime = endTime - startTime;
+    console.log(`[PERFORMANCE] getTasksV3 method completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
     
-    // Log warning if request is taking too long
+    // Log warning if this method is taking too long
     if (totalTime > 1000) {
-      console.warn(`[PERFORMANCE WARNING] Slow request detected: ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
+      console.warn(`[PERFORMANCE WARNING] getTasksV3 method taking ${totalTime.toFixed(2)}ms - Consider optimizing the query or data processing!`);
     }
 
-    console.log(`[PERFORMANCE] getTasksV3 completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
-    
     return res.status(200).send(new ServerResponse(true, {
       groups: responseGroups,
       allTasks: transformedTasks,
