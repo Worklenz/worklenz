@@ -69,13 +69,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static getFilterByProjectsWhereClosure(text: string) {
-    return text ? `project_id IN (${this.flatString(text)})` : "";
+    return text ? `t.project_id IN (${this.flatString(text)})` : "";
   }
 
   private static getFilterByAssignee(filterBy: string) {
     return filterBy === "member"
-      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $1)`
-      : "project_id = $1";
+      ? `t.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $1)`
+      : "t.project_id = $1";
   }
 
   private static getStatusesQuery(filterBy: string) {
@@ -136,14 +136,14 @@ export default class TasksControllerV2 extends TasksControllerBase {
       ? `, COALESCE(cc_data.custom_column_values, '{}'::JSONB) AS custom_column_values`
       : "";
 
-    const archivedFilter = options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
+    const archivedFilter = options.archived === "true" ? "t.archived IS TRUE" : "t.archived IS FALSE";
 
     let subTasksFilter;
 
     if (options.isSubtasksInclude === "true") {
       subTasksFilter = "";
     } else {
-      subTasksFilter = isSubTasks ? "parent_task_id = $2" : "parent_task_id IS NULL";
+      subTasksFilter = isSubTasks ? "t.parent_task_id = $2" : "t.parent_task_id IS NULL";
     }
 
     const filters = [
@@ -186,18 +186,18 @@ export default class TasksControllerV2 extends TasksControllerBase {
         SELECT 
           ta.task_id,
                      JSON_AGG(JSON_BUILD_OBJECT(
-            "team_member_id", ta.team_member_id,
-            "project_member_id", ta.project_member_id,
-            "name", COALESCE(tmiv.name, ""),
-            "avatar_url", COALESCE(tmiv.avatar_url, ""),
-            "email", COALESCE(tmiv.email, ""),
-            "user_id", tmiv.user_id,
-            "socket_id", COALESCE(u.socket_id, ""),
-            "team_id", tmiv.team_id,
-            "email_notifications_enabled", COALESCE(ns.email_notifications_enabled, false)
+            'team_member_id', ta.team_member_id,
+            'project_member_id', ta.project_member_id,
+                         'name', COALESCE(tmiv.name, ''),
+             'avatar_url', COALESCE(tmiv.avatar_url, ''),
+             'email', COALESCE(tmiv.email, ''),
+             'user_id', tmiv.user_id,
+             'socket_id', COALESCE(u.socket_id, ''),
+             'team_id', tmiv.team_id,
+             'email_notifications_enabled', COALESCE(ns.email_notifications_enabled, false)
           )) AS assignees,
-                     STRING_AGG(COALESCE(tmiv.name, \"\"), \", \") AS assignee_names,
-           STRING_AGG(COALESCE(tmiv.name, \"\"), \", \") AS names
+                     STRING_AGG(COALESCE(tmiv.name, ''), ', ') AS assignee_names,
+           STRING_AGG(COALESCE(tmiv.name, ''), ', ') AS names
         FROM tasks_assignees ta
         LEFT JOIN team_member_info_view tmiv ON ta.team_member_id = tmiv.team_member_id
         LEFT JOIN users u ON tmiv.user_id = u.id
@@ -208,16 +208,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
         SELECT 
           tl.task_id,
                    JSON_AGG(JSON_BUILD_OBJECT(
-           "id", tl.label_id,
-           "label_id", tl.label_id,
-           "name", team_l.name,
-           "color_code", team_l.color_code
+           'id', tl.label_id,
+           'label_id', tl.label_id,
+           'name', team_l.name,
+           'color_code', team_l.color_code
          )) AS labels,
          JSON_AGG(JSON_BUILD_OBJECT(
-           "id", tl.label_id,
-           "label_id", tl.label_id,
-           "name", team_l.name,
-           "color_code", team_l.color_code
+           'id', tl.label_id,
+           'label_id', tl.label_id,
+           'name', team_l.name,
+           'color_code', team_l.color_code
          )) AS all_labels
         FROM task_labels tl
         JOIN team_labels team_l ON tl.label_id = team_l.id
@@ -241,7 +241,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         FROM cc_column_values ccv
         JOIN cc_custom_columns cc ON ccv.column_id = cc.id
         GROUP BY ccv.task_id
-      )` : ""}
+             )` : ""}
       SELECT 
         t.id,
         t.name,
@@ -270,11 +270,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
         -- Status information via JOINs
         stsc.color_code AS status_color,
         stsc.color_code_dark AS status_color_dark,
-        JSON_BUILD_OBJECT(
-          "is_done", stsc.is_done,
-          "is_doing", stsc.is_doing,
-          "is_todo", stsc.is_todo
-        ) AS status_category,
+                 JSON_BUILD_OBJECT(
+           'is_done', stsc.is_done,
+           'is_doing', stsc.is_doing,
+           'is_todo', stsc.is_todo
+         ) AS status_category,
         -- Aggregated counts
         COALESCE(agg.sub_tasks_count, 0) AS sub_tasks_count,
         COALESCE(agg.completed_sub_tasks, 0) AS completed_sub_tasks,
@@ -286,11 +286,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
         -- Task completion status
         CASE WHEN stsc.is_done THEN 1 ELSE 0 END AS parent_task_completed,
         -- Assignees and labels via JOINs
-        COALESCE(assignees.assignees, "[]"::JSON) AS assignees,
-        COALESCE(assignees.assignee_names, "") AS assignee_names,
-        COALESCE(assignees.names, "") AS names,
-        COALESCE(labels.labels, "[]"::JSON) AS labels,
-        COALESCE(labels.all_labels, "[]"::JSON) AS all_labels,
+                 COALESCE(assignees.assignees, '[]'::JSON) AS assignees,
+         COALESCE(assignees.assignee_names, '') AS assignee_names,
+         COALESCE(assignees.names, '') AS names,
+         COALESCE(labels.labels, '[]'::JSON) AS labels,
+         COALESCE(labels.all_labels, '[]'::JSON) AS all_labels,
         -- Other fields
         stsc.is_done AS is_complete,
         reporter.name AS reporter,
@@ -317,7 +317,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       LEFT JOIN project_phases pp ON tp.phase_id = pp.id
       LEFT JOIN task_priorities tp_priority ON t.priority_id = tp_priority.id
       LEFT JOIN users reporter ON t.reporter_id = reporter.id
-      LEFT JOIN task_timers tt ON t.id = tt.task_id AND tt.user_id = "${userId}"
+      LEFT JOIN task_timers tt ON t.id = tt.task_id AND tt.user_id = $${isSubTasks ? "3" : "2"}
       LEFT JOIN task_aggregates agg ON t.id = agg.id
       LEFT JOIN task_assignees assignees ON t.id = assignees.task_id
       LEFT JOIN task_labels labels ON t.id = labels.task_id
@@ -402,7 +402,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     req.query.customColumns = "true";
 
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const params = isSubTasks ? [req.params.id || null, req.query.parent_task, req.user?.id] : [req.params.id || null, req.user?.id];
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
@@ -510,7 +510,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     req.query.customColumns = "true";
     
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const params = isSubTasks ? [req.params.id || null, req.query.parent_task, req.user?.id] : [req.params.id || null, req.user?.id];
     const result = await db.query(q, params);
 
     let data: any[] = [];
@@ -1060,7 +1060,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const queryStartTime = performance.now();
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const params = isSubTasks ? [req.params.id || null, req.query.parent_task, req.user?.id] : [req.params.id || null, req.user?.id];
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
@@ -1126,7 +1126,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         phase: task.phase_name || "Development",
         progress: typeof task.complete_ratio === "number" ? task.complete_ratio : 0,
         assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
-        assignee_names: task.assignee_names || task.names || [],
+        assignee_names: task.assignees || [],
         labels: task.labels?.map((l: any) => ({
           id: l.id || l.label_id,
           name: l.name,
