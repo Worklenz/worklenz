@@ -153,7 +153,7 @@ tr:hover .action-buttons {
   z-index: 1;
 }
 
-.custom-column-cell.focused {
+.custom-column-cell.custom-column-focused {
   z-index: 10;
 }
 
