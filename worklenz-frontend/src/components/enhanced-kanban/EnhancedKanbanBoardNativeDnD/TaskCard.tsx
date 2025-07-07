@@ -203,16 +203,18 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         <>
             {isDropIndicator && (
                 <div
-                    style={{
+                    
+                    onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
+                    onDragOver={e => onTaskDragOver(e, groupId, idx)}
+                    onDrop={e => onTaskDrop(e, groupId, idx)}
+                >
+                    <div className="w-full h-full bg-red-500"style={{
                         height: 80,
                         background: themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0',
                         borderRadius: 6,
                         border: `5px`
-                    }}
-                    onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
-                    onDragOver={e => onTaskDragOver(e, groupId, idx)}
-                    onDrop={e => onTaskDrop(e, groupId, idx)}
-                />
+                    }}></div>
+                </div>
             )}
             <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block' }} >
                 <div
@@ -429,7 +431,16 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                         </div>
                     </div>
                 </div>
-                {task.show_sub_tasks && (
+                <div 
+                    className="subtasks-container"
+                    style={{
+                        overflow: 'hidden',
+                        transition: 'all 0.3s ease-in-out',
+                        maxHeight: task.show_sub_tasks ? '500px' : '0px',
+                        opacity: task.show_sub_tasks ? 1 : 0,
+                        transform: task.show_sub_tasks ? 'translateY(0)' : 'translateY(-10px)',
+                    }}
+                >
                     <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                         {/* Loading state */}
                         {task.sub_tasks_loading && (
@@ -469,7 +480,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                             <div className="py-2 text-xs text-gray-400 dark:text-gray-500">{t('noSubtasks', 'No subtasks')}</div>
                         )}
                     </div>
-                )}
+                </div>
             </div>
         </>
     );
