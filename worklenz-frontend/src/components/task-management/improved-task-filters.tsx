@@ -605,6 +605,15 @@ const SearchFilter: React.FC<{
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Sync local value with external value prop
+  useEffect(() => {
+    setLocalValue(value);
+    // Keep expanded if there's a search value
+    if (value) {
+      setIsExpanded(true);
+    }
+  }, [value]);
+
   const handleToggle = useCallback(() => {
     setIsExpanded(!isExpanded);
     if (!isExpanded) {
@@ -623,7 +632,6 @@ const SearchFilter: React.FC<{
   const handleClear = useCallback(() => {
     setLocalValue('');
     onChange('');
-    setIsExpanded(false);
   }, [onChange]);
 
   // Redux selectors for theme and other state
@@ -631,7 +639,7 @@ const SearchFilter: React.FC<{
 
   return (
     <div className={`relative ${className}`}>
-      {!isExpanded ? (
+      {!isExpanded && !value ? (
         <button
           onClick={handleToggle}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
@@ -663,7 +671,11 @@ const SearchFilter: React.FC<{
               <button
                 type="button"
                 onClick={handleClear}
-                className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 ${themeClasses.secondaryText} hover:${themeClasses.optionText} transition-colors duration-150`}
+                className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 transition-colors duration-150 ${
+                  isDarkMode 
+                    ? 'text-gray-400 hover:text-gray-200' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
               >
                 <CloseOutlined className="w-3.5 h-3.5" />
               </button>
@@ -681,11 +693,19 @@ const SearchFilter: React.FC<{
             </button>
           <button
             type="button"
-            onClick={() => setIsExpanded(false)}
-            className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${themeClasses.secondaryText} hover:${themeClasses.optionText}`}
-                      >
-              {t('cancel')}
-            </button>
+            onClick={() => {
+              setLocalValue('');
+              onChange('');
+              setIsExpanded(false);
+            }}
+            className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${
+              isDarkMode
+                ? 'text-gray-400 hover:text-gray-200'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            {t('cancel')}
+          </button>
         </form>
       )}
     </div>
@@ -871,9 +891,14 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   // Use the filter data loader hook
   useFilterDataLoader();
 
+  // Get search value from Redux based on position
+  const taskReducerSearch = useAppSelector(state => state.taskReducer?.search || '');
+  const kanbanSearch = useAppSelector(state => state.enhancedKanbanReducer?.search || '');
+  
+  const searchValue = position === 'board' ? kanbanSearch : taskReducerSearch;
+
   // Local state for filter sections
   const [filterSections, setFilterSections] = useState<FilterSection[]>([]);
-  const [searchValue, setSearchValue] = useState('');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   const [clearingFilters, setClearingFilters] = useState(false);
@@ -890,8 +915,9 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   const filterSectionsData = useFilterData(position);
 
   // Check if data is loaded - memoize this computation
+  // Keep filters visible even during refetch if we have any filter sections
   const isDataLoaded = useMemo(() => {
-    return filterSectionsData.some(section => section.options.length > 0);
+    return filterSectionsData.length > 0;
   }, [filterSectionsData]);
 
   // Initialize filter sections from data - memoize this to prevent unnecessary updates
@@ -948,12 +974,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
     // Debounced search change function
     debouncedSearchChangeRef.current = createDebouncedFunction(
       (projectId: string, value: string) => {
-        // Dispatch search action based on current view
-        if (projectView === 'list') {
-          dispatch(setSearch(value));
-        } else {
-          dispatch(setKanbanSearch(value));
-        }
+        // Always use taskReducer search for list view since that's what we read from
+        dispatch(setSearch(value));
 
         // Trigger task refetch with new search value
         dispatch(fetchTasksV3(projectId));
@@ -1084,8 +1106,6 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
 
   const handleSearchChange = useCallback(
     (value: string) => {
-      setSearchValue(value);
-
       if (!projectId) return;
 
       if (position === 'board') {
@@ -1094,7 +1114,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           dispatch(fetchEnhancedKanbanGroups(projectId));
         }
       } else {
-        // Use debounced search
+        // Use debounced search for list view
         if (projectId) {
           debouncedSearchChangeRef.current?.(projectId, value);
         }
@@ -1116,9 +1136,6 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
 
       // Batch all state updates together to prevent multiple re-renders
       const batchUpdates = () => {
-        // Clear local state immediately for UI feedback
-        setSearchValue('');
-
         // Update local filter sections state immediately
         setFilterSections(prev =>
           prev.map(section => ({
@@ -1133,12 +1150,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
 
       // Prepare all Redux actions to be dispatched together
       const reduxUpdates = () => {
-        // Clear search based on view
-        if (projectView === 'list') {
-          dispatch(setSearch(''));
-        } else {
-          dispatch(setKanbanBoardSearch(''));
-        }
+        // Clear search - always use taskReducer for list view
+        dispatch(setSearch(''));
 
         // Clear label filters
         const clearedLabels = currentTaskLabels.map(label => ({
@@ -1298,7 +1311,6 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
               <span>"{searchValue}"</span>
               <button
                 onClick={() => {
-                  setSearchValue('');
                   if (projectId) {
                     // Cancel pending search and immediately clear
                     debouncedSearchChangeRef.current?.cancel();
@@ -1306,11 +1318,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                       dispatch(setKanbanSearch(''));
                       dispatch(fetchEnhancedKanbanGroups(projectId));
                     } else {
-                      if (projectView === 'list') {
-                        dispatch(setSearch(''));
-                      } else {
-                        dispatch(setKanbanBoardSearch(''));
-                      }
+                      // Always use taskReducer search for list view
+                      dispatch(setSearch(''));
                       dispatch(fetchTasksV3(projectId));
                     }
                   }
