@@ -25,6 +25,7 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateRecurringChange } from '@/features/tasks/tasks.slice';
+import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { taskRecurringApiService } from '@/api/tasks/task-recurring.api.service';
 import logger from '@/utils/errorLogger';
 import { setTaskRecurringSchedule } from '@/features/task-drawer/task-drawer.slice';
@@ -99,6 +100,14 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
         dispatch(
           setTaskRecurringSchedule({ schedule_id: schedule.id as string, task_id: task.id })
         );
+
+        // Update Redux state with recurring task status
+        dispatch(updateTaskCounts({
+          taskId: task.id,
+          counts: {
+            schedule_id: schedule.id as string || null
+          }
+        }));
 
         setRecurring(checked);
         if (!checked) setShowConfig(false);

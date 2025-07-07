@@ -29,7 +29,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
       <button
         onClick={handleModalOpen}
         className={`
-          group relative w-8 h-8 rounded-lg border-2 border-dashed transition-all duration-200
+          group relative w-9 h-9 rounded-lg border-2 border-dashed transition-all duration-200
           flex items-center justify-center
           ${isDarkMode 
             ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400' 
@@ -37,7 +37,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
           }
         `}
       >
-        <PlusOutlined className="text-xs transition-transform duration-200 group-hover:scale-110" />
+        <PlusOutlined className="text-sm transition-transform duration-200 group-hover:scale-110" />
         
         {/* Subtle glow effect on hover */}
         <div className={`
@@ -60,6 +60,7 @@ export const CustomColumnHeader: React.FC<{
   onSettingsClick: (columnId: string) => void;
 }> = ({ column, onSettingsClick }) => {
   const { t } = useTranslation('task-list-table');
+  const [isHovered, setIsHovered] = useState(false);
 
   const displayName = column.name || 
                      column.label || 
@@ -68,15 +69,20 @@ export const CustomColumnHeader: React.FC<{
                      t('customColumns.customColumnHeader');
 
   return (
-    <Flex align="center" justify="space-between" className="w-full px-2">
-      <span title={displayName}>{displayName}</span>
+    <Flex 
+      align="center" 
+      justify="space-between" 
+      className="w-full px-2 group cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => onSettingsClick(column.key || column.id)}
+    >
+      <span title={displayName} className="truncate flex-1 mr-2">{displayName}</span>
       <Tooltip title={t('customColumns.customColumnSettings')}>
         <SettingOutlined
-          className="cursor-pointer hover:text-primary"
-          onClick={e => {
-            e.stopPropagation();
-            onSettingsClick(column.key || column.id);
-          }}
+          className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 flex-shrink-0 ${
+            isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}
         />
       </Tooltip>
     </Flex>
@@ -278,14 +284,14 @@ export const DateCustomColumnCell: React.FC<{
   };
 
   return (
-    <div className={`px-2 relative custom-column-cell ${isOpen ? 'focused' : ''}`}>
+    <div className={`px-2 relative custom-column-cell ${isOpen ? 'custom-column-focused' : ''}`}>
       <div className="relative">
         <DatePicker
           open={isOpen}
           onOpenChange={setIsOpen}
           value={dateValue}
           onChange={handleDateChange}
-          placeholder={dateValue ? "" : "Click to set date"}
+          placeholder={dateValue ? "" : "Set date"}
           format="MMM DD, YYYY"
           suffixIcon={null}
           size="small"
@@ -440,15 +446,22 @@ export const SelectionCustomColumnCell: React.FC<{
   const selectedOption = selectionsList.find((option: any) => option.selection_name === customValue);
 
   const handleOptionSelect = async (option: any) => {
+    if (!task.id) return;
+
+    setIsDropdownOpen(false);
     setIsLoading(true);
+
     try {
-      if (task.id) {
-        updateTaskCustomColumnValue(task.id, columnKey, option.selection_name);
-      }
-      setIsDropdownOpen(false);
-    } finally {
-      // Small delay to show loading state
-      setTimeout(() => setIsLoading(false), 200);
+      // Send the update to the server - Redux store will be updated immediately
+      updateTaskCustomColumnValue(task.id, columnKey, option.selection_name);
+      
+      // Short loading state for visual feedback
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 200);
+    } catch (error) {
+      console.error('Error updating selection:', error);
+      setIsLoading(false);
     }
   };
 
@@ -468,7 +481,7 @@ export const SelectionCustomColumnCell: React.FC<{
           : 'border-gray-200 text-gray-600 bg-gray-50'
         }
       `}>
-        Select an option
+        Select option
       </div>
       
       {/* Options */}
@@ -521,7 +534,7 @@ export const SelectionCustomColumnCell: React.FC<{
   );
 
   return (
-    <div className={`px-2 relative custom-column-cell ${isDropdownOpen ? 'focused' : ''}`}>
+    <div className={`px-2 relative custom-column-cell ${isDropdownOpen ? 'custom-column-focused' : ''}`}>
       <Dropdown
         open={isDropdownOpen}
         onOpenChange={setIsDropdownOpen}
@@ -569,7 +582,7 @@ export const SelectionCustomColumnCell: React.FC<{
             <>
               <div className={`w-3 h-3 rounded-full border-2 border-dashed ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`} />
               <span className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Select option
+                Select
               </span>
               <svg className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

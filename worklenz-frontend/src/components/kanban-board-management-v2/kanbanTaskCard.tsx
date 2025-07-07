@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -36,6 +37,7 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
   onSelect,
   onToggleSubtasks,
 }) => {
+  const { t } = useTranslation('task-list-table');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id!,
     data: {
@@ -195,15 +197,19 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
                 <ClockCircleOutlined /> {task.time_spent_string}
               </span>
             )}
-            {task.comments_count && task.comments_count > 0 && (
-              <span className="kanban-task-indicator">
-                <MessageOutlined /> {task.comments_count}
-              </span>
+            {task.comments_count && task.comments_count > 1 && (
+              <Tooltip title={t(`indicators.tooltips.comments${task.comments_count === 1 ? '' : '_plural'}`, { count: task.comments_count })}>
+                <span className="kanban-task-indicator">
+                  <MessageOutlined /> {task.comments_count}
+                </span>
+              </Tooltip>
             )}
-            {task.attachments_count && task.attachments_count > 0 && (
-              <span className="kanban-task-indicator">
-                <PaperClipOutlined /> {task.attachments_count}
-              </span>
+            {task.attachments_count && task.attachments_count > 1 && (
+              <Tooltip title={t(`indicators.tooltips.attachments${task.attachments_count === 1 ? '' : '_plural'}`, { count: task.attachments_count })}>
+                <span className="kanban-task-indicator">
+                  <PaperClipOutlined /> {task.attachments_count}
+                </span>
+              </Tooltip>
             )}
           </div>
         </Space>

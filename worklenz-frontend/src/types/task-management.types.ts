@@ -36,6 +36,7 @@ export interface Task {
   comments_count?: number;
   attachments_count?: number;
   has_dependencies?: boolean;
+  has_subscribers?: boolean;
   schedule_id?: string | null;
   order?: number;
   reporter?: string; // Reporter field

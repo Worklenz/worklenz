@@ -1,8 +1,8 @@
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined, ArrowsAltOutlined } from '@ant-design/icons';
-import { Checkbox, DatePicker } from 'antd';
+import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@ant-design/icons';
+import { Checkbox, DatePicker, Tooltip } from 'antd';
 import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
@@ -190,7 +190,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
       name: label.name,
       color_code: label.color,
     })) || [],
-  }), [task.id, task.title, task.name, task.parent_task_id, task.labels]);
+  }), [task.id, task.title, task.name, task.parent_task_id, task.labels, task.labels?.length]);
 
   // Handle checkbox change
   const handleCheckboxChange = useCallback((e: any) => {
@@ -261,7 +261,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
       case 'dragHandle':
         return (
           <div
-            className={`flex items-center justify-center ${isSubtask ? '' : 'cursor-grab active:cursor-grabbing'}`}
+            className="flex items-center justify-center"
             style={baseStyle}
             {...(isSubtask ? {} : { ...attributes, ...listeners })}
           >
@@ -301,7 +301,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                 <button
                   onClick={handleToggleExpansion}
                   className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out ${
-                    task.sub_tasks_count && Number(task.sub_tasks_count) > 0 
+                    task.sub_tasks_count != null && Number(task.sub_tasks_count) > 0 
                       ? 'opacity-100' 
                       : 'opacity-0 group-hover:opacity-100'
                   }`}
@@ -326,15 +326,74 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                   {taskDisplayName}
                 </span>
                 
-                {/* Subtask count indicator */}
-                {!isSubtask && task.sub_tasks_count && Number(task.sub_tasks_count) > 0 && (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                      {task.sub_tasks_count}
-                    </span>
-                    <DoubleRightOutlined className="text-xs text-blue-600 dark:text-blue-400" />
-                  </div>
+                {/* Subtask count indicator - only show if count > 1 */}
+                {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count !== 0 && (
+                  <Tooltip title={t(`indicators.tooltips.subtasks${task.sub_tasks_count === 1 ? '' : '_plural'}`, { count: task.sub_tasks_count })}>
+                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                        {task.sub_tasks_count}
+                      </span>
+                      <DoubleRightOutlined className="text-xs text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </Tooltip>
                 )}
+
+                {/* Task indicators */}
+                <div className="flex items-center gap-1 ml-2">
+                  {/* Comments count indicator - only show if count > 1 */}
+                  {task.comments_count != null && task.comments_count !== 0 && (
+                    <Tooltip title={t(`indicators.tooltips.comments${task.comments_count === 1 ? '' : '_plural'}`, { count: task.comments_count })}>
+                      <div className="flex items-center gap-1">
+                        <CommentOutlined 
+                          className="text-gray-500 dark:text-gray-400" 
+                          style={{ fontSize: 14 }} 
+                        />
+                      </div>
+                    </Tooltip>
+                  )}
+
+                  {/* Subscribers indicator */}
+                  {task.has_subscribers && (
+                    <Tooltip title={t('indicators.tooltips.subscribers')}>
+                      <EyeOutlined 
+                        className="text-gray-500 dark:text-gray-400" 
+                        style={{ fontSize: 14 }} 
+                      />
+                    </Tooltip>
+                  )}
+
+                  {/* Attachments count indicator - only show if count > 1 */}
+                  {task.attachments_count != null && task.attachments_count !== 0 && (
+                    <Tooltip title={t(`indicators.tooltips.attachments${task.attachments_count === 1 ? '' : '_plural'}`, { count: task.attachments_count })}>
+                      <div className="flex items-center gap-1">
+                        <PaperClipOutlined 
+                          className="text-gray-500 dark:text-gray-400" 
+                          style={{ fontSize: 14 }} 
+                        />
+                      </div>
+                    </Tooltip>
+                  )}
+
+                  {/* Dependencies indicator */}
+                  {task.has_dependencies && (
+                    <Tooltip title={t('indicators.tooltips.dependencies')}>
+                      <MinusCircleOutlined 
+                        className="text-gray-500 dark:text-gray-400" 
+                        style={{ fontSize: 14 }} 
+                      />
+                    </Tooltip>
+                  )}
+
+                  {/* Recurring task indicator */}
+                  {task.schedule_id && (
+                    <Tooltip title={t('indicators.tooltips.recurring')}>
+                      <RetweetOutlined 
+                        className="text-gray-500 dark:text-gray-400" 
+                        style={{ fontSize: 14 }} 
+                      />
+                    </Tooltip>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -349,6 +408,24 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
               <ArrowsAltOutlined />
               {t('openButton')}
             </button>
+          </div>
+        );
+
+      case 'description':
+        return (
+          <div style={baseStyle} className="px-2">
+            <div
+              className="text-sm text-gray-600 dark:text-gray-400 truncate"
+              style={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxHeight: '24px',
+                lineHeight: '24px',
+              }}
+              title={task.description || ''}
+              dangerouslySetInnerHTML={{ __html: task.description || '' }}
+            />
           </div>
         );
 
@@ -636,8 +713,15 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     isDarkMode,
     projectId,
     
-    // Task data
+    // Task data - include specific fields that might update via socket
     task,
+    task.labels, // Explicit dependency for labels updates
+    task.phase, // Explicit dependency for phase updates
+    task.comments_count, // Explicit dependency for comments count updates
+    task.has_subscribers, // Explicit dependency for subscribers updates
+    task.attachments_count, // Explicit dependency for attachments count updates
+    task.has_dependencies, // Explicit dependency for dependencies updates
+    task.schedule_id, // Explicit dependency for recurring task updates
     taskDisplayName,
     convertedTask,
     
