@@ -181,9 +181,24 @@ const ProjectViewHeader = memo(() => {
   // Memoized settings handler
   const handleSettingsClick = useCallback(() => {
     if (selectedProject?.id) {
+      console.log('Opening project drawer from project view for project:', selectedProject.id);
+      
+      // Set project ID first
       dispatch(setProjectId(selectedProject.id));
-      dispatch(fetchProjectData(selectedProject.id));
-      dispatch(toggleProjectDrawer());
+      
+      // Then fetch project data
+      dispatch(fetchProjectData(selectedProject.id))
+        .unwrap()
+        .then((projectData) => {
+          console.log('Project data fetched successfully from project view:', projectData);
+          // Open drawer after data is fetched
+          dispatch(toggleProjectDrawer());
+        })
+        .catch((error) => {
+          console.error('Failed to fetch project data from project view:', error);
+          // Still open drawer even if fetch fails, so user can see error state
+          dispatch(toggleProjectDrawer());
+        });
     }
   }, [dispatch, selectedProject?.id]);
 
