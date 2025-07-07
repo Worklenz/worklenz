@@ -110,7 +110,7 @@ const TaskListTaskCell = ({
   };
 
   const renderSubtasksCountLabel = (taskId: string, isSubTask: boolean, subTasksCount: number) => {
-    if (!taskId) return null;
+    if (!taskId || subTasksCount <= 1) return null;
     return (
       <Button
         onClick={() => handleToggleExpansion(taskId)}
