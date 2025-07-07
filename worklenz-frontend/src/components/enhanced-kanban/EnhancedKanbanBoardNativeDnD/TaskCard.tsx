@@ -431,7 +431,16 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                         </div>
                     </div>
                 </div>
-                {task.show_sub_tasks && (
+                <div 
+                    className="subtasks-container"
+                    style={{
+                        overflow: 'hidden',
+                        transition: 'all 0.3s ease-in-out',
+                        maxHeight: task.show_sub_tasks ? '500px' : '0px',
+                        opacity: task.show_sub_tasks ? 1 : 0,
+                        transform: task.show_sub_tasks ? 'translateY(0)' : 'translateY(-10px)',
+                    }}
+                >
                     <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                         {/* Loading state */}
                         {task.sub_tasks_loading && (
@@ -471,7 +480,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                             <div className="py-2 text-xs text-gray-400 dark:text-gray-500">{t('noSubtasks', 'No subtasks')}</div>
                         )}
                     </div>
-                )}
+                </div>
             </div>
         </>
     );
