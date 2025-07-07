@@ -17,12 +17,12 @@ import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
-  deleteStatusToggleDrawer,
-  seletedStatusCategory,
+    deleteStatusToggleDrawer,
+    seletedStatusCategory,
 } from '@/features/projects/status/DeleteStatusSlice';
 import {
-  fetchEnhancedKanbanGroups,
-  IGroupBy,
+    fetchEnhancedKanbanGroups,
+    IGroupBy,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 
@@ -32,8 +32,8 @@ interface KanbanGroupProps {
     onGroupDragOver: (e: React.DragEvent) => void;
     onGroupDrop: (e: React.DragEvent, groupId: string) => void;
     onTaskDragStart: (e: React.DragEvent, taskId: string, groupId: string) => void;
-    onTaskDragOver: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
-    onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
+    onTaskDragOver: (e: React.DragEvent, groupId: string, taskIdx: number | null) => void;
+    onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number | null) => void;
     hoveredTaskIdx: number | null;
     hoveredGroupId: string | null;
 }
@@ -229,324 +229,340 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
     }, [showDropdown]);
 
     return (
-        <div className="enhanced-kanban-group">
+        <div className="enhanced-kanban-group" style={{ position: 'relative' }}
+        >
+            {/* Background layer - z-index 0 */}
             <div
-                className="enhanced-kanban-group-header"
+                className="enhanced-kanban-group-background"
                 style={{
-                    backgroundColor: headerBackgroundColor,
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    border: `0.1px solid ${themeMode === 'dark' ? '#404040' : '#e0e0e0'}`,
+                    borderRadius: '8px',
+                    zIndex: 0
                 }}
-                draggable
-                onDragStart={e => onGroupDragStart(e, group.id)}
-                onDragOver={onGroupDragOver}
-                onDrop={e => onGroupDrop(e, group.id)}
-            >
+                onDragOver={e => { e.preventDefault(); onTaskDragOver(e, group.id, null); }}
+                onDrop={e => { e.preventDefault(); onTaskDrop(e, group.id, null); }}
+            />
+
+            {/* Content layer - z-index 1 */}
+            <div style={{ position: 'relative', zIndex: 1 }}>
                 <div
-                    className="flex items-center justify-between w-full font-semibold rounded-md"
-                    onMouseEnter={() => setIsHover(true)}
-                    onMouseLeave={() => setIsHover(false)}
+                    className="enhanced-kanban-group-header"
+                    style={{
+                        backgroundColor: headerBackgroundColor,
+                    }}
+                    draggable
+                    onDragStart={e => onGroupDragStart(e, group.id)}
+                    onDragOver={onGroupDragOver}
+                    onDrop={e => onGroupDrop(e, group.id)}
                 >
                     <div
-                        className="flex items-center gap-2 cursor-pointer"
-                        onClick={e => {
-                            e.stopPropagation();
-                            if ((isProjectManager || isOwnerOrAdmin) && group.name !== t('unmapped'))
-                                setIsEditable(true);
-                        }}
-                        onMouseDown={e => {
-                            e.stopPropagation();
-                        }}
+                        className="flex items-center justify-between w-full font-semibold rounded-md"
+                        onMouseEnter={() => setIsHover(true)}
+                        onMouseLeave={() => setIsHover(false)}
                     >
-                        {isLoading && (
-                            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                        )}
-                        {isEditable ? (
-                            <input
-                                ref={inputRef}
-                                value={name}
-                                className={`bg-transparent border-none outline-none text-sm font-semibold capitalize min-w-[185px] ${
-                                    themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'
-                                }`}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                onKeyDown={handlePressEnter}
-                                onMouseDown={e => {
-                                    e.stopPropagation();
-                                }}
-                                onClick={e => {
-                                    e.stopPropagation();
-                                }}
-                            />
-                        ) : (
-                            <div
-                                className={`min-w-[185px] text-sm font-semibold capitalize truncate ${
-                                    themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'
-                                }`}
-                                title={isEllipsisActive ? name : undefined}
-                                onMouseDown={e => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                }}
-                                onMouseUp={e => {
-                                    e.stopPropagation();
-                                }}
-                                onClick={e => {
-                                    e.stopPropagation();
-                                }}
-                            >
-                                {name} ({group.tasks.length})
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                        <button
-                            type="button"
-                            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-                            onClick={() => {
-                                setShowNewCardTop(true);
-                                setShowNewCardBottom(false);
+                        <div
+                            className="flex items-center gap-2 cursor-pointer"
+                            onClick={e => {
+                                e.stopPropagation();
+                                if ((isProjectManager || isOwnerOrAdmin) && group.name !== t('unmapped'))
+                                    setIsEditable(true);
+                            }}
+                            onMouseDown={e => {
+                                e.stopPropagation();
                             }}
                         >
-                            <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                        </button>
-
-                        {(isOwnerOrAdmin || isProjectManager) && name !== t('unmapped') && (
-                            <div className="relative" ref={dropdownRef}>
-                                <button
-                                    type="button"
-                                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-                                    onClick={() => setShowDropdown(!showDropdown)}
-                                >
-                                    <svg className="w-4 h-4 text-gray-800 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                    </svg>
-                                </button>
-
-                                {showDropdown && (
-                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                                        <div className="py-1">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                                onClick={handleRename}
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                                {t('rename')}
-                                            </button>
-
-                                            {groupBy === IGroupBy.STATUS && statusCategories && (
-                                                <div className="border-t border-gray-200 dark:border-gray-700">
-                                                    <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                                        {t('changeCategory')}
-                                                    </div>
-                                                    {statusCategories.map(status => (
-                                                        <button
-                                                            key={status.id}
-                                                            type="button"
-                                                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                                            onClick={() => status.id && handleCategoryChange(status.id)}
-                                                        >
-                                                            <div 
-                                                                className="w-3 h-3 rounded-full" 
-                                                                style={{ backgroundColor: status.color_code }}
-                                                            ></div>
-                                                            <span className={group.category_id === status.id ? 'font-bold' : ''}>
-                                                                {status.name}
-                                                            </span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            {groupBy !== IGroupBy.PRIORITY && (
-                                                <div className="border-t border-gray-200 dark:border-gray-700">
-                                                    <button
-                                                        type="button"
-                                                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600 dark:text-red-400"
-                                                        onClick={e => {
-                                                            e.stopPropagation();
-                                                            handleDelete();
-                                                        }}
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                        {t('delete')}
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Simple Delete Confirmation */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-w-sm w-full mx-4">
-                        <div className="p-4">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="flex-shrink-0">
-                                    <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 className={`text-base font-medium ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                                        {t('deleteConfirmationTitle')}
-                                    </h3>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                                <button
-                                    type="button"
-                                    className={`px-3 py-1.5 text-sm font-medium rounded border transition-colors ${
-                                        themeMode === 'dark' 
-                                            ? 'border-gray-600 text-gray-300 hover:bg-gray-600' 
-                                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                                    }`}
-                                    onClick={() => setShowDeleteConfirm(false)}
-                                >
-                                    {t('deleteConfirmationCancel')}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 border border-transparent rounded hover:bg-red-700 transition-colors"
-                                    onClick={() => {
-                                        handleDeleteSection();
-                                        setShowDeleteConfirm(false);
+                            {isLoading && (
+                                <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                            )}
+                            {isEditable ? (
+                                <input
+                                    ref={inputRef}
+                                    value={name}
+                                    className={`bg-transparent border-none outline-none text-sm font-semibold capitalize min-w-[185px] ${themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'
+                                        }`}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    onKeyDown={handlePressEnter}
+                                    onMouseDown={e => {
+                                        e.stopPropagation();
+                                    }}
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                    }}
+                                />
+                            ) : (
+                                <div
+                                    className={`min-w-[185px] text-sm font-semibold capitalize truncate ${themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'
+                                        }`}
+                                    title={isEllipsisActive ? name : undefined}
+                                    onMouseDown={e => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                    }}
+                                    onMouseUp={e => {
+                                        e.stopPropagation();
+                                    }}
+                                    onClick={e => {
+                                        e.stopPropagation();
                                     }}
                                 >
-                                    {t('deleteConfirmationOk')}
-                                </button>
-                            </div>
+                                    {name} ({group.tasks.length})
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+                                onClick={() => {
+                                    setShowNewCardTop(true);
+                                    setShowNewCardBottom(false);
+                                }}
+                            >
+                                <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                            </button>
+
+                            {(isOwnerOrAdmin || isProjectManager) && name !== t('unmapped') && (
+                                <div className="relative" ref={dropdownRef}>
+                                    <button
+                                        type="button"
+                                        className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+                                        onClick={() => setShowDropdown(!showDropdown)}
+                                    >
+                                        <svg className="w-4 h-4 text-gray-800 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                        </svg>
+                                    </button>
+
+                                    {showDropdown && (
+                                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                                            <div className="py-1">
+                                                <button
+                                                    type="button"
+                                                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                    onClick={handleRename}
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                    {t('rename')}
+                                                </button>
+
+                                                {groupBy === IGroupBy.STATUS && statusCategories && (
+                                                    <div className="border-t border-gray-200 dark:border-gray-700">
+                                                        <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                                            {t('changeCategory')}
+                                                        </div>
+                                                        {statusCategories.map(status => (
+                                                            <button
+                                                                key={status.id}
+                                                                type="button"
+                                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                                onClick={() => status.id && handleCategoryChange(status.id)}
+                                                            >
+                                                                <div
+                                                                    className="w-3 h-3 rounded-full"
+                                                                    style={{ backgroundColor: status.color_code }}
+                                                                ></div>
+                                                                <span className={group.category_id === status.id ? 'font-bold' : ''}>
+                                                                    {status.name}
+                                                                </span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {groupBy !== IGroupBy.PRIORITY && (
+                                                    <div className="border-t border-gray-200 dark:border-gray-700">
+                                                        <button
+                                                            type="button"
+                                                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600 dark:text-red-400"
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                handleDelete();
+                                                            }}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                            {t('delete')}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
-            )}
-            <div className="enhanced-kanban-group-tasks">
-                {/* Create card at top */}
-                {showNewCardTop && (
-                    <EnhancedKanbanCreateTaskCard
-                        sectionId={group.id}
-                        setShowNewCard={setShowNewCardTop}
-                        position="top"
-                    />
-                )}
 
-                {/* If group is empty, render a drop zone */}
-                {group.tasks.length === 0 && !showNewCardTop && !showNewCardBottom &&(
-                    <div
-                        className="empty-drop-zone"
-                        style={{
-                            padding: 8,
-                            height: 500,
-                            background: themeWiseColor(
-                                'linear-gradient( 180deg, #fafafa, rgba(245, 243, 243, 0))',
-                                'linear-gradient( 180deg, #2a2b2d, rgba(42, 43, 45, 0))',
-                                themeMode
-                            ),
-                            borderRadius: 6,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'flex-start',
-                            paddingTop: 8,
-                            color: '#888',
-                            fontStyle: 'italic',
-                        }}
-                        onDragOver={e => { e.preventDefault(); onTaskDragOver(e, group.id, 0); }}
-                        onDrop={e => { e.preventDefault(); onTaskDrop(e, group.id, 0); }}
-                    >
-                        {/* Drop indicator at the end of the group */}
-                        {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
-                            <div className="drop-preview-indicator">
-                                <div className="drop-line" />
+                {/* Simple Delete Confirmation */}
+                {showDeleteConfirm && (
+                    <div className="fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-w-sm w-full mx-4">
+                            <div className="p-4">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="flex-shrink-0">
+                                        <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className={`text-base font-medium ${themeMode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                                            {t('deleteConfirmationTitle')}
+                                        </h3>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        className={`px-3 py-1.5 text-sm font-medium rounded border transition-colors ${themeMode === 'dark'
+                                            ? 'border-gray-600 text-gray-300 hover:bg-gray-600'
+                                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                        onClick={() => setShowDeleteConfirm(false)}
+                                    >
+                                        {t('deleteConfirmationCancel')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 border border-transparent rounded hover:bg-red-700 transition-colors"
+                                        onClick={() => {
+                                            handleDeleteSection();
+                                            setShowDeleteConfirm(false);
+                                        }}
+                                    >
+                                        {t('deleteConfirmationOk')}
+                                    </button>
+                                </div>
                             </div>
-                        )}
-                        {(isOwnerOrAdmin || isProjectManager) && !showNewCardTop && !showNewCardBottom && (
-                            <button
-                                type="button"
-                                className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                                onClick={() => {
-                                    setShowNewCardBottom(false);
-                                    setShowNewCardTop(true);
-                                }}
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                                {t('addTask')}
-                            </button>
-                        )}
-                    </div>
-                )
-                }
-                
-
-                {/* Drop indicator at the top of the group */}
-                {hoveredGroupId === group.id && hoveredTaskIdx === 0 && (
-                    <div className="drop-preview-indicator">
-                        <div className="drop-line" />
+                        </div>
                     </div>
                 )}
+                <div className="enhanced-kanban-group-tasks">
+                    {/* Create card at top */}
+                    {showNewCardTop && (
+                        <EnhancedKanbanCreateTaskCard
+                            sectionId={group.id}
+                            setShowNewCard={setShowNewCardTop}
+                            position="top"
+                        />
+                    )}
 
-                {group.tasks.map((task, idx) => (
-                    <TaskCard
-                        key={task.id}
-                        task={task}
-                        onTaskDragStart={onTaskDragStart}
-                        onTaskDragOver={onTaskDragOver}
-                        onTaskDrop={onTaskDrop}
-                        groupId={group.id}
-                        isDropIndicator={hoveredGroupId === group.id && hoveredTaskIdx === idx}
-                        idx={idx}
-                    />
-                ))}
+                    {/* If group is empty, render a drop zone */}
+                    {group.tasks.length === 0 && !showNewCardTop && !showNewCardBottom && (
+                        <div
+                            className="empty-drop-zone"
+                            style={{
+                                padding: 8,
+                                height: 500,
+                                background: themeWiseColor(
+                                    'linear-gradient( 180deg, #fafafa, rgba(245, 243, 243, 0))',
+                                    'linear-gradient( 180deg, #2a2b2d, rgba(42, 43, 45, 0))',
+                                    themeMode
+                                ),
+                                borderRadius: 6,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'flex-start',
+                                paddingTop: 8,
+                                color: '#888',
+                                fontStyle: 'italic',
+                            }}
+                            onDragOver={e => { e.preventDefault(); onTaskDragOver(e, group.id, 0); }}
+                            onDrop={e => { e.preventDefault(); onTaskDrop(e, group.id, 0); }}
+                        >
+                            {/* Drop indicator at the end of the group */}
+                            {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
+                                <div className="drop-preview-indicator">
+                                    <div className="drop-line" />
+                                </div>
+                            )}
+                            {(isOwnerOrAdmin || isProjectManager) && !showNewCardTop && !showNewCardBottom && (
+                                <button
+                                    type="button"
+                                    className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                                    onClick={() => {
+                                        setShowNewCardBottom(false);
+                                        setShowNewCardTop(true);
+                                    }}
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    {t('addTask')}
+                                </button>
+                            )}
+                        </div>
+                    )
+                    }
 
-                {/* Create card at bottom */}
-                {showNewCardBottom && (
-                    <EnhancedKanbanCreateTaskCard
-                        sectionId={group.id}
-                        setShowNewCard={setShowNewCardBottom}
-                        position="bottom"
-                    />
-                )}
 
-                {/* Footer Add Task Button */}
-                {!showNewCardTop && !showNewCardBottom && group.tasks.length > 0 && (
-                    <button
-                        type="button"
-                        className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 mt-2"
-                        onClick={() => {
-                            setShowNewCardBottom(true);
-                            setShowNewCardTop(false);
-                        }}
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        {t('addTask')}
-                    </button>
-                )}
+                    {/* Drop indicator at the top of the group */}
+                    {hoveredGroupId === group.id && hoveredTaskIdx === 0 && (
+                        <div className="drop-preview-indicator">
+                            <div className="drop-line" />
+                        </div>
+                    )}
 
-                {/* Drop indicator at the end of the group */}
-                {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
-                    <div className="drop-preview-indicator">
-                        <div className="drop-line" />
-                    </div>
-                )}
+                    {group.tasks.map((task, idx) => (
+                        <TaskCard
+                            key={task.id}
+                            task={task}
+                            onTaskDragStart={onTaskDragStart}
+                            onTaskDragOver={onTaskDragOver}
+                            onTaskDrop={onTaskDrop}
+                            groupId={group.id}
+                            isDropIndicator={hoveredGroupId === group.id && hoveredTaskIdx === idx}
+                            idx={idx}
+                        />
+                    ))}
+
+                    {/* Create card at bottom */}
+                    {showNewCardBottom && (
+                        <EnhancedKanbanCreateTaskCard
+                            sectionId={group.id}
+                            setShowNewCard={setShowNewCardBottom}
+                            position="bottom"
+                        />
+                    )}
+
+                    {/* Footer Add Task Button */}
+                    {!showNewCardTop && !showNewCardBottom && group.tasks.length > 0 && (
+                        <button
+                            type="button"
+                            className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 mt-2"
+                            onClick={() => {
+                                setShowNewCardBottom(true);
+                                setShowNewCardTop(false);
+                            }}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            {t('addTask')}
+                        </button>
+                    )}
+
+                    {/* Drop indicator at the end of the group */}
+                    {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
+                        <div className="drop-preview-indicator">
+                            <div className="drop-line" />
+                        </div>
+                    )}
+                </div>
             </div>
-
-
         </div>
     );
 });
