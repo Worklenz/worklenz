@@ -26,10 +26,15 @@ const SubtaskLoadingSkeleton: React.FC<SubtaskLoadingSkeletonProps> = ({ visible
       case 'title':
         return (
           <div style={baseStyle} className="flex items-center">
-            {/* Subtask indentation - tighter spacing */}
             <div className="w-4" />
             <div className="w-2" />
             <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </div>
+        );
+      case 'description':
+        return (
+          <div style={baseStyle} className="flex items-center px-2">
+            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           </div>
         );
       case 'status':
@@ -60,7 +65,7 @@ const SubtaskLoadingSkeleton: React.FC<SubtaskLoadingSkeletonProps> = ({ visible
       case 'progress':
         return (
           <div style={baseStyle} className="flex items-center">
-            <div className="h-2 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+            <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           </div>
         );
       case 'labels':
@@ -85,7 +90,7 @@ const SubtaskLoadingSkeleton: React.FC<SubtaskLoadingSkeletonProps> = ({ visible
       case 'estimation':
         return (
           <div style={baseStyle} className="flex items-center">
-            <div className="h-4 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           </div>
         );
       case 'startDate':
@@ -126,7 +131,7 @@ const SubtaskLoadingSkeleton: React.FC<SubtaskLoadingSkeletonProps> = ({ visible
   return (
     <div className="bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-200 dark:border-blue-700">
       <div className="flex items-center min-w-max px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-        {visibleColumns.map((column) => (
+        {visibleColumns.map((column, index) => (
           <div key={column.id}>
             {renderColumn(column.id, column.width)}
           </div>

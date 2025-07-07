@@ -93,6 +93,8 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
         return <div style={baseStyle} />;
       case 'taskKey':
         return <div style={baseStyle} />;
+      case 'description':
+        return <div style={baseStyle} />;
       case 'title':
         return (
           <div className="flex items-center h-full" style={baseStyle}>
@@ -119,7 +121,7 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
                   className="w-full h-full border-none shadow-none bg-transparent"
                   style={{ 
                     height: '100%',
-                    minHeight: '42px',
+                    minHeight: '32px',
                     padding: '0',
                     fontSize: '14px'
                   }}
@@ -135,10 +137,12 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
   }, [isAdding, subtaskName, handleAddSubtask, handleCancel, t]);
 
   return (
-    <div className="flex items-center min-w-max px-1 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[42px]">
-      {visibleColumns.map((column) =>
-        renderColumn(column.id, column.width)
-      )}
+    <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px] border-b border-gray-200 dark:border-gray-700">
+      {visibleColumns.map((column, index) => (
+        <React.Fragment key={column.id}>
+          {renderColumn(column.id, column.width)}
+        </React.Fragment>
+      ))}
     </div>
   );
 });

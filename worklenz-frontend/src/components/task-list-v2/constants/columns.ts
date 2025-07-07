@@ -17,6 +17,7 @@ export const BASE_COLUMNS = [
   { id: 'checkbox', label: '', width: '28px', isSticky: true, key: 'checkbox' },
   { id: 'taskKey', label: 'keyColumn', width: '100px', key: COLUMN_KEYS.KEY, minWidth: '100px', maxWidth: '150px' },
   { id: 'title', label: 'taskColumn', width: '470px', isSticky: true, key: COLUMN_KEYS.NAME },
+  { id: 'description', label: 'descriptionColumn', width: '260px', key: COLUMN_KEYS.DESCRIPTION },
   { id: 'status', label: 'statusColumn', width: '120px', key: COLUMN_KEYS.STATUS },
   { id: 'assignees', label: 'assigneesColumn', width: '150px', key: COLUMN_KEYS.ASSIGNEES },
   { id: 'priority', label: 'priorityColumn', width: '120px', key: COLUMN_KEYS.PRIORITY },

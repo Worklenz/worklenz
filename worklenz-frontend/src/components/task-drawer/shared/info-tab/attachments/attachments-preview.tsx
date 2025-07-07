@@ -15,6 +15,8 @@ import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service'
 import logger from '@/utils/errorLogger';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 
 interface AttachmentsPreviewProps {
   attachment: ITaskAttachmentViewModel;
@@ -28,6 +30,7 @@ const AttachmentsPreview = ({
   isCommentAttachment = false,
 }: AttachmentsPreviewProps) => {
   const { selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
+  const dispatch = useAppDispatch();
   const [deleting, setDeleting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [currentFileUrl, setCurrentFileUrl] = useState<string | null>(null);
@@ -88,6 +91,7 @@ const AttachmentsPreview = ({
       if (isCommentAttachment) {
         const res = await taskCommentsApiService.deleteAttachment(id, selectedTaskId);
         if (res.done) {
+          // Let the parent component handle the refetch and Redux update
           document.dispatchEvent(new Event('task-comment-update'));
         }
       } else {
@@ -96,6 +100,7 @@ const AttachmentsPreview = ({
           if (onDelete) {
             onDelete(id);
           }
+          // Parent component will handle the refetch and Redux update
         }
       }
     } catch (e) {

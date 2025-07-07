@@ -264,10 +264,10 @@ export const fetchTasksV3 = createAsyncThunk(
           progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
           assignees: task.assignees?.map((a: { team_member_id: string }) => a.team_member_id) || [],
           assignee_names: task.assignee_names || task.names || [],
-          labels: task.labels?.map((l: { id: string; label_id: string; name: string; color_code: string; end: boolean; names: string[] }) => ({
+          labels: task.labels?.map((l: { id: string; label_id: string; name: string; color: string; end: boolean; names: string[] }) => ({
             id: l.id || l.label_id,
             name: l.name,
-            color: l.color_code || '#1890ff',
+            color: l.color || '#1890ff',
             end: l.end,
             names: l.names,
           })) || [],
@@ -908,6 +908,38 @@ const taskManagementSlice = createSlice({
         return column;
       });
     },
+    // Add action to update task counts (comments, attachments, etc.)
+    updateTaskCounts: (state, action: PayloadAction<{
+      taskId: string;
+      counts: {
+        comments_count?: number;
+        attachments_count?: number;
+        has_subscribers?: boolean;
+        has_dependencies?: boolean;
+        schedule_id?: string | null; // Add schedule_id for recurring tasks
+      };
+    }>) => {
+      const { taskId, counts } = action.payload;
+      const task = state.entities[taskId];
+      if (task) {
+        // Update only the provided count fields
+        if (counts.comments_count !== undefined) {
+          task.comments_count = counts.comments_count;
+        }
+        if (counts.attachments_count !== undefined) {
+          task.attachments_count = counts.attachments_count;
+        }
+        if (counts.has_subscribers !== undefined) {
+          task.has_subscribers = counts.has_subscribers;
+        }
+        if (counts.has_dependencies !== undefined) {
+          task.has_dependencies = counts.has_dependencies;
+        }
+        if (counts.schedule_id !== undefined) {
+          task.schedule_id = counts.schedule_id;
+        }
+      }
+    },
   },
   extraReducers: builder => {
     builder
@@ -1100,6 +1132,7 @@ export const {
   updateCustomColumn,
   deleteCustomColumn,
   syncColumnsWithFields,
+  updateTaskCounts,
 } = taskManagementSlice.actions;
 
 // Export the selectors

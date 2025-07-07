@@ -108,5 +108,19 @@
       "key": "Chave",
       "formula": "Fórmula"
     }
+  },
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} subtarefa",
+      "subtasks_plural": "{{count}} subtarefas",
+      "comments": "{{count}} comentário",
+      "comments_plural": "{{count}} comentários",
+      "attachments": "{{count}} anexo",
+      "attachments_plural": "{{count}} anexos",
+      "subscribers": "A tarefa tem assinantes",
+      "dependencies": "A tarefa tem dependências",
+      "recurring": "Tarefa recorrente"
+    }
   }
 }

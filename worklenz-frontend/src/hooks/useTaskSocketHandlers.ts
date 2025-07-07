@@ -91,16 +91,17 @@ export const useTaskSocketHandlers = () => {
 
       // REAL-TIME UPDATES: Update the task-management slice for immediate UI updates
       if (data.id) {
-        dispatch(
-          updateTask({
-            id: data.id,
-            changes: {
-              assignees: data.assignees?.map(a => a.team_member_id) || [],
-              assignee_names: data.names || [],
-              updatedAt: new Date().toISOString(),
-            },
-          })
-        );
+        const currentTask = store.getState().taskManagement.entities[data.id];
+        if (currentTask) {
+          const updatedTask: Task = {
+            ...currentTask,
+            assignees: data.assignees?.map(a => a.team_member_id) || [],
+            assignee_names: data.names || [],
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          dispatch(updateTask(updatedTask));
+        }
       }
 
       // Update the old task slice (for backward compatibility)
@@ -147,22 +148,23 @@ export const useTaskSocketHandlers = () => {
 
       // REAL-TIME UPDATES: Update the task-management slice for immediate UI updates
       if (labels.id) {
-        dispatch(
-          updateTask({
-            id: labels.id,
-            changes: {
-              labels:
-                labels.labels?.map(l => ({
-                  id: l.id || '',
-                  name: l.name || '',
-                  color: l.color_code || '#1890ff',
-                  end: l.end,
-                  names: l.names,
-                })) || [],
-              updatedAt: new Date().toISOString(),
-            },
-          })
-        );
+        const currentTask = store.getState().taskManagement.entities[labels.id];
+        if (currentTask) {
+          const updatedTask: Task = {
+            ...currentTask,
+            labels:
+              labels.all_labels?.map(l => ({
+                id: l.id || '',
+                name: l.name || '',
+                color: l.color_code || '#1890ff',
+                end: l.end,
+                names: l.names,
+              })) || [],
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          dispatch(updateTask(updatedTask));
+        }
       }
 
       // Update the old task slice and other related slices (for backward compatibility)
@@ -281,15 +283,16 @@ export const useTaskSocketHandlers = () => {
       // For the task management slice, update task progress
       const taskId = data.parent_task || data.id;
       if (taskId) {
-        dispatch(
-          updateTask({
-            id: taskId,
-            changes: {
-              progress: data.complete_ratio,
-              updatedAt: new Date().toISOString(),
-            },
-          })
-        );
+        const currentTask = store.getState().taskManagement.entities[taskId];
+        if (currentTask) {
+          const updatedTask: Task = {
+            ...currentTask,
+            progress: data.complete_ratio,
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          dispatch(updateTask(updatedTask));
+        }
       }
 
       // Update enhanced kanban slice
@@ -326,14 +329,19 @@ export const useTaskSocketHandlers = () => {
       if (currentTask) {
         // Get priority list to map priority_id to priority name
         const priorityList = state.priorityReducer?.priorities || [];
-        const priority = priorityList.find(p => p.id === response.priority_id);
-
         let newPriorityValue: 'critical' | 'high' | 'medium' | 'low' = 'medium';
-        if (priority?.name) {
-          const priorityName = priority.name.toLowerCase();
-          if (['critical', 'high', 'medium', 'low'].includes(priorityName)) {
-            newPriorityValue = priorityName as 'critical' | 'high' | 'medium' | 'low';
+
+        if (response.priority_id) {
+          const priority = priorityList.find(p => p.id === response.priority_id);
+          if (priority?.name) {
+            const priorityName = priority.name.toLowerCase();
+            if (['critical', 'high', 'medium', 'low'].includes(priorityName)) {
+              newPriorityValue = priorityName as 'critical' | 'high' | 'medium' | 'low';
+            }
           }
+        } else {
+          // No priority selected (cleared) - default to medium or find unmapped
+          newPriorityValue = 'medium';
         }
 
         // Update the task entity first
@@ -353,11 +361,33 @@ export const useTaskSocketHandlers = () => {
           const currentGroup = groups.find(group => group.taskIds.includes(response.id));
 
           // Find target group based on new priority value
-          const targetGroup = groups.find(
-            group => group.groupValue?.toLowerCase() === newPriorityValue.toLowerCase()
-          );
+          let targetGroup: any = null;
+
+          if (response.priority_id) {
+            // Find group by priority name (groupValue should match the priority name)
+            targetGroup = groups.find(
+              group => group.groupValue?.toLowerCase() === newPriorityValue.toLowerCase() ||
+                       group.title?.toLowerCase() === newPriorityValue.toLowerCase()
+            );
+          } else {
+            // Find "Unmapped" group for tasks without a priority
+            targetGroup = groups.find(
+              group =>
+                group.groupValue === 'Unmapped' ||
+                group.title === 'Unmapped' ||
+                group.groupValue === '' ||
+                group.title?.toLowerCase().includes('unmapped') ||
+                group.groupValue?.toLowerCase().includes('unmapped')
+            );
+          }
 
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+            console.log('🔄 Moving task between priority groups:', {
+              taskId: response.id,
+              from: currentGroup.title,
+              to: targetGroup.title,
+              newPriorityValue
+            });
             dispatch(
               moveTaskBetweenGroups({
                 taskId: response.id,
@@ -365,6 +395,8 @@ export const useTaskSocketHandlers = () => {
                 targetGroupId: targetGroup.id,
               })
             );
+          } else if (!targetGroup && response.priority_id) {
+            console.log('🔧 Target priority group not found for priority:', newPriorityValue);
           } else {
             console.log('🔧 No group movement needed for priority change');
           }
@@ -413,19 +445,24 @@ export const useTaskSocketHandlers = () => {
 
       // For the task management slice, update task name
       if (data.id) {
-        dispatch(
-          updateTask({
-            id: data.id,
-            changes: {
-              title: data.name,
-              updatedAt: new Date().toISOString(),
-            },
-          })
-        );
+        const currentTask = store.getState().taskManagement.entities[data.id];
+        if (currentTask) {
+          const updatedTask: Task = {
+            ...currentTask,
+            title: data.name,
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          dispatch(updateTask(updatedTask));
+        }
       }
 
-      // Update enhanced kanban slice
-      dispatch(updateEnhancedKanbanTaskName({ task: data }));
+      // Update enhanced kanban slice (add manual_progress property for compatibility)
+      const taskWithProgress = {
+        ...data,
+        manual_progress: false,
+      } as IProjectTask;
+      dispatch(updateEnhancedKanbanTaskName({ task: taskWithProgress }));
     },
     [dispatch]
   );
@@ -460,15 +497,13 @@ export const useTaskSocketHandlers = () => {
           }
 
           // Update the task entity
-          dispatch(
-            updateTask({
-              id: taskId,
-              changes: {
-                phase: newPhaseValue,
-                updatedAt: new Date().toISOString(),
-              },
-            })
-          );
+          const updatedTask: Task = {
+            ...currentTask,
+            phase: newPhaseValue,
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          dispatch(updateTask(updatedTask));
 
           // Handle group movement ONLY if grouping by phase
           const groups = state.taskManagement.groups;
@@ -482,31 +517,41 @@ export const useTaskSocketHandlers = () => {
             let targetGroup: any = null;
 
             if (newPhaseValue && newPhaseValue.trim() !== '') {
-              // Find group by phase name
+              // Find group by phase name (groupValue should match the phase name)
               targetGroup = groups.find(
-                group => group.groupValue === newPhaseValue || group.title === newPhaseValue
+                group => group.groupValue === newPhaseValue || 
+                         group.title === newPhaseValue ||
+                         group.groupValue?.toLowerCase() === newPhaseValue.toLowerCase() ||
+                         group.title?.toLowerCase() === newPhaseValue.toLowerCase()
               );
             } else {
-              // Find "Unmapped" group for tasks without a phase or with default phase
+              // Find "Unmapped" group for tasks without a phase
               targetGroup = groups.find(
                 group =>
                   group.groupValue === 'Unmapped' ||
                   group.title === 'Unmapped' ||
-                  group.title.toLowerCase().includes('unmapped')
+                  group.groupValue === '' ||
+                  group.title?.toLowerCase().includes('unmapped') ||
+                  group.groupValue?.toLowerCase().includes('unmapped')
               );
             }
 
             if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+              console.log('🔄 Moving task between phase groups:', {
+                taskId,
+                from: currentGroup.title,
+                to: targetGroup.title,
+                newPhaseValue
+              });
               dispatch(
                 moveTaskBetweenGroups({
                   taskId: taskId,
-                  fromGroupId: currentGroup.id,
-                  toGroupId: targetGroup.id,
-                  taskUpdate: {
-                    phase: newPhaseValue,
-                  },
+                  sourceGroupId: currentGroup.id,
+                  targetGroupId: targetGroup.id,
                 })
               );
+            } else if (!targetGroup && newPhaseValue) {
+              console.log('🔧 Target phase group not found for phase:', newPhaseValue);
             } else {
               console.log('🔧 No group movement needed for phase change');
             }
@@ -534,23 +579,30 @@ export const useTaskSocketHandlers = () => {
       // Update task-management slice for task-list-v2 components
       const currentTask = store.getState().taskManagement.entities[task.id];
       if (currentTask) {
-        dispatch(updateTask({
+        const updatedTask: Task = {
           ...currentTask,
           startDate: task.start_date,
           updatedAt: new Date().toISOString(),
-        }));
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
       }
     },
     [dispatch]
   );
 
   const handleTaskSubscribersChange = useCallback(
-    (data: InlineMember[]) => {
-      if (!data) return;
-      dispatch(setTaskSubscribers(data));
+    (subscribers: InlineMember[]) => {
+      if (!subscribers) return;
+      dispatch(setTaskSubscribers(subscribers));
+      
+      // Note: We don't have task_id in this event, so we can't update the task-management slice
+      // The has_subscribers field will be updated when the task is refetched
     },
     [dispatch]
   );
+
+
 
   const handleEstimationChange = useCallback(
     (task: { id: string; parent_task: string | null; estimation: number }) => {
@@ -801,6 +853,7 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.QUICK_TASK.toString(), handler: handleNewTaskReceived },
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgressUpdated },
       { event: SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), handler: handleCustomColumnUpdate },
+
     ];
 
     // Register all event listeners
@@ -832,5 +885,6 @@ export const useTaskSocketHandlers = () => {
     handleNewTaskReceived,
     handleTaskProgressUpdated,
     handleCustomColumnUpdate,
+
   ]);
 };

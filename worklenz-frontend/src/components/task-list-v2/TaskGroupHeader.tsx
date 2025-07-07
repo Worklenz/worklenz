@@ -166,8 +166,6 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
     setCategoryModalVisible(true);
   }, []);
 
-
-
   // Handle category change
   const handleCategoryChange = useCallback(async (categoryId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -237,7 +235,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
   return (
     <div
       ref={setNodeRef}
-      className={`inline-flex w-max items-center px-1 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-b border-gray-200 dark:border-gray-700 rounded-t-md ${
+      className={`inline-flex w-max items-center px-1 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-t border-b border-gray-200 dark:border-gray-700 rounded-t-md pr-2 ${
         isOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
       }`}
       style={{
@@ -292,107 +290,17 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
       <div className="flex items-center flex-1 ml-1">
         {/* Group name and count */}
         <div className="flex items-center">
-          {isEditingName && isOwnerOrAdmin ? (
-            <Input
-              value={editingName}
-              onChange={(e) => setEditingName(e.target.value)}
-              onKeyDown={handleNameKeyDown}
-              onBlur={handleNameBlur}
-              className="text-sm font-semibold px-2 py-1 rounded-md transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-              style={{ 
-                color: headerTextColor,
-                fontSize: '14px',
-                fontWeight: 600,
-                width: `${Math.max(editingName.length * 8 + 16, 80)}px`,
-                minWidth: '80px',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                border: `1px solid ${headerTextColor}40`,
-                backdropFilter: 'blur(4px)'
-              }}
-              styles={{
-                input: {
-                  color: headerTextColor,
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: 'none',
-                  padding: '0'
-                }
-              }}
-              autoFocus
-              disabled={isRenaming}
-              placeholder={t('enterGroupName')}
-            />
-          ) : (
-            <span 
-              className={`text-sm font-semibold ${isOwnerOrAdmin ? 'cursor-pointer hover:bg-black hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded px-2 py-1 transition-all duration-200 hover:shadow-sm' : ''}`}
-              onClick={handleNameClick}
-              style={{ color: headerTextColor }}
-              title={isOwnerOrAdmin ? t('clickToEditGroupName') : ''}
-            >
-              {group.name}
-            </span>
-          )}
+          <span 
+            className="text-sm font-semibold pr-2"
+            style={{ color: headerTextColor }}
+          >
+            {group.name}
+          </span>
           <span className="text-sm font-semibold ml-1" style={{ color: headerTextColor }}>
             ({group.count})
           </span>
         </div>
-        
-        {/* Three dots menu */}
-        <div className="flex items-center justify-center ml-2">
-          <Dropdown
-            menu={{ items: menuItems }}
-            trigger={['click']}
-            open={dropdownVisible}
-            onOpenChange={setDropdownVisible}
-            placement="bottomLeft"
-          >
-            <button
-              className="p-1 rounded-sm hover:bg-black hover:bg-opacity-10 transition-all duration-200 ease-out"
-              style={{ color: headerTextColor }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setDropdownVisible(!dropdownVisible);
-              }}
-            >
-              <EllipsisHorizontalIcon className="h-4 w-4" />
-            </button>
-          </Dropdown>
-        </div>
       </div>
-
-
-
-      {/* Change Category Modal */}
-      <Modal
-        title="Change Category"
-        open={categoryModalVisible}
-        onCancel={() => setCategoryModalVisible(false)}
-        footer={null}
-        width={400}
-      >
-        <div className="py-4">
-          <div className="space-y-2">
-            {statusCategories?.map((category) => (
-              <div
-                key={category.id}
-                className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                onClick={(e) => category.id && handleCategoryChange(category.id, e)}
-              >
-                <Flex align="center" gap={12}>
-                  <Badge color={category.color_code} />
-                  <span className="font-medium">{category.name}</span>
-                </Flex>
-                {isChangingCategory && (
-                  <div className="text-blue-500">
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

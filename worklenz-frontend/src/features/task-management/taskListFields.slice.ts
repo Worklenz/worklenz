@@ -1,4 +1,7 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import { updateColumnVisibility } from './task-management.slice';
+import { ITaskListColumn } from '@/types/tasks/taskList.types';
+import logger from '@/utils/errorLogger';
 
 export interface TaskListField {
   key: string;
@@ -37,7 +40,7 @@ function loadFields(): TaskListField[] {
       const parsed = JSON.parse(stored);
       return parsed;
     } catch (error) {
-      console.warn('Failed to parse stored fields, using defaults:', error);
+      logger.error('Failed to parse stored fields, using defaults:', error);
     }
   }
 
@@ -45,9 +48,73 @@ function loadFields(): TaskListField[] {
 }
 
 function saveFields(fields: TaskListField[]) {
-  console.log('Saving fields to localStorage:', fields);
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fields));
 }
+
+// Async thunk to sync field visibility with database
+export const syncFieldWithDatabase = createAsyncThunk(
+  'taskManagementFields/syncFieldWithDatabase',
+  async (
+    { projectId, fieldKey, visible, columns }: { 
+      projectId: string; 
+      fieldKey: string; 
+      visible: boolean; 
+      columns: ITaskListColumn[] 
+    },
+    { dispatch }
+  ) => {
+    // Find the corresponding backend column
+    const backendColumn = columns.find(c => c.key === fieldKey);
+    if (backendColumn) {
+      // Update the column visibility in the database
+      await dispatch(updateColumnVisibility({
+        projectId,
+        item: {
+          ...backendColumn,
+          pinned: visible
+        }
+      }));
+    }
+    return { fieldKey, visible };
+  }
+);
+
+// Async thunk to sync all fields with database
+export const syncAllFieldsWithDatabase = createAsyncThunk(
+  'taskManagementFields/syncAllFieldsWithDatabase',
+  async (
+    { projectId, fields, columns }: { 
+      projectId: string; 
+      fields: TaskListField[]; 
+      columns: ITaskListColumn[] 
+    },
+    { dispatch }
+  ) => {
+    // Find fields that need to be synced
+    const fieldsToSync = fields.filter(field => {
+      const backendColumn = columns.find(c => c.key === field.key);
+      return backendColumn && (backendColumn.pinned ?? false) !== field.visible;
+    });
+
+    // Sync each field
+    const syncPromises = fieldsToSync.map(field => {
+      const backendColumn = columns.find(c => c.key === field.key);
+      if (backendColumn) {
+        return dispatch(updateColumnVisibility({
+          projectId,
+          item: {
+            ...backendColumn,
+            pinned: field.visible
+          }
+        }));
+      }
+      return Promise.resolve();
+    });
+
+    await Promise.all(syncPromises);
+    return fieldsToSync.map(f => ({ fieldKey: f.key, visible: f.visible }));
+  }
+);
 
 const initialState: TaskListField[] = loadFields();
 
@@ -75,10 +142,42 @@ const taskListFieldsSlice = createSlice({
       saveFields(defaultFields);
       return defaultFields;
     },
+    // New action to update field visibility from database
+    updateFieldVisibilityFromDatabase(state, action: PayloadAction<{ fieldKey: string; visible: boolean }>) {
+      const { fieldKey, visible } = action.payload;
+      const field = state.find(f => f.key === fieldKey);
+      if (field) {
+        field.visible = visible;
+        // Save to localStorage
+        saveFields(state);
+      }
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(syncFieldWithDatabase.fulfilled, (state, action) => {
+        // Field visibility has been synced with database
+        const { fieldKey, visible } = action.payload;
+        const field = state.find(f => f.key === fieldKey);
+        if (field) {
+          field.visible = visible;
+          saveFields(state);
+        }
+      })
+      .addCase(syncAllFieldsWithDatabase.fulfilled, (state, action) => {
+        // All fields have been synced with database
+        action.payload.forEach(({ fieldKey, visible }) => {
+          const field = state.find(f => f.key === fieldKey);
+          if (field) {
+            field.visible = visible;
+          }
+        });
+        saveFields(state);
+      });
   },
 });
 
-export const { toggleField, setFields, resetFields } = taskListFieldsSlice.actions;
+export const { toggleField, setFields, resetFields, updateFieldVisibilityFromDatabase } = taskListFieldsSlice.actions;
 
 // Utility function to force reset fields (can be called from browser console)
 export const forceResetFields = () => {

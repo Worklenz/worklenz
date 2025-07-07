@@ -14,6 +14,8 @@ import {
 import React, { useState, useEffect } from 'react';
 import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { colors } from '@/styles/colors';
 import { TFunction } from 'i18next';
 import { IDependencyType, ITaskDependency } from '@/types/tasks/task-dependency.types';
@@ -40,6 +42,7 @@ const DependenciesTable = ({
   const [hoverRow, setHoverRow] = useState<string | null>(null);
   const [isDependencyInputShow, setIsDependencyInputShow] = useState(false);
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const dispatch = useAppDispatch();
   const [taskList, setTaskList] = useState<{ label: string; value: string }[]>([]);
   const [loadingTaskList, setLoadingTaskList] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,6 +63,14 @@ const DependenciesTable = ({
         setIsDependencyInputShow(false);
         setTaskList([]);
         setSearchTerm('');
+        
+        // Update Redux state with dependency status
+        dispatch(updateTaskCounts({
+          taskId: task.id,
+          counts: {
+            has_dependencies: true
+          }
+        }));
       }
     } catch (error) {
       console.error('Error adding dependency:', error);
@@ -89,6 +100,16 @@ const DependenciesTable = ({
       const res = await taskDependenciesApiService.deleteTaskDependency(dependencyId);
       if (res.done) {
         refreshTaskDependencies();
+        
+        // Update Redux state with dependency status
+        // Check if there are any remaining dependencies
+        const remainingDependencies = taskDependencies.filter(dep => dep.id !== dependencyId);
+        dispatch(updateTaskCounts({
+          taskId: task.id,
+          counts: {
+            has_dependencies: remainingDependencies.length > 0
+          }
+        }));
       }
     } catch (error) {
       console.error('Error deleting dependency:', error);

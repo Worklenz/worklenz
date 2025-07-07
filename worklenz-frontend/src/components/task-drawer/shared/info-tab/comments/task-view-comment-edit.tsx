@@ -6,6 +6,8 @@ import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { colors } from '@/styles/colors';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 interface TaskViewCommentEditProps {
   commentData: ITaskCommentViewModel;
@@ -27,6 +29,7 @@ const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProp
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState('');
+  const { socket, connected } = useSocket();
 
   // Initialize content when component mounts
   useEffect(() => {
@@ -55,7 +58,9 @@ const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProp
         onUpdated(commentData);
 
         // Dispatch event to notify that a comment was updated
-        document.dispatchEvent(new Event('task-comment-update'));
+        document.dispatchEvent(new CustomEvent('task-comment-update', { 
+          detail: { taskId: commentData.task_id } 
+        }));
       }
     } catch (e) {
       logger.error('Error updating comment', e);
