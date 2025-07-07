@@ -120,15 +120,19 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setDragType('task');
     e.dataTransfer.effectAllowed = 'move';
   };
-  const handleTaskDragOver = (e: React.DragEvent, groupId: string, taskIdx: number) => {
+  const handleTaskDragOver = (e: React.DragEvent, groupId: string, taskIdx: number | null) => {
     if (dragType !== 'task') return;
     e.preventDefault();
     if (draggedTaskId) {
       setHoveredGroupId(groupId);
-      setHoveredTaskIdx(taskIdx);
     }
+    if(taskIdx === null) {
+      setHoveredTaskIdx(0);
+    }else{
+      setHoveredTaskIdx(taskIdx);
+    };
   };
-  const handleTaskDrop = (e: React.DragEvent, targetGroupId: string, targetTaskIdx: number) => {
+  const handleTaskDrop = (e: React.DragEvent, targetGroupId: string, targetTaskIdx: number | null) => {
     if (dragType !== 'task') return;
     e.preventDefault();
     if (!draggedTaskId || !draggedTaskGroupId || hoveredGroupId === null || hoveredTaskIdx === null) return;
