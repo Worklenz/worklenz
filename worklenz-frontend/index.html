@@ -43,9 +43,7 @@
         // Use requestIdleCallback to defer analytics loading
         const loadAnalytics = () => {
           // Determine which tracking ID to use based on the environment
-          const isProduction =
-            window.location.hostname === 'worklenz.com' ||
-            window.location.hostname === 'app.worklenz.com';
+          const isProduction = window.location.hostname === 'app.worklenz.com';
 
           const trackingId = isProduction ? 'G-XXXXXXXXXX' : 'G-3LM2HGWEXG'; // Open source tracking ID
 
