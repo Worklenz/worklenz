@@ -77,90 +77,36 @@ export default defineConfig(({ command, mode }) => {
       // **Rollup Options**
       rollupOptions: {
         output: {
-          // **Optimized Chunking Strategy for better caching and loading**
-          manualChunks: (id) => {
-            // Core React libraries - most stable, rarely change
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react/jsx-runtime')) {
-              return 'react-core';
-            }
-            
-            // React Router - separate chunk as it's used throughout the app
-            if (id.includes('react-router') || id.includes('react-router-dom')) {
-              return 'react-router';
-            }
-            
-            // Ant Design - large UI library, separate chunk
-            if (id.includes('antd') || id.includes('@ant-design')) {
-              return 'antd';
-            }
-            
-            // Chart.js and related libraries - heavy visualization libs
-            if (id.includes('chart.js') || id.includes('react-chartjs') || id.includes('chartjs')) {
-              return 'charts';
-            }
-            
-            // TinyMCE - heavy editor, separate chunk (lazy loaded)
-            if (id.includes('tinymce') || id.includes('@tinymce')) {
-              return 'tinymce';
-            }
-            
-            // Gantt and scheduling libraries - heavy components
-            if (id.includes('gantt') || id.includes('scheduler')) {
-              return 'gantt';
-            }
-            
-            // Date utilities - commonly used
-            if (id.includes('date-fns') || id.includes('moment')) {
-              return 'date-utils';
-            }
-            
-            // Redux and state management
-            if (id.includes('@reduxjs') || id.includes('react-redux') || id.includes('redux')) {
-              return 'redux';
-            }
-            
-            // Socket.io - real-time communication
-            if (id.includes('socket.io')) {
-              return 'socket';
-            }
-            
-            // Utility libraries
-            if (id.includes('lodash') || id.includes('dompurify') || id.includes('nanoid')) {
-              return 'utils';
-            }
-            
-            // i18n libraries
-            if (id.includes('i18next') || id.includes('react-i18next')) {
-              return 'i18n';
-            }
-            
-            // Other node_modules dependencies
-            if (id.includes('node_modules')) {
-              return 'vendor';
-            }
-            
-            // Return undefined for app code to be bundled together
-            return undefined;
+          // **Simplified Chunking Strategy to avoid React context issues**
+          manualChunks: {
+            // Keep React and all React-dependent libraries together
+            'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
+
+            // Separate chunk for router
+            'react-router': ['react-router-dom'],
+
+            // Keep Ant Design separate but ensure React is available
+            antd: ['antd', '@ant-design/icons'],
           },
 
           // **File Naming Strategies**
-          chunkFileNames: (chunkInfo) => {
-            // Use shorter names for better caching
-            return `assets/js/[name]-[hash:8].js`;
+          chunkFileNames: chunkInfo => {
+            const facadeModuleId = chunkInfo.facadeModuleId
+              ? chunkInfo.facadeModuleId.split('/').pop()
+              : 'chunk';
+            return `assets/js/[name]-[hash].js`;
           },
-          entryFileNames: 'assets/js/[name]-[hash:8].js',
-          assetFileNames: (assetInfo) => {
-            if (!assetInfo.name) return 'assets/[name]-[hash:8].[ext]';
+          entryFileNames: 'assets/js/[name]-[hash].js',
+          assetFileNames: assetInfo => {
+            if (!assetInfo.name) return 'assets/[name]-[hash].[ext]';
             const info = assetInfo.name.split('.');
             let extType = info[info.length - 1];
-            if (/png|jpe?g|svg|gif|tiff|bmp|ico|webp/i.test(extType)) {
+            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
               extType = 'img';
             } else if (/woff2?|eot|ttf|otf/i.test(extType)) {
               extType = 'fonts';
-            } else if (/css/i.test(extType)) {
-              extType = 'css';
             }
-            return `assets/${extType}/[name]-[hash:8].[ext]`;
+            return `assets/${extType}/[name]-[hash].[ext]`;
           },
         },
 
@@ -180,28 +126,12 @@ export default defineConfig(({ command, mode }) => {
 
     // **Optimization**
     optimizeDeps: {
-      include: [
-        'react', 
-        'react-dom', 
-        'react/jsx-runtime', 
-        'antd', 
-        '@ant-design/icons',
-        'react-router-dom',
-        'i18next',
-        'react-i18next',
-        'date-fns',
-        'dompurify',
-      ],
+      include: ['react', 'react-dom', 'react/jsx-runtime', 'antd', '@ant-design/icons'],
       exclude: [
-        // Exclude heavy libraries that should be lazy loaded
-        '@tinymce/tinymce-react',
-        'tinymce',
-        'chart.js',
-        'react-chartjs-2',
-        'gantt-task-react',
+        // Add any packages that should not be pre-bundled
       ],
       // Force pre-bundling to avoid runtime issues
-      force: false, // Only force when needed to improve dev startup time
+      force: true,
     },
 
     // **Define global constants**
