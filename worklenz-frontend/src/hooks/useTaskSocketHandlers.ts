@@ -43,6 +43,7 @@ import {
   selectCurrentGroupingV3,
   fetchTasksV3,
   addSubtaskToParent,
+  removeTemporarySubtask,
 } from '@/features/task-management/task-management.slice';
 import {
   updateEnhancedKanbanSubtask,
@@ -153,12 +154,18 @@ export const useTaskSocketHandlers = () => {
           const updatedTask: Task = {
             ...currentTask,
             labels:
-              labels.all_labels?.map(l => ({
+              labels.labels?.map(l => ({
                 id: l.id || '',
                 name: l.name || '',
                 color: l.color_code || '#1890ff',
                 end: l.end,
                 names: l.names,
+              })) || [],
+            all_labels:
+              labels.all_labels?.map(l => ({
+                id: l.id || '',
+                name: l.name || '',
+                color_code: l.color_code || '#1890ff',
               })) || [],
             updatedAt: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -675,6 +682,24 @@ export const useTaskSocketHandlers = () => {
           parent_task_id: data.parent_task_id,
           is_sub_task: true,
         };
+
+        // Before adding the real subtask, remove any temporary subtasks with the same name
+        // This prevents duplication from optimistic updates
+        const parentTask = store.getState().taskManagement.entities[data.parent_task_id];
+        if (parentTask && parentTask.sub_tasks) {
+          const temporarySubtasks = parentTask.sub_tasks.filter(
+            (st: Task) => st.isTemporary && st.name === subtask.title
+          );
+          
+          // Remove each temporary subtask
+          temporarySubtasks.forEach((tempSubtask: Task) => {
+            dispatch(removeTemporarySubtask({ 
+              parentTaskId: data.parent_task_id, 
+              tempId: tempSubtask.id 
+            }));
+          });
+        }
+
         dispatch(addSubtaskToParent({ parentId: data.parent_task_id, subtask }));
 
         // Also update enhanced kanban slice for subtask creation
