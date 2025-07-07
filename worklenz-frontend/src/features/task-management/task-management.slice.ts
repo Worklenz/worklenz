@@ -908,6 +908,38 @@ const taskManagementSlice = createSlice({
         return column;
       });
     },
+    // Add action to update task counts (comments, attachments, etc.)
+    updateTaskCounts: (state, action: PayloadAction<{
+      taskId: string;
+      counts: {
+        comments_count?: number;
+        attachments_count?: number;
+        has_subscribers?: boolean;
+        has_dependencies?: boolean;
+        schedule_id?: string | null; // Add schedule_id for recurring tasks
+      };
+    }>) => {
+      const { taskId, counts } = action.payload;
+      const task = state.entities[taskId];
+      if (task) {
+        // Update only the provided count fields
+        if (counts.comments_count !== undefined) {
+          task.comments_count = counts.comments_count;
+        }
+        if (counts.attachments_count !== undefined) {
+          task.attachments_count = counts.attachments_count;
+        }
+        if (counts.has_subscribers !== undefined) {
+          task.has_subscribers = counts.has_subscribers;
+        }
+        if (counts.has_dependencies !== undefined) {
+          task.has_dependencies = counts.has_dependencies;
+        }
+        if (counts.schedule_id !== undefined) {
+          task.schedule_id = counts.schedule_id;
+        }
+      }
+    },
   },
   extraReducers: builder => {
     builder
@@ -1100,6 +1132,7 @@ export const {
   updateCustomColumn,
   deleteCustomColumn,
   syncColumnsWithFields,
+  updateTaskCounts,
 } = taskManagementSlice.actions;
 
 // Export the selectors
