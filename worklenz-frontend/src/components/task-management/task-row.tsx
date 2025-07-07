@@ -1017,7 +1017,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                       <div className="task-indicators flex items-center gap-2">
                         {/* Comments indicator */}
                         {(task as any).comments_count > 0 && (
-                          <Tooltip title={t('taskManagement.comments', 'Comments')}>
+                          <Tooltip title={t(`task-management:indicators.tooltips.comments${(task as any).comments_count === 1 ? '' : '_plural'}`, { count: (task as any).comments_count })}>
                             <MessageOutlined
                               style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
                             />
@@ -1025,7 +1025,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                         )}
                         {/* Attachments indicator */}
                         {(task as any).attachments_count > 0 && (
-                          <Tooltip title={t('taskManagement.attachments', 'Attachments')}>
+                          <Tooltip title={t(`task-management:indicators.tooltips.attachments${(task as any).attachments_count === 1 ? '' : '_plural'}`, { count: (task as any).attachments_count })}>
                             <PaperClipOutlined
                               style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
                             />
@@ -1033,7 +1033,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                         )}
                         {/* Dependencies indicator */}
                         {(task as any).has_dependencies && (
-                          <Tooltip title={t('taskManagement.dependencies', 'Dependencies')}>
+                          <Tooltip title={t('task-management:indicators.tooltips.dependencies')}>
                             <MinusCircleOutlined
                               style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
                             />
@@ -1041,7 +1041,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                         )}
                         {/* Subscribers indicator */}
                         {(task as any).has_subscribers && (
-                          <Tooltip title={t('taskManagement.subscribers', 'Subscribers')}>
+                          <Tooltip title={t('task-management:indicators.tooltips.subscribers')}>
                             <EyeOutlined
                               style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
                             />
@@ -1049,7 +1049,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                         )}
                         {/* Recurring indicator */}
                         {(task as any).schedule_id && (
-                          <Tooltip title={t('taskManagement.recurringTask', 'Recurring Task')}>
+                          <Tooltip title={t('task-management:indicators.tooltips.recurring')}>
                             <RetweetOutlined
                               style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
                             />

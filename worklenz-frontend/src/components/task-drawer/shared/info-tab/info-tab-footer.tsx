@@ -2,6 +2,8 @@ import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } fro
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { colors } from '@/styles/colors';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
@@ -47,6 +49,7 @@ const InfoTabFooter = () => {
 
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const dispatch = useAppDispatch();
 
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState<boolean>(false);
@@ -156,8 +159,10 @@ const InfoTabFooter = () => {
         setCommentValue('');
 
         // Dispatch event to notify that a comment was created
-        // This will trigger scrolling to the new comment
-        document.dispatchEvent(new Event('task-comment-create'));
+        // This will trigger the task comments component to refresh and update Redux
+        document.dispatchEvent(new CustomEvent('task-comment-create', { 
+          detail: { taskId: selectedTaskId } 
+        }));
       }
     } catch (error) {
       logger.error('Failed to create comment:', error);

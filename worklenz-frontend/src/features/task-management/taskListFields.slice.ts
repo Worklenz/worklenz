@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { updateColumnVisibility } from './task-management.slice';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
+import logger from '@/utils/errorLogger';
 
 export interface TaskListField {
   key: string;
@@ -39,7 +40,7 @@ function loadFields(): TaskListField[] {
       const parsed = JSON.parse(stored);
       return parsed;
     } catch (error) {
-      console.warn('Failed to parse stored fields, using defaults:', error);
+      logger.error('Failed to parse stored fields, using defaults:', error);
     }
   }
 
@@ -47,7 +48,6 @@ function loadFields(): TaskListField[] {
 }
 
 function saveFields(fields: TaskListField[]) {
-  console.log('Saving fields to localStorage:', fields);
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fields));
 }
 

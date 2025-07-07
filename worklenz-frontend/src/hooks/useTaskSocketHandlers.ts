@@ -592,12 +592,17 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleTaskSubscribersChange = useCallback(
-    (data: InlineMember[]) => {
-      if (!data) return;
-      dispatch(setTaskSubscribers(data));
+    (subscribers: InlineMember[]) => {
+      if (!subscribers) return;
+      dispatch(setTaskSubscribers(subscribers));
+      
+      // Note: We don't have task_id in this event, so we can't update the task-management slice
+      // The has_subscribers field will be updated when the task is refetched
     },
     [dispatch]
   );
+
+
 
   const handleEstimationChange = useCallback(
     (task: { id: string; parent_task: string | null; estimation: number }) => {
@@ -848,6 +853,7 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.QUICK_TASK.toString(), handler: handleNewTaskReceived },
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgressUpdated },
       { event: SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), handler: handleCustomColumnUpdate },
+
     ];
 
     // Register all event listeners
@@ -879,5 +885,6 @@ export const useTaskSocketHandlers = () => {
     handleNewTaskReceived,
     handleTaskProgressUpdated,
     handleCustomColumnUpdate,
+
   ]);
 };

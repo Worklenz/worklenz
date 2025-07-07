@@ -108,5 +108,19 @@
       "key": "Schlüssel",
       "formula": "Formel"
     }
+  },
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} Unteraufgabe",
+      "subtasks_plural": "{{count}} Unteraufgaben",
+      "comments": "{{count}} Kommentar",
+      "comments_plural": "{{count}} Kommentare",
+      "attachments": "{{count}} Anhang",
+      "attachments_plural": "{{count}} Anhänge",
+      "subscribers": "Aufgabe hat Abonnenten",
+      "dependencies": "Aufgabe hat Abhängigkeiten",
+      "recurring": "Wiederkehrende Aufgabe"
+    }
   }
 }

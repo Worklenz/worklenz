@@ -15,6 +15,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { TFunction } from 'i18next';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
@@ -27,7 +29,6 @@ import { useAuthService } from '@/hooks/useAuth';
 import Avatars from '@/components/avatars/avatars';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { setTaskSubscribers } from '@/features/task-drawer/task-drawer.slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
@@ -100,6 +101,14 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
       socket?.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), body);
       socket?.once(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), (data: InlineMember[]) => {
         dispatch(setTaskSubscribers(data));
+        
+        // Update Redux state with subscriber status
+        dispatch(updateTaskCounts({
+          taskId: task.id,
+          counts: {
+            has_subscribers: data && data.length > 0
+          }
+        }));
       });
     } catch (error) {
       logger.error('Error notifying member:', error);
