@@ -8,7 +8,6 @@ import { ServerResponse } from "../models/server-response";
 import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../shared/constants";
 import { getColor, log_error } from "../shared/utils";
 import TasksControllerBase, { GroupBy, ITaskGroup } from "./tasks-controller-base";
-import { redisClient } from "../redis/client";
 
 export class TaskListGroup implements ITaskGroup {
   name: string;
@@ -1051,36 +1050,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Only refresh if explicitly requested via refresh_progress=true query parameter
     // This dramatically improves initial load performance (from ~2-5s to ~200-500ms)
     const shouldRefreshProgress = req.query.refresh_progress === "true";
-
-    // CACHING OPTIMIZATION: Cache results for frequently accessed data
-    const cacheKey = `tasks_v3_${req.params.id}_${groupBy}_${JSON.stringify({
-      parent_task: req.query.parent_task,
-      archived: req.query.archived,
-      search: req.query.search,
-      statuses: req.query.statuses,
-      priorities: req.query.priorities,
-      labels: req.query.labels,
-      members: req.query.members,
-      projects: req.query.projects,
-      filterBy: req.query.filterBy,
-      customColumns: req.query.customColumns,
-      isSubtasksInclude: req.query.isSubtasksInclude
-    })}`;
-
-    // Try to get cached result first (only if not refreshing progress)
-    if (!shouldRefreshProgress) {
-      try {
-        const cachedResult = await redisClient.get(cacheKey);
-        if (cachedResult) {
-          const parsedResult = JSON.parse(cachedResult);
-          console.log(`[PERFORMANCE] Cache hit for project ${req.params.id} - returned in ${(performance.now() - startTime).toFixed(2)}ms`);
-          return res.status(200).send(parsedResult);
-        }
-      } catch (cacheError) {
-        console.warn("[CACHE WARNING] Redis cache read failed:", cacheError);
-        // Continue with normal query if cache fails
-      }
-    }
     
     if (shouldRefreshProgress && req.params.id) {
       const progressStartTime = performance.now();
@@ -1316,26 +1285,14 @@ export default class TasksControllerV2 extends TasksControllerBase {
       console.warn(`[PERFORMANCE WARNING] Slow request detected: ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
     }
 
-    const responseData = new ServerResponse(true, {
+    console.log(`[PERFORMANCE] getTasksV3 completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
+    
+    return res.status(200).send(new ServerResponse(true, {
       groups: responseGroups,
       allTasks: transformedTasks,
       grouping: groupBy,
       totalTasks: transformedTasks.length
-    });
-
-    // Cache the result for 5 minutes (300 seconds) - only cache successful results
-    if (transformedTasks.length > 0) {
-      try {
-        await redisClient.setEx(cacheKey, 300, JSON.stringify(responseData));
-        console.log(`[PERFORMANCE] Cached result for project ${req.params.id} with ${transformedTasks.length} tasks`);
-      } catch (cacheError) {
-        console.warn("[CACHE WARNING] Redis cache write failed:", cacheError);
-        // Continue even if cache write fails
-      }
-    }
-
-    console.log(`[PERFORMANCE] getTasksV3 completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
-    return res.status(200).send(responseData);
+    }));
   }
 
   private static getDefaultGroupColor(groupBy: string, groupValue: string): string {
@@ -1434,20 +1391,5 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }
   }
 
-  // Helper method to invalidate cache when tasks are modified
-  public static async invalidateTasksCache(projectId: string): Promise<void> {
-    try {
-      // Get all cache keys for this project
-      const pattern = `tasks_v3_${projectId}_*`;
-      const keys = await redisClient.keys(pattern);
-      
-      if (keys.length > 0) {
-        await redisClient.del(keys);
-        console.log(`[CACHE] Invalidated ${keys.length} cache entries for project ${projectId}`);
-      }
-    } catch (error) {
-      console.warn("[CACHE WARNING] Cache invalidation failed:", error);
-      // Don't throw error - cache invalidation failure shouldn't break the operation
-    }
-  }
+
 }
