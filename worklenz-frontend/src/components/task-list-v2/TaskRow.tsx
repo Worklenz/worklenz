@@ -180,17 +180,17 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     name: task.title || task.name,
     parent_task_id: task.parent_task_id,
     manual_progress: false,
-    all_labels: task.labels?.map(label => ({
+    all_labels: task.all_labels?.map(label => ({
       id: label.id,
       name: label.name,
-      color_code: label.color,
+      color_code: label.color_code,
     })) || [],
     labels: task.labels?.map(label => ({
       id: label.id,
       name: label.name,
       color_code: label.color,
     })) || [],
-  }), [task.id, task.title, task.name, task.parent_task_id, task.labels, task.labels?.length]);
+  }), [task.id, task.title, task.name, task.parent_task_id, task.all_labels, task.labels, task.all_labels?.length, task.labels?.length]);
 
   // Handle checkbox change
   const handleCheckboxChange = useCallback((e: any) => {
@@ -556,7 +556,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'labels':
         return (
-          <div className="flex items-center gap-0.5 flex-wrap min-w-0" style={{ ...baseStyle, minWidth: '150px' }}>
+          <div className="flex items-center gap-0.5 flex-wrap min-w-0" style={{ ...baseStyle, minWidth: '150px', width: 'auto', flexGrow: 1 }}>
             <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
             <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
           </div>

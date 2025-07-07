@@ -1078,6 +1078,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
           end: l.end,
           names: l.names
         })) || [],
+        all_labels: task.all_labels?.map((l: any) => ({
+          id: l.id || l.label_id,
+          name: l.name,
+          color_code: l.color_code || "#1890ff"
+        })) || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
         timeTracking: {
