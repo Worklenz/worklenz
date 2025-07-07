@@ -5,6 +5,7 @@ import {
   createAsyncThunk,
   EntityState,
   EntityId,
+  createSelector,
 } from '@reduxjs/toolkit';
 import { Task, TaskManagementState, TaskGroup, TaskGrouping } from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
@@ -1142,7 +1143,12 @@ export const {
 
 // Export the selectors
 export const selectAllTasks = (state: RootState) => state.taskManagement.entities;
-export const selectAllTasksArray = (state: RootState) => Object.values(state.taskManagement.entities);
+
+// Memoized selector to prevent unnecessary re-renders
+export const selectAllTasksArray = createSelector(
+  [selectAllTasks],
+  (entities) => Object.values(entities)
+);
 export const selectTaskById = (state: RootState, taskId: string) => state.taskManagement.entities[taskId];
 export const selectTaskIds = (state: RootState) => state.taskManagement.ids;
 export const selectGroups = (state: RootState) => state.taskManagement.groups;
@@ -1153,15 +1159,21 @@ export const selectSelectedPriorities = (state: RootState) => state.taskManageme
 export const selectSearch = (state: RootState) => state.taskManagement.search;
 export const selectSubtaskLoading = (state: RootState, taskId: string) => state.taskManagement.loadingSubtasks[taskId] || false;
 
-// Memoized selectors
-export const selectTasksByStatus = (state: RootState, status: string) =>
-  Object.values(state.taskManagement.entities).filter(task => task.status === status);
+// Memoized selectors to prevent unnecessary re-renders
+export const selectTasksByStatus = createSelector(
+  [selectAllTasksArray, (_state: RootState, status: string) => status],
+  (tasks, status) => tasks.filter(task => task.status === status)
+);
 
-export const selectTasksByPriority = (state: RootState, priority: string) =>
-  Object.values(state.taskManagement.entities).filter(task => task.priority === priority);
+export const selectTasksByPriority = createSelector(
+  [selectAllTasksArray, (_state: RootState, priority: string) => priority],
+  (tasks, priority) => tasks.filter(task => task.priority === priority)
+);
 
-export const selectTasksByPhase = (state: RootState, phase: string) =>
-  Object.values(state.taskManagement.entities).filter(task => task.phase === phase);
+export const selectTasksByPhase = createSelector(
+  [selectAllTasksArray, (_state: RootState, phase: string) => phase],
+  (tasks, phase) => tasks.filter(task => task.phase === phase)
+);
 
 // Add archived selector
 export const selectArchived = (state: RootState) => state.taskManagement.archived;
