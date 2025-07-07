@@ -208,7 +208,5 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __DEV__: !isProduction,
     },
-
-
   };
 });
