@@ -1,5 +1,4 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import { Bar } from 'react-chartjs-2';
+import React, { useEffect, useState, forwardRef, useImperativeHandle, lazy, Suspense } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -20,7 +19,34 @@ import { IRPTTimeProject } from '@/types/reporting/reporting.types';
 import { Empty, Spin } from 'antd';
 import logger from '@/utils/errorLogger';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
+// Lazy load the Bar chart component
+const LazyBarChart = lazy(() => 
+  import('react-chartjs-2').then(module => ({ default: module.Bar }))
+);
+
+// Chart loading fallback
+const ChartLoadingFallback = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '400px',
+    background: '#fafafa',
+    borderRadius: '8px',
+    border: '1px solid #f0f0f0'
+  }}>
+    <Spin size="large" />
+  </div>
+);
+
+// Register Chart.js components only when needed
+let isChartJSRegistered = false;
+const registerChartJS = () => {
+  if (!isChartJSRegistered) {
+    ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
+    isChartJSRegistered = true;
+  }
+};
 
 const BAR_THICKNESS = 40;
 const STROKE_WIDTH = 4;
@@ -36,6 +62,7 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
   const { t } = useTranslation('time-report');
   const [jsonData, setJsonData] = useState<IRPTTimeProject[]>([]);
   const [loading, setLoading] = useState(false);
+  const [chartReady, setChartReady] = useState(false);
   const chartRef = React.useRef<ChartJS<'bar', string[], unknown>>(null);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -50,6 +77,21 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
     archived,
   } = useAppSelector(state => state.timeReportsOverviewReducer);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
+
+  // Initialize chart when component mounts
+  useEffect(() => {
+    const initChart = () => {
+      registerChartJS();
+      setChartReady(true);
+    };
+
+    // Use requestIdleCallback to defer chart initialization
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(initChart, { timeout: 1000 });
+    } else {
+      setTimeout(initChart, 500);
+    }
+  }, []);
 
   const handleBarClick = (event: any, elements: any) => {
     if (elements.length > 0) {
@@ -158,7 +200,7 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
   };
 
   useEffect(() => {
-    if (!loadingTeams && !loadingProjects && !loadingCategories) {
+    if (!loadingTeams && !loadingProjects && !loadingCategories && chartReady) {
       setLoading(true);
       fetchChartData().finally(() => {
         setLoading(false);
@@ -175,6 +217,7 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
     loadingTeams,
     loadingProjects,
     loadingCategories,
+    chartReady,
   ]);
 
   const exportChart = () => {
@@ -200,8 +243,8 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
 
       // Create download link
       const link = document.createElement('a');
-      link.download = 'project-time-sheet.png';
-      link.href = tempCanvas.toDataURL('image/png');
+      link.download = 'project-time-sheet-chart.png';
+      link.href = tempCanvas.toDataURL();
       link.click();
     }
   };
@@ -210,25 +253,35 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
     exportChart,
   }));
 
-  // if (loading) {
-  //   return (
-  //     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-  //       <Spin />
-  //     </div>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <div style={{ minHeight: MIN_HEIGHT }}>
+        <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
+      </div>
+    );
+  }
+
+  if (!Array.isArray(jsonData) || jsonData.length === 0) {
+    return (
+      <div style={{ minHeight: MIN_HEIGHT }}>
+        <Empty description={t('noDataAvailable')} />
+      </div>
+    );
+  }
+
+  const chartHeight = jsonData.length * (BAR_THICKNESS + 10) + 100;
+  const containerHeight = Math.max(chartHeight, 400);
 
   return (
-    <div>
-      <div
-        style={{
-          maxWidth: `calc(100vw - ${SIDEBAR_WIDTH}px)`,
-          minWidth: 'calc(100vw - 260px)',
-          minHeight: MIN_HEIGHT,
-          height: `${60 * data.labels.length}px`,
-        }}
-      >
-        <Bar data={data} options={options} ref={chartRef} />
+    <div style={{ minHeight: MIN_HEIGHT }}>
+      <div style={{ height: `${containerHeight}px`, width: '100%' }}>
+        {chartReady ? (
+          <Suspense fallback={<ChartLoadingFallback />}>
+            <LazyBarChart data={data} options={options} ref={chartRef} />
+          </Suspense>
+        ) : (
+          <ChartLoadingFallback />
+        )}
       </div>
       <ProjectTimeLogDrawer />
     </div>

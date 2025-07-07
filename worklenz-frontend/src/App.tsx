@@ -29,6 +29,7 @@ import { SuspenseFallback } from './components/suspense-fallback/suspense-fallba
  * 4. Lazy loading - All route components loaded on demand
  * 5. Suspense boundaries - Better loading states
  * 6. Optimized guard components with memoization
+ * 7. Deferred initialization - Non-critical operations moved to background
  */
 const App: React.FC = memo(() => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -37,8 +38,22 @@ const App: React.FC = memo(() => {
   // Memoize mixpanel initialization to prevent re-initialization
   const mixpanelToken = useMemo(() => import.meta.env.VITE_MIXPANEL_TOKEN as string, []);
 
+  // Defer mixpanel initialization to not block initial render
   useEffect(() => {
-    initMixpanel(mixpanelToken);
+    const initializeMixpanel = () => {
+      try {
+        initMixpanel(mixpanelToken);
+      } catch (error) {
+        logger.error('Failed to initialize Mixpanel:', error);
+      }
+    };
+
+    // Use requestIdleCallback to defer mixpanel initialization
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(initializeMixpanel, { timeout: 2000 });
+    } else {
+      setTimeout(initializeMixpanel, 1000);
+    }
   }, [mixpanelToken]);
 
   // Memoize language change handler
@@ -48,37 +63,52 @@ const App: React.FC = memo(() => {
     });
   }, []);
 
+  // Apply theme immediately to prevent flash
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeMode);
   }, [themeMode]);
 
+  // Handle language changes
   useEffect(() => {
     handleLanguageChange(language || Language.EN);
   }, [language, handleLanguageChange]);
 
-  // Initialize CSRF token and translations on app startup
+  // Initialize critical app functionality
   useEffect(() => {
     let isMounted = true;
 
-    const initializeApp = async () => {
+    const initializeCriticalApp = async () => {
       try {
-        // Initialize CSRF token
+        // Initialize CSRF token immediately as it's needed for API calls
         await initializeCsrfToken();
-
-        // Note: Translation preloading is handled in i18n.ts initialization
-        // No need to call ensureTranslationsLoaded here to avoid duplicate requests
       } catch (error) {
         if (isMounted) {
-          logger.error('Failed to initialize app:', error);
+          logger.error('Failed to initialize critical app functionality:', error);
         }
       }
     };
 
-    initializeApp();
+    // Initialize critical functionality immediately
+    initializeCriticalApp();
 
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  // Defer non-critical initialization
+  useEffect(() => {
+    const initializeNonCriticalApp = () => {
+      // Any non-critical initialization can go here
+      // For example: analytics, feature flags, etc.
+    };
+
+    // Defer non-critical initialization to not block initial render
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(initializeNonCriticalApp, { timeout: 3000 });
+    } else {
+      setTimeout(initializeNonCriticalApp, 1500);
+    }
   }, []);
 
   return (
