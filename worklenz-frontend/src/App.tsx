@@ -2,7 +2,6 @@
 import React, { Suspense, useEffect, memo, useMemo, useCallback } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import i18next from 'i18next';
-import { ensureTranslationsLoaded } from './i18n';
 
 // Components
 import ThemeWrapper from './features/theme/ThemeWrapper';
@@ -66,8 +65,8 @@ const App: React.FC = memo(() => {
         // Initialize CSRF token
         await initializeCsrfToken();
 
-        // Preload essential translations
-        await ensureTranslationsLoaded();
+        // Note: Translation preloading is handled in i18n.ts initialization
+        // No need to call ensureTranslationsLoaded here to avoid duplicate requests
       } catch (error) {
         if (isMounted) {
           logger.error('Failed to initialize app:', error);
