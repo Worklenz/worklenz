@@ -203,16 +203,18 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         <>
             {isDropIndicator && (
                 <div
-                    style={{
+                    
+                    onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
+                    onDragOver={e => onTaskDragOver(e, groupId, idx)}
+                    onDrop={e => onTaskDrop(e, groupId, idx)}
+                >
+                    <div className="w-full h-full bg-red-500"style={{
                         height: 80,
                         background: themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0',
                         borderRadius: 6,
                         border: `5px`
-                    }}
-                    onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
-                    onDragOver={e => onTaskDragOver(e, groupId, idx)}
-                    onDrop={e => onTaskDrop(e, groupId, idx)}
-                />
+                    }}></div>
+                </div>
             )}
             <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block' }} >
                 <div
