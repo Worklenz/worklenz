@@ -54,7 +54,7 @@ const TaskLabelsCell: React.FC<TaskLabelsCellProps> = memo(({ labels, isDarkMode
   }
 
   return (
-    <>
+    <div className="flex items-center gap-0.5 flex-wrap">
       {labels.map((label, index) => {
         const extendedLabel = label as any;
         return extendedLabel.end && extendedLabel.names && extendedLabel.name ? (
@@ -73,7 +73,7 @@ const TaskLabelsCell: React.FC<TaskLabelsCellProps> = memo(({ labels, isDarkMode
           />
         );
       })}
-    </>
+    </div>
   );
 });
 
@@ -322,9 +322,19 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
               {isSubtask && <div className="w-2" />}
               
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                  {taskDisplayName}
-                </span>
+                <Tooltip title={taskDisplayName}>
+                  <span 
+                    className="text-sm text-gray-700 dark:text-gray-300 truncate cursor-pointer"
+                    style={{
+                      maxWidth: '200px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {taskDisplayName}
+                  </span>
+                </Tooltip>
                 
                 {/* Subtask count indicator - only show if count > 1 */}
                 {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count !== 0 && (
@@ -552,7 +562,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'labels':
         return (
-          <div className="flex items-center gap-1 flex-wrap min-w-0" style={{ ...baseStyle, minWidth: '200px' }}>
+          <div className="flex items-center gap-0.5 flex-wrap min-w-0" style={{ ...baseStyle, minWidth: '150px' }}>
             <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
             <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
           </div>
