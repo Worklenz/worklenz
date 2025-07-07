@@ -283,6 +283,24 @@ const TaskListV2: React.FC = () => {
         project_id: urlProjectId,
       };
 
+      // Update the Redux store immediately for optimistic updates
+      const currentTask = allTasks.find(task => task.id === taskId);
+      if (currentTask) {
+        const updatedTask = {
+          ...currentTask,
+          custom_column_values: {
+            ...currentTask.custom_column_values,
+            [columnKey]: value,
+          },
+          updated_at: new Date().toISOString(),
+        };
+        
+        // Import and dispatch the updateTask action
+        import('@/features/task-management/task-management.slice').then(({ updateTask }) => {
+          dispatch(updateTask(updatedTask));
+        });
+      }
+
       if (socket && connected) {
         socket.emit(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), JSON.stringify(body));
       } else {
@@ -291,7 +309,7 @@ const TaskListV2: React.FC = () => {
     } catch (error) {
       console.error('Error updating custom column value:', error);
     }
-  }, [urlProjectId, socket, connected]);
+  }, [urlProjectId, socket, connected, allTasks, dispatch]);
 
   // Custom column settings handler
   const handleCustomColumnSettings = useCallback((columnKey: string) => {
@@ -317,11 +335,9 @@ const TaskListV2: React.FC = () => {
     // The global socket handler will handle the real-time update
   }, []);
 
-  // Handle scroll synchronization
+  // Handle scroll synchronization - disabled since header is now sticky inside content
   const handleContentScroll = useCallback(() => {
-    if (headerScrollRef.current && contentScrollRef.current) {
-      headerScrollRef.current.scrollLeft = contentScrollRef.current.scrollLeft;
-    }
+    // No longer needed since header scrolls naturally with content
   }, []);
 
   // Memoized values for GroupedVirtuoso
@@ -454,7 +470,7 @@ const TaskListV2: React.FC = () => {
 
   // Render column headers
   const renderColumnHeaders = useCallback(() => (
-    <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" style={{ width: '100%', minWidth: 'max-content' }}>
       <div className="flex items-center px-3 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
         {visibleColumns.map((column, index) => {
           const columnStyle: ColumnStyle = {
@@ -491,7 +507,8 @@ const TaskListV2: React.FC = () => {
             </div>
           );
         })}
-        <div className="flex items-center justify-center" style={{ width: '70px', flexShrink: 0, paddingRight: '8px' }}>
+        {/* Add Custom Column Button - positioned at the end and scrolls with content */}
+        <div className="flex items-center justify-center ml-2" style={{ width: '50px', flexShrink: 0 }}>
           <AddCustomColumnButton />
         </div>
       </div>
@@ -533,7 +550,7 @@ const TaskListV2: React.FC = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col bg-white dark:bg-gray-900" style={{ overflow: 'hidden' }}>
+      <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
         {/* Task Filters */}
         <div className="flex-none px-6 py-4" style={{ height: '74px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
@@ -544,33 +561,24 @@ const TaskListV2: React.FC = () => {
 
         {/* Table Container */}
         <div 
-          className="flex-1 border border-gray-200 dark:border-gray-700 mx-6 rounded-lg" 
+          className="border border-gray-200 dark:border-gray-700 mx-6 rounded-lg" 
           style={{ 
-            height: '600px',
-            maxHeight: '600px',
+            height: 'calc(100vh - 140px)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden'
           }}
         >
-          {/* Column Headers */}
-          <div className="flex-none">
-            <div 
-              ref={headerScrollRef}
-              className="overflow-hidden"
-              style={{ overflowX: 'hidden', overflowY: 'hidden' }}
-            >
-              {renderColumnHeaders()}
-            </div>
-          </div>
-
-          {/* Task List Content */}
+          {/* Task List Content with Sticky Header */}
           <div 
             ref={contentScrollRef}
-            className="flex-1 bg-white dark:bg-gray-900" 
-            style={{ overflow: 'auto' }}
-            onScroll={handleContentScroll}
+            className="flex-1 bg-white dark:bg-gray-900 relative" 
+            style={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}
           >
+            {/* Sticky Column Headers */}
+            <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800" style={{ width: '100%', minWidth: 'max-content' }}>
+              {renderColumnHeaders()}
+            </div>
             <SortableContext
               items={virtuosoItems
                 .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)

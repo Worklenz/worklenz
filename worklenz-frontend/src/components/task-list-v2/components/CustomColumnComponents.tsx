@@ -284,7 +284,7 @@ export const DateCustomColumnCell: React.FC<{
   };
 
   return (
-    <div className={`px-2 relative custom-column-cell ${isOpen ? 'focused' : ''}`}>
+    <div className={`px-2 relative custom-column-cell ${isOpen ? 'custom-column-focused' : ''}`}>
       <div className="relative">
         <DatePicker
           open={isOpen}
@@ -446,15 +446,22 @@ export const SelectionCustomColumnCell: React.FC<{
   const selectedOption = selectionsList.find((option: any) => option.selection_name === customValue);
 
   const handleOptionSelect = async (option: any) => {
+    if (!task.id) return;
+
+    setIsDropdownOpen(false);
     setIsLoading(true);
+
     try {
-      if (task.id) {
-        updateTaskCustomColumnValue(task.id, columnKey, option.selection_name);
-      }
-      setIsDropdownOpen(false);
-    } finally {
-      // Small delay to show loading state
-      setTimeout(() => setIsLoading(false), 200);
+      // Send the update to the server - Redux store will be updated immediately
+      updateTaskCustomColumnValue(task.id, columnKey, option.selection_name);
+      
+      // Short loading state for visual feedback
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 200);
+    } catch (error) {
+      console.error('Error updating selection:', error);
+      setIsLoading(false);
     }
   };
 
@@ -527,7 +534,7 @@ export const SelectionCustomColumnCell: React.FC<{
   );
 
   return (
-    <div className={`px-2 relative custom-column-cell ${isDropdownOpen ? 'focused' : ''}`}>
+    <div className={`px-2 relative custom-column-cell ${isDropdownOpen ? 'custom-column-focused' : ''}`}>
       <Dropdown
         open={isDropdownOpen}
         onOpenChange={setIsDropdownOpen}
