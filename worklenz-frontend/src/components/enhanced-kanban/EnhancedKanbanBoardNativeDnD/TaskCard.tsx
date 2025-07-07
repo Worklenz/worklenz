@@ -210,7 +210,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                 >
                     <div className="w-full h-full bg-red-500"style={{
                         height: 80,
-                        background: themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0',
+                        background: themeMode === 'dark' ? '#2a2a2a' : '#E2EAF4',
                         borderRadius: 6,
                         border: `5px`
                     }}></div>
