@@ -9,5 +9,6 @@
   "saveChanges": "保存更改",
   "profileJoinedText": "一个月前加入",
   "profileLastUpdatedText": "一个月前更新",
-  "avatarTooltip": "点击上传头像"
+  "avatarTooltip": "点击上传头像",
+  "title": "个人资料设置"
 }

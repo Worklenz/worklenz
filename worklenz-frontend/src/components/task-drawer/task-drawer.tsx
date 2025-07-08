@@ -154,7 +154,7 @@ const TaskDrawer = () => {
               onClick={handleAddTimeLog}
               style={{ width: '100%' }}
             >
-              Add new time log
+              {t('taskTimeLogTab.addTimeLog')}
             </Button>
           </Flex>
         );

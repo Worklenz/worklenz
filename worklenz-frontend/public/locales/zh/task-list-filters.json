@@ -50,5 +50,17 @@
   "selectCategory": "选择类别",
   "pleaseEnterAName": "请输入名称",
   "pleaseSelectACategory": "请选择类别",
-  "create": "创建"
+  "create": "创建",
+  "searchTasks": "搜索任务...",
+  "searchPlaceholder": "搜索...",
+  "fieldsText": "字段",
+  "loadingFilters": "加载筛选器...",
+  "noOptionsFound": "未找到选项",
+  "filtersActive": "个筛选器已激活",
+  "filterActive": "个筛选器已激活",
+  "clearAll": "清除全部",
+  "clearing": "清除中...",
+  "cancel": "取消",
+  "search": "搜索",
+  "groupedBy": "分组依据"
 }

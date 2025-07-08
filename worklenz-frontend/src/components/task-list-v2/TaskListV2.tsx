@@ -519,7 +519,7 @@ const TaskListV2: React.FC = () => {
 
   // Loading and error states
   if (loading || loadingColumns) return <Skeleton active />;
-  if (error) return <div>Error: {error}</div>;
+  if (error) return <div>{t('emptyStates.errorPrefix')} {error}</div>;
   
   // Show message when no data
   if (groups.length === 0 && !loading) {
@@ -531,10 +531,10 @@ const TaskListV2: React.FC = () => {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No task groups found
+              {t('emptyStates.noTaskGroups')}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              Tasks will appear here when they are created or when filters are applied.
+              {t('emptyStates.noTaskGroupsDescription')}
             </div>
           </div>
         </div>
@@ -623,7 +623,7 @@ const TaskListV2: React.FC = () => {
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {allTasks.find(task => task.id === activeId)?.name ||
                         allTasks.find(task => task.id === activeId)?.title ||
-                        'Task'}
+                        t('emptyStates.dragTaskFallback')}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {allTasks.find(task => task.id === activeId)?.task_key}
