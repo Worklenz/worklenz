@@ -34,6 +34,7 @@ interface KanbanGroupProps {
     onTaskDragStart: (e: React.DragEvent, taskId: string, groupId: string) => void;
     onTaskDragOver: (e: React.DragEvent, groupId: string, taskIdx: number | null) => void;
     onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number | null) => void;
+    onDragEnd: (e: React.DragEvent) => void;
     hoveredTaskIdx: number | null;
     hoveredGroupId: string | null;
 }
@@ -46,6 +47,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
     onTaskDragStart,
     onTaskDragOver,
     onTaskDrop,
+    onDragEnd,
     hoveredTaskIdx,
     hoveredGroupId
 }) => {
@@ -197,7 +199,10 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
         setIsEditable(true);
         setShowDropdown(false);
         setTimeout(() => {
-            inputRef.current?.focus();
+            if (inputRef.current) {
+                inputRef.current.focus();
+                inputRef.current.select(); // Select all text on focus
+            }
         }, 100);
     };
 
@@ -259,6 +264,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                     onDragStart={e => onGroupDragStart(e, group.id)}
                     onDragOver={onGroupDragOver}
                     onDrop={e => onGroupDrop(e, group.id)}
+                    onDragEnd={onDragEnd}
                 >
                     <div
                         className="flex items-center justify-between w-full font-semibold rounded-md"
@@ -517,17 +523,46 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                     )}
 
                     {group.tasks.map((task, idx) => (
-                        <TaskCard
-                            key={task.id}
-                            task={task}
-                            onTaskDragStart={onTaskDragStart}
-                            onTaskDragOver={onTaskDragOver}
-                            onTaskDrop={onTaskDrop}
-                            groupId={group.id}
-                            isDropIndicator={hoveredGroupId === group.id && hoveredTaskIdx === idx}
-                            idx={idx}
-                        />
+                        <React.Fragment key={task.id}>
+                            {/* Drop indicator before this card */}
+                            {hoveredGroupId === group.id && hoveredTaskIdx === idx && (
+                                <div
+                                    onDragOver={e => onTaskDragOver(e, group.id, idx)}
+                                    onDrop={e => onTaskDrop(e, group.id, idx)}
+                                >
+                                    <div className="w-full h-full bg-red-500" style={{
+                                        height: 80,
+                                        background: themeMode === 'dark' ? '#2a2a2a' : '#E2EAF4',
+                                        borderRadius: 6,
+                                        border: `5px`
+                                    }}></div>
+                                </div>
+                            )}
+                            <TaskCard
+                                task={task}
+                                onTaskDragStart={onTaskDragStart}
+                                onTaskDragOver={onTaskDragOver}
+                                onTaskDrop={onTaskDrop}
+                                groupId={group.id}
+                                idx={idx}
+                                onDragEnd={onDragEnd}
+                            />
+                        </React.Fragment>
                     ))}
+                    {/* Drop indicator at the end of the group */}
+                    {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
+                        <div
+                        onDragOver={e => onTaskDragOver(e, group.id, group.tasks.length)}
+                        onDrop={e => onTaskDrop(e, group.id, group.tasks.length)}
+                    >
+                        <div className="w-full h-full bg-red-500" style={{
+                            height: 80,
+                            background: themeMode === 'dark' ? '#2a2a2a' : '#E2EAF4',
+                            borderRadius: 6,
+                            border: `5px`
+                        }}></div>
+                    </div>
+                    )}
 
                     {/* Create card at bottom */}
                     {showNewCardBottom && (
