@@ -1,0 +1,14 @@
+{
+  "title": "验证重置电子邮件",
+  "description": "输入您的新密码",
+  "placeholder": "输入您的新密码",
+  "confirmPasswordPlaceholder": "确认您的新密码",
+  "passwordHint": "至少8个字符，包括大小写字母、一个数字和一个符号。",
+  "resetPasswordButton": "重置密码",
+  "orText": "或",
+  "resendResetEmail": "重新发送重置电子邮件",
+  "passwordRequired": "请输入您的新密码",
+  "returnToLoginButton": "返回登录",
+  "confirmPasswordRequired": "请确认您的新密码",
+  "passwordMismatch": "两次输入的密码不匹配"
+}

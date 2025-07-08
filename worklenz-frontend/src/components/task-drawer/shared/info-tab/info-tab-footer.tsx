@@ -76,6 +76,8 @@ const InfoTabFooter = () => {
     setIsCommentBoxExpand(false);
     setSelectedFiles([]);
     setAttachmentComment(false);
+    setCommentValue('');
+    setSelectedMembers([]);
   };
 
   // Check if comment is valid (either has text or files)
@@ -157,7 +159,8 @@ const InfoTabFooter = () => {
         setAttachmentComment(false);
         setIsCommentBoxExpand(false);
         setCommentValue('');
-
+        setSelectedMembers([]);
+        
         // Dispatch event to notify that a comment was created
         // This will trigger the task comments component to refresh and update Redux
         document.dispatchEvent(new CustomEvent('task-comment-create', { 
@@ -454,31 +457,27 @@ const InfoTabFooter = () => {
       <Flex align="center" justify="space-between" style={{ width: '100%', marginTop: 8 }}>
         <Tooltip
           title={
-            taskFormViewModel?.task?.created_at
-              ? formatDateTimeWithLocale(taskFormViewModel.task.created_at)
+            taskFormViewModel?.task?.created_from_now
+              ? `Created ${taskFormViewModel.task.created_from_now}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             Created{' '}
-            {taskFormViewModel?.task?.created_at
-              ? calculateTimeDifference(taskFormViewModel.task.created_at)
-              : 'N/A'}{' '}
+            {taskFormViewModel?.task?.created_from_now || 'N/A'}{' '}
             by {taskFormViewModel?.task?.reporter}
           </Typography.Text>
         </Tooltip>
         <Tooltip
           title={
-            taskFormViewModel?.task?.updated_at
-              ? formatDateTimeWithLocale(taskFormViewModel.task.updated_at)
+            taskFormViewModel?.task?.updated_from_now
+              ? `Updated ${taskFormViewModel.task.updated_from_now}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             Updated{' '}
-            {taskFormViewModel?.task?.updated_at
-              ? calculateTimeDifference(taskFormViewModel.task.updated_at)
-              : 'N/A'}
+            {taskFormViewModel?.task?.updated_from_now || 'N/A'}
           </Typography.Text>
         </Tooltip>
       </Flex>
