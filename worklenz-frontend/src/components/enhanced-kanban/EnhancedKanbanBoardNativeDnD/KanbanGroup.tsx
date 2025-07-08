@@ -34,6 +34,7 @@ interface KanbanGroupProps {
     onTaskDragStart: (e: React.DragEvent, taskId: string, groupId: string) => void;
     onTaskDragOver: (e: React.DragEvent, groupId: string, taskIdx: number | null) => void;
     onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number | null) => void;
+    onDragEnd: (e: React.DragEvent) => void;
     hoveredTaskIdx: number | null;
     hoveredGroupId: string | null;
 }
@@ -46,6 +47,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
     onTaskDragStart,
     onTaskDragOver,
     onTaskDrop,
+    onDragEnd,
     hoveredTaskIdx,
     hoveredGroupId
 }) => {
@@ -259,6 +261,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                     onDragStart={e => onGroupDragStart(e, group.id)}
                     onDragOver={onGroupDragOver}
                     onDrop={e => onGroupDrop(e, group.id)}
+                    onDragEnd={onDragEnd}
                 >
                     <div
                         className="flex items-center justify-between w-full font-semibold rounded-md"
@@ -520,8 +523,16 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                         <React.Fragment key={task.id}>
                             {/* Drop indicator before this card */}
                             {hoveredGroupId === group.id && hoveredTaskIdx === idx && (
-                                <div className="drop-preview-indicator" style={{height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px 0'}}>
-                                    <div className="drop-line" style={{width: '90%', height: 4, background: '#1976d2', borderRadius: 2, boxShadow: '0 0 4px #1976d2'}} />
+                                <div
+                                    onDragOver={e => onTaskDragOver(e, group.id, idx)}
+                                    onDrop={e => onTaskDrop(e, group.id, idx)}
+                                >
+                                    <div className="w-full h-full bg-red-500" style={{
+                                        height: 80,
+                                        background: themeMode === 'dark' ? '#2a2a2a' : '#E2EAF4',
+                                        borderRadius: 6,
+                                        border: `5px`
+                                    }}></div>
                                 </div>
                             )}
                             <TaskCard
@@ -531,14 +542,23 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                                 onTaskDrop={onTaskDrop}
                                 groupId={group.id}
                                 idx={idx}
+                                onDragEnd={onDragEnd}
                             />
                         </React.Fragment>
                     ))}
                     {/* Drop indicator at the end of the group */}
                     {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
-                        <div className="drop-preview-indicator" style={{height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px 0'}}>
-                            <div className="drop-line" style={{width: '90%', height: 4, background: '#1976d2', borderRadius: 2, boxShadow: '0 0 4px #1976d2'}} />
-                        </div>
+                        <div
+                        onDragOver={e => onTaskDragOver(e, group.id, group.tasks.length)}
+                        onDrop={e => onTaskDrop(e, group.id, group.tasks.length)}
+                    >
+                        <div className="w-full h-full bg-red-500" style={{
+                            height: 80,
+                            background: themeMode === 'dark' ? '#2a2a2a' : '#E2EAF4',
+                            borderRadius: 6,
+                            border: `5px`
+                        }}></div>
+                    </div>
                     )}
 
                     {/* Create card at bottom */}
