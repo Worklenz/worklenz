@@ -552,67 +552,66 @@ const TaskListV2: React.FC = () => {
     >
       <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
         {/* Task Filters */}
-        <div className="flex-none" style={{ height: '74px', flexShrink: 0 }}>
+        <div className="flex-none" style={{ height: '54px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
         </div>
 
-        {/* Table Container */}
-        <div 
-          className="border border-gray-200 dark:border-gray-700 rounded-lg" 
-          style={{ 
-            height: 'calc(100vh - 130px)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Task List Content with Sticky Header */}
+                  {/* Table Container */}
           <div 
-            ref={contentScrollRef}
-            className="flex-1 bg-white dark:bg-gray-900 relative" 
+            className="border border-gray-200 dark:border-gray-700 rounded-lg" 
             style={{ 
-              overflowX: 'auto', 
-              overflowY: 'auto', 
-              minHeight: 0,
-              paddingBottom: '20px' // Add padding to ensure horizontal scrollbar is visible
+              height: 'calc(100vh - 240px)', // Slightly reduce height to ensure scrollbar visibility
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
             }}
           >
-            {/* Sticky Column Headers */}
-            <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800" style={{ width: '100%', minWidth: 'max-content' }}>
-              {renderColumnHeaders()}
-            </div>
-            <SortableContext
-              items={virtuosoItems
-                .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
-                .map(item => item.id)
-                .filter((id): id is string => id !== undefined)}
-              strategy={verticalListSortingStrategy}
+            {/* Task List Content with Sticky Header */}
+            <div 
+              ref={contentScrollRef}
+              className="flex-1 bg-white dark:bg-gray-900 relative" 
+              style={{ 
+                overflowX: 'auto', 
+                overflowY: 'auto',
+                minHeight: 0
+              }}
             >
-              <div style={{ minWidth: 'max-content' }}>
-                {/* Render groups manually for debugging */}
-                {virtuosoGroups.map((group, groupIndex) => (
-                  <div key={group.id}>
-                    {/* Group Header */}
-                    {renderGroup(groupIndex)}
-                    
-                    {/* Group Tasks */}
-                    {!collapsedGroups.has(group.id) && group.tasks.map((task, taskIndex) => {
-                      const globalTaskIndex = virtuosoGroups
-                        .slice(0, groupIndex)
-                        .reduce((sum, g) => sum + g.count, 0) + taskIndex;
-                      
-                      return (
-                        <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
-                          {renderTask(globalTaskIndex)}
-                        </div>
-                      );
-                    })}
+                {/* Sticky Column Headers */}
+                <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800" style={{ width: '100%', minWidth: 'max-content' }}>
+                  {renderColumnHeaders()}
+                </div>
+                <SortableContext
+                  items={virtuosoItems
+                    .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
+                    .map(item => item.id)
+                    .filter((id): id is string => id !== undefined)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div style={{ minWidth: 'max-content' }}>
+                    {/* Render groups manually for debugging */}
+                    {virtuosoGroups.map((group, groupIndex) => (
+                      <div key={group.id}>
+                        {/* Group Header */}
+                        {renderGroup(groupIndex)}
+                        
+                        {/* Group Tasks */}
+                        {!collapsedGroups.has(group.id) && group.tasks.map((task, taskIndex) => {
+                          const globalTaskIndex = virtuosoGroups
+                            .slice(0, groupIndex)
+                            .reduce((sum, g) => sum + g.count, 0) + taskIndex;
+                          
+                          return (
+                            <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
+                              {renderTask(globalTaskIndex)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </SortableContext>
               </div>
-            </SortableContext>
-          </div>
-        </div>
+            </div>
 
         {/* Drag Overlay */}
         <DragOverlay dropAnimation={null}>

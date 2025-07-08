@@ -477,7 +477,6 @@ const ProjectViewHeader = memo(() => {
   const pageHeaderStyle = useMemo(
     () => ({
       paddingInline: 0,
-      marginBlockEnd: 8,
     }),
     []
   );

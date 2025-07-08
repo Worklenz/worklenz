@@ -1240,7 +1240,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
 
   return (
     <div
-      className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-sm ${className}`}
+      className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-1.5 shadow-sm ${className}`}
     >
       <div className="flex flex-wrap items-center gap-2">
         {/* Left Section - Main Filters */}
