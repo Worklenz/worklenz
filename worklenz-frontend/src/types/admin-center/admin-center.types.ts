@@ -1,4 +1,4 @@
-import { ISUBSCRIPTION_TYPE } from "@/shared/constants";
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 export interface IOrganization {
   name?: string;

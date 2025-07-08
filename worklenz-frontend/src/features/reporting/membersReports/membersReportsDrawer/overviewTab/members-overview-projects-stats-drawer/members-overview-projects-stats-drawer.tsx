@@ -44,7 +44,7 @@ const MembersOverviewProjectsStatsDrawer = ({
           archived: false,
         };
         const response = await reportingApiService.getSingleMemberProjects(body);
-        if (response.done){
+        if (response.done) {
           setProjectsData(response.body.projects || []);
         } else {
           setProjectsData([]);
@@ -74,10 +74,7 @@ const MembersOverviewProjectsStatsDrawer = ({
         )
       }
     >
-      <MembersOverviewProjectsStatsTable 
-        projectList={projectsData}
-        loading={loading}
-      />
+      <MembersOverviewProjectsStatsTable projectList={projectsData} loading={loading} />
     </Drawer>
   );
 };

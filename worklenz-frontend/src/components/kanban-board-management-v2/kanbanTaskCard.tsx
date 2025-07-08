@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -36,14 +37,8 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
   onSelect,
   onToggleSubtasks,
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+  const { t } = useTranslation('task-list-table');
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id!,
     data: {
       type: 'task',
@@ -93,7 +88,10 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
           {...attributes}
           {...listeners}
         />
-        <Text strong className={`kanban-task-title${task.complete_ratio === 100 ? ' kanban-task-completed' : ''}`}>
+        <Text
+          strong
+          className={`kanban-task-title${task.complete_ratio === 100 ? ' kanban-task-completed' : ''}`}
+        >
           {task.name}
         </Text>
         {task.sub_tasks_count && task.sub_tasks_count > 0 && (
@@ -112,15 +110,23 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
           {/* Task Key and Status */}
           <div className="kanban-task-row">
             {task.task_key && (
-              <Text code className="kanban-task-key">{task.task_key}</Text>
+              <Text code className="kanban-task-key">
+                {task.task_key}
+              </Text>
             )}
             {task.status_name && (
-              <Tag className="kanban-task-status" style={{ backgroundColor: task.status_color, color: 'white', marginLeft: 8 }}>
+              <Tag
+                className="kanban-task-status"
+                style={{ backgroundColor: task.status_color, color: 'white', marginLeft: 8 }}
+              >
                 {task.status_name}
               </Tag>
             )}
             {task.priority_name && (
-              <Tag className="kanban-task-priority" style={{ backgroundColor: task.priority_color, color: 'white', marginLeft: 8 }}>
+              <Tag
+                className="kanban-task-priority"
+                style={{ backgroundColor: task.priority_color, color: 'white', marginLeft: 8 }}
+              >
                 {task.priority_name}
               </Tag>
             )}
@@ -139,7 +145,11 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
               />
             )}
             {dueDate && (
-              <Text type={dueDate.color as any} className="kanban-task-due-date" style={{ marginLeft: 12 }}>
+              <Text
+                type={dueDate.color as any}
+                className="kanban-task-due-date"
+                style={{ marginLeft: 12 }}
+              >
                 <ClockCircleOutlined style={{ marginRight: 4 }} />
                 {dueDate.text}
               </Text>
@@ -149,7 +159,7 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
           <div className="kanban-task-row">
             {task.assignees && task.assignees.length > 0 && (
               <Avatar.Group size="small" maxCount={3}>
-                {task.assignees.map((assignee) => (
+                {task.assignees.map(assignee => (
                   <Tooltip key={assignee.id} title={assignee.name}>
                     <Avatar size="small">{assignee.name?.charAt(0)?.toUpperCase()}</Avatar>
                   </Tooltip>
@@ -158,11 +168,16 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
             )}
             {task.labels && task.labels.length > 0 && (
               <div className="kanban-task-labels">
-                {task.labels.slice(0, 2).map((label) => (
+                {task.labels.slice(0, 2).map(label => (
                   <Tag
                     key={label.id}
                     className="kanban-task-label"
-                    style={{ backgroundColor: label.color_code, border: 'none', color: 'white', marginLeft: 4 }}
+                    style={{
+                      backgroundColor: label.color_code,
+                      border: 'none',
+                      color: 'white',
+                      marginLeft: 4,
+                    }}
                   >
                     {label.name}
                   </Tag>
@@ -182,15 +197,19 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
                 <ClockCircleOutlined /> {task.time_spent_string}
               </span>
             )}
-            {task.comments_count && task.comments_count > 0 && (
-              <span className="kanban-task-indicator">
-                <MessageOutlined /> {task.comments_count}
-              </span>
+            {task.comments_count && task.comments_count > 1 && (
+              <Tooltip title={t(`indicators.tooltips.comments${task.comments_count === 1 ? '' : '_plural'}`, { count: task.comments_count })}>
+                <span className="kanban-task-indicator">
+                  <MessageOutlined /> {task.comments_count}
+                </span>
+              </Tooltip>
             )}
-            {task.attachments_count && task.attachments_count > 0 && (
-              <span className="kanban-task-indicator">
-                <PaperClipOutlined /> {task.attachments_count}
-              </span>
+            {task.attachments_count && task.attachments_count > 1 && (
+              <Tooltip title={t(`indicators.tooltips.attachments${task.attachments_count === 1 ? '' : '_plural'}`, { count: task.attachments_count })}>
+                <span className="kanban-task-indicator">
+                  <PaperClipOutlined /> {task.attachments_count}
+                </span>
+              </Tooltip>
             )}
           </div>
         </Space>
@@ -198,7 +217,7 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
       {/* Subtasks */}
       {task.show_sub_tasks && task.sub_tasks && task.sub_tasks.length > 0 && (
         <div className="kanban-task-subtasks">
-          {task.sub_tasks.map((subtask) => (
+          {task.sub_tasks.map(subtask => (
             <KanbanTaskCard
               key={subtask.id}
               task={subtask}
@@ -398,4 +417,4 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
   );
 };
 
-export default KanbanTaskCard; 
+export default KanbanTaskCard;

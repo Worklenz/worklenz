@@ -19,5 +19,12 @@
   "archive": "Archive",
 
   "newTaskNamePlaceholder": "Write a task Name",
-  "newSubtaskNamePlaceholder": "Write a subtask Name"
+  "newSubtaskNamePlaceholder": "Write a subtask Name",
+  "untitledSection": "Untitled section",
+  "unmapped": "Unmapped",
+  "clickToChangeDate": "Click to change date",
+  "noDueDate": "No due date",
+  "save": "Save",
+  "clear": "Clear",
+  "nextWeek": "Next week"
 }

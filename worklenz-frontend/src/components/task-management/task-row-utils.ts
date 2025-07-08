@@ -68,11 +68,11 @@ export const formatDateTimeCache = new DateFormatCache();
 // Optimized date formatters with caching
 export const formatDate = (dateString?: string): string => {
   if (!dateString) return '';
-  
+
   if (formatDateCache.has(dateString)) {
     return formatDateCache.get(dateString)!;
   }
-  
+
   const formatted = dayjs(dateString).format('MMM DD, YYYY');
   formatDateCache.set(dateString, formatted);
   return formatted;
@@ -80,11 +80,11 @@ export const formatDate = (dateString?: string): string => {
 
 export const formatDateTime = (dateString?: string): string => {
   if (!dateString) return '';
-  
+
   if (formatDateTimeCache.has(dateString)) {
     return formatDateTimeCache.get(dateString)!;
   }
-  
+
   const formatted = dayjs(dateString).format('MMM DD, YYYY HH:mm');
   formatDateTimeCache.set(dateString, formatted);
   return formatted;
@@ -104,18 +104,18 @@ export class PerformanceMonitor {
 
   startTiming(operation: string): () => void {
     const startTime = performance.now();
-    
+
     return () => {
       const endTime = performance.now();
       const duration = endTime - startTime;
-      
+
       if (!this.metrics.has(operation)) {
         this.metrics.set(operation, []);
       }
-      
+
       const operationMetrics = this.metrics.get(operation)!;
       operationMetrics.push(duration);
-      
+
       // Keep only last 100 measurements
       if (operationMetrics.length > 100) {
         operationMetrics.shift();
@@ -126,14 +126,14 @@ export class PerformanceMonitor {
   getAverageTime(operation: string): number {
     const times = this.metrics.get(operation);
     if (!times || times.length === 0) return 0;
-    
+
     const sum = times.reduce((acc, time) => acc + time, 0);
     return sum / times.length;
   }
 
   getMetrics(): Record<string, { average: number; count: number; latest: number }> {
     const result: Record<string, { average: number; count: number; latest: number }> = {};
-    
+
     this.metrics.forEach((times, operation) => {
       if (times.length > 0) {
         result[operation] = {
@@ -143,7 +143,7 @@ export class PerformanceMonitor {
         };
       }
     });
-    
+
     return result;
   }
 
@@ -165,8 +165,14 @@ export const taskPropsEqual = (prevTask: Task, nextTask: Task): boolean => {
 
   // Check commonly changing properties
   const criticalProps: (keyof Task)[] = [
-    'title', 'progress', 'status', 'priority', 'description', 
-    'startDate', 'dueDate', 'updatedAt'
+    'title',
+    'progress',
+    'status',
+    'priority',
+    'description',
+    'startDate',
+    'dueDate',
+    'updatedAt',
   ];
 
   for (const prop of criticalProps) {
@@ -245,19 +251,19 @@ export const getOptimizedClasses = (
   isSelected: boolean
 ): string => {
   const classes = ['task-row-optimized'];
-  
+
   if (isDragging) {
     classes.push('task-row-dragging');
   }
-  
+
   if (isVirtualized) {
     classes.push('task-row-virtualized');
   }
-  
+
   if (isSelected) {
     classes.push('task-row-selected');
   }
-  
+
   return classes.join(' ');
 };
 
@@ -284,7 +290,7 @@ export const setupAutoCleanup = (): void => {
   if (cleanupInterval) {
     clearInterval(cleanupInterval);
   }
-  
+
   cleanupInterval = setInterval(() => {
     clearAllCaches();
   }, PERFORMANCE_CONSTANTS.CACHE_CLEAR_INTERVAL);
@@ -300,7 +306,7 @@ export const teardownAutoCleanup = (): void => {
 // Initialize auto-cleanup
 if (typeof window !== 'undefined') {
   setupAutoCleanup();
-  
+
   // Cleanup on page unload
   window.addEventListener('beforeunload', teardownAutoCleanup);
 }
@@ -309,35 +315,40 @@ if (typeof window !== 'undefined') {
 export const performanceMonitor = PerformanceMonitor.getInstance();
 
 // Task adapter utilities
-export const createLabelsAdapter = (task: Task) => ({
-  id: task.id,
-  name: task.title,
-  parent_task_id: undefined,
-  manual_progress: false,
-  all_labels: task.labels?.map(label => ({ 
-    id: label.id, 
-    name: label.name,
-    color_code: label.color 
-  })) || [],
-  labels: task.labels?.map(label => ({ 
-    id: label.id, 
-    name: label.name,
-    color_code: label.color 
-  })) || [],
-} as any);
+export const createLabelsAdapter = (task: Task) =>
+  ({
+    id: task.id,
+    name: task.title,
+    parent_task_id: undefined,
+    manual_progress: false,
+    all_labels:
+      task.labels?.map(label => ({
+        id: label.id,
+        name: label.name,
+        color_code: label.color,
+      })) || [],
+    labels:
+      task.labels?.map(label => ({
+        id: label.id,
+        name: label.name,
+        color_code: label.color,
+      })) || [],
+  }) as any;
 
-export const createAssigneeAdapter = (task: Task) => ({
-  id: task.id,
-  name: task.title,
-  parent_task_id: undefined,
-  manual_progress: false,
-  assignees: task.assignee_names?.map(member => ({
-    team_member_id: member.team_member_id || '',
-    id: member.team_member_id || '',
-    project_member_id: member.team_member_id || '',
-    name: member.name,
-  })) || [],
-} as any);
+export const createAssigneeAdapter = (task: Task) =>
+  ({
+    id: task.id,
+    name: task.title,
+    parent_task_id: undefined,
+    manual_progress: false,
+    assignees:
+      task.assignee_names?.map(member => ({
+        team_member_id: member.team_member_id || '',
+        id: member.team_member_id || '',
+        project_member_id: member.team_member_id || '',
+        name: member.name,
+      })) || [],
+  }) as any;
 
 // Color utilities
 export const getPriorityColor = (priority: string): string => {
@@ -346,4 +357,4 @@ export const getPriorityColor = (priority: string): string => {
 
 export const getStatusColor = (status: string): string => {
   return STATUS_COLORS[status as keyof typeof STATUS_COLORS] || '#d9d9d9';
-}; 
+};

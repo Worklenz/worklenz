@@ -33,9 +33,9 @@ const TimerButton = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await taskTimeLogsApiService.getRunningTimers();
-      
+
       if (response && response.done) {
         const timers = Array.isArray(response.body) ? response.body : [];
         setRunningTimers(timers);
@@ -54,24 +54,25 @@ const TimerButton = () => {
   const updateCurrentTimes = useCallback(() => {
     try {
       if (!Array.isArray(runningTimers) || runningTimers.length === 0) return;
-      
+
       const newTimes: Record<string, string> = {};
       runningTimers.forEach(timer => {
         try {
           if (!timer || !timer.task_id || !timer.start_time) return;
-          
+
           const startTime = moment(timer.start_time);
           if (!startTime.isValid()) {
             logError(`Invalid start time for timer ${timer.task_id}: ${timer.start_time}`);
             return;
           }
-          
+
           const now = moment();
           const duration = moment.duration(now.diff(startTime));
           const hours = Math.floor(duration.asHours());
           const minutes = duration.minutes();
           const seconds = duration.seconds();
-          newTimes[timer.task_id] = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          newTimes[timer.task_id] =
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         } catch (error) {
           logError(`Error updating time for timer ${timer?.task_id}`, error);
         }
@@ -84,12 +85,12 @@ const TimerButton = () => {
 
   useEffect(() => {
     fetchRunningTimers();
-    
+
     // Set up polling to refresh timers every 30 seconds
     const pollInterval = setInterval(() => {
       fetchRunningTimers();
     }, 30000);
-    
+
     return () => clearInterval(pollInterval);
   }, [fetchRunningTimers]);
 
@@ -175,12 +176,12 @@ const TimerButton = () => {
       logError('Socket not available for stopping timer');
       return;
     }
-    
+
     if (!taskId) {
       logError('Invalid task ID for stopping timer');
       return;
     }
-    
+
     try {
       socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
       dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
@@ -200,15 +201,15 @@ const TimerButton = () => {
       }
 
       return (
-        <div 
-          style={{ 
-            width: 350, 
-            maxHeight: 400, 
+        <div
+          style={{
+            width: 350,
+            maxHeight: 400,
             overflow: 'auto',
             backgroundColor: token.colorBgElevated,
             borderRadius: token.borderRadius,
             boxShadow: token.boxShadowSecondary,
-            border: `1px solid ${token.colorBorderSecondary}`
+            border: `1px solid ${token.colorBorderSecondary}`,
           }}
         >
           {!Array.isArray(runningTimers) || runningTimers.length === 0 ? (
@@ -218,15 +219,15 @@ const TimerButton = () => {
           ) : (
             <List
               dataSource={runningTimers}
-              renderItem={(timer) => {
+              renderItem={timer => {
                 if (!timer || !timer.task_id) return null;
-                
+
                 return (
-                  <List.Item 
-                    style={{ 
+                  <List.Item
+                    style={{
                       padding: '12px 16px',
                       borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                      backgroundColor: 'transparent'
+                      backgroundColor: 'transparent',
                     }}
                   >
                     <div style={{ width: '100%' }}>
@@ -234,16 +235,18 @@ const TimerButton = () => {
                         <Text strong style={{ fontSize: 14, color: token.colorText }}>
                           {timer.task_name || 'Unnamed Task'}
                         </Text>
-                        <div style={{ 
-                          display: 'inline-block',
-                          backgroundColor: token.colorPrimaryBg,
-                          color: token.colorPrimary,
-                          padding: '2px 8px',
-                          borderRadius: token.borderRadiusSM,
-                          fontSize: 11,
-                          fontWeight: 500,
-                          marginTop: 2
-                        }}>
+                        <div
+                          style={{
+                            display: 'inline-block',
+                            backgroundColor: token.colorPrimaryBg,
+                            color: token.colorPrimary,
+                            padding: '2px 8px',
+                            borderRadius: token.borderRadiusSM,
+                            fontSize: 11,
+                            fontWeight: 500,
+                            marginTop: 2,
+                          }}
+                        >
                           {timer.project_name || 'Unnamed Project'}
                         </div>
                         {timer.parent_task_name && (
@@ -251,18 +254,34 @@ const TimerButton = () => {
                             Parent: {timer.parent_task_name}
                           </Text>
                         )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
                           <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                marginBottom: 4,
+                              }}
+                            >
                               <Text type="secondary" style={{ fontSize: 11 }}>
-                                Started: {timer.start_time ? moment(timer.start_time).format('HH:mm') : '--:--'}
+                                Started:{' '}
+                                {timer.start_time
+                                  ? moment(timer.start_time).format('HH:mm')
+                                  : '--:--'}
                               </Text>
-                              <Text 
-                                strong 
-                                style={{ 
-                                  fontSize: 14, 
+                              <Text
+                                strong
+                                style={{
+                                  fontSize: 14,
                                   color: token.colorPrimary,
-                                  fontFamily: 'monospace'
+                                  fontFamily: 'monospace',
                                 }}
                               >
                                 {currentTimes[timer.task_id] || '00:00:00'}
@@ -272,7 +291,7 @@ const TimerButton = () => {
                           <Button
                             size="small"
                             icon={<StopOutlined />}
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               handleStopTimer(timer.task_id);
                             }}
@@ -280,7 +299,7 @@ const TimerButton = () => {
                               backgroundColor: token.colorErrorBg,
                               borderColor: token.colorError,
                               color: token.colorError,
-                              fontWeight: 500
+                              fontWeight: 500,
                             }}
                           >
                             Stop
@@ -296,13 +315,13 @@ const TimerButton = () => {
           {hasRunningTimers() && (
             <>
               <Divider style={{ margin: 0, borderColor: token.colorBorderSecondary }} />
-              <div 
-                style={{ 
-                  padding: '8px 16px', 
-                  textAlign: 'center', 
+              <div
+                style={{
+                  padding: '8px 16px',
+                  textAlign: 'center',
                   backgroundColor: token.colorFillQuaternary,
                   borderBottomLeftRadius: token.borderRadius,
-                  borderBottomRightRadius: token.borderRadius
+                  borderBottomRightRadius: token.borderRadius,
                 }}
               >
                 <Text type="secondary" style={{ fontSize: 11 }}>
@@ -376,4 +395,4 @@ const TimerButton = () => {
   }
 };
 
-export default TimerButton; 
+export default TimerButton;

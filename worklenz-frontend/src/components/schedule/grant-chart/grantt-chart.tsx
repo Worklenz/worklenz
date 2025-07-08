@@ -13,7 +13,7 @@ import ProjectTimelineModal from '@/features/schedule/ProjectTimelineModal';
 const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date }, ref) => {
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<string|undefined>(undefined);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
 
   const { teamData } = useAppSelector(state => state.scheduleReducer);
   const { dateList, loading, dayCount } = useAppSelector(state => state.scheduleReducer);
@@ -217,7 +217,13 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
               {expandedProject === member.id && (
                 <div>
                   <Popover
-                    content={<ProjectTimelineModal memberId={member?.team_member_id} projectId={selectedProjectId} setIsModalOpen={setIsModalOpen} />}
+                    content={
+                      <ProjectTimelineModal
+                        memberId={member?.team_member_id}
+                        projectId={selectedProjectId}
+                        setIsModalOpen={setIsModalOpen}
+                      />
+                    }
                     trigger={'click'}
                     open={isModalOpen}
                   ></Popover>

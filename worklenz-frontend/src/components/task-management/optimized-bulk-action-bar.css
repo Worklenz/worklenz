@@ -3,14 +3,14 @@
   /* GPU acceleration for smooth animations */
   will-change: transform, opacity;
   transform: translateZ(0);
-  
+
   /* Smooth backdrop blur with fallback */
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  
+
   /* Prevent layout shifts */
   contain: layout style paint;
-  
+
   /* Optimize for animations */
   animation-fill-mode: both;
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -57,16 +57,16 @@
   /* GPU acceleration */
   will-change: transform, background-color;
   transform: translateZ(0);
-  
+
   /* Smooth hover transitions */
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   /* Prevent text selection */
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  
+
   /* Optimize for touch */
   touch-action: manipulation;
 }
@@ -143,14 +143,14 @@
     padding: 10px 16px;
     gap: 2px;
   }
-  
+
   .bulk-action-button {
     /* Smaller buttons on mobile */
     min-width: 28px;
     height: 28px;
     padding: 4px;
   }
-  
+
   /* Hide some actions on very small screens */
   .bulk-action-secondary {
     display: none;
@@ -164,7 +164,7 @@
     padding: 8px 12px;
     gap: 1px;
   }
-  
+
   /* Show only essential actions */
   .bulk-action-tertiary {
     display: none;
@@ -179,7 +179,7 @@
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
-  
+
   .bulk-action-button {
     border: 1px solid currentColor;
   }
@@ -194,7 +194,7 @@
     animation: none !important;
     will-change: auto !important;
   }
-  
+
   .bulk-action-button:hover {
     transform: none;
   }
@@ -237,7 +237,10 @@
 
 /* Smooth color transitions for theme switching */
 .bulk-action-theme-transition {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
 }
 
 /* Optimize for 60fps animations */
@@ -250,4 +253,4 @@
 .bulk-action-stable-layout {
   contain: layout;
   transform: translateZ(0);
-} 
+}

@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
 // Auth & User
 import authReducer from '@features/auth/authSlice';
@@ -76,14 +77,14 @@ import teamMembersReducer from '@features/team-members/team-members.slice';
 import groupByFilterDropdownReducer from '../features/group-by-filter-dropdown/group-by-filter-dropdown-slice';
 
 // Task Management System
-import taskManagementReducer from '@features/task-management/task-management.slice';
-import groupingReducer from '@features/task-management/grouping.slice';
-import selectionReducer from '@features/task-management/selection.slice';
+import taskManagementReducer from '@/features/task-management/task-management.slice';
+import groupingReducer from '@/features/task-management/grouping.slice';
+import selectionReducer from '@/features/task-management/selection.slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 
 import projectViewReducer from '@features/project/project-view-slice';
-import taskManagementFields from '@features/task-management/taskListFields.slice';
+import taskManagementFieldsReducer from '@features/task-management/taskListFields.slice';
 
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
@@ -122,7 +123,7 @@ export const store = configureStore({
     taskListCustomColumnsReducer: taskListCustomColumnsReducer,
     boardReducer: boardReducer,
     projectDrawerReducer: projectDrawerReducer,
-    
+
     projectViewReducer: projectViewReducer,
 
     // Project Lookups
@@ -172,9 +173,13 @@ export const store = configureStore({
     taskManagement: taskManagementReducer,
     grouping: groupingReducer,
     taskManagementSelection: selectionReducer,
-    taskManagementFields,
+    taskManagementFields: taskManagementFieldsReducer,
   },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
+
 export type AppDispatch = typeof store.dispatch;
+
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;

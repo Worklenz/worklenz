@@ -2,6 +2,8 @@ import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } fro
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { colors } from '@/styles/colors';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
@@ -47,11 +49,14 @@ const InfoTabFooter = () => {
 
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const dispatch = useAppDispatch();
 
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState<boolean>(false);
 
-  const [selectedMembers, setSelectedMembers] = useState<{ team_member_id: string; name: string }[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<
+    { team_member_id: string; name: string }[]
+  >([]);
   const [commentValue, setCommentValue] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
 
@@ -71,6 +76,8 @@ const InfoTabFooter = () => {
     setIsCommentBoxExpand(false);
     setSelectedFiles([]);
     setAttachmentComment(false);
+    setCommentValue('');
+    setSelectedMembers([]);
   };
 
   // Check if comment is valid (either has text or files)
@@ -102,20 +109,23 @@ const InfoTabFooter = () => {
       key: member.id,
     })) ?? [];
 
-  const memberSelectHandler = useCallback((member: IMentionMemberSelectOption) => {
-    if (!member?.value || !member?.label) return;
-    
-    // Find the member ID from the members list using the name
-    const selectedMember = members.find(m => m.name === member.value);
-    if (!selectedMember) return;
-    
-    // Add to selected members if not already present
-    setSelectedMembers(prev =>
-      prev.some(mention => mention.team_member_id === selectedMember.id)
-        ? prev
-        : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
-    );
-  }, [members]);
+  const memberSelectHandler = useCallback(
+    (member: IMentionMemberSelectOption) => {
+      if (!member?.value || !member?.label) return;
+
+      // Find the member ID from the members list using the name
+      const selectedMember = members.find(m => m.name === member.value);
+      if (!selectedMember) return;
+
+      // Add to selected members if not already present
+      setSelectedMembers(prev =>
+        prev.some(mention => mention.team_member_id === selectedMember.id)
+          ? prev
+          : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
+      );
+    },
+    [members]
+  );
 
   const handleCommentChange = useCallback((value: string) => {
     setCommentValue(value);
@@ -149,10 +159,13 @@ const InfoTabFooter = () => {
         setAttachmentComment(false);
         setIsCommentBoxExpand(false);
         setCommentValue('');
+        setSelectedMembers([]);
         
         // Dispatch event to notify that a comment was created
-        // This will trigger scrolling to the new comment
-        document.dispatchEvent(new Event('task-comment-create'));
+        // This will trigger the task comments component to refresh and update Redux
+        document.dispatchEvent(new CustomEvent('task-comment-create', { 
+          detail: { taskId: selectedTaskId } 
+        }));
       }
     } catch (error) {
       logger.error('Failed to create comment:', error);
@@ -444,31 +457,27 @@ const InfoTabFooter = () => {
       <Flex align="center" justify="space-between" style={{ width: '100%', marginTop: 8 }}>
         <Tooltip
           title={
-            taskFormViewModel?.task?.created_at
-              ? formatDateTimeWithLocale(taskFormViewModel.task.created_at)
+            taskFormViewModel?.task?.created_from_now
+              ? `Created ${taskFormViewModel.task.created_from_now}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             Created{' '}
-            {taskFormViewModel?.task?.created_at
-              ? calculateTimeDifference(taskFormViewModel.task.created_at)
-              : 'N/A'}{' '}
+            {taskFormViewModel?.task?.created_from_now || 'N/A'}{' '}
             by {taskFormViewModel?.task?.reporter}
           </Typography.Text>
         </Tooltip>
         <Tooltip
           title={
-            taskFormViewModel?.task?.updated_at
-              ? formatDateTimeWithLocale(taskFormViewModel.task.updated_at)
+            taskFormViewModel?.task?.updated_from_now
+              ? `Updated ${taskFormViewModel.task.updated_from_now}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             Updated{' '}
-            {taskFormViewModel?.task?.updated_at
-              ? calculateTimeDifference(taskFormViewModel.task.updated_at)
-              : 'N/A'}
+            {taskFormViewModel?.task?.updated_from_now || 'N/A'}
           </Typography.Text>
         </Tooltip>
       </Flex>

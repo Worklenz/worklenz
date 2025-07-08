@@ -11,4 +11,4 @@ export interface IProjectGroup {
 export interface IGroupedProjectsViewModel {
   total_groups: number;
   data: IProjectGroup[];
-} 
+}

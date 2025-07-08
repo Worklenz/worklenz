@@ -14,4 +14,4 @@
 /* Maintain hover state */
 .table-body-row:hover .sticky-column {
   background-color: var(--background-hover);
-} 
+}

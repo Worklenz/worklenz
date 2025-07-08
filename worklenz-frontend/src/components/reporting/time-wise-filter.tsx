@@ -132,7 +132,11 @@ const TimeWiseFilter = () => {
               {t(item.label)}
             </Typography.Text>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {item.dates ? dayjs(item.dates.split(' - ')[0]).format('MMM DD, YYYY') + ' - ' + dayjs(item.dates.split(' - ')[1]).format('MMM DD, YYYY') : ''}
+              {item.dates
+                ? dayjs(item.dates.split(' - ')[0]).format('MMM DD, YYYY') +
+                  ' - ' +
+                  dayjs(item.dates.split(' - ')[1]).format('MMM DD, YYYY')
+                : ''}
             </Typography.Text>
           </List.Item>
         ))}

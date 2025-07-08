@@ -14,7 +14,11 @@ interface headerState {
   export: (key: string) => void;
 }
 
-const TimeReportingRightHeader: React.FC<headerState> = ({ title, exportType, export: exportFn }) => {
+const TimeReportingRightHeader: React.FC<headerState> = ({
+  title,
+  exportType,
+  export: exportFn,
+}) => {
   const { t } = useTranslation('time-report');
   const dispatch = useAppDispatch();
   const { archived } = useAppSelector(state => state.timeReportsOverviewReducer);
@@ -22,7 +26,7 @@ const TimeReportingRightHeader: React.FC<headerState> = ({ title, exportType, ex
   const menuItems = exportType.map(item => ({
     key: item.key,
     label: item.label,
-    onClick: () => exportFn(item.key)
+    onClick: () => exportFn(item.key),
   }));
 
   return (
@@ -36,8 +40,8 @@ const TimeReportingRightHeader: React.FC<headerState> = ({ title, exportType, ex
             </Checkbox>
           </Button>
           <TimeWiseFilter />
-            <Dropdown menu={{ items: menuItems }}>
-            <Button type="primary" icon={<DownOutlined />} iconPosition="end">  
+          <Dropdown menu={{ items: menuItems }}>
+            <Button type="primary" icon={<DownOutlined />} iconPosition="end">
               {t('export')}
             </Button>
           </Dropdown>

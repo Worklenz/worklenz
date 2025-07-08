@@ -1,8 +1,7 @@
 {
-    "title": "Miembros del Proyecto",
-    "searchLabel": "Agregar miembros ingresando su nombre o correo electrónico",
-    "searchPlaceholder": "Escriba nombre o correo electrónico",
-    "inviteAsAMember": "Invitar como miembro",
-    "inviteNewMemberByEmail": "Invitar nuevo miembro por correo electrónico"
-
+  "title": "Miembros del Proyecto",
+  "searchLabel": "Agregar miembros ingresando su nombre o correo electrónico",
+  "searchPlaceholder": "Escriba nombre o correo electrónico",
+  "inviteAsAMember": "Invitar como miembro",
+  "inviteNewMemberByEmail": "Invitar nuevo miembro por correo electrónico"
 }

@@ -5,12 +5,12 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import React, { ReactNode } from 'react';
-import Overview from './overview/overview';
-import Users from './users/users';
-import Teams from './teams/teams';
-import Billing from './billing/billing';
-import Projects from './projects/projects';
+import React, { ReactNode, lazy } from 'react';
+const Overview = lazy(() => import('./overview/overview'));
+const Users = lazy(() => import('./users/users'));
+const Teams = lazy(() => import('./teams/teams'));
+const Billing = lazy(() => import('./billing/billing'));
+const Projects = lazy(() => import('./projects/projects'));
 
 // type of a menu item in admin center sidebar
 type AdminCenterMenuItems = {

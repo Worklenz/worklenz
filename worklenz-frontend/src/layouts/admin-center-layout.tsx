@@ -14,7 +14,7 @@ const AdminCenterLayout: React.FC = () => {
   const { t } = useTranslation('admin-center/sidebar');
 
   useEffect(() => {
-    void dispatch(verifyAuthentication())
+    void dispatch(verifyAuthentication());
   }, [dispatch]);
 
   return (

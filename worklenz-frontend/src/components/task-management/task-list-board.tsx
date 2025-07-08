@@ -17,33 +17,28 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Card, Spin, Empty, Alert } from 'antd';
 import { RootState } from '@/app/store';
 import {
-  taskManagementSelectors,
-  reorderTasks,
-  moveTaskToGroup,
-  optimisticTaskMove,
+  selectAllTasks,
+  selectLoading,
+  selectError,
   reorderTasksInGroup,
-  setLoading,
-  fetchTasks,
+  toggleTaskExpansion,
   fetchTasksV3,
   selectTaskGroupsV3,
-  selectCurrentGroupingV3,
+  fetchSubTasks,
 } from '@/features/task-management/task-management.slice';
 import {
-  selectTaskGroups,
   selectCurrentGrouping,
-  setCurrentGrouping,
 } from '@/features/task-management/grouping.slice';
 import {
   selectSelectedTaskIds,
-  toggleTaskSelection,
   clearSelection,
+  selectTask,
 } from '@/features/task-management/selection.slice';
 import {
-  selectTaskIds,
   selectTasks,
   deselectAll as deselectAllBulk,
 } from '@/features/projects/bulkActions/bulkActionSlice';
-import { Task } from '@/types/task-management.types';
+import { Task, TaskGroup } from '@/types/task-management.types';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -72,18 +67,11 @@ import {
   IBulkTasksPriorityChangeRequest,
   IBulkTasksStatusChangeRequest,
 } from '@/types/tasks/bulk-action-bar.types';
-import { ITaskStatus } from '@/types/tasks/taskStatus.types';
-import { ITaskPriority } from '@/types/tasks/taskPriority.types';
-import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { ITaskLabel } from '@/types/tasks/taskLabel.types';
-import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
-import { performanceMonitor } from '@/utils/performance-monitor';
-import debugPerformance from '@/utils/debug-performance';
 
 // Import the improved TaskListFilters component synchronously to avoid suspense
 import ImprovedTaskFilters from './improved-task-filters';
@@ -138,7 +126,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Prevent duplicate API calls in React StrictMode
   const hasInitialized = useRef(false);
-  
+
   // PERFORMANCE OPTIMIZATION: Frame rate monitoring and throttling
   const frameTimeRef = useRef(performance.now());
   const renderCountRef = useRef(0);
@@ -155,14 +143,12 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const { socket, connected } = useSocket();
 
   // Redux selectors using V3 API (pre-processed data, minimal loops)
-  const tasks = useSelector(taskManagementSelectors.selectAll);
+  const tasks = useSelector(selectAllTasks);
+  const loading = useSelector(selectLoading);
+  const error = useSelector(selectError);
   const taskGroups = useSelector(selectTaskGroupsV3, shallowEqual);
-  const currentGrouping = useSelector(selectCurrentGroupingV3, shallowEqual);
-  // Use bulk action slice for selected tasks instead of selection slice
-  const selectedTaskIds = useSelector((state: RootState) => state.bulkActionReducer.selectedTaskIdsList);
-  const selectedTasks = useSelector((state: RootState) => state.bulkActionReducer.selectedTasks);
-  const loading = useSelector((state: RootState) => state.taskManagement.loading, shallowEqual);
-  const error = useSelector((state: RootState) => state.taskManagement.error);
+  const currentGrouping = useSelector(selectCurrentGrouping);
+  const selectedTaskIds = useSelector(selectSelectedTaskIds);
 
   // Bulk action selectors
   const statusList = useSelector((state: RootState) => state.taskStatusReducer.status);
@@ -180,7 +166,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   const tasksById = useMemo(() => {
     const map: Record<string, Task> = {};
     // Cache all tasks for full functionality - performance optimizations are handled at the virtualization level
-    tasks.forEach(task => { map[task.id] = task; });
+    if (Array.isArray(tasks)) {
+      tasks.forEach((task: Task) => {
+        map[task.id] = task;
+      });
+    }
     return map;
   }, [tasks]);
 
@@ -204,7 +194,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const now = performance.now();
       const frameTime = now - frameTimeRef.current;
       renderCountRef.current++;
-      
+
       // If frame time is consistently over 16.67ms (60fps), enable throttling
       if (frameTime > 20 && renderCountRef.current > 10) {
         setShouldThrottle(true);
@@ -212,10 +202,10 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         setShouldThrottle(false);
         renderCountRef.current = 0; // Reset counter
       }
-      
+
       frameTimeRef.current = now;
     };
-    
+
     const interval = setInterval(monitorPerformance, 100);
     return () => clearInterval(interval);
   }, []);
@@ -224,7 +214,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   useEffect(() => {
     if (projectId && !hasInitialized.current) {
       hasInitialized.current = true;
-      
+
       // Fetch real tasks from V3 API (minimal processing needed)
       dispatch(fetchTasksV3(projectId));
     }
@@ -238,14 +228,6 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   const hasAnyTasks = useMemo(() => totalTasks > 0, [totalTasks]);
 
-  // Memoized handlers for better performance
-  const handleGroupingChange = useCallback(
-    (newGroupBy: 'status' | 'priority' | 'phase') => {
-      dispatch(setCurrentGrouping(newGroupBy));
-    },
-    [dispatch]
-  );
-
   // Add isDragging state
   const [isDragging, setIsDragging] = useState(false);
 
@@ -256,7 +238,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const taskId = active.id as string;
 
       // Find the task and its group
-      const activeTask = tasks.find(t => t.id === taskId) || null;
+      const activeTask = Array.isArray(tasks) ? tasks.find((t: Task) => t.id === taskId) || null : null;
       let activeGroupId: string | null = null;
 
       if (activeTask) {
@@ -288,7 +270,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const overId = over.id as string;
 
       // Check if we're hovering over a task or a group container
-      const targetTask = tasks.find(t => t.id === overId);
+      const targetTask = Array.isArray(tasks) ? tasks.find((t: Task) => t.id === overId) : undefined;
       let targetGroupId = overId;
 
       if (targetTask) {
@@ -338,7 +320,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       let targetIndex = -1;
 
       // Check if dropping on a task or a group
-      const targetTask = tasks.find(t => t.id === overId);
+      const targetTask = Array.isArray(tasks) ? tasks.find((t: Task) => t.id === overId) : undefined;
       if (targetTask) {
         // Dropping on a task, find which group contains this task
         for (const group of taskGroups) {
@@ -374,20 +356,17 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           // Use the new reorderTasksInGroup action that properly handles group arrays
           dispatch(
             reorderTasksInGroup({
-              taskId: activeTaskId,
-              fromGroupId: currentDragState.activeGroupId,
-              toGroupId: targetGroupId,
-              fromIndex: sourceIndex,
-              toIndex: finalTargetIndex,
-              groupType: targetGroup.groupType,
-              groupValue: targetGroup.groupValue,
+              sourceTaskId: activeTaskId,
+              destinationTaskId: targetTask?.id || '',
+              sourceGroupId: currentDragState.activeGroupId,
+              destinationGroupId: targetGroupId,
             })
           );
 
           // Emit socket event to backend
           if (connected && socket && currentDragState.activeTask) {
             const currentSession = JSON.parse(localStorage.getItem('session') || '{}');
-            
+
             const socketData = {
               from_index: sourceIndex,
               to_index: finalTargetIndex,
@@ -410,14 +389,26 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   const handleSelectTask = useCallback(
     (taskId: string, selected: boolean) => {
+      // Create a new Set from existing selections for efficient lookup and modification
+      const currentSelectedIds = new Set(selectedTaskIds);
+
+      // Update the selection state based on the checkbox action
       if (selected) {
-        // Add task to bulk selection
-        const task = tasks.find(t => t.id === taskId);
-        if (task) {
-          // Convert Task to IProjectTask format for bulk actions
-          const projectTask: IProjectTask = {
+        currentSelectedIds.add(taskId);
+      } else {
+        currentSelectedIds.delete(taskId);
+      }
+
+      // Convert Set back to array for Redux state
+      const newSelectedIds = Array.from(currentSelectedIds);
+
+      // Map selected tasks to the required format
+      const newSelectedTasks = Array.isArray(tasks) ? tasks
+        .filter((t: Task) => newSelectedIds.includes(t.id))
+        .map(
+          (task: Task): IProjectTask => ({
             id: task.id,
-            name: task.title, // Always use title as the name
+            name: task.title,
             task_key: task.task_key,
             status: task.status,
             status_id: task.status,
@@ -427,11 +418,11 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
             description: task.description,
             start_date: task.startDate,
             end_date: task.dueDate,
-            total_hours: task.timeTracking.estimated || 0,
-            total_minutes: task.timeTracking.logged || 0,
+            total_hours: task.timeTracking?.estimated || 0,
+            total_minutes: task.timeTracking?.logged || 0,
             progress: task.progress,
             sub_tasks_count: task.sub_tasks_count || 0,
-            assignees: task.assignees.map(assigneeId => ({
+            assignees: task.assignees?.map((assigneeId: string) => ({
               id: assigneeId,
               name: '',
               email: '',
@@ -440,28 +431,37 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
               project_member_id: assigneeId,
             })),
             labels: task.labels,
-            manual_progress: false, // Default value for Task type
-            created_at: task.createdAt,
-            updated_at: task.updatedAt,
+            manual_progress: false,
+            created_at: (task as any).createdAt || (task as any).created_at,
+            updated_at: (task as any).updatedAt || (task as any).updated_at,
             sort_order: task.order,
-          };
-          dispatch(selectTasks([...selectedTasks, projectTask]));
-          dispatch(selectTaskIds([...selectedTaskIds, taskId]));
-        }
-      } else {
-        // Remove task from bulk selection
-        const updatedTasks = selectedTasks.filter(t => t.id !== taskId);
-        const updatedTaskIds = selectedTaskIds.filter(id => id !== taskId);
-        dispatch(selectTasks(updatedTasks));
-        dispatch(selectTaskIds(updatedTaskIds));
-      }
+          })
+        ) : [];
+
+      // Dispatch both actions to update the Redux state
+      dispatch(selectTasks(newSelectedTasks));
+      // Update selection state with the new task IDs
+      newSelectedIds.forEach(taskId => dispatch(selectTask(taskId)));
     },
-    [dispatch, selectedTasks, selectedTaskIds, tasks]
+    [dispatch, selectedTaskIds, tasks]
   );
 
-  const handleToggleSubtasks = useCallback((taskId: string) => {
-    // Implementation for toggling subtasks
-  }, []);
+  const handleToggleSubtasks = useCallback(
+    (taskId: string) => {
+      const task = tasksById[taskId];
+      if (
+        task &&
+        !task.show_sub_tasks &&
+        task.sub_tasks_count &&
+        task.sub_tasks_count > 0 &&
+        (!task.sub_tasks || task.sub_tasks.length === 0)
+      ) {
+        dispatch(fetchSubTasks({ taskId, projectId }));
+      }
+      dispatch(toggleTaskExpansion(taskId));
+    },
+    [dispatch, projectId, tasksById]
+  );
 
   // Memoized DragOverlay content for better performance
   const dragOverlayContent = useMemo(() => {
@@ -485,92 +485,101 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     dispatch(clearSelection());
   }, [dispatch]);
 
-  const handleBulkStatusChange = useCallback(async (statusId: string) => {
-    if (!statusId || !projectId) return;
-    try {
-      // Find the status object
-      const status = statusList.find(s => s.id === statusId);
-      if (!status || !status.id) return;
+  const handleBulkStatusChange = useCallback(
+    async (statusId: string) => {
+      if (!statusId || !projectId) return;
+      try {
+        // Find the status object
+        const status = statusList.find(s => s.id === statusId);
+        if (!status || !status.id) return;
 
-      const body: IBulkTasksStatusChangeRequest = {
-        tasks: selectedTaskIds,
-        status_id: status.id,
-      };
-      
-      // Check task dependencies first
-      for (const taskId of selectedTaskIds) {
-        const canContinue = await checkTaskDependencyStatus(taskId, status.id);
-        if (!canContinue) {
-          if (selectedTaskIds.length > 1) {
-            alertService.warning(
-              'Incomplete Dependencies!',
-              'Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding.'
-            );
-          } else {
-            alertService.error(
-              'Task is not completed',
-              'Please complete the task dependencies before proceeding'
-            );
+        const body: IBulkTasksStatusChangeRequest = {
+          tasks: selectedTaskIds,
+          status_id: status.id,
+        };
+
+        // Check task dependencies first
+        for (const taskId of selectedTaskIds) {
+          const canContinue = await checkTaskDependencyStatus(taskId, status.id);
+          if (!canContinue) {
+            if (selectedTaskIds.length > 1) {
+              alertService.warning(
+                'Incomplete Dependencies!',
+                'Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding.'
+              );
+            } else {
+              alertService.error(
+                'Task is not completed',
+                'Please complete the task dependencies before proceeding'
+              );
+            }
+            return;
           }
-          return;
         }
+
+        const res = await taskListBulkActionsApiService.changeStatus(body, projectId);
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_change_status);
+          dispatch(deselectAllBulk());
+          dispatch(clearSelection());
+          dispatch(fetchTasksV3(projectId));
+        }
+      } catch (error) {
+        logger.error('Error changing status:', error);
       }
+    },
+    [selectedTaskIds, statusList, projectId, trackMixpanelEvent, dispatch]
+  );
 
-      const res = await taskListBulkActionsApiService.changeStatus(body, projectId);
-      if (res.done) {
-        trackMixpanelEvent(evt_project_task_list_bulk_change_status);
-        dispatch(deselectAllBulk());
-        dispatch(clearSelection());
-        dispatch(fetchTasksV3(projectId));
+  const handleBulkPriorityChange = useCallback(
+    async (priorityId: string) => {
+      if (!priorityId || !projectId) return;
+      try {
+        const priority = priorityList.find(p => p.id === priorityId);
+        if (!priority || !priority.id) return;
+
+        const body: IBulkTasksPriorityChangeRequest = {
+          tasks: selectedTaskIds,
+          priority_id: priority.id,
+        };
+        const res = await taskListBulkActionsApiService.changePriority(body, projectId);
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_change_priority);
+          dispatch(deselectAllBulk());
+          dispatch(clearSelection());
+          dispatch(fetchTasksV3(projectId));
+        }
+      } catch (error) {
+        logger.error('Error changing priority:', error);
       }
-    } catch (error) {
-      logger.error('Error changing status:', error);
-    }
-  }, [selectedTaskIds, statusList, projectId, trackMixpanelEvent, dispatch]);
+    },
+    [selectedTaskIds, priorityList, projectId, trackMixpanelEvent, dispatch]
+  );
 
-  const handleBulkPriorityChange = useCallback(async (priorityId: string) => {
-    if (!priorityId || !projectId) return;
-    try {
-      const priority = priorityList.find(p => p.id === priorityId);
-      if (!priority || !priority.id) return;
+  const handleBulkPhaseChange = useCallback(
+    async (phaseId: string) => {
+      if (!phaseId || !projectId) return;
+      try {
+        const phase = phaseList.find(p => p.id === phaseId);
+        if (!phase || !phase.id) return;
 
-      const body: IBulkTasksPriorityChangeRequest = {
-        tasks: selectedTaskIds,
-        priority_id: priority.id,
-      };
-      const res = await taskListBulkActionsApiService.changePriority(body, projectId);
-      if (res.done) {
-        trackMixpanelEvent(evt_project_task_list_bulk_change_priority);
-        dispatch(deselectAllBulk());
-        dispatch(clearSelection());
-        dispatch(fetchTasksV3(projectId));
+        const body: IBulkTasksPhaseChangeRequest = {
+          tasks: selectedTaskIds,
+          phase_id: phase.id,
+        };
+        const res = await taskListBulkActionsApiService.changePhase(body, projectId);
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_change_phase);
+          dispatch(deselectAllBulk());
+          dispatch(clearSelection());
+          dispatch(fetchTasksV3(projectId));
+        }
+      } catch (error) {
+        logger.error('Error changing phase:', error);
       }
-    } catch (error) {
-      logger.error('Error changing priority:', error);
-    }
-  }, [selectedTaskIds, priorityList, projectId, trackMixpanelEvent, dispatch]);
-
-  const handleBulkPhaseChange = useCallback(async (phaseId: string) => {
-    if (!phaseId || !projectId) return;
-    try {
-      const phase = phaseList.find(p => p.id === phaseId);
-      if (!phase || !phase.id) return;
-
-      const body: IBulkTasksPhaseChangeRequest = {
-        tasks: selectedTaskIds,
-        phase_id: phase.id,
-      };
-      const res = await taskListBulkActionsApiService.changePhase(body, projectId);
-      if (res.done) {
-        trackMixpanelEvent(evt_project_task_list_bulk_change_phase);
-        dispatch(deselectAllBulk());
-        dispatch(clearSelection());
-        dispatch(fetchTasksV3(projectId));
-      }
-    } catch (error) {
-      logger.error('Error changing phase:', error);
-    }
-  }, [selectedTaskIds, phaseList, projectId, trackMixpanelEvent, dispatch]);
+    },
+    [selectedTaskIds, phaseList, projectId, trackMixpanelEvent, dispatch]
+  );
 
   const handleBulkAssignToMe = useCallback(async () => {
     if (!projectId) return;
@@ -591,63 +600,67 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     }
   }, [selectedTaskIds, projectId, trackMixpanelEvent, dispatch]);
 
-  const handleBulkAssignMembers = useCallback(async (memberIds: string[]) => {
-    if (!projectId || !members?.data) return;
-    try {
-      // Convert memberIds to member objects with proper type checking
-      const selectedMembers = members.data.filter(member => 
-        member.id && memberIds.includes(member.id)
-      );
-      
-      const body = {
-        tasks: selectedTaskIds,
-        project_id: projectId,
-        members: selectedMembers.map(member => ({
-          id: member.id!,
-          name: member.name || '',
-          email: member.email || '',
-          avatar_url: member.avatar_url || '',
-          team_member_id: member.id!,
-          project_member_id: member.id!,
-        })),
-      };
-      const res = await taskListBulkActionsApiService.assignTasks(body);
-      if (res.done) {
-        trackMixpanelEvent(evt_project_task_list_bulk_assign_members);
-        dispatch(deselectAllBulk());
-        dispatch(clearSelection());
-        dispatch(fetchTasksV3(projectId));
-      }
-    } catch (error) {
-      logger.error('Error assigning tasks:', error);
-    }
-  }, [selectedTaskIds, projectId, members, trackMixpanelEvent, dispatch]);
+  const handleBulkAssignMembers = useCallback(
+    async (memberIds: string[]) => {
+      if (!projectId || !members?.data) return;
+      try {
+        // Convert memberIds to member objects with proper type checking
+        const selectedMembers = members.data.filter(
+          member => member.id && memberIds.includes(member.id)
+        );
 
-  const handleBulkAddLabels = useCallback(async (labelIds: string[]) => {
-    if (!projectId) return;
-    try {
-      // Convert labelIds to label objects with proper type checking
-      const selectedLabels = labelsList.filter(label => 
-        label.id && labelIds.includes(label.id)
-      );
-      
-      const body: IBulkTasksLabelsRequest = {
-        tasks: selectedTaskIds,
-        labels: selectedLabels,
-        text: null,
-      };
-      const res = await taskListBulkActionsApiService.assignLabels(body, projectId);
-      if (res.done) {
-        trackMixpanelEvent(evt_project_task_list_bulk_update_labels);
-        dispatch(deselectAllBulk());
-        dispatch(clearSelection());
-        dispatch(fetchTasksV3(projectId));
-        dispatch(fetchLabels());
+        const body = {
+          tasks: selectedTaskIds,
+          project_id: projectId,
+          members: selectedMembers.map(member => ({
+            id: member.id!,
+            name: member.name || '',
+            email: member.email || '',
+            avatar_url: member.avatar_url || '',
+            team_member_id: member.id!,
+            project_member_id: member.id!,
+          })),
+        };
+        const res = await taskListBulkActionsApiService.assignTasks(body);
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_assign_members);
+          dispatch(deselectAllBulk());
+          dispatch(clearSelection());
+          dispatch(fetchTasksV3(projectId));
+        }
+      } catch (error) {
+        logger.error('Error assigning tasks:', error);
       }
-    } catch (error) {
-      logger.error('Error updating labels:', error);
-    }
-  }, [selectedTaskIds, projectId, labelsList, trackMixpanelEvent, dispatch]);
+    },
+    [selectedTaskIds, projectId, members, trackMixpanelEvent, dispatch]
+  );
+
+  const handleBulkAddLabels = useCallback(
+    async (labelIds: string[]) => {
+      if (!projectId) return;
+      try {
+        // Convert labelIds to label objects with proper type checking
+        const selectedLabels = labelsList.filter(label => label.id && labelIds.includes(label.id));
+
+        const body: IBulkTasksLabelsRequest = {
+          tasks: selectedTaskIds,
+          labels: selectedLabels,
+          text: null,
+        };
+        const res = await taskListBulkActionsApiService.assignLabels(body, projectId);
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_update_labels);
+          dispatch(deselectAllBulk());
+          dispatch(clearSelection());
+          dispatch(fetchTasksV3(projectId));
+          dispatch(fetchLabels());
+        }
+      } catch (error) {
+        logger.error('Error updating labels:', error);
+      }
+    },
+    [selectedTaskIds, projectId, labelsList, trackMixpanelEvent, dispatch]
+  );
 
   const handleBulkArchive = useCallback(async () => {
     if (!projectId) return;
@@ -696,9 +709,12 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     // This would need to be implemented in the API service
   }, [selectedTaskIds]);
 
-  const handleBulkSetDueDate = useCallback(async (date: string) => {
-    // This would need to be implemented in the API service
-  }, [selectedTaskIds]);
+  const handleBulkSetDueDate = useCallback(
+    async (date: string) => {
+      // This would need to be implemented in the API service
+    },
+    [selectedTaskIds]
+  );
 
   // Cleanup effect
   useEffect(() => {
@@ -757,18 +773,20 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
               </div>
             ) : taskGroups.length === 0 ? (
               <div className="empty-container">
-                <Empty 
+                <Empty
                   description={
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>
                         No task groups available
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--task-text-secondary, #595959)' }}>
+                      <div
+                        style={{ fontSize: '12px', color: 'var(--task-text-secondary, #595959)' }}
+                      >
                         Create tasks to see them organized in groups
                       </div>
                     </div>
                   }
-                  image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               </div>
             ) : (
@@ -778,7 +796,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
                   const groupTasks = group.taskIds.length;
                   const baseHeight = 120; // Header + column headers + add task row
                   const taskRowsHeight = groupTasks * 40; // 40px per task row
-                  
+
                   // PERFORMANCE OPTIMIZATION: Enhanced virtualization threshold for better UX
                   const shouldVirtualizeGroup = groupTasks > 25; // Increased threshold for smoother experience
                   const minGroupHeight = shouldVirtualizeGroup ? 200 : 120; // Minimum height for virtualized groups
@@ -815,10 +833,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           </div>
         </div>
 
-        <DragOverlay
-          adjustScale={false}
-          dropAnimation={null}
-        >
+        <DragOverlay adjustScale={false} dropAnimation={null}>
           {dragOverlayContent}
         </DragOverlay>
       </DndContext>
@@ -1204,6 +1219,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           --task-selected-border: #1890ff;
           --task-drag-over-bg: #f0f8ff;
           --task-drag-over-border: #40a9ff;
+          --task-border-hover-top: #c0c0c0; /* Slightly darker for visibility */
         }
 
         .dark .task-groups-container-fixed,
@@ -1225,6 +1241,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
           --task-selected-border: #1890ff;
           --task-drag-over-bg: #1a2332;
           --task-drag-over-border: #40a9ff;
+          --task-border-hover-top-dark: #505050; /* Slightly darker for visibility in dark mode */
         }
 
         /* Dark mode scrollbar */

@@ -27,9 +27,9 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
   const goToUrl = async (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    
+
     console.log('goToUrl triggered', { url: item.url, teamId: item.team_id });
-    
+
     if (item.url) {
       dispatch(toggleDrawer());
 
@@ -92,4 +92,4 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
   );
 };
 
-export default NotificationTemplate; 
+export default NotificationTemplate;

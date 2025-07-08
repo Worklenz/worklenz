@@ -20,42 +20,49 @@ interface AvatarGroupProps {
   onClick?: (e: React.MouseEvent) => void;
 }
 
-const AvatarGroup: React.FC<AvatarGroupProps> = ({ 
-  members, 
-  maxCount, 
-  size = 28, 
+const AvatarGroup: React.FC<AvatarGroupProps> = ({
+  members,
+  maxCount,
+  size = 28,
   isDarkMode = false,
   className = '',
-  onClick
+  onClick,
 }) => {
-  const stopPropagation = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onClick?.(e);
-  }, [onClick]);
+  const stopPropagation = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onClick?.(e);
+    },
+    [onClick]
+  );
 
-  const renderAvatar = useCallback((member: Member, index: number) => {
-    const memberName = member.end && member.names ? member.names.join(', ') : member.name || '';
-    const displayName = member.end && member.names ? member.name : member.name?.charAt(0).toUpperCase();
-    
-    return (
-      <Tooltip
-        key={member.team_member_id || member.id || index}
-        title={memberName}
-        isDarkMode={isDarkMode}
-      >
-        <Avatar
-          name={member.name || ''}
-          src={member.avatar_url}
-          size={size}
+  const renderAvatar = useCallback(
+    (member: Member, index: number) => {
+      const memberName = member.end && member.names ? member.names.join(', ') : member.name || '';
+      const displayName =
+        member.end && member.names ? member.name : member.name?.charAt(0).toUpperCase();
+
+      return (
+        <Tooltip
+          key={member.team_member_id || member.id || index}
+          title={memberName}
           isDarkMode={isDarkMode}
-          backgroundColor={member.color_code}
-          onClick={stopPropagation}
-          className="border-2 border-white"
-          style={isDarkMode ? { borderColor: '#374151' } : {}}
-        />
-      </Tooltip>
-    );
-  }, [stopPropagation, size, isDarkMode]);
+        >
+          <Avatar
+            name={member.name || ''}
+            src={member.avatar_url}
+            size={size}
+            isDarkMode={isDarkMode}
+            backgroundColor={member.color_code}
+            onClick={stopPropagation}
+            className="border-2 border-white"
+            style={isDarkMode ? { borderColor: '#374151' } : {}}
+          />
+        </Tooltip>
+      );
+    },
+    [stopPropagation, size, isDarkMode]
+  );
 
   const visibleMembers = useMemo(() => {
     return maxCount ? members.slice(0, maxCount) : members;
@@ -73,13 +80,13 @@ const AvatarGroup: React.FC<AvatarGroupProps> = ({
     if (typeof size === 'number') {
       return { width: size, height: size, fontSize: `${size * 0.4}px` };
     }
-    
+
     const sizeMap = {
       small: { width: 24, height: 24, fontSize: '10px' },
       default: { width: 32, height: 32, fontSize: '14px' },
-      large: { width: 48, height: 48, fontSize: '18px' }
+      large: { width: 48, height: 48, fontSize: '18px' },
     };
-    
+
     return sizeMap[size];
   };
 
@@ -87,15 +94,10 @@ const AvatarGroup: React.FC<AvatarGroupProps> = ({
     <div onClick={stopPropagation} className={`flex -space-x-1 ${className}`}>
       {avatarElements}
       {remainingCount > 0 && (
-        <Tooltip 
-          title={`${remainingCount} more`} 
-          isDarkMode={isDarkMode}
-        >
-          <div 
+        <Tooltip title={`${remainingCount} more`} isDarkMode={isDarkMode}>
+          <div
             className={`rounded-full flex items-center justify-center text-white font-medium shadow-sm border-2 cursor-pointer ${
-              isDarkMode 
-                ? 'bg-gray-600 border-gray-700' 
-                : 'bg-gray-400 border-white'
+              isDarkMode ? 'bg-gray-600 border-gray-700' : 'bg-gray-400 border-white'
             }`}
             style={getSizeStyle()}
             onClick={stopPropagation}
@@ -108,4 +110,4 @@ const AvatarGroup: React.FC<AvatarGroupProps> = ({
   );
 };
 
-export default AvatarGroup; 
+export default AvatarGroup;

@@ -68,11 +68,11 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
 
       const body = {
         name: values.name,
-        teamMembers: teamData?.team_members || []
+        teamMembers: teamData?.team_members || [],
       };
-      
+
       const response = await adminCenterApiService.updateTeam(teamId, body);
-      
+
       if (response.done) {
         setIsSettingDrawerOpen(false);
       }
@@ -108,7 +108,7 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
           if (value === 'Owner') {
             return;
           }
-          
+
           // Update the team member's role in teamData
           if (teamData && teamData.team_members) {
             const updatedMembers = teamData.team_members.map(member => {
@@ -117,20 +117,21 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
               }
               return member;
             });
-            
+
             setTeamData({
               ...teamData,
-              team_members: updatedMembers
+              team_members: updatedMembers,
             });
           }
         };
 
         const isDisabled = record.role_name === 'Owner' || record.pending_invitation;
-        const tooltipTitle = record.role_name === 'Owner' 
-          ? t('cannotChangeOwnerRole') 
-          : record.pending_invitation 
-            ? t('pendingInvitation')
-            : '';
+        const tooltipTitle =
+          record.role_name === 'Owner'
+            ? t('cannotChangeOwnerRole')
+            : record.pending_invitation
+              ? t('pendingInvitation')
+              : '';
 
         const selectComponent = (
           <Select
@@ -145,9 +146,7 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
         return (
           <div>
             {isDisabled ? (
-              <Tooltip title={tooltipTitle}>
-                {selectComponent}
-              </Tooltip>
+              <Tooltip title={tooltipTitle}>{selectComponent}</Tooltip>
             ) : (
               selectComponent
             )}

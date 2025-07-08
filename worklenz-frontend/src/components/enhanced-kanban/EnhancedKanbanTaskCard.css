@@ -13,6 +13,12 @@
   position: relative;
 }
 
+html.light .enhanced-kanban-task-card {
+  border: 1.5px solid #e1e4e8 !important; /* Asana-like light border */
+  box-shadow: 0 1px 4px 0 rgba(60, 64, 67, 0.08), 0 0.5px 1.5px 0 rgba(60, 64, 67, 0.03);
+  background: #fff !important;
+}
+
 .enhanced-kanban-task-card:hover {
   box-shadow: 0 2px 6px var(--ant-color-shadow);
   transform: translateY(-1px);
@@ -47,7 +53,7 @@
 }
 
 .enhanced-kanban-task-card.drop-target::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -2px;
   left: -2px;
@@ -60,7 +66,8 @@
 }
 
 @keyframes dropTargetPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.3;
     transform: scale(1);
   }
@@ -117,4 +124,4 @@
   font-size: 12px;
   color: var(--ant-color-text-tertiary);
   margin-top: 4px;
-} 
+}

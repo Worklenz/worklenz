@@ -13,12 +13,16 @@ import logger from '@/utils/errorLogger';
 import TaskViewCommentEdit from './task-view-comment-edit';
 import './task-comments.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { colors } from '@/styles/colors';
 import AttachmentsGrid from '../attachments/attachments-grid';
 import { TFunction } from 'i18next';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sanitizeHtml } from '@/utils/sanitizeInput';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 // Helper function to format date for time separators
 const formatDateForSeparator = (date: string) => {
@@ -61,7 +65,7 @@ const processMentions = (content: string) => {
 const linkify = (text: string) => {
   if (!text) return '';
   // Regex to match URLs (http, https, www)
-  return text.replace(/(https?:\/\/[^\s]+|www\.[^\s]+)/g, (url) => {
+  return text.replace(/(https?:\/\/[^\s]+|www\.[^\s]+)/g, url => {
     let href = url;
     if (!href.startsWith('http')) {
       href = 'http://' + href;
@@ -83,13 +87,15 @@ const processContent = (content: string) => {
   return sanitizeHtml(processed);
 };
 
-const TaskComments = ({ taskId, t }: { taskId?: string, t: TFunction }) => {
+const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<ITaskCommentViewModel[]>([]);
   const commentsViewRef = useRef<HTMLDivElement>(null);
   const auth = useAuthService();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const currentUserId = auth.getCurrentSession()?.id;
+  const { socket, connected } = useSocket();
+  const dispatch = useAppDispatch();
 
   const getComments = useCallback(
     async (showLoading = true) => {
@@ -115,6 +121,14 @@ const TaskComments = ({ taskId, t }: { taskId?: string, t: TFunction }) => {
           });
 
           setComments(sortedComments);
+          
+          // Update Redux state with the current comment count
+          dispatch(updateTaskCounts({
+            taskId,
+            counts: {
+              comments_count: sortedComments.length
+            }
+          }));
         }
 
         setLoading(false);
@@ -123,7 +137,7 @@ const TaskComments = ({ taskId, t }: { taskId?: string, t: TFunction }) => {
         setLoading(false);
       }
     },
-    [taskId]
+    [taskId, dispatch]
   );
 
   useEffect(() => {
@@ -196,8 +210,11 @@ const TaskComments = ({ taskId, t }: { taskId?: string, t: TFunction }) => {
     try {
       const res = await taskCommentsApiService.delete(id, taskId);
       if (res.done) {
+        // Refresh comments to get updated list
         await getComments(false);
-        document.dispatchEvent(new Event('task-comment-update'));
+        
+        // The comment count will be updated by getComments function
+        // No need to dispatch here as getComments already handles it
       }
     } catch (e) {
       logger.error('Error deleting comment', e);
@@ -227,7 +244,9 @@ const TaskComments = ({ taskId, t }: { taskId?: string, t: TFunction }) => {
         await getComments(false);
 
         // Dispatch event to notify that an attachment was deleted
-        document.dispatchEvent(new Event('task-comment-update'));
+        document.dispatchEvent(new CustomEvent('task-comment-update', { 
+          detail: { taskId } 
+        }));
       }
     } catch (e) {
       logger.error('Error deleting attachment', e);
@@ -290,9 +309,7 @@ const TaskComments = ({ taskId, t }: { taskId?: string, t: TFunction }) => {
                     key={item.id}
                     author={<span style={authorStyle}>{item.member_name}</span>}
                     datetime={<span style={dateStyle}>{fromNow(item.created_at || '')}</span>}
-                    avatar={
-                      <SingleAvatar name={item.member_name} avatarUrl={item.avatar_url}/>
-                    }
+                    avatar={<SingleAvatar name={item.member_name} avatarUrl={item.avatar_url} />}
                     content={
                       item.edit ? (
                         <TaskViewCommentEdit commentData={item} onUpdated={commentUpdated} />

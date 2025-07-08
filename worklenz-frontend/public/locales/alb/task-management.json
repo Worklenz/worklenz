@@ -11,5 +11,11 @@
   "attachments": "bashkëngjitje",
   "enterSubtaskName": "Shkruani emrin e nën-detyrës...",
   "add": "Shto",
-  "cancel": "Anulo"
-} 
+  "cancel": "Anulo",
+  "renameGroup": "Riemërto Grupin",
+  "renameStatus": "Riemërto Statusin",
+  "renamePhase": "Riemërto Fazën",
+  "changeCategory": "Ndrysho Kategorinë",
+  "clickToEditGroupName": "Kliko për të ndryshuar emrin e grupit",
+  "enterGroupName": "Shkruani emrin e grupit"
+}

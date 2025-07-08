@@ -40,7 +40,10 @@ export const fetchPhasesByProjectId = createAsyncThunk(
 
 export const deletePhaseOption = createAsyncThunk(
   'phase/deletePhaseOption',
-  async ({ phaseOptionId, projectId }: { phaseOptionId: string; projectId: string }, { rejectWithValue }) => {
+  async (
+    { phaseOptionId, projectId }: { phaseOptionId: string; projectId: string },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await phasesApiService.deletePhaseOption(phaseOptionId, projectId);
       return response;
@@ -64,14 +67,17 @@ export const updatePhaseColor = createAsyncThunk(
 
 export const updatePhaseOrder = createAsyncThunk(
   'phases/updatePhaseOrder',
-  async ({ projectId, body }: { 
-    projectId: string, 
-    body: { 
+  async ({
+    projectId,
+    body,
+  }: {
+    projectId: string;
+    body: {
       from_index: number;
       to_index: number;
       phases: ITaskPhase[];
       project_id: string;
-    } 
+    };
   }) => {
     try {
       const response = await phasesApiService.updatePhaseOrder(projectId, body);
@@ -84,7 +90,10 @@ export const updatePhaseOrder = createAsyncThunk(
 
 export const updateProjectPhaseLabel = createAsyncThunk(
   'phase/updateProjectPhaseLabel',
-  async ({ projectId, phaseLabel }: { projectId: string; phaseLabel: string }, { rejectWithValue }) => {
+  async (
+    { projectId, phaseLabel }: { projectId: string; phaseLabel: string },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await phasesApiService.updateProjectPhaseLabel(projectId, phaseLabel);
       return response;
@@ -96,7 +105,10 @@ export const updateProjectPhaseLabel = createAsyncThunk(
 
 export const updatePhaseName = createAsyncThunk(
   'phase/updatePhaseName',
-  async ({ phaseId, phase, projectId }: { phaseId: string; phase: ITaskPhase; projectId: string }, { rejectWithValue }) => {
+  async (
+    { phaseId, phase, projectId }: { phaseId: string; phase: ITaskPhase; projectId: string },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await phasesApiService.updateNameOfPhase(phaseId, phase, projectId);
       return response;
@@ -127,13 +139,13 @@ const phaseSlice = createSlice({
     builder.addCase(fetchPhasesByProjectId.rejected, state => {
       state.loadingPhases = false;
     });
-    builder.addCase(updatePhaseOrder.pending, (state) => {
+    builder.addCase(updatePhaseOrder.pending, state => {
       state.loadingPhases = true;
     });
     builder.addCase(updatePhaseOrder.fulfilled, (state, action) => {
       state.loadingPhases = false;
     });
-    builder.addCase(updatePhaseOrder.rejected, (state) => {
+    builder.addCase(updatePhaseOrder.rejected, state => {
       state.loadingPhases = false;
     });
   },

@@ -1,9 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Editor } from '@tinymce/tinymce-react';
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import DOMPurify from 'dompurify';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+
+// Lazy load TinyMCE editor to reduce initial bundle size
+const LazyTinyMCEEditor = lazy(() => 
+  import('@tinymce/tinymce-react').then(module => ({ default: module.Editor }))
+);
 
 interface DescriptionEditorProps {
   description: string | null;
@@ -17,31 +21,50 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [content, setContent] = useState<string>(description || '');
   const [isEditorLoading, setIsEditorLoading] = useState<boolean>(false);
-  const [wordCount, setWordCount] = useState<number>(0); // State for word count
+  const [wordCount, setWordCount] = useState<number>(0);
+  const [isTinyMCELoaded, setIsTinyMCELoaded] = useState<boolean>(false);
   const editorRef = useRef<any>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  // Preload TinyMCE script
-  useEffect(() => {
-    const preloadTinyMCE = () => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.href = '/tinymce/tinymce.min.js';
-      link.as = 'script';
-      document.head.appendChild(link);
-    };
+  // Load TinyMCE script only when editor is opened
+  const loadTinyMCE = async () => {
+    if (isTinyMCELoaded) return;
     
-    preloadTinyMCE();
-  }, []);
+    setIsEditorLoading(true);
+    try {
+      // Load TinyMCE script dynamically
+      await new Promise<void>((resolve, reject) => {
+        if (window.tinymce) {
+          resolve();
+          return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = '/tinymce/tinymce.min.js';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load TinyMCE'));
+        document.head.appendChild(script);
+      });
+      
+      setIsTinyMCELoaded(true);
+    } catch (error) {
+      console.error('Failed to load TinyMCE:', error);
+      setIsEditorLoading(false);
+    }
+  };
 
   const handleDescriptionChange = () => {
     if (!taskId) return;
-    socket?.emit(SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), JSON.stringify({
-      task_id: taskId,
-      description: content || null,
-      parent_task: parentTaskId,
-    }));
+    socket?.emit(
+      SocketEvents.TASK_DESCRIPTION_CHANGE.toString(),
+      JSON.stringify({
+        task_id: taskId,
+        description: content || null,
+        parent_task: parentTaskId,
+      })
+    );
   };
 
   useEffect(() => {
@@ -51,7 +74,9 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
 
       const isClickedInsideWrapper = wrapper && wrapper.contains(target);
       const isClickedInsideEditor = document.querySelector('.tox-tinymce')?.contains(target);
-      const isClickedInsideToolbarPopup = document.querySelector('.tox-menu, .tox-pop, .tox-collection')?.contains(target);
+      const isClickedInsideToolbarPopup = document
+        .querySelector('.tox-menu, .tox-pop, .tox-collection')
+        ?.contains(target);
 
       if (
         isEditorOpen &&
@@ -75,7 +100,6 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   const handleEditorChange = (content: string) => {
     const sanitizedContent = DOMPurify.sanitize(content);
     setContent(sanitizedContent);
-    // Update word count when content changes
     if (editorRef.current) {
       const count = editorRef.current.plugins.wordcount.getCount();
       setWordCount(count);
@@ -85,18 +109,19 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   const handleInit = (evt: any, editor: any) => {
     editorRef.current = editor;
     editor.on('focus', () => setIsEditorOpen(true));
-    // Set initial word count on init
     const initialCount = editor.plugins.wordcount.getCount();
     setWordCount(initialCount);
     setIsEditorLoading(false);
   };
 
-  const handleOpenEditor = () => {
+  const handleOpenEditor = async () => {
     setIsEditorOpen(true);
-    setIsEditorLoading(true);
+    await loadTinyMCE();
   };
 
-  const darkModeStyles = themeMode === 'dark' ? `
+  const darkModeStyles =
+    themeMode === 'dark'
+      ? `
     body { 
       background-color: #1e1e1e !important;
       color: #ffffff !important;
@@ -104,90 +129,131 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     body.mce-content-body[data-mce-placeholder]:not([contenteditable="false"]):before {
       color: #666666 !important;
     }
-  ` : '';
+  `
+      : '';
 
   return (
     <div ref={wrapperRef}>
       {isEditorOpen ? (
-        <div style={{ 
-          minHeight: '200px',
-          backgroundColor: themeMode === 'dark' ? '#1e1e1e' : '#ffffff' 
-        }}>
+        <div
+          style={{
+            minHeight: '200px',
+            backgroundColor: themeMode === 'dark' ? '#1e1e1e' : '#ffffff',
+          }}
+        >
           {isEditorLoading && (
-            <div style={{
-              position: 'absolute',
-              zIndex: 10,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: '100%',
-              height: '200px',
-              backgroundColor: themeMode === 'dark' ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-              color: themeMode === 'dark' ? '#ffffff' : '#000000'
-            }}>
+            <div
+              style={{
+                position: 'absolute',
+                zIndex: 10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%',
+                height: '200px',
+                backgroundColor:
+                  themeMode === 'dark' ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                color: themeMode === 'dark' ? '#ffffff' : '#000000',
+              }}
+            >
               <div>Loading editor...</div>
             </div>
           )}
-          <Editor
-            tinymceScriptSrc="/tinymce/tinymce.min.js"
-            value={content}
-            onInit={handleInit}
-            licenseKey="gpl"
-            init={{
-              height: 200,
-              menubar: false,
-              branding: false,
-              plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'code', 'wordcount' // Added wordcount
-              ],
-              toolbar: 'blocks |' +
-                'bold italic underline strikethrough | ' +
-                'bullist numlist | link |  removeformat | help',
-              content_style: `
-                body { 
-                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-                  font-size: 14px;
-                }
-                ${darkModeStyles}
-              `,
-              skin: themeMode === 'dark' ? 'oxide-dark' : 'oxide',
-              content_css: themeMode === 'dark' ? 'dark' : 'default',
-              skin_url: `/tinymce/skins/ui/${themeMode === 'dark' ? 'oxide-dark' : 'oxide'}`,
-              content_css_cors: true,
-              auto_focus: true,
-              init_instance_callback: (editor) => {
-                editor.dom.setStyle(editor.getBody(), 'backgroundColor', themeMode === 'dark' ? '#1e1e1e' : '#ffffff');
-              }
-            }}
-            onEditorChange={handleEditorChange}
-          />
+          {isTinyMCELoaded && (
+            <Suspense fallback={<div>Loading editor...</div>}>
+              <LazyTinyMCEEditor
+                tinymceScriptSrc="/tinymce/tinymce.min.js"
+                value={content}
+                onInit={handleInit}
+                licenseKey="gpl"
+                init={{
+                  height: 200,
+                  menubar: false,
+                  branding: false,
+                  plugins: [
+                    'advlist',
+                    'autolink',
+                    'lists',
+                    'link',
+                    'charmap',
+                    'preview',
+                    'anchor',
+                    'searchreplace',
+                    'visualblocks',
+                    'code',
+                    'fullscreen',
+                    'insertdatetime',
+                    'media',
+                    'table',
+                    'code',
+                    'wordcount',
+                  ],
+                  toolbar:
+                    'blocks |' +
+                    'bold italic underline strikethrough | ' +
+                    'bullist numlist | link |  removeformat | help',
+                  content_style: `
+                    body { 
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+                      font-size: 14px;
+                    }
+                    ${darkModeStyles}
+                  `,
+                  skin: themeMode === 'dark' ? 'oxide-dark' : 'oxide',
+                  content_css: themeMode === 'dark' ? 'dark' : 'default',
+                  skin_url: `/tinymce/skins/ui/${themeMode === 'dark' ? 'oxide-dark' : 'oxide'}`,
+                  content_css_cors: true,
+                  auto_focus: true,
+                  init_instance_callback: editor => {
+                    editor.dom.setStyle(
+                      editor.getBody(),
+                      'backgroundColor',
+                      themeMode === 'dark' ? '#1e1e1e' : '#ffffff'
+                    );
+                  },
+                }}
+                onEditorChange={handleEditorChange}
+              />
+            </Suspense>
+          )}
         </div>
       ) : (
-        <div 
+        <div
           onClick={handleOpenEditor}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          style={{ 
-            minHeight: '32px', 
-            padding: '4px 11px',
-            border: `1px solid ${isHovered ? (themeMode === 'dark' ? '#177ddc' : '#40a9ff') : 'transparent'}`,
+          style={{
+            minHeight: '40px',
+            padding: '8px 12px',
+            border: `1px solid ${themeMode === 'dark' ? '#424242' : '#d9d9d9'}`,
             borderRadius: '6px',
             cursor: 'pointer',
+            backgroundColor: isHovered
+              ? themeMode === 'dark'
+                ? '#2a2a2a'
+                : '#fafafa'
+              : themeMode === 'dark'
+              ? '#1e1e1e'
+              : '#ffffff',
             color: themeMode === 'dark' ? '#ffffff' : '#000000',
-            transition: 'border-color 0.3s ease'
+            transition: 'all 0.2s ease',
           }}
         >
           {content ? (
-            <div 
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
-              style={{ color: 'inherit' }}
+            <div
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(content),
+              }}
             />
           ) : (
-            <span style={{ color: themeMode === 'dark' ? '#666666' : '#bfbfbf' }}>
-              Add a more detailed description...
-            </span>
+            <div
+              style={{
+                color: themeMode === 'dark' ? '#888888' : '#999999',
+                fontStyle: 'italic',
+              }}
+            >
+              Click to add description...
+            </div>
           )}
         </div>
       )}

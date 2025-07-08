@@ -10,7 +10,10 @@ type TaskListProgressCellProps = {
 
 const TaskListProgressCell = ({ task }: TaskListProgressCellProps) => {
   const { project } = useAppSelector(state => state.projectReducer);
-  const isManualProgressEnabled = (task.project_use_manual_progress || task.project_use_weighted_progress || task.project_use_time_progress);;
+  const isManualProgressEnabled =
+    task.project_use_manual_progress ||
+    task.project_use_weighted_progress ||
+    task.project_use_time_progress;
   const isSubtask = task.is_sub_task;
   const hasManualProgress = task.manual_progress;
 
@@ -18,7 +21,7 @@ const TaskListProgressCell = ({ task }: TaskListProgressCellProps) => {
   // 1. For subtasks when manual progress is enabled, show the progress
   // 2. For parent tasks, always show progress
   // 3. For subtasks when manual progress is not enabled, don't show progress (null)
-  
+
   if (isSubtask && !isManualProgressEnabled) {
     return null; // Don't show progress for subtasks when manual progress is disabled
   }
@@ -40,11 +43,11 @@ const TaskListProgressCell = ({ task }: TaskListProgressCellProps) => {
 
   // For subtasks with manual progress enabled, show the progress
   return (
-    <Tooltip 
+    <Tooltip
       title={hasManualProgress ? `Manual: ${task.progress_value || 0}%` : `${task.progress || 0}%`}
     >
       <Progress
-        percent={hasManualProgress ? (task.progress_value || 0) : (task.progress || 0)}
+        percent={hasManualProgress ? task.progress_value || 0 : task.progress || 0}
         type="circle"
         size={22} // Slightly smaller for subtasks
         style={{ cursor: 'default' }}

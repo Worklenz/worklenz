@@ -19,5 +19,12 @@
   "archive": "Archivieren",
 
   "newTaskNamePlaceholder": "Aufgabenname eingeben",
-  "newSubtaskNamePlaceholder": "Unteraufgabenname eingeben"
+  "newSubtaskNamePlaceholder": "Unteraufgabenname eingeben",
+  "untitledSection": "Unbenannter Abschnitt",
+  "unmapped": "Nicht zugeordnet",
+  "clickToChangeDate": "Klicken Sie, um das Datum zu ändern",
+  "noDueDate": "Kein Fälligkeitsdatum",
+  "save": "Speichern",
+  "clear": "Löschen",
+  "nextWeek": "Nächste Woche"
 }

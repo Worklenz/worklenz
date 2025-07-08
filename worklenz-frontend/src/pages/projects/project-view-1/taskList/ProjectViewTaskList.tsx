@@ -40,10 +40,7 @@ const ProjectViewTaskList = () => {
 
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
-      <TaskListBoard 
-        projectId={projectId}
-        className="task-list-board"
-      />
+      <TaskListBoard projectId={projectId} className="task-list-board" />
     </Flex>
   );
 };

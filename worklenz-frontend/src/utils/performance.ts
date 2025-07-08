@@ -22,7 +22,7 @@ class PerformanceMonitor {
    */
   public startTimer(name: string): void {
     if (isProduction) return;
-    
+
     this.timers.set(name, performance.now());
   }
 
@@ -46,10 +46,7 @@ class PerformanceMonitor {
 
     if (isDevelopment) {
       const color = duration > 100 ? '#ff4d4f' : duration > 50 ? '#faad14' : '#52c41a';
-      console.log(
-        `%c⏱️ ${name}: ${duration.toFixed(2)}ms`,
-        `color: ${color}; font-weight: bold;`
-      );
+      console.log(`%c⏱️ ${name}: ${duration.toFixed(2)}ms`, `color: ${color}; font-weight: bold;`);
     }
 
     return duration;
@@ -100,7 +97,7 @@ class PerformanceMonitor {
     if (isProduction || this.entries.length === 0) return;
 
     console.group('📊 Performance Summary');
-    
+
     const sortedEntries = this.entries
       .filter(entry => entry.duration !== undefined)
       .sort((a, b) => (b.duration || 0) - (a.duration || 0));
@@ -109,13 +106,13 @@ class PerformanceMonitor {
       sortedEntries.map(entry => ({
         Name: entry.name,
         Duration: `${(entry.duration || 0).toFixed(2)}ms`,
-        'Start Time': `${entry.startTime.toFixed(2)}ms`
+        'Start Time': `${entry.startTime.toFixed(2)}ms`,
       }))
     );
 
     const totalTime = sortedEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
     console.log(`%cTotal measured time: ${totalTime.toFixed(2)}ms`, 'font-weight: bold;');
-    
+
     console.groupEnd();
   }
 }
@@ -133,7 +130,7 @@ export function withPerformanceMonitoring<P extends object>(
   if (isProduction) return Component;
 
   const name = componentName || Component.displayName || Component.name || 'Unknown';
-  
+
   const WrappedComponent = (props: P) => {
     React.useEffect(() => {
       performanceMonitor.startTimer(`${name} mount`);
@@ -179,4 +176,4 @@ export function useRenderPerformance(componentName: string): void {
   startTime.current = performance.now();
 }
 
-export default performanceMonitor; 
+export default performanceMonitor;

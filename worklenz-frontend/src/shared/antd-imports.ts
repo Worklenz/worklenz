@@ -1,6 +1,6 @@
 /**
  * Centralized Ant Design imports for better tree-shaking and React context sharing
- * 
+ *
  * This file provides:
  * - Consistent imports across the application
  * - Better tree-shaking through centralized management
@@ -49,7 +49,7 @@ import {
   Drawer,
   message,
   notification,
-  theme
+  theme,
 } from 'antd';
 
 // Icons - Import commonly used ones
@@ -98,6 +98,9 @@ export {
   CheckCircleOutlined,
   MinusCircleOutlined,
   RetweetOutlined,
+  DoubleRightOutlined,
+  UserAddOutlined,
+  ArrowsAltOutlined,
 } from '@ant-design/icons';
 
 // Re-export all components with React
@@ -140,7 +143,7 @@ export {
   Drawer,
   message,
   notification,
-  theme
+  theme,
 };
 
 // TypeScript Types - Import commonly used ones
@@ -160,7 +163,7 @@ export type {
   FlexProps,
   TabsProps,
   TableProps,
-  TableColumnsType
+  TableColumnsType,
 } from 'antd';
 
 // Dayjs

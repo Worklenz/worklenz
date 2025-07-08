@@ -92,12 +92,12 @@ export interface ProjectListTableProps {
 
 export enum ProjectViewType {
   LIST = 'list',
-  GROUP = 'group'
+  GROUP = 'group',
 }
 
 export enum ProjectGroupBy {
   CLIENT = 'client',
-  CATEGORY = 'category'
+  CATEGORY = 'category',
 }
 
 export interface GroupedProject {

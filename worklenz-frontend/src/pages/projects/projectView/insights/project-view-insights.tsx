@@ -18,7 +18,11 @@ import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import logo from '@/assets/images/worklenz-light-mode.png';
-import { evt_project_insights_members_visit, evt_project_insights_overview_visit, evt_project_insights_tasks_visit } from '@/shared/worklenz-analytics-events';
+import {
+  evt_project_insights_members_visit,
+  evt_project_insights_overview_visit,
+  evt_project_insights_tasks_visit,
+} from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 type SegmentType = 'Overview' | 'Members' | 'Tasks';
@@ -35,9 +39,7 @@ const ProjectViewInsights = () => {
   const { activeSegment, includeArchivedTasks } = useAppSelector(
     state => state.projectInsightsReducer
   );
-  const {
-    project: selectedProject,
-  } = useAppSelector(state => state.projectReducer);
+  const { project: selectedProject } = useAppSelector(state => state.projectReducer);
 
   const handleSegmentChange = (value: SegmentType) => {
     dispatch(setActiveSegment(value));
@@ -113,7 +115,7 @@ const ProjectViewInsights = () => {
       pdf.save(`${activeSegment} ${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     };
 
-    logoImg.onerror = (error) => {
+    logoImg.onerror = error => {
       pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0, 0.85);
       pdf.text(
@@ -127,11 +129,11 @@ const ProjectViewInsights = () => {
     };
   };
 
-  useEffect(()=>{
-    if(projectId){
+  useEffect(() => {
+    if (projectId) {
       dispatch(setActiveSegment('Overview'));
     }
-  },[refreshTimestamp])
+  }, [refreshTimestamp]);
 
   return (
     <Flex vertical gap={24}>
@@ -169,9 +171,7 @@ const ProjectViewInsights = () => {
           </Button>
         </Flex>
       </Flex>
-      <div ref={exportRef}>
-        {renderSegmentContent()}
-      </div>
+      <div ref={exportRef}>{renderSegmentContent()}</div>
     </Flex>
   );
 };

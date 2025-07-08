@@ -33,14 +33,12 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
 
   const clearTimerInterval = useCallback(() => {
     if (intervalRef.current) {
-      
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
   }, [taskId]);
 
   const resetTimer = useCallback(() => {
-    
     clearTimerInterval();
     setTimeString(DEFAULT_TIME_LEFT);
     setLocalStarted(false);
@@ -48,15 +46,11 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
 
   // Timer management effect
   useEffect(() => {
-    
-    
     if (started && localStarted && reduxStartTime) {
-      
       clearTimerInterval();
       timerTick();
       intervalRef.current = setInterval(timerTick, 1000);
     } else {
-      
       clearTimerInterval();
       setTimeString(DEFAULT_TIME_LEFT);
       if (started !== localStarted) {
@@ -65,7 +59,6 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
     }
 
     return () => {
-      
       clearTimerInterval();
     };
   }, [reduxStartTime, started, localStarted, timerTick, clearTimerInterval, taskId]);
@@ -73,11 +66,9 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
   // Initialize timer only on first mount if Redux is unset
   useEffect(() => {
     if (!hasInitialized.current && initialStartTime && reduxStartTime === undefined) {
-      
       dispatch(updateTaskTimeTracking({ taskId, timeTracking: initialStartTime }));
       setLocalStarted(true);
     } else if (reduxStartTime && !localStarted) {
-      
       setLocalStarted(true);
     }
     hasInitialized.current = true; // Mark as initialized
@@ -87,7 +78,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
     if (started || !taskId) return;
     try {
       const now = Date.now();
-      
+
       dispatch(updateTaskTimeTracking({ taskId, timeTracking: now }));
       setLocalStarted(true);
       socket?.emit(SocketEvents.TASK_TIMER_START.toString(), JSON.stringify({ task_id: taskId }));
@@ -98,7 +89,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
 
   const handleStopTimer = useCallback(() => {
     if (!taskId) return;
-    
+
     resetTimer();
     socket?.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
     dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
@@ -112,7 +103,6 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
       try {
         const { task_id } = typeof data === 'string' ? JSON.parse(data) : data;
         if (task_id === taskId) {
-          
           resetTimer();
           dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
         }
@@ -126,7 +116,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
         const { task_id, start_time } = typeof data === 'string' ? JSON.parse(data) : data;
         if (task_id === taskId && start_time) {
           const time = typeof start_time === 'number' ? start_time : parseInt(start_time);
-          
+
           dispatch(updateTaskTimeTracking({ taskId, timeTracking: time }));
           setLocalStarted(true);
         }

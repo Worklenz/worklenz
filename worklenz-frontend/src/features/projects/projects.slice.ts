@@ -39,4 +39,4 @@ export const updateProject = (payload: UpdateProjectPayload) => async (dispatch:
   }
 };
 
-export default projectsSlice.reducer; 
+export default projectsSlice.reducer;

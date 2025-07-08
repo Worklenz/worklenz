@@ -19,5 +19,12 @@
   "archive": "Arquivar",
 
   "newTaskNamePlaceholder": "Escreva um nome de tarefa",
-  "newSubtaskNamePlaceholder": "Escreva um nome de subtarefa"
+  "newSubtaskNamePlaceholder": "Escreva um nome de subtarefa",
+  "untitledSection": "Seção sem título",
+  "unmapped": "Não mapeado",
+  "clickToChangeDate": "Clique para alterar a data",
+  "noDueDate": "Sem data de vencimento",
+  "save": "Salvar",
+  "clear": "Limpar",
+  "nextWeek": "Próxima semana"
 }

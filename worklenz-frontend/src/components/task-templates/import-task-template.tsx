@@ -117,7 +117,12 @@ const ImportTaskTemplate = () => {
       footer={
         <Flex justify="end" gap={10}>
           <Button onClick={handleClose}>{t('cancel')}</Button>
-          <Button type="primary" onClick={handleImport} loading={importing} disabled={tasks.length === 0}>
+          <Button
+            type="primary"
+            onClick={handleImport}
+            loading={importing}
+            disabled={tasks.length === 0}
+          >
             {t('import')}
           </Button>
         </Flex>

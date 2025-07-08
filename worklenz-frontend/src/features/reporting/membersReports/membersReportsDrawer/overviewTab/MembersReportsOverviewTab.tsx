@@ -28,7 +28,7 @@ const MembersReportsOverviewTab = ({ memberId }: MembersReportsOverviewTabProps)
         teamMemberId: memberId,
         duration: duration,
         date_range: dateRange,
-        archived
+        archived,
       };
       const response = await reportingApiService.getMemberInfo(body);
       if (response.done) {

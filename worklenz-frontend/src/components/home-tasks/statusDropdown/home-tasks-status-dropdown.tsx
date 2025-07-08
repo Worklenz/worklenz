@@ -20,9 +20,7 @@ const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps)
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
-  const {
-    refetch
-  } = useGetMyTasksQuery(homeTasksConfig, {
+  const { refetch } = useGetMyTasksQuery(homeTasksConfig, {
     skip: false, // Ensure this query runs
   });
 

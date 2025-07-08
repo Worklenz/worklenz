@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Button, Card, Col, Flex, Form, Row, Select, Tag, Tooltip, Typography, message } from 'antd/es';
+import {
+  Button,
+  Card,
+  Col,
+  Flex,
+  Form,
+  Row,
+  Select,
+  Tag,
+  Tooltip,
+  Typography,
+  message,
+} from 'antd/es';
 import { useTranslation } from 'react-i18next';
 
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
@@ -106,7 +118,7 @@ const UpgradePlans = () => {
 
   const handlePaddleCallback = (data: any) => {
     console.log('Paddle event:', data);
-    
+
     switch (data.event) {
       case 'Checkout.Loaded':
         setSwitchingToPaddlePlan(false);
@@ -144,13 +156,13 @@ const UpgradePlans = () => {
   const initializePaddle = (data: IUpgradeSubscriptionPlanResponse) => {
     setPaddleLoading(true);
     setPaddleError(null);
-    
+
     // Check if Paddle is already loaded
     if (window.Paddle) {
       configurePaddle(data);
       return;
     }
-    
+
     const script = document.createElement('script');
     script.src = 'https://cdn.paddle.com/paddle/paddle.js';
     script.type = 'text/javascript';
@@ -159,7 +171,7 @@ const UpgradePlans = () => {
     script.onload = () => {
       configurePaddle(data);
     };
-    
+
     script.onerror = () => {
       setPaddleLoading(false);
       setPaddleError('Failed to load Paddle checkout');
@@ -169,7 +181,7 @@ const UpgradePlans = () => {
 
     document.getElementsByTagName('head')[0].appendChild(script);
   };
-  
+
   const configurePaddle = (data: IUpgradeSubscriptionPlanResponse) => {
     try {
       if (data.sandbox) Paddle.Environment.set('sandbox');
@@ -193,7 +205,7 @@ const UpgradePlans = () => {
       setSwitchingToPaddlePlan(true);
       setPaddleLoading(true);
       setPaddleError(null);
-      
+
       if (billingInfo?.trial_in_progress && billingInfo.status === SUBSCRIPTION_STATUS.TRIALING) {
         const res = await billingApiService.upgradeToPaidPlan(planId, selectedSeatCount);
         if (res.done) {
@@ -263,7 +275,6 @@ const UpgradePlans = () => {
 
   const isSelected = (cardIndex: IPaddlePlans) =>
     selectedPlan === cardIndex ? { border: '2px solid #1890ff' } : {};
-
 
   const cardStyles = {
     title: {
@@ -363,7 +374,6 @@ const UpgradePlans = () => {
               title={<span style={cardStyles.title}>{t('freePlan')}</span>}
               onClick={() => setSelectedCard(paddlePlans.FREE)}
             >
-
               <div style={cardStyles.priceContainer}>
                 <Flex justify="space-between" align="center">
                   <Typography.Title level={1}>$ 0.00</Typography.Title>
@@ -389,7 +399,6 @@ const UpgradePlans = () => {
             <Card
               style={{ ...isSelected(paddlePlans.ANNUAL), height: '100%' }}
               hoverable
-
               title={
                 <span style={cardStyles.title}>
                   {t('annualPlan')}{' '}
@@ -401,7 +410,6 @@ const UpgradePlans = () => {
               onClick={() => setSelectedCard(paddlePlans.ANNUAL)}
             >
               <div style={cardStyles.priceContainer}>
-
                 <Flex justify="space-between" align="center">
                   <Typography.Title level={1}>$ {plans.annual_price}</Typography.Title>
                   <Typography.Text>seat / month</Typography.Text>
@@ -442,7 +450,6 @@ const UpgradePlans = () => {
               hoverable
               title={<span style={cardStyles.title}>{t('monthlyPlan')}</span>}
               onClick={() => setSelectedCard(paddlePlans.MONTHLY)}
-
             >
               <div style={cardStyles.priceContainer}>
                 <Flex justify="space-between" align="center">
@@ -501,7 +508,9 @@ const UpgradePlans = () => {
             onClick={continueWithPaddlePlan}
             disabled={billingInfo?.plan_id === plans.annual_plan_id}
           >
-            {billingInfo?.status === SUBSCRIPTION_STATUS.ACTIVE ? t('changeToPlan', {plan: t('annualPlan')}) : t('continueWith', {plan: t('annualPlan')})}
+            {billingInfo?.status === SUBSCRIPTION_STATUS.ACTIVE
+              ? t('changeToPlan', { plan: t('annualPlan') })
+              : t('continueWith', { plan: t('annualPlan') })}
           </Button>
         )}
         {selectedPlan === paddlePlans.MONTHLY && (
@@ -512,7 +521,9 @@ const UpgradePlans = () => {
             onClick={continueWithPaddlePlan}
             disabled={billingInfo?.plan_id === plans.monthly_plan_id}
           >
-            {billingInfo?.status === SUBSCRIPTION_STATUS.ACTIVE ? t('changeToPlan', {plan: t('monthlyPlan')}) : t('continueWith', {plan: t('monthlyPlan')})}
+            {billingInfo?.status === SUBSCRIPTION_STATUS.ACTIVE
+              ? t('changeToPlan', { plan: t('monthlyPlan') })
+              : t('continueWith', { plan: t('monthlyPlan') })}
           </Button>
         )}
       </Row>

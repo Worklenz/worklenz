@@ -43,7 +43,10 @@ export const fetchTeamData = createAsyncThunk('schedule/fetchTeamData', async ()
 export const fetchDateList = createAsyncThunk(
   'schedule/fetchDateList',
   async ({ date, type }: { date: Date; type: string }) => {
-    const response = await scheduleAPIService.fetchScheduleDates({ date: date.toISOString(), type });
+    const response = await scheduleAPIService.fetchScheduleDates({
+      date: date.toISOString(),
+      type,
+    });
     if (!response.done) {
       throw new Error('Failed to fetch date list');
     }
@@ -97,7 +100,7 @@ export const fetchMemberProjects = createAsyncThunk(
 
 export const createSchedule = createAsyncThunk(
   'schedule/createSchedule',
-  async ({ schedule }: { schedule: ScheduleData}) => {
+  async ({ schedule }: { schedule: ScheduleData }) => {
     const response = await scheduleAPIService.submitScheduleData({ schedule });
     if (!response.done) {
       throw new Error('Failed to fetch date list');
@@ -187,7 +190,8 @@ const scheduleSlice = createSlice({
       .addCase(getWorking.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch list';
-      }).addCase(fetchMemberProjects.pending, state => {
+      })
+      .addCase(fetchMemberProjects.pending, state => {
         state.loading = true;
         state.error = null;
       })
@@ -196,15 +200,16 @@ const scheduleSlice = createSlice({
 
         state.teamData.find((team: any) => {
           if (team.id === data.id) {
-            team.projects = data.projects||[];
+            team.projects = data.projects || [];
           }
-        })
+        });
         state.loading = false;
       })
       .addCase(fetchMemberProjects.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch date list';
-      }).addCase(createSchedule.pending, state => {
+      })
+      .addCase(createSchedule.pending, state => {
         state.loading = true;
         state.error = null;
       })
@@ -218,6 +223,13 @@ const scheduleSlice = createSlice({
   },
 });
 
-export const { toggleSettingsDrawer, updateSettings, toggleScheduleDrawer, getWorkingSettings, setDate, setType, setDayCount } =
-  scheduleSlice.actions;
+export const {
+  toggleSettingsDrawer,
+  updateSettings,
+  toggleScheduleDrawer,
+  getWorkingSettings,
+  setDate,
+  setType,
+  setDayCount,
+} = scheduleSlice.actions;
 export default scheduleSlice.reducer;

@@ -8,10 +8,7 @@ import React, { useState } from 'react';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import {
-  updateColumnVisibility,
-  updateCustomColumnPinned,
-} from '@/features/tasks/tasks.slice';
+import { updateColumnVisibility, updateCustomColumnPinned } from '@/features/tasks/tasks.slice';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -37,14 +34,38 @@ const DEFAULT_COLUMN_CONFIG: ColumnConfig[] = [
   { key: 'LABELS', label: 'Labels', showInDropdown: true, order: 7, category: 'basic' },
   { key: 'PHASE', label: 'Phase', showInDropdown: true, order: 8, category: 'basic' },
   { key: 'PRIORITY', label: 'Priority', showInDropdown: true, order: 9, category: 'basic' },
-  { key: 'TIME_TRACKING', label: 'Time Tracking', showInDropdown: true, order: 10, category: 'time' },
+  {
+    key: 'TIME_TRACKING',
+    label: 'Time Tracking',
+    showInDropdown: true,
+    order: 10,
+    category: 'time',
+  },
   { key: 'ESTIMATION', label: 'Estimation', showInDropdown: true, order: 11, category: 'time' },
   { key: 'START_DATE', label: 'Start Date', showInDropdown: true, order: 12, category: 'dates' },
   { key: 'DUE_DATE', label: 'Due Date', showInDropdown: true, order: 13, category: 'dates' },
   { key: 'DUE_TIME', label: 'Due Time', showInDropdown: true, order: 14, category: 'dates' },
-  { key: 'COMPLETED_DATE', label: 'Completed Date', showInDropdown: true, order: 15, category: 'dates' },
-  { key: 'CREATED_DATE', label: 'Created Date', showInDropdown: true, order: 16, category: 'dates' },
-  { key: 'LAST_UPDATED', label: 'Last Updated', showInDropdown: true, order: 17, category: 'dates' },
+  {
+    key: 'COMPLETED_DATE',
+    label: 'Completed Date',
+    showInDropdown: true,
+    order: 15,
+    category: 'dates',
+  },
+  {
+    key: 'CREATED_DATE',
+    label: 'Created Date',
+    showInDropdown: true,
+    order: 16,
+    category: 'dates',
+  },
+  {
+    key: 'LAST_UPDATED',
+    label: 'Last Updated',
+    showInDropdown: true,
+    order: 17,
+    category: 'dates',
+  },
   { key: 'REPORTER', label: 'Reporter', showInDropdown: true, order: 18, category: 'basic' },
 ];
 
@@ -55,11 +76,11 @@ const useColumnConfig = (projectId?: string): ColumnConfig[] => {
   // 2. User preferences from localStorage
   // 3. Global settings from configuration
   // 4. Team-level settings
-  
+
   // For now, return default configuration
   // You can extend this to load from localStorage or API
   const storedConfig = localStorage.getItem(`worklenz.column-config.${projectId}`);
-  
+
   if (storedConfig) {
     try {
       return JSON.parse(storedConfig);
@@ -67,7 +88,7 @@ const useColumnConfig = (projectId?: string): ColumnConfig[] => {
       console.warn('Failed to parse stored column config, using default');
     }
   }
-  
+
   return DEFAULT_COLUMN_CONFIG;
 };
 
@@ -85,7 +106,9 @@ const ShowFieldsFilterDropdown = () => {
   const columnList = useAppSelector(state => state.taskReducer.columns);
   const { projectId, project } = useAppSelector(state => state.projectReducer);
   const [configModalOpen, setConfigModalOpen] = useState(false);
-  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(useColumnConfig(projectId || undefined));
+  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>(
+    useColumnConfig(projectId || undefined)
+  );
   const saveColumnConfig = useSaveColumnConfig();
 
   // Update config if projectId changes
@@ -99,15 +122,15 @@ const ShowFieldsFilterDropdown = () => {
     if (column.key === 'selector' || column.key === 'TASK') {
       return false;
     }
-    
+
     // Find configuration for this column
     const config = columnConfig.find(c => c.key === column.key);
-    
+
     // If no config found, show custom columns by default
     if (!config) {
       return column.custom_column;
     }
-    
+
     // Return based on configuration
     return config.showInDropdown;
   });
@@ -116,13 +139,13 @@ const ShowFieldsFilterDropdown = () => {
   const sortedColumns = visibilityChangableColumnList.sort((a, b) => {
     const configA = columnConfig.find(c => c.key === a.key);
     const configB = columnConfig.find(c => c.key === b.key);
-    
+
     const orderA = configA?.order ?? 999;
     const orderB = configB?.order ?? 999;
-    
+
     return orderA - orderB;
   });
-  
+
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const handleColumnVisibilityChange = async (col: ITaskListColumn) => {

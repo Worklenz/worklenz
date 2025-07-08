@@ -20,14 +20,31 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
-import { toggleField } from '@/features/task-management/taskListFields.slice';
+import { toggleField, syncFieldWithDatabase } from '@/features/task-management/taskListFields.slice';
+import { selectColumns } from '@/features/task-management/task-management.slice';
 
 // Import Redux actions
-import { fetchTasksV3, setSearch as setTaskManagementSearch } from '@/features/task-management/task-management.slice';
-import { setCurrentGrouping, selectCurrentGrouping } from '@/features/task-management/grouping.slice';
+import {
+  fetchTasksV3,
+  setSearch as setTaskManagementSearch,
+  setArchived as setTaskManagementArchived,
+  toggleArchived as toggleTaskManagementArchived,
+  selectArchived,
+} from '@/features/task-management/task-management.slice';
+import {
+  setCurrentGrouping,
+  selectCurrentGrouping,
+} from '@/features/task-management/grouping.slice';
 
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
-import { fetchLabelsByProject, fetchTaskAssignees, setMembers, setLabels, setSearch, setPriorities } from '@/features/tasks/tasks.slice';
+import {
+  fetchLabelsByProject,
+  fetchTaskAssignees,
+  setMembers,
+  setLabels,
+  setSearch,
+  setPriorities,
+} from '@/features/tasks/tasks.slice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
@@ -213,7 +230,9 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           icon: TeamOutlined,
           multiSelect: true,
           searchable: true,
-          selectedValues: currentAssignees.filter((m: any) => m.selected && m.id).map((m: any) => m.id || ''),
+          selectedValues: currentAssignees
+            .filter((m: any) => m.selected && m.id)
+            .map((m: any) => m.id || ''),
           options: filterData.kanbanTaskAssignees.map((assignee: any) => ({
             id: assignee.id || '',
             label: assignee.name || '',
@@ -228,7 +247,9 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           icon: TagOutlined,
           multiSelect: true,
           searchable: true,
-          selectedValues: currentLabels.filter((l: any) => l.selected && l.id).map((l: any) => l.id || ''),
+          selectedValues: currentLabels
+            .filter((l: any) => l.selected && l.id)
+            .map((l: any) => l.id || ''),
           options: filterData.kanbanLabels.map((label: any) => ({
             id: label.id || '',
             label: label.name || '',
@@ -247,15 +268,22 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           options: [
             { id: 'status', label: t('statusText'), value: 'status' },
             { id: 'priority', label: t('priorityText'), value: 'priority' },
-            { id: 'phase', label: (kanbanProject as any)?.phase_label || t('phaseText'), value: 'phase' },
+            {
+              id: 'phase',
+              label: (kanbanProject as any)?.phase_label || t('phaseText'),
+              value: 'phase',
+            },
           ],
         },
       ];
     } else {
       // Use task management/board state
-      const currentPriorities = currentProjectView === 'list' ? filterData.taskPriorities : filterData.boardPriorities;
-      const currentLabels = currentProjectView === 'list' ? filterData.taskLabels : filterData.boardLabels;
-      const currentAssignees = currentProjectView === 'list' ? filterData.taskAssignees : filterData.boardAssignees;
+      const currentPriorities =
+        currentProjectView === 'list' ? filterData.taskPriorities : filterData.boardPriorities;
+      const currentLabels =
+        currentProjectView === 'list' ? filterData.taskLabels : filterData.boardLabels;
+      const currentAssignees =
+        currentProjectView === 'list' ? filterData.taskAssignees : filterData.boardAssignees;
       const groupByValue = currentGrouping || 'status';
       return [
         {
@@ -277,7 +305,9 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           icon: TeamOutlined,
           multiSelect: true,
           searchable: true,
-          selectedValues: currentAssignees.filter((m: any) => m.selected && m.id).map((m: any) => m.id || ''),
+          selectedValues: currentAssignees
+            .filter((m: any) => m.selected && m.id)
+            .map((m: any) => m.id || ''),
           options: currentAssignees.map((assignee: any) => ({
             id: assignee.id || '',
             label: assignee.name || '',
@@ -292,7 +322,9 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           icon: TagOutlined,
           multiSelect: true,
           searchable: true,
-          selectedValues: currentLabels.filter((l: any) => l.selected && l.id).map((l: any) => l.id || ''),
+          selectedValues: currentLabels
+            .filter((l: any) => l.selected && l.id)
+            .map((l: any) => l.id || ''),
           options: currentLabels.map((label: any) => ({
             id: label.id || '',
             label: label.name || '',
@@ -311,13 +343,16 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           options: [
             { id: 'status', label: t('statusText'), value: 'status' },
             { id: 'priority', label: t('priorityText'), value: 'priority' },
-            { id: 'phase', label: filterData.project?.phase_label || t('phaseText'), value: 'phase' },
+            {
+              id: 'phase',
+              label: filterData.project?.phase_label || t('phaseText'),
+              value: 'phase',
+            },
           ],
         },
       ];
     }
   }, [isBoard, kanbanState, kanbanProject, filterData, currentProjectView, t, currentGrouping]);
-
 };
 
 // Filter Dropdown Component
@@ -329,7 +364,16 @@ const FilterDropdown: React.FC<{
   themeClasses: any;
   isDarkMode: boolean;
   className?: string;
-}> = ({ section, onSelectionChange, isOpen, onToggle, themeClasses, isDarkMode, className = '' }) => {
+}> = ({
+  section,
+  onSelectionChange,
+  isOpen,
+  onToggle,
+  themeClasses,
+  isDarkMode,
+  className = '',
+}) => {
+  const { t } = useTranslation('task-list-filters');
   // Add permission checks for groupBy section
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
@@ -345,9 +389,7 @@ const FilterDropdown: React.FC<{
     }
 
     const searchLower = searchTerm.toLowerCase();
-    return section.options.filter(option =>
-      option.label.toLowerCase().includes(searchLower)
-    );
+    return section.options.filter(option => option.label.toLowerCase().includes(searchLower));
   }, [searchTerm, section.options, section.searchable]);
 
   // Update filtered options when memo changes
@@ -373,17 +415,20 @@ const FilterDropdown: React.FC<{
     }
   }, [isOpen]);
 
-  const handleOptionToggle = useCallback((optionValue: string) => {
-    if (section.multiSelect) {
-      const newValues = section.selectedValues.includes(optionValue)
-        ? section.selectedValues.filter(v => v !== optionValue)
-        : [...section.selectedValues, optionValue];
-      onSelectionChange(section.id, newValues);
-    } else {
-      onSelectionChange(section.id, [optionValue]);
-      onToggle();
-    }
-  }, [section, onSelectionChange, onToggle]);
+  const handleOptionToggle = useCallback(
+    (optionValue: string) => {
+      if (section.multiSelect) {
+        const newValues = section.selectedValues.includes(optionValue)
+          ? section.selectedValues.filter(v => v !== optionValue)
+          : [...section.selectedValues, optionValue];
+        onSelectionChange(section.id, newValues);
+      } else {
+        onSelectionChange(section.id, [optionValue]);
+        onToggle();
+      }
+    },
+    [section, onSelectionChange, onToggle]
+  );
 
   const clearSelection = useCallback(() => {
     onSelectionChange(section.id, []);
@@ -397,14 +442,17 @@ const FilterDropdown: React.FC<{
       {/* Trigger Button */}
       <button
         onClick={onToggle}
-        className={`
+                  className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
-          ${selectedCount > 0
-            ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold')
-            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          ${
+            selectedCount > 0
+              ? isDarkMode
+                ? 'bg-gray-600 text-white border-gray-500'
+                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={isOpen}
@@ -412,8 +460,15 @@ const FilterDropdown: React.FC<{
       >
         <IconComponent className="w-3.5 h-3.5" />
         <span>{section.label}</span>
-        {selectedCount > 0 && (
-          <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-blue-500 rounded-full">
+        {/* Show selected option for single-select (group by) */}
+        {section.id === 'groupBy' && selectedCount > 0 && (
+          <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            {section.options.find(opt => opt.value === section.selectedValues[0])?.label}
+          </span>
+        )}
+        {/* Show count for multi-select filters */}
+        {section.id !== 'groupBy' && selectedCount > 0 && (
+          <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-gray-500 rounded-full">
             {selectedCount}
           </span>
         )}
@@ -432,7 +487,9 @@ const FilterDropdown: React.FC<{
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}>
+        <div
+          className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+        >
           {/* Search Input */}
           {section.searchable && (
             <div className={`p-2 border-b ${themeClasses.dividerBorder}`}>
@@ -441,11 +498,12 @@ const FilterDropdown: React.FC<{
                 <input
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  placeholder={`Search ${section.label.toLowerCase()}...`}
-                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${isDarkMode
-                    ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                    : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                    }`}
+                  placeholder={`${t('searchPlaceholder')} ${section.label.toLowerCase()}...`}
+                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
+                    isDarkMode
+                      ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                      : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+                  }`}
                 />
               </div>
             </div>
@@ -455,11 +513,11 @@ const FilterDropdown: React.FC<{
           <div className="max-h-48 overflow-y-auto">
             {filteredOptions.length === 0 ? (
               <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
-                No options found
+                {t('noOptionsFound')}
               </div>
             ) : (
               <div className="p-0.5">
-                {filteredOptions.map((option) => {
+                {filteredOptions.map(option => {
                   const isSelected = section.selectedValues.includes(option.value);
 
                   return (
@@ -469,22 +527,30 @@ const FilterDropdown: React.FC<{
                       className={`
                         w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
                         transition-colors duration-150 text-left
-                        ${isSelected
-                          ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-800 font-semibold')
-                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                        ${
+                          isSelected
+                            ? isDarkMode
+                              ? 'bg-gray-600 text-white'
+                              : 'bg-gray-200 text-gray-800 font-semibold'
+                            : `${themeClasses.optionText} ${themeClasses.optionHover}`
                         }
                       `}
                     >
-                      {/* Checkbox/Radio indicator */}
-                      <div className={`
-                        flex items-center justify-center w-3.5 h-3.5 border rounded
-                        ${isSelected
-                          ? 'bg-blue-500 border-blue-500 text-white'
-                          : 'border-gray-300 dark:border-gray-600'
-                        }
-                      `}>
-                        {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
-                      </div>
+                      {/* Checkbox/Radio indicator - hide for group by */}
+                      {section.id !== 'groupBy' && (
+                        <div
+                          className={`
+                          flex items-center justify-center w-3.5 h-3.5 border rounded
+                          ${
+                            isSelected
+                              ? 'bg-gray-600 border-gray-800 text-white'
+                              : 'border-gray-300 dark:border-gray-600'
+                          }
+                        `}
+                        >
+                          {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
+                        </div>
+                      )}
 
                       {/* Color indicator */}
                       {option.color && (
@@ -533,10 +599,20 @@ const SearchFilter: React.FC<{
   placeholder?: string;
   themeClasses: any;
   className?: string;
-}> = ({ value, onChange, placeholder = 'Search tasks...', themeClasses, className = '' }) => {
+}> = ({ value, onChange, placeholder, themeClasses, className = '' }) => {
+  const { t } = useTranslation('task-list-filters');
   const [isExpanded, setIsExpanded] = useState(false);
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync local value with external value prop
+  useEffect(() => {
+    setLocalValue(value);
+    // Keep expanded if there's a search value
+    if (value) {
+      setIsExpanded(true);
+    }
+  }, [value]);
 
   const handleToggle = useCallback(() => {
     setIsExpanded(!isExpanded);
@@ -545,15 +621,17 @@ const SearchFilter: React.FC<{
     }
   }, [isExpanded]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    onChange(localValue);
-  }, [localValue, onChange]);
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      onChange(localValue);
+    },
+    [localValue, onChange]
+  );
 
   const handleClear = useCallback(() => {
     setLocalValue('');
     onChange('');
-    setIsExpanded(false);
   }, [onChange]);
 
   // Redux selectors for theme and other state
@@ -561,14 +639,17 @@ const SearchFilter: React.FC<{
 
   return (
     <div className={`relative ${className}`}>
-      {!isExpanded ? (
+      {!isExpanded && !value ? (
         <button
           onClick={handleToggle}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${themeClasses.containerBg === 'bg-gray-800' ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
-            }`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
+            themeClasses.containerBg === 'bg-gray-800'
+              ? 'focus:ring-offset-gray-900'
+              : 'focus:ring-offset-white'
+          }`}
         >
           <SearchOutlined className="w-3.5 h-3.5" />
-          <span>Search</span>
+          <span>{t('search')}</span>
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="flex items-center gap-1.5">
@@ -578,18 +659,23 @@ const SearchFilter: React.FC<{
               ref={inputRef}
               type="text"
               value={localValue}
-              onChange={(e) => setLocalValue(e.target.value)}
-              placeholder={placeholder}
-              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${isDarkMode
-                ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                }`}
+              onChange={e => setLocalValue(e.target.value)}
+              placeholder={placeholder || t('searchTasks')}
+                                className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
+                    isDarkMode
+                      ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                      : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+                  }`}
             />
             {localValue && (
               <button
                 type="button"
                 onClick={handleClear}
-                className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 ${themeClasses.secondaryText} hover:${themeClasses.optionText} transition-colors duration-150`}
+                className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 transition-colors duration-150 ${
+                  isDarkMode 
+                    ? 'text-gray-400 hover:text-gray-200' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
               >
                 <CloseOutlined className="w-3.5 h-3.5" />
               </button>
@@ -597,16 +683,28 @@ const SearchFilter: React.FC<{
           </div>
           <button
             type="submit"
-            className="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
-          >
-            Search
-          </button>
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 ${
+              isDarkMode
+                ? 'text-white bg-gray-600 hover:bg-gray-700'
+                : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
+            }`}
+                      >
+              {t('search')}
+            </button>
           <button
             type="button"
-            onClick={() => setIsExpanded(false)}
-            className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${themeClasses.secondaryText} hover:${themeClasses.optionText}`}
+            onClick={() => {
+              setLocalValue('');
+              onChange('');
+              setIsExpanded(false);
+            }}
+            className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${
+              isDarkMode
+                ? 'text-gray-400 hover:text-gray-200'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
           >
-            Cancel
+            {t('cancel')}
           </button>
         </form>
       )}
@@ -616,9 +714,15 @@ const SearchFilter: React.FC<{
 
 const LOCAL_STORAGE_KEY = 'worklenz.taskManagement.fields';
 
-const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ themeClasses, isDarkMode }) => {
-  const dispatch = useDispatch();
+const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
+  themeClasses,
+  isDarkMode,
+}) => {
+  const { t } = useTranslation('task-list-filters');
+  const dispatch = useAppDispatch();
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
+  const columns = useSelector(selectColumns);
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
   const fields = Array.isArray(fieldsRaw) ? fieldsRaw : [];
   const sortedFields = useMemo(() => [...fields].sort((a, b) => a.order - b.order), [fields]);
 
@@ -626,11 +730,13 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Debounced save to localStorage using enhanced debounce
-  const debouncedSaveFields = useMemo(() =>
-    createDebouncedFunction((fieldsToSave: typeof fields) => {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fieldsToSave));
-    }, 300),
-    []);
+  const debouncedSaveFields = useMemo(
+    () =>
+      createDebouncedFunction((fieldsToSave: typeof fields) => {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fieldsToSave));
+      }, 300),
+    []
+  );
 
   useEffect(() => {
     debouncedSaveFields(fields);
@@ -650,7 +756,10 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const visibleCount = useMemo(() => sortedFields.filter(field => field.visible).length, [sortedFields]);
+  const visibleCount = useMemo(
+    () => sortedFields.filter(field => field.visible).length,
+    [sortedFields]
+  );
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -660,20 +769,25 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
-          ${visibleCount > 0
-            ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-50 text-blue-800 border-blue-300 font-semibold')
-            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          ${
+            visibleCount > 0
+              ? isDarkMode
+                ? 'bg-gray-600 text-white border-gray-500'
+                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
-          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
         aria-expanded={open}
         aria-haspopup="true"
       >
         <EyeOutlined className="w-3.5 h-3.5" />
-        <span>Fields</span>
+        <span>{t('fieldsText')}</span>
         {visibleCount > 0 && (
-          <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-blue-500 rounded-full">
+          <span
+            className={`inline-flex items-center justify-center w-4 h-4 text-xs font-bold ${isDarkMode ? 'text-white bg-gray-500' : 'text-gray-800 bg-gray-300'} rounded-full`}
+          >
             {visibleCount}
           </span>
         )}
@@ -684,39 +798,60 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
 
       {/* Dropdown Panel - matching FilterDropdown style */}
       {open && (
-        <div className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}>
+        <div
+          className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+        >
           {/* Options List */}
           <div className="max-h-48 overflow-y-auto">
             {sortedFields.length === 0 ? (
-              <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
-                No fields available
-              </div>
+                          <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
+              {t('noOptionsFound')}
+            </div>
             ) : (
               <div className="p-0.5">
-                {sortedFields.map((field) => {
+                {sortedFields.map(field => {
                   const isSelected = field.visible;
 
                   return (
                     <button
                       key={field.key}
-                      onClick={() => dispatch(toggleField(field.key))}
+                      onClick={() => {
+                        // Toggle field locally first
+                        dispatch(toggleField(field.key));
+                        
+                        // Sync with database if projectId is available
+                        if (projectId) {
+                          dispatch(syncFieldWithDatabase({
+                            projectId,
+                            fieldKey: field.key,
+                            visible: !field.visible,
+                            columns
+                          }));
+                        }
+                      }}
                       className={`
                         w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
                         transition-colors duration-150 text-left
-                        ${isSelected
-                          ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-800 font-semibold')
-                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                        ${
+                          isSelected
+                            ? isDarkMode
+                              ? 'text-white font-semibold'
+                              : 'text-gray-800 font-semibold'
+                            : `${themeClasses.optionText} ${themeClasses.optionHover}`
                         }
                       `}
                     >
                       {/* Checkbox indicator - matching FilterDropdown style */}
-                      <div className={`
+                      <div
+                        className={`
                         flex items-center justify-center w-3.5 h-3.5 border rounded
-                        ${isSelected
-                          ? 'bg-blue-500 border-blue-500 text-white'
-                          : 'border-gray-300 dark:border-gray-600'
+                        ${
+                          isSelected
+                            ? 'bg-gray-600 border-gray-600 text-white'
+                            : 'border-gray-300 dark:border-gray-600'
                         }
-                      `}>
+                      `}
+                      >
                         {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
                       </div>
 
@@ -737,10 +872,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({ 
 };
 
 // Main Component
-const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
-  position,
-  className = ''
-}) => {
+const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, className = '' }) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
 
@@ -751,27 +883,41 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   // Enhanced Kanban state
   const kanbanState = useAppSelector((state: RootState) => state.enhancedKanbanReducer);
 
+  // Get archived state from the appropriate slice based on position
+  const taskManagementArchived = useAppSelector(selectArchived);
+  const taskReducerArchived = useAppSelector(state => state.taskReducer.archived);
+  const showArchived = position === 'list' ? taskManagementArchived : taskReducerArchived;
+
   // Use the filter data loader hook
   useFilterDataLoader();
 
+  // Get search value from Redux based on position
+  const taskReducerSearch = useAppSelector(state => state.taskReducer?.search || '');
+  const kanbanSearch = useAppSelector(state => state.enhancedKanbanReducer?.search || '');
+  
+  const searchValue = position === 'board' ? kanbanSearch : taskReducerSearch;
+
   // Local state for filter sections
   const [filterSections, setFilterSections] = useState<FilterSection[]>([]);
-  const [searchValue, setSearchValue] = useState('');
-  const [showArchived, setShowArchived] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   const [clearingFilters, setClearingFilters] = useState(false);
 
   // Refs for debounced functions
-  const debouncedFilterChangeRef = useRef<((projectId: string) => void) & { cancel: () => void } | null>(null);
-  const debouncedSearchChangeRef = useRef<((projectId: string, value: string) => void) & { cancel: () => void } | null>(null);
+  const debouncedFilterChangeRef = useRef<
+    (((projectId: string) => void) & { cancel: () => void }) | null
+  >(null);
+  const debouncedSearchChangeRef = useRef<
+    (((projectId: string, value: string) => void) & { cancel: () => void }) | null
+  >(null);
 
   // Get real filter data
   const filterSectionsData = useFilterData(position);
 
   // Check if data is loaded - memoize this computation
+  // Keep filters visible even during refetch if we have any filter sections
   const isDataLoaded = useMemo(() => {
-    return filterSectionsData.some(section => section.options.length > 0);
+    return filterSectionsData.length > 0;
   }, [filterSectionsData]);
 
   // Initialize filter sections from data - memoize this to prevent unnecessary updates
@@ -793,27 +939,30 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   const { projectView } = useTabSearchParam();
 
   // Theme-aware class names - memoize to prevent unnecessary re-renders
-  // Using task list row colors for consistency: --task-bg-primary: #1f1f1f, --task-bg-secondary: #141414
-  const themeClasses = useMemo(() => ({
-    containerBg: isDarkMode ? 'bg-[#1f1f1f]' : 'bg-white',
-    containerBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-200',
-    buttonBg: isDarkMode ? 'bg-[#141414] hover:bg-[#262626]' : 'bg-white hover:bg-gray-50',
-    buttonBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-300',
-    buttonText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
-    dropdownBg: isDarkMode ? 'bg-[#1f1f1f]' : 'bg-white',
-    dropdownBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-200',
-    optionText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
-    optionHover: isDarkMode ? 'hover:bg-[#262626]' : 'hover:bg-gray-50',
-    secondaryText: isDarkMode ? 'text-[#8c8c8c]' : 'text-gray-500',
-    dividerBorder: isDarkMode ? 'border-[#404040]' : 'border-gray-200',
-    pillBg: isDarkMode ? 'bg-[#141414]' : 'bg-gray-100',
-    pillText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
-    pillActiveBg: isDarkMode ? 'bg-blue-600' : 'bg-blue-100',
-    pillActiveText: isDarkMode ? 'text-white' : 'text-blue-800',
-    searchBg: isDarkMode ? 'bg-[#141414]' : 'bg-gray-50',
-    searchBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-300',
-    searchText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-900',
-  }), [isDarkMode]);
+  // Using greyish colors for both dark and light modes
+  const themeClasses = useMemo(
+    () => ({
+      containerBg: isDarkMode ? 'bg-[#1f1f1f]' : 'bg-white',
+      containerBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-200',
+      buttonBg: isDarkMode ? 'bg-[#141414] hover:bg-[#262626]' : 'bg-white hover:bg-gray-50',
+      buttonBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-300',
+      buttonText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
+      dropdownBg: isDarkMode ? 'bg-[#1f1f1f]' : 'bg-white',
+      dropdownBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-200',
+      optionText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
+      optionHover: isDarkMode ? 'hover:bg-[#262626]' : 'hover:bg-gray-50',
+      secondaryText: isDarkMode ? 'text-[#8c8c8c]' : 'text-gray-500',
+      dividerBorder: isDarkMode ? 'border-[#404040]' : 'border-gray-200',
+      pillBg: isDarkMode ? 'bg-[#141414]' : 'bg-gray-100',
+      pillText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-700',
+      pillActiveBg: isDarkMode ? 'bg-gray-600' : 'bg-gray-200',
+      pillActiveText: isDarkMode ? 'text-white' : 'text-gray-800',
+      searchBg: isDarkMode ? 'bg-[#141414]' : 'bg-gray-50',
+      searchBorder: isDarkMode ? 'border-[#303030]' : 'border-gray-300',
+      searchText: isDarkMode ? 'text-[#d9d9d9]' : 'text-gray-900',
+    }),
+    [isDarkMode]
+  );
 
   // Initialize debounced functions
   useEffect(() => {
@@ -823,17 +972,16 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
     }, FILTER_DEBOUNCE_DELAY);
 
     // Debounced search change function
-    debouncedSearchChangeRef.current = createDebouncedFunction((projectId: string, value: string) => {
-      // Dispatch search action based on current view
-      if (projectView === 'list') {
+    debouncedSearchChangeRef.current = createDebouncedFunction(
+      (projectId: string, value: string) => {
+        // Always use taskReducer search for list view since that's what we read from
         dispatch(setSearch(value));
-      } else {
-        dispatch(setKanbanSearch(value));
-      }
 
-      // Trigger task refetch with new search value
-      dispatch(fetchTasksV3(projectId));
-    }, SEARCH_DEBOUNCE_DELAY);
+        // Trigger task refetch with new search value
+        dispatch(fetchTasksV3(projectId));
+      },
+      SEARCH_DEBOUNCE_DELAY
+    );
 
     // Cleanup function
     return () => {
@@ -844,8 +992,9 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
 
   // Calculate active filters count - memoized to prevent unnecessary recalculations
   const calculatedActiveFiltersCount = useMemo(() => {
-    const count = filterSections.reduce((acc, section) =>
-      section.id === 'groupBy' ? acc : acc + section.selectedValues.length, 0
+    const count = filterSections.reduce(
+      (acc, section) => (section.id === 'groupBy' ? acc : acc + section.selectedValues.length),
+      0
     );
     return count + (searchValue ? 1 : 0);
   }, [filterSections, searchValue]);
@@ -858,117 +1007,121 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
 
   // Handlers
   const handleDropdownToggle = useCallback((sectionId: string) => {
-    setOpenDropdown(current => current === sectionId ? null : sectionId);
+    setOpenDropdown(current => (current === sectionId ? null : sectionId));
   }, []);
 
-  const handleSelectionChange = useCallback((sectionId: string, values: string[]) => {
-    if (!projectId) return;
-    if (position === 'board') {
-      // Enhanced Kanban logic
-      if (sectionId === 'groupBy' && values.length > 0) {
-        dispatch(setKanbanGroupBy(values[0] as any));
-        dispatch(fetchEnhancedKanbanGroups(projectId));
-        return;
+  const handleSelectionChange = useCallback(
+    (sectionId: string, values: string[]) => {
+      if (!projectId) return;
+      if (position === 'board') {
+        // Enhanced Kanban logic
+        if (sectionId === 'groupBy' && values.length > 0) {
+          dispatch(setKanbanGroupBy(values[0] as any));
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+          return;
+        }
+        if (sectionId === 'priority') {
+          dispatch(setKanbanPriorities(values));
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+          return;
+        }
+        if (sectionId === 'assignees') {
+          // Update individual assignee selections using the new action
+          const currentAssignees = kanbanState.taskAssignees || [];
+          const currentSelectedIds = currentAssignees
+            .filter((m: any) => m.selected)
+            .map((m: any) => m.id);
+
+          // First, clear all selections
+          currentAssignees.forEach((assignee: any) => {
+            if (assignee.selected) {
+              dispatch(setTaskAssigneeSelection({ id: assignee.id, selected: false }));
+            }
+          });
+
+          // Then set the new selections
+          values.forEach(id => {
+            dispatch(setTaskAssigneeSelection({ id, selected: true }));
+          });
+
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+          return;
+        }
+        if (sectionId === 'labels') {
+          // Update individual label selections using the new action
+          const currentLabels = kanbanState.labels || [];
+          const currentSelectedIds = currentLabels
+            .filter((l: any) => l.selected)
+            .map((l: any) => l.id);
+
+          // First, clear all selections
+          currentLabels.forEach((label: any) => {
+            if (label.selected) {
+              dispatch(setLabelSelection({ id: label.id, selected: false }));
+            }
+          });
+
+          // Then set the new selections
+          values.forEach(id => {
+            dispatch(setLabelSelection({ id, selected: true }));
+          });
+
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+          return;
+        }
+      } else {
+        // ... existing list logic ...
+        if (sectionId === 'groupBy' && values.length > 0) {
+          dispatch(setCurrentGrouping(values[0] as 'status' | 'priority' | 'phase'));
+          dispatch(fetchTasksV3(projectId));
+          return;
+        }
+        if (sectionId === 'priority') {
+          dispatch(setPriorities(values));
+          dispatch(fetchTasksV3(projectId));
+          return;
+        }
+        if (sectionId === 'assignees') {
+          const updatedAssignees = currentTaskAssignees.map(member => ({
+            ...member,
+            selected: values.includes(member.id || ''),
+          }));
+          dispatch(setMembers(updatedAssignees));
+          dispatch(fetchTasksV3(projectId));
+          return;
+        }
+        if (sectionId === 'labels') {
+          const updatedLabels = currentTaskLabels.map(label => ({
+            ...label,
+            selected: values.includes(label.id || ''),
+          }));
+          dispatch(setLabels(updatedLabels));
+          dispatch(fetchTasksV3(projectId));
+          return;
+        }
       }
-      if (sectionId === 'priority') {
-        dispatch(setKanbanPriorities(values));
-        dispatch(fetchEnhancedKanbanGroups(projectId));
-        return;
+    },
+    [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState]
+  );
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      if (!projectId) return;
+
+      if (position === 'board') {
+        dispatch(setKanbanSearch(value));
+        if (projectId) {
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+        }
+      } else {
+        // Use debounced search for list view
+        if (projectId) {
+          debouncedSearchChangeRef.current?.(projectId, value);
+        }
       }
-      if (sectionId === 'assignees') {
-        // Update individual assignee selections using the new action
-        const currentAssignees = kanbanState.taskAssignees || [];
-        const currentSelectedIds = currentAssignees.filter((m: any) => m.selected).map((m: any) => m.id);
-
-        // First, clear all selections
-        currentAssignees.forEach((assignee: any) => {
-          if (assignee.selected) {
-            dispatch(setTaskAssigneeSelection({ id: assignee.id, selected: false }));
-          }
-        });
-
-        // Then set the new selections
-        values.forEach(id => {
-          dispatch(setTaskAssigneeSelection({ id, selected: true }));
-        });
-
-        dispatch(fetchEnhancedKanbanGroups(projectId));
-        return;
-      }
-      if (sectionId === 'labels') {
-        // Update individual label selections using the new action
-        const currentLabels = kanbanState.labels || [];
-        const currentSelectedIds = currentLabels.filter((l: any) => l.selected).map((l: any) => l.id);
-
-        // First, clear all selections
-        currentLabels.forEach((label: any) => {
-          if (label.selected) {
-            dispatch(setLabelSelection({ id: label.id, selected: false }));
-          }
-        });
-
-        // Then set the new selections
-        values.forEach(id => {
-          dispatch(setLabelSelection({ id, selected: true }));
-        });
-
-        dispatch(fetchEnhancedKanbanGroups(projectId));
-        return;
-      }
-    } else {
-      // ... existing list logic ...
-      if (sectionId === 'groupBy' && values.length > 0) {
-        dispatch(setCurrentGrouping(values[0] as 'status' | 'priority' | 'phase'));
-        dispatch(fetchTasksV3(projectId));
-        return;
-      }
-      if (sectionId === 'priority') {
-        dispatch(setPriorities(values));
-        dispatch(fetchTasksV3(projectId));
-        return;
-      }
-      if (sectionId === 'assignees') {
-        const updatedAssignees = currentTaskAssignees.map(member => ({
-          ...member,
-          selected: values.includes(member.id || '')
-        }));
-        dispatch(setMembers(updatedAssignees));
-        dispatch(fetchTasksV3(projectId));
-        return;
-      }
-      if (sectionId === 'labels') {
-        const updatedLabels = currentTaskLabels.map(label => ({
-          ...label,
-          selected: values.includes(label.id || '')
-        }));
-        dispatch(setLabels(updatedLabels));
-        dispatch(fetchTasksV3(projectId));
-        return;
-      }
-
-    }
-  }, [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState]);
-
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchValue(value);
-
-
-    if (!projectId) return;
-
-    if (position === 'board') {
-      dispatch(setKanbanSearch(value));
-      if (projectId) {
-        dispatch(fetchEnhancedKanbanGroups(projectId));
-      }
-    } else {
-      // Use debounced search
-      if (projectId) {
-        debouncedSearchChangeRef.current?.(projectId, value);
-      }
-    }
-
-
-  }, [dispatch, projectId, position]);
+    },
+    [dispatch, projectId, position]
+  );
 
   const clearAllFilters = useCallback(async () => {
     if (!projectId || clearingFilters) return;
@@ -983,15 +1136,13 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
 
       // Batch all state updates together to prevent multiple re-renders
       const batchUpdates = () => {
-        // Clear local state immediately for UI feedback
-        setSearchValue('');
-        setShowArchived(false);
-
         // Update local filter sections state immediately
-        setFilterSections(prev => prev.map(section => ({
-          ...section,
-          selectedValues: section.id === 'groupBy' ? section.selectedValues : [] // Keep groupBy, clear others
-        })));
+        setFilterSections(prev =>
+          prev.map(section => ({
+            ...section,
+            selectedValues: section.id === 'groupBy' ? section.selectedValues : [], // Keep groupBy, clear others
+          }))
+        );
       };
 
       // Execute all local state updates in a batch
@@ -999,29 +1150,32 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
 
       // Prepare all Redux actions to be dispatched together
       const reduxUpdates = () => {
-        // Clear search based on view
-        if (projectView === 'list') {
-          dispatch(setSearch(''));
-        } else {
-          dispatch(setKanbanBoardSearch(''));
-        }
+        // Clear search - always use taskReducer for list view
+        dispatch(setSearch(''));
 
         // Clear label filters
         const clearedLabels = currentTaskLabels.map(label => ({
           ...label,
-          selected: false
+          selected: false,
         }));
         dispatch(setLabels(clearedLabels));
 
         // Clear assignee filters
         const clearedAssignees = currentTaskAssignees.map(member => ({
           ...member,
-          selected: false
+          selected: false,
         }));
         dispatch(setMembers(clearedAssignees));
 
         // Clear priority filters
         dispatch(setPriorities([]));
+
+        // Clear archived state based on position
+        if (position === 'list') {
+          dispatch(setTaskManagementArchived(false));
+        } else {
+          dispatch(setKanbanArchived(false));
+        }
       };
 
       // Execute Redux updates
@@ -1043,19 +1197,24 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
   }, [projectId, projectView, dispatch, currentTaskLabels, currentTaskAssignees, clearingFilters]);
 
   const toggleArchived = useCallback(() => {
-    setShowArchived(!showArchived);
     if (position === 'board') {
       dispatch(setKanbanArchived(!showArchived));
       if (projectId) {
         dispatch(fetchEnhancedKanbanGroups(projectId));
       }
     } else {
-      // ... existing logic ...
+      // For TaskListV2, use the task management slice
+      dispatch(toggleTaskManagementArchived());
+      if (projectId) {
+        dispatch(fetchTasksV3(projectId));
+      }
     }
   }, [dispatch, projectId, position, showArchived]);
 
   return (
-    <div className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-sm ${className}`}>
+    <div
+      className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-sm ${className}`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         {/* Left Section - Main Filters */}
         <div className="flex flex-wrap items-center gap-2">
@@ -1069,7 +1228,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
 
           {/* Filter Dropdowns - Only render when data is loaded */}
           {isDataLoaded ? (
-            filterSectionsData.map((section) => (
+            filterSectionsData.map(section => (
               <FilterDropdown
                 key={section.id}
                 section={section}
@@ -1082,10 +1241,12 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
             ))
           ) : (
             // Loading state
-            <div className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}>
-              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-blue-500"></div>
-              <span>Loading filters...</span>
-            </div>
+                          <div
+                className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}
+              >
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-500"></div>
+                <span>{t('loadingFilters')}</span>
+              </div>
           )}
         </div>
 
@@ -1095,19 +1256,20 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-1.5">
               <span className={`text-xs ${themeClasses.secondaryText}`}>
-                {activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} active
+                {activeFiltersCount} {activeFiltersCount !== 1 ? t('filtersActive') : t('filterActive')}
               </span>
               <button
                 onClick={clearAllFilters}
                 disabled={clearingFilters}
-                className={`text-xs font-medium transition-colors duration-150 ${clearingFilters
-                  ? 'text-gray-400 cursor-not-allowed'
+                className={`text-xs font-medium transition-colors duration-150 ${
+                  clearingFilters
+                    ?                   'text-gray-400 cursor-not-allowed'
                   : isDarkMode
-                    ? 'text-blue-400 hover:text-blue-300'
-                    : 'text-blue-600 hover:text-blue-700'
-                  }`}
+                    ? 'text-gray-400 hover:text-gray-300'
+                    : 'text-gray-600 hover:text-gray-700'
+                }`}
               >
-                {clearingFilters ? 'Clearing...' : 'Clear all'}
+                {clearingFilters ? t('clearing') : t('clearAll')}
               </button>
             </div>
           )}
@@ -1119,101 +1281,22 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({
                 type="checkbox"
                 checked={showArchived}
                 onChange={toggleArchived}
-                className={`w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500 transition-colors duration-150 ${
-                  isDarkMode 
-                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800' 
+                className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${
+                  isDarkMode
+                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
                     : 'border-gray-300 bg-white focus:ring-offset-white'
                 }`}
               />
-              <span className={`text-xs ${themeClasses.optionText}`}>
-                Show archived
-              </span>
-              <InboxOutlined className={`w-3.5 h-3.5 ${themeClasses.secondaryText}`} />
+              <span className={`text-xs ${themeClasses.optionText}`}>{t('showArchivedText')}</span>
             </label>
           )}
 
           {/* Show Fields Button (for list view) */}
-          {position === 'list' && <FieldsDropdown themeClasses={themeClasses} isDarkMode={isDarkMode} />}
+          {position === 'list' && (
+            <FieldsDropdown themeClasses={themeClasses} isDarkMode={isDarkMode} />
+          )}
         </div>
       </div>
-
-      {/* Active Filters Pills */}
-      {activeFiltersCount > 0 && (
-        <div className={`flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t ${themeClasses.dividerBorder}`}>
-          {searchValue && (
-            <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${themeClasses.pillActiveBg} ${themeClasses.pillActiveText}`}>
-              <SearchOutlined className="w-2.5 h-2.5" />
-              <span>"{searchValue}"</span>
-              <button
-                onClick={() => {
-                  setSearchValue('');
-                  if (projectId) {
-                    // Cancel pending search and immediately clear
-                    debouncedSearchChangeRef.current?.cancel();
-                    if (position === 'board') {
-                      dispatch(setKanbanSearch(''));
-                      dispatch(fetchEnhancedKanbanGroups(projectId));
-                    } else {
-                      if (projectView === 'list') {
-                        dispatch(setSearch(''));
-                      } else {
-                        dispatch(setKanbanBoardSearch(''));
-                      }
-                      dispatch(fetchTasksV3(projectId));
-                    }
-                  }
-                }}
-                className={`ml-1 rounded-full p-0.5 transition-colors duration-150 ${isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-200'
-                  }`}
-              >
-                <CloseOutlined className="w-2.5 h-2.5" />
-              </button>
-            </div>
-          )}
-
-          {filterSectionsData
-            .filter(section => section.id !== 'groupBy') // <-- skip groupBy
-            .flatMap((section) =>
-              section.selectedValues.map((value) => {
-                const option = section.options.find(opt => opt.value === value);
-                if (!option) return null;
-
-                return (
-                  <div
-                    key={`${section.id}-${value}`}
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${themeClasses.pillBg} ${themeClasses.pillText}`}
-                  >
-                    {option.color && (
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: option.color }}
-                      />
-                    )}
-                    <span>{option.label}</span>
-                    <button
-                      onClick={() => {
-                        // Update local state immediately for UI feedback
-                        setFilterSections(prev => prev.map(s =>
-                          s.id === section.id
-                            ? { ...s, selectedValues: s.selectedValues.filter(v => v !== value) }
-                            : s
-                        ));
-
-                        // Use debounced API call
-                        const newValues = section.selectedValues.filter(v => v !== value);
-                        handleSelectionChange(section.id, newValues);
-                      }}
-                      className={`ml-1 rounded-full p-0.5 transition-colors duration-150 ${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'
-                        }`}
-                    >
-                      <CloseOutlined className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
-                );
-              }).filter(Boolean)
-            )}
-        </div>
-      )}
     </div>
   );
 };
