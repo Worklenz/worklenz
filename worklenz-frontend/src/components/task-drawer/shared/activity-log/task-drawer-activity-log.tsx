@@ -20,7 +20,7 @@ const TaskDrawerActivityLog = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { selectedTaskId, taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
-  const { t } = useTranslation();
+  const { t } = useTranslation('task-drawer/task-drawer');
 
   useEffect(() => {
     fetchActivityLogs();
@@ -73,7 +73,7 @@ const TaskDrawerActivityLog = () => {
             </Tag>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color={'default'}>{activity.log_type === 'create' ? 'ADD' : 'REMOVE'}</Tag>
+            <Tag color={'default'}>{activity.log_type === 'create' ? t('taskActivityLogTab.add') : t('taskActivityLogTab.remove')}</Tag>
           </Flex>
         );
 
@@ -87,7 +87,7 @@ const TaskDrawerActivityLog = () => {
                   : activity.previous_status?.color_code
               }
             >
-              {truncateText(activity.previous_status?.name) || 'None'}
+              {truncateText(activity.previous_status?.name) || t('taskActivityLogTab.none')}
             </Tag>
             <ArrowRightOutlined />
             &nbsp;
@@ -98,7 +98,7 @@ const TaskDrawerActivityLog = () => {
                   : activity.next_status?.color_code
               }
             >
-              {truncateText(activity.next_status?.name) || 'None'}
+              {truncateText(activity.next_status?.name) || t('taskActivityLogTab.none')}
             </Tag>
           </Flex>
         );
@@ -113,7 +113,7 @@ const TaskDrawerActivityLog = () => {
                   : activity.previous_priority?.color_code
               }
             >
-              {truncateText(activity.previous_priority?.name) || 'None'}
+              {truncateText(activity.previous_priority?.name) || t('taskActivityLogTab.none')}
             </Tag>
             <ArrowRightOutlined />
             &nbsp;
@@ -124,7 +124,7 @@ const TaskDrawerActivityLog = () => {
                   : activity.next_priority?.color_code
               }
             >
-              {truncateText(activity.next_priority?.name) || 'None'}
+              {truncateText(activity.next_priority?.name) || t('taskActivityLogTab.none')}
             </Tag>
           </Flex>
         );
@@ -133,12 +133,12 @@ const TaskDrawerActivityLog = () => {
         return (
           <Flex gap={4} align="center">
             <Tag color={activity.previous_phase?.color_code}>
-              {truncateText(activity.previous_phase?.name) || 'None'}
+              {truncateText(activity.previous_phase?.name) || t('taskActivityLogTab.none')}
             </Tag>
             <ArrowRightOutlined />
             &nbsp;
             <Tag color={activity.next_phase?.color_code}>
-              {truncateText(activity.next_phase?.name) || 'None'}
+              {truncateText(activity.next_phase?.name) || t('taskActivityLogTab.none')}
             </Tag>
           </Flex>
         );
@@ -156,20 +156,20 @@ const TaskDrawerActivityLog = () => {
       case IActivityLogAttributeTypes.WEIGHT:
         return (
           <Flex gap={4} align="center">
-            <Tag color="purple">Weight: {activity.previous || '100'}</Tag>
+            <Tag color="purple">{t('taskActivityLogTab.weight')}: {activity.previous || '100'}</Tag>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color="purple">Weight: {activity.current || '100'}</Tag>
+            <Tag color="purple">{t('taskActivityLogTab.weight')}: {activity.current || '100'}</Tag>
           </Flex>
         );
 
       default:
         return (
           <Flex gap={4} align="center">
-            <Tag color={'default'}>{truncateText(activity.previous) || 'None'}</Tag>
+            <Tag color={'default'}>{truncateText(activity.previous) || t('taskActivityLogTab.none')}</Tag>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color={'default'}>{truncateText(activity.current) || 'None'}</Tag>
+            <Tag color={'default'}>{truncateText(activity.current) || t('taskActivityLogTab.none')}</Tag>
           </Flex>
         );
     }
@@ -222,7 +222,7 @@ const TaskDrawerActivityLog = () => {
               <Flex vertical gap={4}>
                 <Flex gap={4} align="center">
                   <Typography.Text strong>{activityLogs.name}</Typography.Text>
-                  <Typography.Text>created the task.</Typography.Text>
+                  <Typography.Text>{t('taskActivityLogTab.createdTask')}</Typography.Text>
                   <Tooltip
                     title={
                       activityLogs.created_at

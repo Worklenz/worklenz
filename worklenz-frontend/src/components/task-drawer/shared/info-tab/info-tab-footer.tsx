@@ -1,18 +1,14 @@
 import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { colors } from '@/styles/colors';
 import { themeWiseColor } from '@/utils/themeWiseColor';
-import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
-import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import {
   IMentionMemberSelectOption,
-  IMentionMemberViewModel,
 } from '@/types/project/projectComments.types';
-import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { ITaskCommentsCreateRequest } from '@/types/tasks/task-comments.types';
 import { ITaskAttachment } from '@/types/tasks/task-attachment-view-model';
 import logger from '@/utils/errorLogger';
@@ -40,6 +36,7 @@ const formatFileSize = (bytes: number): string => {
 };
 
 const InfoTabFooter = () => {
+  const { t } = useTranslation('task-drawer/task-drawer');
   const MAXIMUM_FILE_COUNT = 5;
 
   const [characterLength, setCharacterLength] = useState<number>(0);
@@ -136,7 +133,7 @@ const InfoTabFooter = () => {
     if (!selectedTaskId || !projectId) return;
 
     if (!isCommentValid()) {
-      message.error('Please add a comment or attach files');
+      message.error(t('taskInfoTab.comments.addCommentError'));
       return;
     }
 
@@ -188,7 +185,7 @@ const InfoTabFooter = () => {
     const files = Array.from(event.target.files);
 
     if (selectedFiles.length + files.length > MAXIMUM_FILE_COUNT) {
-      message.error(`You can only upload a maximum of ${MAXIMUM_FILE_COUNT} files`);
+      message.error(t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT }));
       return;
     }
 
@@ -219,7 +216,7 @@ const InfoTabFooter = () => {
       }
     } catch (error) {
       console.error('Failed to process files:', error);
-      message.error('Failed to process files');
+      message.error(t('taskInfoTab.comments.processFilesError'));
     } finally {
       setUploading(false);
 
@@ -279,7 +276,7 @@ const InfoTabFooter = () => {
           }}
         >
           <Mentions
-            placeholder={'Add a comment...'}
+            placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
             options={mentionsOptions}
             autoSize
             maxLength={5000}
@@ -312,7 +309,7 @@ const InfoTabFooter = () => {
           {selectedFiles.length > 0 && (
             <Flex vertical gap={8} style={{ marginTop: 12 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>
-                Selected Files (Up to 25MB, Maximum of {MAXIMUM_FILE_COUNT})
+{t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT })}
               </Typography.Title>
               <Flex
                 vertical
@@ -368,7 +365,7 @@ const InfoTabFooter = () => {
                     icon={<PlusOutlined />}
                     disabled={selectedFiles.length >= MAXIMUM_FILE_COUNT || uploading}
                   >
-                    Add more files
+                    {t('taskInfoTab.comments.addMoreFiles')}
                   </Button>
                 </Flex>
               </Flex>
@@ -378,7 +375,7 @@ const InfoTabFooter = () => {
           <Form.Item name={'comment'} style={{ marginBlock: 12 }}>
             <div>
               <Mentions
-                placeholder={'Add a comment...'}
+                placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
                 options={mentionsOptions}
                 autoSize
                 autoFocus
@@ -427,8 +424,8 @@ const InfoTabFooter = () => {
               <Tooltip
                 title={
                   selectedFiles.length >= MAXIMUM_FILE_COUNT
-                    ? `Maximum ${MAXIMUM_FILE_COUNT} files allowed`
-                    : 'Attach files'
+                    ? t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT })
+                    : t('taskInfoTab.comments.attachFiles')
                 }
               >
                 <Button
@@ -439,14 +436,14 @@ const InfoTabFooter = () => {
               </Tooltip>
 
               <Space>
-                <Button onClick={handleCancel}>Cancel</Button>
+                <Button onClick={handleCancel}>{t('taskInfoTab.comments.cancel')}</Button>
                 <Button
                   type="primary"
                   disabled={!isCommentValid()}
                   onClick={handleSubmit}
                   loading={uploading}
                 >
-                  Comment
+                  {t('taskInfoTab.comments.commentButton')}
                 </Button>
               </Space>
             </Flex>
@@ -463,9 +460,10 @@ const InfoTabFooter = () => {
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Created{' '}
-            {taskFormViewModel?.task?.created_from_now || 'N/A'}{' '}
-            by {taskFormViewModel?.task?.reporter}
+{t('taskInfoTab.comments.createdBy', { 
+              time: taskFormViewModel?.task?.created_from_now || 'N/A',
+              user: taskFormViewModel?.task?.reporter || ''
+            })}
           </Typography.Text>
         </Tooltip>
         <Tooltip
@@ -476,8 +474,9 @@ const InfoTabFooter = () => {
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Updated{' '}
-            {taskFormViewModel?.task?.updated_from_now || 'N/A'}
+{t('taskInfoTab.comments.updatedTime', { 
+              time: taskFormViewModel?.task?.updated_from_now || 'N/A'
+            })}
           </Typography.Text>
         </Tooltip>
       </Flex>

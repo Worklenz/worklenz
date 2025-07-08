@@ -4,11 +4,9 @@ import {
   Card,
   Flex,
   Form,
-  GetProp,
   Input,
   Tooltip,
   Typography,
-  UploadProps,
   Spin,
   Skeleton,
 } from 'antd';
@@ -20,7 +18,6 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
   evt_settings_profile_visit,
-  evt_settings_profile_avatar_upload,
   evt_settings_profile_name_change,
   evt_settings_profile_picture_update,
 } from '@/shared/worklenz-analytics-events';
