@@ -27,6 +27,18 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   const wrapperRef = useRef<HTMLDivElement>(null);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
+  // CSS styles for description content links
+  const descriptionStyles = `
+    .description-content a {
+      color: ${themeMode === 'dark' ? '#4dabf7' : '#1890ff'} !important;
+      text-decoration: underline !important;
+      cursor: pointer !important;
+    }
+    .description-content a:hover {
+      color: ${themeMode === 'dark' ? '#74c0fc' : '#40a9ff'} !important;
+    }
+  `;
+
   // Load TinyMCE script only when editor is opened
   const loadTinyMCE = async () => {
     if (isTinyMCELoaded) return;
@@ -35,7 +47,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     try {
       // Load TinyMCE script dynamically
       await new Promise<void>((resolve, reject) => {
-        if (window.tinymce) {
+        if ((window as any).tinymce) {
           resolve();
           return;
         }
@@ -75,7 +87,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
       const isClickedInsideWrapper = wrapper && wrapper.contains(target);
       const isClickedInsideEditor = document.querySelector('.tox-tinymce')?.contains(target);
       const isClickedInsideToolbarPopup = document
-        .querySelector('.tox-menu, .tox-pop, .tox-collection')
+        .querySelector('.tox-menu, .tox-pop, .tox-collection, .tox-dialog, .tox-dialog-wrap, .tox-silver-sink')
         ?.contains(target);
 
       if (
@@ -119,6 +131,28 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     await loadTinyMCE();
   };
 
+  const handleContentClick = (event: React.MouseEvent) => {
+    const target = event.target as HTMLElement;
+    
+    // Check if clicked element is a link
+    if (target.tagName === 'A' || target.closest('a')) {
+      event.preventDefault(); // Prevent default link behavior
+      event.stopPropagation(); // Prevent opening the editor
+      const link = target.tagName === 'A' ? target : target.closest('a');
+      if (link) {
+        const href = (link as HTMLAnchorElement).href;
+        if (href) {
+          // Open link in new tab/window for security
+          window.open(href, '_blank', 'noopener,noreferrer');
+        }
+      }
+      return;
+    }
+    
+    // If not a link, open the editor
+    handleOpenEditor();
+  };
+
   const darkModeStyles =
     themeMode === 'dark'
       ? `
@@ -134,6 +168,8 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
 
   return (
     <div ref={wrapperRef}>
+      {/* Inject CSS styles for links */}
+      <style>{descriptionStyles}</style>
       {isEditorOpen ? (
         <div
           style={{
@@ -219,7 +255,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
         </div>
       ) : (
         <div
-          onClick={handleOpenEditor}
+          onClick={handleContentClick}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           style={{
@@ -244,6 +280,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
               dangerouslySetInnerHTML={{
                 __html: DOMPurify.sanitize(content),
               }}
+              className="description-content"
             />
           ) : (
             <div

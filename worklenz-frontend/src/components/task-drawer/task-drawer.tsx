@@ -222,7 +222,7 @@ const TaskDrawer = () => {
       <Tabs
         type="card"
         items={tabItems}
-        destroyInactiveTabPane
+        destroyOnHidden
         onChange={handleTabChange}
         activeKey={activeTab}
       />
