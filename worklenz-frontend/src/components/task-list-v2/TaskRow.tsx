@@ -417,9 +417,9 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'description':
         return (
-          <div style={baseStyle} className="px-2">
+          <div className="flex items-center px-2" style={baseStyle}>
             <div
-              className="text-sm text-gray-600 dark:text-gray-400 truncate"
+              className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
               style={{
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -435,7 +435,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'status':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
             <TaskStatusDropdown
               task={task}
               projectId={projectId}
@@ -463,7 +463,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'priority':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
             <TaskPriorityDropdown
               task={task}
               projectId={projectId}
@@ -474,7 +474,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'dueDate':
         return (
-          <div style={baseStyle} className="relative group">
+          <div className="flex items-center justify-center px-2 relative group" style={baseStyle}>
             {activeDatePicker === 'dueDate' ? (
               <div className="w-full relative">
                 <DatePicker
@@ -510,7 +510,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
               </div>
             ) : (
               <div 
-                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors"
+                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors text-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   datePickerHandlers.setDueDate();
@@ -532,7 +532,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'progress':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
             {task.progress !== undefined &&
               task.progress >= 0 &&
               (task.progress === 100 ? (
@@ -556,7 +556,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'labels':
         return (
-          <div className="flex items-center gap-0.5 flex-wrap min-w-0" style={{ ...baseStyle, minWidth: '150px', width: 'auto', flexGrow: 1 }}>
+          <div className="flex items-center gap-0.5 flex-wrap min-w-0 px-2" style={{ ...baseStyle, minWidth: '150px', width: 'auto', flexGrow: 1 }}>
             <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
             <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
           </div>
@@ -582,10 +582,14 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'estimation':
         return (
-          <div style={baseStyle}>
-            {task.timeTracking?.estimated && (
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
+            {task.timeTracking?.estimated ? (
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {task.timeTracking.estimated}h
+              </span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500">
+                0
               </span>
             )}
           </div>
@@ -593,7 +597,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'startDate':
         return (
-          <div style={baseStyle} className="relative group">
+          <div className="flex items-center justify-center px-2 relative group" style={baseStyle}>
             {activeDatePicker === 'startDate' ? (
               <div className="w-full relative">
                 <DatePicker
@@ -629,7 +633,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
               </div>
             ) : (
               <div 
-                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors"
+                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors text-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   datePickerHandlers.setStartDate();
@@ -651,42 +655,50 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'completedDate':
         return (
-          <div style={baseStyle}>
-            {formattedDates.completed && (
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
+            {formattedDates.completed ? (
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {formattedDates.completed}
               </span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
             )}
           </div>
         );
 
       case 'createdDate':
         return (
-          <div style={baseStyle}>
-            {formattedDates.created && (
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
+            {formattedDates.created ? (
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {formattedDates.created}
               </span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
             )}
           </div>
         );
 
       case 'lastUpdated':
         return (
-          <div style={baseStyle}>
-            {formattedDates.updated && (
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
+            {formattedDates.updated ? (
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {formattedDates.updated}
               </span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
             )}
           </div>
         );
 
       case 'reporter':
         return (
-          <div style={baseStyle}>
-            {task.reporter && (
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
+            {task.reporter ? (
               <span className="text-sm text-gray-500 dark:text-gray-400">{task.reporter}</span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
             )}
           </div>
         );
@@ -696,7 +708,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         const column = visibleColumns.find(col => col.id === columnId);
         if (column && (column.custom_column || column.isCustom) && updateTaskCustomColumnValue) {
           return (
-            <div style={baseStyle}>
+            <div className="flex items-center justify-center px-2" style={baseStyle}>
               <CustomColumnCell
                 column={column}
                 task={task}
