@@ -263,6 +263,11 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setDragType(null);
   };
 
+  const handleDragEnd = () => {
+    setHoveredGroupId(null);
+    setHoveredTaskIdx(null);
+  };
+
   useEffect(() => {
     if (!socket) return;
 
@@ -332,6 +337,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
                 onTaskDragStart={handleTaskDragStart}
                 onTaskDragOver={handleTaskDragOver}
                 onTaskDrop={handleTaskDrop}
+                onDragEnd={handleDragEnd}
                 hoveredTaskIdx={hoveredGroupId === group.id ? hoveredTaskIdx : null}
                 hoveredGroupId={hoveredGroupId}
               />
