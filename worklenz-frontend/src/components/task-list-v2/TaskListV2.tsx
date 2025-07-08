@@ -525,7 +525,7 @@ const TaskListV2: React.FC = () => {
   if (groups.length === 0 && !loading) {
     return (
       <div className="flex flex-col bg-white dark:bg-gray-900 h-full">
-        <div className="flex-none px-6 py-4" style={{ height: '74px', flexShrink: 0 }}>
+        <div className="flex-none" style={{ height: '74px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -552,18 +552,15 @@ const TaskListV2: React.FC = () => {
     >
       <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
         {/* Task Filters */}
-        <div className="flex-none px-6 py-4" style={{ height: '74px', flexShrink: 0 }}>
+        <div className="flex-none" style={{ height: '74px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
         </div>
 
-        {/* Spacing between filters and table */}
-        <div className="flex-none h-4" style={{ flexShrink: 0 }}></div>
-
         {/* Table Container */}
         <div 
-          className="border border-gray-200 dark:border-gray-700 mx-6 rounded-lg" 
+          className="border border-gray-200 dark:border-gray-700 rounded-lg" 
           style={{ 
-            height: 'calc(100vh - 140px)',
+            height: 'calc(100vh - 130px)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden'
@@ -573,7 +570,12 @@ const TaskListV2: React.FC = () => {
           <div 
             ref={contentScrollRef}
             className="flex-1 bg-white dark:bg-gray-900 relative" 
-            style={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}
+            style={{ 
+              overflowX: 'auto', 
+              overflowY: 'auto', 
+              minHeight: 0,
+              paddingBottom: '20px' // Add padding to ensure horizontal scrollbar is visible
+            }}
           >
             {/* Sticky Column Headers */}
             <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800" style={{ width: '100%', minWidth: 'max-content' }}>
