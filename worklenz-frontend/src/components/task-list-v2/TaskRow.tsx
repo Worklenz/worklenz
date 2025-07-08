@@ -564,7 +564,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'phase':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
             <TaskPhaseDropdown
               task={task}
               projectId={projectId}
@@ -575,7 +575,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'timeTracking':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2" style={baseStyle}>
             <TaskTimeTracking taskId={task.id || ''} isDarkMode={isDarkMode} />
           </div>
         );
