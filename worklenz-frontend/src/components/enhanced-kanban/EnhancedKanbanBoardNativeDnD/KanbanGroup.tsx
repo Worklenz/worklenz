@@ -199,7 +199,10 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
         setIsEditable(true);
         setShowDropdown(false);
         setTimeout(() => {
-            inputRef.current?.focus();
+            if (inputRef.current) {
+                inputRef.current.focus();
+                inputRef.current.select(); // Select all text on focus
+            }
         }, 100);
     };
 
