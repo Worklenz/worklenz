@@ -379,6 +379,51 @@ const ProjectList: React.FC = () => {
     }
   }, [projectsError]);
 
+  // Optimized refresh handler with better error handling
+  const handleRefresh = useCallback(async () => {
+    try {
+      trackMixpanelEvent(evt_projects_refresh_click);
+      setIsLoading(true);
+      setErrorMessage(null);
+      
+      if (viewMode === ProjectViewType.LIST) {
+        await refetchProjects();
+      } else if (viewMode === ProjectViewType.GROUP && groupBy) {
+        await dispatch(fetchGroupedProjects(groupedRequestParams)).unwrap();
+      }
+    } catch (error) {
+      console.error('Error refreshing projects:', error);
+      setErrorMessage('Failed to refresh projects. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [trackMixpanelEvent, refetchProjects, viewMode, groupBy, dispatch, groupedRequestParams]);
+
+  // Enhanced empty text with error handling
+  const emptyContent = useMemo(() => {
+    if (errorMessage) {
+      return (
+        <Empty 
+          description={
+            <div>
+              <p>{errorMessage}</p>
+              <Button type="primary" onClick={handleRefresh} loading={isLoading}>
+                Retry
+              </Button>
+            </div>
+          } 
+        />
+      );
+    }
+    return <Empty description={t('noProjects')} />;
+  }, [errorMessage, handleRefresh, isLoading, t]);
+
+  // Memoize the pagination show total function
+  const paginationShowTotal = useMemo(
+    () => (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} groups`,
+    []
+  );
+
   const handleTableChange = useCallback(
     (
       newPagination: TablePaginationConfig,

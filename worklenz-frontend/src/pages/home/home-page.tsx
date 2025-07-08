@@ -26,7 +26,7 @@ const TASK_LIST_MIN_WIDTH = 500;
 const SIDEBAR_MAX_WIDTH = 400;
 
 // Lazy load heavy components
-const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
+const TaskDrawer = React.lazy(() => import('@/components/task-drawer/task-drawer'));
 
 const HomePage = memo(() => {
   const dispatch = useAppDispatch();
@@ -34,6 +34,19 @@ const HomePage = memo(() => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
 
   useDocumentTitle('Home');
+
+  // Preload TaskDrawer component to prevent dynamic import failures
+  useEffect(() => {
+    const preloadTaskDrawer = async () => {
+      try {
+        await import('@/components/task-drawer/task-drawer');
+      } catch (error) {
+        console.warn('Failed to preload TaskDrawer:', error);
+      }
+    };
+    
+    preloadTaskDrawer();
+  }, []);
 
   // Memoize fetch function to prevent recreation on every render
   const fetchLookups = useCallback(async () => {
@@ -113,9 +126,15 @@ const HomePage = memo(() => {
 
       {MainContent}
 
-      {/* Use Suspense for lazy-loaded components */}
-      <Suspense fallback={null}>
-        {createPortal(<TaskDrawer />, document.body, 'home-task-drawer')}
+      {/* Use Suspense for lazy-loaded components with error boundary */}
+      <Suspense fallback={<div>Loading...</div>}>
+        {createPortal(
+          <React.Suspense fallback={null}>
+            <TaskDrawer />
+          </React.Suspense>, 
+          document.body, 
+          'home-task-drawer'
+        )}
       </Suspense>
 
       {createPortal(
