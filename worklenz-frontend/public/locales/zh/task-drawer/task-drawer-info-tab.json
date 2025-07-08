@@ -1,0 +1,29 @@
+{
+  "details": {
+    "task-key": "任务ID",
+    "phase": "阶段",
+    "assignees": "受托人",
+    "due-date": "截止日期",
+    "time-estimation": "估计时间",
+    "priority": "优先级",
+    "labels": "标签",
+    "billable": "可计费",
+    "notify": "通知",
+    "when-done-notify": "完成时通知",
+    "start-date": "开始日期",
+    "end-date": "结束日期",
+    "hide-start-date": "隐藏开始日期",
+    "show-start-date": "显示开始日期",
+    "hours": "小时",
+    "minutes": "分钟"
+  },
+  "description": {
+    "title": "描述",
+    "placeholder": "添加更详细的描述..."
+  },
+  "subTasks": {
+    "title": "子任务",
+    "add-sub-task": "+ 添加子任务",
+    "refresh-sub-tasks": "刷新子任务"
+  }
+}
