@@ -6,6 +6,7 @@ import mainRoutes, { licenseExpiredRoute } from './main-routes';
 import notFoundRoute from './not-found-route';
 import accountSetupRoute from './account-setup-routes';
 import reportingRoutes from './reporting-routes';
+import clientPortalRoutes from './client-portal-routes';
 import { useAuthService } from '@/hooks/useAuth';
 import { AuthenticatedLayout } from '@/layouts/AuthenticatedLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -287,6 +288,7 @@ const publicRoutes = [...rootRoutes, ...authRoutes, notFoundRoute];
 
 const protectedMainRoutes = wrapRoutes(mainRoutes, AuthGuard);
 const adminRoutes = wrapRoutes(reportingRoutes, AdminGuard);
+const adminclientPortalRoutes = wrapRoutes(clientPortalRoutes, AdminGuard);
 const setupRoutes = wrapRoutes([accountSetupRoute], SetupGuard);
 
 // License expiry check function
@@ -327,7 +329,7 @@ const router = createBrowserRouter(
           </Suspense>
         </ErrorBoundary>
       ),
-      children: [...licenseCheckedMainRoutes, ...adminRoutes, ...setupRoutes, licenseExpiredRoute],
+      children: [...licenseCheckedMainRoutes, ...adminRoutes,...adminclientPortalRoutes, ...setupRoutes, licenseExpiredRoute],
     },
     ...publicRoutes,
   ],

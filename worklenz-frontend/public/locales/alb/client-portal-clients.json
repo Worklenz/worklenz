@@ -1,0 +1,30 @@
+{
+    "title": "Clients",
+    "clientColumn": "Client",
+    "nameColumn": "Name",
+    "assignedProjectsColumn": "Assigned Projects",
+    "actionBtnsColumn": "Actions",
+    "settingsTooltip": "Settings",
+    "shareTooltip": "Share",
+    "deleteTooltip": "Delete",
+    "deleteConfirmationTitle": "Are you sure?",
+    "deleteConfirmationOk": "Yes",
+    "deleteConfirmationCancel": "Cancel",
+  
+    "addClientDrawerTitle": "Add Client",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Email",
+    "emailRequiredError": "Please enter a Email",
+    "createClientSuccessMessage": "Create client success!",
+    "createClientErrorMessage": "Create client failed!",
+  
+    "copyLinkLabel": "Copy Link",
+    "linkCopiedMessage": "Link copied to clipboard!",
+  
+    "addTeamMembersLabel": "Add Team Members",
+    "teamMembersLabel": "Team Members",
+  
+    "assignProjectLabel": "Assign Project",
+    "searchProjectPlaceholder": "Search Project"
+  }
+  

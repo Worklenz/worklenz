@@ -86,6 +86,9 @@ import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import projectViewReducer from '@features/project/project-view-slice';
 import taskManagementFieldsReducer from '@features/task-management/taskListFields.slice';
 
+//clients portal
+import clientsPortalReducer from '../features/clients-portal';
+
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -174,6 +177,9 @@ export const store = configureStore({
     grouping: groupingReducer,
     taskManagementSelection: selectionReducer,
     taskManagementFields: taskManagementFieldsReducer,
+
+    //clients portal
+    clientsPortalReducer: clientsPortalReducer,
   },
 });
 

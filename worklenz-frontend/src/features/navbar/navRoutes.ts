@@ -30,4 +30,10 @@ export const navRoutes: NavRoutesType[] = [
     adminOnly: true,
     freePlanFeature: false,
   },
+  {
+    name: 'client-portal',
+    path: '/worklenz/client-portal/clients',
+    adminOnly: false,
+    freePlanFeature: false,
+  },
 ];

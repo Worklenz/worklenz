@@ -1,0 +1,8 @@
+.clients-portal-services-steper .ant-steps-item-finish .ant-steps-item-icon,
+.clients-portal-services-steper .ant-steps-item-wait .ant-steps-item-icon {
+  background-color: transparent !important;
+}
+
+.clients-portal-services-steper .ant-steps-item-wait .ant-steps-item-icon {
+  border: 1px solid #d9d9d9 !important;
+}

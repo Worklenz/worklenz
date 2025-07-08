@@ -4,7 +4,7 @@ import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
 
 import { useTranslation } from 'react-i18next';
-import TableColumns from '../../../components/ProjectList/TableColumns';
+import TableColumns from '../../../components/project-list/table-columns';
 import { addProjectToClient, toggleClientSettingsDrawer, updateClientName } from './clients-slice';
 
 const ClientPortalClientsSettingsDrawer = () => {
@@ -15,7 +15,7 @@ const ClientPortalClientsSettingsDrawer = () => {
 
   // get all projects from state
   const projectList = useAppSelector(
-    (state) => state.projectReducer.projectsList
+    (state) => state.projectsReducer.projects.data
   );
 
   // get drawer data from client reducer
