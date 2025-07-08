@@ -29,6 +29,7 @@ interface TaskCardProps {
     onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
     groupId: string;
     idx: number;
+    onDragEnd: (e: React.DragEvent) => void; // <-- add this
 }
 
 function getDaysInMonth(year: number, month: number) {
@@ -45,7 +46,8 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
     onTaskDragOver,
     onTaskDrop,
     groupId,
-    idx
+    idx,
+    onDragEnd // <-- add this
 }) => {
     const { socket } = useSocket();
     const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
@@ -213,7 +215,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                         onTaskDragOver(e, groupId, isDown ? idx + 1 : idx);
                     }}
                     onDrop={e => onTaskDrop(e, groupId, idx)}
-
+                    onDragEnd={onDragEnd} // <-- add this
                     onClick={e => handleCardClick(e, task.id!)}
                 >
                     <div className="task-content">
