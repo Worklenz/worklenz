@@ -471,7 +471,7 @@ const TaskListV2: React.FC = () => {
   // Render column headers
   const renderColumnHeaders = useCallback(() => (
     <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" style={{ width: '100%', minWidth: 'max-content' }}>
-      <div className="flex items-center px-3 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
+      <div className="flex items-center px-1 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
         {visibleColumns.map((column, index) => {
           const columnStyle: ColumnStyle = {
             width: column.width,
@@ -490,7 +490,21 @@ const TaskListV2: React.FC = () => {
             <div
               key={column.id}
               className={`text-sm font-semibold text-gray-600 dark:text-gray-300 ${
-                column.id === 'taskKey' ? 'pl-3' : ''
+                column.id === 'dragHandle'
+                  ? 'flex items-center justify-center'
+                  : column.id === 'checkbox'
+                  ? 'flex items-center justify-center'
+                  : column.id === 'taskKey'
+                  ? 'flex items-center pl-3'
+                  : column.id === 'title'
+                  ? 'flex items-center justify-between'
+                  : column.id === 'description'
+                  ? 'flex items-center px-2'
+                  : column.id === 'labels'
+                  ? 'flex items-center gap-0.5 flex-wrap min-w-0 px-2'
+                  : column.id === 'assignees'
+                  ? 'flex items-center px-2'
+                  : 'flex items-center justify-center px-2'
               }`}
               style={columnStyle}
             >
@@ -508,7 +522,7 @@ const TaskListV2: React.FC = () => {
           );
         })}
         {/* Add Custom Column Button - positioned at the end and scrolls with content */}
-        <div className="flex items-center justify-center ml-2" style={{ width: '50px', flexShrink: 0 }}>
+        <div className="flex items-center justify-center px-2" style={{ width: '50px', flexShrink: 0 }}>
           <AddCustomColumnButton />
         </div>
       </div>
