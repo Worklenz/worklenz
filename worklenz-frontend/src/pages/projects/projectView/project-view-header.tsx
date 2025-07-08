@@ -340,7 +340,7 @@ const ProjectViewHeader = memo(() => {
     }
 
     return (
-      <Flex gap={8} align="center">
+      <Flex gap={4} align="center">
         {elements}
       </Flex>
     );
@@ -436,7 +436,7 @@ const ProjectViewHeader = memo(() => {
     }
 
     return (
-      <Flex gap={8} align="center">
+      <Flex gap={4} align="center">
         {actions}
       </Flex>
     );
@@ -460,11 +460,11 @@ const ProjectViewHeader = memo(() => {
   // Memoized page header title
   const pageHeaderTitle = useMemo(
     () => (
-      <Flex gap={8} align="center">
+      <Flex gap={4} align="center">
         <Tooltip title={t('navigateBackTooltip')}>
           <ArrowLeftOutlined style={{ fontSize: 16, cursor: 'pointer' }} onClick={handleNavigateToProjects} />
         </Tooltip>
-        <Typography.Title level={4} style={{ marginBlockEnd: 0, marginInlineStart: 12 }}>
+        <Typography.Title level={4} style={{ marginBlockEnd: 0, marginInlineStart: 8 }}>
           {selectedProject?.name}
         </Typography.Title>
         {projectAttributes}
@@ -477,7 +477,7 @@ const ProjectViewHeader = memo(() => {
   const pageHeaderStyle = useMemo(
     () => ({
       paddingInline: 0,
-      marginBlockEnd: 12,
+      marginBlockEnd: 8,
     }),
     []
   );

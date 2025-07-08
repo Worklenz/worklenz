@@ -301,7 +301,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                 <button
                   onClick={handleToggleExpansion}
                   className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out flex-shrink-0 ${
-                    task.sub_tasks_count != null && Number(task.sub_tasks_count) > 0 
+                    task.sub_tasks_count != null && task.sub_tasks_count > 0 
                       ? 'opacity-100' 
                       : 'opacity-0 group-hover:opacity-100'
                   }`}
@@ -341,7 +341,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                 {/* Indicators container - flex-shrink-0 to prevent compression */}
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {/* Subtask count indicator - only show if count > 0 */}
-                  {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count !== 0 && (
+                  {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count > 0 && (
                     <Tooltip title={t(`indicators.tooltips.subtasks${task.sub_tasks_count === 1 ? '' : '_plural'}`, { count: task.sub_tasks_count })}>
                       <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
                         <span className="text-blue-600 dark:text-blue-400 font-medium">
@@ -446,7 +446,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'assignees':
         return (
-          <div className="flex items-center gap-1" style={baseStyle}>
+          <div className="flex items-center gap-1 px-2" style={baseStyle}>
             <AvatarGroup
               members={task.assignee_names || []}
               maxCount={3}
