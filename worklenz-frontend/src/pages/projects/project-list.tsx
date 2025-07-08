@@ -708,8 +708,9 @@ const ProjectList: React.FC = () => {
       dispatch(setRequestParams(initialParams));
     }
     
-    // Initialize grouped request params only once
+    // Initialize grouped request params with proper groupBy value
     if (!groupedRequestParams.groupBy) {
+      const initialGroupBy = groupBy || ProjectGroupBy.CATEGORY;
       dispatch(setGroupedRequestParams({
         filter: filterIndex,
         index: 1,
@@ -717,24 +718,45 @@ const ProjectList: React.FC = () => {
         field: 'name',
         order: 'ascend',
         search: '',
-        groupBy: '',
+        groupBy: initialGroupBy,
         statuses: null,
         categories: null,
       }));
     }
-  }, [dispatch, getFilterIndex]); // Remove requestParams and groupedRequestParams from deps to avoid loops
+  }, [dispatch, getFilterIndex, groupBy]); // Add groupBy to deps to handle initial state
 
   // Separate effect for tracking page visits - only run once
   useEffect(() => {
     trackMixpanelEvent(evt_projects_page_visit);
   }, [trackMixpanelEvent]);
 
-  // Optimized effect for grouped projects - only fetch when necessary
+  // Enhanced effect for grouped projects - fetch data when in group view
   useEffect(() => {
-    if (viewMode === ProjectViewType.GROUP && groupBy && groupedRequestParams.groupBy) {
-      dispatch(fetchGroupedProjects(groupedRequestParams));
+    // Fetch grouped projects when:
+    // 1. View mode is GROUP
+    // 2. We have a groupBy value (either from Redux or default)
+    if (viewMode === ProjectViewType.GROUP && groupBy) {
+      // Always ensure grouped request params are properly set with current groupBy
+      const shouldUpdateParams = !groupedRequestParams.groupBy || groupedRequestParams.groupBy !== groupBy;
+      
+      if (shouldUpdateParams) {
+        const updatedParams = {
+          ...groupedRequestParams,
+          groupBy: groupBy,
+          // Ensure we have all required params for the API call
+          index: groupedRequestParams.index || 1,
+          size: groupedRequestParams.size || DEFAULT_PAGE_SIZE,
+          field: groupedRequestParams.field || 'name',
+          order: groupedRequestParams.order || 'ascend',
+        };
+        dispatch(setGroupedRequestParams(updatedParams));
+        dispatch(fetchGroupedProjects(updatedParams));
+      } else if (groupedRequestParams.groupBy === groupBy && !groupedProjects.data) {
+        // Params are set correctly but we don't have data yet - fetch it
+        dispatch(fetchGroupedProjects(groupedRequestParams));
+      }
     }
-  }, [dispatch, viewMode, groupBy, groupedRequestParams]);
+  }, [dispatch, viewMode, groupBy, groupedRequestParams, groupedProjects.data]);
 
   // Optimize lookups loading - only fetch once
   useEffect(() => {
