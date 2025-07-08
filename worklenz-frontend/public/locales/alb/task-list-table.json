@@ -68,6 +68,13 @@
   "dueDatePlaceholder": "Data e afatit",
   "startDatePlaceholder": "Data e fillimit",
 
+  "emptyStates": {
+    "noTaskGroups": "Nuk u gjetën grupe detyrash",
+    "noTaskGroupsDescription": "Detyrat do të shfaqen këtu kur krijohen ose kur aplikohen filtra.",
+    "errorPrefix": "Gabim:",
+    "dragTaskFallback": "Detyrë"
+  },
+
   "customColumns": {
     "addCustomColumn": "Shto një kolonë të personalizuar",
     "customColumnHeader": "Kolona e Personalizuar",

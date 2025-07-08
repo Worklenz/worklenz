@@ -268,7 +268,7 @@ const ProjectViewHeader = memo(() => {
       {
         key: 'import',
         label: (
-          <div style={{ width: '100%', margin: 0, padding: 0 }} onClick={handleImportTaskTemplate}>
+          <div style={{ width: '100%', margin: 0, padding: 0 }} onClick={handleImportTaskTemplate} title={t('importTaskTooltip')}>
             <ImportOutlined /> {t('importTask')}
           </div>
         ),
@@ -285,19 +285,21 @@ const ProjectViewHeader = memo(() => {
 
     if (selectedProject.category_id) {
       elements.push(
-        <Tag
-          key="category"
-          color={colors.vibrantOrange}
-          style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
-        >
-          {selectedProject.category_name}
-        </Tag>
+        <Tooltip key="category-tooltip" title={`${t('projectCategoryTooltip')}: ${selectedProject.category_name}`}>
+          <Tag
+            key="category"
+            color={colors.vibrantOrange}
+            style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
+          >
+            {selectedProject.category_name}
+          </Tag>
+        </Tooltip>
       );
     }
 
     if (selectedProject.status) {
       elements.push(
-        <Tooltip key="status" title={selectedProject.status}>
+        <Tooltip key="status" title={`${t('projectStatusTooltip')}: ${selectedProject.status}`}>
           <ProjectStatusIcon
             iconName={selectedProject.status_icon || ''}
             color={selectedProject.status_color || ''}
@@ -309,6 +311,8 @@ const ProjectViewHeader = memo(() => {
     if (selectedProject.start_date || selectedProject.end_date) {
       const tooltipContent = (
         <Typography.Text style={{ color: colors.white }}>
+          {t('projectDatesInfo')}
+          <br />
           {selectedProject.start_date &&
             `${t('startDate')}: ${formatDate(new Date(selectedProject.start_date))}`}
           {selectedProject.end_date && (
@@ -348,7 +352,7 @@ const ProjectViewHeader = memo(() => {
 
     // Refresh button
     actions.push(
-      <Tooltip key="refresh" title={t('refreshProject')}>
+      <Tooltip key="refresh" title={t('refreshTooltip')}>
         <Button
           shape="circle"
           icon={<SyncOutlined spin={loadingGroups} />}
@@ -360,7 +364,7 @@ const ProjectViewHeader = memo(() => {
     // Save as template (owner/admin only)
     if (isOwnerOrAdmin) {
       actions.push(
-        <Tooltip key="template" title={t('saveAsTemplate')}>
+        <Tooltip key="template" title={t('saveAsTemplateTooltip')}>
           <Button shape="circle" icon={<SaveOutlined />} onClick={handleSaveAsTemplate} />
         </Tooltip>
       );
@@ -368,14 +372,14 @@ const ProjectViewHeader = memo(() => {
 
     // Settings button
     actions.push(
-      <Tooltip key="settings" title={t('projectSettings')}>
+      <Tooltip key="settings" title={t('settingsTooltip')}>
         <Button shape="circle" icon={<SettingOutlined />} onClick={handleSettingsClick} />
       </Tooltip>
     );
 
     // Subscribe button
     actions.push(
-      <Tooltip key="subscribe" title={t('subscribe')}>
+      <Tooltip key="subscribe" title={selectedProject?.subscribed ? t('unsubscribeTooltip') : t('subscribeTooltip')}>
         <Button
           shape="round"
           loading={subscriptionLoading}
@@ -390,38 +394,44 @@ const ProjectViewHeader = memo(() => {
     // Invite button (owner/admin/project manager only)
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
-        <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
-          {t('invite')}
-        </Button>
+        <Tooltip key="invite-tooltip" title={t('inviteTooltip')}>
+          <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
+            {t('invite')}
+          </Button>
+        </Tooltip>
       );
     }
 
     // Create task button
     if (isOwnerOrAdmin) {
       actions.push(
-        <Dropdown.Button
-          key="create-task-dropdown"
-          loading={creatingTask}
-          type="primary"
-          icon={<DownOutlined />}
-          menu={{ items: dropdownItems }}
-          trigger={['click']}
-          onClick={handleCreateTask}
-        >
-          <EditOutlined /> {t('createTask')}
-        </Dropdown.Button>
+        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip')}>
+          <Dropdown.Button
+            key="create-task-dropdown"
+            loading={creatingTask}
+            type="primary"
+            icon={<DownOutlined />}
+            menu={{ items: dropdownItems }}
+            trigger={['click']}
+            onClick={handleCreateTask}
+          >
+            <EditOutlined /> {t('createTask')}
+          </Dropdown.Button>
+        </Tooltip>
       );
     } else {
       actions.push(
-        <Button
-          key="create-task"
-          loading={creatingTask}
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={handleCreateTask}
-        >
-          {t('createTask')}
-        </Button>
+        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip')}>
+          <Button
+            key="create-task"
+            loading={creatingTask}
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={handleCreateTask}
+          >
+            {t('createTask')}
+          </Button>
+        </Tooltip>
       );
     }
 
@@ -451,14 +461,16 @@ const ProjectViewHeader = memo(() => {
   const pageHeaderTitle = useMemo(
     () => (
       <Flex gap={8} align="center">
-        <ArrowLeftOutlined style={{ fontSize: 16 }} onClick={handleNavigateToProjects} />
+        <Tooltip title={t('navigateBackTooltip')}>
+          <ArrowLeftOutlined style={{ fontSize: 16, cursor: 'pointer' }} onClick={handleNavigateToProjects} />
+        </Tooltip>
         <Typography.Title level={4} style={{ marginBlockEnd: 0, marginInlineStart: 12 }}>
           {selectedProject?.name}
         </Typography.Title>
         {projectAttributes}
       </Flex>
     ),
-    [handleNavigateToProjects, selectedProject?.name, projectAttributes]
+    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t]
   );
 
   // Memoized page header styles

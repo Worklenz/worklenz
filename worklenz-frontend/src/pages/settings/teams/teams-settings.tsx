@@ -5,6 +5,7 @@ import { durationDateFormat } from '@utils/durationDateFormat';
 import { EditOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import EditTeamModal from '@/components/settings/edit-team-name-modal';
+import { useTranslation } from 'react-i18next';
 
 import { fetchTeams } from '@features/teams/teamSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -12,7 +13,8 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { ITeamGetResponse } from '@/types/teams/team.type';
 
 const TeamsSettings = () => {
-  useDocumentTitle('Teams');
+  const { t } = useTranslation('settings/teams');
+  useDocumentTitle(t('title'));
 
   const [selectedTeam, setSelectedTeam] = useState<ITeamGetResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,27 +28,27 @@ const TeamsSettings = () => {
   const columns: TableProps['columns'] = [
     {
       key: 'name',
-      title: 'Name',
+      title: t('name'),
       render: (record: ITeamGetResponse) => <Typography.Text>{record.name}</Typography.Text>,
     },
 
     {
       key: 'created',
-      title: 'Created',
+      title: t('created'),
       render: (record: ITeamGetResponse) => (
         <Typography.Text>{durationDateFormat(record.created_at)}</Typography.Text>
       ),
     },
     {
       key: 'ownsBy',
-      title: 'Owns By',
+      title: t('ownsBy'),
       render: (record: ITeamGetResponse) => <Typography.Text>{record.owns_by}</Typography.Text>,
     },
     {
       key: 'actionBtns',
       width: 60,
       render: (record: ITeamGetResponse) => (
-        <Tooltip title="Edit" trigger={'hover'}>
+        <Tooltip title={t('edit')} trigger={'hover'}>
           <Button
             size="small"
             icon={<EditOutlined />}
@@ -69,13 +71,12 @@ const TeamsSettings = () => {
     <div style={{ width: '100%' }}>
       <Flex align="center" justify="space-between" style={{ marginBlockEnd: 24 }}>
         <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
-          {teamsList.length} Team
-          {teamsList.length !== 1 && 's'}
+          {teamsList.length} {teamsList.length === 1 ? t('team') : t('teams')}
         </Typography.Title>
 
-        <Tooltip title={'Click to pin this into the main menu'} trigger={'hover'}>
+        <Tooltip title={t('pinTooltip')} trigger={'hover'}>
           {/* this button pin this route to navbar  */}
-          <PinRouteToNavbarButton name="teams" path="/worklenz/settings/teams" />
+          <PinRouteToNavbarButton name="teams" path="/worklenz/settings/teams" adminOnly={true} />
         </Tooltip>
       </Flex>
 

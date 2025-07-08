@@ -4,7 +4,7 @@
   "createTask": "Aufgabe erstellen",
   "settings": "Einstellungen",
   "subscribe": "Abonnieren",
-  "unsubscribe": "Abbestellen",
+  "unsubscribe": "Abonnement beenden",
   "deleteProject": "Projekt löschen",
   "startDate": "Startdatum",
   "endDate": "Enddatum",
@@ -13,5 +13,17 @@
   "receiveProjectSummary": "Erhalten Sie jeden Abend eine Projektzusammenfassung.",
   "refreshProject": "Projekt aktualisieren",
   "saveAsTemplate": "Als Vorlage speichern",
-  "invite": "Einladen"
+  "invite": "Einladen",
+  "subscribeTooltip": "Projektbenachrichtigungen abonnieren",
+  "unsubscribeTooltip": "Projektbenachrichtigungen beenden",
+  "refreshTooltip": "Projektdaten aktualisieren",
+  "settingsTooltip": "Projekteinstellungen öffnen",
+  "saveAsTemplateTooltip": "Dieses Projekt als Vorlage speichern",
+  "inviteTooltip": "Teammitglieder zu diesem Projekt einladen",
+  "createTaskTooltip": "Neue Aufgabe erstellen",
+  "importTaskTooltip": "Aufgabe aus Vorlage importieren",
+  "navigateBackTooltip": "Zurück zur Projektliste",
+  "projectStatusTooltip": "Projektstatus",
+  "projectDatesInfo": "Informationen zum Projektzeitraum",
+  "projectCategoryTooltip": "Projektkategorie"
 }
