@@ -10,7 +10,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import TaskDrawerStatusDropdown from '../task-drawer-status-dropdown/task-drawer-status-dropdown';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setSelectedTaskId } from '@/features/task-drawer/task-drawer.slice';
+import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
@@ -73,6 +73,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
       } else {
         dispatch(deleteKanbanTask(selectedTaskId)); // <-- Add this line
       }
+      dispatch(setShowTaskDrawer(false));
       // Reset the flag after a short delay
       setTimeout(() => {
         clearTaskFromUrl();
