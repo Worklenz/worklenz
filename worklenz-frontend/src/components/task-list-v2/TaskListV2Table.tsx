@@ -62,10 +62,7 @@ import ImprovedTaskFilters from '@/components/task-management/improved-task-filt
 import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-action-bar';
 import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 import AddTaskRow from './components/AddTaskRow';
-import {
-  AddCustomColumnButton,
-  CustomColumnHeader,
-} from './components/CustomColumnComponents';
+import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
 
 // Hooks and utilities
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
@@ -126,7 +123,10 @@ const TaskListV2Section: React.FC = () => {
   );
 
   // Custom hooks
-  const { activeId, handleDragStart, handleDragOver, handleDragEnd } = useDragAndDrop(allTasks, groups);
+  const { activeId, handleDragStart, handleDragOver, handleDragEnd } = useDragAndDrop(
+    allTasks,
+    groups
+  );
   const bulkActions = useBulkActions();
 
   // Enable real-time updates via socket handlers
@@ -156,49 +156,51 @@ const TaskListV2Section: React.FC = () => {
     });
 
     // Add visible custom columns
-    const visibleCustomColumns = customColumns
-      ?.filter(column => column.pinned)
-      ?.map(column => {
-        // Give selection columns more width for dropdown content
-        const fieldType = column.custom_column_obj?.fieldType;
-        let defaultWidth = 160;
-        if (fieldType === 'selection') {
-          defaultWidth = 150; // Reduced width for selection dropdowns
-        } else if (fieldType === 'people') {
-          defaultWidth = 170; // Extra width for people with avatars
-        }
+    const visibleCustomColumns =
+      customColumns
+        ?.filter(column => column.pinned)
+        ?.map(column => {
+          // Give selection columns more width for dropdown content
+          const fieldType = column.custom_column_obj?.fieldType;
+          let defaultWidth = 160;
+          if (fieldType === 'selection') {
+            defaultWidth = 150; // Reduced width for selection dropdowns
+          } else if (fieldType === 'people') {
+            defaultWidth = 170; // Extra width for people with avatars
+          }
 
-        // Map the configuration data structure to the expected format
-        const customColumnObj = column.custom_column_obj || (column as any).configuration;
+          // Map the configuration data structure to the expected format
+          const customColumnObj = column.custom_column_obj || (column as any).configuration;
 
-        // Transform configuration format to custom_column_obj format if needed
-        let transformedColumnObj = customColumnObj;
-        if (customColumnObj && !customColumnObj.fieldType && customColumnObj.field_type) {
-          transformedColumnObj = {
-            ...customColumnObj,
-            fieldType: customColumnObj.field_type,
-            numberType: customColumnObj.number_type,
-            labelPosition: customColumnObj.label_position,
-            previewValue: customColumnObj.preview_value,
-            firstNumericColumn: customColumnObj.first_numeric_column_key,
-            secondNumericColumn: customColumnObj.second_numeric_column_key,
-            selectionsList: customColumnObj.selections_list || customColumnObj.selectionsList || [],
-            labelsList: customColumnObj.labels_list || customColumnObj.labelsList || [],
+          // Transform configuration format to custom_column_obj format if needed
+          let transformedColumnObj = customColumnObj;
+          if (customColumnObj && !customColumnObj.fieldType && customColumnObj.field_type) {
+            transformedColumnObj = {
+              ...customColumnObj,
+              fieldType: customColumnObj.field_type,
+              numberType: customColumnObj.number_type,
+              labelPosition: customColumnObj.label_position,
+              previewValue: customColumnObj.preview_value,
+              firstNumericColumn: customColumnObj.first_numeric_column_key,
+              secondNumericColumn: customColumnObj.second_numeric_column_key,
+              selectionsList:
+                customColumnObj.selections_list || customColumnObj.selectionsList || [],
+              labelsList: customColumnObj.labels_list || customColumnObj.labelsList || [],
+            };
+          }
+
+          return {
+            id: column.key || column.id || 'unknown',
+            label: column.name || t('customColumns.customColumnHeader'),
+            width: `${(column as any).width || defaultWidth}px`,
+            key: column.key || column.id || 'unknown',
+            custom_column: true,
+            custom_column_obj: transformedColumnObj,
+            isCustom: true,
+            name: column.name,
+            uuid: column.id,
           };
-        }
-
-        return {
-          id: column.key || column.id || 'unknown',
-          label: column.name || t('customColumns.customColumnHeader'),
-          width: `${(column as any).width || defaultWidth}px`,
-          key: column.key || column.id || 'unknown',
-          custom_column: true,
-          custom_column_obj: transformedColumnObj,
-          isCustom: true,
-          name: column.name,
-          uuid: column.id,
-        };
-      }) || [];
+        }) || [];
 
     return [...baseVisibleColumns, ...visibleCustomColumns];
   }, [fields, columns, customColumns, t]);
@@ -222,15 +224,15 @@ const TaskListV2Section: React.FC = () => {
           if (backendColumn) {
             return {
               ...field,
-              visible: backendColumn.pinned ?? field.visible
+              visible: backendColumn.pinned ?? field.visible,
             };
           }
           return field;
         });
 
         // Only update if there are actual changes
-        const hasChanges = updatedFields.some((field, index) =>
-          field.visible !== fields[index].visible
+        const hasChanges = updatedFields.some(
+          (field, index) => field.visible !== fields[index].visible
         );
 
         if (hasChanges) {
@@ -269,65 +271,73 @@ const TaskListV2Section: React.FC = () => {
   );
 
   // Function to update custom column values
-  const updateTaskCustomColumnValue = useCallback((taskId: string, columnKey: string, value: string) => {
-    try {
-      if (!urlProjectId) {
-        console.error('Project ID is missing');
-        return;
-      }
+  const updateTaskCustomColumnValue = useCallback(
+    (taskId: string, columnKey: string, value: string) => {
+      try {
+        if (!urlProjectId) {
+          console.error('Project ID is missing');
+          return;
+        }
 
-      const body = {
-        task_id: taskId,
-        column_key: columnKey,
-        value: value,
-        project_id: urlProjectId,
-      };
-
-      // Update the Redux store immediately for optimistic updates
-      const currentTask = allTasks.find(task => task.id === taskId);
-      if (currentTask) {
-        const updatedTask = {
-          ...currentTask,
-          custom_column_values: {
-            ...currentTask.custom_column_values,
-            [columnKey]: value,
-          },
-          updated_at: new Date().toISOString(),
+        const body = {
+          task_id: taskId,
+          column_key: columnKey,
+          value: value,
+          project_id: urlProjectId,
         };
 
-        // Import and dispatch the updateTask action
-        import('@/features/task-management/task-management.slice').then(({ updateTask }) => {
-          dispatch(updateTask(updatedTask));
-        });
-      }
+        // Update the Redux store immediately for optimistic updates
+        const currentTask = allTasks.find(task => task.id === taskId);
+        if (currentTask) {
+          const updatedTask = {
+            ...currentTask,
+            custom_column_values: {
+              ...currentTask.custom_column_values,
+              [columnKey]: value,
+            },
+            updated_at: new Date().toISOString(),
+          };
 
-      if (socket && connected) {
-        socket.emit(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), JSON.stringify(body));
-      } else {
-        console.warn('Socket not connected, unable to emit TASK_CUSTOM_COLUMN_UPDATE event');
+          // Import and dispatch the updateTask action
+          import('@/features/task-management/task-management.slice').then(({ updateTask }) => {
+            dispatch(updateTask(updatedTask));
+          });
+        }
+
+        if (socket && connected) {
+          socket.emit(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), JSON.stringify(body));
+        } else {
+          console.warn('Socket not connected, unable to emit TASK_CUSTOM_COLUMN_UPDATE event');
+        }
+      } catch (error) {
+        console.error('Error updating custom column value:', error);
       }
-    } catch (error) {
-      console.error('Error updating custom column value:', error);
-    }
-  }, [urlProjectId, socket, connected, allTasks, dispatch]);
+    },
+    [urlProjectId, socket, connected, allTasks, dispatch]
+  );
 
   // Custom column settings handler
-  const handleCustomColumnSettings = useCallback((columnKey: string) => {
-    if (!columnKey) return;
+  const handleCustomColumnSettings = useCallback(
+    (columnKey: string) => {
+      if (!columnKey) return;
 
-    const columnData = visibleColumns.find(col => col.key === columnKey || col.id === columnKey);
+      const columnData = visibleColumns.find(col => col.key === columnKey || col.id === columnKey);
 
-    // Use the UUID for API calls, not the key (nanoid)
-    // For custom columns, prioritize the uuid field over id field
-    const columnId = (columnData as any)?.uuid || columnData?.id || columnKey;
+      // Use the UUID for API calls, not the key (nanoid)
+      // For custom columns, prioritize the uuid field over id field
+      const columnId = (columnData as any)?.uuid || columnData?.id || columnKey;
 
-    dispatch(setCustomColumnModalAttributes({
-      modalType: 'edit',
-      columnId: columnId,
-      columnData: columnData
-    }));
-    dispatch(toggleCustomColumnModalOpen(true));
-  }, [dispatch, visibleColumns]);
+      dispatch(
+        setCustomColumnModalAttributes({
+          modalType: 'edit',
+          columnId: columnId,
+          columnData: columnData,
+        })
+      );
+      dispatch(toggleCustomColumnModalOpen(true));
+    },
+    [dispatch, visibleColumns]
+  );
 
   // Add callback for task added
   const handleTaskAdded = useCallback(() => {
@@ -350,25 +360,27 @@ const TaskListV2Section: React.FC = () => {
       const visibleTasksInGroup = isCurrentGroupCollapsed
         ? []
         : group.taskIds
-          .map(taskId => allTasks.find(task => task.id === taskId))
-          .filter((task): task is Task => task !== undefined);
+            .map(taskId => allTasks.find(task => task.id === taskId))
+            .filter((task): task is Task => task !== undefined);
 
       const tasksForVirtuoso = visibleTasksInGroup.map(task => ({
         ...task,
         originalIndex: allTasks.indexOf(task),
       }));
 
-      const itemsWithAddTask = !isCurrentGroupCollapsed ? [
-        ...tasksForVirtuoso,
-        {
-          id: `add-task-${group.id}`,
-          isAddTaskRow: true,
-          groupId: group.id,
-          groupType: currentGrouping || 'status',
-          groupValue: group.id, // Use the actual database ID from backend
-          projectId: urlProjectId,
-        }
-      ] : tasksForVirtuoso;
+      const itemsWithAddTask = !isCurrentGroupCollapsed
+        ? [
+            ...tasksForVirtuoso,
+            {
+              id: `add-task-${group.id}`,
+              isAddTaskRow: true,
+              groupId: group.id,
+              groupType: currentGrouping || 'status',
+              groupValue: group.id, // Use the actual database ID from backend
+              projectId: urlProjectId,
+            },
+          ]
+        : tasksForVirtuoso;
 
       const groupData = {
         ...group,
@@ -398,8 +410,6 @@ const TaskListV2Section: React.FC = () => {
       const isGroupCollapsed = collapsedGroups.has(group.id);
       const isGroupEmpty = group.actualCount === 0;
 
-
-
       return (
         <div className={groupIndex > 0 ? 'mt-2' : ''}>
           <TaskGroupHeader
@@ -416,12 +426,22 @@ const TaskListV2Section: React.FC = () => {
           {isGroupEmpty && !isGroupCollapsed && (
             <div className="relative w-full">
               <div className="flex items-center min-w-max px-1 py-3">
-                {visibleColumns.map((column, index) => (
-                  <div
-                    key={`empty-${column.id}`}
-                    style={{ width: column.width, flexShrink: 0 }}
-                  />
-                ))}
+                {visibleColumns.map((column, index) => {
+                  const emptyColumnStyle = {
+                    width: column.width,
+                    flexShrink: 0,
+                    ...(column.id === 'labels' && column.width === 'auto'
+                      ? { minWidth: '200px', flexGrow: 1 }
+                      : {}),
+                  };
+                  return (
+                    <div
+                      key={`empty-${column.id}`}
+                      className="border-r border-gray-200 dark:border-gray-700"
+                      style={emptyColumnStyle}
+                    />
+                  );
+                })}
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-sm italic text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 px-4 py-1 rounded-md border border-gray-200 dark:border-gray-700">
@@ -439,7 +459,6 @@ const TaskListV2Section: React.FC = () => {
   const renderTask = useCallback(
     (taskIndex: number) => {
       const item = virtuosoItems[taskIndex];
-
 
       if (!item || !urlProjectId) return null;
 
@@ -469,70 +488,86 @@ const TaskListV2Section: React.FC = () => {
   );
 
   // Render column headers
-  const renderColumnHeaders = useCallback(() => (
-    <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" style={{ width: '100%', minWidth: 'max-content' }}>
-      <div className="flex items-center px-1 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
-        {visibleColumns.map((column, index) => {
-          const columnStyle: ColumnStyle = {
-            width: column.width,
-            flexShrink: 0,
-            ...(column.id === 'labels' && column.width === 'auto'
-              ? {
-                minWidth: '200px',
-                flexGrow: 1,
-              }
-              : {}),
-            ...((column as any).minWidth && { minWidth: (column as any).minWidth }),
-            ...((column as any).maxWidth && { maxWidth: (column as any).maxWidth }),
-          };
+  const renderColumnHeaders = useCallback(
+    () => (
+      <div
+        className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+        style={{ width: '100%', minWidth: 'max-content' }}
+      >
+        <div
+          className="flex items-center px-1 py-3 w-full"
+          style={{ minWidth: 'max-content', height: '44px' }}
+        >
+          {visibleColumns.map((column, index) => {
+            const columnStyle: ColumnStyle = {
+              width: column.width,
+              flexShrink: 0,
+              ...(column.id === 'labels' && column.width === 'auto'
+                ? {
+                    minWidth: '200px',
+                    flexGrow: 1,
+                  }
+                : {}),
+              ...((column as any).minWidth && { minWidth: (column as any).minWidth }),
+              ...((column as any).maxWidth && { maxWidth: (column as any).maxWidth }),
+            };
 
-          return (
-            <div
-              key={column.id}
-              className={`text-sm font-semibold text-gray-600 dark:text-gray-300 ${column.id === 'dragHandle'
-                  ? 'flex items-center justify-center'
-                  : column.id === 'checkbox'
+            return (
+              <div
+                key={column.id}
+                className={`text-sm font-semibold text-gray-600 dark:text-gray-300 ${
+                  column.id === 'dragHandle'
                     ? 'flex items-center justify-center'
-                    : column.id === 'taskKey'
-                      ? 'flex items-center pl-3'
-                      : column.id === 'title'
-                        ? 'flex items-center justify-between'
-                        : column.id === 'description'
-                          ? 'flex items-center px-2'
-                          : column.id === 'labels'
-                            ? 'flex items-center gap-0.5 flex-wrap min-w-0 px-2'
-                            : column.id === 'assignees'
-                              ? 'flex items-center px-2'
-                              : 'flex items-center justify-center px-2'
+                    : column.id === 'checkbox'
+                      ? 'flex items-center justify-center'
+                      : column.id === 'taskKey'
+                        ? 'flex items-center pl-3'
+                        : column.id === 'title'
+                          ? 'flex items-center justify-between'
+                          : column.id === 'description'
+                            ? 'flex items-center px-2'
+                            : column.id === 'labels'
+                              ? 'flex items-center gap-0.5 flex-wrap min-w-0 px-2'
+                              : column.id === 'assignees'
+                                ? 'flex items-center px-2'
+                                : 'flex items-center justify-center px-2'
                 }`}
-              style={columnStyle}
-            >
-              {column.id === 'dragHandle' || column.id === 'checkbox' ? (
-                <span></span>
-              ) : (column as any).isCustom ? (
-                <CustomColumnHeader
-                  column={column}
-                  onSettingsClick={handleCustomColumnSettings}
-                />
-              ) : (
-                t(column.label || '')
-              )}
-            </div>
-          );
-        })}
-        {/* Add Custom Column Button - positioned at the end and scrolls with content */}
-        <div className="flex items-center justify-center px-2" style={{ width: '50px', flexShrink: 0 }}>
-          <AddCustomColumnButton />
+                style={columnStyle}
+              >
+                {column.id === 'dragHandle' || column.id === 'checkbox' ? (
+                  <span></span>
+                ) : (column as any).isCustom ? (
+                  <CustomColumnHeader
+                    column={column}
+                    onSettingsClick={handleCustomColumnSettings}
+                  />
+                ) : (
+                  t(column.label || '')
+                )}
+              </div>
+            );
+          })}
+          {/* Add Custom Column Button - positioned at the end and scrolls with content */}
+          <div
+            className="flex items-center justify-center px-2"
+            style={{ width: '50px', flexShrink: 0 }}
+          >
+            <AddCustomColumnButton />
+          </div>
         </div>
       </div>
-    </div>
-  ), [visibleColumns, t, handleCustomColumnSettings]);
-
-
+    ),
+    [visibleColumns, t, handleCustomColumnSettings]
+  );
 
   // Loading and error states
   if (loading || loadingColumns) return <Skeleton style={{ marginTop: 8 }} active />;
-  if (error) return <div>{t('emptyStates.errorPrefix')} {error}</div>;
+  if (error)
+    return (
+      <div>
+        {t('emptyStates.errorPrefix')} {error}
+      </div>
+    );
 
   // Show message when no data
   if (groups.length === 0 && !loading) {
@@ -556,58 +591,61 @@ const TaskListV2Section: React.FC = () => {
   }
 
   return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
-
-          {/* Table Container */}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
+        {/* Table Container */}
+        <div
+          className="border border-gray-200 dark:border-gray-700 rounded-lg"
+          style={{
+            height: 'calc(100vh - 240px)', // Slightly reduce height to ensure scrollbar visibility
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Task List Content with Sticky Header */}
           <div
-            className="border border-gray-200 dark:border-gray-700 rounded-lg"
+            ref={contentScrollRef}
+            className="flex-1 bg-white dark:bg-gray-900 relative"
             style={{
-              height: 'calc(100vh - 240px)', // Slightly reduce height to ensure scrollbar visibility
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
+              overflowX: 'auto',
+              overflowY: 'auto',
+              minHeight: 0,
             }}
           >
-            {/* Task List Content with Sticky Header */}
+            {/* Sticky Column Headers */}
             <div
-              ref={contentScrollRef}
-              className="flex-1 bg-white dark:bg-gray-900 relative"
-              style={{
-                overflowX: 'auto',
-                overflowY: 'auto',
-                minHeight: 0
-              }}
+              className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
+              style={{ width: '100%', minWidth: 'max-content' }}
             >
-              {/* Sticky Column Headers */}
-              <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800" style={{ width: '100%', minWidth: 'max-content' }}>
-                {renderColumnHeaders()}
-              </div>
-              <SortableContext
-                items={virtuosoItems
-                  .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
-                  .map(item => item.id)
-                  .filter((id): id is string => id !== undefined)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div style={{ minWidth: 'max-content' }}>
-                  {/* Render groups manually for debugging */}
-                  {virtuosoGroups.map((group, groupIndex) => (
-                    <div key={group.id}>
-                      {/* Group Header */}
-                      {renderGroup(groupIndex)}
+              {renderColumnHeaders()}
+            </div>
+            <SortableContext
+              items={virtuosoItems
+                .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
+                .map(item => item.id)
+                .filter((id): id is string => id !== undefined)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div style={{ minWidth: 'max-content' }}>
+                {/* Render groups manually for debugging */}
+                {virtuosoGroups.map((group, groupIndex) => (
+                  <div key={group.id}>
+                    {/* Group Header */}
+                    {renderGroup(groupIndex)}
 
-                      {/* Group Tasks */}
-                      {!collapsedGroups.has(group.id) && group.tasks.map((task, taskIndex) => {
-                        const globalTaskIndex = virtuosoGroups
-                          .slice(0, groupIndex)
-                          .reduce((sum, g) => sum + g.count, 0) + taskIndex;
+                    {/* Group Tasks */}
+                    {!collapsedGroups.has(group.id) &&
+                      group.tasks.map((task, taskIndex) => {
+                        const globalTaskIndex =
+                          virtuosoGroups.slice(0, groupIndex).reduce((sum, g) => sum + g.count, 0) +
+                          taskIndex;
 
                         return (
                           <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
@@ -615,63 +653,73 @@ const TaskListV2Section: React.FC = () => {
                           </div>
                         );
                       })}
-                    </div>
-                  ))}
-                </div>
-              </SortableContext>
-            </div>
+                  </div>
+                ))}
+              </div>
+            </SortableContext>
           </div>
+        </div>
 
-          {/* Drag Overlay */}
-          <DragOverlay dropAnimation={null}>
-            {activeId ? (
-              <div className="bg-white dark:bg-gray-800 shadow-xl rounded-md border-2 border-blue-400 opacity-95">
-                <div className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <HolderOutlined className="text-blue-500" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {allTasks.find(task => task.id === activeId)?.name ||
-                          allTasks.find(task => task.id === activeId)?.title ||
-                          t('emptyStates.dragTaskFallback')}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {allTasks.find(task => task.id === activeId)?.task_key}
-                      </div>
+        {/* Drag Overlay */}
+        <DragOverlay dropAnimation={null}>
+          {activeId ? (
+            <div className="bg-white dark:bg-gray-800 shadow-xl rounded-md border-2 border-blue-400 opacity-95">
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <HolderOutlined className="text-blue-500" />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      {allTasks.find(task => task.id === activeId)?.name ||
+                        allTasks.find(task => task.id === activeId)?.title ||
+                        t('emptyStates.dragTaskFallback')}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {allTasks.find(task => task.id === activeId)?.task_key}
                     </div>
                   </div>
                 </div>
               </div>
-            ) : null}
-          </DragOverlay>
-
-          {/* Bulk Action Bar */}
-          {selectedTaskIds.length > 0 && urlProjectId && (
-            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-              <OptimizedBulkActionBar
-                selectedTaskIds={selectedTaskIds}
-                totalSelected={selectedTaskIds.length}
-                projectId={urlProjectId}
-                onClearSelection={bulkActions.handleClearSelection}
-                onBulkStatusChange={(statusId) => bulkActions.handleBulkStatusChange(statusId, selectedTaskIds)}
-                onBulkPriorityChange={(priorityId) => bulkActions.handleBulkPriorityChange(priorityId, selectedTaskIds)}
-                onBulkPhaseChange={(phaseId) => bulkActions.handleBulkPhaseChange(phaseId, selectedTaskIds)}
-                onBulkAssignToMe={() => bulkActions.handleBulkAssignToMe(selectedTaskIds)}
-                onBulkAssignMembers={(memberIds) => bulkActions.handleBulkAssignMembers(memberIds, selectedTaskIds)}
-                onBulkAddLabels={(labelIds) => bulkActions.handleBulkAddLabels(labelIds, selectedTaskIds)}
-                onBulkArchive={() => bulkActions.handleBulkArchive(selectedTaskIds)}
-                onBulkDelete={() => bulkActions.handleBulkDelete(selectedTaskIds)}
-                onBulkDuplicate={() => bulkActions.handleBulkDuplicate(selectedTaskIds)}
-                onBulkExport={() => bulkActions.handleBulkExport(selectedTaskIds)}
-                onBulkSetDueDate={(date) => bulkActions.handleBulkSetDueDate(date, selectedTaskIds)}
-              />
             </div>
-          )}
+          ) : null}
+        </DragOverlay>
 
-          {/* Custom Column Modal */}
-          {createPortal(<CustomColumnModal />, document.body, 'custom-column-modal')}
-        </div>
-      </DndContext>
+        {/* Bulk Action Bar */}
+        {selectedTaskIds.length > 0 && urlProjectId && (
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+            <OptimizedBulkActionBar
+              selectedTaskIds={selectedTaskIds}
+              totalSelected={selectedTaskIds.length}
+              projectId={urlProjectId}
+              onClearSelection={bulkActions.handleClearSelection}
+              onBulkStatusChange={statusId =>
+                bulkActions.handleBulkStatusChange(statusId, selectedTaskIds)
+              }
+              onBulkPriorityChange={priorityId =>
+                bulkActions.handleBulkPriorityChange(priorityId, selectedTaskIds)
+              }
+              onBulkPhaseChange={phaseId =>
+                bulkActions.handleBulkPhaseChange(phaseId, selectedTaskIds)
+              }
+              onBulkAssignToMe={() => bulkActions.handleBulkAssignToMe(selectedTaskIds)}
+              onBulkAssignMembers={memberIds =>
+                bulkActions.handleBulkAssignMembers(memberIds, selectedTaskIds)
+              }
+              onBulkAddLabels={labelIds =>
+                bulkActions.handleBulkAddLabels(labelIds, selectedTaskIds)
+              }
+              onBulkArchive={() => bulkActions.handleBulkArchive(selectedTaskIds)}
+              onBulkDelete={() => bulkActions.handleBulkDelete(selectedTaskIds)}
+              onBulkDuplicate={() => bulkActions.handleBulkDuplicate(selectedTaskIds)}
+              onBulkExport={() => bulkActions.handleBulkExport(selectedTaskIds)}
+              onBulkSetDueDate={date => bulkActions.handleBulkSetDueDate(date, selectedTaskIds)}
+            />
+          </div>
+        )}
+
+        {/* Custom Column Modal */}
+        {createPortal(<CustomColumnModal />, document.body, 'custom-column-modal')}
+      </div>
+    </DndContext>
   );
 };
 

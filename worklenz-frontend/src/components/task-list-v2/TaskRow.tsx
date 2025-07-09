@@ -271,7 +271,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'checkbox':
         return (
-          <div className="flex items-center justify-center" style={baseStyle}>
+          <div className="flex items-center justify-center dark:border-gray-700" style={baseStyle}>
             <Checkbox
               checked={isSelected}
               onChange={handleCheckboxChange}
@@ -282,7 +282,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'taskKey':
         return (
-          <div className="flex items-center pl-3" style={baseStyle}>
+          <div className="flex items-center pl-3 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <span className="text-xs font-medium px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 whitespace-nowrap border border-gray-200 dark:border-gray-600">
               {task.task_key || 'N/A'}
             </span>
@@ -291,7 +291,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'title':
         return (
-          <div className="flex items-center justify-between group" style={baseStyle}>
+          <div className="flex items-center justify-between group pl-1 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <div className="flex items-center flex-1 min-w-0">
               {/* Indentation for subtasks - tighter spacing */}
               {isSubtask && <div className="w-4 flex-shrink-0" />}
@@ -417,7 +417,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'description':
         return (
-          <div className="flex items-center px-2" style={baseStyle}>
+          <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <div
               className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
               style={{
@@ -435,7 +435,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'status':
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <TaskStatusDropdown
               task={task}
               projectId={projectId}
@@ -446,7 +446,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'assignees':
         return (
-          <div className="flex items-center gap-1 px-2" style={baseStyle}>
+          <div className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <AvatarGroup
               members={task.assignee_names || []}
               maxCount={3}
@@ -463,7 +463,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'priority':
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <TaskPriorityDropdown
               task={task}
               projectId={projectId}
@@ -474,7 +474,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'dueDate':
         return (
-          <div className="flex items-center justify-center px-2 relative group" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 relative group border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {activeDatePicker === 'dueDate' ? (
               <div className="w-full relative">
                 <DatePicker
@@ -532,7 +532,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'progress':
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {task.progress !== undefined &&
               task.progress >= 0 &&
               (task.progress === 100 ? (
@@ -555,8 +555,13 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         );
 
       case 'labels':
+        const labelsColumn = visibleColumns.find(col => col.id === 'labels');
+        const labelsStyle = {
+          ...baseStyle,
+          ...(labelsColumn?.width === 'auto' ? { minWidth: '200px', flexGrow: 1 } : {})
+        };
         return (
-          <div className="flex items-center gap-0.5 flex-wrap min-w-0 px-2" style={{ ...baseStyle, minWidth: '150px', width: 'auto', flexGrow: 1 }}>
+          <div className="flex items-center gap-0.5 flex-wrap min-w-0 px-2 border-r border-gray-200 dark:border-gray-700" style={labelsStyle}>
             <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
             <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
           </div>
@@ -564,7 +569,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'phase':
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <TaskPhaseDropdown
               task={task}
               projectId={projectId}
@@ -575,21 +580,42 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'timeTracking':
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <TaskTimeTracking taskId={task.id || ''} isDarkMode={isDarkMode} />
           </div>
         );
 
       case 'estimation':
+        // Use timeTracking.estimated which is the converted value from backend's total_minutes
+        const estimationDisplay = (() => {
+          const estimatedHours = task.timeTracking?.estimated;
+          
+          if (estimatedHours && estimatedHours > 0) {
+            // Convert decimal hours to hours and minutes for display
+            const hours = Math.floor(estimatedHours);
+            const minutes = Math.round((estimatedHours - hours) * 60);
+            
+            if (hours > 0 && minutes > 0) {
+              return `${hours}h ${minutes}m`;
+            } else if (hours > 0) {
+              return `${hours}h`;
+            } else if (minutes > 0) {
+              return `${minutes}m`;
+            }
+          }
+          
+          return null;
+        })();
+        
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
-            {task.timeTracking?.estimated ? (
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
+            {estimationDisplay ? (
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                {task.timeTracking.estimated}h
+                {estimationDisplay}
               </span>
             ) : (
               <span className="text-sm text-gray-400 dark:text-gray-500">
-                0
+                -
               </span>
             )}
           </div>
@@ -597,7 +623,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'startDate':
         return (
-          <div className="flex items-center justify-center px-2 relative group" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 relative group border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {activeDatePicker === 'startDate' ? (
               <div className="w-full relative">
                 <DatePicker
@@ -655,7 +681,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'completedDate':
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {formattedDates.completed ? (
               <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {formattedDates.completed}
@@ -668,7 +694,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'createdDate':
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {formattedDates.created ? (
               <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {formattedDates.created}
@@ -680,9 +706,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         );
 
       case 'lastUpdated':
-        console.log('formattedDates.updated', formattedDates.updated);
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {formattedDates.updated ? (
               <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {formattedDates.updated}
@@ -695,7 +720,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'reporter':
         return (
-          <div className="flex items-center justify-center px-2" style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {task.reporter ? (
               <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{task.reporter}</span>
             ) : (
@@ -709,7 +734,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         const column = visibleColumns.find(col => col.id === columnId);
         if (column && (column.custom_column || column.isCustom) && updateTaskCustomColumnValue) {
           return (
-            <div className="flex items-center justify-center px-2" style={baseStyle}>
+            <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
               <CustomColumnCell
                 column={column}
                 task={task}

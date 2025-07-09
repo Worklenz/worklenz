@@ -670,15 +670,32 @@ export const useTaskSocketHandlers = () => {
 
 
   const handleEstimationChange = useCallback(
-    (task: { id: string; parent_task: string | null; estimation: number }) => {
-      if (!task) return;
+    (data: { id: string; parent_task: string | null; total_hours: number; total_minutes: number }) => {
+      if (!data) return;
 
+      // Update the old task slice (for backward compatibility)
       const taskWithProgress = {
-        ...task,
+        ...data,
         manual_progress: false,
       } as IProjectTask;
 
       dispatch(updateTaskEstimation({ task: taskWithProgress }));
+
+      // Update task-management slice for task-list-v2 components
+      const currentTask = store.getState().taskManagement.entities[data.id];
+      if (currentTask) {
+        const estimatedHours = (data.total_hours || 0) + (data.total_minutes || 0) / 60;
+        const updatedTask: Task = {
+          ...currentTask,
+          timeTracking: {
+            ...currentTask.timeTracking,
+            estimated: estimatedHours,
+          },
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
     },
     [dispatch]
   );
