@@ -1,4 +1,5 @@
 {
+  "title": "Team Members",
   "nameColumn": "Name",
   "projectsColumn": "Projects",
   "emailColumn": "Email",
@@ -40,5 +41,7 @@
   "ownerText": "Team Owner",
   "addedText": "Added",
   "updatedText": "Updated",
-  "noResultFound": "Type an email address and hit enter..."
+  "noResultFound": "Type an email address and hit enter...",
+  "jobTitlesFetchError": "Failed to fetch job titles",
+  "invitationResent": "Invitation resent successfully!"
 }

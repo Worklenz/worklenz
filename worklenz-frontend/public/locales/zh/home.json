@@ -1,0 +1,46 @@
+{
+  "todoList": {
+    "title": "待办事项列表",
+    "refreshTasks": "刷新任务",
+    "addTask": "+ 添加任务",
+    "noTasks": "没有任务",
+    "pressEnter": "按",
+    "toCreate": "创建。",
+    "markAsDone": "标记为完成"
+  },
+  "projects": {
+    "title": "项目",
+    "refreshProjects": "刷新项目",
+    "noRecentProjects": "您当前未被分配到任何项目。",
+    "noFavouriteProjects": "没有项目被标记为收藏。",
+    "recent": "最近",
+    "favourites": "收藏"
+  },
+  "tasks": {
+    "assignedToMe": "分配给我",
+    "assignedByMe": "由我分配",
+    "all": "全部",
+    "today": "今天",
+    "upcoming": "即将到来",
+    "overdue": "逾期",
+    "noDueDate": "没有截止日期",
+    "noTasks": "没有任务可显示。",
+    "addTask": "+ 添加任务",
+    "name": "名称",
+    "project": "项目",
+    "status": "状态",
+    "dueDate": "截止日期",
+    "dueDatePlaceholder": "设置截止日期",
+    "tomorrow": "明天",
+    "nextWeek": "下周",
+    "nextMonth": "下个月",
+    "projectRequired": "请选择一个项目",
+    "pressTabToSelectDueDateAndProject": "按Tab键选择截止日期和项目",
+    "dueOn": "任务截止于",
+    "taskRequired": "请添加一个任务",
+    "list": "列表",
+    "calendar": "日历",
+    "tasks": "任务",
+    "refresh": "刷新"
+  }
+}

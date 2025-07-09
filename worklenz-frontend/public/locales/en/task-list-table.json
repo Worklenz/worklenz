@@ -68,6 +68,13 @@
   "dueDatePlaceholder": "Due Date",
   "startDatePlaceholder": "Start Date",
 
+  "emptyStates": {
+    "noTaskGroups": "No task groups found",
+    "noTaskGroupsDescription": "Tasks will appear here when they are created or when filters are applied.",
+    "errorPrefix": "Error:",
+    "dragTaskFallback": "Task"
+  },
+
   "customColumns": {
     "addCustomColumn": "Add a custom column",
     "customColumnHeader": "Custom Column",

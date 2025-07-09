@@ -68,6 +68,13 @@
   "dueDatePlaceholder": "Fecha de vencimiento",
   "startDatePlaceholder": "Fecha de inicio",
 
+  "emptyStates": {
+    "noTaskGroups": "No se encontraron grupos de tareas",
+    "noTaskGroupsDescription": "Las tareas aparecerán aquí cuando se creen o cuando se apliquen filtros.",
+    "errorPrefix": "Error:",
+    "dragTaskFallback": "Tarea"
+  },
+
   "customColumns": {
     "addCustomColumn": "Agregar una columna personalizada",
     "customColumnHeader": "Columna Personalizada",
