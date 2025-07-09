@@ -15,10 +15,10 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import { deleteTask } from '@/features/tasks/tasks.slice';
-import { deleteBoardTask, updateTaskName } from '@/features/board/board-slice';
-import { updateEnhancedKanbanTaskName } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { deleteTask as deleteTaskFromManagement } from '@/features/task-management/task-management.slice';
+import { deselectTask } from '@/features/task-management/selection.slice';
+import { deleteBoardTask } from '@/features/board/board-slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 
 type TaskDrawerHeaderProps = {
@@ -30,7 +30,6 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
-  const { tab } = useTabSearchParam();
   const isDeleting = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -54,16 +53,19 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
 
     const res = await tasksApiService.deleteTask(selectedTaskId);
     if (res.done) {
-      // Explicitly clear the task parameter from URL
-      clearTaskFromUrl();
+      // Update all relevant slices to ensure task is removed everywhere
+      dispatch(deleteTask({ taskId: selectedTaskId })); // Old tasks slice
+      dispatch(deleteTaskFromManagement(selectedTaskId)); // Task management slice (TaskListV2)
+      dispatch(deselectTask(selectedTaskId)); // Remove from selection if selected
+      dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId })); // Board slice
 
-      dispatch(setShowTaskDrawer(false));
+      // Clear the task drawer state and URL
       dispatch(setSelectedTaskId(null));
-      dispatch(deleteTask({ taskId: selectedTaskId }));
-      dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
-
-      // Reset the flag after a short delay
+      dispatch(setShowTaskDrawer(false));
+      
+      // Clear the URL parameter last to avoid race conditions
       setTimeout(() => {
+        clearTaskFromUrl();
         isDeleting.current = false;
       }, 100);
       if (taskFormViewModel?.task?.parent_task_id) {
