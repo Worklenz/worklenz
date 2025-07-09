@@ -65,6 +65,7 @@ import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/boar
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { ShareAltOutlined } from '@ant-design/icons';
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
@@ -395,8 +396,8 @@ const ProjectViewHeader = memo(() => {
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
         <Tooltip key="invite-tooltip" title={t('inviteTooltip')}>
-          <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
-            {t('invite')}
+          <Button key="invite" type="primary" icon={<ShareAltOutlined />} onClick={handleInvite}>
+            {t('share')}
           </Button>
         </Tooltip>
       );
