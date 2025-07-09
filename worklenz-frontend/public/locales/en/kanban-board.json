@@ -26,5 +26,8 @@
   "noDueDate": "No due date",
   "save": "Save",
   "clear": "Clear",
-  "nextWeek": "Next week"
+  "nextWeek": "Next week",
+  "noSubtasks": "No subtasks",
+  "showSubtasks": "Show subtasks",
+  "hideSubtasks": "Hide subtasks"
 }

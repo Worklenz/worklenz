@@ -18,6 +18,7 @@ import { deleteTask } from '@/features/tasks/tasks.slice';
 import { deleteTask as deleteTaskFromManagement } from '@/features/task-management/task-management.slice';
 import { deselectTask } from '@/features/task-management/selection.slice';
 import { deleteBoardTask } from '@/features/board/board-slice';
+import { deleteTask as deleteKanbanTask, updateEnhancedKanbanSubtask } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 
@@ -61,9 +62,19 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
 
       // Clear the task drawer state and URL
       dispatch(setSelectedTaskId(null));
+      dispatch(deleteTask({ taskId: selectedTaskId }));
+      dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
+      if (taskFormViewModel?.task?.is_sub_task) {
+        dispatch(updateEnhancedKanbanSubtask({
+          sectionId: '',
+          subtask: { id: selectedTaskId, parent_task_id: taskFormViewModel?.task?.parent_task_id || '', manual_progress: false },
+          mode: 'delete',
+        }));
+      } else {
+        dispatch(deleteKanbanTask(selectedTaskId)); // <-- Add this line
+      }
       dispatch(setShowTaskDrawer(false));
-      
-      // Clear the URL parameter last to avoid race conditions
+      // Reset the flag after a short delay
       setTimeout(() => {
         clearTaskFromUrl();
         isDeleting.current = false;
