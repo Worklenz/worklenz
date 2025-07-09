@@ -109,7 +109,14 @@ export const selectCurrentGrouping = (state: RootState) => state.grouping.curren
 export const selectCustomPhases = (state: RootState) => state.grouping.customPhases;
 export const selectGroupOrder = (state: RootState) => state.grouping.groupOrder;
 export const selectGroupStates = (state: RootState) => state.grouping.groupStates;
-export const selectCollapsedGroups = (state: RootState) => new Set(state.grouping.collapsedGroups);
+export const selectCollapsedGroupsArray = (state: RootState) => state.grouping.collapsedGroups;
+
+// Memoized selector to prevent unnecessary re-renders
+export const selectCollapsedGroups = createSelector(
+  [selectCollapsedGroupsArray],
+  (collapsedGroupsArray) => new Set(collapsedGroupsArray)
+);
+
 export const selectIsGroupCollapsed = (state: RootState, groupId: string) =>
   state.grouping.collapsedGroups.includes(groupId);
 

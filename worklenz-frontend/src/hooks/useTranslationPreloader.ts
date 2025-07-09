@@ -26,7 +26,7 @@ export const useTranslationPreloader = (
       try {
         setIsLoading(true);
 
-        // Ensure translations are loaded
+        // Only load translations for current language to avoid multiple requests
         await ensureTranslationsLoaded(namespaces);
 
         // Wait for i18next to be ready
@@ -47,12 +47,18 @@ export const useTranslationPreloader = (
       }
     };
 
-    loadTranslations();
+    // Only load if not already loaded
+    if (!isLoaded && !ready) {
+      loadTranslations();
+    } else if (ready && !isLoaded) {
+      setIsLoaded(true);
+      setIsLoading(false);
+    }
 
     return () => {
       isMounted = false;
     };
-  }, [namespaces, ready]);
+  }, [namespaces, ready, isLoaded]);
 
   return {
     t,

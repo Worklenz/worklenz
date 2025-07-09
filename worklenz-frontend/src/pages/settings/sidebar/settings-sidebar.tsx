@@ -24,7 +24,7 @@ const SettingSidebar: React.FC = () => {
   const items: Required<MenuProps>['items'] = accessibleSettings
     .map(item => {
       if (currentSession?.is_google && item.key === 'change-password') {
-        return undefined;
+        return null;
       }
       return {
         key: item.key,
@@ -39,7 +39,7 @@ const SettingSidebar: React.FC = () => {
         ),
       };
     })
-    .filter(Boolean);
+    .filter((item): item is NonNullable<typeof item> => item !== null);
 
   return (
     <ConfigProvider

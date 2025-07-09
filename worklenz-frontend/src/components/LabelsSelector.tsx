@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { PlusOutlined, TagOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
@@ -26,6 +27,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   const { labels } = useSelector((state: RootState) => state.taskLabelsReducer);
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
+  const { t } = useTranslation('task-list-table');
 
   const filteredLabels = useMemo(() => {
     return (
@@ -203,7 +205,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Search labels..."
+                placeholder={t('searchLabelsPlaceholder')}
                 className={`
                 w-full px-2 py-1 text-xs rounded border
                 ${
@@ -223,16 +225,21 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                   <div
                     key={label.id}
                     className={`
-                    flex items-center gap-2 p-2 cursor-pointer transition-colors
+                    flex items-center gap-2 px-2 py-1 cursor-pointer transition-colors
                     ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}
                   `}
-                    onClick={() => handleLabelToggle(label)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLabelToggle(label);
+                    }}
                   >
-                    <Checkbox
-                      checked={checkLabelSelected(label.id || '')}
-                      onChange={() => handleLabelToggle(label)}
-                      isDarkMode={isDarkMode}
-                    />
+                    <div style={{ pointerEvents: 'none' }}>
+                      <Checkbox
+                        checked={checkLabelSelected(label.id || '')}
+                        onChange={() => {}} // Empty handler since we handle click on the div
+                        isDarkMode={isDarkMode}
+                      />
+                    </div>
 
                     <div
                       className="w-3 h-3 rounded-full shrink-0"
@@ -252,7 +259,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                 <div
                   className={`p-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
                 >
-                  <div className="text-xs">No labels found</div>
+                  <div className="text-xs">{t('noLabelsFound')}</div>
                   {searchQuery.trim() && (
                     <button
                       onClick={handleCreateLabel}
@@ -265,7 +272,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                       }
                     `}
                     >
-                      Create "{searchQuery}"
+                      {t('createLabelButton', { name: searchQuery.trim() })}
                     </button>
                   )}
                 </div>
@@ -274,20 +281,10 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
 
             {/* Footer */}
             <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-              <button
-                className={`
-                w-full flex items-center justify-center gap-1 px-2 py-1 text-xs rounded
-                transition-colors
-                ${isDarkMode ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}
-              `}
-                onClick={() => {
-                  // TODO: Implement manage labels functionality
-                  console.log('Manage labels clicked');
-                }}
-              >
+              <div className={`flex items-center justify-center gap-1 px-2 py-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 <TagOutlined />
-                Manage labels
-              </button>
+                {t('manageLabelsPath')}
+              </div>
             </div>
           </div>,
           document.body

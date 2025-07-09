@@ -1,4 +1,5 @@
 {
+  "title": "Teammitglieder",
   "nameColumn": "Name",
   "projectsColumn": "Projekte",
   "emailColumn": "E-Mail",
@@ -40,5 +41,7 @@
   "ownerText": "Team-Besitzer",
   "addedText": "Hinzugefügt",
   "updatedText": "Aktualisiert",
-  "noResultFound": "Geben Sie eine E-Mail-Adresse ein und drücken Sie Enter..."
+  "noResultFound": "Geben Sie eine E-Mail-Adresse ein und drücken Sie Enter...",
+  "jobTitlesFetchError": "Fehler beim Abrufen der Jobtitel",
+  "invitationResent": "Einladung erfolgreich erneut gesendet!"
 }

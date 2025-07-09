@@ -1,4 +1,5 @@
 {
+  "title": "Anëtarët e Ekipit",
   "nameColumn": "Emri",
   "projectsColumn": "Projektet",
   "emailColumn": "Email",
@@ -40,5 +41,7 @@
   "ownerText": "Pronar i Ekipit",
   "addedText": "Shtuar",
   "updatedText": "Përditësuar",
-  "noResultFound": "Shkruani një adresë email dhe shtypni Enter..."
+  "noResultFound": "Shkruani një adresë email dhe shtypni Enter...",
+  "jobTitlesFetchError": "Dështoi marrja e titujve të punës",
+  "invitationResent": "Ftesa u dërgua sërish me sukses!"
 }

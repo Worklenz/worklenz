@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, DatePicker, Form, Input, TimePicker, Flex } from 'antd';
 import { ClockCircleOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -25,6 +26,7 @@ const TimeLogForm = ({
   initialValues,
   mode = 'create',
 }: TimeLogFormProps) => {
+  const { t } = useTranslation('task-drawer/task-drawer');
   const currentSession = useAuthService().getCurrentSession();
   const { socket, connected } = useSocket();
   const [form] = Form.useForm();
@@ -140,7 +142,7 @@ const TimeLogForm = ({
       form.setFields([
         {
           name: 'endTime',
-          errors: ['End time must be after start time'],
+          errors: [t('taskTimeLogTab.timeLogForm.endTimeAfterStartError')],
         },
       ]);
       return;
@@ -219,44 +221,44 @@ const TimeLogForm = ({
           <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
             <Form.Item
               name="date"
-              label="Date"
-              rules={[{ required: true, message: 'Please select a date' }]}
+                                label={t('taskTimeLogTab.timeLogForm.date')}
+                  rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectDateError') }]}
             >
               <DatePicker disabledDate={current => current && current.toDate() > new Date()} />
             </Form.Item>
 
             <Form.Item
               name="startTime"
-              label="Start Time"
-              rules={[{ required: true, message: 'Please select start time' }]}
+                                label={t('taskTimeLogTab.timeLogForm.startTime')}
+                  rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectStartTimeError') }]}
             >
               <TimePicker format="HH:mm" />
             </Form.Item>
 
             <Form.Item
               name="endTime"
-              label="End Time"
-              rules={[{ required: true, message: 'Please select end time' }]}
+                                label={t('taskTimeLogTab.timeLogForm.endTime')}
+                  rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectEndTimeError') }]}
             >
               <TimePicker format="HH:mm" />
             </Form.Item>
           </Flex>
         </Form.Item>
 
-        <Form.Item name="description" label="Work Description" style={{ marginBlockEnd: 12 }}>
-          <Input.TextArea placeholder="Add a description" />
+                    <Form.Item name="description" label={t('taskTimeLogTab.timeLogForm.workDescription')} style={{ marginBlockEnd: 12 }}>
+              <Input.TextArea placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder')} />
         </Form.Item>
 
         <Form.Item style={{ marginBlockEnd: 0 }}>
           <Flex gap={8}>
-            <Button onClick={onCancel}>Cancel</Button>
+            <Button onClick={onCancel}>{t('taskTimeLogTab.timeLogForm.cancel')}</Button>
             <Button
               type="primary"
               icon={<ClockCircleOutlined />}
               disabled={!isFormValid()}
               htmlType="submit"
             >
-              {mode === 'edit' ? 'Update time' : 'Log time'}
+              {mode === 'edit' ? t('taskTimeLogTab.timeLogForm.updateTime') : t('taskTimeLogTab.timeLogForm.logTime')}
             </Button>
           </Flex>
         </Form.Item>

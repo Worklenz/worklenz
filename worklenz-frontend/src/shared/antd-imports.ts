@@ -101,6 +101,7 @@ export {
   DoubleRightOutlined,
   UserAddOutlined,
   ArrowsAltOutlined,
+  EllipsisOutlined
 } from '@ant-design/icons';
 
 // Re-export all components with React

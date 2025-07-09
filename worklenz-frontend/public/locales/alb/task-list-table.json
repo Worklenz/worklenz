@@ -48,6 +48,9 @@
   "searchInputPlaceholder": "Kërko ose krijo",
   "assigneeSelectorInviteButton": "Fto një anëtar të ri me email",
   "labelInputPlaceholder": "Kërko ose krijo",
+  "searchLabelsPlaceholder": "Kërko etiketa...",
+  "createLabelButton": "Krijo \"{{name}}\"",
+  "manageLabelsPath": "Cilësimet → Etiketat",
 
   "pendingInvitation": "Ftesë në Pritje",
 
@@ -67,6 +70,13 @@
   "clearStartDate": "Pastro datën e fillimit",
   "dueDatePlaceholder": "Data e afatit",
   "startDatePlaceholder": "Data e fillimit",
+
+  "emptyStates": {
+    "noTaskGroups": "Nuk u gjetën grupe detyrash",
+    "noTaskGroupsDescription": "Detyrat do të shfaqen këtu kur krijohen ose kur aplikohen filtra.",
+    "errorPrefix": "Gabim:",
+    "dragTaskFallback": "Detyrë"
+  },
 
   "customColumns": {
     "addCustomColumn": "Shto një kolonë të personalizuar",

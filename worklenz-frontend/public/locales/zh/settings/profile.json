@@ -1,0 +1,14 @@
+{
+  "uploadError": "您只能上传JPG/PNG文件！",
+  "uploadSizeError": "图片必须小于2MB！",
+  "upload": "上传",
+  "nameLabel": "名称",
+  "nameRequiredError": "名称是必需的",
+  "emailLabel": "电子邮件",
+  "emailRequiredError": "电子邮件是必需的",
+  "saveChanges": "保存更改",
+  "profileJoinedText": "一个月前加入",
+  "profileLastUpdatedText": "一个月前更新",
+  "avatarTooltip": "点击上传头像",
+  "title": "个人资料设置"
+}
