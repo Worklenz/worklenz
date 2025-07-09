@@ -40,6 +40,11 @@
     "list": "Lista",
     "calendar": "Calendário",
     "tasks": "Tarefas",
-    "refresh": "Atualizar"
+    "refresh": "Atualizar",
+    "recentActivity": "Atividade Recente",
+    "recentTasks": "Tarefas Recentes",
+    "timeLoggedTasks": "Tempo Registrado",
+    "noRecentTasks": "Nenhuma tarefa recente",
+    "noTimeLoggedTasks": "Nenhuma tarefa com tempo registrado"
   }
 }
