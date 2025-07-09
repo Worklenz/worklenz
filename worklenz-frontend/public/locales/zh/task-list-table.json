@@ -43,6 +43,9 @@
   "searchInputPlaceholder": "搜索或创建",
   "assigneeSelectorInviteButton": "通过电子邮件邀请新成员",
   "labelInputPlaceholder": "搜索或创建",
+  "searchLabelsPlaceholder": "搜索标签...",
+  "createLabelButton": "创建 \"{{name}}\"",
+  "manageLabelsPath": "设置 → 标签",
   "pendingInvitation": "待处理邀请",
   "contextMenu": {
     "assignToMe": "分配给我",

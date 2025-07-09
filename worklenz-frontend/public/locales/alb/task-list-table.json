@@ -48,6 +48,9 @@
   "searchInputPlaceholder": "Kërko ose krijo",
   "assigneeSelectorInviteButton": "Fto një anëtar të ri me email",
   "labelInputPlaceholder": "Kërko ose krijo",
+  "searchLabelsPlaceholder": "Kërko etiketa...",
+  "createLabelButton": "Krijo \"{{name}}\"",
+  "manageLabelsPath": "Cilësimet → Etiketat",
 
   "pendingInvitation": "Ftesë në Pritje",
 
