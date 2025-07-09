@@ -29,9 +29,36 @@ type TabItems = {
   element: ReactNode;
 };
 
-// Function to get translated labels
+// Function to get translated labels with fallback
 const getTabLabel = (key: string): string => {
-  return i18n.t(`project-view:${key}`);
+  try {
+    const translated = i18n.t(`project-view:${key}`);
+    // If translation is not loaded, it returns the key back, so we provide fallbacks
+    if (translated === `project-view:${key}` || translated === key) {
+      // Provide fallback labels
+      const fallbacks: Record<string, string> = {
+        taskList: 'Task List',
+        board: 'Board',
+        insights: 'Insights',
+        files: 'Files',
+        members: 'Members',
+        updates: 'Updates',
+      };
+      return fallbacks[key] || key;
+    }
+    return translated;
+  } catch (error) {
+    // Fallback labels in case of any error
+    const fallbacks: Record<string, string> = {
+      taskList: 'Task List',
+      board: 'Board',
+      insights: 'Insights',
+      files: 'Files',
+      members: 'Members',
+      updates: 'Updates',
+    };
+    return fallbacks[key] || key;
+  }
 };
 
 // settings all element items use for tabs
@@ -94,26 +121,30 @@ export const tabItems: TabItems[] = [
 
 // Function to update tab labels when language changes
 export const updateTabLabels = () => {
-  tabItems.forEach(item => {
-    switch (item.key) {
-      case 'tasks-list':
-        item.label = getTabLabel('taskList');
-        break;
-      case 'board':
-        item.label = getTabLabel('board');
-        break;
-      case 'project-insights-member-overview':
-        item.label = getTabLabel('insights');
-        break;
-      case 'all-attachments':
-        item.label = getTabLabel('files');
-        break;
-      case 'members':
-        item.label = getTabLabel('members');
-        break;
-      case 'updates':
-        item.label = getTabLabel('updates');
-        break;
-    }
-  });
+  try {
+    tabItems.forEach(item => {
+      switch (item.key) {
+        case 'tasks-list':
+          item.label = getTabLabel('taskList');
+          break;
+        case 'board':
+          item.label = getTabLabel('board');
+          break;
+        case 'project-insights-member-overview':
+          item.label = getTabLabel('insights');
+          break;
+        case 'all-attachments':
+          item.label = getTabLabel('files');
+          break;
+        case 'members':
+          item.label = getTabLabel('members');
+          break;
+        case 'updates':
+          item.label = getTabLabel('updates');
+          break;
+      }
+    });
+  } catch (error) {
+    console.error('Error updating tab labels:', error);
+  }
 };
