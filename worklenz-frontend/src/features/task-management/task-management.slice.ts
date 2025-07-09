@@ -227,8 +227,8 @@ export const fetchTasksV3 = createAsyncThunk(
       // Get selected priorities from taskReducer
       const selectedPriorities = state.taskReducer.priorities.join(' ');
 
-      // Get search value from taskReducer
-      const searchValue = state.taskReducer.search || '';
+      // Get search value from taskManagement slice
+      const searchValue = state.taskManagement.search || '';
 
       // Get archived state from task management slice
       const archivedState = state.taskManagement.archived;
