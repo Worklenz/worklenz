@@ -1161,6 +1161,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         attachments_count: task.attachments_count || 0,
         has_dependencies: !!task.has_dependencies,
         schedule_id: task.schedule_id || null,
+        reporter: task.reporter || null,
       };
     });
 
