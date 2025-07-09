@@ -41,6 +41,11 @@
     "list": "Liste",
     "calendar": "Kalender",
     "tasks": "Aufgaben",
-    "refresh": "Aktualisieren"
+    "refresh": "Aktualisieren",
+    "recentActivity": "Aktuelle Aktivitäten",
+    "recentTasks": "Aktuelle Aufgaben",
+    "timeLoggedTasks": "Erfasste Zeit",
+    "noRecentTasks": "Keine aktuellen Aufgaben",
+    "noTimeLoggedTasks": "Keine Aufgaben mit erfasster Zeit"
   }
 }
