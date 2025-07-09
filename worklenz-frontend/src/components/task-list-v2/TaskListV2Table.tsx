@@ -515,7 +515,7 @@ const TaskListV2Section: React.FC = () => {
             return (
               <div
                 key={column.id}
-                className={`text-sm font-semibold text-gray-600 dark:text-gray-300 ${
+                className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 ${
                   column.id === 'dragHandle'
                     ? 'flex items-center justify-center'
                     : column.id === 'checkbox'
@@ -549,7 +549,7 @@ const TaskListV2Section: React.FC = () => {
           })}
           {/* Add Custom Column Button - positioned at the end and scrolls with content */}
           <div
-            className="flex items-center justify-center px-2"
+            className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
             style={{ width: '50px', flexShrink: 0 }}
           >
             <AddCustomColumnButton />

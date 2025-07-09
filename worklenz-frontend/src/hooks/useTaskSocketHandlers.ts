@@ -232,7 +232,7 @@ export const useTaskSocketHandlers = () => {
         dispatch(
           updateTask({
             ...currentTask,
-            status: newStatusValue,
+            status: response.status_id || newStatusValue, // Use actual status_id instead of category
             progress: response.complete_ratio || currentTask.progress,
             updatedAt: new Date().toISOString(),
           })
@@ -806,13 +806,7 @@ export const useTaskSocketHandlers = () => {
           task_key: data.task_key || '',
           title: data.name || '',
           description: data.description || '',
-          status: (data.status_category?.is_todo
-            ? 'todo'
-            : data.status_category?.is_doing
-              ? 'doing'
-              : data.status_category?.is_done
-                ? 'done'
-                : 'todo') as 'todo' | 'doing' | 'done',
+          status: data.status || 'todo',
           priority: (data.priority_value === 3
             ? 'critical'
             : data.priority_value === 2
