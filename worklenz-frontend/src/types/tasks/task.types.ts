@@ -39,6 +39,8 @@ export interface ITask {
   manual_progress: boolean;
   progress_value: number | null;
   weight: number | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface IProjectMemberViewModel extends IProjectMember {

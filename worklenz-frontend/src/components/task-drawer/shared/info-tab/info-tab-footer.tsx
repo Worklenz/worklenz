@@ -1,5 +1,5 @@
 import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } from 'antd';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -15,6 +15,7 @@ import logger from '@/utils/errorLogger';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
+import { fromNow } from '@/utils/dateUtils';
 
 // Utility function to convert file to base64
 const getBase64 = (file: File): Promise<string> => {
@@ -65,6 +66,31 @@ const InfoTabFooter = () => {
 
   // get member list from project members slice
   const projectMembersList = useAppSelector(state => state.projectMemberReducer.membersList);
+
+  // Calculate relative time values
+  const createdFromNow = useMemo(() => {
+    const createdAt = taskFormViewModel?.task?.created_at;
+    if (!createdAt) return 'N/A';
+    
+    try {
+      return fromNow(createdAt);
+    } catch (error) {
+      console.error('Error formatting created_at:', error, createdAt);
+      return 'N/A';
+    }
+  }, [taskFormViewModel?.task?.created_at]);
+  
+  const updatedFromNow = useMemo(() => {
+    const updatedAt = taskFormViewModel?.task?.updated_at;
+    if (!updatedAt) return 'N/A';
+    
+    try {
+      return fromNow(updatedAt);
+    } catch (error) {
+      console.error('Error formatting updated_at:', error, updatedAt);
+      return 'N/A';
+    }
+  }, [taskFormViewModel?.task?.updated_at]);
 
   // function to handle cancel
   const handleCancel = () => {
@@ -454,28 +480,28 @@ const InfoTabFooter = () => {
       <Flex align="center" justify="space-between" style={{ width: '100%', marginTop: 8 }}>
         <Tooltip
           title={
-            taskFormViewModel?.task?.created_from_now
-              ? `Created ${taskFormViewModel.task.created_from_now}`
+            createdFromNow !== 'N/A'
+              ? `Created ${createdFromNow}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-{t('taskInfoTab.comments.createdBy', { 
-              time: taskFormViewModel?.task?.created_from_now || 'N/A',
+            {t('taskInfoTab.comments.createdBy', { 
+              time: createdFromNow,
               user: taskFormViewModel?.task?.reporter || ''
             })}
           </Typography.Text>
         </Tooltip>
         <Tooltip
           title={
-            taskFormViewModel?.task?.updated_from_now
-              ? `Updated ${taskFormViewModel.task.updated_from_now}`
+            updatedFromNow !== 'N/A'
+              ? `Updated ${updatedFromNow}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-{t('taskInfoTab.comments.updatedTime', { 
-              time: taskFormViewModel?.task?.updated_from_now || 'N/A'
+            {t('taskInfoTab.comments.updatedTime', { 
+              time: updatedFromNow
             })}
           </Typography.Text>
         </Tooltip>

@@ -79,8 +79,8 @@
       "maxFilesError": "Mund të ngarkoni maksimum {count} skedarë",
       "processFilesError": "Dështoi përpunimi i skedarëve",
       "addCommentError": "Ju lutemi shtoni një koment ose bashkëngjitni skedarë",
-      "createdBy": "Krijuar {time} nga {user}",
-      "updatedTime": "Përditësuar {time}"
+      "createdBy": "Krijuar {{time}} nga {{user}}",
+      "updatedTime": "Përditësuar {{time}}"
     },
     "searchInputPlaceholder": "Kërko sipas emrit",
     "pendingInvitation": "Ftesë në Pritje"

@@ -79,8 +79,8 @@
       "maxFilesError": "Solo puede subir un máximo de {count} archivos",
       "processFilesError": "Error al procesar archivos",
       "addCommentError": "Por favor agregue un comentario o adjunte archivos",
-      "createdBy": "Creado {time} por {user}",
-      "updatedTime": "Actualizado {time}"
+      "createdBy": "Creado {{time}} por {{user}}",
+      "updatedTime": "Actualizado {{time}}"
     },
     "searchInputPlaceholder": "Buscar por nombre",
     "pendingInvitation": "Invitación Pendiente"

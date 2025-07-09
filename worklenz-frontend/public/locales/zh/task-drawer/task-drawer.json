@@ -79,8 +79,8 @@
       "maxFilesError": "您最多只能上传{count}个文件",
       "processFilesError": "处理文件失败",
       "addCommentError": "请添加评论或附加文件",
-      "createdBy": "{time}由{user}创建",
-      "updatedTime": "更新于{time}"
+      "createdBy": "{{time}}由{{user}}创建",
+      "updatedTime": "更新于{{time}}"
     },
     "searchInputPlaceholder": "按名称搜索",
     "pendingInvitation": "待处理邀请"
