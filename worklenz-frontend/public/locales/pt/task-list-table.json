@@ -48,6 +48,9 @@
   "searchInputPlaceholder": "Buscar ou criar",
   "assigneeSelectorInviteButton": "Convide um novo membro por e-mail",
   "labelInputPlaceholder": "Buscar ou criar",
+  "searchLabelsPlaceholder": "Buscar etiquetas...",
+  "createLabelButton": "Criar \"{{name}}\"",
+  "manageLabelsPath": "Configurações → Etiquetas",
 
   "pendingInvitation": "Convite Pendente",
 
