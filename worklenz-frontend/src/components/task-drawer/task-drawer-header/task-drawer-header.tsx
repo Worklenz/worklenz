@@ -16,7 +16,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import { deleteTask } from '@/features/tasks/tasks.slice';
 import { deleteBoardTask, updateTaskName } from '@/features/board/board-slice';
-import { updateEnhancedKanbanTaskName } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { updateEnhancedKanbanTaskName, deleteTask as deleteKanbanTask, updateEnhancedKanbanSubtask } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
@@ -60,7 +60,15 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
       dispatch(setSelectedTaskId(null));
       dispatch(deleteTask({ taskId: selectedTaskId }));
       dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
-
+      if (taskFormViewModel?.task?.is_sub_task) {
+        dispatch(updateEnhancedKanbanSubtask({
+          sectionId: '',
+          subtask: { id: selectedTaskId, parent_task_id: taskFormViewModel?.task?.parent_task_id || '', manual_progress: false },
+          mode: 'delete',
+        }));
+      } else {
+        dispatch(deleteKanbanTask(selectedTaskId)); // <-- Add this line
+      }
       // Reset the flag after a short delay
       setTimeout(() => {
         isDeleting.current = false;
