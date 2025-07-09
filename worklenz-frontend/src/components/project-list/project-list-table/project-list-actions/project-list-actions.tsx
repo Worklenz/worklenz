@@ -46,10 +46,25 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   const handleSettingsClick = () => {
     if (record.id) {
+      console.log('Opening project drawer for project:', record.id);
       trackMixpanelEvent(evt_projects_settings_click);
+      
+      // Set project ID first
       dispatch(setProjectId(record.id));
-      dispatch(fetchProjectData(record.id));
-      dispatch(toggleProjectDrawer());
+      
+      // Then fetch project data
+      dispatch(fetchProjectData(record.id))
+        .unwrap()
+        .then((projectData) => {
+          console.log('Project data fetched successfully:', projectData);
+          // Open drawer after data is fetched
+          dispatch(toggleProjectDrawer());
+        })
+        .catch((error) => {
+          console.error('Failed to fetch project data:', error);
+          // Still open drawer even if fetch fails, so user can see error state
+          dispatch(toggleProjectDrawer());
+        });
     }
   };
 

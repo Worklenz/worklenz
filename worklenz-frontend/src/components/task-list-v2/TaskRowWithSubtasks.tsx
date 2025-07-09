@@ -20,6 +20,7 @@ interface TaskRowWithSubtasksProps {
     width: string;
     isSticky?: boolean;
   }>;
+  isFirstInGroup?: boolean;
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
 }
 
@@ -153,6 +154,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
   taskId, 
   projectId, 
   visibleColumns,
+  isFirstInGroup = false,
   updateTaskCustomColumnValue
 }) => {
   const task = useAppSelector(state => selectTaskById(state, taskId));
@@ -175,6 +177,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
         taskId={taskId}
         projectId={projectId}
         visibleColumns={visibleColumns}
+        isFirstInGroup={isFirstInGroup}
         updateTaskCustomColumnValue={updateTaskCustomColumnValue}
       />
       

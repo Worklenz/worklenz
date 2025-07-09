@@ -5,6 +5,7 @@ import {
   createAsyncThunk,
   EntityState,
   EntityId,
+  createSelector,
 } from '@reduxjs/toolkit';
 import { Task, TaskManagementState, TaskGroup, TaskGrouping } from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
@@ -170,10 +171,10 @@ export const fetchTasks = createAsyncThunk(
             logged: convertTimeValue(task.time_spent),
           },
           customFields: {},
-          createdAt: task.created_at || new Date().toISOString(),
-          updatedAt: task.updated_at || new Date().toISOString(),
-          created_at: task.created_at || new Date().toISOString(),
-          updated_at: task.updated_at || new Date().toISOString(),
+          createdAt: task.createdAt || task.created_at || new Date().toISOString(),
+          updatedAt: task.updatedAt || task.updated_at || new Date().toISOString(),
+          created_at: task.createdAt || task.created_at || new Date().toISOString(),
+          updated_at: task.updatedAt || task.updated_at || new Date().toISOString(),
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           // Ensure all Task properties are mapped, even if undefined in API response
           sub_tasks: task.sub_tasks || [],
@@ -188,6 +189,7 @@ export const fetchTasks = createAsyncThunk(
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
           schedule_id: task.schedule_id || null,
+          reporter: task.reporter || undefined,
         }))
       );
 
@@ -271,18 +273,23 @@ export const fetchTasksV3 = createAsyncThunk(
             end: l.end,
             names: l.names,
           })) || [],
+          all_labels: task.all_labels?.map((l: { id: string; label_id: string; name: string; color_code: string }) => ({
+            id: l.id || l.label_id,
+            name: l.name,
+            color_code: l.color_code || '#1890ff',
+          })) || [],
           dueDate: task.dueDate,
           startDate: task.startDate,
           timeTracking: {
-            estimated: convertTimeValue(task.total_time),
-            logged: convertTimeValue(task.time_spent),
+            estimated: task.timeTracking?.estimated || 0,
+            logged: task.timeTracking?.logged || 0,
           },
           customFields: {},
           custom_column_values: task.custom_column_values || {},
-          createdAt: task.created_at || now,
-          updatedAt: task.updated_at || now,
-          created_at: task.created_at || now,
-          updated_at: task.updated_at || now,
+          createdAt: task.createdAt || task.created_at || now,
+          updatedAt: task.updatedAt || task.updated_at || now,
+          created_at: task.createdAt || task.created_at || now,
+          updated_at: task.updatedAt || task.updated_at || now,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           sub_tasks: task.sub_tasks || [],
           sub_tasks_count: task.sub_tasks_count || 0,
@@ -296,6 +303,7 @@ export const fetchTasksV3 = createAsyncThunk(
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
           schedule_id: task.schedule_id || null,
+          reporter: task.reporter || undefined,
         };
         
         return transformedTask;
@@ -1137,7 +1145,12 @@ export const {
 
 // Export the selectors
 export const selectAllTasks = (state: RootState) => state.taskManagement.entities;
-export const selectAllTasksArray = (state: RootState) => Object.values(state.taskManagement.entities);
+
+// Memoized selector to prevent unnecessary re-renders
+export const selectAllTasksArray = createSelector(
+  [selectAllTasks],
+  (entities) => Object.values(entities)
+);
 export const selectTaskById = (state: RootState, taskId: string) => state.taskManagement.entities[taskId];
 export const selectTaskIds = (state: RootState) => state.taskManagement.ids;
 export const selectGroups = (state: RootState) => state.taskManagement.groups;
@@ -1148,15 +1161,21 @@ export const selectSelectedPriorities = (state: RootState) => state.taskManageme
 export const selectSearch = (state: RootState) => state.taskManagement.search;
 export const selectSubtaskLoading = (state: RootState, taskId: string) => state.taskManagement.loadingSubtasks[taskId] || false;
 
-// Memoized selectors
-export const selectTasksByStatus = (state: RootState, status: string) =>
-  Object.values(state.taskManagement.entities).filter(task => task.status === status);
+// Memoized selectors to prevent unnecessary re-renders
+export const selectTasksByStatus = createSelector(
+  [selectAllTasksArray, (_state: RootState, status: string) => status],
+  (tasks, status) => tasks.filter(task => task.status === status)
+);
 
-export const selectTasksByPriority = (state: RootState, priority: string) =>
-  Object.values(state.taskManagement.entities).filter(task => task.priority === priority);
+export const selectTasksByPriority = createSelector(
+  [selectAllTasksArray, (_state: RootState, priority: string) => priority],
+  (tasks, priority) => tasks.filter(task => task.priority === priority)
+);
 
-export const selectTasksByPhase = (state: RootState, phase: string) =>
-  Object.values(state.taskManagement.entities).filter(task => task.phase === phase);
+export const selectTasksByPhase = createSelector(
+  [selectAllTasksArray, (_state: RootState, phase: string) => phase],
+  (tasks, phase) => tasks.filter(task => task.phase === phase)
+);
 
 // Add archived selector
 export const selectArchived = (state: RootState) => state.taskManagement.archived;

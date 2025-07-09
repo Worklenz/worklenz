@@ -1,8 +1,9 @@
-import React, { memo, useMemo, useCallback, useState } from 'react';
+import React, { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@ant-design/icons';
-import { Checkbox, DatePicker, Tooltip } from 'antd';
+import { Checkbox, DatePicker, Tooltip, Input } from 'antd';
+import type { InputRef } from 'antd';
 import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
@@ -40,6 +41,7 @@ interface TaskRowProps {
     isCustom?: boolean;
   }>;
   isSubtask?: boolean;
+  isFirstInGroup?: boolean;
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
 }
 
@@ -97,7 +99,7 @@ const formatDate = (dateString: string): string => {
   }
 };
 
-const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumns, isSubtask = false, updateTaskCustomColumnValue }) => {
+const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumns, isSubtask = false, isFirstInGroup = false, updateTaskCustomColumnValue }) => {
   const dispatch = useAppDispatch();
   const task = useAppSelector(state => selectTaskById(state, taskId));
   const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
@@ -106,6 +108,12 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
   // State for tracking which date picker is open
   const [activeDatePicker, setActiveDatePicker] = useState<string | null>(null);
+  
+  // State for editing task name
+  const [editTaskName, setEditTaskName] = useState(false);
+  const [taskName, setTaskName] = useState(task.title || task.name || '');
+  const inputRef = useRef<InputRef>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   if (!task) {
     return null; // Don't render if task is not found in store
@@ -153,6 +161,45 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     manual_progress: undefined,
   }), [task.id, taskDisplayName, task.task_key, task.assignee_names, task.parent_task_id]);
 
+  // Handle task name save
+  const handleTaskNameSave = useCallback(() => {
+    const newTaskName = inputRef.current?.input?.value || taskName;
+    if (newTaskName?.trim() !== '' && connected && newTaskName.trim() !== (task.title || task.name || '').trim()) {
+      socket?.emit(
+        SocketEvents.TASK_NAME_CHANGE.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          name: newTaskName.trim(),
+          parent_task: task.parent_task_id,
+        })
+      );
+    }
+    setEditTaskName(false);
+  }, [taskName, connected, socket, task.id, task.parent_task_id, task.title, task.name]);
+
+  // Handle click outside for task name editing
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        handleTaskNameSave();
+      }
+    };
+
+    if (editTaskName) {
+      document.addEventListener('mousedown', handleClickOutside);
+      inputRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editTaskName, handleTaskNameSave]);
+
+  // Update local taskName state when task name changes
+  useEffect(() => {
+    setTaskName(task.title || task.name || '');
+  }, [task.title, task.name]);
+
   // Memoize formatted dates
   const formattedDates = useMemo(() => ({
     due: (() => {
@@ -161,9 +208,9 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     })(),
     start: task.startDate ? formatDate(task.startDate) : null,
     completed: task.completedAt ? formatDate(task.completedAt) : null,
-    created: task.created_at ? formatDate(task.created_at) : null,
+    created: (task.createdAt || task.created_at) ? formatDate(task.createdAt || task.created_at) : null,
     updated: task.updatedAt ? formatDate(task.updatedAt) : null,
-  }), [task.dueDate, task.due_date, task.startDate, task.completedAt, task.created_at, task.updatedAt]);
+  }), [task.dueDate, task.due_date, task.startDate, task.completedAt, task.createdAt, task.created_at, task.updatedAt]);
 
   // Memoize date values for DatePicker
   const dateValues = useMemo(
@@ -180,17 +227,17 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     name: task.title || task.name,
     parent_task_id: task.parent_task_id,
     manual_progress: false,
-    all_labels: task.labels?.map(label => ({
+    all_labels: task.all_labels?.map(label => ({
       id: label.id,
       name: label.name,
-      color_code: label.color,
+      color_code: label.color_code,
     })) || [],
     labels: task.labels?.map(label => ({
       id: label.id,
       name: label.name,
       color_code: label.color,
     })) || [],
-  }), [task.id, task.title, task.name, task.parent_task_id, task.labels, task.labels?.length]);
+  }), [task.id, task.title, task.name, task.parent_task_id, task.all_labels, task.labels, task.all_labels?.length, task.labels?.length]);
 
   // Handle checkbox change
   const handleCheckboxChange = useCallback((e: any) => {
@@ -271,7 +318,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'checkbox':
         return (
-          <div className="flex items-center justify-center" style={baseStyle}>
+          <div className="flex items-center justify-center dark:border-gray-700" style={baseStyle}>
             <Checkbox
               checked={isSelected}
               onChange={handleCheckboxChange}
@@ -282,144 +329,184 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'taskKey':
         return (
-          <div className="flex items-center pl-3" style={baseStyle}>
+          <div className="flex items-center pl-3 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <span className="text-xs font-medium px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 whitespace-nowrap border border-gray-200 dark:border-gray-600">
               {task.task_key || 'N/A'}
             </span>
           </div>
         );
 
-      case 'title':
+            case 'title':
         return (
-          <div className="flex items-center justify-between group" style={baseStyle}>
-            <div className="flex items-center flex-1 min-w-0">
-              {/* Indentation for subtasks - tighter spacing */}
-              {isSubtask && <div className="w-4 flex-shrink-0" />}
-              
-              {/* Expand/Collapse button - only show for parent tasks */}
-              {!isSubtask && (
-                <button
-                  onClick={handleToggleExpansion}
-                  className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out flex-shrink-0 ${
-                    task.sub_tasks_count != null && Number(task.sub_tasks_count) > 0 
-                      ? 'opacity-100' 
-                      : 'opacity-0 group-hover:opacity-100'
-                  }`}
-                >
-                  <div 
-                    className="transition-transform duration-300 ease-out"
-                    style={{ 
-                      transform: task.show_sub_tasks ? 'rotate(90deg)' : 'rotate(0deg)',
-                      transformOrigin: 'center'
-                    }}
-                  >
-                    <RightOutlined className="text-gray-600 dark:text-gray-400" />
-                  </div>
-                </button>
-              )}
-              
-              {/* Additional indentation for subtasks after the expand button space */}
-              {isSubtask && <div className="w-2 flex-shrink-0" />}
-              
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                {/* Task name with dynamic width */}
-                <div className="flex-1 min-w-0">
-                  <Tooltip title={taskDisplayName}>
-                    <span 
-                      className="text-sm text-gray-700 dark:text-gray-300 truncate cursor-pointer block"
-                      style={{
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
+          <div 
+            className="flex items-center justify-between group pl-1 border-r border-gray-200 dark:border-gray-700" 
+            style={baseStyle}
+          >
+            {editTaskName ? (
+              /* Full cell input when editing */
+              <div className="flex-1" style={{ height: '38px' }} ref={wrapperRef}>
+                <Input
+                  ref={inputRef}
+                  variant="borderless"
+                  value={taskName}
+                  onChange={(e) => setTaskName(e.target.value)}
+                  autoFocus
+                  onPressEnter={handleTaskNameSave}
+                  onBlur={handleTaskNameSave}
+                  className="text-sm"
+                  style={{
+                    width: '100%',
+                    height: '38px',
+                    margin: '0',
+                    padding: '8px 12px',
+                    border: '1px solid #1677ff',
+                    backgroundColor: 'rgba(22, 119, 255, 0.02)',
+                    borderRadius: '3px',
+                    fontSize: '14px',
+                    lineHeight: '22px',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    boxShadow: '0 0 0 2px rgba(22, 119, 255, 0.1)',
+                  }}
+                />
+              </div>
+            ) : (
+              /* Normal layout when not editing */
+              <>
+                <div className="flex items-center flex-1 min-w-0">
+                  {/* Indentation for subtasks - tighter spacing */}
+                  {isSubtask && <div className="w-4 flex-shrink-0" />}
+                  
+                  {/* Expand/Collapse button - only show for parent tasks */}
+                  {!isSubtask && (
+                    <button
+                      onClick={handleToggleExpansion}
+                      className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out flex-shrink-0 ${
+                        task.sub_tasks_count != null && task.sub_tasks_count > 0 
+                          ? 'opacity-100' 
+                          : 'opacity-0 group-hover:opacity-100'
+                      }`}
                     >
-                      {taskDisplayName}
-                    </span>
-                  </Tooltip>
+                      <div 
+                        className="transition-transform duration-300 ease-out"
+                        style={{ 
+                          transform: task.show_sub_tasks ? 'rotate(90deg)' : 'rotate(0deg)',
+                          transformOrigin: 'center'
+                        }}
+                      >
+                        <RightOutlined className="text-gray-600 dark:text-gray-400" />
+                      </div>
+                    </button>
+                  )}
+                  
+                  {/* Additional indentation for subtasks after the expand button space */}
+                  {isSubtask && <div className="w-2 flex-shrink-0" />}
+                  
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {/* Task name with dynamic width */}
+                    <div className="flex-1 min-w-0" ref={wrapperRef}>
+                      <span 
+                        className="text-sm text-gray-700 dark:text-gray-300 truncate cursor-text block"
+                        style={{
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setEditTaskName(true);
+                        }}
+                        title={taskDisplayName}
+                      >
+                        {taskDisplayName}
+                      </span>
+                    </div>
+                    
+                    {/* Indicators container - flex-shrink-0 to prevent compression */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {/* Subtask count indicator - only show if count > 0 */}
+                      {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count > 0 && (
+                        <Tooltip title={t(`indicators.tooltips.subtasks${task.sub_tasks_count === 1 ? '' : '_plural'}`, { count: task.sub_tasks_count })}>
+                          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                            <span className="text-blue-600 dark:text-blue-400 font-medium">
+                              {task.sub_tasks_count}
+                            </span>
+                            <DoubleRightOutlined className="text-blue-600 dark:text-blue-400" style={{ fontSize: 10 }} />
+                          </div>
+                        </Tooltip>
+                      )}
+
+                      {/* Task indicators - compact layout */}
+                      {task.comments_count != null && task.comments_count !== 0 && (
+                        <Tooltip title={t(`indicators.tooltips.comments${task.comments_count === 1 ? '' : '_plural'}`, { count: task.comments_count })}>
+                          <CommentOutlined 
+                            className="text-gray-500 dark:text-gray-400" 
+                            style={{ fontSize: 12 }} 
+                          />
+                        </Tooltip>
+                      )}
+
+                      {task.has_subscribers && (
+                        <Tooltip title={t('indicators.tooltips.subscribers')}>
+                          <EyeOutlined 
+                            className="text-gray-500 dark:text-gray-400" 
+                            style={{ fontSize: 12 }} 
+                          />
+                        </Tooltip>
+                      )}
+
+                      {task.attachments_count != null && task.attachments_count !== 0 && (
+                        <Tooltip title={t(`indicators.tooltips.attachments${task.attachments_count === 1 ? '' : '_plural'}`, { count: task.attachments_count })}>
+                          <PaperClipOutlined 
+                            className="text-gray-500 dark:text-gray-400" 
+                            style={{ fontSize: 12 }} 
+                          />
+                        </Tooltip>
+                      )}
+
+                      {task.has_dependencies && (
+                        <Tooltip title={t('indicators.tooltips.dependencies')}>
+                          <MinusCircleOutlined 
+                            className="text-gray-500 dark:text-gray-400" 
+                            style={{ fontSize: 12 }} 
+                          />
+                        </Tooltip>
+                      )}
+
+                      {task.schedule_id && (
+                        <Tooltip title={t('indicators.tooltips.recurring')}>
+                          <RetweetOutlined 
+                            className="text-gray-500 dark:text-gray-400" 
+                            style={{ fontSize: 12 }} 
+                          />
+                        </Tooltip>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 
-                {/* Indicators container - flex-shrink-0 to prevent compression */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  {/* Subtask count indicator - only show if count > 0 */}
-                  {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count !== 0 && (
-                    <Tooltip title={t(`indicators.tooltips.subtasks${task.sub_tasks_count === 1 ? '' : '_plural'}`, { count: task.sub_tasks_count })}>
-                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">
-                          {task.sub_tasks_count}
-                        </span>
-                        <DoubleRightOutlined className="text-blue-600 dark:text-blue-400" style={{ fontSize: 10 }} />
-                      </div>
-                    </Tooltip>
-                  )}
-
-                  {/* Task indicators - compact layout */}
-                  {task.comments_count != null && task.comments_count !== 0 && (
-                    <Tooltip title={t(`indicators.tooltips.comments${task.comments_count === 1 ? '' : '_plural'}`, { count: task.comments_count })}>
-                      <CommentOutlined 
-                        className="text-gray-500 dark:text-gray-400" 
-                        style={{ fontSize: 12 }} 
-                      />
-                    </Tooltip>
-                  )}
-
-                  {task.has_subscribers && (
-                    <Tooltip title={t('indicators.tooltips.subscribers')}>
-                      <EyeOutlined 
-                        className="text-gray-500 dark:text-gray-400" 
-                        style={{ fontSize: 12 }} 
-                      />
-                    </Tooltip>
-                  )}
-
-                  {task.attachments_count != null && task.attachments_count !== 0 && (
-                    <Tooltip title={t(`indicators.tooltips.attachments${task.attachments_count === 1 ? '' : '_plural'}`, { count: task.attachments_count })}>
-                      <PaperClipOutlined 
-                        className="text-gray-500 dark:text-gray-400" 
-                        style={{ fontSize: 12 }} 
-                      />
-                    </Tooltip>
-                  )}
-
-                  {task.has_dependencies && (
-                    <Tooltip title={t('indicators.tooltips.dependencies')}>
-                      <MinusCircleOutlined 
-                        className="text-gray-500 dark:text-gray-400" 
-                        style={{ fontSize: 12 }} 
-                      />
-                    </Tooltip>
-                  )}
-
-                  {task.schedule_id && (
-                    <Tooltip title={t('indicators.tooltips.recurring')}>
-                      <RetweetOutlined 
-                        className="text-gray-500 dark:text-gray-400" 
-                        style={{ fontSize: 12 }} 
-                      />
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <button
-              className="opacity-0 group-hover:opacity-100 transition-all duration-200 ml-2 mr-2 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 flex-shrink-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                dispatch(setSelectedTaskId(task.id));
-                dispatch(setShowTaskDrawer(true));
-              }}
-            >
-              <ArrowsAltOutlined />
-              {t('openButton')}
-            </button>
+                <button
+                  className="opacity-0 group-hover:opacity-100 transition-all duration-200 ml-2 mr-2 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 flex-shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dispatch(setSelectedTaskId(task.id));
+                    dispatch(setShowTaskDrawer(true));
+                  }}
+                >
+                  <ArrowsAltOutlined />
+                  {t('openButton')}
+                </button>
+              </>
+            )}
           </div>
         );
 
       case 'description':
         return (
-          <div style={baseStyle} className="px-2">
+          <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <div
-              className="text-sm text-gray-600 dark:text-gray-400 truncate"
+              className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
               style={{
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -435,7 +522,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'status':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <TaskStatusDropdown
               task={task}
               projectId={projectId}
@@ -446,7 +533,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'assignees':
         return (
-          <div className="flex items-center gap-1" style={baseStyle}>
+          <div className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <AvatarGroup
               members={task.assignee_names || []}
               maxCount={3}
@@ -463,7 +550,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'priority':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <TaskPriorityDropdown
               task={task}
               projectId={projectId}
@@ -474,7 +561,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'dueDate':
         return (
-          <div style={baseStyle} className="relative group">
+          <div className="flex items-center justify-center px-2 relative group border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {activeDatePicker === 'dueDate' ? (
               <div className="w-full relative">
                 <DatePicker
@@ -510,18 +597,18 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
               </div>
             ) : (
               <div 
-                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors"
+                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors text-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   datePickerHandlers.setDueDate();
                 }}
               >
                 {formattedDates.due ? (
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     {formattedDates.due}
                   </span>
                 ) : (
-                  <span className="text-sm text-gray-400 dark:text-gray-500">
+                  <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
                     {t('setDueDate')}
                   </span>
                 )}
@@ -532,7 +619,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'progress':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {task.progress !== undefined &&
               task.progress >= 0 &&
               (task.progress === 100 ? (
@@ -555,8 +642,13 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         );
 
       case 'labels':
+        const labelsColumn = visibleColumns.find(col => col.id === 'labels');
+        const labelsStyle = {
+          ...baseStyle,
+          ...(labelsColumn?.width === 'auto' ? { minWidth: '200px', flexGrow: 1 } : {})
+        };
         return (
-          <div className="flex items-center gap-0.5 flex-wrap min-w-0" style={{ ...baseStyle, minWidth: '150px' }}>
+          <div className="flex items-center gap-0.5 flex-wrap min-w-0 px-2 border-r border-gray-200 dark:border-gray-700" style={labelsStyle}>
             <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
             <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
           </div>
@@ -564,7 +656,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'phase':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <TaskPhaseDropdown
               task={task}
               projectId={projectId}
@@ -575,17 +667,42 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'timeTracking':
         return (
-          <div style={baseStyle}>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <TaskTimeTracking taskId={task.id || ''} isDarkMode={isDarkMode} />
           </div>
         );
 
       case 'estimation':
+        // Use timeTracking.estimated which is the converted value from backend's total_minutes
+        const estimationDisplay = (() => {
+          const estimatedHours = task.timeTracking?.estimated;
+          
+          if (estimatedHours && estimatedHours > 0) {
+            // Convert decimal hours to hours and minutes for display
+            const hours = Math.floor(estimatedHours);
+            const minutes = Math.round((estimatedHours - hours) * 60);
+            
+            if (hours > 0 && minutes > 0) {
+              return `${hours}h ${minutes}m`;
+            } else if (hours > 0) {
+              return `${hours}h`;
+            } else if (minutes > 0) {
+              return `${minutes}m`;
+            }
+          }
+          
+          return null;
+        })();
+        
         return (
-          <div style={baseStyle}>
-            {task.timeTracking?.estimated && (
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
+            {estimationDisplay ? (
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                {task.timeTracking.estimated}h
+                {estimationDisplay}
+              </span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500">
+                -
               </span>
             )}
           </div>
@@ -593,7 +710,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'startDate':
         return (
-          <div style={baseStyle} className="relative group">
+          <div className="flex items-center justify-center px-2 relative group border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             {activeDatePicker === 'startDate' ? (
               <div className="w-full relative">
                 <DatePicker
@@ -629,18 +746,18 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
               </div>
             ) : (
               <div 
-                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors"
+                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors text-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   datePickerHandlers.setStartDate();
                 }}
               >
                 {formattedDates.start ? (
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     {formattedDates.start}
                   </span>
                 ) : (
-                  <span className="text-sm text-gray-400 dark:text-gray-500">
+                  <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
                     {t('setStartDate')}
                   </span>
                 )}
@@ -651,42 +768,50 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
 
       case 'completedDate':
         return (
-          <div style={baseStyle}>
-            {formattedDates.completed && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
+            {formattedDates.completed ? (
+              <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {formattedDates.completed}
               </span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
             )}
           </div>
         );
 
       case 'createdDate':
         return (
-          <div style={baseStyle}>
-            {formattedDates.created && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
+            {formattedDates.created ? (
+              <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {formattedDates.created}
               </span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
             )}
           </div>
         );
 
       case 'lastUpdated':
         return (
-          <div style={baseStyle}>
-            {formattedDates.updated && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
+            {formattedDates.updated ? (
+              <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {formattedDates.updated}
               </span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
             )}
           </div>
         );
 
       case 'reporter':
         return (
-          <div style={baseStyle}>
-            {task.reporter && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">{task.reporter}</span>
+          <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
+            {task.reporter ? (
+              <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{task.reporter}</span>
+            ) : (
+              <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
             )}
           </div>
         );
@@ -696,7 +821,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         const column = visibleColumns.find(col => col.id === columnId);
         if (column && (column.custom_column || column.isCustom) && updateTaskCustomColumnValue) {
           return (
-            <div style={baseStyle}>
+            <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
               <CustomColumnCell
                 column={column}
                 task={task}
@@ -716,6 +841,10 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     activeDatePicker,
     isDarkMode,
     projectId,
+    
+    // Edit task name state - CRITICAL for re-rendering
+    editTaskName,
+    taskName,
     
     // Task data - include specific fields that might update via socket
     task,
@@ -737,6 +866,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     // Handlers
     handleDateChange,
     datePickerHandlers,
+    handleTaskNameSave,
     
     // Translation
     t,
@@ -749,8 +879,10 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className={`flex items-center min-w-max px-1 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+      style={{ ...style, height: '40px' }}
+      className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+        isFirstInGroup ? 'border-t border-gray-200 dark:border-gray-700' : ''
+      } ${
         isDragging ? 'shadow-lg border border-blue-300' : ''
       }`}
     >

@@ -48,6 +48,9 @@
   "searchInputPlaceholder": "Suchen oder erstellen",
   "assigneeSelectorInviteButton": "Neues Mitglied per E-Mail einladen",
   "labelInputPlaceholder": "Suchen oder erstellen",
+  "searchLabelsPlaceholder": "Labels suchen...",
+  "createLabelButton": "\"{{name}}\" erstellen",
+  "manageLabelsPath": "Einstellungen → Labels",
 
   "pendingInvitation": "Einladung ausstehend",
 
@@ -67,6 +70,13 @@
   "clearStartDate": "Startdatum löschen",
   "dueDatePlaceholder": "Fälligkeitsdatum",
   "startDatePlaceholder": "Startdatum",
+
+  "emptyStates": {
+    "noTaskGroups": "Keine Aufgabengruppen gefunden",
+    "noTaskGroupsDescription": "Aufgaben werden hier angezeigt, wenn sie erstellt oder Filter angewendet werden.",
+    "errorPrefix": "Fehler:",
+    "dragTaskFallback": "Aufgabe"
+  },
 
   "customColumns": {
     "addCustomColumn": "Benutzerdefinierte Spalte hinzufügen",

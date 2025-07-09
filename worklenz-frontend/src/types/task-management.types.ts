@@ -19,9 +19,10 @@ export interface Task {
   dueDate?: string; // Alternative due date field
   startDate?: string; // Start date field
   completedAt?: string; // Completion date
-  updatedAt?: string; // Update timestamp
-  created_at: string;
-  updated_at: string;
+  updatedAt?: string; // Update timestamp (camelCase from API)
+  createdAt?: string; // Creation timestamp (camelCase from API)
+  created_at: string; // Creation timestamp (snake_case, legacy)
+  updated_at: string; // Update timestamp (snake_case, legacy)
   sub_tasks?: Task[];
   sub_tasks_count?: number;
   show_sub_tasks?: boolean;
@@ -33,6 +34,7 @@ export interface Task {
   statusColor?: string;
   priorityColor?: string;
   labels?: { id: string; name: string; color: string; end?: boolean; names?: string[] }[];
+  all_labels?: { id: string; name: string; color_code: string }[]; // Complete list of labels for selection logic
   comments_count?: number;
   attachments_count?: number;
   has_dependencies?: boolean;

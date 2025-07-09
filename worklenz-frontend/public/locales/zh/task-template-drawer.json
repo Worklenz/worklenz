@@ -1,0 +1,11 @@
+{
+  "createTaskTemplate": "创建任务模板",
+  "editTaskTemplate": "编辑任务模板",
+  "cancelText": "取消",
+  "saveText": "保存",
+  "templateNameText": "模板名称",
+  "selectedTasks": "已选任务",
+  "removeTask": "移除",
+  "cancelButton": "取消",
+  "saveButton": "保存"
+}

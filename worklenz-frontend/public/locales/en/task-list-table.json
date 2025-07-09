@@ -48,6 +48,9 @@
   "searchInputPlaceholder": "Search or create",
   "assigneeSelectorInviteButton": "Invite a new member by email",
   "labelInputPlaceholder": "Search or create",
+  "searchLabelsPlaceholder": "Search labels...",
+  "createLabelButton": "Create \"{{name}}\"",
+  "manageLabelsPath": "Settings → Labels",
 
   "pendingInvitation": "Pending Invitation",
 
@@ -67,6 +70,13 @@
   "clearStartDate": "Clear start date",
   "dueDatePlaceholder": "Due Date",
   "startDatePlaceholder": "Start Date",
+
+  "emptyStates": {
+    "noTaskGroups": "No task groups found",
+    "noTaskGroupsDescription": "Tasks will appear here when they are created or when filters are applied.",
+    "errorPrefix": "Error:",
+    "dragTaskFallback": "Task"
+  },
 
   "customColumns": {
     "addCustomColumn": "Add a custom column",

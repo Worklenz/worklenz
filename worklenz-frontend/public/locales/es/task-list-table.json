@@ -48,6 +48,9 @@
   "searchInputPlaceholder": "Buscar o crear",
   "assigneeSelectorInviteButton": "Invitar a un nuevo miembro por correo",
   "labelInputPlaceholder": "Buscar o crear",
+  "searchLabelsPlaceholder": "Buscar etiquetas...",
+  "createLabelButton": "Crear \"{{name}}\"",
+  "manageLabelsPath": "Configuración → Etiquetas",
 
   "pendingInvitation": "Invitación pendiente",
 
@@ -67,6 +70,13 @@
   "clearStartDate": "Limpiar fecha de inicio",
   "dueDatePlaceholder": "Fecha de vencimiento",
   "startDatePlaceholder": "Fecha de inicio",
+
+  "emptyStates": {
+    "noTaskGroups": "No se encontraron grupos de tareas",
+    "noTaskGroupsDescription": "Las tareas aparecerán aquí cuando se creen o cuando se apliquen filtros.",
+    "errorPrefix": "Error:",
+    "dragTaskFallback": "Tarea"
+  },
 
   "customColumns": {
     "addCustomColumn": "Agregar una columna personalizada",

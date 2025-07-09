@@ -213,7 +213,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
       return [
         {
           id: 'priority',
-          label: 'Priority',
+          label: t('priorityText'),
           options: filterData.priorities.map((p: any) => ({
             value: p.id,
             label: p.name,
@@ -288,7 +288,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
       return [
         {
           id: 'priority',
-          label: 'Priority',
+          label: t('priorityText'),
           options: filterData.priorities.map((p: any) => ({
             value: p.id,
             label: p.name,
@@ -719,7 +719,34 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   isDarkMode,
 }) => {
   const { t } = useTranslation('task-list-filters');
+  const { t: tTable } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
+
+  // Helper function to get translated field label using existing task-list-table translations
+  const getFieldLabel = useCallback((fieldKey: string) => {
+    const keyMappings: Record<string, string> = {
+      'KEY': 'keyColumn',
+      'DESCRIPTION': 'descriptionColumn', 
+      'PROGRESS': 'progressColumn',
+      'ASSIGNEES': 'assigneesColumn',
+      'LABELS': 'labelsColumn',
+      'PHASE': 'phaseColumn',
+      'STATUS': 'statusColumn',
+      'PRIORITY': 'priorityColumn',
+      'TIME_TRACKING': 'timeTrackingColumn',
+      'ESTIMATION': 'estimationColumn',
+      'START_DATE': 'startDateColumn',
+      'DUE_DATE': 'dueDateColumn',
+      'DUE_TIME': 'dueTimeColumn',
+      'COMPLETED_DATE': 'completedDateColumn',
+      'CREATED_DATE': 'createdDateColumn',
+      'LAST_UPDATED': 'lastUpdatedColumn',
+      'REPORTER': 'reporterColumn',
+    };
+
+    const translationKey = keyMappings[fieldKey];
+    return translationKey ? tTable(translationKey) : fieldKey;
+  }, [tTable]);
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
   const columns = useSelector(selectColumns);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
@@ -857,7 +884,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
 
                       {/* Label and Count */}
                       <div className="flex-1 flex items-center justify-between">
-                        <span className="truncate">{field.label}</span>
+                        <span className="truncate">{getFieldLabel(field.key)}</span>
                       </div>
                     </button>
                   );
@@ -1213,7 +1240,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
 
   return (
     <div
-      className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-3 shadow-sm ${className}`}
+      className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-1.5 shadow-sm ${className}`}
     >
       <div className="flex flex-wrap items-center gap-2">
         {/* Left Section - Main Filters */}
