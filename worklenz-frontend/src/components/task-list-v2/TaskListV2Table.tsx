@@ -457,7 +457,7 @@ const TaskListV2Section: React.FC = () => {
   );
 
   const renderTask = useCallback(
-    (taskIndex: number) => {
+    (taskIndex: number, isFirstInGroup: boolean = false) => {
       const item = virtuosoItems[taskIndex];
 
       if (!item || !urlProjectId) return null;
@@ -480,6 +480,7 @@ const TaskListV2Section: React.FC = () => {
           taskId={item.id}
           projectId={urlProjectId}
           visibleColumns={visibleColumns}
+          isFirstInGroup={isFirstInGroup}
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
         />
       );
@@ -647,9 +648,12 @@ const TaskListV2Section: React.FC = () => {
                           virtuosoGroups.slice(0, groupIndex).reduce((sum, g) => sum + g.count, 0) +
                           taskIndex;
 
+                        // Check if this is the first actual task in the group (not AddTaskRow)
+                        const isFirstTaskInGroup = taskIndex === 0 && !('isAddTaskRow' in task);
+
                         return (
                           <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
-                            {renderTask(globalTaskIndex)}
+                            {renderTask(globalTaskIndex, isFirstTaskInGroup)}
                           </div>
                         );
                       })}
