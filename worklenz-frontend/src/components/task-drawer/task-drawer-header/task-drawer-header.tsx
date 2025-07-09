@@ -19,6 +19,7 @@ import { deleteBoardTask, updateTaskName } from '@/features/board/board-slice';
 import { updateEnhancedKanbanTaskName } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import { ITaskViewModel } from '@/types/tasks/task.types';
 
 type TaskDrawerHeaderProps = {
   inputRef: React.RefObject<InputRef | null>;
@@ -89,22 +90,6 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     },
   ];
 
-  const handleReceivedTaskNameChange = (data: {
-    id: string;
-    parent_task: string;
-    name: string;
-  }) => {
-    if (data.id === selectedTaskId) {
-      const taskData = { ...data, manual_progress: false } as IProjectTask;
-      dispatch(updateTaskName({ task: taskData }));
-
-      // Also update enhanced kanban if on board tab
-      if (tab === 'board') {
-        dispatch(updateEnhancedKanbanTaskName({ task: taskData }));
-      }
-    }
-  };
-
   const handleInputBlur = () => {
     setIsEditing(false);
     if (
@@ -124,9 +109,8 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
         parent_task: taskFormViewModel?.task?.parent_task_id,
       })
     );
-    socket?.once(SocketEvents.TASK_NAME_CHANGE.toString(), (data: any) => {
-      handleReceivedTaskNameChange(data);
-    });
+    // Note: Real-time updates are handled by the global useTaskSocketHandlers hook
+    // No need for local socket listeners that could interfere with global handlers
   };
 
   return (
