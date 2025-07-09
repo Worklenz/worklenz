@@ -161,9 +161,9 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
     })(),
     start: task.startDate ? formatDate(task.startDate) : null,
     completed: task.completedAt ? formatDate(task.completedAt) : null,
-    created: task.created_at ? formatDate(task.created_at) : null,
+    created: (task.createdAt || task.created_at) ? formatDate(task.createdAt || task.created_at) : null,
     updated: task.updatedAt ? formatDate(task.updatedAt) : null,
-  }), [task.dueDate, task.due_date, task.startDate, task.completedAt, task.created_at, task.updatedAt]);
+  }), [task.dueDate, task.due_date, task.startDate, task.completedAt, task.createdAt, task.created_at, task.updatedAt]);
 
   // Memoize date values for DatePicker
   const dateValues = useMemo(
@@ -517,11 +517,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                 }}
               >
                 {formattedDates.due ? (
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     {formattedDates.due}
                   </span>
                 ) : (
-                  <span className="text-sm text-gray-400 dark:text-gray-500">
+                  <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
                     {t('setDueDate')}
                   </span>
                 )}
@@ -640,11 +640,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
                 }}
               >
                 {formattedDates.start ? (
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     {formattedDates.start}
                   </span>
                 ) : (
-                  <span className="text-sm text-gray-400 dark:text-gray-500">
+                  <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
                     {t('setStartDate')}
                   </span>
                 )}
@@ -657,11 +657,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         return (
           <div className="flex items-center justify-center px-2" style={baseStyle}>
             {formattedDates.completed ? (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {formattedDates.completed}
               </span>
             ) : (
-              <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
+              <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
             )}
           </div>
         );
@@ -670,24 +670,25 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         return (
           <div className="flex items-center justify-center px-2" style={baseStyle}>
             {formattedDates.created ? (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {formattedDates.created}
               </span>
             ) : (
-              <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
+              <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
             )}
           </div>
         );
 
       case 'lastUpdated':
+        console.log('formattedDates.updated', formattedDates.updated);
         return (
           <div className="flex items-center justify-center px-2" style={baseStyle}>
             {formattedDates.updated ? (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {formattedDates.updated}
               </span>
             ) : (
-              <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
+              <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
             )}
           </div>
         );
@@ -696,9 +697,9 @@ const TaskRow: React.FC<TaskRowProps> = memo(({ taskId, projectId, visibleColumn
         return (
           <div className="flex items-center justify-center px-2" style={baseStyle}>
             {task.reporter ? (
-              <span className="text-sm text-gray-500 dark:text-gray-400">{task.reporter}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{task.reporter}</span>
             ) : (
-              <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
+              <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
             )}
           </div>
         );
