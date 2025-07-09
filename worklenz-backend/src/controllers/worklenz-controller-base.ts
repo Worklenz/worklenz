@@ -34,29 +34,24 @@ export default abstract class WorklenzControllerBase {
     const offset = queryParams.search ? 0 : (index - 1) * size;
     const paging = queryParams.paging || "true";
 
-    // let s = "";
-    // if (typeof searchField === "string") {
-    //   s = `${searchField} || ' ' || id::TEXT`;
-    // } else if (Array.isArray(searchField)) {
-    //   s = searchField.join(" || ' ' || ");
-    // }
-
-    // const search = (queryParams.search as string || "").trim();
-    // const searchQuery = search ? `AND TO_TSVECTOR(${s}) @@ TO_TSQUERY('${toTsQuery(search)}')` : "";
-
     const search = (queryParams.search as string || "").trim();
-
-    let s = "";
-    if (typeof searchField === "string") {
-      s = ` ${searchField} ILIKE '%${search}%'`;
-    } else if (Array.isArray(searchField)) {
-      s = searchField.map(index => ` ${index} ILIKE '%${search}%'`).join(" OR ");
-    }
 
     let searchQuery = "";
 
     if (search) {
-      searchQuery = isMemberFilter ? ` (${s})  AND ` : ` AND (${s}) `;
+      // Properly escape single quotes to prevent SQL syntax errors
+      const escapedSearch = search.replace(/'/g, "''");
+      
+      let s = "";
+      if (typeof searchField === "string") {
+        s = ` ${searchField} ILIKE '%${escapedSearch}%'`;
+      } else if (Array.isArray(searchField)) {
+        s = searchField.map(field => ` ${field} ILIKE '%${escapedSearch}%'`).join(" OR ");
+      }
+
+      if (s) {
+        searchQuery = isMemberFilter ? ` (${s})  AND ` : ` AND (${s}) `;
+      }
     }
 
     // Sort

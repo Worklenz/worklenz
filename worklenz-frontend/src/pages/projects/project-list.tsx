@@ -13,7 +13,6 @@ import {
   Pagination,
   Segmented,
   Select,
-  Skeleton,
   Table,
   TablePaginationConfig,
   Tooltip,
@@ -77,7 +76,6 @@ import {
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import ProjectGroupList from '@/components/project-list/project-group/project-group-list';
-import { groupProjects } from '@/utils/project-group';
 
 const createFilters = (items: { id: string; name: string }[]) =>
   items.map(item => ({ text: item.name, value: item.id })) as ColumnFilterItem[];
@@ -129,7 +127,8 @@ const ProjectList: React.FC = () => {
       return params;
     }
     
-    return params;
+    // Return the previous params to maintain reference stability
+    return JSON.parse(lastQueryParamsRef.current || '{}');
   }, [requestParams]);
 
   // Use the optimized query with better error handling and caching
@@ -148,6 +147,8 @@ const ProjectList: React.FC = () => {
     skip: viewMode === ProjectViewType.GROUP,
   });
 
+
+
   // Add performance monitoring
   const performanceRef = useRef<{ startTime: number | null }>({ startTime: null });
 
@@ -156,17 +157,13 @@ const ProjectList: React.FC = () => {
     if (loadingProjects && !performanceRef.current.startTime) {
       performanceRef.current.startTime = performance.now();
     } else if (!loadingProjects && performanceRef.current.startTime) {
-      const duration = performance.now() - performanceRef.current.startTime;
-      console.log(`Projects query completed in ${duration.toFixed(2)}ms`);
       performanceRef.current.startTime = null;
     }
   }, [loadingProjects]);
 
   // Optimized debounced search with better cleanup and performance
   const debouncedSearch = useCallback(
-    debounce((searchTerm: string) => {
-      console.log('Executing debounced search:', searchTerm);
-      
+    debounce((searchTerm: string) => {      
       // Clear any error messages when starting a new search
       setErrorMessage(null);
       
@@ -372,7 +369,6 @@ const ProjectList: React.FC = () => {
   // Handle query errors
   useEffect(() => {
     if (projectsError) {
-      console.error('Projects query error:', projectsError);
       setErrorMessage('Failed to load projects. Please try again.');
     } else {
       setErrorMessage(null);
@@ -392,7 +388,6 @@ const ProjectList: React.FC = () => {
         await dispatch(fetchGroupedProjects(groupedRequestParams)).unwrap();
       }
     } catch (error) {
-      console.error('Error refreshing projects:', error);
       setErrorMessage('Failed to refresh projects. Please try again.');
     } finally {
       setIsLoading(false);
@@ -632,7 +627,7 @@ const ProjectList: React.FC = () => {
       },
       {
         title: t('category'),
-        dataIndex: 'category',
+        dataIndex: 'category_name',
         key: 'category_id',
         filters: categoryFilters,
         filteredValue: filteredInfo.category_id || filteredCategories || [],
@@ -647,7 +642,7 @@ const ProjectList: React.FC = () => {
         dataIndex: 'status',
         key: 'status_id',
         filters: statusFilters,
-        filteredValue: filteredInfo.status_id || [],
+        filteredValue: filteredInfo.status_id || filteredStatuses || [],
         filterMultiple: true,
         sorter: true,
       },
@@ -785,10 +780,10 @@ const ProjectList: React.FC = () => {
   // Sync search input value with Redux state
   useEffect(() => {
     const currentSearch = viewMode === ProjectViewType.LIST ? requestParams.search : groupedRequestParams.search;
-    if (searchValue !== currentSearch) {
+    if (searchValue !== (currentSearch || '')) {
       setSearchValue(currentSearch || '');
     }
-  }, [requestParams.search, groupedRequestParams.search, viewMode, searchValue]);
+  }, [requestParams.search, groupedRequestParams.search, viewMode]); // Remove searchValue from deps to prevent loops
 
   // Optimize loading state management
   useEffect(() => {
@@ -854,49 +849,47 @@ const ProjectList: React.FC = () => {
         }
       />
       <Card className="project-card">
-        <Skeleton active loading={isLoading} className="mt-4 p-4">
-          {viewMode === ProjectViewType.LIST ? (
-            <Table<IProjectViewModel>
-              columns={tableColumns}
-              dataSource={tableDataSource}
-              rowKey={record => record.id || ''}
-              loading={loadingProjects}
-              size="small"
-              onChange={handleTableChange}
-              pagination={paginationConfig}
-              locale={{ emptyText: emptyContent }}
-              onRow={record => ({
-                onClick: () => navigateToProject(record.id, record.team_member_default_view),
-                onMouseEnter: () => handleProjectHover(record.id),
-              })}
+        {viewMode === ProjectViewType.LIST ? (
+          <Table<IProjectViewModel>
+            columns={tableColumns}
+            dataSource={tableDataSource}
+            rowKey={record => record.id || ''}
+            loading={loadingProjects || isFetchingProjects}
+            size="small"
+            onChange={handleTableChange}
+            pagination={paginationConfig}
+            locale={{ emptyText: emptyContent }}
+            onRow={record => ({
+              onClick: () => navigateToProject(record.id, record.team_member_default_view),
+              onMouseEnter: () => handleProjectHover(record.id),
+            })}
+          />
+        ) : (
+          <div>
+            <ProjectGroupList
+              groups={transformedGroupedProjects}
+              navigate={navigate}
+              onProjectSelect={id => navigateToProject(id, undefined)}
+              onArchive={() => {}}
+              isOwnerOrAdmin={isOwnerOrAdmin}
+              loading={groupedProjects.loading}
+              t={t}
             />
-          ) : (
-            <div>
-              <ProjectGroupList
-                groups={transformedGroupedProjects}
-                navigate={navigate}
-                onProjectSelect={id => navigateToProject(id, undefined)}
-                onArchive={() => {}}
-                isOwnerOrAdmin={isOwnerOrAdmin}
-                loading={groupedProjects.loading}
-                t={t}
-              />
-              {!groupedProjects.loading &&
-                groupedProjects.data?.data &&
-                groupedProjects.data.data.length > 0 && (
-                  <div style={{ marginTop: '24px', textAlign: 'center' }}>
-                    <Pagination
-                      {...groupedPaginationConfig}
-                      onChange={(page, pageSize) =>
-                        handleGroupedTableChange({ current: page, pageSize })
-                      }
-                      showTotal={paginationShowTotal}
-                    />
-                  </div>
-                )}
-            </div>
-          )}
-        </Skeleton>
+            {!groupedProjects.loading &&
+              groupedProjects.data?.data &&
+              groupedProjects.data.data.length > 0 && (
+                <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                  <Pagination
+                    {...groupedPaginationConfig}
+                    onChange={(page, pageSize) =>
+                      handleGroupedTableChange({ current: page, pageSize })
+                    }
+                    showTotal={paginationShowTotal}
+                  />
+                </div>
+              )}
+          </div>
+        )}
       </Card>
 
       {createPortal(<ProjectDrawer onClose={handleDrawerClose} />, document.body, 'project-drawer')}
