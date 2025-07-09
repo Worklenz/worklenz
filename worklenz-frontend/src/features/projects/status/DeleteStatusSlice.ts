@@ -24,7 +24,10 @@ const deleteStatusSlice = createSlice({
     deleteStatusToggleDrawer: state => {
       state.isDeleteStatusDrawerOpen = !state.isDeleteStatusDrawerOpen;
     },
-    seletedStatusCategory: (state, action: PayloadAction<{ id: string; name: string; category_id: string; message: string}>) => {
+    seletedStatusCategory: (
+      state,
+      action: PayloadAction<{ id: string; name: string; category_id: string; message: string }>
+    ) => {
       state.status = action.payload;
     },
     // deleteStatus: (state, action: PayloadAction<string>) => {
@@ -33,9 +36,9 @@ const deleteStatusSlice = createSlice({
   },
 });
 
-export const { 
-    deleteStatusToggleDrawer, 
-    seletedStatusCategory, 
-    // deleteStatus 
+export const {
+  deleteStatusToggleDrawer,
+  seletedStatusCategory,
+  // deleteStatus
 } = deleteStatusSlice.actions;
 export default deleteStatusSlice.reducer;

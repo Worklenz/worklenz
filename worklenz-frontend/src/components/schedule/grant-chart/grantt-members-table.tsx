@@ -2,7 +2,10 @@ import { Badge, Button, Flex, Tooltip } from 'antd';
 import React, { useCallback } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import CustomAvatar from '../../CustomAvatar';
-import { fetchMemberProjects, toggleScheduleDrawer } from '../../../features/schedule/scheduleSlice';
+import {
+  fetchMemberProjects,
+  toggleScheduleDrawer,
+} from '../../../features/schedule/scheduleSlice';
 import { CaretDownOutlined, CaretRightFilled } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -37,12 +40,10 @@ const GranttMembersTable = React.memo(
 
     const handleToggleProject = useCallback(
       (id: string) => {
-        if(expandedProject != id) {
-          
+        if (expandedProject != id) {
           dispatch(fetchMemberProjects({ id }));
         }
         setExpandedProject(expandedProject === id ? null : id);
-
       },
       [expandedProject, setExpandedProject]
     );

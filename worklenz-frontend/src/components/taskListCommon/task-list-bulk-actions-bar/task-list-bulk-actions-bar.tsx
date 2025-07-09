@@ -58,7 +58,7 @@ import alertService from '@/services/alerts/alertService';
 
 interface ITaskAssignee {
   id: string;
-  name: string;
+  name?: string;
   email?: string;
   avatar_url?: string;
   team_member_id: string;
@@ -247,7 +247,7 @@ const TaskListBulkActionsBar = () => {
         project_id: projectId,
         members: selectedAssignees.map(member => ({
           id: member.id,
-          name: member.name,
+          name: member.name || '',
           email: member.email,
           avatar_url: member.avatar_url,
         })) as ITaskAssignee[],
@@ -437,7 +437,6 @@ const TaskListBulkActionsBar = () => {
                 placement="top"
                 arrow
                 trigger={['click']}
-                destroyOnHidden
                 onOpenChange={value => {
                   if (!value) {
                     setSelectedLabels([]);

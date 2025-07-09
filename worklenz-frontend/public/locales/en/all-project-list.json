@@ -19,5 +19,13 @@
   "unarchiveConfirm": "Are you sure you want to unarchive this project?",
   "clickToFilter": "Click to filter by",
   "noProjects": "No projects found",
-  "addToFavourites": "Add to favourites"
+  "addToFavourites": "Add to favourites",
+  "list": "List",
+  "group": "Group",
+  "listView": "List View",
+  "groupView": "Group View",
+  "groupBy": {
+    "category": "Category",
+    "client": "Client"
+  }
 }

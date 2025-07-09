@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Button, ConfigProvider, Flex, PaginationProps, Table, TableColumnsType } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
@@ -63,10 +63,14 @@ const ProjectsReportsTable = () => {
 
   const columnsVisibility = useAppSelector(state => state.projectReportsTableColumnsReducer);
 
-  const handleDrawerOpen = (record: IRPTProject) => {
-    setSelectedProject(record);
-    dispatch(toggleProjectReportsDrawer());
-  };
+  // Memoize the drawer open handler to prevent recreation on every render
+  const handleDrawerOpen = useCallback(
+    (record: IRPTProject) => {
+      setSelectedProject(record);
+      dispatch(toggleProjectReportsDrawer());
+    },
+    [dispatch]
+  );
 
   const columns: TableColumnsType<IRPTProject> = useMemo(
     () => [
@@ -231,7 +235,7 @@ const ProjectsReportsTable = () => {
         width: 200,
       },
     ],
-    [t, order]
+    [t, order, handleDrawerOpen]
   );
 
   // filter columns based on the `hidden` state from Redux
@@ -240,12 +244,16 @@ const ProjectsReportsTable = () => {
     [columns, columnsVisibility]
   );
 
-  const handleTableChange = (pagination: PaginationProps, filters: any, sorter: any) => {
-    if (sorter.order) dispatch(setOrder(sorter.order));
-    if (sorter.field) dispatch(setField(sorter.field));
-    dispatch(setIndex(pagination.current));
-    dispatch(setPageSize(pagination.pageSize));
-  };
+  // Memoize the table change handler to prevent recreation on every render
+  const handleTableChange = useCallback(
+    (pagination: PaginationProps, filters: any, sorter: any) => {
+      if (sorter.order) dispatch(setOrder(sorter.order));
+      if (sorter.field) dispatch(setField(sorter.field));
+      dispatch(setIndex(pagination.current));
+      dispatch(setPageSize(pagination.pageSize));
+    },
+    [dispatch]
+  );
 
   useEffect(() => {
     if (!isLoading) dispatch(fetchProjectData());
@@ -268,7 +276,7 @@ const ProjectsReportsTable = () => {
     return () => {
       dispatch(resetProjectReports());
     };
-  }, []);
+  }, [dispatch]);
 
   const tableRowProps = useMemo(
     () => ({
@@ -292,27 +300,42 @@ const ProjectsReportsTable = () => {
     []
   );
 
+  // Memoize pagination configuration to prevent recreation on every render
+  const paginationConfig = useMemo(
+    () => ({
+      showSizeChanger: true,
+      defaultPageSize: 10,
+      total: total,
+      current: index,
+      pageSizeOptions: PAGE_SIZE_OPTIONS,
+    }),
+    [total, index]
+  );
+
+  // Memoize scroll configuration to prevent recreation on every render
+  const scrollConfig = useMemo(() => ({ x: 'max-content' }), []);
+
+  // Memoize row key function to prevent recreation on every render
+  const getRowKey = useCallback((record: IRPTProject) => record.id, []);
+
+  // Memoize onRow function to prevent recreation on every render
+  const getRowProps = useCallback(() => tableRowProps, [tableRowProps]);
+
   return (
     <ConfigProvider {...tableConfig}>
       <Table
         columns={visibleColumns}
         dataSource={projectList}
-        pagination={{
-          showSizeChanger: true,
-          defaultPageSize: 10,
-          total: total,
-          current: index,
-          pageSizeOptions: PAGE_SIZE_OPTIONS,
-        }}
-        scroll={{ x: 'max-content' }}
+        pagination={paginationConfig}
+        scroll={scrollConfig}
         loading={isLoading}
         onChange={handleTableChange}
-        rowKey={record => record.id}
-        onRow={() => tableRowProps}
+        rowKey={getRowKey}
+        onRow={getRowProps}
       />
       {createPortal(<ProjectReportsDrawer selectedProject={selectedProject} />, document.body)}
     </ConfigProvider>
   );
 };
 
-export default ProjectsReportsTable;
+export default memo(ProjectsReportsTable);

@@ -220,46 +220,46 @@ export const SUBSCRIPTION_STATUS = {
 };
 
 export enum IPaddlePlans {
-  FREE = "FREE",
-  ANNUAL = "ANNUAL",
-  MONTHLY = "MONTHLY",
+  FREE = 'FREE',
+  ANNUAL = 'ANNUAL',
+  MONTHLY = 'MONTHLY',
 }
 
 export enum ISUBSCRIPTION_TYPE {
-  LIFE_TIME_DEAL = "LIFE_TIME_DEAL",
-  PADDLE = "PADDLE",
-  TRIAL = "TRIAL",
-  CUSTOM = "CUSTOM",
-  FREE = "FREE",
-  CREDIT = "CREDIT",
+  LIFE_TIME_DEAL = 'LIFE_TIME_DEAL',
+  PADDLE = 'PADDLE',
+  TRIAL = 'TRIAL',
+  CUSTOM = 'CUSTOM',
+  FREE = 'FREE',
+  CREDIT = 'CREDIT',
 }
 
-export const IconsMap: { [x: string]: string; } = {
-  ai: "ai.png",
-  avi: "avi.png",
-  css: "css.png",
-  csv: "csv.png",
-  doc: "doc.png",
-  docx: "doc.png",
-  exe: "exe.png",
-  html: "html.png",
-  js: "js.png",
-  jpg: "jpg.png",
-  jpeg: "jpg.png",
-  json: "json.png",
-  mp3: "mp3.png",
-  mp4: "mp4.png",
-  pdf: "pdf.png",
-  png: "png.png",
-  ppt: "ppt.png",
-  psd: "psd.png",
-  search: "search.png",
-  svg: "svg.png",
-  txt: "txt.png",
-  xls: "xls.png",
-  xml: "xml.png",
-  zip: "zip.png",
-}
+export const IconsMap: { [x: string]: string } = {
+  ai: 'ai.png',
+  avi: 'avi.png',
+  css: 'css.png',
+  csv: 'csv.png',
+  doc: 'doc.png',
+  docx: 'doc.png',
+  exe: 'exe.png',
+  html: 'html.png',
+  js: 'js.png',
+  jpg: 'jpg.png',
+  jpeg: 'jpg.png',
+  json: 'json.png',
+  mp3: 'mp3.png',
+  mp4: 'mp4.png',
+  pdf: 'pdf.png',
+  png: 'png.png',
+  ppt: 'ppt.png',
+  psd: 'psd.png',
+  search: 'search.png',
+  svg: 'svg.png',
+  txt: 'txt.png',
+  xls: 'xls.png',
+  xml: 'xml.png',
+  zip: 'zip.png',
+};
 
 export const durations: IRPTDuration[] = [
   {

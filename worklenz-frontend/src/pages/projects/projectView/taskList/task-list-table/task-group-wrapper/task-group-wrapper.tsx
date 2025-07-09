@@ -61,7 +61,7 @@ import {
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 
 import TaskListTableWrapper from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-wrapper/task-list-table-wrapper';
-import TaskListBulkActionsBar from '@/components/taskListCommon/task-list-bulk-actions-bar/task-list-bulk-actions-bar';
+
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -117,10 +117,11 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
     (data: ITaskAssigneesUpdateResponse) => {
       if (!data) return;
 
-      const updatedAssignees = data.assignees?.map(assignee => ({
-        ...assignee,
-        selected: true,
-      })) || [];
+      const updatedAssignees =
+        data.assignees?.map(assignee => ({
+          ...assignee,
+          selected: true,
+        })) || [];
 
       const groupId = groups?.find(group =>
         group.tasks?.some(
@@ -158,7 +159,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
   const handleLabelsChange = useCallback(
     async (labels: ILabelsChangeResponse) => {
       if (!labels) return;
-      
+
       await Promise.all([
         dispatch(updateTaskLabel(labels)),
         dispatch(setTaskLabels(labels)),
@@ -226,11 +227,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
   // Memoize socket event handlers
   const handleEndDateChange = useCallback(
-    (task: {
-      id: string;
-      parent_task: string | null;
-      end_date: string;
-    }) => {
+    (task: { id: string; parent_task: string | null; end_date: string }) => {
       if (!task) return;
 
       const taskWithProgress = {
@@ -267,11 +264,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
   // Memoize socket event handlers
   const handleStartDateChange = useCallback(
-    (task: {
-      id: string;
-      parent_task: string | null;
-      start_date: string;
-    }) => {
+    (task: { id: string; parent_task: string | null; start_date: string }) => {
       if (!task) return;
 
       const taskWithProgress = {
@@ -297,11 +290,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
   // Memoize socket event handlers
   const handleEstimationChange = useCallback(
-    (task: {
-      id: string;
-      parent_task: string | null;
-      estimation: number;
-    }) => {
+    (task: { id: string; parent_task: string | null; estimation: number }) => {
       if (!task) return;
 
       const taskWithProgress = {
@@ -316,11 +305,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
   // Memoize socket event handlers
   const handleTaskDescriptionChange = useCallback(
-    (data: {
-      id: string;
-      parent_task: string;
-      description: string;
-    }) => {
+    (data: { id: string; parent_task: string; description: string }) => {
       if (!data) return;
 
       dispatch(updateTaskDescription(data));
@@ -342,11 +327,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
   // Memoize socket event handlers
   const handleTaskProgressUpdated = useCallback(
-    (data: {
-      task_id: string;
-      progress_value?: number;
-      weight?: number;
-    }) => {
+    (data: { task_id: string; progress_value?: number; weight?: number }) => {
       if (!data || !taskGroups) return;
 
       if (data.progress_value !== undefined) {
@@ -685,8 +666,6 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
             activeId={activeId}
           />
         ))}
-
-        {createPortal(<TaskListBulkActionsBar />, document.body, 'bulk-action-container')}
 
         {createPortal(
           <TaskTemplateDrawer showDrawer={false} selectedTemplateId="" onClose={() => {}} />,

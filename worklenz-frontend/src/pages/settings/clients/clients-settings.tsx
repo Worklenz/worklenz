@@ -126,7 +126,12 @@ const ClientsSettings: React.FC = () => {
                 onConfirm={() => deleteClientHandler(record.id)}
               >
                 <Tooltip title="Delete">
-                  <Button shape="default" icon={<DeleteOutlined />} size="small" onClick={() => deleteClientHandler(record.id)} />
+                  <Button
+                    shape="default"
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    onClick={() => deleteClientHandler(record.id)}
+                  />
                 </Tooltip>
               </Popconfirm>
             </Flex>

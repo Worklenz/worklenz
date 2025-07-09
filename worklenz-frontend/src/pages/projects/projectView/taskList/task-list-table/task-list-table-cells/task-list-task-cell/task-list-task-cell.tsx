@@ -20,7 +20,7 @@ import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/tas
 import { useState, useRef, useEffect } from 'react';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { fetchSubTasks } from '@/features/tasks/tasks.slice';
+import { fetchSubTasks } from '@/features/task-management/task-management.slice';
 
 type TaskListTaskCellProps = {
   task: IProjectTask;
@@ -74,7 +74,7 @@ const TaskListTaskCell = ({
     return (
       <button
         onClick={() => handleToggleExpansion(taskId)}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
       >
         {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
       </button>
@@ -90,7 +90,7 @@ const TaskListTaskCell = ({
       return (
         <button
           onClick={() => handleToggleExpansion(taskId)}
-          className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+          className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
         >
           {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
         </button>
@@ -100,7 +100,7 @@ const TaskListTaskCell = ({
     return !isSubTask ? (
       <button
         onClick={() => handleToggleExpansion(taskId)}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54] open-task-button"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54] open-task-button"
       >
         {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
       </button>
@@ -110,7 +110,7 @@ const TaskListTaskCell = ({
   };
 
   const renderSubtasksCountLabel = (taskId: string, isSubTask: boolean, subTasksCount: number) => {
-    if (!taskId) return null;
+    if (!taskId || subTasksCount <= 1) return null;
     return (
       <Button
         onClick={() => handleToggleExpansion(taskId)}

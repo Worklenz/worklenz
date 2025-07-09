@@ -101,7 +101,6 @@ const BoardAssigneeSelector = ({ task, groupId = null }: BoardAssigneeSelectorPr
     const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
     return assignees?.includes(memberId);
   };
-  
 
   const membersDropdownContent = (
     <Card className="custom-card" styles={{ body: { padding: 8 } }}>
@@ -143,16 +142,16 @@ const BoardAssigneeSelector = ({ task, groupId = null }: BoardAssigneeSelectorPr
                   />
                 </div>
                 <Flex vertical>
-                    <Typography.Text>{member.name}</Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {member.email}&nbsp;
-                      {member.pending_invitation && (
-                        <Typography.Text type="danger" style={{ fontSize: 10 }}>
-                          ({t('pendingInvitation')})
-                        </Typography.Text>
-                      )}
-                    </Typography.Text>
-                  </Flex>
+                  <Typography.Text>{member.name}</Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {member.email}&nbsp;
+                    {member.pending_invitation && (
+                      <Typography.Text type="danger" style={{ fontSize: 10 }}>
+                        ({t('pendingInvitation')})
+                      </Typography.Text>
+                    )}
+                  </Typography.Text>
+                </Flex>
               </List.Item>
             ))
           ) : (
@@ -201,7 +200,7 @@ const BoardAssigneeSelector = ({ task, groupId = null }: BoardAssigneeSelectorPr
         type="dashed"
         shape="circle"
         size="small"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
         icon={
           <PlusOutlined
             style={{

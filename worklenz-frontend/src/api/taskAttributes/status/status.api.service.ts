@@ -60,6 +60,20 @@ export const statusApiService = {
     return response.data;
   },
 
+  updateStatusCategory: async (
+    statusId: string,
+    categoryId: string,
+    currentProjectId: string
+  ): Promise<IServerResponse<ITaskStatus>> => {
+    const q = toQueryString({ current_project_id: currentProjectId });
+
+    const response = await apiClient.put<IServerResponse<ITaskStatus>>(
+      `${rootUrl}/category/${statusId}${q}`,
+      { category_id: categoryId }
+    );
+    return response.data;
+  },
+
   updateStatusOrder: async (
     body: ITaskStatusCreateRequest,
     currentProjectId: string
@@ -69,8 +83,16 @@ export const statusApiService = {
     return response.data;
   },
 
-  deleteStatus: async (statusId: string, projectId: string, replacingStatusId: string): Promise<IServerResponse<void>> => {
-    const q = toQueryString({ project: projectId, current_project_id: projectId, replace: replacingStatusId || null });
+  deleteStatus: async (
+    statusId: string,
+    projectId: string,
+    replacingStatusId: string
+  ): Promise<IServerResponse<void>> => {
+    const q = toQueryString({
+      project: projectId,
+      current_project_id: projectId,
+      replace: replacingStatusId || null,
+    });
     const response = await apiClient.delete<IServerResponse<void>>(`${rootUrl}/${statusId}${q}`);
     return response.data;
   },

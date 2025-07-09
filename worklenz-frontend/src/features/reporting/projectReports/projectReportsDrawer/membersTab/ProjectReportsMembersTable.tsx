@@ -2,7 +2,10 @@ import { Progress, Table, TableColumnsType } from 'antd';
 import React from 'react';
 import CustomTableTitle from '../../../../../components/CustomTableTitle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setSelectedMember, toggleProjectReportsMembersTaskDrawer } from '../../project-reports-slice';
+import {
+  setSelectedMember,
+  toggleProjectReportsMembersTaskDrawer,
+} from '../../project-reports-slice';
 import { useTranslation } from 'react-i18next';
 import ProjectReportsMembersTaskDrawer from './projectReportsMembersTaskDrawer/ProjectReportsMembersTaskDrawer';
 import { createPortal } from 'react-dom';
@@ -107,7 +110,11 @@ const ProjectReportsMembersTable = ({ membersData, loading }: ProjectReportsMemb
           };
         }}
       />
-      {createPortal(<ProjectReportsMembersTaskDrawer />, document.body, 'project-reports-members-task-drawer')}
+      {createPortal(
+        <ProjectReportsMembersTaskDrawer />,
+        document.body,
+        'project-reports-members-task-drawer'
+      )}
     </>
   );
 };

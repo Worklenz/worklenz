@@ -76,6 +76,10 @@ interface BoardState {
   priorities: string[];
   members: string[];
   editableSectionId: string | null;
+
+  allTasks: IProjectTask[];
+  grouping: string;
+  totalTasks: number;
 }
 
 const initialState: BoardState = {
@@ -98,6 +102,9 @@ const initialState: BoardState = {
   priorities: [],
   members: [],
   editableSectionId: null,
+  allTasks: [],
+  grouping: '',
+  totalTasks: 0,
 };
 
 const deleteTaskFromGroup = (
@@ -186,7 +193,7 @@ export const fetchBoardTaskGroups = createAsyncThunk(
         priorities: boardReducer.priorities.join(' '),
       };
 
-      const response = await tasksApiService.getTaskList(config);
+      const response = await tasksApiService.getTaskListV3(config);
       return response.body;
     } catch (error) {
       logger.error('Fetch Task Groups', error);
@@ -400,11 +407,11 @@ const boardSlice = createSlice({
             section.tasks.splice(taskIndex, 1);
             return;
           }
-          
+
           // Check if task is in subtasks
           for (const parentTask of section.tasks) {
             if (!parentTask.sub_tasks) continue;
-            
+
             const subtaskIndex = parentTask.sub_tasks.findIndex(st => st.id === taskId);
             if (subtaskIndex !== -1) {
               parentTask.sub_tasks.splice(subtaskIndex, 1);
@@ -423,11 +430,11 @@ const boardSlice = createSlice({
           group.tasks.splice(taskIndex, 1);
           return;
         }
-        
+
         // Check subtasks
         for (const parentTask of group.tasks) {
           if (!parentTask.sub_tasks) continue;
-          
+
           const subtaskIndex = parentTask.sub_tasks.findIndex(st => st.id === taskId);
           if (subtaskIndex !== -1) {
             parentTask.sub_tasks.splice(subtaskIndex, 1);
@@ -459,10 +466,24 @@ const boardSlice = createSlice({
       const { body, sectionId, taskId } = action.payload;
       const section = state.taskGroups.find(sec => sec.id === sectionId);
       if (section) {
-        const task = section.tasks.find(task => task.id === taskId);
-        if (task) {
-          task.assignees = body.assignees;
-          task.names = body.names;
+        // First try to find the task in main tasks
+        const mainTask = section.tasks.find(task => task.id === taskId);
+        if (mainTask) {
+          mainTask.assignees = body.assignees;
+          mainTask.names = body.names;
+          return;
+        }
+
+        // If not found in main tasks, look in subtasks
+        for (const parentTask of section.tasks) {
+          if (!parentTask.sub_tasks) continue;
+
+          const subtask = parentTask.sub_tasks.find(st => st.id === taskId);
+          if (subtask) {
+            subtask.assignees = body.assignees;
+            subtask.names = body.names;
+            return;
+          }
         }
       }
     },
@@ -789,7 +810,11 @@ const boardSlice = createSlice({
       })
       .addCase(fetchBoardTaskGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
-        state.taskGroups = action.payload;
+        state.taskGroups = action.payload && action.payload.groups ? action.payload.groups : [];
+        state.allTasks = action.payload && action.payload.allTasks ? action.payload.allTasks : [];
+        state.grouping = action.payload && action.payload.grouping ? action.payload.grouping : '';
+        state.totalTasks =
+          action.payload && action.payload.totalTasks ? action.payload.totalTasks : 0;
       })
       .addCase(fetchBoardTaskGroups.rejected, (state, action) => {
         state.loadingGroups = false;

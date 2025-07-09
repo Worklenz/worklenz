@@ -24,7 +24,7 @@
   },
   "subTasks": {
     "title": "Sub Tasks",
-    "add-sub-task": "+ Add Sub Task",
+    "add-sub-task": "Add Sub Task",
     "refresh-sub-tasks": "Refresh Sub Tasks"
   }
 }

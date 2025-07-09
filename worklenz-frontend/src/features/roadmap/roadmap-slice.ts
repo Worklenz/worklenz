@@ -197,11 +197,18 @@ const roadmapSlice = createSlice({
 
       state.tasksList = updateTask(state.tasksList);
     },
-    updateTaskProgress: (state, action: PayloadAction<{ taskId: string; progress: number, totalTasksCount: number, completedCount: number }>) => {
+    updateTaskProgress: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        progress: number;
+        totalTasksCount: number;
+        completedCount: number;
+      }>
+    ) => {
       const { taskId, progress, totalTasksCount, completedCount } = action.payload;
       const updateTask = (tasks: NewTaskType[]) => {
         tasks.forEach(task => {
-
           if (task.id === taskId) {
             task.progress = progress;
           } else if (task.subTasks) {

@@ -4,7 +4,12 @@ import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { IProjectHealth } from '@/types/project/projectHealth.types';
 import { IProjectManager } from '@/types/project/projectManager.types';
 import { IProjectStatus } from '@/types/project/projectStatus.types';
-import { IGetProjectsRequestBody, IRPTOverviewProject, IRPTOverviewProjectMember, IRPTProject } from '@/types/reporting/reporting.types';
+import {
+  IGetProjectsRequestBody,
+  IRPTOverviewProject,
+  IRPTOverviewProjectMember,
+  IRPTProject,
+} from '@/types/reporting/reporting.types';
 import { getFromLocalStorage } from '@/utils/localStorageFunctions';
 import { createAsyncThunk, createSlice, createAction } from '@reduxjs/toolkit';
 
@@ -75,7 +80,7 @@ const initialState: ProjectReportsState = {
 
   isProjectReportsMembersTaskDrawerOpen: false,
   selectedMember: null,
-  selectedProject: null, 
+  selectedProject: null,
 
   projectList: [],
   total: 0,
@@ -226,7 +231,7 @@ const projectReportsSlice = createSlice({
       .addCase(updateProjectCategory, (state, action) => {
         const { projectId, category } = action.payload;
         const projectIndex = state.projectList.findIndex(project => project.id === projectId);
-        
+
         if (projectIndex !== -1) {
           state.projectList[projectIndex].category_id = category.id || null;
           state.projectList[projectIndex].category_name = category.name ?? '';
@@ -236,7 +241,7 @@ const projectReportsSlice = createSlice({
       .addCase(updateProjectStatus, (state, action) => {
         const { projectId, status } = action.payload;
         const projectIndex = state.projectList.findIndex(project => project.id === projectId);
-        
+
         if (projectIndex !== -1) {
           state.projectList[projectIndex].status_id = status.id || '';
           state.projectList[projectIndex].status_name = status.name ?? '';

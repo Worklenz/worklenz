@@ -4,7 +4,11 @@ import CustomTableTitle from '@/components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import dayjs from 'dayjs';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setShowTaskDrawer, fetchTask, setSelectedTaskId  } from '@/features/task-drawer/task-drawer.slice';
+import {
+  setShowTaskDrawer,
+  fetchTask,
+  setSelectedTaskId,
+} from '@/features/task-drawer/task-drawer.slice';
 import { DoubleRightOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
@@ -33,11 +37,13 @@ const ProjectReportsTasksTable = ({
 
   const dispatch = useAppDispatch();
 
-  useEffect(()=>{
+  useEffect(() => {
     dispatch(fetchPriorities());
     dispatch(fetchLabels());
-    dispatch(getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true }));
-  },[dispatch])
+    dispatch(
+      getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true })
+    );
+  }, [dispatch]);
 
   // function to handle task drawer open
   const handleUpdateTaskDrawer = (id: string) => {

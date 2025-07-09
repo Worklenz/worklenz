@@ -2,7 +2,12 @@ import { Button, ColorPicker, ConfigProvider, Flex, Input } from 'antd';
 import { CloseCircleOutlined, HolderOutlined } from '@ant-design/icons';
 import { nanoid } from '@reduxjs/toolkit';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { deletePhaseOption, fetchPhasesByProjectId, updatePhaseColor, updatePhaseName } from './phases.slice';
+import {
+  deletePhaseOption,
+  fetchPhasesByProjectId,
+  updatePhaseColor,
+  updatePhaseName,
+} from './phases.slice';
 import { PhaseColorCodes } from '@/shared/constants';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { TFunction } from 'i18next';
@@ -27,7 +32,7 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
   const { projectView } = useTabSearchParam();
 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: option?.id || 'temp-id'
+    id: option?.id || 'temp-id',
   });
 
   const style = {
@@ -50,14 +55,16 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
 
   const handlePhaseNameChange = async (e: React.FocusEvent<HTMLInputElement>) => {
     if (!projectId || !option || phaseName.trim() === option.name.trim()) return;
-    
+
     try {
       const updatedPhase = { ...option, name: phaseName.trim() };
-      const response = await dispatch(updatePhaseName({
-        phaseId: option.id,
-        phase: updatedPhase,
-        projectId
-      })).unwrap();
+      const response = await dispatch(
+        updatePhaseName({
+          phaseId: option.id,
+          phase: updatedPhase,
+          projectId,
+        })
+      ).unwrap();
 
       if (response.done) {
         dispatch(fetchPhasesByProjectId(projectId));
@@ -71,7 +78,7 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
 
   const handleDeletePhaseOption = async () => {
     if (!option?.id || !projectId) return;
-    
+
     try {
       const response = await dispatch(
         deletePhaseOption({ phaseOptionId: option.id, projectId })
@@ -88,7 +95,7 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
 
   const handleColorChange = async () => {
     if (!projectId || !option) return;
-    
+
     try {
       const updatedPhase = { ...option, color_code: color };
       const response = await dispatch(updatePhaseColor({ projectId, body: updatedPhase })).unwrap();
@@ -112,13 +119,13 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
           <Input
             type="text"
             value={phaseName}
-            onChange={(e) => setPhaseName(e.target.value)}
+            onChange={e => setPhaseName(e.target.value)}
             onBlur={handlePhaseNameChange}
-            onPressEnter={(e) => e.currentTarget.blur()}
+            onPressEnter={e => e.currentTarget.blur()}
             placeholder={t('enterPhaseName')}
           />
           <ColorPicker
-            onChange={(value) => setColor(value.toHexString())}
+            onChange={value => setColor(value.toHexString())}
             onChangeComplete={handleColorChange}
             value={color}
           />

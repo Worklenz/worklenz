@@ -1,4 +1,5 @@
 {
+  "title": "团队成员",
   "nameColumn": "名称",
   "projectsColumn": "项目",
   "emailColumn": "电子邮件",
@@ -40,5 +41,7 @@
   "ownerText": "团队所有者",
   "addedText": "已添加",
   "updatedText": "已更新",
-  "noResultFound": "输入电子邮件地址并按回车键..."
+  "noResultFound": "输入电子邮件地址并按回车键...",
+  "jobTitlesFetchError": "获取职位失败",
+  "invitationResent": "邀请重新发送成功！"
 }

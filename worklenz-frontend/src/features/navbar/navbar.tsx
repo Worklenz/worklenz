@@ -22,6 +22,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
 import TimerButton from './timers/timer-button';
+import HelpButton from './help/HelpButton';
 
 const Navbar = () => {
   const [current, setCurrent] = useState<string>('home');
@@ -34,15 +35,18 @@ const Navbar = () => {
   const authService = useAuthService();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState<boolean>(authService.isOwnerOrAdmin());
-  const showUpgradeTypes = [ISUBSCRIPTION_TYPE.TRIAL]
+  const showUpgradeTypes = [ISUBSCRIPTION_TYPE.TRIAL];
 
   useEffect(() => {
-    authApiService.verify().then(authorizeResponse => {
+    authApiService
+      .verify()
+      .then(authorizeResponse => {
         if (authorizeResponse.authenticated) {
           authService.setCurrentSession(authorizeResponse.user);
           setIsOwnerOrAdmin(!!(authorizeResponse.user.is_admin || authorizeResponse.user.owner));
         }
-      }).catch(error => {
+      })
+      .catch(error => {
         logger.error('Error during authorization', error);
       });
   }, []);
@@ -66,9 +70,13 @@ const Navbar = () => {
     () =>
       navRoutesList
         .filter(route => {
-          if (!route.freePlanFeature && currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE) return false;
-          if (route.adminOnly && !isOwnerOrAdmin) return false;       
-          
+          if (
+            !route.freePlanFeature &&
+            currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE
+          )
+            return false;
+          if (route.adminOnly && !isOwnerOrAdmin) return false;
+
           return true;
         })
         .map((route, index) => ({
@@ -90,7 +98,6 @@ const Navbar = () => {
   }, [location]);
 
   return (
-    
     <Col
       style={{
         width: '100%',
@@ -138,14 +145,16 @@ const Navbar = () => {
             <ConfigProvider wave={{ disabled: true }}>
               {isDesktop && (
                 <Flex gap={20} align="center">
-                  {isOwnerOrAdmin && showUpgradeTypes.includes(currentSession?.subscription_type as ISUBSCRIPTION_TYPE) && (
-                    <UpgradePlanButton />
-                  )}
+                  {isOwnerOrAdmin &&
+                    showUpgradeTypes.includes(
+                      currentSession?.subscription_type as ISUBSCRIPTION_TYPE
+                    ) && <UpgradePlanButton />}
                   {isOwnerOrAdmin && <InviteButton />}
                   <Flex align="center">
                     <SwitchTeamButton />
                     <NotificationButton />
-                    <TimerButton />
+                    {/* <TimerButton /> */}
+                    <HelpButton />
                     <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
                   </Flex>
                 </Flex>

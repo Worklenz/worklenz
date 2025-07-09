@@ -24,7 +24,7 @@ const ConfigPhaseButton = () => {
         onClick={() => dispatch(toggleDrawer())}
         icon={
           <SettingOutlined
-            style={{ color: themeMode === 'dark' ? colors.white : colors.skyBlue }}
+            style={{ color: themeMode === 'dark' ? colors.white : 'black' }}
           />
         }
       />

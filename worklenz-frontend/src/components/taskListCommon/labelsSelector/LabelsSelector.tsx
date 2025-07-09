@@ -71,77 +71,74 @@ const LabelsSelector = ({ task }: LabelsSelectorProps) => {
   }, [labelList, searchQuery]);
 
   const labelDropdownContent = (
-    <Card
-      className="custom-card"
-      styles={{ body: { padding: 8, overflow: 'hidden' } }}
-    >
+    <Card className="custom-card" styles={{ body: { padding: 8, overflow: 'hidden' } }}>
       <Flex vertical gap={8}>
-      <Input
-        ref={labelInputRef}
-        value={searchQuery}
-        onChange={e => setSearchQuery(e.currentTarget.value)}
-        placeholder={t('labelInputPlaceholder')}
-        onKeyDown={e => {
-        const isLabel = filteredLabelData.findIndex(
-          label => label.name?.toLowerCase() === searchQuery.toLowerCase()
-        );
-        if (isLabel === -1) {
-          if (e.key === 'Enter') {
-          handleCreateLabel();
-          }
-        }
-        }}
-      />
-
-      <List
-        style={{
-        padding: 0,
-        maxHeight: 150,
-        overflow: 'scroll',
-        }}
-      >
-        {filteredLabelData.length ? (
-        filteredLabelData.map(label => (
-          <List.Item
-          className={themeMode === 'dark' ? 'custom-list-item dark' : 'custom-list-item'}
-          key={label.id}
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-start',
-            gap: 8,
-            padding: '4px 8px',
-            border: 'none',
-          }}
-          >
-          <Checkbox
-            id={label.id}
-            checked={
-            task?.all_labels
-              ? task?.all_labels.some(existingLabel => existingLabel.id === label.id)
-              : false
+        <Input
+          ref={labelInputRef}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.currentTarget.value)}
+          placeholder={t('labelInputPlaceholder')}
+          onKeyDown={e => {
+            const isLabel = filteredLabelData.findIndex(
+              label => label.name?.toLowerCase() === searchQuery.toLowerCase()
+            );
+            if (isLabel === -1) {
+              if (e.key === 'Enter') {
+                handleCreateLabel();
+              }
             }
-            onChange={() => handleLabelChange(label)}
-          >
-            <Flex gap={8}>
-            <Badge color={label.color_code} />
-            {label.name}
-            </Flex>
-          </Checkbox>
-          </List.Item>
-        ))
-        ) : (
-        <Typography.Text
-          style={{ color: colors.lightGray }}
-          onClick={() => handleCreateLabel()}
+          }}
+        />
+
+        <List
+          style={{
+            padding: 0,
+            maxHeight: 150,
+            overflow: 'scroll',
+          }}
         >
-          {t('labelsSelectorInputTip')}
-        </Typography.Text>
-        )}
-      </List>
+          {filteredLabelData.length ? (
+            filteredLabelData.map(label => (
+              <List.Item
+                className={themeMode === 'dark' ? 'custom-list-item dark' : 'custom-list-item'}
+                key={label.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-start',
+                  gap: 8,
+                  padding: '4px 8px',
+                  border: 'none',
+                }}
+              >
+                <Checkbox
+                  id={label.id}
+                  checked={
+                    task?.all_labels
+                      ? task?.all_labels.some(existingLabel => existingLabel.id === label.id)
+                      : false
+                  }
+                  onChange={() => handleLabelChange(label)}
+                >
+                  <Flex gap={8}>
+                    <Badge color={label.color_code} />
+                    {label.name}
+                  </Flex>
+                </Checkbox>
+              </List.Item>
+            ))
+          ) : (
+            <Typography.Text
+              style={{ color: colors.lightGray }}
+              onClick={() => handleCreateLabel()}
+            >
+              {t('labelsSelectorInputTip')}
+            </Typography.Text>
+          )}
+        </List>
 
-      {/* <Divider style={{ margin: 0 }} /> */}
+        {/* <Divider style={{ margin: 0 }} /> */}
 
-      {/* <Button
+        {/* <Button
         type="primary"
         style={{ alignSelf: 'flex-end' }}
         onClick={() => handleCreateLabel()}

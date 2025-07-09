@@ -32,3 +32,37 @@ SELECT u.avatar_url,
 FROM team_members
          LEFT JOIN users u ON team_members.user_id = u.id;
 
+-- PERFORMANCE OPTIMIZATION: Create materialized view for team member info
+-- This pre-calculates the expensive joins and subqueries from team_member_info_view
+CREATE MATERIALIZED VIEW IF NOT EXISTS team_member_info_mv AS
+SELECT 
+    u.avatar_url,
+    COALESCE(u.email, ei.email) AS email,
+    COALESCE(u.name, ei.name) AS name,
+    u.id AS user_id,
+    tm.id AS team_member_id,
+    tm.team_id,
+    tm.active,
+    u.socket_id
+FROM team_members tm
+LEFT JOIN users u ON tm.user_id = u.id
+LEFT JOIN email_invitations ei ON ei.team_member_id = tm.id
+WHERE tm.active = TRUE;
+
+-- Create unique index on the materialized view for fast lookups
+CREATE UNIQUE INDEX IF NOT EXISTS idx_team_member_info_mv_team_member_id 
+ON team_member_info_mv(team_member_id);
+
+CREATE INDEX IF NOT EXISTS idx_team_member_info_mv_team_user 
+ON team_member_info_mv(team_id, user_id);
+
+-- Function to refresh the materialized view
+CREATE OR REPLACE FUNCTION refresh_team_member_info_mv()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY team_member_info_mv;
+END;
+$$;
+

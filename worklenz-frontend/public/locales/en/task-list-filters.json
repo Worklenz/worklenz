@@ -55,5 +55,18 @@
   "selectCategory": "Select a category",
   "pleaseEnterAName": "Please enter a name",
   "pleaseSelectACategory": "Please select a category",
-  "create": "Create"
+  "create": "Create",
+
+  "searchTasks": "Search tasks...",
+  "searchPlaceholder": "Search...",
+  "fieldsText": "Fields",
+  "loadingFilters": "Loading filters...",
+  "noOptionsFound": "No options found",
+  "filtersActive": "filters active",
+  "filterActive": "filter active",
+  "clearAll": "Clear all",
+  "clearing": "Clearing...",
+  "cancel": "Cancel",
+  "search": "Search",
+  "groupedBy": "Grouped by"
 }

@@ -1,20 +1,20 @@
+import { lazy, Suspense } from 'react';
 import AuthLayout from '@/layouts/AuthLayout';
-import LoginPage from '@/pages/auth/login-page';
-import SignupPage from '@/pages/auth/signup-page';
-import ForgotPasswordPage from '@/pages/auth/forgot-password-page';
-import LoggingOutPage from '@/pages/auth/logging-out';
-import AuthenticatingPage from '@/pages/auth/authenticating';
 import { Navigate } from 'react-router-dom';
-import VerifyResetEmailPage from '@/pages/auth/verify-reset-email';
-import { Suspense } from 'react';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+
+// Lazy load auth page components for better code splitting
+const LoginPage = lazy(() => import('@/pages/auth/login-page'));
+const SignupPage = lazy(() => import('@/pages/auth/signup-page'));
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/forgot-password-page'));
+const LoggingOutPage = lazy(() => import('@/pages/auth/logging-out'));
+const AuthenticatingPage = lazy(() => import('@/pages/auth/authenticating'));
+const VerifyResetEmailPage = lazy(() => import('@/pages/auth/verify-reset-email'));
 
 const authRoutes = [
   {
     path: '/auth',
-    element: (
-      <AuthLayout />
-    ),
+    element: <AuthLayout />,
     children: [
       {
         path: '',
@@ -22,27 +22,51 @@ const authRoutes = [
       },
       {
         path: 'login',
-        element: <LoginPage />,
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <LoginPage />
+          </Suspense>
+        ),
       },
       {
         path: 'signup',
-        element: <SignupPage />,
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <SignupPage />
+          </Suspense>
+        ),
       },
       {
         path: 'forgot-password',
-        element: <ForgotPasswordPage />,
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <ForgotPasswordPage />
+          </Suspense>
+        ),
       },
       {
         path: 'logging-out',
-        element: <LoggingOutPage />,
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <LoggingOutPage />
+          </Suspense>
+        ),
       },
       {
         path: 'authenticating',
-        element: <AuthenticatingPage />,
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <AuthenticatingPage />
+          </Suspense>
+        ),
       },
       {
         path: 'verify-reset-email/:user/:hash',
-        element: <VerifyResetEmailPage />,
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <VerifyResetEmailPage />
+          </Suspense>
+        ),
       },
     ],
   },

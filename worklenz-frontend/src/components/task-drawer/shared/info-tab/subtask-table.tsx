@@ -24,10 +24,10 @@ import {
 } from '@/features/tasks/tasks.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import logger from '@/utils/errorLogger';
-import { 
-  setShowTaskDrawer, 
-  setSelectedTaskId, 
-  fetchTask 
+import {
+  setShowTaskDrawer,
+  setSelectedTaskId,
+  fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
 import { updateSubtask } from '@/features/board/board-slice';
 
@@ -53,7 +53,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
 
   const createRequestBody = (taskName: string): ITaskCreateRequest | null => {
     if (!projectId || !currentSession) return null;
-    
+
     const body: ITaskCreateRequest = {
       project_id: projectId,
       name: taskName,
@@ -63,7 +63,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
 
     const groupBy = getCurrentGroup();
     const task = taskFormViewModel?.task;
-    
+
     if (groupBy.value === GROUP_BY_STATUS_VALUE) {
       body.status_id = task?.status_id;
     } else if (groupBy.value === GROUP_BY_PRIORITY_VALUE) {
@@ -75,7 +75,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
     if (selectedTaskId) {
       body.parent_task_id = selectedTaskId;
     }
-    
+
     return body;
   };
 
@@ -86,12 +86,15 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
       setCreatingTask(true);
       const body = createRequestBody(taskName);
       if (!body) return;
-      
+
       socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
       socket?.once(SocketEvents.QUICK_TASK.toString(), (task: IProjectTask) => {
         if (task.parent_task_id) {
           refreshSubTasks();
           dispatch(updateSubtask({ sectionId: '', subtask: task, mode: 'add' }));
+
+          // Note: Enhanced kanban updates are now handled by the global socket handler
+          // No need to dispatch here as it will be handled by useTaskSocketHandlers
         }
       });
     } catch (error) {
@@ -108,14 +111,24 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
 
     try {
       await tasksApiService.deleteTask(taskId);
-      dispatch(updateSubtask({ sectionId: '', subtask: { id: taskId, parent_task_id: selectedTaskId || '' }, mode: 'delete' }));
+      dispatch(
+        updateSubtask({
+          sectionId: '',
+          subtask: { id: taskId, parent_task_id: selectedTaskId || '' },
+          mode: 'delete',
+        })
+      );
+
+      // Note: Enhanced kanban updates are now handled by the global socket handler
+      // No need to dispatch here as it will be handled by useTaskSocketHandlers
+
       refreshSubTasks();
     } catch (error) {
       logger.error('Error deleting subtask:', error);
     }
   };
 
-  const handleOnBlur = () => {   
+  const handleOnBlur = () => {
     if (newTaskName.trim() === '') {
       setIsEdit(true);
       return;
@@ -143,15 +156,15 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
 
   const handleEditSubTask = (taskId: string) => {
     if (!taskId || !projectId) return;
-    
+
     // Close the current drawer and open the drawer for the selected sub task
     dispatch(setShowTaskDrawer(false));
-    
+
     // Small delay to ensure the current drawer is closed before opening the new one
     setTimeout(() => {
       dispatch(setSelectedTaskId(taskId));
       dispatch(setShowTaskDrawer(true));
-      
+
       // Fetch task data for the subtask
       dispatch(fetchTask({ taskId, projectId }));
     }, 100);
@@ -160,67 +173,77 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
   const getSubTasksProgress = () => {
     const ratio = taskFormViewModel?.task?.complete_ratio || 0;
     return ratio == Infinity ? 0 : ratio;
-  }
+  };
 
-  const columns = useMemo(() => [
-    {
-      key: 'name',
-      dataIndex: 'name',
-    },
-    {
-      key: 'priority',
-      render: (record: IProjectTask) => (
-        <Tag
-          color={themeMode === 'dark' ? record.priority_color_dark : record.priority_color}
-          style={{ textTransform: 'capitalize' }}
-        >
-          {record.priority_name}
-        </Tag>
-      ),
-    },
-    {
-      key: 'status',
-      render: (record: IProjectTask) => (
-        <Tag
-          color={themeMode === 'dark' ? record.status_color_dark : record.status_color}
-          style={{ textTransform: 'capitalize' }}
-        >
-          {record.status_name}
-        </Tag>
-      ),
-    },
-    {
-      key: 'assignee',
-      render: (record: ISubTask) => <Avatars members={record.names || []} />,
-    },
-    {
-      key: 'actionBtns',
-      width: 80,
-      render: (record: IProjectTask) => (
-        <Flex gap={8} align="center" className="action-buttons">
-          <Tooltip title={typeof t === 'function' ? t('taskInfoTab.subTasks.edit') : 'Edit'}>
-            <Button
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => record.id && handleEditSubTask(record.id)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Are you sure?"
-            icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-            okText="Yes"
-            cancelText="No"
-            onPopupClick={(e) => e.stopPropagation()}
-            onConfirm={(e) => {handleDeleteSubTask(record.id)}}
+  const columns = useMemo(
+    () => [
+      {
+        key: 'name',
+        dataIndex: 'name',
+      },
+      {
+        key: 'priority',
+        render: (record: IProjectTask) => (
+          <Tag
+            color={themeMode === 'dark' ? record.priority_color_dark : record.priority_color}
+            style={{ textTransform: 'capitalize' }}
           >
-            <Tooltip title="Delete">
-              <Button shape="default" icon={<DeleteOutlined />} size="small" onClick={(e)=> e.stopPropagation()} />
+            {record.priority_name}
+          </Tag>
+        ),
+      },
+      {
+        key: 'status',
+        render: (record: IProjectTask) => (
+          <Tag
+            color={themeMode === 'dark' ? record.status_color_dark : record.status_color}
+            style={{ textTransform: 'capitalize' }}
+          >
+            {record.status_name}
+          </Tag>
+        ),
+      },
+      {
+        key: 'assignee',
+        render: (record: ISubTask) => <Avatars members={record.names || []} />,
+      },
+      {
+        key: 'actionBtns',
+        width: 80,
+        render: (record: IProjectTask) => (
+          <Flex gap={8} align="center" className="action-buttons">
+            <Tooltip title={typeof t === 'function' ? t('taskInfoTab.subTasks.edit') : 'Edit'}>
+              <Button
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => record.id && handleEditSubTask(record.id)}
+              />
             </Tooltip>
-          </Popconfirm>
-        </Flex>
-      ),
-    },
-  ], [themeMode, t]);
+            <Popconfirm
+              title="Are you sure?"
+              icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+              okText="Yes"
+              cancelText="No"
+              onPopupClick={e => e.stopPropagation()}
+              onConfirm={e => {
+                handleDeleteSubTask(record.id);
+              }}
+            >
+              <Tooltip title="Delete">
+                <Button
+                  shape="default"
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  onClick={e => e.stopPropagation()}
+                />
+              </Tooltip>
+            </Popconfirm>
+          </Flex>
+        ),
+      },
+    ],
+    [themeMode, t]
+  );
 
   return (
     <Flex vertical gap={12}>
@@ -240,12 +263,12 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
                 cursor: 'pointer',
                 height: 36,
               },
-              onClick: () => record.id && handleEditSubTask(record.id)
+              onClick: () => record.id && handleEditSubTask(record.id),
             })}
             loading={loadingSubTasks}
           />
         )}
-        
+
         <div>
           {isEdit ? (
             <Input
@@ -257,7 +280,11 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
                 boxShadow: 'none',
                 height: 38,
               }}
-              placeholder={typeof t === 'function' ? t('taskInfoTab.subTasks.addSubTaskInputPlaceholder') : 'Type your task and hit enter'}
+              placeholder={
+                typeof t === 'function'
+                  ? t('taskInfoTab.subTasks.addSubTaskInputPlaceholder')
+                  : 'Type your task and hit enter'
+              }
               onBlur={handleInputBlur}
               onPressEnter={handleOnBlur}
               size="small"

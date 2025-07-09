@@ -4,6 +4,7 @@
   "cancelText": "Cancel",
   "saveText": "Save",
   "templateNameText": "Template Name",
+  "templateNameRequired": "Template name is required",
   "selectedTasks": "Selected Tasks",
   "removeTask": "Remove",
   "cancelButton": "Cancel",

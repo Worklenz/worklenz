@@ -7,6 +7,7 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberOverviewGetResponse } from '@/types/project/project-insights.types';
 import { IProjectMembersViewModel } from '@/types/projectMember.types';
 import { IProjectManager } from '@/types/project/projectManager.types';
+import { IGroupedProjectsViewModel } from '@/types/project/groupedProjectsViewModel.types';
 
 const rootUrl = `${API_BASE_URL}/projects`;
 
@@ -29,6 +30,23 @@ export const projectsApiService = {
     const s = encodeURIComponent(search || '');
     const url = `${rootUrl}${toQueryString({ index, size, field, order, search: s, filter, statuses, categories })}`;
     const response = await apiClient.get<IServerResponse<IProjectsViewModel>>(`${url}`);
+    return response.data;
+  },
+
+  getGroupedProjects: async (
+    index: number,
+    size: number,
+    field: string | null,
+    order: string | null,
+    search: string | null,
+    groupBy: string,
+    filter: number | null = null,
+    statuses: string | null = null,
+    categories: string | null = null
+  ): Promise<IServerResponse<IGroupedProjectsViewModel>> => {
+    const s = encodeURIComponent(search || '');
+    const url = `${rootUrl}/grouped${toQueryString({ index, size, field, order, search: s, groupBy, filter, statuses, categories })}`;
+    const response = await apiClient.get<IServerResponse<IGroupedProjectsViewModel>>(`${url}`);
     return response.data;
   },
 
@@ -83,7 +101,9 @@ export const projectsApiService = {
     return response.data;
   },
 
-  updateProject: async (payload: UpdateProjectPayload): Promise<IServerResponse<IProjectViewModel>> => {
+  updateProject: async (
+    payload: UpdateProjectPayload
+  ): Promise<IServerResponse<IProjectViewModel>> => {
     const { id, ...data } = payload;
     const q = toQueryString({ current_project_id: id });
     const url = `${API_BASE_URL}/projects/${id}${q}`;
@@ -109,7 +129,10 @@ export const projectsApiService = {
     return response.data;
   },
 
-  updateDefaultTab: async (body: { project_id: string; default_view: string }): Promise<IServerResponse<any>> => {
+  updateDefaultTab: async (body: {
+    project_id: string;
+    default_view: string;
+  }): Promise<IServerResponse<any>> => {
     const url = `${rootUrl}/update-pinned-view`;
     const response = await apiClient.put<IServerResponse<IProjectViewModel>>(`${url}`, body);
     return response.data;
@@ -121,4 +144,3 @@ export const projectsApiService = {
     return response.data;
   },
 };
-

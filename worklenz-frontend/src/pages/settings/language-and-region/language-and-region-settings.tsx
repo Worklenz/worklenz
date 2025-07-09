@@ -57,8 +57,8 @@ const LanguageAndRegionSettings = () => {
     },
     {
       value: Language.ZH_CN,
-      label: "简体中文"
-    }
+      label: '简体中文',
+    },
   ];
 
   const handleLanguageChange = async (values: { language?: ILanguageType; timezone?: string }) => {
@@ -111,50 +111,52 @@ const LanguageAndRegionSettings = () => {
 
   return (
     <Card style={{ width: '100%' }}>
-      {!loadingTimezones ? (<Form
-        layout="vertical"
-        style={{ width: '100%', maxWidth: 350 }}
-        initialValues={{
-          language: lng || Language.EN,
-          timezone: currentSession?.timezone,
-        }}
-        onFinish={onFinish}
-      >
-        <Form.Item
-          name="language"
-          label={t('language')}
-          rules={[
-            {
-              required: true,
-              message: t('language_required'),
-            },
-          ]}
+      {!loadingTimezones ? (
+        <Form
+          layout="vertical"
+          style={{ width: '100%', maxWidth: 350 }}
+          initialValues={{
+            language: lng || Language.EN,
+            timezone: currentSession?.timezone,
+          }}
+          onFinish={onFinish}
         >
-          <Select options={languageOptions} />
-        </Form.Item>
-        <Form.Item
-          name="timezone"
-          label={t('time_zone')}
-          rules={[
-            {
-              required: true,
-              message: t('time_zone_required'),
-            },
-          ]}
-        >
-          <Select
-            showSearch
-            optionFilterProp="label"
-            options={timeZoneOptions}
-            loading={loadingTimezones}
-          />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit">
-            {t('save_changes')}
-          </Button>
-        </Form.Item>
-      </Form>) : (
+          <Form.Item
+            name="language"
+            label={t('language')}
+            rules={[
+              {
+                required: true,
+                message: t('language_required'),
+              },
+            ]}
+          >
+            <Select options={languageOptions} />
+          </Form.Item>
+          <Form.Item
+            name="timezone"
+            label={t('time_zone')}
+            rules={[
+              {
+                required: true,
+                message: t('time_zone_required'),
+              },
+            ]}
+          >
+            <Select
+              showSearch
+              optionFilterProp="label"
+              options={timeZoneOptions}
+              loading={loadingTimezones}
+            />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              {t('save_changes')}
+            </Button>
+          </Form.Item>
+        </Form>
+      ) : (
         <Skeleton />
       )}
     </Card>

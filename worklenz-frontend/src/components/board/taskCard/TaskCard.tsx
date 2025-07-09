@@ -284,7 +284,7 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
                     format={value => formatDate(value)}
                   />
                 </div>
-                {task.sub_tasks_count && task.sub_tasks_count > 0 && (
+                {task.sub_tasks_count && task.sub_tasks_count > 1 && (
                   <Button
                     onClick={() => setIsSubTaskShow(!isSubTaskShow)}
                     size="small"
@@ -306,7 +306,7 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
 
             {isSubTaskShow &&
               task.sub_tasks_count &&
-              task.sub_tasks_count > 0 &&
+              task.sub_tasks_count > 1 &&
               task.sub_tasks?.map(subtask => <SubTaskCard subtask={subtask} />)}
           </div>
         </div>

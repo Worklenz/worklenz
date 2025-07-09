@@ -1,4 +1,5 @@
 {
+  "title": "Miembros del Equipo",
   "nameColumn": "Nombre",
   "projectsColumn": "Proyectos",
   "emailColumn": "Correo electrónico",
@@ -40,5 +41,7 @@
   "ownerText": "Propietario del equipo",
   "addedText": "Agregado",
   "updatedText": "Actualizado",
-  "noResultFound": "Escriba una dirección de correo electrónico y presione enter..."
+  "noResultFound": "Escriba una dirección de correo electrónico y presione enter...",
+  "jobTitlesFetchError": "Error al obtener los cargos",
+  "invitationResent": "¡Invitación reenviada exitosamente!"
 }

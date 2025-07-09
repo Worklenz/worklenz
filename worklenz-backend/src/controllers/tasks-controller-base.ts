@@ -50,11 +50,16 @@ export default class TasksControllerBase extends WorklenzControllerBase {
       task.progress = parseInt(task.progress_value);
       task.complete_ratio = parseInt(task.progress_value);
     }
-    // For tasks with no subtasks and no manual progress, calculate based on time
+    // For tasks with no subtasks and no manual progress
     else {
-      task.progress = task.total_minutes_spent && task.total_minutes
-        ? ~~(task.total_minutes_spent / task.total_minutes * 100)
-        : 0;
+      // Only calculate progress based on time if time-based progress is enabled for the project
+      if (task.project_use_time_progress && task.total_minutes_spent && task.total_minutes) {
+        // Cap the progress at 100% to prevent showing more than 100% progress
+        task.progress = Math.min(~~(task.total_minutes_spent / task.total_minutes * 100), 100);
+      } else {
+        // Default to 0% progress when time-based calculation is not enabled
+        task.progress = 0;
+      }
 
       // Set complete_ratio to match progress
       task.complete_ratio = task.progress;

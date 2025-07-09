@@ -52,7 +52,7 @@ const TaskRowName = React.memo(
       return (
         <button
           onClick={() => handleToggleExpansion(taskId)}
-          className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54] transition duration-150"
+          className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54] transition duration-150"
         >
           {expandedTasks.includes(taskId) ? <DownOutlined /> : <RightOutlined />}
         </button>

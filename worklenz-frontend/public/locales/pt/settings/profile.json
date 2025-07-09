@@ -9,5 +9,6 @@
   "saveChanges": "Salvar Alterações",
   "profileJoinedText": "Entrou há um mês",
   "profileLastUpdatedText": "Última atualização há um mês",
-  "avatarTooltip": "Clique para carregar um avatar"
-} 
+  "avatarTooltip": "Clique para carregar um avatar",
+  "title": "Configurações do Perfil"
+}
