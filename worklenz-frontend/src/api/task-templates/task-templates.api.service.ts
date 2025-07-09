@@ -21,12 +21,18 @@ export const taskTemplatesApiService = {
     const response = await apiClient.get<IServerResponse<ITaskTemplateGetResponse>>(`${url}`);
     return response.data;
   },
-  createTemplate: async (body: { name: string, tasks: IProjectTask[] }): Promise<IServerResponse<ITask>> => {
+  createTemplate: async (body: {
+    name: string;
+    tasks: IProjectTask[];
+  }): Promise<IServerResponse<ITask>> => {
     const url = `${rootUrl}`;
     const response = await apiClient.post<IServerResponse<ITask>>(`${url}`, body);
     return response.data;
   },
-  updateTemplate: async (id: string, body: { name: string, tasks: IProjectTask[] }): Promise<IServerResponse<ITask>> => {
+  updateTemplate: async (
+    id: string,
+    body: { name: string; tasks: IProjectTask[] }
+  ): Promise<IServerResponse<ITask>> => {
     const url = `${rootUrl}/${id}`;
     const response = await apiClient.put<IServerResponse<ITask>>(`${url}`, body);
     return response.data;

@@ -1,16 +1,14 @@
 import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { colors } from '@/styles/colors';
 import { themeWiseColor } from '@/utils/themeWiseColor';
-import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
-import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import {
   IMentionMemberSelectOption,
-  IMentionMemberViewModel,
 } from '@/types/project/projectComments.types';
-import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { ITaskCommentsCreateRequest } from '@/types/tasks/task-comments.types';
 import { ITaskAttachment } from '@/types/tasks/task-attachment-view-model';
 import logger from '@/utils/errorLogger';
@@ -38,6 +36,7 @@ const formatFileSize = (bytes: number): string => {
 };
 
 const InfoTabFooter = () => {
+  const { t } = useTranslation('task-drawer/task-drawer');
   const MAXIMUM_FILE_COUNT = 5;
 
   const [characterLength, setCharacterLength] = useState<number>(0);
@@ -47,11 +46,14 @@ const InfoTabFooter = () => {
 
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const dispatch = useAppDispatch();
 
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState<boolean>(false);
 
-  const [selectedMembers, setSelectedMembers] = useState<{ team_member_id: string; name: string }[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<
+    { team_member_id: string; name: string }[]
+  >([]);
   const [commentValue, setCommentValue] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
 
@@ -99,25 +101,28 @@ const InfoTabFooter = () => {
   // mentions options
   const mentionsOptions =
     members?.map(member => ({
-      value: member.name, // Use name as value so it displays correctly
+      value: member.name,
       label: member.name,
-      key: member.id, // Keep ID as key for identification
+      key: member.id,
     })) ?? [];
 
-  const memberSelectHandler = useCallback((member: IMentionMemberSelectOption) => {
-    if (!member?.value || !member?.label) return;
-    
-    // Find the member ID from the members array using the name
-    const selectedMember = members.find(m => m.name === member.value);
-    if (!selectedMember || !selectedMember.id || !selectedMember.name) return;
-    
-    // Add to selected members if not already present
-    setSelectedMembers(prev =>
-      prev.some(mention => mention.team_member_id === selectedMember.id)
-        ? prev
-        : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
-    );
-  }, [members]);
+  const memberSelectHandler = useCallback(
+    (member: IMentionMemberSelectOption) => {
+      if (!member?.value || !member?.label) return;
+
+      // Find the member ID from the members list using the name
+      const selectedMember = members.find(m => m.name === member.value);
+      if (!selectedMember) return;
+
+      // Add to selected members if not already present
+      setSelectedMembers(prev =>
+        prev.some(mention => mention.team_member_id === selectedMember.id)
+          ? prev
+          : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
+      );
+    },
+    [members]
+  );
 
   const handleCommentChange = useCallback((value: string) => {
     setCommentValue(value);
@@ -128,7 +133,7 @@ const InfoTabFooter = () => {
     if (!selectedTaskId || !projectId) return;
 
     if (!isCommentValid()) {
-      message.error('Please add a comment or attach files');
+      message.error(t('taskInfoTab.comments.addCommentError'));
       return;
     }
 
@@ -154,8 +159,10 @@ const InfoTabFooter = () => {
         setSelectedMembers([]);
         
         // Dispatch event to notify that a comment was created
-        // This will trigger scrolling to the new comment
-        document.dispatchEvent(new Event('task-comment-create'));
+        // This will trigger the task comments component to refresh and update Redux
+        document.dispatchEvent(new CustomEvent('task-comment-create', { 
+          detail: { taskId: selectedTaskId } 
+        }));
       }
     } catch (error) {
       logger.error('Failed to create comment:', error);
@@ -178,7 +185,7 @@ const InfoTabFooter = () => {
     const files = Array.from(event.target.files);
 
     if (selectedFiles.length + files.length > MAXIMUM_FILE_COUNT) {
-      message.error(`You can only upload a maximum of ${MAXIMUM_FILE_COUNT} files`);
+      message.error(t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT }));
       return;
     }
 
@@ -209,7 +216,7 @@ const InfoTabFooter = () => {
       }
     } catch (error) {
       console.error('Failed to process files:', error);
-      message.error('Failed to process files');
+      message.error(t('taskInfoTab.comments.processFilesError'));
     } finally {
       setUploading(false);
 
@@ -269,7 +276,7 @@ const InfoTabFooter = () => {
           }}
         >
           <Mentions
-            placeholder={'Add a comment...'}
+            placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
             options={mentionsOptions}
             autoSize
             maxLength={5000}
@@ -302,7 +309,7 @@ const InfoTabFooter = () => {
           {selectedFiles.length > 0 && (
             <Flex vertical gap={8} style={{ marginTop: 12 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>
-                Selected Files (Up to 25MB, Maximum of {MAXIMUM_FILE_COUNT})
+{t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT })}
               </Typography.Title>
               <Flex
                 vertical
@@ -358,7 +365,7 @@ const InfoTabFooter = () => {
                     icon={<PlusOutlined />}
                     disabled={selectedFiles.length >= MAXIMUM_FILE_COUNT || uploading}
                   >
-                    Add more files
+                    {t('taskInfoTab.comments.addMoreFiles')}
                   </Button>
                 </Flex>
               </Flex>
@@ -368,7 +375,7 @@ const InfoTabFooter = () => {
           <Form.Item name={'comment'} style={{ marginBlock: 12 }}>
             <div>
               <Mentions
-                placeholder={'Add a comment...'}
+                placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
                 options={mentionsOptions}
                 autoSize
                 autoFocus
@@ -417,8 +424,8 @@ const InfoTabFooter = () => {
               <Tooltip
                 title={
                   selectedFiles.length >= MAXIMUM_FILE_COUNT
-                    ? `Maximum ${MAXIMUM_FILE_COUNT} files allowed`
-                    : 'Attach files'
+                    ? t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT })
+                    : t('taskInfoTab.comments.attachFiles')
                 }
               >
                 <Button
@@ -429,14 +436,14 @@ const InfoTabFooter = () => {
               </Tooltip>
 
               <Space>
-                <Button onClick={handleCancel}>Cancel</Button>
+                <Button onClick={handleCancel}>{t('taskInfoTab.comments.cancel')}</Button>
                 <Button
                   type="primary"
                   disabled={!isCommentValid()}
                   onClick={handleSubmit}
                   loading={uploading}
                 >
-                  Comment
+                  {t('taskInfoTab.comments.commentButton')}
                 </Button>
               </Space>
             </Flex>
@@ -453,9 +460,10 @@ const InfoTabFooter = () => {
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Created{' '}
-            {taskFormViewModel?.task?.created_from_now || 'N/A'}{' '}
-            by {taskFormViewModel?.task?.reporter}
+{t('taskInfoTab.comments.createdBy', { 
+              time: taskFormViewModel?.task?.created_from_now || 'N/A',
+              user: taskFormViewModel?.task?.reporter || ''
+            })}
           </Typography.Text>
         </Tooltip>
         <Tooltip
@@ -466,8 +474,9 @@ const InfoTabFooter = () => {
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Updated{' '}
-            {taskFormViewModel?.task?.updated_from_now || 'N/A'}
+{t('taskInfoTab.comments.updatedTime', { 
+              time: taskFormViewModel?.task?.updated_from_now || 'N/A'
+            })}
           </Typography.Text>
         </Tooltip>
       </Flex>

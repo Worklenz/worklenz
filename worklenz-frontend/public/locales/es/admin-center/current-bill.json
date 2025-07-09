@@ -24,7 +24,7 @@
   "paymentMethod": "Método de Pago",
   "status": "Estado",
   "ltdUsers": "Puedes agregar hasta {{ltd_users}} usuarios.",
-  
+
   "drawerTitle": "Canjear Código",
   "label": "Canjear Código",
   "drawerPlaceholder": "Ingrese su código de canje",
@@ -98,7 +98,7 @@
   "perMonthPerUser": "por usuario / mes",
   "viewInvoice": "Ver Factura",
   "switchToFreePlan": "Cambiar a Plan Gratuito",
-  
+
   "expirestoday": "hoy",
   "expirestomorrow": "mañana",
   "expiredDaysAgo": "hace {{days}} días",

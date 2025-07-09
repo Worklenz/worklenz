@@ -109,9 +109,9 @@ const RoadmapTable = () => {
   }));
 
   // Layout styles for table and columns
-  const customHeaderColumnStyles = `border px-2 h-[50px] text-left z-10 after:content after:absolute after:top-0 after:-right-1 after:-z-10 after:h-[42px] after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent ${themeMode === 'dark' ? 'bg-[#1d1d1d] border-[#303030]' : 'bg-[#fafafa]'}`;
+  const customHeaderColumnStyles = `border px-2 h-[50px] text-left z-10 after:content after:absolute after:top-0 after:-right-1 after:-z-10 after:h-[42px] after:w-1.5 after:bg-transparent after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent ${themeMode === 'dark' ? 'bg-[#1d1d1d] border-[#303030]' : 'bg-[#fafafa]'}`;
 
-  const customBodyColumnStyles = `border px-2 h-[50px] z-10 after:content after:absolute after:top-0 after:-right-1 after:-z-10 after:min-h-[40px] after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent ${themeMode === 'dark' ? 'bg-transparent border-[#303030]' : 'bg-transparent'}`;
+  const customBodyColumnStyles = `border px-2 h-[50px] z-10 after:content after:absolute after:top-0 after:-right-1 after:-z-10 after:min-h-[40px] after:w-1.5 after:bg-transparent after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent ${themeMode === 'dark' ? 'bg-transparent border-[#303030]' : 'bg-transparent'}`;
 
   const rowBackgroundStyles =
     themeMode === 'dark' ? 'even:bg-[#1b1b1b] odd:bg-[#141414]' : 'even:bg-[#f4f4f4] odd:bg-white';

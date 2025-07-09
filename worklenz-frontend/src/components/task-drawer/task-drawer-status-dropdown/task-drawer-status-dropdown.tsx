@@ -13,6 +13,7 @@ import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { Select } from 'antd';
 import { useMemo } from 'react';
+import { updateEnhancedKanbanTaskStatus } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 interface TaskDrawerStatusDropdownProps {
   statuses: ITaskStatus[];
@@ -52,7 +53,7 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
           dispatch(updateTaskStatus(data));
         }
         if (tab === 'board') {
-          dispatch(updateBoardTaskStatus(data));
+          dispatch(updateEnhancedKanbanTaskStatus(data));
         }
         if (data.parent_task) getTaskProgress(data.parent_task);
       }

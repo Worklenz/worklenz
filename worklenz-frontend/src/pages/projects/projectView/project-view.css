@@ -4,3 +4,27 @@
   height: 8px;
   width: 8px;
 }
+
+/* Light mode - selected tab header bold */
+[data-theme="light"] .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 700;
+  color: #000000 !important;
+}
+
+/* Dark mode - selected tab header bold and white */
+[data-theme="dark"] .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 900;
+  color: #ffffff;
+}
+
+/* Light mode - selected tab underline black */
+[data-theme="light"] .project-view-tabs .ant-tabs-ink-bar {
+  background-color: #000000 !important;
+}
+
+/* Dark mode - selected tab underline white */
+[data-theme="dark"] .project-view-tabs .ant-tabs-ink-bar {
+  background-color: #ffffff;
+}
+
+

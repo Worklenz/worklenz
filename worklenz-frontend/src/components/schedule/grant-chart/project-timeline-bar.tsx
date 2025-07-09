@@ -68,7 +68,13 @@ const ProjectTimelineBar = ({
 
   return (
     <Popover
-      content={<ProjectTimelineModal defaultData={defaultData} projectId={project?.id} setIsModalOpen={setIsModalOpen} />}
+      content={
+        <ProjectTimelineModal
+          defaultData={defaultData}
+          projectId={project?.id}
+          setIsModalOpen={setIsModalOpen}
+        />
+      }
       trigger={'click'}
       open={isModalOpen}
     >
@@ -127,7 +133,10 @@ const ProjectTimelineBar = ({
           align="center"
           justify="center"
           style={{ width: '100%' }}
-          onClick={() => {setIsModalOpen(true);dispatch(getWorking());}}
+          onClick={() => {
+            setIsModalOpen(true);
+            dispatch(getWorking());
+          }}
         >
           <Typography.Text
             style={{

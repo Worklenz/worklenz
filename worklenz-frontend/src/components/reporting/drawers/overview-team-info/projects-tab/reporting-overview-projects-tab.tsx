@@ -13,7 +13,6 @@ const OverviewReportsProjectsTab = ({ teamsId = null }: OverviewReportsProjectsT
   const { t } = useTranslation('reporting-projects-drawer');
   const [searchQuery, setSearchQuery] = useState('');
 
-
   return (
     <Flex vertical gap={24}>
       <CustomSearchbar

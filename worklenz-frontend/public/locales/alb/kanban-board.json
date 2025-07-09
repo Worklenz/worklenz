@@ -19,5 +19,12 @@
   "archive": "Arkivo",
 
   "newTaskNamePlaceholder": "Shkruaj emrin e detyrës",
-  "newSubtaskNamePlaceholder": "Shkruaj emrin e nëndetyrës"
+  "newSubtaskNamePlaceholder": "Shkruaj emrin e nëndetyrës",
+  "untitledSection": "Seksion pa titull",
+  "unmapped": "Pa hartë",
+  "clickToChangeDate": "Klikoni për të ndryshuar datën",
+  "noDueDate": "Pa datë përfundimi",
+  "save": "Ruaj",
+  "clear": "Pastro",
+  "nextWeek": "Javën e ardhshme"
 }

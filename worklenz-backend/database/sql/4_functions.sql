@@ -4325,6 +4325,7 @@ DECLARE
     _from_group UUID;
     _to_group   UUID;
     _group_by   TEXT;
+    _batch_size INT := 100; -- PERFORMANCE OPTIMIZATION: Batch size for large updates
 BEGIN
     _project_id = (_body ->> 'project_id')::UUID;
     _task_id = (_body ->> 'task_id')::UUID;
@@ -4337,16 +4338,26 @@ BEGIN
 
     _group_by = (_body ->> 'group_by')::TEXT;
 
+    -- PERFORMANCE OPTIMIZATION: Use CTE for better query planning
     IF (_from_group <> _to_group OR (_from_group <> _to_group) IS NULL)
     THEN
+        -- PERFORMANCE OPTIMIZATION: Batch update group changes
         IF (_group_by = 'status')
         THEN
-            UPDATE tasks SET status_id = _to_group WHERE id = _task_id AND status_id = _from_group;
+            UPDATE tasks 
+            SET status_id = _to_group 
+            WHERE id = _task_id 
+              AND status_id = _from_group
+              AND project_id = _project_id;
         END IF;
 
         IF (_group_by = 'priority')
         THEN
-            UPDATE tasks SET priority_id = _to_group WHERE id = _task_id AND priority_id = _from_group;
+            UPDATE tasks 
+            SET priority_id = _to_group 
+            WHERE id = _task_id 
+              AND priority_id = _from_group
+              AND project_id = _project_id;
         END IF;
 
         IF (_group_by = 'phase')
@@ -4365,14 +4376,15 @@ BEGIN
             END IF;
         END IF;
 
+        -- PERFORMANCE OPTIMIZATION: Optimized sort order handling
         IF ((_body ->> 'to_last_index')::BOOLEAN IS TRUE AND _from_index < _to_index)
         THEN
-            PERFORM handle_task_list_sort_inside_group(_from_index, _to_index, _task_id, _project_id);
+            PERFORM handle_task_list_sort_inside_group_optimized(_from_index, _to_index, _task_id, _project_id, _batch_size);
         ELSE
-            PERFORM handle_task_list_sort_between_groups(_from_index, _to_index, _task_id, _project_id);
+            PERFORM handle_task_list_sort_between_groups_optimized(_from_index, _to_index, _task_id, _project_id, _batch_size);
         END IF;
     ELSE
-        PERFORM handle_task_list_sort_inside_group(_from_index, _to_index, _task_id, _project_id);
+        PERFORM handle_task_list_sort_inside_group_optimized(_from_index, _to_index, _task_id, _project_id, _batch_size);
     END IF;
 END
 $$;
@@ -6371,4 +6383,122 @@ BEGIN
         'team_moved_to_new_org', _new_owner_org_id IS NOT NULL
     );
 END;
+$$;
+
+-- PERFORMANCE OPTIMIZATION: Optimized version with batching for large datasets
+CREATE OR REPLACE FUNCTION handle_task_list_sort_between_groups_optimized(_from_index integer, _to_index integer, _task_id uuid, _project_id uuid, _batch_size integer DEFAULT 100) RETURNS void
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _offset INT := 0;
+    _affected_rows INT;
+BEGIN
+    -- PERFORMANCE OPTIMIZATION: Use CTE for better query planning
+    IF (_to_index = -1)
+    THEN
+        _to_index = COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = _project_id), 0);
+    END IF;
+
+    -- PERFORMANCE OPTIMIZATION: Batch updates for large datasets
+    IF _to_index > _from_index
+    THEN
+        LOOP
+            WITH batch_update AS (
+                UPDATE tasks
+                SET sort_order = sort_order - 1
+                WHERE project_id = _project_id
+                  AND sort_order > _from_index
+                  AND sort_order < _to_index
+                  AND sort_order > _offset
+                  AND sort_order <= _offset + _batch_size
+                RETURNING 1
+            )
+            SELECT COUNT(*) INTO _affected_rows FROM batch_update;
+            
+            EXIT WHEN _affected_rows = 0;
+            _offset := _offset + _batch_size;
+        END LOOP;
+
+        UPDATE tasks SET sort_order = _to_index - 1 WHERE id = _task_id AND project_id = _project_id;
+    END IF;
+
+    IF _to_index < _from_index
+    THEN
+        _offset := 0;
+        LOOP
+            WITH batch_update AS (
+                UPDATE tasks
+                SET sort_order = sort_order + 1
+                WHERE project_id = _project_id
+                  AND sort_order > _to_index
+                  AND sort_order < _from_index
+                  AND sort_order > _offset
+                  AND sort_order <= _offset + _batch_size
+                RETURNING 1
+            )
+            SELECT COUNT(*) INTO _affected_rows FROM batch_update;
+            
+            EXIT WHEN _affected_rows = 0;
+            _offset := _offset + _batch_size;
+        END LOOP;
+
+        UPDATE tasks SET sort_order = _to_index + 1 WHERE id = _task_id AND project_id = _project_id;
+    END IF;
+END
+$$;
+
+-- PERFORMANCE OPTIMIZATION: Optimized version with batching for large datasets
+CREATE OR REPLACE FUNCTION handle_task_list_sort_inside_group_optimized(_from_index integer, _to_index integer, _task_id uuid, _project_id uuid, _batch_size integer DEFAULT 100) RETURNS void
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _offset INT := 0;
+    _affected_rows INT;
+BEGIN
+    -- PERFORMANCE OPTIMIZATION: Batch updates for large datasets
+    IF _to_index > _from_index
+    THEN
+        LOOP
+            WITH batch_update AS (
+                UPDATE tasks
+                SET sort_order = sort_order - 1
+                WHERE project_id = _project_id
+                  AND sort_order > _from_index
+                  AND sort_order <= _to_index
+                  AND sort_order > _offset
+                  AND sort_order <= _offset + _batch_size
+                RETURNING 1
+            )
+            SELECT COUNT(*) INTO _affected_rows FROM batch_update;
+            
+            EXIT WHEN _affected_rows = 0;
+            _offset := _offset + _batch_size;
+        END LOOP;
+    END IF;
+
+    IF _to_index < _from_index
+    THEN
+        _offset := 0;
+        LOOP
+            WITH batch_update AS (
+                UPDATE tasks
+                SET sort_order = sort_order + 1
+                WHERE project_id = _project_id
+                  AND sort_order >= _to_index
+                  AND sort_order < _from_index
+                  AND sort_order > _offset
+                  AND sort_order <= _offset + _batch_size
+                RETURNING 1
+            )
+            SELECT COUNT(*) INTO _affected_rows FROM batch_update;
+            
+            EXIT WHEN _affected_rows = 0;
+            _offset := _offset + _batch_size;
+        END LOOP;
+    END IF;
+
+    UPDATE tasks SET sort_order = _to_index WHERE id = _task_id AND project_id = _project_id;
+END
 $$;

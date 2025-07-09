@@ -48,7 +48,6 @@ const ProjectCategoriesFilterDropdown = () => {
 
   // Add filtered categories memo
   const filteredCategories = useMemo(() => {
-
     if (!searchQuery.trim()) return orgCategories;
 
     return orgCategories.filter(category =>
@@ -92,22 +91,22 @@ const ProjectCategoriesFilterDropdown = () => {
           {filteredCategories.length ? (
             filteredCategories.map(category => (
               <List.Item
-          className={`custom-list-item ${themeMode === 'dark' ? 'dark' : ''}`}
-          key={category.id}
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-start',
-            gap: 8,
-            padding: '4px 8px',
-            border: 'none',
-          }}
+                className={`custom-list-item ${themeMode === 'dark' ? 'dark' : ''}`}
+                key={category.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-start',
+                  gap: 8,
+                  padding: '4px 8px',
+                  border: 'none',
+                }}
               >
-          <Checkbox id={category.id} onChange={() => handleCategoryChange(category)}>
-            <Flex gap={8}>
-              <Badge color={category.color_code} />
-              {category.name}
-            </Flex>
-          </Checkbox>
+                <Checkbox id={category.id} onChange={() => handleCategoryChange(category)}>
+                  <Flex gap={8}>
+                    <Badge color={category.color_code} />
+                    {category.name}
+                  </Flex>
+                </Checkbox>
               </List.Item>
             ))
           ) : (
@@ -129,10 +128,11 @@ const ProjectCategoriesFilterDropdown = () => {
         icon={<CaretDownFilled />}
         iconPosition="end"
         loading={projectCategoriesLoading}
-        className={`transition-colors duration-300 ${isDropdownOpen
+        className={`transition-colors duration-300 ${
+          isDropdownOpen
             ? 'border-[#1890ff] text-[#1890ff]'
             : 'hover:text-[#1890ff hover:border-[#1890ff]'
-          }`}
+        }`}
       >
         {t('categoryText')}
       </Button>

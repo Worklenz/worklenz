@@ -39,7 +39,7 @@
 
 .focused {
   border-color: #1890ff;
-  background-color: #FAFAFA;
+  background-color: #fafafa;
 }
 
 /* Conversation-like styles */
@@ -250,7 +250,7 @@
 }
 
 .comment-time-separator::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 50%;

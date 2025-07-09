@@ -1,11 +1,8 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
-import {
-  fetchLabelsByProject,
-  fetchTaskAssignees,
-} from '@/features/tasks/tasks.slice';
+import { fetchLabelsByProject, fetchTaskAssignees } from '@/features/tasks/tasks.slice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 
 /**
@@ -14,14 +11,12 @@ import { getTeamMembers } from '@/features/team-members/team-members.slice';
  */
 export const useFilterDataLoader = () => {
   const dispatch = useAppDispatch();
-  
-  const { priorities } = useAppSelector(state => ({
-    priorities: state.priorityReducer.priorities,
-  }));
-  
-  const { projectId } = useAppSelector(state => ({
-    projectId: state.projectReducer.projectId,
-  }));
+
+  // Memoize the priorities selector to prevent unnecessary re-renders
+  const priorities = useAppSelector(state => state.priorityReducer.priorities);
+
+  // Memoize the projectId selector to prevent unnecessary re-renders
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
 
   // Load filter data asynchronously
   const loadFilterData = useCallback(async () => {
@@ -40,14 +35,16 @@ export const useFilterDataLoader = () => {
       }
 
       // Load team members for member filters
-      dispatch(getTeamMembers({ 
-        index: 0, 
-        size: 100, 
-        field: null, 
-        order: null, 
-        search: null, 
-        all: true 
-      }));
+      dispatch(
+        getTeamMembers({
+          index: 0,
+          size: 100,
+          field: null,
+          order: null,
+          search: null,
+          all: true,
+        })
+      );
     } catch (error) {
       console.error('Error loading filter data:', error);
       // Don't throw - filter loading errors shouldn't break the main UI
@@ -59,11 +56,11 @@ export const useFilterDataLoader = () => {
     // Use setTimeout to ensure this runs after the main component render
     // This prevents filter loading from blocking the initial render
     const timeoutId = setTimeout(loadFilterData, 0);
-    
+
     return () => clearTimeout(timeoutId);
   }, [loadFilterData]);
 
   return {
     loadFilterData,
   };
-}; 
+};

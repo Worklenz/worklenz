@@ -55,5 +55,18 @@
   "selectCategory": "Zgjidh një kategori",
   "pleaseEnterAName": "Ju lutemi vendosni një emër",
   "pleaseSelectACategory": "Ju lutemi zgjidhni një kategori",
-  "create": "Krijo"
+  "create": "Krijo",
+
+  "searchTasks": "Kërko detyrat...",
+  "searchPlaceholder": "Kërko...",
+  "fieldsText": "Fushat",
+  "loadingFilters": "Duke ngarkuar filtrat...",
+  "noOptionsFound": "Nuk u gjetën opsione",
+  "filtersActive": "filtra aktiv",
+  "filterActive": "filtër aktiv",
+  "clearAll": "Pastro të gjitha",
+  "clearing": "Duke pastruar...",
+  "cancel": "Anulo",
+  "search": "Kërko",
+  "groupedBy": "Grupuar sipas"
 }

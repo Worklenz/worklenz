@@ -12,11 +12,7 @@ const TimeLogList = ({ timeLoggedList, onRefresh }: TimeLogListProps) => {
   return (
     <Flex vertical gap={6}>
       {timeLoggedList.map(log => (
-        <TimeLogItem
-          key={log.id}
-          log={log}
-          onDelete={onRefresh}
-        />
+        <TimeLogItem key={log.id} log={log} onDelete={onRefresh} />
       ))}
     </Flex>
   );

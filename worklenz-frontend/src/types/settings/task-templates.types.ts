@@ -1,4 +1,4 @@
-import { IProjectTask } from "../project/projectTasksViewModel.types";
+import { IProjectTask } from '../project/projectTasksViewModel.types';
 
 export interface ITaskTemplatesGetResponse {
   name?: string;
@@ -7,8 +7,7 @@ export interface ITaskTemplatesGetResponse {
 }
 
 export interface ITaskTemplateGetResponse {
-    id?: string;
-    name?: string;
-    tasks?: IProjectTask[]
-  }
-  
+  id?: string;
+  name?: string;
+  tasks?: IProjectTask[];
+}

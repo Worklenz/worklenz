@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { CustomTableColumnsType } from '../taskListColumns/taskColumnsSlice';
-import { LabelType } from '../../../../types/label.type';
+import { LabelType } from '../../../../pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/label-type-column/label-type-column';
 import { SelectionType } from '../../../../pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/selection-type-column/selection-type-column';
 
 export type CustomFieldsTypes =
@@ -21,7 +21,8 @@ type TaskListCustomColumnsState = {
   isCustomColumnModalOpen: boolean;
   customColumnModalType: 'create' | 'edit';
   customColumnId: string | null;
-  
+  currentColumnData: any | null; // Store the current column data for editing
+
   customFieldType: CustomFieldsTypes;
   customFieldNumberType: CustomFieldNumberTypes;
   decimals: number;
@@ -39,6 +40,7 @@ const initialState: TaskListCustomColumnsState = {
   isCustomColumnModalOpen: false,
   customColumnModalType: 'create',
   customColumnId: null,
+  currentColumnData: null,
 
   customFieldType: 'people',
   customFieldNumberType: 'formatted',
@@ -60,9 +62,13 @@ const taskListCustomColumnsSlice = createSlice({
     toggleCustomColumnModalOpen: (state, action: PayloadAction<boolean>) => {
       state.isCustomColumnModalOpen = action.payload;
     },
-    setCustomColumnModalAttributes: (state, action: PayloadAction<{modalType: 'create' | 'edit', columnId: string | null}>) => {
+    setCustomColumnModalAttributes: (
+      state,
+      action: PayloadAction<{ modalType: 'create' | 'edit'; columnId: string | null; columnData?: any }>
+    ) => {
       state.customColumnModalType = action.payload.modalType;
       state.customColumnId = action.payload.columnId;
+      state.currentColumnData = action.payload.columnData || null;
     },
     setCustomFieldType: (state, action: PayloadAction<CustomFieldsTypes>) => {
       state.customFieldType = action.payload;
@@ -95,7 +101,19 @@ const taskListCustomColumnsSlice = createSlice({
       state.selectionsList = action.payload;
     },
     resetCustomFieldValues: state => {
-      state = initialState;
+      // Reset all field values to initial state while keeping modal state
+      state.customFieldType = initialState.customFieldType;
+      state.customFieldNumberType = initialState.customFieldNumberType;
+      state.decimals = initialState.decimals;
+      state.label = initialState.label;
+      state.labelPosition = initialState.labelPosition;
+      state.previewValue = initialState.previewValue;
+      state.expression = initialState.expression;
+      state.firstNumericColumn = initialState.firstNumericColumn;
+      state.secondNumericColumn = initialState.secondNumericColumn;
+      state.labelsList = initialState.labelsList;
+      state.selectionsList = initialState.selectionsList;
+      state.currentColumnData = initialState.currentColumnData;
     },
   },
 });

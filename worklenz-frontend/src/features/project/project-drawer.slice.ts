@@ -16,15 +16,35 @@ const initialState: IProjectDrawerState = {
   project: null,
 };
 
-
 export const fetchProjectData = createAsyncThunk(
   'project/fetchProjectData',
   async (projectId: string, { rejectWithValue, dispatch }) => {
     try {
+      if (!projectId) {
+        throw new Error('Project ID is required');
+      }
+      
+      console.log(`Fetching project data for ID: ${projectId}`);
       const response = await projectsApiService.getProject(projectId);
+      
+      if (!response) {
+        throw new Error('No response received from API');
+      }
+      
+      if (!response.done) {
+        throw new Error(response.message || 'API request failed');
+      }
+      
+      if (!response.body) {
+        throw new Error('No project data in response body');
+      }
+      
+      console.log(`Successfully fetched project data:`, response.body);
       return response.body;
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch project');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch project';
+      console.error(`Error fetching project data for ID ${projectId}:`, error);
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -45,16 +65,21 @@ const projectDrawerSlice = createSlice({
   },
   extraReducers: builder => {
     builder
-
       .addCase(fetchProjectData.pending, state => {
+        console.log('Starting project data fetch...');
         state.projectLoading = true;
+        state.project = null; // Clear existing data while loading
       })
       .addCase(fetchProjectData.fulfilled, (state, action) => {
+        console.log('Project data fetch completed successfully:', action.payload);
         state.project = action.payload;
         state.projectLoading = false;
       })
-      .addCase(fetchProjectData.rejected, state => {
+      .addCase(fetchProjectData.rejected, (state, action) => {
+        console.error('Project data fetch failed:', action.payload);
         state.projectLoading = false;
+        state.project = null;
+        // You could add an error field to the state if needed for UI feedback
       });
   },
 });

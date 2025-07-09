@@ -11,7 +11,7 @@ const useDragCursor = (isDragging: boolean) => {
 
     // Save the original cursor style
     const originalCursor = document.body.style.cursor;
-    
+
     // Apply grabbing cursor to the entire document when dragging
     document.body.style.cursor = 'grabbing';
 
@@ -22,4 +22,4 @@ const useDragCursor = (isDragging: boolean) => {
   }, [isDragging]);
 };
 
-export default useDragCursor; 
+export default useDragCursor;

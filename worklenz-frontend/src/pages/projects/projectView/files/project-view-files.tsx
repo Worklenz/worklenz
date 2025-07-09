@@ -47,7 +47,6 @@ const ProjectViewFiles = () => {
     defaultPageSize: DEFAULT_PAGE_SIZE,
   });
 
-  
   const fetchAttachments = async () => {
     if (!projectId) return;
     try {

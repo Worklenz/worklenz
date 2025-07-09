@@ -2,7 +2,13 @@ import { API_BASE_URL } from '@/shared/constants';
 import apiClient from '../api-client';
 import { IServerResponse } from '@/types/common.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
-import { DateList, Member, Project, ScheduleData, Settings } from '@/types/schedule/schedule-v2.types';
+import {
+  DateList,
+  Member,
+  Project,
+  ScheduleData,
+  Settings,
+} from '@/types/schedule/schedule-v2.types';
 
 const rootUrl = `${API_BASE_URL}/schedule-gannt-v2`;
 
@@ -45,16 +51,18 @@ export const scheduleAPIService = {
   },
 
   fetchMemberProjects: async ({ id }: { id: string }): Promise<IServerResponse<Project>> => {
-    const response = await apiClient.get<IServerResponse<Project>>(`${rootUrl}/members/projects/${id}`);
+    const response = await apiClient.get<IServerResponse<Project>>(
+      `${rootUrl}/members/projects/${id}`
+    );
     return response.data;
   },
 
   submitScheduleData: async ({
-    schedule
+    schedule,
   }: {
-    schedule: ScheduleData
+    schedule: ScheduleData;
   }): Promise<IServerResponse<any>> => {
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/schedule`, schedule);
     return response.data;
-  }
+  },
 };

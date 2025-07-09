@@ -10,7 +10,7 @@
   "taskIncludes": "¿Qué se debe incluir en la plantilla de las tareas?",
   "taskIncludesOptions": {
     "statuses": "Estados",
-    "phases": "Fases", 
+    "phases": "Fases",
     "labels": "Etiquetas",
     "name": "Nombre",
     "priority": "Prioridad",

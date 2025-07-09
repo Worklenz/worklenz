@@ -76,14 +76,16 @@ const ProjectMemberDrawer = () => {
       const res = await dispatch(addProjectMember({ memberId, projectId })).unwrap();
       if (res.done) {
         form.resetFields();
-        dispatch(getTeamMembers({
-          index: 1,
-          size: 5,
-          field: null,
-          order: null,
-          search: null, 
-          all: true,
-        }));        
+        dispatch(
+          getTeamMembers({
+            index: 1,
+            size: 5,
+            field: null,
+            order: null,
+            search: null,
+            all: true,
+          })
+        );
         await fetchProjectMembers();
       }
     } catch (error) {
@@ -135,14 +137,16 @@ const ProjectMemberDrawer = () => {
       if (res.done) {
         form.resetFields();
         await fetchProjectMembers();
-        dispatch(getTeamMembers({
-          index: 1,
-          size: 5,
-          field: null,
-          order: null,
-          search: null, 
-          all: true,
-        }));
+        dispatch(
+          getTeamMembers({
+            index: 1,
+            size: 5,
+            field: null,
+            order: null,
+            search: null,
+            all: true,
+          })
+        );
       }
     } catch (error) {
       logger.error('Error sending invite:', error);

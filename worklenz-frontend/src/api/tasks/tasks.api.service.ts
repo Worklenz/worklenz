@@ -28,6 +28,24 @@ export interface ITaskListConfigV2 {
   parent_task?: string;
   group?: string;
   isSubtasksInclude: boolean;
+  include_empty?: string; // Include empty groups in response
+  customColumns?: boolean; // Include custom column values in response
+}
+
+export interface ITaskListV3Response {
+  groups: Array<{
+    id: string;
+    title: string;
+    groupType: 'status' | 'priority' | 'phase';
+    groupValue: string;
+    collapsed: boolean;
+    tasks: any[];
+    taskIds: string[];
+    color: string;
+  }>;
+  allTasks: any[];
+  grouping: string;
+  totalTasks: number;
 }
 
 export const tasksApiService = {
@@ -114,9 +132,70 @@ export const tasksApiService = {
     return response.data;
   },
 
-  getTaskDependencyStatus: async (taskId: string, statusId: string): Promise<IServerResponse<{ can_continue: boolean }>> => {
-    const q = toQueryString({taskId, statusId});
+  getTaskDependencyStatus: async (
+    taskId: string,
+    statusId: string
+  ): Promise<IServerResponse<{ can_continue: boolean }>> => {
+    const q = toQueryString({ taskId, statusId });
     const response = await apiClient.get(`${rootUrl}/dependency-status${q}`);
+    return response.data;
+  },
+
+  getTaskListV3: async (
+    config: ITaskListConfigV2
+  ): Promise<IServerResponse<ITaskListV3Response>> => {
+    const q = toQueryString({ ...config, include_empty: 'true' });
+    const response = await apiClient.get(`${rootUrl}/list/v3/${config.id}${q}`);
+    return response.data;
+  },
+
+  refreshTaskProgress: async (projectId: string): Promise<IServerResponse<{ message: string }>> => {
+    const response = await apiClient.post(`${rootUrl}/refresh-progress/${projectId}`);
+    return response.data;
+  },
+
+  getTaskProgressStatus: async (
+    projectId: string
+  ): Promise<
+    IServerResponse<{
+      projectId: string;
+      totalTasks: number;
+      completedTasks: number;
+      avgProgress: number;
+      lastUpdated: string;
+      completionPercentage: number;
+    }>
+  > => {
+    const response = await apiClient.get(`${rootUrl}/progress-status/${projectId}`);
+    return response.data;
+  },
+
+  // API method to reorder tasks
+  reorderTasks: async (params: {
+    taskIds: string[];
+    newOrder: number[];
+    projectId: string;
+  }): Promise<IServerResponse<{ done: boolean }>> => {
+    const response = await apiClient.post(`${rootUrl}/reorder`, {
+      task_ids: params.taskIds,
+      new_order: params.newOrder,
+      project_id: params.projectId,
+    });
+    return response.data;
+  },
+
+  // API method to update task group (status, priority, phase)
+  updateTaskGroup: async (params: {
+    taskId: string;
+    groupType: 'status' | 'priority' | 'phase';
+    groupValue: string;
+    projectId: string;
+  }): Promise<IServerResponse<{ done: boolean }>> => {
+    const response = await apiClient.put(`${rootUrl}/${params.taskId}/group`, {
+      group_type: params.groupType,
+      group_value: params.groupValue,
+      project_id: params.projectId,
+    });
     return response.data;
   },
 };

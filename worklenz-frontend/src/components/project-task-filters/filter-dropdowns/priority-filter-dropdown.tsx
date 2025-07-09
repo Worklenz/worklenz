@@ -6,7 +6,7 @@ import { Badge, Button, Card, Checkbox, Dropdown, List, Space } from 'antd';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
-import { ITaskPriority } from '@/types/tasks/taskPriority.types';   
+import { ITaskPriority } from '@/types/tasks/taskPriority.types';
 import { setPriorities } from '@/features/tasks/tasks.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
@@ -34,14 +34,12 @@ const PriorityFilterDropdown = ({ priorities }: PriorityFilterDropdownProps) => 
 
   const { projectView } = useTabSearchParam();
 
-  const selectedCount = projectView === 'list' 
-    ? selectedPriorities.length 
-    : boardSelectedPriorities.length;
+  const selectedCount =
+    projectView === 'list' ? selectedPriorities.length : boardSelectedPriorities.length;
 
   const buttonStyle = {
-    backgroundColor: selectedCount > 0
-      ? themeMode === 'dark' ? '#003a5c' : colors.paleBlue
-      : colors.transparent,
+    backgroundColor:
+      selectedCount > 0 ? (themeMode === 'dark' ? '#003a5c' : colors.paleBlue) : colors.transparent,
     color: selectedCount > 0 ? (themeMode === 'dark' ? 'white' : colors.darkGray) : 'inherit',
   };
 
@@ -55,58 +53,64 @@ const PriorityFilterDropdown = ({ priorities }: PriorityFilterDropdownProps) => 
     }
   }, [dispatch, projectId, selectedPriorities, boardSelectedPriorities, projectView]);
 
-  const handleSelectedPriority = useCallback((priorityId: string) => {
-    if (!projectId) return;
+  const handleSelectedPriority = useCallback(
+    (priorityId: string) => {
+      if (!projectId) return;
 
-    const updatePriorities = (currentPriorities: string[], setAction: any, fetchAction: any) => {
-      const newPriorities = currentPriorities.includes(priorityId)
-        ? currentPriorities.filter(id => id !== priorityId)
-        : [...currentPriorities, priorityId];
-      dispatch(setAction(newPriorities));
-      dispatch(fetchAction(projectId));
-    };
+      const updatePriorities = (currentPriorities: string[], setAction: any, fetchAction: any) => {
+        const newPriorities = currentPriorities.includes(priorityId)
+          ? currentPriorities.filter(id => id !== priorityId)
+          : [...currentPriorities, priorityId];
+        dispatch(setAction(newPriorities));
+        dispatch(fetchAction(projectId));
+      };
 
-    if (projectView === 'list') {
-      updatePriorities(selectedPriorities, setPriorities, fetchTaskGroupsList);
-    } else {
-      updatePriorities(boardSelectedPriorities, setBoardPriorities, fetchBoardTaskGroups);
-    }
-  }, [dispatch, projectId, projectView, selectedPriorities, boardSelectedPriorities]);
+      if (projectView === 'list') {
+        updatePriorities(selectedPriorities, setPriorities, fetchTaskGroupsList);
+      } else {
+        updatePriorities(boardSelectedPriorities, setBoardPriorities, fetchBoardTaskGroups);
+      }
+    },
+    [dispatch, projectId, projectView, selectedPriorities, boardSelectedPriorities]
+  );
 
-  const priorityDropdownContent = useMemo(() => (
-    <Card className="custom-card" style={{ width: 120 }} styles={{ body: { padding: 0 } }}>
-      <List style={{ padding: 0, maxHeight: 250, overflow: 'auto' }}>
-        {priorities?.map(priority => (
-          <List.Item
-            className={`custom-list-item ${themeMode === 'dark' ? 'dark' : ''}`}
-            key={priority.id}
-            onClick={() => handleSelectedPriority(priority.id)}
-            style={{
-              display: 'flex',
-              gap: 8,
-              padding: '4px 8px',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <Space>
-              <Checkbox
-                id={priority.id}
-                checked={
-                  projectView === 'list'
-                    ? selectedPriorities.includes(priority.id)
-                    : boardSelectedPriorities.includes(priority.id)
-                }
-                onChange={() => handleSelectedPriority(priority.id)}
-              />
-              <Badge color={priority.color_code} />
-              {priority.name}
-            </Space>
-          </List.Item>
-        ))}
-      </List>
-    </Card>
-  ), [priorities, selectedPriorities, boardSelectedPriorities, themeMode, handleSelectedPriority]);
+  const priorityDropdownContent = useMemo(
+    () => (
+      <Card className="custom-card" style={{ width: 120 }} styles={{ body: { padding: 0 } }}>
+        <List style={{ padding: 0, maxHeight: 250, overflow: 'auto' }}>
+          {priorities?.map(priority => (
+            <List.Item
+              className={`custom-list-item ${themeMode === 'dark' ? 'dark' : ''}`}
+              key={priority.id}
+              onClick={() => handleSelectedPriority(priority.id)}
+              style={{
+                display: 'flex',
+                gap: 8,
+                padding: '4px 8px',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <Space>
+                <Checkbox
+                  id={priority.id}
+                  checked={
+                    projectView === 'list'
+                      ? selectedPriorities.includes(priority.id)
+                      : boardSelectedPriorities.includes(priority.id)
+                  }
+                  onChange={() => handleSelectedPriority(priority.id)}
+                />
+                <Badge color={priority.color_code} />
+                {priority.name}
+              </Space>
+            </List.Item>
+          ))}
+        </List>
+      </Card>
+    ),
+    [priorities, selectedPriorities, boardSelectedPriorities, themeMode, handleSelectedPriority]
+  );
 
   return (
     <Dropdown
@@ -114,16 +118,10 @@ const PriorityFilterDropdown = ({ priorities }: PriorityFilterDropdownProps) => 
       trigger={['click']}
       dropdownRender={() => priorityDropdownContent}
     >
-      <Button
-        icon={<CaretDownFilled />}
-        iconPosition="end"
-        style={buttonStyle}
-      >
+      <Button icon={<CaretDownFilled />} iconPosition="end" style={buttonStyle}>
         <Space>
           {t('priorityText')}
-          {selectedCount > 0 && (
-            <Badge size="small" count={selectedCount} color={colors.skyBlue} />
-          )}
+          {selectedCount > 0 && <Badge size="small" count={selectedCount} color={colors.skyBlue} />}
         </Space>
       </Button>
     </Dropdown>

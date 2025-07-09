@@ -1,5 +1,10 @@
 import { IServerResponse } from '@/types/common.types';
-import { IGetProjectsRequestBody, IRPTOverviewProjectInfo, IRPTOverviewProjectMember, IRPTProjectsViewModel } from '@/types/reporting/reporting.types';
+import {
+  IGetProjectsRequestBody,
+  IRPTOverviewProjectInfo,
+  IRPTOverviewProjectMember,
+  IRPTProjectsViewModel,
+} from '@/types/reporting/reporting.types';
 import apiClient from '../api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { toQueryString } from '@/utils/toQueryString';
@@ -33,8 +38,11 @@ export const reportingProjectsApiService = {
     return response.data;
   },
 
-  getTasks: async (projectId: string, groupBy: string): Promise<IServerResponse<ITaskListGroup[]>> => {
-    const q = toQueryString({group: groupBy})
+  getTasks: async (
+    projectId: string,
+    groupBy: string
+  ): Promise<IServerResponse<ITaskListGroup[]>> => {
+    const q = toQueryString({ group: groupBy });
 
     const url = `${API_BASE_URL}/reporting/overview/project/tasks/${projectId}${q}`;
     const response = await apiClient.get<IServerResponse<ITaskListGroup[]>>(url);

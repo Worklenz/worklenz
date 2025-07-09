@@ -1,11 +1,11 @@
 {
-    "importTaskTemplate": "Importar plantilla de tarea",
-    "templateName": "Nombre de la plantilla",
-    "templateDescription": "Descripción de la plantilla",
-    "selectedTasks": "Tareas seleccionadas",
-    "tasks": "Tareas",
-    "templates": "Plantillas",
-    "remove": "Eliminar",
-    "cancel": "Cancelar",
-    "import": "Importar"
-} 
+  "importTaskTemplate": "Importar plantilla de tarea",
+  "templateName": "Nombre de la plantilla",
+  "templateDescription": "Descripción de la plantilla",
+  "selectedTasks": "Tareas seleccionadas",
+  "tasks": "Tareas",
+  "templates": "Plantillas",
+  "remove": "Eliminar",
+  "cancel": "Cancelar",
+  "import": "Importar"
+}

@@ -25,7 +25,7 @@
   "paymentMethod": "Payment Method",
   "status": "Status",
   "ltdUsers": "You can add up to {{ltd_users}} users.",
-  
+
   "totalSeats": "Total seats",
   "availableSeats": "Available seats",
   "addMoreSeats": "Add more seats",
@@ -103,11 +103,11 @@
   "perMonthPerUser": "per user/month",
   "viewInvoice": "View Invoice",
   "switchToFreePlan": "Switch to Free Plan",
-  
+
   "expirestoday": "today",
   "expirestomorrow": "tomorrow",
   "expiredDaysAgo": "{{days}} days ago",
-  
+
   "continueWith": "Continue with {{plan}}",
   "changeToPlan": "Change to {{plan}}",
   "creditPlan": "Credit Plan",

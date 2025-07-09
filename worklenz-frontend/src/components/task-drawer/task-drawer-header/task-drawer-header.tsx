@@ -16,6 +16,9 @@ import { SocketEvents } from '@/shared/socket-events';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import { deleteTask } from '@/features/tasks/tasks.slice';
 import { deleteBoardTask, updateTaskName } from '@/features/board/board-slice';
+import { updateEnhancedKanbanTaskName } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
 type TaskDrawerHeaderProps = {
   inputRef: React.RefObject<InputRef | null>;
@@ -26,6 +29,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
+  const { tab } = useTabSearchParam();
   const isDeleting = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -43,26 +47,29 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
 
   const handleDeleteTask = async () => {
     if (!selectedTaskId) return;
-    
+
     // Set flag to indicate we're deleting the task
     isDeleting.current = true;
-    
+
     const res = await tasksApiService.deleteTask(selectedTaskId);
     if (res.done) {
       // Explicitly clear the task parameter from URL
       clearTaskFromUrl();
-      
+
       dispatch(setShowTaskDrawer(false));
       dispatch(setSelectedTaskId(null));
       dispatch(deleteTask({ taskId: selectedTaskId }));
       dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
-      
+
       // Reset the flag after a short delay
       setTimeout(() => {
         isDeleting.current = false;
       }, 100);
       if (taskFormViewModel?.task?.parent_task_id) {
-        socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), taskFormViewModel?.task?.parent_task_id);
+        socket?.emit(
+          SocketEvents.GET_TASK_PROGRESS.toString(),
+          taskFormViewModel?.task?.parent_task_id
+        );
       }
     } else {
       isDeleting.current = false;
@@ -82,9 +89,19 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     },
   ];
 
-  const handleReceivedTaskNameChange = (data: { id: string; parent_task: string; name: string }) => {
+  const handleReceivedTaskNameChange = (data: {
+    id: string;
+    parent_task: string;
+    name: string;
+  }) => {
     if (data.id === selectedTaskId) {
-      dispatch(updateTaskName({ task: data }));
+      const taskData = { ...data, manual_progress: false } as IProjectTask;
+      dispatch(updateTaskName({ task: taskData }));
+
+      // Also update enhanced kanban if on board tab
+      if (tab === 'board') {
+        dispatch(updateEnhancedKanbanTaskName({ task: taskData }));
+      }
     }
   };
 
@@ -124,8 +141,8 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
             onBlur={handleInputBlur}
             placeholder={t('taskHeader.taskNamePlaceholder')}
             className="task-name-input"
-            style={{ 
-              width: '100%', 
+            style={{
+              width: '100%',
               border: 'none',
             }}
             showCount={true}
@@ -133,16 +150,16 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
             autoFocus
           />
         ) : (
-          <p 
-            onClick={() => setIsEditing(true)} 
-            style={{ 
-              margin: 0, 
+          <p
+            onClick={() => setIsEditing(true)}
+            style={{
+              margin: 0,
               padding: '4px 11px',
               fontSize: '16px',
               cursor: 'pointer',
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
-              width: '100%'
+              width: '100%',
             }}
           >
             {taskName || t('taskHeader.taskNamePlaceholder')}
@@ -152,7 +169,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
 
       <TaskDrawerStatusDropdown
         statuses={taskFormViewModel?.statuses ?? []}
-        task={taskFormViewModel?.task ?? {}}
+        task={taskFormViewModel?.task ?? ({} as ITaskViewModel)}
         teamId={currentSession?.team_id ?? ''}
       />
 

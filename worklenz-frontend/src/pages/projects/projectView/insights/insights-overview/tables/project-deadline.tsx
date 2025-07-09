@@ -37,7 +37,7 @@ const ProjectDeadline = () => {
 
   useEffect(() => {
     getProjectDeadline();
-  }, [projectId, includeArchivedTasks,refreshTimestamp]);
+  }, [projectId, includeArchivedTasks, refreshTimestamp]);
 
   // table columns
   const columns: TableProps['columns'] = [

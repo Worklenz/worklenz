@@ -1,11 +1,11 @@
 {
-    "importTaskTemplate": "Importar modelo de tarefa",
-    "templateName": "Nome do modelo",
-    "templateDescription": "Descrição do modelo",
-    "selectedTasks": "Tarefas selecionadas",
-    "tasks": "Tarefas",
-    "templates": "Modelos",
-    "remove": "Remover",
-    "cancel": "Cancelar",
-    "import": "Importar"
-} 
+  "importTaskTemplate": "Importar modelo de tarefa",
+  "templateName": "Nome do modelo",
+  "templateDescription": "Descrição do modelo",
+  "selectedTasks": "Tarefas selecionadas",
+  "tasks": "Tarefas",
+  "templates": "Modelos",
+  "remove": "Remover",
+  "cancel": "Cancelar",
+  "import": "Importar"
+}

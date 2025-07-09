@@ -58,10 +58,10 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
         FROM tasks
         WHERE id = $1
       `, [body.task_id]);
-      
+
       const currentProgress = progressResult.rows[0]?.progress_value;
       const isManualProgress = progressResult.rows[0]?.manual_progress;
-      
+
       // Only update if not already 100%
       if (currentProgress !== 100) {
         // Update progress to 100%
@@ -70,9 +70,9 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
           SET progress_value = 100, manual_progress = TRUE
           WHERE id = $1
         `, [body.task_id]);
-        
+
         log(`Task ${body.task_id} moved to done status - progress automatically set to 100%`, null);
-        
+
         // Log the progress change to activity logs
         await logProgressChange({
           task_id: body.task_id,
@@ -80,13 +80,30 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
           new_value: "100",
           socket
         });
-        
+
         // If this is a subtask, update parent task progress
         if (body.parent_task) {
           setTimeout(() => {
             socket.emit(SocketEvents.GET_TASK_PROGRESS.toString(), body.parent_task);
           }, 100);
         }
+      }
+    } else {
+      // Task is moving from "done" to "todo" or "doing" - reset manual_progress to FALSE
+      // so progress can be recalculated based on subtasks
+      await db.query(`
+        UPDATE tasks
+        SET manual_progress = FALSE
+        WHERE id = $1
+      `, [body.task_id]);
+
+      log(`Task ${body.task_id} moved from done status - manual_progress reset to FALSE`, null);
+
+      // If this is a subtask, update parent task progress
+      if (body.parent_task) {
+        setTimeout(() => {
+          socket.emit(SocketEvents.GET_TASK_PROGRESS.toString(), body.parent_task);
+        }, 100);
       }
     }
 
