@@ -69,13 +69,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static getFilterByProjectsWhereClosure(text: string) {
-    return text ? `t.project_id IN (${this.flatString(text)})` : "";
+    return text ? `project_id IN (${this.flatString(text)})` : "";
   }
 
   private static getFilterByAssignee(filterBy: string) {
     return filterBy === "member"
-      ? `t.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $1)`
-      : "t.project_id = $1";
+      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $1)`
+      : "project_id = $1";
   }
 
   private static getStatusesQuery(filterBy: string) {
@@ -130,20 +130,42 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const filterByAssignee = TasksControllerV2.getFilterByAssignee(options.filterBy as string);
     // Returns statuses of each task as a json array if filterBy === "member"
     const statusesQuery = TasksControllerV2.getStatusesQuery(options.filterBy as string);
-    
-    // Custom columns data query - optimized with LEFT JOIN
-    const customColumnsQuery = options.customColumns 
-      ? `, COALESCE(cc_data.custom_column_values, '{}'::JSONB) AS custom_column_values`
+
+    // Custom columns data query
+    const customColumnsQuery = options.customColumns
+      ? `, (SELECT COALESCE(
+            jsonb_object_agg(
+              custom_cols.key,
+              custom_cols.value
+            ),
+            '{}'::JSONB
+          )
+          FROM (
+            SELECT
+              cc.key,
+              CASE
+                WHEN ccv.text_value IS NOT NULL THEN to_jsonb(ccv.text_value)
+                WHEN ccv.number_value IS NOT NULL THEN to_jsonb(ccv.number_value)
+                WHEN ccv.boolean_value IS NOT NULL THEN to_jsonb(ccv.boolean_value)
+                WHEN ccv.date_value IS NOT NULL THEN to_jsonb(ccv.date_value)
+                WHEN ccv.json_value IS NOT NULL THEN ccv.json_value
+                ELSE NULL::JSONB
+              END AS value
+            FROM cc_column_values ccv
+            JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+            WHERE ccv.task_id = t.id
+          ) AS custom_cols
+          WHERE custom_cols.value IS NOT NULL) AS custom_column_values`
       : "";
 
-    const archivedFilter = options.archived === "true" ? "t.archived IS TRUE" : "t.archived IS FALSE";
+    const archivedFilter = options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
 
     let subTasksFilter;
 
     if (options.isSubtasksInclude === "true") {
       subTasksFilter = "";
     } else {
-      subTasksFilter = isSubTasks ? "t.parent_task_id = $2" : "t.parent_task_id IS NULL";
+      subTasksFilter = isSubTasks ? "parent_task_id = $2" : "parent_task_id IS NULL";
     }
 
     const filters = [
@@ -157,171 +179,94 @@ export default class TasksControllerV2 extends TasksControllerBase {
       projectsFilter
     ].filter(i => !!i).join(" AND ");
 
-    // PERFORMANCE OPTIMIZED QUERY - Using CTEs and JOINs instead of correlated subqueries
     return `
-      WITH task_aggregates AS (
-        SELECT 
-          t.id,
-          COUNT(DISTINCT sub.id) AS sub_tasks_count,
-          COUNT(DISTINCT CASE WHEN sub_status.is_done THEN sub.id END) AS completed_sub_tasks,
-          COUNT(DISTINCT tc.id) AS comments_count,
-          COUNT(DISTINCT ta.id) AS attachments_count,
-          COUNT(DISTINCT twl.id) AS work_log_count,
-          COALESCE(SUM(twl.time_spent), 0) AS total_minutes_spent,
-          MAX(CASE WHEN ts.id IS NOT NULL THEN 1 ELSE 0 END) AS has_subscribers,
-          MAX(CASE WHEN td.id IS NOT NULL THEN 1 ELSE 0 END) AS has_dependencies
-        FROM tasks t
-        LEFT JOIN tasks sub ON t.id = sub.parent_task_id AND sub.archived = FALSE
-        LEFT JOIN task_statuses sub_ts ON sub.status_id = sub_ts.id
-        LEFT JOIN sys_task_status_categories sub_status ON sub_ts.category_id = sub_status.id
-        LEFT JOIN task_comments tc ON t.id = tc.task_id
-        LEFT JOIN task_attachments ta ON t.id = ta.task_id
-        LEFT JOIN task_work_log twl ON t.id = twl.task_id
-        LEFT JOIN task_subscribers ts ON t.id = ts.task_id
-        LEFT JOIN task_dependencies td ON t.id = td.task_id
-        WHERE t.project_id = $1 AND t.archived = FALSE
-        GROUP BY t.id
-      ),
-      task_assignees AS (
-        SELECT 
-          ta.task_id,
-                     JSON_AGG(JSON_BUILD_OBJECT(
-            'team_member_id', ta.team_member_id,
-            'project_member_id', ta.project_member_id,
-                         'name', COALESCE(tmiv.name, ''),
-             'avatar_url', COALESCE(tmiv.avatar_url, ''),
-             'email', COALESCE(tmiv.email, ''),
-             'user_id', tmiv.user_id,
-             'socket_id', COALESCE(u.socket_id, ''),
-             'team_id', tmiv.team_id,
-             'email_notifications_enabled', COALESCE(ns.email_notifications_enabled, false)
-          )) AS assignees,
-                     STRING_AGG(COALESCE(tmiv.name, ''), ', ') AS assignee_names,
-           STRING_AGG(COALESCE(tmiv.name, ''), ', ') AS names
-        FROM tasks_assignees ta
-        LEFT JOIN team_member_info_view tmiv ON ta.team_member_id = tmiv.team_member_id
-        LEFT JOIN users u ON tmiv.user_id = u.id
-        LEFT JOIN notification_settings ns ON ns.user_id = u.id AND ns.team_id = tmiv.team_id
-        GROUP BY ta.task_id
-      ),
-      task_labels AS (
-        SELECT 
-          tl.task_id,
-                   JSON_AGG(JSON_BUILD_OBJECT(
-           'id', tl.label_id,
-           'label_id', tl.label_id,
-           'name', team_l.name,
-           'color_code', team_l.color_code
-         )) AS labels,
-         JSON_AGG(JSON_BUILD_OBJECT(
-           'id', tl.label_id,
-           'label_id', tl.label_id,
-           'name', team_l.name,
-           'color_code', team_l.color_code
-         )) AS all_labels
-        FROM task_labels tl
-        JOIN team_labels team_l ON tl.label_id = team_l.id
-        GROUP BY tl.task_id
-      )
-      ${options.customColumns ? `,
-      custom_columns_data AS (
-        SELECT 
-          ccv.task_id,
-          JSONB_OBJECT_AGG(
-            cc.key, 
-            CASE 
-              WHEN ccv.text_value IS NOT NULL THEN to_jsonb(ccv.text_value)
-              WHEN ccv.number_value IS NOT NULL THEN to_jsonb(ccv.number_value)
-              WHEN ccv.boolean_value IS NOT NULL THEN to_jsonb(ccv.boolean_value)
-              WHEN ccv.date_value IS NOT NULL THEN to_jsonb(ccv.date_value)
-              WHEN ccv.json_value IS NOT NULL THEN ccv.json_value
-              ELSE NULL::JSONB
-            END
-          ) AS custom_column_values
-        FROM cc_column_values ccv
-        JOIN cc_custom_columns cc ON ccv.column_id = cc.id
-        GROUP BY ccv.task_id
-             )` : ""}
-      SELECT 
-        t.id,
-        t.name,
-        CONCAT(p.key, '-', t.task_no) AS task_key,
-        p.name AS project_name,
-        t.project_id,
-        t.parent_task_id,
-        t.parent_task_id IS NOT NULL AS is_sub_task,
-        parent_task.name AS parent_task_name,
-        t.status_id AS status,
-        t.archived,
-        t.description,
-        t.sort_order,
-        t.progress_value,
-        t.manual_progress,
-        t.weight,
-        p.use_manual_progress AS project_use_manual_progress,
-        p.use_weighted_progress AS project_use_weighted_progress,
-        p.use_time_progress AS project_use_time_progress,
-        -- Use stored progress value instead of expensive function call
-        COALESCE(t.progress_value, 0) AS complete_ratio,
-        -- Phase information via JOINs
-        tp.phase_id,
-        pp.name AS phase_name,
-        pp.color_code AS phase_color_code,
-        -- Status information via JOINs
-        stsc.color_code AS status_color,
-        stsc.color_code_dark AS status_color_dark,
-                 JSON_BUILD_OBJECT(
-           'is_done', stsc.is_done,
-           'is_doing', stsc.is_doing,
-           'is_todo', stsc.is_todo
-         ) AS status_category,
-        -- Aggregated counts
-        COALESCE(agg.sub_tasks_count, 0) AS sub_tasks_count,
-        COALESCE(agg.completed_sub_tasks, 0) AS completed_sub_tasks,
-        COALESCE(agg.comments_count, 0) AS comments_count,
-        COALESCE(agg.attachments_count, 0) AS attachments_count,
-        COALESCE(agg.total_minutes_spent, 0) AS total_minutes_spent,
-        CASE WHEN agg.has_subscribers > 0 THEN true ELSE false END AS has_subscribers,
-        CASE WHEN agg.has_dependencies > 0 THEN true ELSE false END AS has_dependencies,
-        -- Task completion status
-        CASE WHEN stsc.is_done THEN 1 ELSE 0 END AS parent_task_completed,
-        -- Assignees and labels via JOINs
-                 COALESCE(assignees.assignees, '[]'::JSON) AS assignees,
-         COALESCE(assignees.assignee_names, '') AS assignee_names,
-         COALESCE(assignees.names, '') AS names,
-         COALESCE(labels.labels, '[]'::JSON) AS labels,
-         COALESCE(labels.all_labels, '[]'::JSON) AS all_labels,
-        -- Other fields
-        stsc.is_done AS is_complete,
-        reporter.name AS reporter,
-        t.priority_id AS priority,
-        tp_priority.value AS priority_value,
-        t.total_minutes,
-        t.created_at,
-        t.updated_at,
-        t.completed_at,
-        t.start_date,
-        t.billable,
-        t.schedule_id,
-        t.END_DATE,
-        -- Timer information
-        tt.start_time AS timer_start_time
-        ${customColumnsQuery}
-        ${statusesQuery}
+      SELECT id,
+             name,
+             CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key,
+             (SELECT name FROM projects WHERE id = t.project_id) AS project_name,
+             t.project_id AS project_id,
+             t.parent_task_id,
+             t.parent_task_id IS NOT NULL AS is_sub_task,
+             (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
+             (SELECT COUNT(*)
+              FROM tasks
+              WHERE parent_task_id = t.id)::INT AS sub_tasks_count,
+
+             t.status_id AS status,
+             t.archived,
+             t.description,
+             t.sort_order,
+             t.progress_value,
+             t.manual_progress,
+             t.weight,
+             (SELECT use_manual_progress FROM projects WHERE id = t.project_id) AS project_use_manual_progress,
+             (SELECT use_weighted_progress FROM projects WHERE id = t.project_id) AS project_use_weighted_progress,
+             (SELECT use_time_progress FROM projects WHERE id = t.project_id) AS project_use_time_progress,
+             (SELECT get_task_complete_ratio(t.id)->>'ratio') AS complete_ratio,
+
+             (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
+             (SELECT name
+              FROM project_phases
+              WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_name,
+              (SELECT color_code
+                FROM project_phases
+                WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_color_code,
+
+             (EXISTS(SELECT 1 FROM task_subscribers WHERE task_id = t.id)) AS has_subscribers,
+             (EXISTS(SELECT 1 FROM task_dependencies td WHERE td.task_id = t.id)) AS has_dependencies,
+             (SELECT start_time
+              FROM task_timers
+              WHERE task_id = t.id
+                AND user_id = '${userId}') AS timer_start_time,
+
+             (SELECT color_code
+              FROM sys_task_status_categories
+              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+
+             (SELECT color_code_dark
+              FROM sys_task_status_categories
+              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color_dark,
+
+             (SELECT COALESCE(ROW_TO_JSON(r), '{}'::JSON)
+              FROM (SELECT is_done, is_doing, is_todo
+                    FROM sys_task_status_categories
+                    WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) r) AS status_category,
+
+             (SELECT COUNT(*) FROM task_comments WHERE task_id = t.id) AS comments_count,
+             (SELECT COUNT(*) FROM task_attachments WHERE task_id = t.id) AS attachments_count,
+             (CASE
+                WHEN EXISTS(SELECT 1
+                            FROM tasks_with_status_view
+                            WHERE tasks_with_status_view.task_id = t.id
+                              AND is_done IS TRUE) THEN 1
+                ELSE 0 END) AS parent_task_completed,
+             (SELECT get_task_assignees(t.id)) AS assignees,
+             (SELECT COUNT(*)
+              FROM tasks_with_status_view tt
+              WHERE tt.parent_task_id = t.id
+                AND tt.is_done IS TRUE)::INT
+               AS completed_sub_tasks,
+
+             (SELECT COALESCE(JSON_AGG(r), '[]'::JSON)
+              FROM (SELECT task_labels.label_id AS id,
+                           (SELECT name FROM team_labels WHERE id = task_labels.label_id),
+                           (SELECT color_code FROM team_labels WHERE id = task_labels.label_id)
+                    FROM task_labels
+                    WHERE task_id = t.id) r) AS labels,
+             (SELECT is_completed(status_id, project_id)) AS is_complete,
+             (SELECT name FROM users WHERE id = t.reporter_id) AS reporter,
+             (SELECT id FROM task_priorities WHERE id = t.priority_id) AS priority,
+             (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
+             total_minutes,
+             (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent,
+             created_at,
+             updated_at,
+             completed_at,
+             start_date,
+             billable,
+             schedule_id,
+             END_DATE ${customColumnsQuery} ${statusesQuery}
       FROM tasks t
-      JOIN projects p ON t.project_id = p.id
-      JOIN task_statuses ts ON t.status_id = ts.id
-      JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
-      LEFT JOIN tasks parent_task ON t.parent_task_id = parent_task.id
-      LEFT JOIN task_phase tp ON t.id = tp.task_id
-      LEFT JOIN project_phases pp ON tp.phase_id = pp.id
-      LEFT JOIN task_priorities tp_priority ON t.priority_id = tp_priority.id
-      LEFT JOIN users reporter ON t.reporter_id = reporter.id
-      LEFT JOIN task_timers tt ON t.id = tt.task_id AND tt.user_id = $${isSubTasks ? "3" : "2"}
-      LEFT JOIN task_aggregates agg ON t.id = agg.id
-      LEFT JOIN task_assignees assignees ON t.id = assignees.task_id
-      LEFT JOIN task_labels labels ON t.id = labels.task_id
-      ${options.customColumns ? "LEFT JOIN custom_columns_data cc_data ON t.id = cc_data.task_id" : ""}
       WHERE ${filters} ${searchQuery}
       ORDER BY ${sortFields}
     `;
@@ -383,7 +328,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
   public static async getList(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
     console.log(`[PERFORMANCE] getList method called for project ${req.params.id} - THIS METHOD IS DEPRECATED, USE getTasksV3 INSTEAD`);
-    
+
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
     // Progress values are already calculated and stored in the database
     // Only refresh if explicitly requested via refresh_progress=true query parameter
@@ -397,12 +342,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
-    
+
     // Add customColumns flag to query params
     req.query.customColumns = "true";
 
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task, req.user?.id] : [req.params.id || null, req.user?.id];
+    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
@@ -433,7 +378,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const endTime = performance.now();
     const totalTime = endTime - startTime;
     console.log(`[PERFORMANCE] getList method completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${tasks.length} tasks`);
-    
+
     // Log warning if this deprecated method is taking too long
     if (totalTime > 1000) {
       console.warn(`[PERFORMANCE WARNING] DEPRECATED getList method taking ${totalTime.toFixed(2)}ms - Frontend should use getTasksV3 instead!`);
@@ -445,16 +390,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
   public static async updateMapByGroup(tasks: any[], groupBy: string, map: { [p: string]: ITaskGroup }) {
     let index = 0;
     const unmapped = [];
-    
+
     // PERFORMANCE OPTIMIZATION: Remove expensive individual DB calls for each task
     // Progress values are already calculated and included in the main query
     // No need to make additional database calls here
-    
+
     // Process tasks with their already-calculated progress values
     for (const task of tasks) {
       task.index = index++;
       TasksControllerV2.updateTaskViewModel(task);
-      
+
       if (groupBy === GroupBy.STATUS) {
         map[task.status]?.tasks.push(task);
       } else if (groupBy === GroupBy.PRIORITY) {
@@ -492,7 +437,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
   public static async getTasksOnly(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
     console.log(`[PERFORMANCE] getTasksOnly method called for project ${req.params.id} - Consider using getTasksV3 for better performance`);
-    
+
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
     // Progress values are already calculated and stored in the database
     // Only refresh if explicitly requested via refresh_progress=true query parameter
@@ -505,12 +450,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }
 
     const isSubTasks = !!req.query.parent_task;
-      
+
     // Add customColumns flag to query params
     req.query.customColumns = "true";
-    
+
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task, req.user?.id] : [req.params.id || null, req.user?.id];
+    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
     const result = await db.query(q, params);
 
     let data: any[] = [];
@@ -520,11 +465,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
       [data] = result.rows;
     } else { // else we return a flat list of tasks
       data = [...result.rows];
-      
+
       // PERFORMANCE OPTIMIZATION: Remove expensive individual DB calls for each task
       // Progress values are already calculated and included in the main query via get_task_complete_ratio
       // The database query already includes complete_ratio, so no need for additional calls
-      
+
       for (const task of data) {
         TasksControllerV2.updateTaskViewModel(task);
       }
@@ -533,7 +478,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const endTime = performance.now();
     const totalTime = endTime - startTime;
     console.log(`[PERFORMANCE] getTasksOnly method completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${data.length} tasks`);
-    
+
     // Log warning if this method is taking too long
     if (totalTime > 1000) {
       console.warn(`[PERFORMANCE WARNING] getTasksOnly method taking ${totalTime.toFixed(2)}ms - Consider using getTasksV3 for better performance!`);
@@ -575,9 +520,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
         "SELECT COUNT(*) as subtask_count FROM tasks WHERE parent_task_id = $1 AND archived IS FALSE",
         [parentTaskId]
       );
-      
+
       const subtaskCount = parseInt(subTasksResult.rows[0]?.subtask_count || "0");
-      
+
       // If it has subtasks, reset the manual_progress flag to false
       if (subtaskCount > 0) {
         await db.query(
@@ -585,24 +530,24 @@ export default class TasksControllerV2 extends TasksControllerBase {
           [parentTaskId]
         );
         console.log(`Reset manual progress for parent task ${parentTaskId} with ${subtaskCount} subtasks`);
-        
+
         // Get the project settings to determine which calculation method to use
         const projectResult = await db.query(
           "SELECT project_id FROM tasks WHERE id = $1",
           [parentTaskId]
         );
-        
+
         const projectId = projectResult.rows[0]?.project_id;
-        
+
         if (projectId) {
           // Recalculate the parent task's progress based on its subtasks
           const progressResult = await db.query(
             "SELECT get_task_complete_ratio($1) AS ratio",
             [parentTaskId]
           );
-          
+
           const progressRatio = progressResult.rows[0]?.ratio?.ratio || 0;
-          
+
           // Emit the updated progress value to all clients
           // Note: We don't have socket context here, so we can't directly emit
           // This will be picked up on the next client refresh
@@ -653,7 +598,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       ? [req.body.id, req.body.to_group_id]
       : [req.body.id, req.body.project_id, req.body.parent_task_id, req.body.to_group_id];
     await db.query(q, params);
-    
+
     // Reset the parent task's manual progress when converting a task to a subtask
     if (req.body.parent_task_id) {
       await this.resetParentTaskManualProgress(req.body.parent_task_id);
@@ -824,27 +769,27 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Get column information
     const columnQuery = `
-      SELECT id, field_type 
-      FROM cc_custom_columns 
+      SELECT id, field_type
+      FROM cc_custom_columns
       WHERE project_id = $1 AND key = $2
     `;
     const columnResult = await db.query(columnQuery, [project_id, column_key]);
-    
+
     if (columnResult.rowCount === 0) {
       return res.status(404).send(new ServerResponse(false, "Custom column not found"));
     }
-    
+
     const column = columnResult.rows[0];
     const columnId = column.id;
     const fieldType = column.field_type;
-    
+
     // Determine which value field to use based on the field_type
     let textValue = null;
     let numberValue = null;
     let dateValue = null;
     let booleanValue = null;
     let jsonValue = null;
-    
+
     switch (fieldType) {
       case "number":
         numberValue = parseFloat(String(value));
@@ -861,55 +806,55 @@ export default class TasksControllerV2 extends TasksControllerBase {
       default:
         textValue = String(value);
     }
-    
+
     // Check if a value already exists
     const existingValueQuery = `
-      SELECT id 
-      FROM cc_column_values 
+      SELECT id
+      FROM cc_column_values
       WHERE task_id = $1 AND column_id = $2
     `;
     const existingValueResult = await db.query(existingValueQuery, [taskId, columnId]);
-    
+
     if (existingValueResult.rowCount && existingValueResult.rowCount > 0) {
       // Update existing value
       const updateQuery = `
-        UPDATE cc_column_values 
-        SET text_value = $1, 
-            number_value = $2, 
-            date_value = $3, 
-            boolean_value = $4, 
-            json_value = $5, 
-            updated_at = NOW() 
+        UPDATE cc_column_values
+        SET text_value = $1,
+            number_value = $2,
+            date_value = $3,
+            boolean_value = $4,
+            json_value = $5,
+            updated_at = NOW()
         WHERE task_id = $6 AND column_id = $7
       `;
       await db.query(updateQuery, [
-        textValue, 
-        numberValue, 
-        dateValue, 
-        booleanValue, 
-        jsonValue, 
-        taskId, 
+        textValue,
+        numberValue,
+        dateValue,
+        booleanValue,
+        jsonValue,
+        taskId,
         columnId
       ]);
     } else {
       // Insert new value
       const insertQuery = `
-        INSERT INTO cc_column_values 
-        (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value, created_at, updated_at) 
+        INSERT INTO cc_column_values
+        (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
       `;
       await db.query(insertQuery, [
-        taskId, 
-        columnId, 
-        textValue, 
-        numberValue, 
-        dateValue, 
-        booleanValue, 
+        taskId,
+        columnId,
+        textValue,
+        numberValue,
+        dateValue,
+        booleanValue,
         jsonValue
       ]);
     }
 
-    return res.status(200).send(new ServerResponse(true, { 
+    return res.status(200).send(new ServerResponse(true, {
       task_id: taskId,
       column_key,
       value
@@ -917,7 +862,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   public static async refreshProjectTaskProgressValues(projectId: string): Promise<void> {
-    try {     
+    try {
       // Run the recalculate_all_task_progress function only for tasks in this project
       const query = `
       DO $$
@@ -932,12 +877,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
             WHERE parent_task_id = t.id
             AND archived IS FALSE
         );
-        
+
         -- Start recalculation from leaf tasks (no subtasks) and propagate upward
         -- This ensures calculations are done in the right order
         WITH RECURSIVE task_hierarchy AS (
             -- Base case: Start with all leaf tasks (no subtasks) in this project
-            SELECT 
+            SELECT
                 id,
                 parent_task_id,
                 0 AS level
@@ -949,11 +894,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
                 AND sub.archived IS FALSE
             )
             AND archived IS FALSE
-            
+
             UNION ALL
-            
+
             -- Recursive case: Move up to parent tasks, but only after processing all their children
-            SELECT 
+            SELECT
                 t.id,
                 t.parent_task_id,
                 th.level + 1
@@ -974,7 +919,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         AND (manual_progress IS FALSE OR manual_progress IS NULL);
       END $$;
       `;
-      
+
       await db.query(query);
       console.log(`Finished refreshing progress values for project ${projectId}`);
     } catch (error) {
@@ -987,24 +932,24 @@ export default class TasksControllerV2 extends TasksControllerBase {
       // Calculate the task's progress using get_task_complete_ratio
       const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [taskId]);
       const [data] = result.rows;
-      
+
       if (data && data.info && data.info.ratio !== undefined) {
         const progressValue = +((data.info.ratio || 0).toFixed());
-        
+
         // Update the task's progress_value in the database
         await db.query(
           "UPDATE tasks SET progress_value = $1 WHERE id = $2",
           [progressValue, taskId]
         );
-        
+
         console.log(`Updated progress for task ${taskId} to ${progressValue}%`);
-        
+
         // If this task has a parent, update the parent's progress as well
         const parentResult = await db.query(
           "SELECT parent_task_id FROM tasks WHERE id = $1",
           [taskId]
         );
-        
+
         if (parentResult.rows.length > 0 && parentResult.rows[0].parent_task_id) {
           await this.updateTaskProgress(parentResult.rows[0].parent_task_id);
         }
@@ -1022,13 +967,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
         "UPDATE tasks SET weight = $1 WHERE id = $2",
         [weight, taskId]
       );
-      
+
       // Get the parent task ID
       const parentResult = await db.query(
         "SELECT parent_task_id FROM tasks WHERE id = $1",
         [taskId]
       );
-      
+
       // If this task has a parent, update the parent's progress
       if (parentResult.rows.length > 0 && parentResult.rows[0].parent_task_id) {
         await this.updateTaskProgress(parentResult.rows[0].parent_task_id);
@@ -1041,62 +986,60 @@ export default class TasksControllerV2 extends TasksControllerBase {
   @HandleExceptions()
   public static async getTasksV3(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
-    console.log(`[PERFORMANCE] getTasksV3 method called for project ${req.params.id}`);
-    
+    const isSubTasks = !!req.query.parent_task;
+    const groupBy = (req.query.group || GroupBy.STATUS) as string;
+    const archived = req.query.archived === "true";
+
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
     // Progress values are already calculated and stored in the database
     // Only refresh if explicitly requested via refresh_progress=true query parameter
-    if (req.query.refresh_progress === "true" && req.params.id) {
-      console.log(`[PERFORMANCE] Starting progress refresh for project ${req.params.id} (getTasksV3)`);
+    // This dramatically improves initial load performance (from ~2-5s to ~200-500ms)
+    const shouldRefreshProgress = req.query.refresh_progress === "true";
+
+    if (shouldRefreshProgress && req.params.id) {
       const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
       const progressEndTime = performance.now();
-      console.log(`[PERFORMANCE] Progress refresh completed in ${(progressEndTime - progressStartTime).toFixed(2)}ms`);
     }
 
-    const isSubTasks = !!req.query.parent_task;
-    const groupBy = (req.query.group || GroupBy.STATUS) as string;
-    
-    // Add customColumns flag to query params (same as getList)
-    req.query.customColumns = "true";
-
-    // Use the exact same database query as getList method
+    const queryStartTime = performance.now();
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task, req.user?.id] : [req.params.id || null, req.user?.id];
+    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
+    const queryEndTime = performance.now();
 
-    // Use the same groups query as getList method
+    // Get groups metadata dynamically from database
+    const groupsStartTime = performance.now();
     const groups = await this.getGroups(groupBy, req.params.id);
-    const map = groups.reduce((g: { [x: string]: ITaskGroup }, group) => {
-      if (group.id)
-        g[group.id] = new TaskListGroup(group);
-      return g;
-    }, {});
+    const groupsEndTime = performance.now();
 
-    // Use the same updateMapByGroup method as getList
-    await this.updateMapByGroup(tasks, groupBy, map);
-
-    // Calculate progress for groups (same as getList)
-    const updatedGroups = Object.keys(map).map(key => {
-      const group = map[key];
-      TasksControllerV2.updateTaskProgresses(group);
-      return {
-        id: key,
-        ...group
-      };
-    });
-
-    // Transform to V3 response format while maintaining the same data processing
+    // Create priority value to name mapping
     const priorityMap: Record<string, string> = {
       "0": "low",
-      "1": "medium", 
+      "1": "medium",
       "2": "high"
     };
 
-    // Transform all tasks to V3 format
+    // Create status category mapping based on actual status names from database
+    const statusCategoryMap: Record<string, string> = {};
+    for (const group of groups) {
+      if (groupBy === GroupBy.STATUS && group.id) {
+        // Use the actual status name from database, convert to lowercase for consistency
+        statusCategoryMap[group.id] = group.name.toLowerCase().replace(/\s+/g, "_");
+      }
+    }
+
+
+
+    // Transform tasks with all necessary data preprocessing
+    const transformStartTime = performance.now();
     const transformedTasks = tasks.map((task, index) => {
+      // Update task with calculated values (lightweight version)
+      TasksControllerV2.updateTaskViewModel(task);
+      task.index = index;
+
       // Convert time values
       const convertTimeValue = (value: any): number => {
         if (typeof value === "number") return value;
@@ -1119,23 +1062,21 @@ export default class TasksControllerV2 extends TasksControllerBase {
         task_key: task.task_key || "",
         title: task.name || "",
         description: task.description || "",
-        status: task.status || "todo",
+        // Use dynamic status mapping from database
+        status: statusCategoryMap[task.status] || task.status,
+        // Pre-processed priority using mapping
         priority: priorityMap[task.priority_value?.toString()] || "medium",
+        // Use actual phase name from database
         phase: task.phase_name || "Development",
         progress: typeof task.complete_ratio === "number" ? task.complete_ratio : 0,
         assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
-        assignee_names: task.assignees || [],
+        assignee_names: task.assignee_names || task.names || [],
         labels: task.labels?.map((l: any) => ({
           id: l.id || l.label_id,
           name: l.name,
           color: l.color_code || "#1890ff",
           end: l.end,
           names: l.names
-        })) || [],
-        all_labels: task.all_labels?.map((l: any) => ({
-          id: l.id || l.label_id,
-          name: l.name,
-          color_code: l.color_code || "#1890ff"
         })) || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
@@ -1144,7 +1085,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           logged: convertTimeValue(task.time_spent),
         },
         customFields: {},
-        custom_column_values: task.custom_column_values || {},
+        custom_column_values: task.custom_column_values || {}, // Include custom column values
         createdAt: task.created_at || new Date().toISOString(),
         updatedAt: task.updated_at || new Date().toISOString(),
         order: typeof task.sort_order === "number" ? task.sort_order : 0,
@@ -1163,53 +1104,124 @@ export default class TasksControllerV2 extends TasksControllerBase {
         schedule_id: task.schedule_id || null,
       };
     });
+    const transformEndTime = performance.now();
 
-    // Transform groups to V3 format while preserving the getList logic
-    const responseGroups = updatedGroups.map(group => {
-             // Create status category mapping for consistent group naming
-       let groupValue = group.name;
-       if (groupBy === GroupBy.STATUS) {
-         groupValue = group.name.toLowerCase().replace(/\s+/g, "_");
-       } else if (groupBy === GroupBy.PRIORITY) {
-         groupValue = group.name.toLowerCase();
-       } else if (groupBy === GroupBy.PHASE) {
-         groupValue = group.name.toLowerCase().replace(/\s+/g, "_");
-       }
+    // Create groups based on dynamic data from database
+    const groupingStartTime = performance.now();
+    const groupedResponse: Record<string, any> = {};
 
-      // Transform tasks in this group to V3 format
-      const groupTasks = group.tasks.map(task => {
-        const foundTask = transformedTasks.find(t => t.id === task.id);
-        return foundTask || task;
-      });
+    // Initialize groups from database data
+    groups.forEach(group => {
+      const groupKey = groupBy === GroupBy.STATUS
+        ? group.name.toLowerCase().replace(/\s+/g, "_")
+        : groupBy === GroupBy.PRIORITY
+        ? priorityMap[(group as any).value?.toString()] || group.name.toLowerCase()
+        : group.name.toLowerCase().replace(/\s+/g, "_");
 
-             return {
-         id: group.id,
-         title: group.name,
-         groupType: groupBy,
-         groupValue,
-         collapsed: false,
-         tasks: groupTasks,
-         taskIds: groupTasks.map((task: any) => task.id),
-         color: group.color_code || this.getDefaultGroupColor(groupBy, groupValue),
-         // Include additional metadata from database
-         category_id: group.category_id,
-         start_date: group.start_date,
-         end_date: group.end_date,
-         sort_index: (group as any).sort_index,
-         // Include progress information from getList logic
-         todo_progress: group.todo_progress,
-         doing_progress: group.doing_progress,
-         done_progress: group.done_progress,
-       };
-    }).filter(group => group.tasks.length > 0 || req.query.include_empty === "true");
+      groupedResponse[groupKey] = {
+        id: group.id,
+        title: group.name,
+        groupType: groupBy,
+        groupValue: groupKey,
+        collapsed: false,
+        tasks: [],
+        taskIds: [],
+        color: group.color_code || this.getDefaultGroupColor(groupBy, groupKey),
+        // Include additional metadata from database
+        category_id: group.category_id,
+        start_date: group.start_date,
+        end_date: group.end_date,
+        sort_index: (group as any).sort_index,
+      };
+    });
+
+    // Distribute tasks into groups
+    const unmappedTasks: any[] = [];
+
+    transformedTasks.forEach(task => {
+      let groupKey: string;
+      let taskAssigned = false;
+
+      if (groupBy === GroupBy.STATUS) {
+        groupKey = task.status;
+        if (groupedResponse[groupKey]) {
+          groupedResponse[groupKey].tasks.push(task);
+          groupedResponse[groupKey].taskIds.push(task.id);
+          taskAssigned = true;
+        }
+      } else if (groupBy === GroupBy.PRIORITY) {
+        groupKey = task.priority;
+        if (groupedResponse[groupKey]) {
+          groupedResponse[groupKey].tasks.push(task);
+          groupedResponse[groupKey].taskIds.push(task.id);
+          taskAssigned = true;
+        }
+      } else if (groupBy === GroupBy.PHASE) {
+        // For phase grouping, check if task has a valid phase
+        if (task.phase && task.phase.trim() !== "") {
+          groupKey = task.phase.toLowerCase().replace(/\s+/g, "_");
+          if (groupedResponse[groupKey]) {
+            groupedResponse[groupKey].tasks.push(task);
+            groupedResponse[groupKey].taskIds.push(task.id);
+            taskAssigned = true;
+          }
+        }
+        // If task doesn't have a valid phase, add to unmapped
+        if (!taskAssigned) {
+          unmappedTasks.push(task);
+        }
+      }
+    });
+
+    // Create unmapped group if there are tasks without proper phase assignment
+    if (unmappedTasks.length > 0 && groupBy === GroupBy.PHASE) {
+      groupedResponse[UNMAPPED.toLowerCase()] = {
+        id: UNMAPPED,
+        title: UNMAPPED,
+        groupType: groupBy,
+        groupValue: UNMAPPED.toLowerCase(),
+        collapsed: false,
+        tasks: unmappedTasks,
+        taskIds: unmappedTasks.map(task => task.id),
+        color: "#fbc84c69", // Orange color with transparency
+        category_id: null,
+        start_date: null,
+        end_date: null,
+        sort_index: 999, // Put unmapped group at the end
+      };
+    }
+
+    // Sort tasks within each group by order
+    Object.values(groupedResponse).forEach((group: any) => {
+      group.tasks.sort((a: any, b: any) => a.order - b.order);
+    });
+
+    // Convert to array format expected by frontend, maintaining database order
+    const responseGroups = groups
+      .map(group => {
+        const groupKey = groupBy === GroupBy.STATUS
+          ? group.name.toLowerCase().replace(/\s+/g, "_")
+          : groupBy === GroupBy.PRIORITY
+          ? priorityMap[(group as any).value?.toString()] || group.name.toLowerCase()
+          : group.name.toLowerCase().replace(/\s+/g, "_");
+
+        return groupedResponse[groupKey];
+      })
+      .filter(group => group && (group.tasks.length > 0 || req.query.include_empty === "true"));
+
+    // Add unmapped group to the end if it exists
+    if (groupedResponse[UNMAPPED.toLowerCase()]) {
+      responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
+    }
+
+    const groupingEndTime = performance.now();
 
     const endTime = performance.now();
     const totalTime = endTime - startTime;
-    console.log(`[PERFORMANCE] getTasksV3 method completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
-    
-    // Log warning if this method is taking too long
+
+    // Log warning if request is taking too long
     if (totalTime > 1000) {
-      console.warn(`[PERFORMANCE WARNING] getTasksV3 method taking ${totalTime.toFixed(2)}ms - Consider optimizing the query or data processing!`);
+      console.warn(`[PERFORMANCE WARNING] Slow request detected: ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
     }
 
     return res.status(200).send(new ServerResponse(true, {
@@ -1220,320 +1232,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }));
   }
 
-  /**
-   * NEW OPTIMIZED METHOD: Split complex query into focused segments for better performance
-   */
-  @HandleExceptions()
-  public static async getTasksV4Optimized(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const startTime = performance.now();
-    console.log(`[PERFORMANCE] getTasksV4Optimized method called for project ${req.params.id}`);
-    
-    // Skip progress refresh by default for better performance
-    if (req.query.refresh_progress === "true" && req.params.id) {
-      const progressStartTime = performance.now();
-      await this.refreshProjectTaskProgressValues(req.params.id);
-      const progressEndTime = performance.now();
-      console.log(`[PERFORMANCE] Progress refresh completed in ${(progressEndTime - progressStartTime).toFixed(2)}ms`);
-    }
-
-    const isSubTasks = !!req.query.parent_task;
-    const groupBy = (req.query.group || GroupBy.STATUS) as string;
-    const projectId = req.params.id;
-    const userId = req.user?.id;
-
-    // STEP 1: Get basic task data with optimized query
-    const baseTasksQuery = `
-      SELECT 
-        t.id,
-        t.name,
-        CONCAT(p.key, '-', t.task_no) AS task_key,
-        p.name AS project_name,
-        t.project_id,
-        t.parent_task_id,
-        t.parent_task_id IS NOT NULL AS is_sub_task,
-        t.status_id AS status,
-        t.priority_id AS priority,
-        t.description,
-        t.sort_order,
-        t.progress_value AS complete_ratio,
-        t.manual_progress,
-        t.weight,
-        t.start_date,
-        t.end_date,
-        t.created_at,
-        t.updated_at,
-        t.completed_at,
-        t.billable,
-        t.schedule_id,
-        t.total_minutes,
-        -- Status information via JOINs
-        stsc.color_code AS status_color,
-        stsc.color_code_dark AS status_color_dark,
-        stsc.is_done,
-        stsc.is_doing,
-        stsc.is_todo,
-        -- Priority information
-        tp_priority.value AS priority_value,
-        -- Phase information
-        tp.phase_id,
-        pp.name AS phase_name,
-        pp.color_code AS phase_color_code,
-        -- Reporter information
-        reporter.name AS reporter,
-        -- Timer information
-        tt.start_time AS timer_start_time
-      FROM tasks t
-      JOIN projects p ON t.project_id = p.id
-      JOIN task_statuses ts ON t.status_id = ts.id
-      JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
-      LEFT JOIN task_phase tp ON t.id = tp.task_id
-      LEFT JOIN project_phases pp ON tp.phase_id = pp.id
-      LEFT JOIN task_priorities tp_priority ON t.priority_id = tp_priority.id
-      LEFT JOIN users reporter ON t.reporter_id = reporter.id
-      LEFT JOIN task_timers tt ON t.id = tt.task_id AND tt.user_id = $2
-      WHERE t.project_id = $1 
-        AND t.archived = FALSE 
-        ${isSubTasks ? "AND t.parent_task_id = $3" : "AND t.parent_task_id IS NULL"}
-      ORDER BY t.sort_order
-    `;
-
-    const baseParams = isSubTasks ? [projectId, userId, req.query.parent_task] : [projectId, userId];
-    const baseResult = await db.query(baseTasksQuery, baseParams);
-    const baseTasks = baseResult.rows;
-
-    if (baseTasks.length === 0) {
-      return res.status(200).send(new ServerResponse(true, {
-        groups: [],
-        allTasks: [],
-        grouping: groupBy,
-        totalTasks: 0
-      }));
-    }
-
-    const taskIds = baseTasks.map(t => t.id);
-
-    // STEP 2: Get aggregated data in parallel
-    const [assigneesResult, labelsResult, aggregatesResult] = await Promise.all([
-      // Get assignees
-      db.query(`
-        SELECT 
-          ta.task_id,
-          JSON_AGG(JSON_BUILD_OBJECT(
-            'team_member_id', ta.team_member_id,
-            'project_member_id', ta.project_member_id,
-            'name', COALESCE(tm.name, ''),
-            'avatar_url', COALESCE(u.avatar_url, ''),
-            'email', COALESCE(u.email, ei.email, ''),
-            'user_id', tm.user_id,
-            'socket_id', COALESCE(u.socket_id, ''),
-            'team_id', tm.team_id
-          )) AS assignees
-        FROM tasks_assignees ta
-        LEFT JOIN team_members tm ON ta.team_member_id = tm.id
-        LEFT JOIN users u ON tm.user_id = u.id
-        LEFT JOIN email_invitations ei ON ta.team_member_id = ei.team_member_id
-        WHERE ta.task_id = ANY($1)
-        GROUP BY ta.task_id
-      `, [taskIds]),
-      
-      // Get labels
-      db.query(`
-        SELECT 
-          tl.task_id,
-          JSON_AGG(JSON_BUILD_OBJECT(
-            'id', tl.label_id,
-            'label_id', tl.label_id,
-            'name', team_l.name,
-            'color_code', team_l.color_code
-          )) AS labels
-        FROM task_labels tl
-        JOIN team_labels team_l ON tl.label_id = team_l.id
-        WHERE tl.task_id = ANY($1)
-        GROUP BY tl.task_id
-      `, [taskIds]),
-
-      // Get aggregated counts
-      db.query(`
-        SELECT 
-          t.id,
-          COUNT(DISTINCT sub.id) AS sub_tasks_count,
-          COUNT(DISTINCT CASE WHEN sub_status.is_done THEN sub.id END) AS completed_sub_tasks,
-          COUNT(DISTINCT tc.id) AS comments_count,
-          COUNT(DISTINCT ta.id) AS attachments_count,
-          COALESCE(SUM(twl.time_spent), 0) AS total_minutes_spent,
-          CASE WHEN COUNT(ts.id) > 0 THEN true ELSE false END AS has_subscribers,
-          CASE WHEN COUNT(td.id) > 0 THEN true ELSE false END AS has_dependencies
-        FROM unnest($1::uuid[]) AS t(id)
-        LEFT JOIN tasks sub ON t.id = sub.parent_task_id AND sub.archived = FALSE
-        LEFT JOIN task_statuses sub_ts ON sub.status_id = sub_ts.id
-        LEFT JOIN sys_task_status_categories sub_status ON sub_ts.category_id = sub_status.id
-        LEFT JOIN task_comments tc ON t.id = tc.task_id
-        LEFT JOIN task_attachments ta ON t.id = ta.task_id
-        LEFT JOIN task_work_log twl ON t.id = twl.task_id
-        LEFT JOIN task_subscribers ts ON t.id = ts.task_id
-        LEFT JOIN task_dependencies td ON t.id = td.task_id
-        GROUP BY t.id
-      `, [taskIds])
-    ]);
-
-    // STEP 3: Create lookup maps for efficient data merging
-    const assigneesMap = new Map();
-    assigneesResult.rows.forEach(row => assigneesMap.set(row.task_id, row.assignees || []));
-
-    const labelsMap = new Map();
-    labelsResult.rows.forEach(row => labelsMap.set(row.task_id, row.labels || []));
-
-    const aggregatesMap = new Map();
-    aggregatesResult.rows.forEach(row => aggregatesMap.set(row.id, row));
-
-    // STEP 4: Merge data efficiently
-    const enrichedTasks = baseTasks.map(task => {
-      const aggregates = aggregatesMap.get(task.id) || {};
-      const assignees = assigneesMap.get(task.id) || [];
-      const labels = labelsMap.get(task.id) || [];
-
-      return {
-        ...task,
-        assignees,
-        assignee_names: assignees.map((a: any) => a.name).join(", "),
-        names: assignees.map((a: any) => a.name).join(", "),
-        labels,
-        all_labels: labels,
-        sub_tasks_count: parseInt(aggregates.sub_tasks_count || 0),
-        completed_sub_tasks: parseInt(aggregates.completed_sub_tasks || 0),
-        comments_count: parseInt(aggregates.comments_count || 0),
-        attachments_count: parseInt(aggregates.attachments_count || 0),
-        total_minutes_spent: parseFloat(aggregates.total_minutes_spent || 0),
-        has_subscribers: aggregates.has_subscribers || false,
-        has_dependencies: aggregates.has_dependencies || false,
-        status_category: {
-          is_done: task.is_done,
-          is_doing: task.is_doing,
-          is_todo: task.is_todo
-        }
-      };
-    });
-
-    // STEP 5: Group tasks (same logic as existing method)
-    const groups = await this.getGroups(groupBy, req.params.id);
-    const map = groups.reduce((g: { [x: string]: ITaskGroup }, group) => {
-      if (group.id)
-        g[group.id] = new TaskListGroup(group);
-      return g;
-    }, {});
-
-    await this.updateMapByGroup(enrichedTasks, groupBy, map);
-
-    const updatedGroups = Object.keys(map).map(key => {
-      const group = map[key];
-      TasksControllerV2.updateTaskProgresses(group);
-      return {
-        id: key,
-        ...group
-      };
-    });
-
-    // STEP 6: Transform to V3 format (same as existing method)
-    const priorityMap: Record<string, string> = {
-      "0": "low",
-      "1": "medium", 
-      "2": "high"
-    };
-
-    const transformedTasks = enrichedTasks.map(task => ({
-      id: task.id,
-      task_key: task.task_key || "",
-      title: task.name || "",
-      description: task.description || "",
-      status: task.status || "todo",
-      priority: priorityMap[task.priority_value?.toString()] || "medium",
-      phase: task.phase_name || "Development",
-      progress: typeof task.complete_ratio === "number" ? task.complete_ratio : 0,
-      assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
-      assignee_names: task.assignees || [],
-      labels: task.labels?.map((l: any) => ({
-        id: l.id || l.label_id,
-        name: l.name,
-        color: l.color_code || "#1890ff"
-      })) || [],
-      dueDate: task.end_date,
-      startDate: task.start_date,
-      timeTracking: {
-        estimated: task.total_minutes || 0,
-        logged: task.total_minutes_spent || 0,
-      },
-      customFields: {},
-      createdAt: task.created_at || new Date().toISOString(),
-      updatedAt: task.updated_at || new Date().toISOString(),
-      order: typeof task.sort_order === "number" ? task.sort_order : 0,
-      originalStatusId: task.status,
-      originalPriorityId: task.priority,
-      statusColor: task.status_color,
-      priorityColor: task.priority_color,
-      sub_tasks_count: task.sub_tasks_count || 0,
-      comments_count: task.comments_count || 0,
-      has_subscribers: !!task.has_subscribers,
-      attachments_count: task.attachments_count || 0,
-      has_dependencies: !!task.has_dependencies,
-      schedule_id: task.schedule_id || null,
-    }));
-
-    const responseGroups = updatedGroups.map(group => {
-      let groupValue = group.name;
-      if (groupBy === GroupBy.STATUS) {
-        groupValue = group.name.toLowerCase().replace(/\s+/g, "_");
-      } else if (groupBy === GroupBy.PRIORITY) {
-        groupValue = group.name.toLowerCase();
-      } else if (groupBy === GroupBy.PHASE) {
-        groupValue = group.name.toLowerCase().replace(/\s+/g, "_");
-      }
-
-      const groupTasks = group.tasks.map(task => {
-        const foundTask = transformedTasks.find(t => t.id === task.id);
-        return foundTask || task;
-      });
-
-      return {
-        id: group.id,
-        title: group.name,
-        groupType: groupBy,
-        groupValue,
-        collapsed: false,
-        tasks: groupTasks,
-        taskIds: groupTasks.map((task: any) => task.id),
-        color: group.color_code || this.getDefaultGroupColor(groupBy, groupValue),
-        category_id: group.category_id,
-        start_date: group.start_date,
-        end_date: group.end_date,
-        sort_index: (group as any).sort_index,
-        todo_progress: group.todo_progress,
-        doing_progress: group.doing_progress,
-        done_progress: group.done_progress,
-      };
-    }).filter(group => group.tasks.length > 0 || req.query.include_empty === "true");
-
-    const endTime = performance.now();
-    const totalTime = endTime - startTime;
-           console.log(`[PERFORMANCE] getTasksV4Optimized method completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks - Improvement: ${2136 - totalTime > 0 ? "+" : ""}${(2136 - totalTime).toFixed(2)}ms`);
-
-    return res.status(200).send(new ServerResponse(true, {
-      groups: responseGroups,
-      allTasks: transformedTasks,
-      grouping: groupBy,
-      totalTasks: transformedTasks.length,
-      performanceMetrics: {
-        executionTime: Math.round(totalTime),
-        tasksCount: transformedTasks.length,
-        optimizationGain: Math.round(2136 - totalTime)
-      }
-    }));
-  }
-
   private static getDefaultGroupColor(groupBy: string, groupValue: string): string {
     const colorMaps: Record<string, Record<string, string>> = {
       [GroupBy.STATUS]: {
         todo: "#f0f0f0",
-        doing: "#1890ff", 
+        doing: "#1890ff",
         done: "#52c41a",
       },
       [GroupBy.PRIORITY]: {
@@ -1550,7 +1253,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         unmapped: "#fbc84c69",
       },
     };
-    
+
     return colorMaps[groupBy]?.[groupValue] || "#d9d9d9";
   }
 
@@ -1558,15 +1261,15 @@ export default class TasksControllerV2 extends TasksControllerBase {
   public static async refreshTaskProgress(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     try {
       const startTime = performance.now();
-      
+
       if (req.params.id) {
         console.log(`[PERFORMANCE] Starting background progress refresh for project ${req.params.id}`);
         await this.refreshProjectTaskProgressValues(req.params.id);
-        
+
         const endTime = performance.now();
         const totalTime = endTime - startTime;
         console.log(`[PERFORMANCE] Background progress refresh completed in ${totalTime.toFixed(2)}ms for project ${req.params.id}`);
-        
+
         return res.status(200).send(new ServerResponse(true, {
           message: "Task progress values refreshed successfully",
           performanceMetrics: {
@@ -1592,31 +1295,31 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
       // Get basic progress stats without expensive calculations
       const result = await db.query(`
-        SELECT 
+        SELECT
           COUNT(*) as total_tasks,
           COUNT(CASE WHEN EXISTS(
-            SELECT 1 FROM tasks_with_status_view 
-            WHERE tasks_with_status_view.task_id = tasks.id 
+            SELECT 1 FROM tasks_with_status_view
+            WHERE tasks_with_status_view.task_id = tasks.id
             AND is_done IS TRUE
           ) THEN 1 END) as completed_tasks,
-          AVG(CASE 
-            WHEN progress_value IS NOT NULL THEN progress_value 
-            ELSE 0 
+          AVG(CASE
+            WHEN progress_value IS NOT NULL THEN progress_value
+            ELSE 0
           END) as avg_progress,
           MAX(updated_at) as last_updated
-        FROM tasks 
+        FROM tasks
         WHERE project_id = $1 AND archived IS FALSE
       `, [req.params.id]);
 
       const [stats] = result.rows;
-      
+
       return res.status(200).send(new ServerResponse(true, {
         projectId: req.params.id,
         totalTasks: parseInt(stats.total_tasks) || 0,
         completedTasks: parseInt(stats.completed_tasks) || 0,
         avgProgress: parseFloat(stats.avg_progress) || 0,
         lastUpdated: stats.last_updated,
-        completionPercentage: stats.total_tasks > 0 ? 
+        completionPercentage: stats.total_tasks > 0 ?
           Math.round((parseInt(stats.completed_tasks) / parseInt(stats.total_tasks)) * 100) : 0
       }));
     } catch (error) {
@@ -1624,6 +1327,4 @@ export default class TasksControllerV2 extends TasksControllerBase {
       return res.status(500).send(new ServerResponse(false, null, "Failed to get task progress status"));
     }
   }
-
-
 }
