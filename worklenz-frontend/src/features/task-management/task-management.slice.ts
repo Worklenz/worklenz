@@ -281,8 +281,8 @@ export const fetchTasksV3 = createAsyncThunk(
           dueDate: task.dueDate,
           startDate: task.startDate,
           timeTracking: {
-            estimated: convertTimeValue(task.total_time),
-            logged: convertTimeValue(task.time_spent),
+            estimated: task.timeTracking?.estimated || 0,
+            logged: task.timeTracking?.logged || 0,
           },
           customFields: {},
           custom_column_values: task.custom_column_values || {},

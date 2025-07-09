@@ -93,10 +93,16 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({
       case 'checkbox':
       case 'taskKey':
       case 'description':
-        return <div style={baseStyle} />;
+        return <div className="border-r border-gray-200 dark:border-gray-700" style={baseStyle} />;
+      case 'labels':
+        const labelsStyle = {
+          ...baseStyle,
+          ...(width === 'auto' ? { minWidth: '200px', flexGrow: 1 } : {})
+        };
+        return <div className="border-r border-gray-200 dark:border-gray-700" style={labelsStyle} />;
       case 'title':
         return (
-          <div className="flex items-center h-full" style={baseStyle}>
+          <div className="flex items-center h-full border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
             <div className="flex items-center w-full h-full">
               <div className="w-4 mr-1" />
               
@@ -129,7 +135,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({
           </div>
         );
       default:
-        return <div style={baseStyle} />;
+        return <div className="border-r border-gray-200 dark:border-gray-700" style={baseStyle} />;
     }
   }, [isAdding, taskName, handleAddTask, handleCancel, t]);
 
