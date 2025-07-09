@@ -660,7 +660,7 @@ const SearchFilter: React.FC<{
               type="text"
               value={localValue}
               onChange={e => setLocalValue(e.target.value)}
-              placeholder={placeholder || t('searchTasks')}
+              placeholder={placeholder || t('searchTasks') || 'Search tasks by name or key...'}
                                 className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
                     isDarkMode
                       ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
@@ -919,10 +919,10 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   useFilterDataLoader();
 
   // Get search value from Redux based on position
-  const taskReducerSearch = useAppSelector(state => state.taskReducer?.search || '');
+  const taskManagementSearch = useAppSelector(state => state.taskManagement?.search || '');
   const kanbanSearch = useAppSelector(state => state.enhancedKanbanReducer?.search || '');
   
-  const searchValue = position === 'board' ? kanbanSearch : taskReducerSearch;
+  const searchValue = position === 'board' ? kanbanSearch : taskManagementSearch;
 
   // Local state for filter sections
   const [filterSections, setFilterSections] = useState<FilterSection[]>([]);
@@ -1001,8 +1001,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
     // Debounced search change function
     debouncedSearchChangeRef.current = createDebouncedFunction(
       (projectId: string, value: string) => {
-        // Always use taskReducer search for list view since that's what we read from
-        dispatch(setSearch(value));
+        // Use taskManagement search for list view
+        dispatch(setTaskManagementSearch(value));
 
         // Trigger task refetch with new search value
         dispatch(fetchTasksV3(projectId));
@@ -1142,6 +1142,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
         }
       } else {
         // Use debounced search for list view
+        dispatch(setTaskManagementSearch(value));
         if (projectId) {
           debouncedSearchChangeRef.current?.(projectId, value);
         }
@@ -1177,8 +1178,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
 
       // Prepare all Redux actions to be dispatched together
       const reduxUpdates = () => {
-        // Clear search - always use taskReducer for list view
-        dispatch(setSearch(''));
+        // Clear search - use taskManagementSearch for list view
+        dispatch(setTaskManagementSearch(''));
 
         // Clear label filters
         const clearedLabels = currentTaskLabels.map(label => ({
@@ -1249,7 +1250,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           <SearchFilter
             value={searchValue}
             onChange={handleSearchChange}
-            placeholder="Search tasks..."
+            placeholder="Search tasks by name or key..."
             themeClasses={themeClasses}
           />
 

@@ -109,7 +109,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static getQuery(userId: string, options: ParsedQs) {
-    const searchField = options.search ? "t.name" : "sort_order";
+    const searchField = options.search ? ["t.name", "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)"] : "sort_order";
     const { searchQuery, sortField } = TasksControllerV2.toPaginationOptions(options, searchField);
 
     const isSubTasks = !!options.parent_task;
