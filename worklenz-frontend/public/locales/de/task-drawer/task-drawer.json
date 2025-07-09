@@ -79,8 +79,8 @@
       "maxFilesError": "Sie können maximal {count} Dateien hochladen",
       "processFilesError": "Fehler beim Verarbeiten der Dateien",
       "addCommentError": "Bitte fügen Sie einen Kommentar hinzu oder hängen Sie Dateien an",
-      "createdBy": "Erstellt {time} von {user}",
-      "updatedTime": "Aktualisiert {time}"
+      "createdBy": "Erstellt {{time}} von {{user}}",
+      "updatedTime": "Aktualisiert {{time}}"
     },
     "searchInputPlaceholder": "Nach Name suchen",
     "pendingInvitation": "Ausstehende Einladung"

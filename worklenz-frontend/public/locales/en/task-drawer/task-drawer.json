@@ -79,8 +79,8 @@
       "maxFilesError": "You can only upload a maximum of {count} files",
       "processFilesError": "Failed to process files",
       "addCommentError": "Please add a comment or attach files",
-      "createdBy": "Created {time} by {user}",
-      "updatedTime": "Updated {time}"
+      "createdBy": "Created {{time}} by {{user}}",
+      "updatedTime": "Updated {{time}}"
     },
     "searchInputPlaceholder": "Search by name",
     "pendingInvitation": "Pending Invitation"
