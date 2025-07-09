@@ -41,6 +41,17 @@ const AuthenticatingPage: React.FC = () => {
         setSession(session.user);
         dispatch(setUser(session.user));
 
+        // Check if user joined via invitation
+        if (session.user.invitation_accepted) {
+          // For invited users, redirect directly to their team
+          // They don't need to go through setup as they're joining an existing team
+          setTimeout(() => {
+            handleSuccessRedirect();
+          }, REDIRECT_DELAY);
+          return;
+        }
+
+        // For regular users (team owners), check if setup is needed
         if (!session.user.setup_completed) {
           return navigate('/worklenz/setup');
         }

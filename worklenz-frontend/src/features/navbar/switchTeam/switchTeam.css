@@ -5,6 +5,10 @@
   overflow: hidden;
   overflow-y: auto;
   scrollbar-width: thin;
+  /* Performance optimizations */
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
 }
 
 .switch-team-dropdown .ant-dropdown-menu::-webkit-scrollbar {
@@ -18,9 +22,112 @@
 
 .switch-team-dropdown .ant-dropdown-menu-item {
   padding: 0 !important;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.15s ease;
+  will-change: background-color;
+}
+
+.switch-team-card {
+  transition: all 0.15s ease;
+  will-change: transform, background-color;
+}
+
+.switch-team-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .switch-team-card .ant-card-body {
   padding: 0 !important;
+}
+
+/* Create new organization card styles */
+.create-org-card {
+  border-top: 1px solid #f0f0f0;
+  transition: all 0.15s ease;
+  will-change: background-color;
+}
+
+.create-org-card:hover {
+  background-color: #f8f9fa;
+}
+
+.create-org-card:hover .ant-card-body {
+  background-color: #f8f9fa;
+}
+
+/* Dark mode styles */
+.ant-theme-dark .switch-team-dropdown .ant-dropdown-menu::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.ant-theme-dark .switch-team-card:hover {
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+
+.ant-theme-dark .create-org-card {
+  border-top: 1px solid #424242;
+}
+
+.ant-theme-dark .create-org-card:hover {
+  background-color: #1f1f1f;
+}
+
+.ant-theme-dark .create-org-card:hover .ant-card-body {
+  background-color: #1f1f1f;
+}
+
+/* Ensure proper text contrast in dark mode */
+.ant-theme-dark .switch-team-card .ant-typography {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.ant-theme-dark .switch-team-card:hover .ant-typography {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Reduce paint operations */
+.switch-team-card * {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Optimize transitions */
+.switch-team-card .ant-typography {
+  transition: color 0.15s ease;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .switch-team-dropdown .ant-dropdown-menu {
+    max-height: 200px;
+  }
+  
+  .switch-team-card {
+    width: 200px !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .switch-team-card {
+    border: 1px solid currentColor;
+  }
+  
+  .create-org-card {
+    border-top: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .switch-team-card,
+  .switch-team-dropdown .ant-dropdown-menu-item,
+  .create-org-card,
+  .switch-team-card .ant-typography {
+    transition: none;
+  }
+  
+  .switch-team-card:hover {
+    transform: none;
+  }
 }

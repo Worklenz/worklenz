@@ -8,3 +8,12 @@ export interface IUserSignUpRequest {
   timezone?: string;
   project_id?: string;
 }
+
+export interface IUserSignUpResponse {
+  id: string;
+  name?: string;
+  email: string;
+  team_id: string;
+  invitation_accepted: boolean;
+  google_id?: string;
+}

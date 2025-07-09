@@ -28,4 +28,5 @@ export interface ILocalSession extends IUserType {
   subscription_status?: string;
   subscription_type?: string;
   trial_expire_date?: string;
+  invitation_accepted?: boolean;
 }

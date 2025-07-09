@@ -52,11 +52,17 @@ const AccountSetup: React.FC = () => {
     trackMixpanelEvent(evt_account_setup_visit);
     const verifyAuthStatus = async () => {
       try {
-        const response = (await dispatch(verifyAuthentication()).unwrap())
-          .payload as IAuthorizeResponse;
+        const response = await dispatch(verifyAuthentication()).unwrap() as IAuthorizeResponse;
         if (response?.authenticated) {
           setSession(response.user);
           dispatch(setUser(response.user));
+          
+          // Prevent invited users from accessing account setup
+          if (response.user.invitation_accepted) {
+            navigate('/worklenz/home');
+            return;
+          }
+          
           if (response?.user?.setup_completed) {
             navigate('/worklenz/home');
           }
