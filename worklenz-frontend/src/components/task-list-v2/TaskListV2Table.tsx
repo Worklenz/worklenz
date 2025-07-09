@@ -103,6 +103,7 @@ const TaskListV2Section: React.FC = () => {
 
   // State hooks
   const [initializedFromDatabase, setInitializedFromDatabase] = useState(false);
+  const [addTaskRows, setAddTaskRows] = useState<{[groupId: string]: string[]}>({});
 
   // Configure sensors for drag and drop
   const sensors = useSensors(
@@ -340,9 +341,22 @@ const TaskListV2Section: React.FC = () => {
   );
 
   // Add callback for task added
-  const handleTaskAdded = useCallback(() => {
+  const handleTaskAdded = useCallback((rowId: string) => {
     // Task is now added in real-time via socket, no need to refetch
     // The global socket handler will handle the real-time update
+    
+    // Find the group this row belongs to
+    const groupId = rowId.split('-')[2]; // Extract from rowId format: add-task-{groupId}-{index}
+    
+    // Add a new add task row to this group
+    setAddTaskRows(prev => {
+      const currentRows = prev[groupId] || [];
+      const newRowId = `add-task-${groupId}-${currentRows.length + 1}`;
+      return {
+        ...prev,
+        [groupId]: [...currentRows, newRowId]
+      };
+    });
   }, []);
 
   // Handle scroll synchronization - disabled since header is now sticky inside content
@@ -368,18 +382,37 @@ const TaskListV2Section: React.FC = () => {
         originalIndex: allTasks.indexOf(task),
       }));
 
-      const itemsWithAddTask = !isCurrentGroupCollapsed
+      // Get add task rows for this group
+      const groupAddRows = addTaskRows[group.id] || [];
+      const addTaskItems = !isCurrentGroupCollapsed 
         ? [
-            ...tasksForVirtuoso,
+            // Default add task row
             {
-              id: `add-task-${group.id}`,
+              id: `add-task-${group.id}-0`,
               isAddTaskRow: true,
               groupId: group.id,
               groupType: currentGrouping || 'status',
               groupValue: group.id, // Use the actual database ID from backend
               projectId: urlProjectId,
+              rowId: `add-task-${group.id}-0`,
+              autoFocus: false,
             },
+            // Additional add task rows
+            ...groupAddRows.map((rowId, index) => ({
+              id: rowId,
+              isAddTaskRow: true,
+              groupId: group.id,
+              groupType: currentGrouping || 'status',
+              groupValue: group.id,
+              projectId: urlProjectId,
+              rowId: rowId,
+              autoFocus: index === groupAddRows.length - 1, // Auto-focus the latest row
+            }))
           ]
+        : [];
+
+      const itemsWithAddTask = !isCurrentGroupCollapsed
+        ? [...tasksForVirtuoso, ...addTaskItems]
         : tasksForVirtuoso;
 
       const groupData = {
@@ -393,7 +426,7 @@ const TaskListV2Section: React.FC = () => {
       currentTaskIndex += itemsWithAddTask.length;
       return groupData;
     });
-  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId]);
+  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId, addTaskRows]);
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
@@ -471,6 +504,8 @@ const TaskListV2Section: React.FC = () => {
             projectId={urlProjectId}
             visibleColumns={visibleColumns}
             onTaskAdded={handleTaskAdded}
+            rowId={item.rowId}
+            autoFocus={item.autoFocus}
           />
         );
       }

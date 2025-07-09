@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { selectTaskById, createSubtask, selectSubtaskLoading } from '@/features/task-management/task-management.slice';
@@ -32,23 +32,38 @@ interface AddSubtaskRowProps {
     width: string;
     isSticky?: boolean;
   }>;
-  onSubtaskAdded: () => void;
+  onSubtaskAdded: (rowId: string) => void;
+  rowId: string; // Unique identifier for this add subtask row
+  autoFocus?: boolean; // Whether this row should auto-focus on mount
 }
 
 const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({ 
   parentTaskId, 
   projectId, 
   visibleColumns, 
-  onSubtaskAdded 
+  onSubtaskAdded,
+  rowId,
+  autoFocus = false
 }) => {
-  const [isAdding, setIsAdding] = useState(false);
+  const [isAdding, setIsAdding] = useState(autoFocus);
   const [subtaskName, setSubtaskName] = useState('');
+  const inputRef = useRef<any>(null);
   const { socket, connected } = useSocket();
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   
   // Get session data for reporter_id and team_id
   const currentSession = useAuthService().getCurrentSession();
+
+  // Auto-focus when autoFocus prop is true
+  useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      setIsAdding(true);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [autoFocus]);
 
   const handleAddSubtask = useCallback(() => {
     if (!subtaskName.trim() || !currentSession) return;
@@ -75,14 +90,22 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
     }
 
     setSubtaskName('');
-    setIsAdding(false);
-    onSubtaskAdded();
-  }, [subtaskName, dispatch, parentTaskId, projectId, connected, socket, currentSession, onSubtaskAdded]);
+    // Keep the input active and notify parent to create new row
+    onSubtaskAdded(rowId);
+  }, [subtaskName, dispatch, parentTaskId, projectId, connected, socket, currentSession, onSubtaskAdded, rowId]);
 
   const handleCancel = useCallback(() => {
-    setSubtaskName('');
-    setIsAdding(false);
-  }, []);
+    if (subtaskName.trim() === '') {
+      setSubtaskName('');
+      setIsAdding(false);
+    }
+  }, [subtaskName]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      handleCancel();
+    }
+  }, [handleCancel]);
 
   const renderColumn = useCallback((columnId: string, width: string) => {
     const baseStyle = { width };
@@ -114,10 +137,12 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
                 </button>
               ) : (
                 <Input
+                  ref={inputRef}
                   value={subtaskName}
                   onChange={(e) => setSubtaskName(e.target.value)}
                   onPressEnter={handleAddSubtask}
                   onBlur={handleCancel}
+                  onKeyDown={handleKeyDown}
                   placeholder="Type subtask name and press Enter to save"
                   className="w-full h-full border-none shadow-none bg-transparent"
                   style={{ 
@@ -135,7 +160,7 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
       default:
         return <div style={baseStyle} />;
     }
-  }, [isAdding, subtaskName, handleAddSubtask, handleCancel, t]);
+  }, [isAdding, subtaskName, handleAddSubtask, handleCancel, handleKeyDown, t]);
 
   return (
     <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px] border-b border-gray-200 dark:border-gray-700">
@@ -160,11 +185,28 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
   const task = useAppSelector(state => selectTaskById(state, taskId));
   const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
   const dispatch = useAppDispatch();
+  const [addSubtaskRows, setAddSubtaskRows] = useState<string[]>([`add-subtask-${taskId}-0`]);
+  const [activeRowId, setActiveRowId] = useState<string | null>(null);
 
-  const handleSubtaskAdded = useCallback(() => {
+  const handleSubtaskAdded = useCallback((rowId: string) => {
     // Refresh subtasks after adding a new one
     // The socket event will handle the real-time update
-  }, []);
+    
+    // Only add a new row if this is the last (most recent) row
+    setAddSubtaskRows(prev => {
+      const currentIndex = prev.indexOf(rowId);
+      const isLastRow = currentIndex === prev.length - 1;
+      
+      if (isLastRow) {
+        const newRowId = `add-subtask-${taskId}-${prev.length}`;
+        // Set the new row as active
+        setActiveRowId(newRowId);
+        return [...prev, newRowId];
+      }
+      
+      return prev; // Don't add new row if this isn't the last row
+    });
+  }, [taskId]);
 
   if (!task) {
     return null;
@@ -204,16 +246,23 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
             </div>
           ))}
           
-          {/* Add subtask row - only show when not loading */}
+          {/* Add subtask rows - only show when not loading */}
           {!isLoadingSubtasks && (
-            <div className="bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-200 dark:border-blue-700">
-              <AddSubtaskRow
-                parentTaskId={taskId}
-                projectId={projectId}
-                visibleColumns={visibleColumns}
-                onSubtaskAdded={handleSubtaskAdded}
-              />
-            </div>
+            <>
+              {/* Render all add subtask rows */}
+              {addSubtaskRows.map((rowId, index) => (
+                <div key={rowId} className="bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-200 dark:border-blue-700">
+                  <AddSubtaskRow
+                    parentTaskId={taskId}
+                    projectId={projectId}
+                    visibleColumns={visibleColumns}
+                    onSubtaskAdded={handleSubtaskAdded}
+                    rowId={rowId}
+                    autoFocus={index === addSubtaskRows.length - 1} // Auto-focus the latest row
+                  />
+                </div>
+              ))}
+            </>
           )}
         </>
       )}
