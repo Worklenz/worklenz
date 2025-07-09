@@ -32,7 +32,7 @@ import { resetSelection } from '@/features/task-management/selection.slice';
 import { resetFields } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
-import { tabItems } from '@/lib/project/project-view-constants';
+import { tabItems, updateTabLabels } from '@/lib/project/project-view-constants';
 import {
   setSelectedTaskId,
   setShowTaskDrawer,
@@ -41,6 +41,7 @@ import {
 import { resetState as resetEnhancedKanbanState } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+import { useTranslation } from 'react-i18next';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -63,13 +64,14 @@ const ProjectView = React.memo(() => {
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
   const { projectId } = useParams();
+  const { t } = useTranslation('project-view');
 
   // Memoized selectors to prevent unnecessary re-renders
   const selectedProject = useAppSelector(state => state.projectReducer.project);
   const projectLoading = useAppSelector(state => state.projectReducer.projectLoading);
 
   // Optimize document title updates
-  useDocumentTitle(selectedProject?.name || 'Project View');
+  useDocumentTitle(selectedProject?.name || t('projectView'));
 
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(
@@ -173,6 +175,11 @@ const ProjectView = React.memo(() => {
   useEffect(() => {
     setIsInitialized(false);
   }, [projectId]);
+
+  // Update tab labels when language changes
+  useEffect(() => {
+    updateTabLabels();
+  }, [t]);
 
   // Effect for handling task drawer opening from URL params
   useEffect(() => {
@@ -287,6 +294,7 @@ const ProjectView = React.memo(() => {
                   e.stopPropagation();
                   pinToDefaultTab(item.key);
                 }}
+                title={item.key === pinnedTab ? t('unpinTab') : t('pinTab')}
               />
             </ConfigProvider>
           )}
@@ -296,7 +304,7 @@ const ProjectView = React.memo(() => {
     }));
 
     return menuItems;
-  }, [pinnedTab, pinToDefaultTab]);
+  }, [pinnedTab, pinToDefaultTab, t]);
 
   // Optimized secondary components loading with better UX
   const [shouldLoadSecondaryComponents, setShouldLoadSecondaryComponents] = useState(false);
@@ -336,14 +344,14 @@ const ProjectView = React.memo(() => {
   // Show loading state while project is being fetched
   if (projectLoading || !isInitialized) {
     return (
-      <div style={{ marginBlockStart: 80, marginBlockEnd: 16, minHeight: '80vh' }}>
+      <div style={{ marginBlockStart: 70, marginBlockEnd: 12, minHeight: '80vh' }}>
         <SuspenseFallback />
       </div>
     );
   }
 
   return (
-    <div style={{ marginBlockStart: 80, marginBlockEnd: 16, minHeight: '80vh' }}>
+    <div style={{ marginBlockStart: 70, marginBlockEnd: 12, minHeight: '80vh' }}>
       <ProjectViewHeader />
 
       <Tabs

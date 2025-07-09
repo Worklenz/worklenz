@@ -471,7 +471,7 @@ const TaskListV2: React.FC = () => {
   // Render column headers
   const renderColumnHeaders = useCallback(() => (
     <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" style={{ width: '100%', minWidth: 'max-content' }}>
-      <div className="flex items-center px-3 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
+      <div className="flex items-center px-1 py-3 w-full" style={{ minWidth: 'max-content', height: '44px' }}>
         {visibleColumns.map((column, index) => {
           const columnStyle: ColumnStyle = {
             width: column.width,
@@ -490,7 +490,21 @@ const TaskListV2: React.FC = () => {
             <div
               key={column.id}
               className={`text-sm font-semibold text-gray-600 dark:text-gray-300 ${
-                column.id === 'taskKey' ? 'pl-3' : ''
+                column.id === 'dragHandle'
+                  ? 'flex items-center justify-center'
+                  : column.id === 'checkbox'
+                  ? 'flex items-center justify-center'
+                  : column.id === 'taskKey'
+                  ? 'flex items-center pl-3'
+                  : column.id === 'title'
+                  ? 'flex items-center justify-between'
+                  : column.id === 'description'
+                  ? 'flex items-center px-2'
+                  : column.id === 'labels'
+                  ? 'flex items-center gap-0.5 flex-wrap min-w-0 px-2'
+                  : column.id === 'assignees'
+                  ? 'flex items-center px-2'
+                  : 'flex items-center justify-center px-2'
               }`}
               style={columnStyle}
             >
@@ -508,7 +522,7 @@ const TaskListV2: React.FC = () => {
           );
         })}
         {/* Add Custom Column Button - positioned at the end and scrolls with content */}
-        <div className="flex items-center justify-center ml-2" style={{ width: '50px', flexShrink: 0 }}>
+        <div className="flex items-center justify-center px-2" style={{ width: '50px', flexShrink: 0 }}>
           <AddCustomColumnButton />
         </div>
       </div>
@@ -519,22 +533,22 @@ const TaskListV2: React.FC = () => {
 
   // Loading and error states
   if (loading || loadingColumns) return <Skeleton active />;
-  if (error) return <div>Error: {error}</div>;
+  if (error) return <div>{t('emptyStates.errorPrefix')} {error}</div>;
   
   // Show message when no data
   if (groups.length === 0 && !loading) {
     return (
       <div className="flex flex-col bg-white dark:bg-gray-900 h-full">
-        <div className="flex-none px-6 py-4" style={{ height: '74px', flexShrink: 0 }}>
+        <div className="flex-none" style={{ height: '74px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No task groups found
+              {t('emptyStates.noTaskGroups')}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              Tasks will appear here when they are created or when filters are applied.
+              {t('emptyStates.noTaskGroupsDescription')}
             </div>
           </div>
         </div>
@@ -552,65 +566,66 @@ const TaskListV2: React.FC = () => {
     >
       <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
         {/* Task Filters */}
-        <div className="flex-none px-6 py-4" style={{ height: '74px', flexShrink: 0 }}>
+        <div className="flex-none" style={{ height: '54px', flexShrink: 0 }}>
           <ImprovedTaskFilters position="list" />
         </div>
 
-        {/* Spacing between filters and table */}
-        <div className="flex-none h-4" style={{ flexShrink: 0 }}></div>
-
-        {/* Table Container */}
-        <div 
-          className="border border-gray-200 dark:border-gray-700 mx-6 rounded-lg" 
-          style={{ 
-            height: 'calc(100vh - 140px)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Task List Content with Sticky Header */}
+                  {/* Table Container */}
           <div 
-            ref={contentScrollRef}
-            className="flex-1 bg-white dark:bg-gray-900 relative" 
-            style={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg" 
+            style={{ 
+              height: 'calc(100vh - 240px)', // Slightly reduce height to ensure scrollbar visibility
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
           >
-            {/* Sticky Column Headers */}
-            <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800" style={{ width: '100%', minWidth: 'max-content' }}>
-              {renderColumnHeaders()}
-            </div>
-            <SortableContext
-              items={virtuosoItems
-                .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
-                .map(item => item.id)
-                .filter((id): id is string => id !== undefined)}
-              strategy={verticalListSortingStrategy}
+            {/* Task List Content with Sticky Header */}
+            <div 
+              ref={contentScrollRef}
+              className="flex-1 bg-white dark:bg-gray-900 relative" 
+              style={{ 
+                overflowX: 'auto', 
+                overflowY: 'auto',
+                minHeight: 0
+              }}
             >
-              <div style={{ minWidth: 'max-content' }}>
-                {/* Render groups manually for debugging */}
-                {virtuosoGroups.map((group, groupIndex) => (
-                  <div key={group.id}>
-                    {/* Group Header */}
-                    {renderGroup(groupIndex)}
-                    
-                    {/* Group Tasks */}
-                    {!collapsedGroups.has(group.id) && group.tasks.map((task, taskIndex) => {
-                      const globalTaskIndex = virtuosoGroups
-                        .slice(0, groupIndex)
-                        .reduce((sum, g) => sum + g.count, 0) + taskIndex;
-                      
-                      return (
-                        <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
-                          {renderTask(globalTaskIndex)}
-                        </div>
-                      );
-                    })}
+                {/* Sticky Column Headers */}
+                <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800" style={{ width: '100%', minWidth: 'max-content' }}>
+                  {renderColumnHeaders()}
+                </div>
+                <SortableContext
+                  items={virtuosoItems
+                    .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
+                    .map(item => item.id)
+                    .filter((id): id is string => id !== undefined)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div style={{ minWidth: 'max-content' }}>
+                    {/* Render groups manually for debugging */}
+                    {virtuosoGroups.map((group, groupIndex) => (
+                      <div key={group.id}>
+                        {/* Group Header */}
+                        {renderGroup(groupIndex)}
+                        
+                        {/* Group Tasks */}
+                        {!collapsedGroups.has(group.id) && group.tasks.map((task, taskIndex) => {
+                          const globalTaskIndex = virtuosoGroups
+                            .slice(0, groupIndex)
+                            .reduce((sum, g) => sum + g.count, 0) + taskIndex;
+                          
+                          return (
+                            <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
+                              {renderTask(globalTaskIndex)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </SortableContext>
               </div>
-            </SortableContext>
-          </div>
-        </div>
+            </div>
 
         {/* Drag Overlay */}
         <DragOverlay dropAnimation={null}>
@@ -623,7 +638,7 @@ const TaskListV2: React.FC = () => {
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {allTasks.find(task => task.id === activeId)?.name ||
                         allTasks.find(task => task.id === activeId)?.title ||
-                        'Task'}
+                        t('emptyStates.dragTaskFallback')}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {allTasks.find(task => task.id === activeId)?.task_key}

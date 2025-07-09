@@ -72,6 +72,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     null
   );
   const [isFormValid, setIsFormValid] = useState<boolean>(true);
+  const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
 
   // Selectors
   const { clients, loading: loadingClients } = useAppSelector(state => state.clientReducer);
@@ -130,6 +131,60 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
     loadInitialData();
   }, [dispatch]);
+
+  // New effect to handle form population when project data becomes available
+  useEffect(() => {
+    if (drawerVisible && projectId && project && !projectLoading) {
+      console.log('Populating form with project data:', project);
+      setEditMode(true);
+      
+      try {
+        form.setFieldsValue({
+          ...project,
+          start_date: project.start_date ? dayjs(project.start_date) : null,
+          end_date: project.end_date ? dayjs(project.end_date) : null,
+          working_days: project.working_days || 0,
+          use_manual_progress: project.use_manual_progress || false,
+          use_weighted_progress: project.use_weighted_progress || false,
+          use_time_progress: project.use_time_progress || false,
+        });
+        
+        setSelectedProjectManager(project.project_manager || null);
+        setLoading(false);
+        console.log('Form populated successfully with project data');
+      } catch (error) {
+        console.error('Error setting form values:', error);
+        logger.error('Error setting form values in project drawer', error);
+        setLoading(false);
+      }
+    } else if (drawerVisible && !projectId) {
+      // Creating new project
+      console.log('Setting up drawer for new project creation');
+      setEditMode(false);
+      setLoading(false);
+    } else if (drawerVisible && projectId && !project && !projectLoading) {
+      // Project data failed to load or is empty
+      console.warn('Project drawer is visible but no project data available');
+      setLoading(false);
+    } else if (drawerVisible && projectId) {
+      console.log('Drawer visible, waiting for project data to load...');
+    }
+  }, [drawerVisible, projectId, project, projectLoading, form]);
+
+  // Additional effect to handle loading state when project data is being fetched
+  useEffect(() => {
+    if (drawerVisible && projectId && projectLoading) {
+      console.log('Project data is loading, maintaining loading state');
+      setLoading(true);
+    }
+  }, [drawerVisible, projectId, projectLoading]);
+
+  // Define resetForm function early to avoid declaration order issues
+  const resetForm = useCallback(() => {
+    setEditMode(false);
+    form.resetFields();
+    setSelectedProjectManager(null);
+  }, [form]);
 
   useEffect(() => {
     const startDate = form.getFieldValue('start_date');
@@ -226,47 +281,33 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     return workingDays;
   };
 
+  // Improved handleVisibilityChange to track drawer state without doing form operations
   const handleVisibilityChange = useCallback(
     (visible: boolean) => {
-      if (visible && projectId) {
-        setEditMode(true);
-        if (project) {
-          form.setFieldsValue({
-            ...project,
-            start_date: project.start_date ? dayjs(project.start_date) : null,
-            end_date: project.end_date ? dayjs(project.end_date) : null,
-            working_days:
-              form.getFieldValue('start_date') && form.getFieldValue('end_date')
-                ? calculateWorkingDays(
-                    form.getFieldValue('start_date'),
-                    form.getFieldValue('end_date')
-                  )
-                : project.working_days || 0,
-            use_manual_progress: project.use_manual_progress || false,
-            use_weighted_progress: project.use_weighted_progress || false,
-            use_time_progress: project.use_time_progress || false,
-          });
-          setSelectedProjectManager(project.project_manager || null);
-          setLoading(false);
-        }
-      } else {
+      console.log('Drawer visibility changed:', visible, 'Project ID:', projectId);
+      setDrawerVisible(visible);
+      
+      if (!visible) {
         resetForm();
+      } else if (visible && !projectId) {
+        // Creating new project - reset form immediately
+        console.log('Opening drawer for new project');
+        setEditMode(false);
+        setLoading(false);
+      } else if (visible && projectId) {
+        // Editing existing project - loading state will be handled by useEffect
+        console.log('Opening drawer for existing project:', projectId);
+        setLoading(true);
       }
     },
-    [projectId, project]
+    [projectId, resetForm]
   );
-
-  const resetForm = useCallback(() => {
-    setEditMode(false);
-    form.resetFields();
-    setSelectedProjectManager(null);
-  }, [form]);
 
   const handleDrawerClose = useCallback(() => {
     setLoading(true);
+    setDrawerVisible(false);
     resetForm();
     dispatch(setProjectData({} as IProjectViewModel));
-    // dispatch(setProjectId(null));
     dispatch(setDrawerProjectId(null));
     dispatch(toggleProjectDrawer());
     onClose();
@@ -405,7 +446,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       {!isEditable && (
         <Alert message={t('noPermission')} type="warning" showIcon style={{ marginBottom: 16 }} />
       )}
-      <Skeleton active paragraph={{ rows: 12 }} loading={projectLoading}>
+      <Skeleton active paragraph={{ rows: 12 }} loading={loading || projectLoading}>
         <Form
           form={form}
           layout="vertical"

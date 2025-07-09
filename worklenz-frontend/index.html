@@ -5,43 +5,72 @@
     <link rel="icon" href="./favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#2b2b2b" />
+    
+    <!-- Resource hints for better loading performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://js.hs-scripts.com" />
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/locales/en/common.json" as="fetch" type="application/json" crossorigin />
+    <link rel="preload" href="/locales/en/auth/login.json" as="fetch" type="application/json" crossorigin />
+    <link rel="preload" href="/locales/en/navbar.json" as="fetch" type="application/json" crossorigin />
+    
+    <!-- Optimized font loading with font-display: swap -->
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    
     <title>Worklenz</title>
+    
     <!-- Environment configuration -->
     <script src="/env-config.js"></script>
-    <!-- Google Analytics -->
+    
+    <!-- Optimized Google Analytics with reduced blocking -->
     <script>
-      // Function to initialize Google Analytics
+      // Function to initialize Google Analytics asynchronously
       function initGoogleAnalytics() {
-        // Load the Google Analytics script
-        const script = document.createElement('script');
-        script.async = true;
+        // Use requestIdleCallback to defer analytics loading
+        const loadAnalytics = () => {
+          // Determine which tracking ID to use based on the environment
+          const isProduction = window.location.hostname === 'app.worklenz.com';
 
-        // Determine which tracking ID to use based on the environment
-        const isProduction =
-          window.location.hostname === 'worklenz.com' ||
-          window.location.hostname === 'app.worklenz.com';
+          const trackingId = isProduction ? 'G-7KSRKQ1397' : 'G-3LM2HGWEXG'; // Open source tracking ID
 
-        const trackingId = isProduction ? 'G-XXXXXXXXXX' : 'G-3LM2HGWEXG'; // Open source tracking ID
+          // Load the Google Analytics script
+          const script = document.createElement('script');
+          script.async = true;
+          script.src = `https://www.googletagmanager.com/gtag/js?id=${trackingId}`;
+          document.head.appendChild(script);
 
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${trackingId}`;
-        document.head.appendChild(script);
+          // Initialize Google Analytics
+          window.dataLayer = window.dataLayer || [];
+          function gtag() {
+            dataLayer.push(arguments);
+          }
+          gtag('js', new Date());
+          gtag('config', trackingId);
+        };
 
-        // Initialize Google Analytics
-        window.dataLayer = window.dataLayer || [];
-        function gtag() {
-          dataLayer.push(arguments);
+        // Use requestIdleCallback if available, otherwise setTimeout
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(loadAnalytics, { timeout: 2000 });
+        } else {
+          setTimeout(loadAnalytics, 1000);
         }
-        gtag('js', new Date());
-        gtag('config', trackingId);
       }
 
-      // Initialize analytics
+      // Initialize analytics after a delay to not block initial render
       initGoogleAnalytics();
 
       // Function to show privacy notice
@@ -98,14 +127,24 @@
     <div id="root"></div>
     <script type="module" src="./src/index.tsx"></script>
     <script type="text/javascript">
+      // Load HubSpot script asynchronously and only for production
       if (window.location.hostname === 'app.worklenz.com') {
-        var hs = document.createElement('script');
-        hs.type = 'text/javascript';
-        hs.id = 'hs-script-loader';
-        hs.async = true;
-        hs.defer = true;
-        hs.src = '//js.hs-scripts.com/22348300.js';
-        document.body.appendChild(hs);
+        // Use requestIdleCallback to defer HubSpot loading
+        const loadHubSpot = () => {
+          var hs = document.createElement('script');
+          hs.type = 'text/javascript';
+          hs.id = 'hs-script-loader';
+          hs.async = true;
+          hs.defer = true;
+          hs.src = '//js.hs-scripts.com/22348300.js';
+          document.body.appendChild(hs);
+        };
+
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(loadHubSpot, { timeout: 3000 });
+        } else {
+          setTimeout(loadHubSpot, 2000);
+        }
       }
     </script>
   </body>

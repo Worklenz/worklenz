@@ -1,0 +1,31 @@
+{
+  "logoAlt": "Worklenz Logo",
+  "home": "首页",
+  "projects": "项目",
+  "schedule": "日程",
+  "reporting": "报告",
+  "clients": "客户",
+  "teams": "团队",
+  "labels": "标签",
+  "jobTitles": "职位",
+  "upgradePlan": "升级计划",
+  "upgradePlanTooltip": "升级计划",
+  "invite": "邀请",
+  "inviteTooltip": "邀请团队成员加入",
+  "switchTeamTooltip": "切换团队",
+  "help": "帮助",
+  "notificationTooltip": "查看通知",
+  "profileTooltip": "查看个人资料",
+  "adminCenter": "管理中心",
+  "settings": "设置",
+  "logOut": "登出",
+  "notificationsDrawer": {
+    "read": "已读通知",
+    "unread": "未读通知",
+    "markAsRead": "标记为已读",
+    "readAndJoin": "阅读并加入",
+    "accept": "接受",
+    "acceptAndJoin": "接受并加入",
+    "noNotifications": "没有通知"
+  }
+}

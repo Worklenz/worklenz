@@ -20,6 +20,7 @@ import { statusApiService } from '@/api/taskAttributes/status/status.api.service
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
 import Skeleton from 'antd/es/skeleton/Skeleton';
+import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const dispatch = useDispatch();
@@ -120,15 +121,19 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setDragType('task');
     e.dataTransfer.effectAllowed = 'move';
   };
-  const handleTaskDragOver = (e: React.DragEvent, groupId: string, taskIdx: number) => {
+  const handleTaskDragOver = (e: React.DragEvent, groupId: string, taskIdx: number | null) => {
     if (dragType !== 'task') return;
     e.preventDefault();
     if (draggedTaskId) {
       setHoveredGroupId(groupId);
-      setHoveredTaskIdx(taskIdx);
     }
+    if(taskIdx === null) {
+      setHoveredTaskIdx(0);
+    }else{
+      setHoveredTaskIdx(taskIdx);
+    };
   };
-  const handleTaskDrop = (e: React.DragEvent, targetGroupId: string, targetTaskIdx: number) => {
+  const handleTaskDrop = async (e: React.DragEvent, targetGroupId: string, targetTaskIdx: number | null) => {
     if (dragType !== 'task') return;
     e.preventDefault();
     if (!draggedTaskId || !draggedTaskGroupId || hoveredGroupId === null || hoveredTaskIdx === null) return;
@@ -138,10 +143,23 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     const targetGroup = taskGroups.find(g => g.id === targetGroupId);
     if (!sourceGroup || !targetGroup) return;
     
+    
     const taskIdx = sourceGroup.tasks.findIndex(t => t.id === draggedTaskId);
     if (taskIdx === -1) return;
     
     const movedTask = sourceGroup.tasks[taskIdx];
+    if (groupBy === 'status' && movedTask.id) {
+      if (sourceGroup.id !== targetGroup.id) {
+        const canContinue = await checkTaskDependencyStatus(movedTask.id, targetGroupId);
+        if (!canContinue) {
+          alertService.error(
+            'Task is not completed',
+            'Please complete the task dependencies before proceeding'
+          );
+          return;
+        }
+      }
+    }
     let insertIdx = hoveredTaskIdx;
     
     // Handle same group reordering
@@ -235,6 +253,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         task: movedTask,
         team_id: teamId,
       });
+
     }
 
     setDraggedTaskId(null);
@@ -242,6 +261,11 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setHoveredGroupId(null);
     setHoveredTaskIdx(null);
     setDragType(null);
+  };
+
+  const handleDragEnd = () => {
+    setHoveredGroupId(null);
+    setHoveredTaskIdx(null);
   };
 
   useEffect(() => {
@@ -313,6 +337,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
                 onTaskDragStart={handleTaskDragStart}
                 onTaskDragOver={handleTaskDragOver}
                 onTaskDrop={handleTaskDrop}
+                onDragEnd={handleDragEnd}
                 hoveredTaskIdx={hoveredGroupId === group.id ? hoveredTaskIdx : null}
                 hoveredGroupId={hoveredGroupId}
               />
