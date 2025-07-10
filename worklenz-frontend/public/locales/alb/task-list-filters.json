@@ -68,5 +68,7 @@
   "clearing": "Duke pastruar...",
   "cancel": "Anulo",
   "search": "Kërko",
-  "groupedBy": "Grupuar sipas"
+  "groupedBy": "Grupuar sipas",
+  "manageStatuses": "Menaxho Statuset",
+  "managePhases": "Menaxho Fazat"
 }

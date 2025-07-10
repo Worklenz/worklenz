@@ -62,5 +62,7 @@
   "clearing": "清除中...",
   "cancel": "取消",
   "search": "搜索",
-  "groupedBy": "分组依据"
+  "groupedBy": "分组依据",
+  "manageStatuses": "管理状态",
+  "managePhases": "管理阶段"
 }

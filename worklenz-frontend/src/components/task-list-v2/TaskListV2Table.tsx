@@ -476,8 +476,8 @@ const TaskListV2Section: React.FC = () => {
                   );
                 })}
               </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-sm italic text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 px-4 py-1 rounded-md border border-gray-200 dark:border-gray-700">
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center">
+                <div className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm">
                   {t('noTasksInGroup')}
                 </div>
               </div>

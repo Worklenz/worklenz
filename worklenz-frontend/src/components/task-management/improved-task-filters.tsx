@@ -82,7 +82,9 @@ import useIsProjectManager from '@/hooks/useIsProjectManager';
 // Performance constants
 const FILTER_DEBOUNCE_DELAY = 300; // ms
 const SEARCH_DEBOUNCE_DELAY = 500; // ms
-const MAX_FILTER_OPTIONS = 100; // Limit options to prevent UI lag
+const MAX_FILTER_OPTIONS = 100;
+
+ // Limit options to prevent UI lag
 
 // Optimized selectors with proper transformation logic
 const selectFilterData = createSelector(
@@ -364,6 +366,7 @@ const FilterDropdown: React.FC<{
   themeClasses: any;
   isDarkMode: boolean;
   className?: string;
+  dispatch?: any;
 }> = ({
   section,
   onSelectionChange,
@@ -372,6 +375,7 @@ const FilterDropdown: React.FC<{
   themeClasses,
   isDarkMode,
   className = '',
+  dispatch,
 }) => {
   const { t } = useTranslation('task-list-filters');
   // Add permission checks for groupBy section
@@ -480,8 +484,34 @@ const FilterDropdown: React.FC<{
       {/* Configuration Buttons for GroupBy section */}
       {section.id === 'groupBy' && canConfigure && (
         <div className="inline-flex items-center gap-1 ml-2">
-          {section.selectedValues[0] === 'phase' && <ConfigPhaseButton />}
-          {section.selectedValues[0] === 'status' && <CreateStatusButton />}
+          {section.selectedValues[0] === 'phase' && (
+            <button
+              onClick={() => {
+                import('@/features/projects/singleProject/phase/phases.slice').then(({ toggleDrawer }) => {
+                  dispatch(toggleDrawer());
+                });
+              }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 ease-in-out hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
+                isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
+              }`}
+            >
+              {t('managePhases')}
+            </button>
+          )}
+          {section.selectedValues[0] === 'status' && (
+            <button
+              onClick={() => {
+                import('@/features/projects/status/StatusSlice').then(({ toggleDrawer }) => {
+                  dispatch(toggleDrawer());
+                });
+              }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 ease-in-out hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
+                isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
+              }`}
+            >
+              {t('manageStatuses')}
+            </button>
+          )}
         </div>
       )}
 
@@ -1265,6 +1295,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                 onToggle={() => handleDropdownToggle(section.id)}
                 themeClasses={themeClasses}
                 isDarkMode={isDarkMode}
+                dispatch={dispatch}
               />
             ))
           ) : (
