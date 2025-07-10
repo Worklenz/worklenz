@@ -68,5 +68,7 @@
   "clearing": "Clearing...",
   "cancel": "Cancel",
   "search": "Search",
-  "groupedBy": "Grouped by"
+  "groupedBy": "Grouped by",
+  "manageStatuses": "Manage Statuses",
+  "managePhases": "Manage Phases"
 }

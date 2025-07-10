@@ -66,6 +66,7 @@ import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { ShareAltOutlined } from '@ant-design/icons';
+import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
@@ -101,9 +102,9 @@ const ProjectViewHeader = memo(() => {
 
     switch (tab) {
       case 'tasks-list':
+        dispatch(fetchStatuses(projectId));
         dispatch(fetchTaskListColumns(projectId));
         dispatch(fetchPhasesByProjectId(projectId));
-        dispatch(fetchTaskGroups(projectId));
         dispatch(fetchTasksV3(projectId));
         break;
       case 'board':

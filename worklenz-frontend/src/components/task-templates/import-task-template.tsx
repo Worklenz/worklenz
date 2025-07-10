@@ -23,6 +23,7 @@ import { fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { setImportTaskTemplateDrawerOpen } from '@/features/project/project.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
+import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 
 const ImportTaskTemplate = () => {
   const dispatch = useAppDispatch();
@@ -90,7 +91,8 @@ const ImportTaskTemplate = () => {
       const res = await taskTemplatesApiService.importTemplate(projectId, tasks);
       if (res.done) {
         if (tab === 'board') dispatch(fetchBoardTaskGroups(projectId));
-        if (tab === 'tasks-list') dispatch(fetchTaskGroups(projectId));
+        if (tab === 'tasks-list') dispatch(fetchTasksV3(projectId));
+
         dispatch(setImportTaskTemplateDrawerOpen(false));
       }
     } catch (error) {

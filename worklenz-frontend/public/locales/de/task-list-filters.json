@@ -65,8 +65,10 @@
   "filtersActive": "Filter aktiv",
   "filterActive": "Filter aktiv",
   "clearAll": "Alle löschen",
-  "clearing": "Löschen...",
-  "cancel": "Abbrechen",
+  "clearing": "Wird gelöscht...",
+  "cancel": "Stornieren",
   "search": "Suchen",
-  "groupedBy": "Gruppiert nach"
+  "groupedBy": "Gruppiert nach",
+  "manageStatuses": "Status verwalten",
+  "managePhases": "Phasen verwalten"
 }
