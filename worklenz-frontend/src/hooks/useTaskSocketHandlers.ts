@@ -930,6 +930,56 @@ export const useTaskSocketHandlers = () => {
     // console.log('🔄 Task assignees change (limited data):', data);
   }, []);
 
+  // Handler for timer start events
+  const handleTimerStart = useCallback((data: string) => {
+    try {
+      const { task_id, start_time } = typeof data === 'string' ? JSON.parse(data) : data;
+      if (!task_id) return;
+
+      // Update the task-management slice to include timer state
+      const currentTask = store.getState().taskManagement.entities[task_id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          timeTracking: {
+            ...currentTask.timeTracking,
+            activeTimer: start_time ? (typeof start_time === 'number' ? start_time : parseInt(start_time)) : Date.now(),
+          },
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
+    } catch (error) {
+      logger.error('Error handling timer start event:', error);
+    }
+  }, [dispatch]);
+
+  // Handler for timer stop events  
+  const handleTimerStop = useCallback((data: string) => {
+    try {
+      const { task_id } = typeof data === 'string' ? JSON.parse(data) : data;
+      if (!task_id) return;
+
+      // Update the task-management slice to remove timer state
+      const currentTask = store.getState().taskManagement.entities[task_id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          timeTracking: {
+            ...currentTask.timeTracking,
+            activeTimer: undefined,
+          },
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
+    } catch (error) {
+      logger.error('Error handling timer stop event:', error);
+    }
+  }, [dispatch]);
+
   // Register socket event listeners
   useEffect(() => {
     if (!socket) return;
@@ -961,6 +1011,8 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.QUICK_TASK.toString(), handler: handleNewTaskReceived },
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgressUpdated },
       { event: SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), handler: handleCustomColumnUpdate },
+      { event: SocketEvents.TASK_TIMER_START.toString(), handler: handleTimerStart },
+      { event: SocketEvents.TASK_TIMER_STOP.toString(), handler: handleTimerStop },
 
     ];
 
@@ -993,6 +1045,8 @@ export const useTaskSocketHandlers = () => {
     handleNewTaskReceived,
     handleTaskProgressUpdated,
     handleCustomColumnUpdate,
+    handleTimerStart,
+    handleTimerStop,
 
   ]);
 };
