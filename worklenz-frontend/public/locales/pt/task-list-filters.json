@@ -67,5 +67,16 @@
   "search": "Pesquisar",
   "groupedBy": "Agrupado por",
   "manageStatuses": "Gerenciar Status",
-  "managePhases": "Gerenciar Fases"
+  "managePhases": "Gerenciar Fases",
+  "dragToReorderStatuses": "Arraste os status para reordená-los. Cada status pode ter uma categoria diferente.",
+  "enterNewStatusName": "Digite o novo nome do status...",
+  "addStatus": "Adicionar Status",
+  "noStatusesFound": "Nenhum status encontrado. Crie seu primeiro status acima.",
+  "deleteStatus": "Excluir Status",
+  "deleteStatusConfirm": "Tem certeza de que deseja excluir este status? Esta ação não pode ser desfeita.",
+  "rename": "Renomear",
+  "delete": "Excluir",
+  "enterStatusName": "Digite o nome do status",
+  "selectCategory": "Selecionar categoria",
+  "close": "Fechar"
 }

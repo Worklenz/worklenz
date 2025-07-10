@@ -70,5 +70,16 @@
   "search": "Search",
   "groupedBy": "Grouped by",
   "manageStatuses": "Manage Statuses",
-  "managePhases": "Manage Phases"
+  "managePhases": "Manage Phases",
+  "dragToReorderStatuses": "Drag statuses to reorder them. Each status can have a different category.",
+  "enterNewStatusName": "Enter new status name...",
+  "addStatus": "Add Status",
+  "noStatusesFound": "No statuses found. Create your first status above.",
+  "deleteStatus": "Delete Status",
+  "deleteStatusConfirm": "Are you sure you want to delete this status? This action cannot be undone.",
+  "rename": "Rename",
+  "delete": "Delete",
+  "enterStatusName": "Enter status name",
+  "selectCategory": "Select category",
+  "close": "Close"
 }

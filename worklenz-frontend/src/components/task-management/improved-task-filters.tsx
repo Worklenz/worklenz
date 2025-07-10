@@ -73,9 +73,9 @@ import {
   setBoardLabels,
 } from '@/features/board/board-slice';
 
-// Import ConfigPhaseButton and CreateStatusButton components
-import ConfigPhaseButton from '@/features/projects/singleProject/phase/ConfigPhaseButton';
-import CreateStatusButton from '@/components/project-task-filters/create-status-button/create-status-button';
+// Import modal components
+import ManageStatusModal from '@/components/task-management/ManageStatusModal';
+import ManagePhaseModal from '@/components/task-management/ManagePhaseModal';
 import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 
@@ -367,6 +367,8 @@ const FilterDropdown: React.FC<{
   isDarkMode: boolean;
   className?: string;
   dispatch?: any;
+  onManageStatus?: () => void;
+  onManagePhase?: () => void;
 }> = ({
   section,
   onSelectionChange,
@@ -376,6 +378,8 @@ const FilterDropdown: React.FC<{
   isDarkMode,
   className = '',
   dispatch,
+  onManageStatus,
+  onManagePhase,
 }) => {
   const { t } = useTranslation('task-list-filters');
   // Add permission checks for groupBy section
@@ -486,11 +490,7 @@ const FilterDropdown: React.FC<{
         <div className="inline-flex items-center gap-1 ml-2">
           {section.selectedValues[0] === 'phase' && (
             <button
-              onClick={() => {
-                import('@/features/projects/singleProject/phase/phases.slice').then(({ toggleDrawer }) => {
-                  dispatch(toggleDrawer());
-                });
-              }}
+              onClick={onManagePhase}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 ease-in-out hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
                 isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
               }`}
@@ -500,11 +500,7 @@ const FilterDropdown: React.FC<{
           )}
           {section.selectedValues[0] === 'status' && (
             <button
-              onClick={() => {
-                import('@/features/projects/status/StatusSlice').then(({ toggleDrawer }) => {
-                  dispatch(toggleDrawer());
-                });
-              }}
+              onClick={onManageStatus}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 ease-in-out hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
                 isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
               }`}
@@ -946,7 +942,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   const showArchived = position === 'list' ? taskManagementArchived : taskReducerArchived;
 
   // Use the filter data loader hook
-  useFilterDataLoader();
+  const { refreshFilterData } = useFilterDataLoader();
 
   // Get search value from Redux based on position
   const taskManagementSearch = useAppSelector(state => state.taskManagement?.search || '');
@@ -959,6 +955,10 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   const [clearingFilters, setClearingFilters] = useState(false);
+  
+  // Modal state
+  const [showManageStatusModal, setShowManageStatusModal] = useState(false);
+  const [showManagePhaseModal, setShowManagePhaseModal] = useState(false);
 
   // Refs for debounced functions
   const debouncedFilterChangeRef = useRef<
@@ -1296,6 +1296,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                 themeClasses={themeClasses}
                 isDarkMode={isDarkMode}
                 dispatch={dispatch}
+                onManageStatus={() => setShowManageStatusModal(true)}
+                onManagePhase={() => setShowManagePhaseModal(true)}
               />
             ))
           ) : (
@@ -1356,6 +1358,27 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           )}
         </div>
       </div>
+      
+      {/* Modals */}
+      <ManageStatusModal
+        open={showManageStatusModal}
+        onClose={() => {
+          setShowManageStatusModal(false);
+          // Refresh filter data after status changes
+          refreshFilterData();
+        }}
+        projectId={projectId || undefined}
+      />
+      
+      <ManagePhaseModal
+        open={showManagePhaseModal}
+        onClose={() => {
+          setShowManagePhaseModal(false);
+          // Refresh filter data after phase changes
+          refreshFilterData();
+        }}
+        projectId={projectId || undefined}
+      />
     </div>
   );
 };
