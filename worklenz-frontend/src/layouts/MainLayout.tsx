@@ -1,36 +1,25 @@
 import { Col, ConfigProvider, Layout } from 'antd';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useEffect, memo, useMemo, useCallback } from 'react';
+import { memo, useMemo } from 'react';
 import { useMediaQuery } from 'react-responsive';
 
 import Navbar from '../features/navbar/navbar';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { colors } from '../styles/colors';
-import { verifyAuthentication } from '@/features/auth/authSlice';
+
 import { useRenderPerformance } from '@/utils/performance';
 import HubSpot from '@/components/HubSpot';
 
 const MainLayout = memo(() => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDesktop = useMediaQuery({ query: '(min-width: 1024px)' });
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
+  
 
   // Performance monitoring in development
   useRenderPerformance('MainLayout');
 
-  // Memoize auth verification function
-  const verifyAuthStatus = useCallback(async () => {
-    const session = await dispatch(verifyAuthentication()).unwrap();
-    if (!session.user.setup_completed) {
-      navigate('/worklenz/setup');
-    }
-  }, [dispatch, navigate]);
-
-  useEffect(() => {
-    void verifyAuthStatus();
-  }, [verifyAuthStatus]);
+  
 
   // Memoize styles to prevent object recreation on every render
   const headerStyles = useMemo(

@@ -1,10 +1,9 @@
 import { Flex, Typography } from 'antd';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
 import AdminCenterSidebar from '@/pages/admin-center/sidebar/sidebar';
 import { useTranslation } from 'react-i18next';
-import { verifyAuthentication } from '@/features/auth/authSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 const AdminCenterLayout: React.FC = () => {
@@ -13,9 +12,7 @@ const AdminCenterLayout: React.FC = () => {
   const isMarginAvailable = useMediaQuery({ query: '(min-width: 1000px)' });
   const { t } = useTranslation('admin-center/sidebar');
 
-  useEffect(() => {
-    void dispatch(verifyAuthentication());
-  }, [dispatch]);
+  
 
   return (
     <div

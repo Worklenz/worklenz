@@ -19,6 +19,9 @@ import { Language } from './features/i18n/localesSlice';
 import logger from './utils/errorLogger';
 import { SuspenseFallback } from './components/suspense-fallback/suspense-fallback';
 
+// Service Worker
+import { registerSW } from './utils/serviceWorkerRegistration';
+
 /**
  * Main App Component - Performance Optimized
  *
@@ -94,6 +97,25 @@ const App: React.FC = memo(() => {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  // Register service worker
+  useEffect(() => {
+    registerSW({
+      onSuccess: (registration) => {
+        console.log('Service Worker registered successfully', registration);
+      },
+      onUpdate: (registration) => {
+        console.log('New content is available and will be used when all tabs for this page are closed.');
+        // You could show a toast notification here for user to refresh
+      },
+      onOfflineReady: () => {
+        console.log('This web app has been cached for offline use.');
+      },
+      onError: (error) => {
+        logger.error('Service Worker registration failed:', error);
+      }
+    });
   }, []);
 
   // Defer non-critical initialization

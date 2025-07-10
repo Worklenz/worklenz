@@ -138,5 +138,8 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __DEV__: !isProduction,
     },
+
+    // **Public Directory** - sw.js will be automatically copied from public/ to build/
+    publicDir: 'public',
   };
 });
