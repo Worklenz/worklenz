@@ -45,6 +45,7 @@ export interface Task {
   timeTracking?: { // Time tracking information
     logged?: number;
     estimated?: number;
+    activeTimer?: number; // Active timer start timestamp
   };
   custom_column_values?: Record<string, any>; // Custom column values
   isTemporary?: boolean; // Temporary task indicator
