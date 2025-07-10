@@ -66,5 +66,16 @@
   "search": "Buscar",
   "groupedBy": "Agrupado por",
   "manageStatuses": "Gestionar Estados",
-  "managePhases": "Gestionar Fases"
+  "managePhases": "Gestionar Fases",
+  "dragToReorderStatuses": "Arrastra los estados para reordenarlos. Cada estado puede tener una categoría diferente.",
+  "enterNewStatusName": "Introducir nuevo nombre de estado...",
+  "addStatus": "Añadir Estado",
+  "noStatusesFound": "No se encontraron estados. Crea tu primer estado arriba.",
+  "deleteStatus": "Eliminar Estado",
+  "deleteStatusConfirm": "¿Estás seguro de que quieres eliminar este estado? Esta acción no se puede deshacer.",
+  "rename": "Renombrar",
+  "delete": "Eliminar",
+  "enterStatusName": "Introducir nombre del estado",
+  "selectCategory": "Seleccionar categoría",
+  "close": "Cerrar"
 }

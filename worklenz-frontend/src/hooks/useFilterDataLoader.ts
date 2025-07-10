@@ -5,6 +5,7 @@ import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { fetchLabelsByProject, fetchTaskAssignees } from '@/features/tasks/tasks.slice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 
 /**
  * Hook to manage filter data loading independently of main task list loading
@@ -21,6 +22,27 @@ export const useFilterDataLoader = () => {
 
   // Memoize the projectId selector to prevent unnecessary re-renders
   const projectId = useAppSelector(state => state.projectReducer.projectId);
+
+  // Export a refresh function for external use
+  const refreshFilterData = useCallback(async () => {
+    if (projectId) {
+      dispatch(fetchLabelsByProject(projectId));
+      dispatch(fetchTaskAssignees(projectId));
+      dispatch(fetchStatuses(projectId));
+      dispatch(fetchPhasesByProjectId(projectId));
+    }
+    dispatch(fetchPriorities());
+    dispatch(
+      getTeamMembers({
+        index: 0,
+        size: 100,
+        field: null,
+        order: null,
+        search: null,
+        all: true,
+      })
+    );
+  }, [dispatch, projectId]);
 
   // Load filter data asynchronously
   const loadFilterData = useCallback(async () => {
@@ -71,5 +93,6 @@ export const useFilterDataLoader = () => {
 
   return {
     loadFilterData,
+    refreshFilterData,
   };
 };

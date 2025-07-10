@@ -70,5 +70,16 @@
   "search": "Kërko",
   "groupedBy": "Grupuar sipas",
   "manageStatuses": "Menaxho Statuset",
-  "managePhases": "Menaxho Fazat"
+  "managePhases": "Menaxho Fazat",
+  "dragToReorderStatuses": "Zvarrit statuset për t'i rirenditur. Çdo status mund të ketë një kategori të ndryshme.",
+  "enterNewStatusName": "Shkruani emrin e statusit të ri...",
+  "addStatus": "Shto Status",
+  "noStatusesFound": "Nuk u gjetën statuse. Krijoni statusin tuaj të parë më sipër.",
+  "deleteStatus": "Fshi Statusin",
+  "deleteStatusConfirm": "Jeni të sigurt që doni të fshini këtë status? Ky veprim nuk mund të zhbëhet.",
+  "rename": "Riemëro",
+  "delete": "Fshi",
+  "enterStatusName": "Shkruani emrin e statusit",
+  "selectCategory": "Zgjidh kategorinë",
+  "close": "Mbyll"
 }
