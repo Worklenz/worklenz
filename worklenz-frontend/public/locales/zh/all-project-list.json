@@ -17,7 +17,18 @@
   "unarchive": "取消归档",
   "archiveConfirm": "您确定要归档此项目吗？",
   "unarchiveConfirm": "您确定要取消归档此项目吗？",
-  "clickToFilter": "点击以筛选",
+  "yes": "是",
+  "no": "否",
+  "clickToFilter": "点击筛选",
   "noProjects": "未找到项目",
-  "addToFavourites": "添加到收藏"
+  "addToFavourites": "添加到收藏",
+  "list": "列表",
+  "group": "分组",
+  "listView": "列表视图",
+  "groupView": "分组视图",
+  "groupBy": {
+    "category": "类别",
+    "client": "客户"
+  },
+  "noPermission": "您没有权限执行此操作"
 }

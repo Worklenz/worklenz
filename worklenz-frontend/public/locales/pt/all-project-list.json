@@ -6,17 +6,19 @@
   "tasksProgress": "Progresso das Tarefas",
   "updated_at": "Última Atualização",
   "members": "Membros",
-  "setting": "Configuração",
-  "archive": "Arquivar",
+  "setting": "Configurações",
   "projects": "Projetos",
   "refreshProjects": "Atualizar projetos",
   "all": "Todos",
   "favorites": "Favoritos",
   "archived": "Arquivados",
   "placeholder": "Pesquisar por nome",
-  "archiveConfirm": "Tem certeza de que deseja arquivar este projeto?",
+  "archive": "Arquivar",
   "unarchive": "Desarquivar",
+  "archiveConfirm": "Tem certeza de que deseja arquivar este projeto?",
   "unarchiveConfirm": "Tem certeza de que deseja desarquivar este projeto?",
+  "yes": "Sim",
+  "no": "Não",
   "clickToFilter": "Clique para filtrar por",
   "noProjects": "Nenhum projeto encontrado",
   "addToFavourites": "Adicionar aos favoritos",
@@ -27,5 +29,6 @@
   "groupBy": {
     "category": "Categoria",
     "client": "Cliente"
-  }
+  },
+  "noPermission": "Você não tem permissão para realizar esta ação"
 }
