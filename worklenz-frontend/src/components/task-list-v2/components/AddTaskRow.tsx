@@ -150,7 +150,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({
                   style={{ 
                     height: '100%',
                     minHeight: '32px',
-                    padding: '0',
+                    padding: '4px 8px',
                     fontSize: '14px'
                   }}
                   autoFocus
