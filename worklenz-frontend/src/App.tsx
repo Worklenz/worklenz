@@ -19,6 +19,9 @@ import { Language } from './features/i18n/localesSlice';
 import logger from './utils/errorLogger';
 import { SuspenseFallback } from './components/suspense-fallback/suspense-fallback';
 
+// Performance optimizations
+import { CSSPerformanceMonitor, LayoutStabilizer, CriticalCSSManager } from './utils/css-optimizations';
+
 // Service Worker
 import { registerSW } from './utils/serviceWorkerRegistration';
 
@@ -84,6 +87,17 @@ const App: React.FC = memo(() => {
       try {
         // Initialize CSRF token immediately as it's needed for API calls
         await initializeCsrfToken();
+        
+        // Start CSS performance monitoring
+        CSSPerformanceMonitor.monitorLayoutShifts();
+        CSSPerformanceMonitor.monitorRenderBlocking();
+        
+        // Preload critical fonts to prevent layout shifts
+        LayoutStabilizer.preloadFonts([
+          { family: 'Inter', weight: '400' },
+          { family: 'Inter', weight: '500' },
+          { family: 'Inter', weight: '600' },
+        ]);
       } catch (error) {
         if (isMounted) {
           logger.error('Failed to initialize critical app functionality:', error);

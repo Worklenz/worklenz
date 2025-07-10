@@ -8,6 +8,9 @@ import { Modal, message } from 'antd';
 import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
 
+// Global socket instance to prevent multiple connections in StrictMode
+let globalSocketInstance: Socket | null = null;
+
 interface SocketContextType {
   socket: Socket | null;
   connected: boolean;
@@ -24,12 +27,30 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const profile = getUserSession(); // Adjust based on your Redux structure
   const [messageApi, messageContextHolder] = message.useMessage(); // Add message API
   const hasShownConnectedMessage = useRef(false); // Add ref to track if message was shown
+  const isInitialized = useRef(false); // Track if socket is already initialized
+  const messageApiRef = useRef(messageApi);
+  const tRef = useRef(t);
+
+  // Update refs when values change
+  useEffect(() => {
+    messageApiRef.current = messageApi;
+  }, [messageApi]);
+
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   // Initialize socket connection
   useEffect(() => {
-    // Only create a new socket if one doesn't exist
-    if (!socketRef.current) {
-      socketRef.current = io(SOCKET_CONFIG.url, {
+    // Prevent duplicate initialization
+    if (isInitialized.current) {
+      return;
+    }
+
+    // Only create a new socket if one doesn't exist globally or locally
+    if (!socketRef.current && !globalSocketInstance) {
+      isInitialized.current = true;
+      globalSocketInstance = io(SOCKET_CONFIG.url, {
         ...SOCKET_CONFIG.options,
         reconnection: true,
         reconnectionAttempts: Infinity,
@@ -37,9 +58,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         reconnectionDelayMax: 5000,
         timeout: 20000,
       });
+      socketRef.current = globalSocketInstance;
+    } else if (globalSocketInstance && !socketRef.current) {
+      // Reuse existing global socket instance
+      socketRef.current = globalSocketInstance;
+      isInitialized.current = true;
     }
 
     const socket = socketRef.current;
+
+    // Only proceed if socket exists
+    if (!socket) return;
 
     // Set up event listeners before connecting
     socket.on('connect', () => {
@@ -48,7 +77,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       // Only show connected message once
       if (!hasShownConnectedMessage.current) {
-        messageApi.success(t('connection-restored'));
+        messageApiRef.current.success(tRef.current('connection-restored'));
         hasShownConnectedMessage.current = true;
       }
     });
@@ -64,7 +93,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     socket.on('connect_error', error => {
       logger.error('Connection error', { error });
       setConnected(false);
-      messageApi.error(t('connection-lost'));
+      messageApiRef.current.error(tRef.current('connection-lost'));
       // Reset the connected message flag on error
       hasShownConnectedMessage.current = false;
     });
@@ -72,7 +101,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     socket.on('disconnect', () => {
       logger.info('Socket disconnected');
       setConnected(false);
-      messageApi.loading(t('reconnecting'));
+      messageApiRef.current.loading(tRef.current('reconnecting'));
       // Reset the connected message flag on disconnect
       hasShownConnectedMessage.current = false;
 
@@ -121,10 +150,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // Then close the connection
         socket.close();
         socketRef.current = null;
+        globalSocketInstance = null; // Clear global instance
         hasShownConnectedMessage.current = false; // Reset on unmount
+        isInitialized.current = false; // Reset initialization flag
       }
     };
-  }, [messageApi, t]); // Add messageApi and t to dependencies
+  }, []); // Remove dependencies to prevent re-initialization
 
   const value = {
     socket: socketRef.current,
