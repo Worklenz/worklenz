@@ -108,9 +108,9 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
 
     const updateStatus = async (category = group.category_id ?? null) => {
         if (!category || !projectId || !group.id) return;
-        const sectionName = getUniqueSectionName(name);
+        // const sectionName = getUniqueSectionName(name);
         const body: ITaskStatusUpdateModel = {
-            name: sectionName,
+            name: name.trim(),
             project_id: projectId,
             category_id: category,
         };
@@ -118,7 +118,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
         if (res.done) {
             dispatch(fetchEnhancedKanbanGroups(projectId));
             dispatch(fetchStatuses(projectId));
-            setName(sectionName);
+            setName(name.trim());
         } else {
             setName(editName);
             logger.error('Error updating status', res.message);
