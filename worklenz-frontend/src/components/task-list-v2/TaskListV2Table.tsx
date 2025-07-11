@@ -63,6 +63,7 @@ import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-
 import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
+import TaskListSkeleton from './components/TaskListSkeleton';
 
 // Hooks and utilities
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
@@ -597,7 +598,9 @@ const TaskListV2Section: React.FC = () => {
   );
 
   // Loading and error states
-  if (loading || loadingColumns) return <Skeleton style={{ marginTop: 8 }} active />;
+  if (loading || loadingColumns) {
+    return <TaskListSkeleton visibleColumns={visibleColumns} />;
+  }
   if (error)
     return (
       <div>
