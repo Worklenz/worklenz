@@ -16,8 +16,8 @@ import {
   toggleTaskExpansion,
   updateTaskAssignees,
 } from '@/features/task-management/task-management.slice';
-import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
-import { setConvertToSubtaskDrawerOpen } from '@/features/task-drawer/task-drawer.slice';
+import { deselectAll, selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
+import { setConvertToSubtaskDrawerOpen } from '@/features/tasks/tasks.slice';
 import { useTranslation } from 'react-i18next';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
@@ -412,7 +412,45 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         key: 'convertToSubTask',
         label: (
           <button
-            onClick={() => dispatch(setConvertToSubtaskDrawerOpen(true))}
+            onClick={() => {
+              // Convert task to the format expected by bulkActionSlice
+              const projectTask = {
+                id: task.id,
+                name: task.title || task.name || '',
+                task_key: task.task_key,
+                status: task.status,
+                status_id: task.status,
+                priority: task.priority,
+                phase_id: task.phase,
+                phase_name: task.phase,
+                description: task.description,
+                start_date: task.startDate,
+                end_date: task.dueDate,
+                total_hours: task.timeTracking?.estimated || 0,
+                total_minutes: task.timeTracking?.logged || 0,
+                progress: task.progress,
+                sub_tasks_count: task.sub_tasks_count || 0,
+                assignees: task.assignees?.map((assigneeId: string) => ({
+                  id: assigneeId,
+                  name: '',
+                  email: '',
+                  avatar_url: '',
+                  team_member_id: assigneeId,
+                  project_member_id: assigneeId,
+                })) || [],
+                labels: task.labels || [],
+                manual_progress: false,
+                created_at: task.createdAt,
+                updated_at: task.updatedAt,
+                sort_order: task.order,
+              };
+              
+              // Select the task in bulk action reducer
+              dispatch(selectTasks([projectTask]));
+              
+              // Open the drawer
+              dispatch(setConvertToSubtaskDrawerOpen(true));
+            }}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
           >
             <DoubleRightOutlined className="text-gray-500 dark:text-gray-400" />

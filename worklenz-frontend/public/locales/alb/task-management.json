@@ -17,5 +17,22 @@
   "renamePhase": "Riemërto Fazën",
   "changeCategory": "Ndrysho Kategorinë",
   "clickToEditGroupName": "Kliko për të ndryshuar emrin e grupit",
-  "enterGroupName": "Shkruani emrin e grupit"
+  "enterGroupName": "Shkruani emrin e grupit",
+  "todo": "Për t'u bërë",
+  "inProgress": "Në progres",
+  "done": "E kryer",
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} nën-detyrë",
+      "subtasks_plural": "{{count}} nën-detyra",
+      "comments": "{{count}} koment",
+      "comments_plural": "{{count}} komente",
+      "attachments": "{{count}} bashkëngjitje",
+      "attachments_plural": "{{count}} bashkëngjitje",
+      "subscribers": "Detyra ka abonentë",
+      "dependencies": "Detyra ka varësi",
+      "recurring": "Detyrë përsëritëse"
+    }
+  }
 }
