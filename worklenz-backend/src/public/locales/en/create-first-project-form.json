@@ -1,0 +1,13 @@
+{
+  "formTitle": "Create your first project",
+  "inputLabel": "What project are you working on right now?",
+  "or": "or",
+  "templateButton": "Import from template",
+  "createFromTemplate": "Create from template",
+  "goBack": "Go Back",
+  "continue": "Continue",
+  "cancel": "Cancel",
+  "create": "Create",
+  "templateDrawerTitle": "Select from templates",
+  "createProject": "Create Project"
+}

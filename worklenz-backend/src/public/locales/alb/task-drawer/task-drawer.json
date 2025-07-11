@@ -1,0 +1,123 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "Shkruani Detyrën tuaj",
+    "deleteTask": "Fshi Detyrën"
+  },
+  "taskInfoTab": {
+    "title": "Informacioni",
+    "details": {
+      "title": "Detajet",
+      "task-key": "Çelësi i Detyrës",
+      "phase": "Faza",
+      "assignees": "Të Caktuar",
+      "due-date": "Data e Përfundimit",
+      "time-estimation": "Vlerësimi i Kohës",
+      "priority": "Prioriteti",
+      "labels": "Etiketat",
+      "billable": "E Faturueshme",
+      "notify": "Njofto",
+      "when-done-notify": "Kur përfundon, njofto",
+      "start-date": "Data e Fillimit",
+      "end-date": "Data e Përfundimit",
+      "hide-start-date": "Fshih Datën e Fillimit",
+      "show-start-date": "Shfaq Datën e Fillimit",
+      "hours": "Orë",
+      "minutes": "Minuta",
+      "progressValue": "Vlera e Progresit",
+      "progressValueTooltip": "Vendosni përqindjen e progresit (0-100%)",
+      "progressValueRequired": "Ju lutemi vendosni një vlerë progresi",
+      "progressValueRange": "Progresi duhet të jetë midis 0 dhe 100",
+      "taskWeight": "Pesha e Detyrës",
+      "taskWeightTooltip": "Vendosni peshën e kësaj nëndetyre (përqindje)",
+      "taskWeightRequired": "Ju lutemi vendosni një peshë detyre",
+      "taskWeightRange": "Pesha duhet të jetë midis 0 dhe 100",
+      "recurring": "E Përsëritur"
+    },
+    "labels": {
+      "labelInputPlaceholder": "Kërko ose krijo",
+      "labelsSelectorInputTip": "Shtyp Enter për të krijuar"
+    },
+    "description": {
+      "title": "Përshkrimi",
+      "placeholder": "Shto një përshkrim më të detajuar..."
+    },
+    "subTasks": {
+      "title": "Nëndetyrat",
+      "addSubTask": "Shto Nëndetyrë",
+      "addSubTaskInputPlaceholder": "Shkruani detyrën tuaj dhe shtypni enter",
+      "refreshSubTasks": "Rifresko Nëndetyrat",
+      "edit": "Modifiko",
+      "delete": "Fshi",
+      "confirmDeleteSubTask": "Jeni i sigurt që doni të fshini këtë nëndetyrë?",
+      "deleteSubTask": "Fshi Nëndetyrën"
+    },
+    "dependencies": {
+      "title": "Varësitë",
+      "addDependency": "+ Shto varësi të re",
+      "blockedBy": "Bllokuar nga",
+      "searchTask": "Shkruani për të kërkuar detyrë",
+      "noTasksFound": "Nuk u gjetën detyra",
+      "confirmDeleteDependency": "Jeni i sigurt që doni të fshini?"
+    },
+    "attachments": {
+      "title": "Bashkëngjitjet",
+      "chooseOrDropFileToUpload": "Zgjidhni ose hidhni skedar për të ngarkuar",
+      "uploading": "Duke ngarkuar..."
+    },
+    "comments": {
+      "title": "Komentet",
+      "addComment": "+ Shto koment të ri",
+      "noComments": "Ende pa komente. Bëhu i pari që komenton!",
+      "delete": "Fshi",
+      "confirmDeleteComment": "Jeni i sigurt që doni të fshini këtë koment?",
+      "addCommentPlaceholder": "Shto një koment...",
+      "cancel": "Anulo",
+      "commentButton": "Komento",
+      "attachFiles": "Bashkëngjit skedarë",
+      "addMoreFiles": "Shto më shumë skedarë",
+      "selectedFiles": "Skedarët e Zgjedhur (Deri në 25MB, Maksimumi {count})",
+      "maxFilesError": "Mund të ngarkoni maksimum {count} skedarë",
+      "processFilesError": "Dështoi përpunimi i skedarëve",
+      "addCommentError": "Ju lutemi shtoni një koment ose bashkëngjitni skedarë",
+      "createdBy": "Krijuar {{time}} nga {{user}}",
+      "updatedTime": "Përditësuar {{time}}"
+    },
+    "searchInputPlaceholder": "Kërko sipas emrit",
+    "pendingInvitation": "Ftesë në Pritje"
+  },
+  "taskTimeLogTab": {
+    "title": "Regjistri i Kohës",
+    "addTimeLog": "Shto regjistrim të ri kohe",
+    "totalLogged": "Totali i Regjistruar",
+    "exportToExcel": "Eksporto në Excel",
+    "noTimeLogsFound": "Nuk u gjetën regjistra kohe",
+    "timeLogForm": {
+      "date": "Data",
+      "startTime": "Koha e Fillimit",
+      "endTime": "Koha e Përfundimit",
+      "workDescription": "Përshkrimi i Punës",
+      "descriptionPlaceholder": "Shto një përshkrim",
+      "logTime": "Regjistro kohën",
+      "updateTime": "Përditëso kohën",
+      "cancel": "Anulo",
+      "selectDateError": "Ju lutemi zgjidhni një datë",
+      "selectStartTimeError": "Ju lutemi zgjidhni kohën e fillimit",
+      "selectEndTimeError": "Ju lutemi zgjidhni kohën e përfundimit",
+      "endTimeAfterStartError": "Koha e përfundimit duhet të jetë pas kohës së fillimit"
+    }
+  },
+  "taskActivityLogTab": {
+    "title": "Regjistri i Aktivitetit",
+    "add": "SHTO",
+    "remove": "HIQE",
+    "none": "Asnjë",
+    "weight": "Pesha",
+    "createdTask": "krijoi detyrën."
+  },
+  "taskProgress": {
+    "markAsDoneTitle": "Shëno Detyrën si të Kryer?",
+    "confirmMarkAsDone": "Po, shëno si të kryer",
+    "cancelMarkAsDone": "Jo, mbaj statusin aktual",
+    "markAsDoneDescription": "Keni vendosur progresin në 100%. Doni të përditësoni statusin e detyrës në \"Kryer\"?"
+  }
+}

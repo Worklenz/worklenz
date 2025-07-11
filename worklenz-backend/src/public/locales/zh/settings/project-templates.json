@@ -1,0 +1,8 @@
+{
+  "nameColumn": "名称",
+  "editToolTip": "编辑",
+  "deleteToolTip": "删除",
+  "confirmText": "您确定吗？",
+  "okText": "是",
+  "cancelText": "取消"
+}

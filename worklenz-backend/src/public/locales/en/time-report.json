@@ -1,0 +1,57 @@
+{
+  "includeArchivedProjects": "Include Archived Projects",
+  "export": "Export",
+  "timeSheet": "Time Sheet",
+
+  "searchByName": "Search by name",
+  "selectAll": "Select All",
+  "teams": "Teams",
+
+  "searchByProject": "Search by project name",
+  "projects": "Projects",
+
+  "searchByCategory": "Search by category name",
+  "categories": "Categories",
+
+  "billable": "Billable",
+  "nonBillable": "Non Billable",
+
+  "total": "Total",
+
+  "projectsTimeSheet": "Projects Time Sheet",
+
+  "loggedTime": "Logged Time(hours)",
+
+  "exportToExcel": "Export to Excel",
+  "logged": "logged",
+  "for": "for",
+
+  "membersTimeSheet": "Members Time Sheet",
+  "member": "Member",
+
+  "estimatedVsActual": "Estimated vs Actual",
+  "workingDays": "Working Days",
+  "manDays": "Man Days",
+  "days": "Days",
+  "estimatedDays": "Estimated Days",
+  "actualDays": "Actual Days",
+
+  "noCategories": "No categories found",
+  "noCategory": "No Category",
+  "noProjects": "No projects found",
+  "noTeams": "No teams found",
+  "noData": "No data found",
+
+  "groupBy": "Group by",
+  "groupByCategory": "Category",
+  "groupByTeam": "Team",
+  "groupByStatus": "Status",
+  "groupByNone": "None",
+  "clearSearch": "Clear search",
+  "selectedProjects": "Selected Projects",
+  "projectsSelected": "projects selected",
+  "showSelected": "Show Selected Only",
+  "expandAll": "Expand All",
+  "collapseAll": "Collapse All",
+  "ungrouped": "Ungrouped"
+}

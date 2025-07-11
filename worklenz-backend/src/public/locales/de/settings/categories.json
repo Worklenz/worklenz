@@ -1,0 +1,10 @@
+{
+  "categoryColumn": "Kategorie",
+  "deleteConfirmationTitle": "Sind Sie sicher?",
+  "deleteConfirmationOk": "Ja",
+  "deleteConfirmationCancel": "Abbrechen",
+  "associatedTaskColumn": "Zugehörige Projekte",
+  "searchPlaceholder": "Nach Namen suchen",
+  "emptyText": "Kategorien können beim Aktualisieren oder Erstellen von Projekten angelegt werden.",
+  "colorChangeTooltip": "Zum Farbwechsel klicken"
+}

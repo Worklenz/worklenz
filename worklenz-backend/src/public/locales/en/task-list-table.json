@@ -1,0 +1,136 @@
+{
+  "keyColumn": "Key",
+  "taskColumn": "Task",
+  "descriptionColumn": "Description",
+  "progressColumn": "Progress",
+  "membersColumn": "Members",
+  "assigneesColumn": "Assignees",
+  "labelsColumn": "Labels",
+  "phasesColumn": "Phases",
+  "phaseColumn": "Phase",
+  "statusColumn": "Status",
+  "priorityColumn": "Priority",
+  "timeTrackingColumn": "Time Tracking",
+  "timetrackingColumn": "Time Tracking",
+  "estimationColumn": "Estimation",
+  "startDateColumn": "Start Date",
+  "startdateColumn": "Start Date",
+  "dueDateColumn": "Due Date",
+  "duedateColumn": "Due Date",
+  "completedDateColumn": "Completed Date",
+  "completeddateColumn": "Completed Date",
+  "createdDateColumn": "Created Date",
+  "createddateColumn": "Created Date",
+  "lastUpdatedColumn": "Last Updated",
+  "lastupdatedColumn": "Last Updated",
+  "reporterColumn": "Reporter",
+  "dueTimeColumn": "Due Time",
+  "todoSelectorText": "To Do",
+  "doingSelectorText": "Doing",
+  "doneSelectorText": "Done",
+
+  "lowSelectorText": "Low",
+  "mediumSelectorText": "Medium",
+  "highSelectorText": "High",
+
+  "selectText": "Select",
+  "labelsSelectorInputTip": "Hit enter to create!",
+
+  "addTaskText": "Add Task",
+  "addSubTaskText": "Add Sub Task",
+  "addTaskInputPlaceholder": "Type your task and hit enter",
+  "noTasksInGroup": "No tasks in this group",
+
+  "openButton": "Open",
+  "okButton": "Ok",
+
+  "noLabelsFound": "No labels found",
+  "searchInputPlaceholder": "Search or create",
+  "assigneeSelectorInviteButton": "Invite a new member by email",
+  "labelInputPlaceholder": "Search or create",
+  "searchLabelsPlaceholder": "Search labels...",
+  "createLabelButton": "Create \"{{name}}\"",
+  "manageLabelsPath": "Settings → Labels",
+
+  "pendingInvitation": "Pending Invitation",
+
+  "contextMenu": {
+    "assignToMe": "Assign to me",
+    "moveTo": "Move to",
+    "unarchive": "Unarchive",
+    "archive": "Archive",
+    "convertToSubTask": "Convert to Sub task",
+    "convertToTask": "Convert to Task",
+    "delete": "Delete",
+    "searchByNameInputPlaceholder": "Search by name"
+  },
+  "setDueDate": "Set due date",
+  "setStartDate": "Set start date",
+  "clearDueDate": "Clear due date",
+  "clearStartDate": "Clear start date",
+  "dueDatePlaceholder": "Due Date",
+  "startDatePlaceholder": "Start Date",
+
+  "emptyStates": {
+    "noTaskGroups": "No task groups found",
+    "noTaskGroupsDescription": "Tasks will appear here when they are created or when filters are applied.",
+    "errorPrefix": "Error:",
+    "dragTaskFallback": "Task"
+  },
+
+  "customColumns": {
+    "addCustomColumn": "Add a custom column",
+    "customColumnHeader": "Custom Column",
+    "customColumnSettings": "Custom column settings",
+    "noCustomValue": "No value",
+    "peopleField": "People field",
+    "noDate": "No date",
+    "unsupportedField": "Unsupported field type",
+    
+    "modal": {
+      "addFieldTitle": "Add field",
+      "editFieldTitle": "Edit field",
+      "fieldTitle": "Field title",
+      "fieldTitleRequired": "Field title is required",
+      "columnTitlePlaceholder": "Column title",
+      "type": "Type",
+      "deleteConfirmTitle": "Are you sure you want to delete this custom column?",
+      "deleteConfirmDescription": "This action cannot be undone. All data associated with this column will be permanently deleted.",
+      "deleteButton": "Delete",
+      "cancelButton": "Cancel",
+      "createButton": "Create",
+      "updateButton": "Update",
+      "createSuccessMessage": "Custom column created successfully",
+      "updateSuccessMessage": "Custom column updated successfully",
+      "deleteSuccessMessage": "Custom column deleted successfully",
+      "deleteErrorMessage": "Failed to delete custom column",
+      "createErrorMessage": "Failed to create custom column",
+      "updateErrorMessage": "Failed to update custom column"
+    },
+    
+    "fieldTypes": {
+      "people": "People",
+      "number": "Number",
+      "date": "Date",
+      "selection": "Selection",
+      "checkbox": "Checkbox",
+      "labels": "Labels",
+      "key": "Key",
+      "formula": "Formula"
+    }
+  },
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} subtask",
+      "subtasks_plural": "{{count}} subtasks",
+      "comments": "{{count}} comment",
+      "comments_plural": "{{count}} comments",
+      "attachments": "{{count}} attachment",
+      "attachments_plural": "{{count}} attachments",
+      "subscribers": "Task has subscribers",
+      "dependencies": "Task has dependencies",
+      "recurring": "Recurring task"
+    }
+  }
+}

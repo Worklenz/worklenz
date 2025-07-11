@@ -1,0 +1,136 @@
+{
+  "keyColumn": "Schlüssel",
+  "taskColumn": "Aufgabe",
+  "descriptionColumn": "Beschreibung",
+  "progressColumn": "Fortschritt",
+  "membersColumn": "Mitglieder",
+  "assigneesColumn": "Zugewiesene",
+  "labelsColumn": "Labels",
+  "phasesColumn": "Phasen",
+  "phaseColumn": "Phase",
+  "statusColumn": "Status",
+  "priorityColumn": "Priorität",
+  "timeTrackingColumn": "Zeiterfassung",
+  "timetrackingColumn": "Zeiterfassung",
+  "estimationColumn": "Schätzung",
+  "startDateColumn": "Startdatum",
+  "startdateColumn": "Startdatum",
+  "dueDateColumn": "Fälligkeitsdatum",
+  "duedateColumn": "Fälligkeitsdatum",
+  "completedDateColumn": "Abschlussdatum",
+  "completeddateColumn": "Abschlussdatum",
+  "createdDateColumn": "Erstellungsdatum",
+  "createddateColumn": "Erstellungsdatum",
+  "lastUpdatedColumn": "Zuletzt aktualisiert",
+  "lastupdatedColumn": "Zuletzt aktualisiert",
+  "reporterColumn": "Melder",
+  "dueTimeColumn": "Fällige Zeit",
+  "todoSelectorText": "Zu erledigen",
+  "doingSelectorText": "Tun",
+  "doneSelectorText": "Erledigt",
+
+  "lowSelectorText": "Niedrig",
+  "mediumSelectorText": "Mittel",
+  "highSelectorText": "Hoch",
+
+  "selectText": "Auswählen",
+  "labelsSelectorInputTip": "Enter drücken zum Erstellen!",
+
+  "addTaskText": "Aufgabe hinzufügen",
+  "addSubTaskText": "+ Unteraufgabe hinzufügen",
+  "addTaskInputPlaceholder": "Aufgabe eingeben und Enter drücken",
+  "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
+
+  "openButton": "Öffnen",
+  "okButton": "OK",
+
+  "noLabelsFound": "Keine Labels gefunden",
+  "searchInputPlaceholder": "Suchen oder erstellen",
+  "assigneeSelectorInviteButton": "Neues Mitglied per E-Mail einladen",
+  "labelInputPlaceholder": "Suchen oder erstellen",
+  "searchLabelsPlaceholder": "Labels suchen...",
+  "createLabelButton": "\"{{name}}\" erstellen",
+  "manageLabelsPath": "Einstellungen → Labels",
+
+  "pendingInvitation": "Einladung ausstehend",
+
+  "contextMenu": {
+    "assignToMe": "Mir zuweisen",
+    "moveTo": "Verschieben nach",
+    "unarchive": "Dearchivieren",
+    "archive": "Archivieren",
+    "convertToSubTask": "In Unteraufgabe umwandeln",
+    "convertToTask": "In Aufgabe umwandeln",
+    "delete": "Löschen",
+    "searchByNameInputPlaceholder": "Nach Namen suchen"
+  },
+  "setDueDate": "Fälligkeitsdatum festlegen",
+  "setStartDate": "Startdatum festlegen",
+  "clearDueDate": "Fälligkeitsdatum löschen",
+  "clearStartDate": "Startdatum löschen",
+  "dueDatePlaceholder": "Fälligkeitsdatum",
+  "startDatePlaceholder": "Startdatum",
+
+  "emptyStates": {
+    "noTaskGroups": "Keine Aufgabengruppen gefunden",
+    "noTaskGroupsDescription": "Aufgaben werden hier angezeigt, wenn sie erstellt oder Filter angewendet werden.",
+    "errorPrefix": "Fehler:",
+    "dragTaskFallback": "Aufgabe"
+  },
+
+  "customColumns": {
+    "addCustomColumn": "Benutzerdefinierte Spalte hinzufügen",
+    "customColumnHeader": "Benutzerdefinierte Spalte",
+    "customColumnSettings": "Einstellungen für benutzerdefinierte Spalte",
+    "noCustomValue": "Kein Wert",
+    "peopleField": "Personenfeld",
+    "noDate": "Kein Datum",
+    "unsupportedField": "Nicht unterstützter Feldtyp",
+    
+    "modal": {
+      "addFieldTitle": "Feld hinzufügen",
+      "editFieldTitle": "Feld bearbeiten",
+      "fieldTitle": "Feldtitel",
+      "fieldTitleRequired": "Feldtitel ist erforderlich",
+      "columnTitlePlaceholder": "Spaltentitel",
+      "type": "Typ",
+      "deleteConfirmTitle": "Sind Sie sicher, dass Sie diese benutzerdefinierte Spalte löschen möchten?",
+      "deleteConfirmDescription": "Diese Aktion kann nicht rückgängig gemacht werden. Alle mit dieser Spalte verbundenen Daten werden dauerhaft gelöscht.",
+      "deleteButton": "Löschen",
+      "cancelButton": "Abbrechen",
+      "createButton": "Erstellen",
+      "updateButton": "Aktualisieren",
+      "createSuccessMessage": "Benutzerdefinierte Spalte erfolgreich erstellt",
+      "updateSuccessMessage": "Benutzerdefinierte Spalte erfolgreich aktualisiert",
+      "deleteSuccessMessage": "Benutzerdefinierte Spalte erfolgreich gelöscht",
+      "deleteErrorMessage": "Fehler beim Löschen der benutzerdefinierten Spalte",
+      "createErrorMessage": "Fehler beim Erstellen der benutzerdefinierten Spalte",
+      "updateErrorMessage": "Fehler beim Aktualisieren der benutzerdefinierten Spalte"
+    },
+    
+    "fieldTypes": {
+      "people": "Personen",
+      "number": "Zahl",
+      "date": "Datum",
+      "selection": "Auswahl",
+      "checkbox": "Kontrollkästchen",
+      "labels": "Etiketten",
+      "key": "Schlüssel",
+      "formula": "Formel"
+    }
+  },
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} Unteraufgabe",
+      "subtasks_plural": "{{count}} Unteraufgaben",
+      "comments": "{{count}} Kommentar",
+      "comments_plural": "{{count}} Kommentare",
+      "attachments": "{{count}} Anhang",
+      "attachments_plural": "{{count}} Anhänge",
+      "subscribers": "Aufgabe hat Abonnenten",
+      "dependencies": "Aufgabe hat Abhängigkeiten",
+      "recurring": "Wiederkehrende Aufgabe"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "overviewTitle": "概览",
+  "includeArchivedButton": "包含已归档项目",
+  "teamCount": "团队",
+  "teamCountPlural": "团队",
+  "projectCount": "项目",
+  "projectCountPlural": "项目",
+  "memberCount": "成员",
+  "memberCountPlural": "成员",
+  "activeProjectCount": "活跃项目",
+  "activeProjectCountPlural": "活跃项目",
+  "overdueProjectCount": "逾期项目",
+  "overdueProjectCountPlural": "逾期项目",
+  "unassignedMemberCount": "未分配成员",
+  "unassignedMemberCountPlural": "未分配成员",
+  "memberWithOverdueTaskCount": "有逾期任务的成员",
+  "memberWithOverdueTaskCountPlural": "有逾期任务的成员",
+  "teamsText": "团队",
+  "nameColumn": "名称",
+  "projectsColumn": "项目",
+  "membersColumn": "成员"
+}

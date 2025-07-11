@@ -18,7 +18,7 @@ import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { useBulkActionTranslations } from '@/hooks/useTranslationPreloader';
+import { useTranslation } from 'react-i18next';
 import LabelsDropdown from '@/components/taskListCommon/task-list-bulk-actions-bar/components/LabelsDropdown';
 import AssigneesDropdown from '@/components/taskListCommon/task-list-bulk-actions-bar/components/AssigneesDropdown';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
@@ -165,7 +165,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     onBulkExport,
     onBulkSetDueDate,
   }) => {
-    const { t, ready, isLoading } = useBulkActionTranslations();
+    const { t } = useTranslation(['tasks/task-table-bulk-actions', 'task-management']);
     const dispatch = useDispatch();
     const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
@@ -549,10 +549,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       [isDarkMode]
     );
 
-    // Don't render until translations are ready to prevent Suspense
-    if (!ready || isLoading) {
-      return null;
-    }
+    // Remove translation loading check since we're using simple load-as-you-go approach
 
     if (!totalSelected || Number(totalSelected) < 1) {
       return null;

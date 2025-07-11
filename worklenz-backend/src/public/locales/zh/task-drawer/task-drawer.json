@@ -1,0 +1,123 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "输入您的任务",
+    "deleteTask": "删除任务"
+  },
+  "taskInfoTab": {
+    "title": "信息",
+    "details": {
+      "title": "详情",
+      "task-key": "任务键",
+      "phase": "阶段",
+      "assignees": "受让人",
+      "due-date": "截止日期",
+      "time-estimation": "时间估算",
+      "priority": "优先级",
+      "labels": "标签",
+      "billable": "可计费",
+      "notify": "通知",
+      "when-done-notify": "完成时，通知",
+      "start-date": "开始日期",
+      "end-date": "结束日期",
+      "hide-start-date": "隐藏开始日期",
+      "show-start-date": "显示开始日期",
+      "hours": "小时",
+      "minutes": "分钟",
+      "progressValue": "进度值",
+      "progressValueTooltip": "设置进度百分比（0-100%）",
+      "progressValueRequired": "请输入进度值",
+      "progressValueRange": "进度必须在0到100之间",
+      "taskWeight": "任务权重",
+      "taskWeightTooltip": "设置此子任务的权重（百分比）",
+      "taskWeightRequired": "请输入任务权重",
+      "taskWeightRange": "权重必须在0到100之间",
+      "recurring": "重复"
+    },
+    "labels": {
+      "labelInputPlaceholder": "搜索或创建",
+      "labelsSelectorInputTip": "按回车创建"
+    },
+    "description": {
+      "title": "描述",
+      "placeholder": "添加更详细的描述..."
+    },
+    "subTasks": {
+      "title": "子任务",
+      "addSubTask": "添加子任务",
+      "addSubTaskInputPlaceholder": "输入您的任务并按回车",
+      "refreshSubTasks": "刷新子任务",
+      "edit": "编辑",
+      "delete": "删除",
+      "confirmDeleteSubTask": "您确定要删除此子任务吗？",
+      "deleteSubTask": "删除子任务"
+    },
+    "dependencies": {
+      "title": "依赖关系",
+      "addDependency": "+ 添加新依赖",
+      "blockedBy": "被阻止",
+      "searchTask": "输入搜索任务",
+      "noTasksFound": "未找到任务",
+      "confirmDeleteDependency": "您确定要删除吗？"
+    },
+    "attachments": {
+      "title": "附件",
+      "chooseOrDropFileToUpload": "选择或拖放文件上传",
+      "uploading": "上传中..."
+    },
+    "comments": {
+      "title": "评论",
+      "addComment": "+ 添加新评论",
+      "noComments": "还没有评论。成为第一个评论的人！",
+      "delete": "删除",
+      "confirmDeleteComment": "您确定要删除此评论吗？",
+      "addCommentPlaceholder": "添加评论...",
+      "cancel": "取消",
+      "commentButton": "评论",
+      "attachFiles": "附加文件",
+      "addMoreFiles": "添加更多文件",
+      "selectedFiles": "已选择的文件（最多25MB，最大{count}个）",
+      "maxFilesError": "您最多只能上传{count}个文件",
+      "processFilesError": "处理文件失败",
+      "addCommentError": "请添加评论或附加文件",
+      "createdBy": "{{time}}由{{user}}创建",
+      "updatedTime": "更新于{{time}}"
+    },
+    "searchInputPlaceholder": "按名称搜索",
+    "pendingInvitation": "待处理邀请"
+  },
+  "taskTimeLogTab": {
+    "title": "时间日志",
+    "addTimeLog": "添加新时间日志",
+    "totalLogged": "总记录时间",
+    "exportToExcel": "导出到Excel",
+    "noTimeLogsFound": "未找到时间日志",
+    "timeLogForm": {
+      "date": "日期",
+      "startTime": "开始时间",
+      "endTime": "结束时间",
+      "workDescription": "工作描述",
+      "descriptionPlaceholder": "添加描述",
+      "logTime": "记录时间",
+      "updateTime": "更新时间",
+      "cancel": "取消",
+      "selectDateError": "请选择日期",
+      "selectStartTimeError": "请选择开始时间",
+      "selectEndTimeError": "请选择结束时间",
+      "endTimeAfterStartError": "结束时间必须在开始时间之后"
+    }
+  },
+  "taskActivityLogTab": {
+    "title": "活动日志",
+    "add": "添加",
+    "remove": "移除",
+    "none": "无",
+    "weight": "权重",
+    "createdTask": "创建了任务。"
+  },
+  "taskProgress": {
+    "markAsDoneTitle": "将任务标记为完成？",
+    "confirmMarkAsDone": "是的，标记为完成",
+    "cancelMarkAsDone": "不，保持当前状态",
+    "markAsDoneDescription": "您已将进度设置为100%。您想将任务状态更新为\"完成\"吗？"
+  }
+}
