@@ -9,7 +9,7 @@
   "comments": "Kommentare",
   "attachment": "Anhang",
   "attachments": "Anhänge",
-  "enterSubtaskName": "Unteraufgabenname eingeben...",
+  "enterSubtaskName": "Geben Sie den Namen der Unteraufgabe ein...",
   "add": "Hinzufügen",
   "cancel": "Abbrechen",
   "renameGroup": "Gruppe umbenennen",
@@ -17,10 +17,11 @@
   "renamePhase": "Phase umbenennen",
   "changeCategory": "Kategorie ändern",
   "clickToEditGroupName": "Klicken Sie, um den Gruppennamen zu bearbeiten",
-  "enterGroupName": "Gruppennamen eingeben",
+  "enterGroupName": "Geben Sie den Gruppennamen ein",
   "todo": "Zu erledigen",
   "inProgress": "In Bearbeitung",
   "done": "Erledigt",
+  "defaultTaskName": "Unbenannte Aufgabe",
 
   "indicators": {
     "tooltips": {

@@ -21,6 +21,7 @@
   "todo": "待办",
   "inProgress": "进行中",
   "done": "已完成",
+  "defaultTaskName": "无标题任务",
 
   "indicators": {
     "tooltips": {
