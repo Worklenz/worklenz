@@ -19,7 +19,6 @@ import { useAuthService } from '@/hooks/useAuth';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
-import Skeleton from 'antd/es/skeleton/Skeleton';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 
