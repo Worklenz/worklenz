@@ -316,14 +316,12 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       </div>
       <div className="enhanced-kanban-board">
         {loadingGroups ? (
-          <Card>
-            <div className="flex flex-row gap-2 h-[600px] py-2">
+            <div className="flex flex-row gap-2 h-[600px]">
               <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '60%' }} />
               <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '100%' }} />
               <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '80%' }} />
               <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '40%' }} />
             </div>
-          </Card>
         ) : taskGroups.length === 0 ? (
           <Card>
             <Empty description="No tasks found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
