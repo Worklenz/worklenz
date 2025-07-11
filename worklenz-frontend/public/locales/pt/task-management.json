@@ -21,6 +21,7 @@
   "todo": "A Fazer",
   "inProgress": "Em Andamento",
   "done": "Concluído",
+  "defaultTaskName": "Tarefa Sem Título",
 
   "indicators": {
     "tooltips": {

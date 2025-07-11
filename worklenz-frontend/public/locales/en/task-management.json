@@ -21,6 +21,7 @@
   "todo": "To Do",
   "inProgress": "Doing",
   "done": "Done",
+  "defaultTaskName": "Untitled Task",
 
   "indicators": {
     "tooltips": {

@@ -21,6 +21,7 @@
   "todo": "Por Hacer",
   "inProgress": "En Progreso",
   "done": "Hecho",
+  "defaultTaskName": "Tarea Sin Título",
 
   "indicators": {
     "tooltips": {

@@ -7,10 +7,10 @@
   "unsubscribe": "Cancelar inscrição",
   "deleteProject": "Excluir projeto",
   "startDate": "Data de início",
-  "endDate": "Data de término",
+  "endDate": "Data de fim",
   "projectSettings": "Configurações do projeto",
   "projectSummary": "Resumo do projeto",
-  "receiveProjectSummary": "Receba um resumo do projeto todas as noites.",
+  "receiveProjectSummary": "Receber um resumo do projeto todas as noites.",
   "refreshProject": "Atualizar projeto",
   "saveAsTemplate": "Salvar como modelo",
   "invite": "Convidar",
@@ -22,9 +22,10 @@
   "saveAsTemplateTooltip": "Salvar este projeto como modelo",
   "inviteTooltip": "Convidar membros da equipe para este projeto",
   "createTaskTooltip": "Criar uma nova tarefa",
-  "importTaskTooltip": "Importar tarefa de modelo",
-  "navigateBackTooltip": "Voltar para lista de projetos",
+  "importTaskTooltip": "Importar tarefa do modelo",
+  "navigateBackTooltip": "Voltar para a lista de projetos",
   "projectStatusTooltip": "Status do projeto",
-  "projectDatesInfo": "Informações do cronograma do projeto",
-  "projectCategoryTooltip": "Categoria do projeto"
+  "projectDatesInfo": "Informações da linha do tempo do projeto",
+  "projectCategoryTooltip": "Categoria do projeto",
+  "defaultTaskName": "Tarefa Sem Título"
 }
