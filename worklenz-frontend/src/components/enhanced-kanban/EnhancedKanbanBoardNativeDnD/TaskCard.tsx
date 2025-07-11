@@ -245,7 +245,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                 className="w-2 h-2 rounded-full inline-block"
                                 style={{ backgroundColor: themeMode === 'dark' ? (task.priority_color_dark || task.priority_color || '#d9d9d9') : (task.priority_color || '#d9d9d9') }}
                             ></span>
-                            <div className="task-title" style={{ marginLeft: 8 }}>{task.name}</div>
+                            <div className="task-title" title={task.name} style={{ marginLeft: 8 }}>{task.name}</div>
                         </div>
 
                         <div className="task-assignees-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
