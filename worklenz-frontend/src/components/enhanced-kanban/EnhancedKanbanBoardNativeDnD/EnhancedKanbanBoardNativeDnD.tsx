@@ -21,6 +21,7 @@ import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
 import Skeleton from 'antd/es/skeleton/Skeleton';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
+import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const dispatch = useDispatch();
@@ -41,6 +42,10 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   const [hoveredTaskIdx, setHoveredTaskIdx] = useState<number | null>(null);
   const [dragType, setDragType] = useState<'group' | 'task' | null>(null);
   const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);
+
+  // Set up socket event handlers for real-time updates
+  useTaskSocketHandlers();
+
   useEffect(() => {
     if (projectId) {
       dispatch(fetchEnhancedKanbanGroups(projectId) as any);
@@ -268,36 +273,8 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setHoveredTaskIdx(null);
   };
 
-  useEffect(() => {
-    if (!socket) return;
-
-    // Handler for new task received via socket
-    const handleNewTaskReceived = (data: any) => {
-      if (!data) return;
-      if (data.parent_task_id) {
-        // Subtask: update subtasks in the correct group
-        dispatch({
-          type: 'enhancedKanbanReducer/updateEnhancedKanbanSubtask',
-          payload: { sectionId: '', subtask: data, mode: 'add' }
-        });
-      } else {
-        // Regular task: add to the correct group
-        let sectionId = '';
-        if (groupBy === 'status') sectionId = data.status;
-        else if (groupBy === 'priority') sectionId = data.priority;
-        else if (groupBy === 'phase') sectionId = data.phase_id;
-        dispatch({
-          type: 'enhancedKanbanReducer/addTaskToGroup',
-          payload: { sectionId, task: data }
-        });
-      }
-    };
-
-    socket.on(SocketEvents.QUICK_TASK.toString(), handleNewTaskReceived);
-    return () => {
-      socket.off(SocketEvents.QUICK_TASK.toString(), handleNewTaskReceived);
-    };
-  }, [socket, groupBy, dispatch]);
+  // Note: Socket event handlers are now managed by useTaskSocketHandlers hook
+  // This includes TASK_NAME_CHANGE, QUICK_TASK, and other real-time updates
 
   if (error) {
     return (
