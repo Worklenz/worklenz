@@ -5497,8 +5497,14 @@ $$
 DECLARE
     _iterator  NUMERIC := 0;
     _status_id TEXT;
+    _project_id UUID;
 BEGIN
+    -- Get the project_id from the first status to ensure we update all statuses in the same project
+    SELECT project_id INTO _project_id
+    FROM task_statuses 
+    WHERE id = (SELECT TRIM(BOTH '"' FROM JSON_ARRAY_ELEMENTS(_status_ids)::TEXT) LIMIT 1)::UUID;
 
+    -- Update the sort_order for statuses in the provided order
     FOR _status_id IN SELECT * FROM JSON_ARRAY_ELEMENTS((_status_ids)::JSON)
         LOOP
             UPDATE task_statuses
@@ -5506,6 +5512,18 @@ BEGIN
             WHERE id = (SELECT TRIM(BOTH '"' FROM _status_id))::UUID;
             _iterator := _iterator + 1;
         END LOOP;
+
+    -- Ensure any remaining statuses in the project (not in the provided list) get sequential sort_order
+    -- This handles edge cases where not all statuses are provided
+    UPDATE task_statuses 
+    SET sort_order = (
+        SELECT COUNT(*) 
+        FROM task_statuses ts2 
+        WHERE ts2.project_id = _project_id 
+        AND ts2.id = ANY(SELECT (TRIM(BOTH '"' FROM JSON_ARRAY_ELEMENTS(_status_ids)::TEXT))::UUID)
+    ) + ROW_NUMBER() OVER (ORDER BY sort_order) - 1
+    WHERE project_id = _project_id 
+    AND id NOT IN (SELECT (TRIM(BOTH '"' FROM JSON_ARRAY_ELEMENTS(_status_ids)::TEXT))::UUID);
 
     RETURN;
 END
