@@ -75,5 +75,8 @@
   "delete": "删除",
   "enterStatusName": "输入状态名称",
   "selectCategory": "选择类别",
-  "close": "关闭"
+  "close": "关闭",
+  "cannotMoveStatus": "无法移动状态",
+  "cannotMoveStatusMessage": "无法移动此状态，因为这会使\"{{categoryName}}\"类别为空。每个类别必须至少有一个状态。",
+  "ok": "确定"
 }
