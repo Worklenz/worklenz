@@ -16,9 +16,9 @@ const initialState: PhaseState = {
 
 export const addPhaseOption = createAsyncThunk(
   'phase/addPhaseOption',
-  async ({ projectId }: { projectId: string }, { rejectWithValue }) => {
+  async ({ projectId, name }: { projectId: string; name?: string }, { rejectWithValue }) => {
     try {
-      const response = await phasesApiService.addPhaseOption(projectId);
+      const response = await phasesApiService.addPhaseOption(projectId, name);
       return response;
     } catch (error) {
       return rejectWithValue(error);
