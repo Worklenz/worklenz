@@ -1,0 +1,11 @@
+{
+  "importTaskTemplate": "Importo Shabllon Detyrash",
+  "templateName": "Emri i Shabllonit",
+  "templateDescription": "Përshkrimi i Shabllonit",
+  "selectedTasks": "Detyrat e Përzgjedhura",
+  "tasks": "Detyrat",
+  "templates": "Shabllonet",
+  "remove": "Hiq",
+  "cancel": "Anulo",
+  "import": "Importo"
+}

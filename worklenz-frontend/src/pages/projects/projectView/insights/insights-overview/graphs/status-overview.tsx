@@ -15,7 +15,6 @@ const StatusOverview = () => {
   const [stats, setStats] = useState<ITaskStatusCounts[]>([]);
   const [loading, setLoading] = useState(false);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
-  
 
   const getTaskStatusCounts = async () => {
     if (!projectId) return;
@@ -38,7 +37,7 @@ const StatusOverview = () => {
 
   useEffect(() => {
     getTaskStatusCounts();
-  }, [projectId, includeArchivedTasks,refreshTimestamp]);
+  }, [projectId, includeArchivedTasks, refreshTimestamp]);
 
   const options: ChartOptions<'doughnut'> = {
     responsive: true,

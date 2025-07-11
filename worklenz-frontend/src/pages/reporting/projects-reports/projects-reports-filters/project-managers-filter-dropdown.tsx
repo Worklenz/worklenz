@@ -43,8 +43,8 @@ const ProjectManagersFilterDropdown = () => {
 
   useEffect(() => {
     if (!projectManagersLoading) dispatch(fetchProjectManagers());
-  }, [dispatch]); 
-  
+  }, [dispatch]);
+
   const projectManagerDropdownContent = (
     <Card className="custom-card" styles={{ body: { padding: 8, width: 260 } }}>
       <Flex vertical gap={8}>

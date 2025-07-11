@@ -11,11 +11,7 @@ const SettingsLayout = () => {
   const currentSession = getCurrentSession();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (currentSession?.is_expired) {
-      navigate('/worklenz/license-expired');
-    }
-  }, [currentSession, navigate]);
+  
 
   return (
     <div style={{ marginBlock: 96, minHeight: '90vh' }}>

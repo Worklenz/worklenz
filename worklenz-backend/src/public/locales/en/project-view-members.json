@@ -1,0 +1,17 @@
+{
+  "nameColumn": "Name",
+  "jobTitleColumn": "Job Title",
+  "emailColumn": "Email",
+  "tasksColumn": "Tasks",
+  "taskProgressColumn": "Task Progress",
+  "accessColumn": "Access",
+  "fileIconAlt": "File icon",
+  "deleteConfirmationTitle": "Are you sure?",
+  "deleteConfirmationOk": "Yes",
+  "deleteConfirmationCancel": "Cancel",
+  "refreshButtonTooltip": "Refresh members",
+  "deleteButtonTooltip": "Remove from project",
+  "memberCount": "Member",
+  "membersCountPlural": "Members",
+  "emptyText": "There are no attachments in the project."
+}

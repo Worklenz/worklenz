@@ -17,42 +17,30 @@ export interface ITaskAssignee {
 }
 
 export interface ITask {
-  assignees?: ITaskAssignee[] | string[];
-  assignees_ids?: any[];
-  description?: string;
-  done?: boolean;
-  end?: string | Date;
-  end_date?: string | Date;
-  id?: string;
-  name?: string;
-  resize_valid?: boolean;
-  start?: string | Date;
-  start_date?: string | Date;
-  _start?: Date;
-  _end?: Date;
-  color_code?: string;
-  priority?: string;
-  priority_id?: string;
-  status?: string;
-  status_id?: string;
-  project_id?: string;
-  reporter_id?: string;
+  id: string;
+  name: string;
+  description: string;
+  status_id: string;
+  priority: string;
+  start_date: string;
+  end_date: string;
+  total_hours: number;
+  total_minutes: number;
+  billable: boolean;
+  phase_id: string;
+  parent_task_id: string | null;
+  project_id: string;
+  team_id: string;
+  task_key: string;
+  labels: string[];
+  assignees: string[];
+  names: string[];
+  sub_tasks_count: number;
+  manual_progress: boolean;
+  progress_value: number | null;
+  weight: number | null;
   created_at?: string;
   updated_at?: string;
-  show_handles?: boolean;
-  min?: number;
-  max?: number;
-  total_hours?: number;
-  total_minutes?: number;
-  name_color?: string;
-  sub_tasks_count?: number;
-  is_sub_task?: boolean;
-  parent_task_name?: string;
-  parent_task_id?: string;
-  show_sub_tasks?: boolean;
-  sub_tasks?: ISubTask[];
-  archived?: boolean;
-  subscribers?: IUser[];
 }
 
 export interface IProjectMemberViewModel extends IProjectMember {
@@ -65,24 +53,20 @@ export interface IProjectMemberViewModel extends IProjectMember {
 }
 
 export interface ITaskViewModel extends ITask {
-  task_key?: string;
   created_from_now?: string;
   updated_from_now?: string;
   reporter?: string;
-  start_date?: string;
-  end_date?: string;
-  sub_tasks_count?: number;
   is_sub_task?: boolean;
   status_color?: string;
   status_color_dark?: string;
   attachments_count?: number;
   complete_ratio?: number;
-  names?: InlineMember[];
-  labels?: ITaskLabel[];
+  assignee_names?: InlineMember[];
+  task_labels?: ITaskLabel[];
   timer_start_time?: number;
-  phase_id?: string;
-  billable?: boolean;
   recurring?: boolean;
+  task_level?: number;
+  schedule_id?: string | null;
 }
 
 export interface ITaskTeamMember extends ITeamMember {

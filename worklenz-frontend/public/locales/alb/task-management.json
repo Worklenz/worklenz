@@ -1,0 +1,39 @@
+{
+  "noTasksInGroup": "Nuk ka detyra në këtë grup",
+  "noTasksInGroupDescription": "Shto një detyrë për të filluar",
+  "addFirstTask": "Shto detyrën e parë",
+  "openTask": "Hap",
+  "subtask": "nëndetyrë",
+  "subtasks": "nëndetyra",
+  "comment": "koment",
+  "comments": "komente",
+  "attachment": "bashkëngjitje",
+  "attachments": "bashkëngjitje",
+  "enterSubtaskName": "Shkruani emrin e nëndetyrës...",
+  "add": "Shto",
+  "cancel": "Anulo",
+  "renameGroup": "Riemërto Grupin",
+  "renameStatus": "Riemërto Statusin",
+  "renamePhase": "Riemërto Fazën",
+  "changeCategory": "Ndrysho Kategorinë",
+  "clickToEditGroupName": "Kliko për të redaktuar emrin e grupit",
+  "enterGroupName": "Shkruani emrin e grupit",
+  "todo": "Për t'u Bërë",
+  "inProgress": "Në Progres",
+  "done": "E Kryer",
+  "defaultTaskName": "Detyrë Pa Emër",
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} nëndetyrë",
+      "subtasks_plural": "{{count}} nëndetyra",
+      "comments": "{{count}} koment",
+      "comments_plural": "{{count}} komente",
+      "attachments": "{{count}} bashkëngjitje",
+      "attachments_plural": "{{count}} bashkëngjitje",
+      "subscribers": "Detyra ka abonues",
+      "dependencies": "Detyra ka varësi",
+      "recurring": "Detyrë e përsëritur"
+    }
+  }
+}

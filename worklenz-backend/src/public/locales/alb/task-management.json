@@ -1,0 +1,21 @@
+{
+  "noTasksInGroup": "Nuk ka detyra në këtë grup",
+  "noTasksInGroupDescription": "Shtoni një detyrë për të filluar",
+  "addFirstTask": "Shtoni detyrën tuaj të parë",
+  "openTask": "Hap",
+  "subtask": "nën-detyrë",
+  "subtasks": "nën-detyra",
+  "comment": "koment",
+  "comments": "komente",
+  "attachment": "bashkëngjitje",
+  "attachments": "bashkëngjitje",
+  "enterSubtaskName": "Shkruani emrin e nën-detyrës...",
+  "add": "Shto",
+  "cancel": "Anulo",
+  "renameGroup": "Riemërto Grupin",
+  "renameStatus": "Riemërto Statusin",
+  "renamePhase": "Riemërto Fazën",
+  "changeCategory": "Ndrysho Kategorinë",
+  "clickToEditGroupName": "Kliko për të ndryshuar emrin e grupit",
+  "enterGroupName": "Shkruani emrin e grupit"
+}

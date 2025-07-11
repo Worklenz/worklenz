@@ -3,7 +3,7 @@ import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortabl
 import BoardSectionCard from './board-section-card/board-section-card';
 import BoardCreateSectionCard from './board-section-card/board-create-section-card';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { setTaskAssignee, setTaskEndDate } from '@/features/task-drawer/task-drawer.slice';
 import { fetchTaskAssignees } from '@/features/taskAttributes/taskMemberSlice';
 import { SocketEvents } from '@/shared/socket-events';
@@ -99,7 +99,7 @@ const BoardSectionCardContainer = ({
     <Flex
       gap={16}
       align="flex-start"
-      className="max-w-screen max-h-[620px] min-h-[620px] overflow-x-scroll p-[1px]"
+      className="max-w-screen max-h-[620px] min-h-[620px] overflow-x-scroll p-px"
     >
       <SortableContext
         items={datasource?.map((section: any) => section.id)}
@@ -108,9 +108,9 @@ const BoardSectionCardContainer = ({
         {datasource?.map((data: any) => <BoardSectionCard key={data.id} taskGroup={data} />)}
       </SortableContext>
 
-      {(group !== 'priority' && (isOwnerorAdmin || isProjectManager)) && <BoardCreateSectionCard />}
+      {group !== 'priority' && (isOwnerorAdmin || isProjectManager) && <BoardCreateSectionCard />}
     </Flex>
   );
 };
 
-export default BoardSectionCardContainer;
+export default React.memo(BoardSectionCardContainer);

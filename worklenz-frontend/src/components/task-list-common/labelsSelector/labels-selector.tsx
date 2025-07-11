@@ -44,9 +44,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
 
   // used useMemo hook for re-render the list when searching
   const filteredLabelData = useMemo(() => {
-    return labels.filter(label =>
-      label.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return labels.filter(label => label.name?.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [labels, searchQuery]);
 
   const handleCreateLabel = (name: string) => {
@@ -105,9 +103,7 @@ const LabelsSelector = ({ taskId, labels }: LabelsSelectorProps) => {
                   id={label.id}
                   checked={
                     selectedTask?.labels
-                      ? selectedTask?.labels.some(
-                          existingLabel => existingLabel.id === label.id
-                        )
+                      ? selectedTask?.labels.some(existingLabel => existingLabel.id === label.id)
                       : false
                   }
                   onChange={() => console.log(123)}

@@ -6,7 +6,7 @@ import logger from "morgan";
 import helmet from "helmet";
 import compression from "compression";
 import passport from "passport";
-import csurf from "csurf";
+import { csrfSync } from "csrf-sync";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import flash from "connect-flash";
@@ -112,17 +112,13 @@ function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
   return req.user ? next() : next(createError(401));
 }
 
-// CSRF configuration
-const csrfProtection = csurf({
-  cookie: {
-    key: "XSRF-TOKEN",
-    path: "/",
-    httpOnly: false,
-    secure: isProduction(), // Only secure in production
-    sameSite: isProduction() ? "none" : "lax", // Different settings for dev vs prod
-    domain: isProduction() ? ".worklenz.com" : undefined // Only set domain in production
-  },
-  ignoreMethods: ["HEAD", "OPTIONS"]
+// CSRF configuration using csrf-sync for session-based authentication
+const {
+  invalidCsrfTokenError,
+  generateToken,
+  csrfSynchronisedProtection,
+} = csrfSync({
+  getTokenFromRequest: (req: Request) => req.headers["x-csrf-token"] as string || (req.body && req.body["_csrf"])
 });
 
 // Apply CSRF selectively (exclude webhooks and public routes)
@@ -135,38 +131,25 @@ app.use((req, res, next) => {
   ) {
     next();
   } else {
-    csrfProtection(req, res, next);
+    csrfSynchronisedProtection(req, res, next);
   }
 });
 
-// Set CSRF token cookie
+// Set CSRF token method on request object for compatibility
 app.use((req: Request, res: Response, next: NextFunction) => {
-  if (req.csrfToken) {
-    const token = req.csrfToken();
-    res.cookie("XSRF-TOKEN", token, {
-      httpOnly: false,
-      secure: isProduction(),
-      sameSite: isProduction() ? "none" : "lax",
-      domain: isProduction() ? ".worklenz.com" : undefined,
-      path: "/"
-    });
+  // Add csrfToken method to request object for compatibility
+  if (!req.csrfToken && generateToken) {
+    req.csrfToken = (overwrite?: boolean) => generateToken(req, overwrite);
   }
   next();
 });
 
 // CSRF token refresh endpoint
 app.get("/csrf-token", (req: Request, res: Response) => {
-  if (req.csrfToken) {
-    const token = req.csrfToken();
-    res.cookie("XSRF-TOKEN", token, {
-      httpOnly: false,
-      secure: isProduction(),
-      sameSite: isProduction() ? "none" : "lax",
-      domain: isProduction() ? ".worklenz.com" : undefined,
-      path: "/"
-    });
-    res.status(200).json({ done: true, message: "CSRF token refreshed" });
-  } else {
+  try {
+    const token = generateToken(req);
+    res.status(200).json({ done: true, message: "CSRF token refreshed", token });
+  } catch (error) {
     res.status(500).json({ done: false, message: "Failed to generate CSRF token" });
   }
 });
@@ -219,7 +202,7 @@ if (isInternalServer()) {
 
 // CSRF error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  if (err.code === "EBADCSRFTOKEN") {
+  if (err === invalidCsrfTokenError) {
     return res.status(403).json({
       done: false,
       message: "Invalid CSRF token",

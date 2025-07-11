@@ -6,7 +6,7 @@ import Configuration from '@/components/admin-center/configuration/configuration
 import { useTranslation } from 'react-i18next';
 
 const Billing: React.FC = () => {
-  const { t } = useTranslation('admin-center/current-bill');;
+  const { t } = useTranslation('admin-center/current-bill');
 
   const items: TabsProps['items'] = [
     {

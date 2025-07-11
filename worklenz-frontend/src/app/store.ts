@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
 // Auth & User
 import authReducer from '@features/auth/authSlice';
@@ -42,6 +43,7 @@ import priorityReducer from '@features/taskAttributes/taskPrioritySlice';
 import taskLabelsReducer from '@features/taskAttributes/taskLabelSlice';
 import taskStatusReducer, { deleteStatus } from '@features/taskAttributes/taskStatusSlice';
 import taskDrawerReducer from '@features/task-drawer/task-drawer.slice';
+import enhancedKanbanReducer from '@features/enhanced-kanban/enhanced-kanban.slice';
 
 // Settings & Management
 import memberReducer from '@features/settings/member/memberSlice';
@@ -73,8 +75,16 @@ import timeReportsOverviewReducer from '@features/reporting/time-reports/time-re
 import roadmapReducer from '../features/roadmap/roadmap-slice';
 import teamMembersReducer from '@features/team-members/team-members.slice';
 import groupByFilterDropdownReducer from '../features/group-by-filter-dropdown/group-by-filter-dropdown-slice';
+
+// Task Management System
+import taskManagementReducer from '@/features/task-management/task-management.slice';
+import groupingReducer from '@/features/task-management/grouping.slice';
+import selectionReducer from '@/features/task-management/selection.slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
+
+import projectViewReducer from '@features/project/project-view-slice';
+import taskManagementFieldsReducer from '@features/task-management/taskListFields.slice';
 
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
@@ -114,6 +124,8 @@ export const store = configureStore({
     boardReducer: boardReducer,
     projectDrawerReducer: projectDrawerReducer,
 
+    projectViewReducer: projectViewReducer,
+
     // Project Lookups
     projectCategoriesReducer: projectCategoriesReducer,
     projectStatusesReducer: projectStatusesReducer,
@@ -126,6 +138,7 @@ export const store = configureStore({
     taskLabelsReducer: taskLabelsReducer,
     taskStatusReducer: taskStatusReducer,
     taskDrawerReducer: taskDrawerReducer,
+    enhancedKanbanReducer: enhancedKanbanReducer,
 
     // Settings & Management
     memberReducer: memberReducer,
@@ -155,8 +168,18 @@ export const store = configureStore({
     roadmapReducer: roadmapReducer,
     groupByFilterDropdownReducer: groupByFilterDropdownReducer,
     timeReportsOverviewReducer: timeReportsOverviewReducer,
+
+    // Task Management System
+    taskManagement: taskManagementReducer,
+    grouping: groupingReducer,
+    taskManagementSelection: selectionReducer,
+    taskManagementFields: taskManagementFieldsReducer,
   },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
+
 export type AppDispatch = typeof store.dispatch;
+
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;

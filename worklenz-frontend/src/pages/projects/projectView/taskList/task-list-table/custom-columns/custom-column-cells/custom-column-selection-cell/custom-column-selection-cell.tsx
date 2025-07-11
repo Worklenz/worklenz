@@ -8,14 +8,14 @@ import { colors } from '../../../../../../../../styles/colors';
 import { SelectionType } from '../../custom-column-modal/selection-type-column/selection-type-column';
 import { ALPHA_CHANNEL } from '@/shared/constants';
 
-const CustomColumnSelectionCell = ({ 
+const CustomColumnSelectionCell = ({
   selectionsList,
   value,
-  onChange
-}: { 
-  selectionsList: SelectionType[],
-  value?: string,
-  onChange?: (value: string) => void
+  onChange,
+}: {
+  selectionsList: SelectionType[];
+  value?: string;
+  onChange?: (value: string) => void;
 }) => {
   const [currentSelectionOption, setCurrentSelectionOption] = useState<SelectionType | null>(null);
 
@@ -23,10 +23,10 @@ const CustomColumnSelectionCell = ({
   const { t } = useTranslation('task-list-table');
 
   // Debug the selectionsList and value
-  console.log('CustomColumnSelectionCell props:', { 
-    selectionsList, 
+  console.log('CustomColumnSelectionCell props:', {
+    selectionsList,
     value,
-    selectionsCount: selectionsList?.length || 0
+    selectionsCount: selectionsList?.length || 0,
   });
 
   // Set initial selection based on value prop
@@ -61,7 +61,7 @@ const CustomColumnSelectionCell = ({
   // handle selection selection
   const handleSelectionOptionSelect: MenuProps['onClick'] = e => {
     if (e.key === 'noSelections') return;
-    
+
     const selectedOption = selectionsList.find(option => option.selection_id === e.key);
     if (selectedOption) {
       setCurrentSelectionOption(selectedOption);
@@ -105,7 +105,8 @@ const CustomColumnSelectionCell = ({
           paddingInline: 8,
           height: 22,
           fontSize: 13,
-          backgroundColor: currentSelectionOption?.selection_color + ALPHA_CHANNEL || colors.transparent,
+          backgroundColor:
+            currentSelectionOption?.selection_color + ALPHA_CHANNEL || colors.transparent,
           color: colors.darkGray,
           cursor: 'pointer',
         }}

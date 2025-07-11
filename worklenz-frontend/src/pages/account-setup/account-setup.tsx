@@ -24,8 +24,8 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { getUserSession, setSession } from '@/utils/session-helper';
 import { validateEmail } from '@/utils/validateEmail';
 import { sanitizeInput } from '@/utils/sanitizeInput';
-import logo from '@/assets/images/logo.png';
-import logoDark from '@/assets/images/logo-dark-mode.png';
+import logo from '@/assets/images/worklenz-light-mode.png';
+import logoDark from '@/assets/images/worklenz-dark-mode.png';
 
 import './account-setup.css';
 import { IAccountSetupRequest } from '@/types/project-templates/project-templates.types';
@@ -52,7 +52,8 @@ const AccountSetup: React.FC = () => {
     trackMixpanelEvent(evt_account_setup_visit);
     const verifyAuthStatus = async () => {
       try {
-        const response = (await dispatch(verifyAuthentication()).unwrap()).payload as IAuthorizeResponse;
+        const response = (await dispatch(verifyAuthentication()).unwrap())
+          .payload as IAuthorizeResponse;
         if (response?.authenticated) {
           setSession(response.user);
           dispatch(setUser(response.user));
@@ -152,9 +153,7 @@ const AccountSetup: React.FC = () => {
       const model: IAccountSetupRequest = {
         team_name: sanitizeInput(organizationName),
         project_name: sanitizeInput(projectName),
-        tasks: tasks
-          .map(task => sanitizeInput(task.value.trim()))
-          .filter(task => task !== ''),
+        tasks: tasks.map(task => sanitizeInput(task.value.trim())).filter(task => task !== ''),
         team_members: skip
           ? []
           : teamMembers

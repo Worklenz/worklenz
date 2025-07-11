@@ -44,7 +44,7 @@ interface ReportingOverviewProjectsTableProps {
 
 const ReportingOverviewProjectsTable = ({
   searchQuery,
-  teamsId,  
+  teamsId,
 }: ReportingOverviewProjectsTableProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');

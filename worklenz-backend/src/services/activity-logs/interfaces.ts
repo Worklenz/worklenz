@@ -29,6 +29,8 @@ export enum IActivityLogAttributeTypes {
   COMMENT = "comment",
   ARCHIVE = "archive",
   PHASE = "phase",
+  PROGRESS = "progress",
+  WEIGHT = "weight",
 }
 
 export enum IActivityLogChangeType {

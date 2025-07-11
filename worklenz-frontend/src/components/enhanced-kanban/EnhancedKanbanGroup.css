@@ -1,0 +1,243 @@
+.enhanced-kanban-group {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+  background: var(--ant-color-bg-elevated);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--ant-color-border);
+  box-shadow: 0 1px 2px var(--ant-color-shadow);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.enhanced-kanban-group.drag-over {
+  border-color: var(--ant-color-primary);
+  box-shadow: 0 0 0 2px var(--ant-color-primary-border);
+}
+
+.enhanced-kanban-group.group-dragging {
+  opacity: 0.5;
+  z-index: 1000;
+  box-shadow: 0 8px 24px var(--ant-color-shadow);
+}
+
+.enhanced-kanban-group.group-dragging .enhanced-kanban-group-tasks {
+  background: var(--ant-color-bg-elevated);
+}
+
+.enhanced-kanban-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ant-color-border);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: -8px -8px 4px -8px;
+}
+
+.enhanced-kanban-group-header:active {
+  cursor: grabbing;
+}
+
+.enhanced-kanban-group-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: inherit;
+  text-shadow: 0 1px 2px var(--ant-color-shadow);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.task-count {
+  background: var(--ant-color-bg-container);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--ant-color-text);
+  font-weight: 500;
+  border: 1px solid var(--ant-color-border);
+  opacity: 0.8;
+}
+
+.virtualization-indicator {
+  background: var(--ant-color-warning);
+  color: var(--ant-color-warning-text);
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.virtualization-indicator:hover {
+  background: var(--ant-color-warning-hover);
+  transform: scale(1.1);
+}
+
+.enhanced-kanban-group-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 200px;
+  max-height: 600px;
+  transition: all 0.2s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: transparent;
+}
+
+/* Performance optimizations for large lists */
+.enhanced-kanban-group-tasks.large-list {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+/* Drop preview indicators */
+.drop-preview-indicator {
+  height: 4px;
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drop-line {
+  height: 2px;
+  background: var(--ant-color-primary);
+  border-radius: 1px;
+  width: 100%;
+  box-shadow: 0 0 4px var(--ant-color-primary);
+  animation: dropPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dropPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scaleX(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* Empty state drop zone */
+.drop-preview-empty {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--ant-color-border);
+  border-radius: 6px;
+  background: var(--ant-color-bg-container);
+  transition: all 0.2s ease;
+}
+
+.enhanced-kanban-group.drag-over .drop-preview-empty {
+  border-color: var(--ant-color-primary);
+}
+
+.drop-indicator {
+  color: var(--ant-color-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.enhanced-kanban-group.drag-over .drop-indicator {
+  color: var(--ant-color-primary);
+}
+
+/* Group drag overlay */
+.group-drag-overlay {
+  background: var(--ant-color-bg-elevated);
+  border: 1px solid var(--ant-color-border);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 8px 24px var(--ant-color-shadow);
+  min-width: 280px;
+  max-width: 320px;
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.group-drag-overlay .group-header-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.group-drag-overlay h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ant-color-text);
+}
+
+.group-drag-overlay .task-count {
+  background: var(--ant-color-bg-container);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--ant-color-text);
+  border: 1px solid var(--ant-color-border);
+}
+
+/* Responsive design for different screen sizes */
+@media (max-width: 768px) {
+  .enhanced-kanban-group {
+    min-width: 240px;
+    max-width: 280px;
+  }
+
+  .enhanced-kanban-group-tasks {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .enhanced-kanban-group {
+    min-width: 200px;
+    max-width: 240px;
+  }
+
+  .enhanced-kanban-group-tasks {
+    max-height: 300px;
+  }
+}
+
+.enhanced-kanban-task-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.task-title {
+  font-weight: 500;
+  color: var(--ant-color-text);
+  margin-bottom: 4px;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+  display: inline-block;
+  vertical-align: middle;
+}

@@ -1,0 +1,19 @@
+{
+  "title": "Editar Plantilla de Tarea",
+  "cancelText": "Cancelar",
+  "saveText": "Guardar",
+  "templateNameText": "Nombre de la Plantilla",
+  "selectedTasks": "Tareas Seleccionadas",
+  "removeTask": "Eliminar",
+  "description": "Descripción",
+  "phase": "Fase",
+  "statuses": "Estados",
+  "priorities": "Prioridades",
+  "labels": "Etiquetas",
+  "tasks": "Tareas",
+  "noTemplateSelected": "No hay plantilla seleccionada",
+  "noDescription": "Sin descripción",
+  "worklenzTemplates": "Plantillas de Worklenz",
+  "yourTemplatesLibrary": "Tu Biblioteca",
+  "searchTemplates": "Buscar Plantillas"
+}

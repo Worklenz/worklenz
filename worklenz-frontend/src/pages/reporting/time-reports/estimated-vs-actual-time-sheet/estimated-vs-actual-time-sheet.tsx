@@ -19,15 +19,23 @@ import { reportingTimesheetApiService } from '@/api/reporting/reporting.timeshee
 
 // Project color palette
 const PROJECT_COLORS = [
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
-  '#D4A5A5', '#9B59B6', '#3498DB', '#F1C40F', '#1ABC9C'
+  '#FF6B6B',
+  '#4ECDC4',
+  '#45B7D1',
+  '#96CEB4',
+  '#FFEEAD',
+  '#D4A5A5',
+  '#9B59B6',
+  '#3498DB',
+  '#F1C40F',
+  '#1ABC9C',
 ];
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
 enum IToggleOptions {
   'WORKING_DAYS',
-  'MAN_DAYS'
+  'MAN_DAYS',
 }
 
 export interface EstimatedVsActualTimeSheetRef {
@@ -38,18 +46,21 @@ interface IEstimatedVsActualTimeSheetProps {
   type: string;
 }
 
-const EstimatedVsActualTimeSheet = forwardRef<EstimatedVsActualTimeSheetRef, IEstimatedVsActualTimeSheetProps>(({ type }, ref) => {
+const EstimatedVsActualTimeSheet = forwardRef<
+  EstimatedVsActualTimeSheetRef,
+  IEstimatedVsActualTimeSheetProps
+>(({ type }, ref) => {
   const chartRef = useRef<any>(null);
-  
+
   // State for filters and data
   const [jsonData, setJsonData] = useState<IRPTTimeProject[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [chartHeight, setChartHeight] = useState(600);
   const [chartWidth, setChartWidth] = useState(1080);
-  
+
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  
+
   const {
     teams,
     loadingTeams,
@@ -61,28 +72,29 @@ const EstimatedVsActualTimeSheet = forwardRef<EstimatedVsActualTimeSheetRef, IEs
     billable,
     archived,
   } = useAppSelector(state => state.timeReportsOverviewReducer);
-  const {
-    duration,
-    dateRange,
-  } = useAppSelector(state => state.reportingReducer);
+  const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
 
   // Add type checking before mapping
   const labels = Array.isArray(jsonData) ? jsonData.map(item => item.name) : [];
-  const actualDays = Array.isArray(jsonData) ? jsonData.map(item => {
-    const value = item.value ? parseFloat(item.value) : 0;
-    return (isNaN(value) ? 0 : value).toString();
-  }) : [];
-  const estimatedDays = Array.isArray(jsonData) ? jsonData.map(item => {
-    const value = item.estimated_value ? parseFloat(item.estimated_value) : 0;
-    return (isNaN(value) ? 0 : value).toString();
-  }) : [];
+  const actualDays = Array.isArray(jsonData)
+    ? jsonData.map(item => {
+        const value = item.value ? parseFloat(item.value) : 0;
+        return (isNaN(value) ? 0 : value).toString();
+      })
+    : [];
+  const estimatedDays = Array.isArray(jsonData)
+    ? jsonData.map(item => {
+        const value = item.estimated_value ? parseFloat(item.estimated_value) : 0;
+        return (isNaN(value) ? 0 : value).toString();
+      })
+    : [];
 
   // Format date helper
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -126,7 +138,7 @@ const EstimatedVsActualTimeSheet = forwardRef<EstimatedVsActualTimeSheetRef, IEs
             }
             return '';
           },
-        }
+        },
       },
       datalabels: {
         color: 'white',
@@ -190,14 +202,14 @@ const EstimatedVsActualTimeSheet = forwardRef<EstimatedVsActualTimeSheetRef, IEs
         projects: selectedProjects.map(p => p.id),
         duration: duration,
         date_range: dateRange,
-        billable
+        billable,
       };
       const res = await reportingTimesheetApiService.getProjectEstimatedVsActual(body, archived);
       if (res.done) {
         // Ensure res.body is an array before setting it
         const dataArray = Array.isArray(res.body) ? res.body : [];
         setJsonData(dataArray);
-        
+
         // Update chart dimensions based on data
         if (dataArray.length) {
           const containerWidth = window.innerWidth - 300;
@@ -224,14 +236,14 @@ const EstimatedVsActualTimeSheet = forwardRef<EstimatedVsActualTimeSheetRef, IEs
     billable,
     archived,
     type,
-    noCategory
+    noCategory,
   ]);
 
   const exportChart = () => {
     if (chartRef.current) {
       // Get the canvas element
       const canvas = chartRef.current.canvas;
-      
+
       // Create a temporary canvas to draw with background
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
@@ -262,19 +274,20 @@ const EstimatedVsActualTimeSheet = forwardRef<EstimatedVsActualTimeSheetRef, IEs
   };
 
   useImperativeHandle(ref, () => ({
-    exportChart
+    exportChart,
   }));
 
   return (
     <div style={{ position: 'relative' }}>
-     
       {/* Outer container with fixed width */}
-      <div style={{ 
-        width: '100%',
-        position: 'relative',
-        overflowX: 'auto',
-        overflowY: 'hidden'
-      }}>
+      <div
+        style={{
+          width: '100%',
+          position: 'relative',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
         {/* Chart container */}
         <div
           style={{
@@ -283,12 +296,12 @@ const EstimatedVsActualTimeSheet = forwardRef<EstimatedVsActualTimeSheetRef, IEs
             minWidth: 'max-content',
           }}
         >
-          <Bar 
+          <Bar
             ref={chartRef}
-            data={data} 
-            options={options} 
-            width={chartWidth} 
-            height={chartHeight} 
+            data={data}
+            options={options}
+            width={chartWidth}
+            height={chartHeight}
           />
         </div>
       </div>

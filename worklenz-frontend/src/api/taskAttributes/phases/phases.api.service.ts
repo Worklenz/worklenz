@@ -1,12 +1,12 @@
-import apiClient from '@/api/api-client';
-import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
+import apiClient from '@api/api-client';
+import { API_BASE_URL } from '@/shared/constants';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { toQueryString } from '@/utils/toQueryString';
 
 const rootUrl = `${API_BASE_URL}/task-phases`;
 
-interface UpdateSortOrderBody {
+export interface UpdateSortOrderBody {
   from_index: number;
   to_index: number;
   phases: ITaskPhase[];
@@ -14,9 +14,10 @@ interface UpdateSortOrderBody {
 }
 
 export const phasesApiService = {
-  addPhaseOption: async (projectId: string) => {
+  addPhaseOption: async (projectId: string, name?: string) => {
     const q = toQueryString({ id: projectId, current_project_id: projectId });
-    const response = await apiClient.post<IServerResponse<ITaskPhase>>(`${rootUrl}${q}`);
+    const body = name ? { name } : {};
+    const response = await apiClient.post<IServerResponse<ITaskPhase>>(`${rootUrl}${q}`, body);
     return response.data;
   },
 
@@ -43,7 +44,7 @@ export const phasesApiService = {
     return response.data;
   },
 
-  updateNameOfPhase: async (phaseId: string, body: ITaskPhase, projectId: string,) => {
+  updateNameOfPhase: async (phaseId: string, body: ITaskPhase, projectId: string) => {
     const q = toQueryString({ id: projectId, current_project_id: projectId });
     const response = await apiClient.put<IServerResponse<ITaskPhase>>(
       `${rootUrl}/${phaseId}${q}`,

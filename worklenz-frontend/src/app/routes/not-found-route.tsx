@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { RouteObject } from 'react-router-dom';
-import NotFoundPage from '@/pages/404-page/404-page';
+import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+
+const NotFoundPage = lazy(() => import('@/pages/404-page/404-page'));
 
 const notFoundRoute: RouteObject = {
   path: '*',
-  element: <NotFoundPage />,
+  element: (
+    <Suspense fallback={<SuspenseFallback />}>
+      <NotFoundPage />
+    </Suspense>
+  ),
 };
 
 export default notFoundRoute;

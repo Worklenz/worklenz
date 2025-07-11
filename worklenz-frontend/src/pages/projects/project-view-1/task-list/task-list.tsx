@@ -6,9 +6,7 @@ import { ITaskListConfigV2, ITaskListGroup } from '@/types/tasks/taskList.types'
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchTaskGroups } from '@/features/tasks/taskSlice';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
-
-import { columnList } from '@/pages/projects/project-view-1/taskList/taskListTable/columns/columnList';
-import StatusGroupTables from '../taskList/statusTables/StatusGroupTables';
+import TaskListTableWrapper from './task-list-table-wrapper/task-list-table-wrapper';
 
 const TaskList = () => {
   const dispatch = useAppDispatch();
@@ -31,6 +29,7 @@ const TaskList = () => {
   const onTaskExpand = (taskId: string) => {
     console.log('taskId:', taskId);
   };
+
   useEffect(() => {
     if (projectId) {
       const config: ITaskListConfigV2 = {
@@ -54,9 +53,15 @@ const TaskList = () => {
     <Flex vertical gap={16}>
       <TaskListFilters position="list" />
       <Skeleton active loading={loadingGroups}>
-        {/* {taskGroups.map((group: ITaskListGroup) => (
-          
-        ))} */}
+        {taskGroups.map((group: ITaskListGroup) => (
+          <TaskListTableWrapper
+            key={group.id}
+            taskList={group}
+            groupId={group.id}
+            name={group.name}
+            color={group.color_code}
+          />
+        ))}
       </Skeleton>
     </Flex>
   );

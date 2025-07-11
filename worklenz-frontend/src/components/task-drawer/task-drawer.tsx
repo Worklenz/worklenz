@@ -32,7 +32,7 @@ const TaskDrawer = () => {
   const [refreshTimeLogTrigger, setRefreshTimeLogTrigger] = useState(0);
 
   const { showTaskDrawer, timeLogEditing } = useAppSelector(state => state.taskDrawerReducer);
-
+  const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const taskNameInputRef = useRef<InputRef>(null);
   const isClosingManually = useRef(false);
 
@@ -47,20 +47,32 @@ const TaskDrawer = () => {
 
   const dispatch = useAppDispatch();
 
-  const handleOnClose = () => {
-    // Set flag to indicate we're manually closing the drawer
-    isClosingManually.current = true;
-    setActiveTab('info');
-
-    // Explicitly clear the task parameter from URL
-    clearTaskFromUrl();
-
-    // Update the Redux state
+  const resetTaskState = () => {
     dispatch(setShowTaskDrawer(false));
     dispatch(setSelectedTaskId(null));
     dispatch(setTaskFormViewModel({}));
     dispatch(setTaskSubscribers([]));
+  };
 
+  const handleOnClose = (
+    e?: React.MouseEvent<Element, MouseEvent> | React.KeyboardEvent<Element>
+  ) => {
+    // Set flag to indicate we're manually closing the drawer
+    isClosingManually.current = true;
+    setActiveTab('info');
+    clearTaskFromUrl();
+
+    const isClickOutsideDrawer =
+      e?.target && (e.target as HTMLElement).classList.contains('ant-drawer-mask');
+
+    if (isClickOutsideDrawer || !taskFormViewModel?.task?.is_sub_task) {
+      resetTaskState();
+    } else {
+      dispatch(setSelectedTaskId(null));
+      dispatch(setTaskFormViewModel({}));
+      dispatch(setTaskSubscribers([]));
+      dispatch(setSelectedTaskId(taskFormViewModel?.task?.parent_task_id || null));
+    }
     // Reset the flag after a short delay
     setTimeout(() => {
       isClosingManually.current = false;
@@ -142,7 +154,7 @@ const TaskDrawer = () => {
               onClick={handleAddTimeLog}
               style={{ width: '100%' }}
             >
-              Add new time log
+              {t('taskTimeLogTab.addTimeLog')}
             </Button>
           </Flex>
         );
@@ -176,8 +188,8 @@ const TaskDrawer = () => {
   // Get conditional body style
   const getBodyStyle = () => {
     const baseStyle = {
-      padding: '24px', 
-      overflow: 'auto'
+      padding: '24px',
+      overflow: 'auto',
     };
 
     if (activeTab === 'timeLog' && timeLogEditing.isEditing) {
@@ -210,7 +222,7 @@ const TaskDrawer = () => {
       <Tabs
         type="card"
         items={tabItems}
-        destroyInactiveTabPane
+        destroyOnHidden
         onChange={handleTabChange}
         activeKey={activeTab}
       />

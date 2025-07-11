@@ -1,0 +1,52 @@
+{
+  "projectCount": "Projekt",
+  "projectCountPlural": "Projekte",
+  "includeArchivedButton": "Archivierte Projekte einschließen",
+  "exportButton": "Exportieren",
+  "excelButton": "Excel",
+
+  "projectColumn": "Projekt",
+  "estimatedVsActualColumn": "Geschätzt vs. Tatsächlich",
+  "tasksProgressColumn": "Aufgabenfortschritt",
+  "lastActivityColumn": "Letzte Aktivität",
+  "statusColumn": "Status",
+  "datesColumn": "Start-/Enddatum",
+  "daysLeftColumn": "Tage übrig/überfällig",
+  "projectHealthColumn": "Projektzustand",
+  "categoryColumn": "Kategorie",
+  "projectUpdateColumn": "Projektupdate",
+  "clientColumn": "Kunde",
+  "teamColumn": "Team",
+  "projectManagerColumn": "Projektleiter",
+
+  "openButton": "Öffnen",
+
+  "estimatedText": "Geschätzt",
+  "actualText": "Tatsächlich",
+
+  "todoText": "Zu erledigen",
+  "doingText": "Tun",
+  "doneText": "Erledigt",
+
+  "cancelledText": "Abgebrochen",
+  "blockedText": "Blockiert",
+  "onHoldText": "Pausiert",
+  "proposedText": "Vorgeschlagen",
+  "inPlanningText": "In Planung",
+  "inProgressText": "In Bearbeitung",
+  "completedText": "Abgeschlossen",
+  "continuousText": "Kontinuierlich",
+
+  "daysLeftText": "Tage übrig",
+  "dayLeftText": "Tag übrig",
+  "daysOverdueText": "Tage überfällig",
+
+  "notSetText": "Nicht festgelegt",
+  "needsAttentionText": "Benötigt Aufmerksamkeit",
+  "atRiskText": "Gefährdet",
+  "goodText": "Gut",
+
+  "setCategoryText": "Kategorie festlegen",
+  "searchByNameInputPlaceholder": "Nach Namen suchen",
+  "todayText": "Heute"
+}

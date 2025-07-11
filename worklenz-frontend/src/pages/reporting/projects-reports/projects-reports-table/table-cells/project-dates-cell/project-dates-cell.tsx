@@ -5,7 +5,10 @@ import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setProjectEndDate, setProjectStartDate } from '@/features/reporting/projectReports/project-reports-slice';
+import {
+  setProjectEndDate,
+  setProjectStartDate,
+} from '@/features/reporting/projectReports/project-reports-slice';
 import logger from '@/utils/errorLogger';
 
 type ProjectDatesCellProps = {
@@ -41,10 +44,13 @@ const ProjectDatesCell = ({ projectId, startDate, endDate }: ProjectDatesCellPro
       if (!socket) {
         throw new Error('Socket connection not available');
       }
-      socket.emit(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), JSON.stringify({
-        project_id: projectId,
-        start_date: date?.format('YYYY-MM-DD'),
-      }));
+      socket.emit(
+        SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
+        JSON.stringify({
+          project_id: projectId,
+          start_date: date?.format('YYYY-MM-DD'),
+        })
+      );
     } catch (error) {
       logger.error('Error sending start date change:', error);
     }
@@ -55,10 +61,13 @@ const ProjectDatesCell = ({ projectId, startDate, endDate }: ProjectDatesCellPro
       if (!socket) {
         throw new Error('Socket connection not available');
       }
-      socket.emit(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), JSON.stringify({
-        project_id: projectId,  
-        end_date: date?.format('YYYY-MM-DD'),
-      }));
+      socket.emit(
+        SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
+        JSON.stringify({
+          project_id: projectId,
+          end_date: date?.format('YYYY-MM-DD'),
+        })
+      );
     } catch (error) {
       logger.error('Error sending end date change:', error);
     }
@@ -70,8 +79,14 @@ const ProjectDatesCell = ({ projectId, startDate, endDate }: ProjectDatesCellPro
       socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
 
       return () => {
-        socket.removeListener(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
-        socket.removeListener(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+        socket.removeListener(
+          SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
+          handleStartDateChangeResponse
+        );
+        socket.removeListener(
+          SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
+          handleEndDateChangeResponse
+        );
       };
     }
   }, [connected, socket]);

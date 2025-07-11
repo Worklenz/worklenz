@@ -20,7 +20,7 @@ import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/tas
 import { useState, useRef, useEffect } from 'react';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { fetchSubTasks } from '@/features/tasks/tasks.slice';
+import { fetchSubTasks } from '@/features/task-management/task-management.slice';
 
 type TaskListTaskCellProps = {
   task: IProjectTask;
@@ -74,7 +74,7 @@ const TaskListTaskCell = ({
     return (
       <button
         onClick={() => handleToggleExpansion(taskId)}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
       >
         {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
       </button>
@@ -86,11 +86,11 @@ const TaskListTaskCell = ({
     isSubTask: boolean,
     subTasksCount: number
   ) => {
-    if (subTasksCount > 0) {
+    if (subTasksCount > 0 && !isSubTask) {
       return (
         <button
           onClick={() => handleToggleExpansion(taskId)}
-          className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
+          className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54]"
         >
           {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
         </button>
@@ -100,7 +100,7 @@ const TaskListTaskCell = ({
     return !isSubTask ? (
       <button
         onClick={() => handleToggleExpansion(taskId)}
-        className="hover flex h-4 w-4 items-center justify-center rounded text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54] open-task-button"
+        className="hover flex h-4 w-4 items-center justify-center rounded-sm text-[12px] hover:border hover:border-[#5587f5] hover:bg-[#d0eefa54] open-task-button"
       >
         {task.show_sub_tasks ? <DownOutlined /> : <RightOutlined />}
       </button>
@@ -110,25 +110,23 @@ const TaskListTaskCell = ({
   };
 
   const renderSubtasksCountLabel = (taskId: string, isSubTask: boolean, subTasksCount: number) => {
-    if (!taskId) return null;
+    if (!taskId || subTasksCount <= 1) return null;
     return (
-      !isSubTask && (
-        <Button
-          onClick={() => handleToggleExpansion(taskId)}
-          size="small"
-          style={{
-            display: 'flex',
-            gap: 2,
-            paddingInline: 4,
-            alignItems: 'center',
-            justifyItems: 'center',
-            border: 'none',
-          }}
-        >
-          <Typography.Text style={{ fontSize: 12, lineHeight: 1 }}>{subTasksCount}</Typography.Text>
-          <DoubleRightOutlined style={{ fontSize: 10 }} />
-        </Button>
-      )
+      <Button
+        onClick={() => handleToggleExpansion(taskId)}
+        size="small"
+        style={{
+          display: 'flex',
+          gap: 2,
+          paddingInline: 4,
+          alignItems: 'center',
+          justifyItems: 'center',
+          border: 'none',
+        }}
+      >
+        <Typography.Text style={{ fontSize: 12, lineHeight: 1 }}>{subTasksCount}</Typography.Text>
+        <DoubleRightOutlined style={{ fontSize: 10 }} />
+      </Button>
     );
   };
 

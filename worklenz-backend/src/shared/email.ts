@@ -1,7 +1,7 @@
 import {SendEmailCommand, SESClient} from "@aws-sdk/client-ses";
 import {Validator} from "jsonschema";
 import {QueryResult} from "pg";
-import {log_error} from "./utils";
+import {log_error, isValidateEmail} from "./utils";
 import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
 
@@ -33,7 +33,7 @@ function isValidMailBody(body: IEmail) {
 async function removeMails(query: string, emails: string[]) {
   const result: QueryResult<{ email: string; }> = await db.query(query, []);
   const bouncedEmails = result.rows.map(e => e.email);
-  for (let i = 0; i < emails.length; i++) {
+  for (let i = emails.length - 1; i >= 0; i--) {
     const email = emails[i];
     if (bouncedEmails.includes(email)) {
       emails.splice(i, 1);
@@ -54,10 +54,19 @@ export async function sendEmail(email: IEmail): Promise<string | null> {
     const options = {...email} as IEmail;
     options.to = Array.isArray(options.to) ? Array.from(new Set(options.to)) : [];
 
+    // Filter out empty, null, undefined, and invalid emails
+    options.to = options.to
+      .filter(email => email && typeof email === 'string' && email.trim().length > 0)
+      .map(email => email.trim())
+      .filter(email => isValidateEmail(email));
+
     if (options.to.length) {
       await filterBouncedEmails(options.to);
       await filterSpamEmails(options.to);
     }
+
+    // Double-check that we still have valid emails after filtering
+    if (!options.to.length) return null;
 
     if (!isValidMailBody(options)) return null;
 

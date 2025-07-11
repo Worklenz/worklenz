@@ -1,0 +1,14 @@
+{
+  "taskList": "Lista e Detyrave",
+  "board": "Tabela Kanban",
+  "insights": "Analiza",
+  "files": "Skedarë",
+  "members": "Anëtarë",
+  "updates": "Përditësime",
+  "projectView": "Pamja e Projektit",
+  "loading": "Duke ngarkuar projektin...",
+  "error": "Gabim në ngarkimin e projektit",
+  "pinnedTab": "E fiksuar si tab i parazgjedhur",
+  "pinTab": "Fikso si tab i parazgjedhur",
+  "unpinTab": "Hiqe fiksimin e tab-it të parazgjedhur"
+} 

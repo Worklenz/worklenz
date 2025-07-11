@@ -41,6 +41,7 @@ export interface IInsightTasks {
   updated_at?: string;
   total_minutes?: string;
   overlogged_time?: string;
+  overlogged_time_string?: string;
   days_overdue?: number;
   is_overdue?: boolean;
   parent_task_id?: string;

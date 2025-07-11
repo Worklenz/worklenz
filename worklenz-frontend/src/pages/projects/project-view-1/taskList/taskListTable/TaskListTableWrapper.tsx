@@ -194,7 +194,7 @@ const TaskListTableWrapper = ({
         </Flex>
         <Collapse
           collapsible="header"
-          className="border-l-[4px]"
+          className="border-l-4"
           bordered={false}
           ghost={true}
           expandIcon={() => null}

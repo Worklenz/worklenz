@@ -1,0 +1,19 @@
+{
+    "configurePhases": "配置阶段",
+    "phaseLabel": "阶段标签",
+    "enterPhaseName": "输入阶段标签名称",
+    "addOption": "添加选项",
+    "phaseOptions": "阶段选项：",
+    "dragToReorderPhases": "拖拽阶段以重新排序。每个阶段可以有不同的颜色。",
+    "enterNewPhaseName": "输入新阶段名称...",
+    "addPhase": "添加阶段",
+    "noPhasesFound": "未找到阶段。请在上面创建您的第一个阶段。",
+    "deletePhase": "删除阶段",
+    "deletePhaseConfirm": "您确定要删除此阶段吗？此操作无法撤销。",
+    "rename": "重命名",
+    "delete": "删除",
+    "enterPhaseName": "输入阶段名称",
+    "selectColor": "选择颜色",
+    "managePhases": "管理阶段",
+    "close": "关闭"
+}

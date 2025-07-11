@@ -1,0 +1,14 @@
+{
+  "taskList": "Aufgabenliste",
+  "board": "Kanban-Board",
+  "insights": "Insights",
+  "files": "Dateien",
+  "members": "Mitglieder",
+  "updates": "Aktualisierungen",
+  "projectView": "Projektansicht",
+  "loading": "Projekt wird geladen...",
+  "error": "Fehler beim Laden des Projekts",
+  "pinnedTab": "Als Standard-Registerkarte festgesetzt",
+  "pinTab": "Als Standard-Registerkarte festsetzen",
+  "unpinTab": "Standard-Registerkarte lösen"
+} 

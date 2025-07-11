@@ -4,45 +4,79 @@ import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
 import config from '@/config/env';
 
-export const getCsrfToken = (): string | null => {
-  const match = document.cookie.split('; ').find(cookie => cookie.startsWith('XSRF-TOKEN='));
+// Store CSRF token in memory (since csrf-sync uses session-based tokens)
+let csrfToken: string | null = null;
 
-  if (!match) {
-    return null;
-  }
-  return decodeURIComponent(match.split('=')[1]);
+export const getCsrfToken = (): string | null => {
+  return csrfToken;
 };
 
-// Function to refresh CSRF token if needed
+// Function to refresh CSRF token from server
 export const refreshCsrfToken = async (): Promise<string | null> => {
   try {
-    // Make a GET request to the server to get a fresh CSRF token
-    await axios.get(`${config.apiUrl}/csrf-token`, { withCredentials: true });
-    return getCsrfToken();
-  } catch (error) {
-    console.error('Failed to refresh CSRF token:', error);
+    const tokenStart = performance.now();
+    console.log('[CSRF] Starting CSRF token refresh...');
+
+    // Make a GET request to the server to get a fresh CSRF token with timeout
+    const response = await axios.get(`${config.apiUrl}/csrf-token`, {
+      withCredentials: true,
+      timeout: 10000, // 10 second timeout for CSRF token requests
+    });
+
+    const tokenEnd = performance.now();
+    console.log(`[CSRF] CSRF token refresh completed in ${(tokenEnd - tokenStart).toFixed(2)}ms`);
+
+    if (response.data && response.data.token) {
+      csrfToken = response.data.token;
+      console.log('[CSRF] CSRF token successfully refreshed');
+      return csrfToken;
+    } else {
+      console.warn('[CSRF] No token in response:', response.data);
+    }
     return null;
+  } catch (error) {
+    console.error('[CSRF] Failed to refresh CSRF token:', error);
+    return null;
+  }
+};
+
+// Initialize CSRF token on app load
+export const initializeCsrfToken = async (): Promise<void> => {
+  if (!csrfToken) {
+    await refreshCsrfToken();
   }
 };
 
 const apiClient = axios.create({
   baseURL: config.apiUrl,
   withCredentials: true,
+  timeout: 30000, // 30 second timeout to prevent hanging requests
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 });
 
-// Request interceptor
+// Request interceptor with performance optimization
 apiClient.interceptors.request.use(
-  config => {
-    const token = getCsrfToken();
-    if (token) {
-      config.headers['X-CSRF-Token'] = token;
-    } else {
-      console.warn('No CSRF token found');
+  async config => {
+    const requestStart = performance.now();
+
+    // Ensure we have a CSRF token before making requests
+    if (!csrfToken) {
+      const tokenStart = performance.now();
+      await refreshCsrfToken();
+      const tokenEnd = performance.now();
     }
+
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+    } else {
+      console.warn('No CSRF token available after refresh attempt');
+    }
+
+    const requestEnd = performance.now();
+
     return config;
   },
   error => Promise.reject(error)
@@ -80,21 +114,24 @@ apiClient.interceptors.response.use(
     const errorResponse = error.response;
 
     // Handle CSRF token errors
-    if (errorResponse?.status === 403 && 
-        (typeof errorResponse.data === 'object' && 
-         errorResponse.data !== null && 
-         'message' in errorResponse.data && 
-         errorResponse.data.message === 'Invalid CSRF token' || 
-         (error as any).code === 'EBADCSRFTOKEN')) {
+    if (
+      errorResponse?.status === 403 &&
+      ((typeof errorResponse.data === 'object' &&
+        errorResponse.data !== null &&
+        'message' in errorResponse.data &&
+        (errorResponse.data.message === 'invalid csrf token' ||
+          errorResponse.data.message === 'Invalid CSRF token')) ||
+        (error as any).code === 'EBADCSRFTOKEN')
+    ) {
       alertService.error('Security Error', 'Invalid security token. Refreshing your session...');
-      
+
       // Try to refresh the CSRF token and retry the request
       const newToken = await refreshCsrfToken();
       if (newToken && error.config) {
         // Update the token in the failed request
         error.config.headers['X-CSRF-Token'] = newToken;
         // Retry the original request with the new token
-        return axios(error.config);
+        return apiClient(error.config);
       } else {
         // If token refresh failed, redirect to login
         window.location.href = '/auth/login';

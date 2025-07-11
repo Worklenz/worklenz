@@ -1,0 +1,31 @@
+{
+  "logoAlt": "Worklenz-Logo",
+  "home": "Startseite",
+  "projects": "Projekte",
+  "schedule": "Zeitplan",
+  "reporting": "Berichterstattung",
+  "clients": "Kunden",
+  "teams": "Teams",
+  "labels": "Labels",
+  "jobTitles": "Jobtitel",
+  "upgradePlan": "Plan upgraden",
+  "upgradePlanTooltip": "Plan upgraden",
+  "invite": "Einladen",
+  "inviteTooltip": "Teammitglieder zur Teilnahme einladen",
+  "switchTeamTooltip": "Team wechseln",
+  "help": "Hilfe",
+  "notificationTooltip": "Benachrichtigungen anzeigen",
+  "profileTooltip": "Profil anzeigen",
+  "adminCenter": "Admin-Center",
+  "settings": "Einstellungen",
+  "logOut": "Abmelden",
+  "notificationsDrawer": {
+    "read": "Gelesene Benachrichtigungen",
+    "unread": "Ungelesene Benachrichtigungen",
+    "markAsRead": "Als gelesen markieren",
+    "readAndJoin": "Lesen & Beitreten",
+    "accept": "Annehmen",
+    "acceptAndJoin": "Annehmen & Beitreten",
+    "noNotifications": "Keine Benachrichtigungen"
+  }
+}

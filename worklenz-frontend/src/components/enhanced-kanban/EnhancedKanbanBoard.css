@@ -1,0 +1,43 @@
+.enhanced-kanban-board {
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 16px;
+  background: var(--ant-color-bg-container);
+  color: var(--ant-color-text);
+}
+
+.kanban-groups-container {
+  display: flex;
+  gap: 16px;
+  min-height: calc(100vh - 350px);
+  padding-bottom: 16px;
+}
+
+/* Ensure groups have proper spacing for drop indicators */
+.enhanced-kanban-group {
+  flex-shrink: 0;
+}
+
+/* Smooth transitions for all drag and drop interactions */
+.enhanced-kanban-board * {
+  transition: all 0.2s ease;
+}
+
+/* Loading state */
+.enhanced-kanban-board .ant-spin {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Empty state */
+.enhanced-kanban-board .ant-empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}

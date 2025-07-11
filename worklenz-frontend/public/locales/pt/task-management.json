@@ -1,0 +1,39 @@
+{
+  "noTasksInGroup": "Nenhuma tarefa neste grupo",
+  "noTasksInGroupDescription": "Adicione uma tarefa para começar",
+  "addFirstTask": "Adicione sua primeira tarefa",
+  "openTask": "Abrir",
+  "subtask": "subtarefa",
+  "subtasks": "subtarefas",
+  "comment": "comentário",
+  "comments": "comentários",
+  "attachment": "anexo",
+  "attachments": "anexos",
+  "enterSubtaskName": "Digite o nome da subtarefa...",
+  "add": "Adicionar",
+  "cancel": "Cancelar",
+  "renameGroup": "Renomear Grupo",
+  "renameStatus": "Renomear Status",
+  "renamePhase": "Renomear Fase",
+  "changeCategory": "Alterar Categoria",
+  "clickToEditGroupName": "Clique para editar o nome do grupo",
+  "enterGroupName": "Digite o nome do grupo",
+  "todo": "A Fazer",
+  "inProgress": "Em Andamento",
+  "done": "Concluído",
+  "defaultTaskName": "Tarefa Sem Título",
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} subtarefa",
+      "subtasks_plural": "{{count}} subtarefas",
+      "comments": "{{count}} comentário",
+      "comments_plural": "{{count}} comentários",
+      "attachments": "{{count}} anexo",
+      "attachments_plural": "{{count}} anexos",
+      "subscribers": "Tarefa tem assinantes",
+      "dependencies": "Tarefa tem dependências",
+      "recurring": "Tarefa recorrente"
+    }
+  }
+}
