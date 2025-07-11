@@ -437,7 +437,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                     <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                         {/* Loading state */}
                         {task.sub_tasks_loading && (
-                            <div className="py-2 text-xs text-gray-400 dark:text-gray-500">Loading...</div>
+                            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
                         )}
                         {/* Loaded subtasks */}
                         {!task.sub_tasks_loading && Array.isArray(task.sub_tasks) && task.sub_tasks.length > 0 && (
