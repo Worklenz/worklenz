@@ -452,6 +452,10 @@ const TaskListV2Section: React.FC = () => {
               name: group.title,
               count: group.actualCount,
               color: group.color,
+              todo_progress: group.todo_progress,
+              doing_progress: group.doing_progress,
+              done_progress: group.done_progress,
+              groupType: group.groupType,
             }}
             isCollapsed={isGroupCollapsed}
             onToggle={() => handleGroupCollapse(group.id)}
