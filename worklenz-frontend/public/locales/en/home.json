@@ -41,6 +41,11 @@
     "list": "List",
     "calendar": "Calendar",
     "tasks": "Tasks",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "recentActivity": "Recent Activity",
+    "recentTasks": "Recent Tasks",
+    "timeLoggedTasks": "Time Logged",
+    "noRecentTasks": "No recent tasks",
+    "noTimeLoggedTasks": "No time logged tasks"
   }
 }
