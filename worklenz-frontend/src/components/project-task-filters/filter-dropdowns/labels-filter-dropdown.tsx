@@ -11,7 +11,7 @@ import List from 'antd/es/list';
 import Space from 'antd/es/space';
 import { useSearchParams } from 'react-router-dom';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +35,13 @@ const LabelsFilterDropdown = () => {
 
   const tab = searchParams.get('tab');
   const projectView = tab === 'tasks-list' ? 'list' : 'kanban';
+
+  // Fetch labels when component mounts or projectId changes
+  useEffect(() => {
+    if (projectId) {
+      dispatch(fetchLabelsByProject(projectId));
+    }
+  }, [dispatch, projectId]);
 
   const filteredLabelData = useMemo(() => {
     if (projectView === 'list') {
@@ -81,9 +88,6 @@ const LabelsFilterDropdown = () => {
       setTimeout(() => {
         labelInputRef.current?.focus();
       }, 0);
-      if (projectView === 'kanban') {
-        dispatch(setBoardLabels(labels));
-      }
     }
   };
 

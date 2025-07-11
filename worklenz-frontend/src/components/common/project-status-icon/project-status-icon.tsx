@@ -1,3 +1,4 @@
+import React from 'react';
 import Icon, {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -12,10 +13,23 @@ const iconMap = {
   'check-circle': CheckCircleOutlined,
 };
 
-const ProjectStatusIcon = ({ iconName, color }: { iconName: string; color: string }) => {
-  const IconComponent = iconMap[iconName as keyof typeof iconMap];
-  if (!IconComponent) return null;
-  return <IconComponent style={{ color: color }} />;
-};
+interface ProjectStatusIconProps {
+  iconName: string;
+  color: string;
+}
+
+const ProjectStatusIcon = React.forwardRef<HTMLSpanElement, ProjectStatusIconProps>(
+  ({ iconName, color }, ref) => {
+    const IconComponent = iconMap[iconName as keyof typeof iconMap];
+    if (!IconComponent) return null;
+    return (
+      <span ref={ref} style={{ display: 'inline-block' }}>
+        <IconComponent style={{ color: color }} />
+      </span>
+    );
+  }
+);
+
+ProjectStatusIcon.displayName = 'ProjectStatusIcon';
 
 export default ProjectStatusIcon;

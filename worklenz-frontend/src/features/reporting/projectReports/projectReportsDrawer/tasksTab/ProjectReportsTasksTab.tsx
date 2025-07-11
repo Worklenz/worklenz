@@ -31,9 +31,9 @@ const ProjectReportsTasksTab = ({ projectId = null }: ProjectReportsTasksTabProp
       .filter(item => item.tasks.length > 0)
       .map(item => ({
         ...item,
-        tasks: item.tasks.filter(task => 
+        tasks: item.tasks.filter(task =>
           task.name?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        ),
       }))
       .filter(item => item.tasks.length > 0);
   }, [groups, searchQuery]);

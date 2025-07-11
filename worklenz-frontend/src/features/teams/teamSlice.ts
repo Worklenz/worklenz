@@ -62,7 +62,6 @@ export const editTeamName = createAsyncThunk(
     } catch (error) {
       logger.error('Edit Team Name', error);
 
-
       if (error instanceof Error) {
         return rejectWithValue(error.message);
       }

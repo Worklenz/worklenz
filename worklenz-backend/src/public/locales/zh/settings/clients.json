@@ -1,0 +1,22 @@
+{
+  "nameColumn": "名称",
+  "projectColumn": "项目",
+  "noProjectsAvailable": "没有可用的项目",
+  "deleteConfirmationTitle": "您确定吗？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "searchPlaceholder": "按名称搜索",
+  "createClient": "创建客户",
+  "pinTooltip": "点击将其固定到主菜单",
+  "createClientDrawerTitle": "创建客户",
+  "updateClientDrawerTitle": "更新客户",
+  "nameLabel": "名称",
+  "namePlaceholder": "名称",
+  "nameRequiredError": "请输入名称",
+  "createButton": "创建",
+  "updateButton": "更新",
+  "createClientSuccessMessage": "客户创建成功！",
+  "createClientErrorMessage": "客户创建失败！",
+  "updateClientSuccessMessage": "客户更新成功！",
+  "updateClientErrorMessage": "客户更新失败！"
+}

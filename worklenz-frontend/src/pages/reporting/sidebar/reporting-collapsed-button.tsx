@@ -40,7 +40,6 @@ const ReportingCollapsedButton = ({
     }
   };
 
-  
   useEffect(() => {
     getOrganizationDetails();
   }, []);
@@ -66,7 +65,7 @@ const ReportingCollapsedButton = ({
             />
 
             <Typography.Text strong>
-            {loading ? 'Loading...' : organization?.name || 'Unknown Organization'}
+              {loading ? 'Loading...' : organization?.name || 'Unknown Organization'}
             </Typography.Text>
           </Flex>
         </Tooltip>

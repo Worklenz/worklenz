@@ -17,12 +17,12 @@ export const getApiUrl = (): string => {
   if (window.VITE_API_URL) {
     return window.VITE_API_URL;
   }
-  
+
   // Then check build-time environment variables
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  
+
   // Default for development
   return 'http://localhost:3000';
 };
@@ -32,12 +32,12 @@ export const getSocketUrl = (): string => {
   if (window.VITE_SOCKET_URL) {
     return window.VITE_SOCKET_URL;
   }
-  
+
   // Then check build-time environment variables
   if (import.meta.env.VITE_SOCKET_URL) {
     return import.meta.env.VITE_SOCKET_URL;
   }
-  
+
   // Default based on API URL (convert http->ws or https->wss)
   const apiUrl = getApiUrl();
   if (apiUrl.startsWith('https://')) {
@@ -45,7 +45,7 @@ export const getSocketUrl = (): string => {
   } else if (apiUrl.startsWith('http://')) {
     return apiUrl.replace('http://', 'ws://');
   }
-  
+
   // Final fallback
   return 'ws://localhost:3000';
 };
@@ -53,4 +53,4 @@ export const getSocketUrl = (): string => {
 export default {
   apiUrl: getApiUrl(),
   socketUrl: getSocketUrl(),
-}; 
+};

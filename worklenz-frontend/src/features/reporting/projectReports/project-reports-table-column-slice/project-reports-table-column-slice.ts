@@ -1,5 +1,9 @@
 import { PROJECT_LIST_COLUMNS } from '@/shared/constants';
-import { getJSONFromLocalStorage, saveJSONToLocalStorage, saveToLocalStorage } from '@/utils/localStorageFunctions';
+import {
+  getJSONFromLocalStorage,
+  saveJSONToLocalStorage,
+  saveToLocalStorage,
+} from '@/utils/localStorageFunctions';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 type ColumnsVisibilityState = {
@@ -8,21 +12,23 @@ type ColumnsVisibilityState = {
 
 const getInitialState = () => {
   const savedState = getJSONFromLocalStorage(PROJECT_LIST_COLUMNS);
-  return savedState || {
-    name: true,
-    projectHealth: true,
-    category: true,
-    projectUpdate: true,
-    client: true,
-    team: true,
-    projectManager: true,
-    estimatedVsActual: true,
-    tasksProgress: true,
-    lastActivity: true,
-    status: true,
-    dates: true,
-    daysLeft: true,
-  };
+  return (
+    savedState || {
+      name: true,
+      projectHealth: true,
+      category: true,
+      projectUpdate: true,
+      client: true,
+      team: true,
+      projectManager: true,
+      estimatedVsActual: true,
+      tasksProgress: true,
+      lastActivity: true,
+      status: true,
+      dates: true,
+      daysLeft: true,
+    }
+  );
 };
 
 const initialState: ColumnsVisibilityState = getInitialState();

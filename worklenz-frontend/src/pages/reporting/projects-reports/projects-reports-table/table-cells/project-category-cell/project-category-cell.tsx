@@ -58,20 +58,20 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       </Typography.Text>
     ),
   }));
-      
+
   // handle category select
   const onClick: MenuProps['onClick'] = e => {
     const newCategory = filteredCategoriesData.find(category => category.id === e.key);
     if (newCategory && connected && socket) {
       // Update local state immediately
       setSelectedCategory(newCategory);
-      
+
       // Emit socket event
       socket.emit(
         SocketEvents.PROJECT_CATEGORY_CHANGE.toString(),
         JSON.stringify({
           project_id: projectId,
-          category_id: newCategory.id
+          category_id: newCategory.id,
         })
       );
     }
@@ -133,12 +133,14 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       if (parsedData && parsedData.project_id === projectId) {
         // Update local state
         setSelectedCategory(parsedData.category);
-        
+
         // Update redux store
-        dispatch(updateProjectCategory({
-          projectId: parsedData.project_id,
-          category: parsedData.category
-        }));
+        dispatch(
+          updateProjectCategory({
+            projectId: parsedData.project_id,
+            category: parsedData.category,
+          })
+        );
       }
     } catch (error) {
       console.error('Error handling category change response:', error);
@@ -200,7 +202,7 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
 // Action creator for updating project category
 const updateProjectCategory = (payload: { projectId: string; category: IProjectCategory }) => ({
   type: 'projects/updateCategory',
-  payload
+  payload,
 });
 
 export default ProjectCategoryCell;

@@ -32,7 +32,7 @@ const ProjectTemplatesSettings = () => {
       const res = await projectTemplatesApiService.deleteCustomTemplate(id);
       if (res.done) {
         fetchProjectTemplates();
-      } 
+      }
     } catch (error) {
       logger.error('Failed to delete project template:', error);
     }
@@ -51,7 +51,7 @@ const ProjectTemplatesSettings = () => {
           style={{ display: 'flex', gap: '10px', justifyContent: 'right' }}
           className="button-visibilty"
         >
-          <Tooltip title={t('editToolTip')}>
+          {/* <Tooltip title={t('editToolTip')}>
             <Button
               size="small"
               onClick={() =>
@@ -60,7 +60,7 @@ const ProjectTemplatesSettings = () => {
             >
               <EditOutlined />
             </Button>
-          </Tooltip>
+          </Tooltip> */}
           <Tooltip title={t('deleteToolTip')}>
             <Popconfirm
               title={

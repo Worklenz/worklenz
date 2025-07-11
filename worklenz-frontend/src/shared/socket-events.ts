@@ -58,4 +58,16 @@ export enum SocketEvents {
   TASK_CUSTOM_COLUMN_UPDATE,
   CUSTOM_COLUMN_PINNED_CHANGE,
   TEAM_MEMBER_ROLE_CHANGE,
+
+  // Task progress events
+  UPDATE_TASK_PROGRESS,
+  UPDATE_TASK_WEIGHT,
+  TASK_PROGRESS_UPDATED,
+
+  // Task subtasks count events
+  GET_TASK_SUBTASKS_COUNT,
+  TASK_SUBTASKS_COUNT,
+
+  // Task completion events
+  GET_DONE_STATUSES,
 }

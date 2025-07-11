@@ -1,0 +1,90 @@
+{
+  "exportButton": "Export",
+  "timeLogsButton": "TimeLogs",
+  "activityLogsButton": "Activity Logs",
+  "tasksButton": "Tasks",
+  "searchByNameInputPlaceholder": "Search by name",
+
+  "overviewTab": "Overview",
+  "timeLogsTab": "Time Logs",
+  "activityLogsTab": "Activity Logs",
+  "tasksTab": "Tasks",
+
+  "projectsText": "Projects",
+  "totalTasksText": "Total Tasks",
+  "assignedTasksText": "Assigned Tasks",
+  "completedTasksText": "Completed Tasks",
+  "ongoingTasksText": "Ongoing Tasks",
+  "overdueTasksText": "Overdue Tasks",
+  "loggedHoursText": "Logged Hours",
+
+  "tasksText": "Tasks",
+  "allText": "All",
+
+  "tasksByProjectsText": "Tasks By Projects",
+  "tasksByStatusText": "Tasks By Status",
+  "tasksByPriorityText": "Tasks By Priority",
+
+  "todoText": "To Do",
+  "doingText": "Doing",
+  "doneText": "Done",
+  "lowText": "Low",
+  "mediumText": "Medium",
+  "highText": "High",
+
+  "billableButton": "Billable",
+  "billableText": "Billable",
+  "nonBillableText": "Non Billable",
+
+  "timeLogsEmptyPlaceholder": "No time logs to show",
+  "loggedText": "Logged",
+  "forText": "for",
+  "inText": "in",
+  "updatedText": "Updated",
+  "fromText": "From",
+  "toText": "to",
+  "withinText": "within",
+
+  "activityLogsEmptyPlaceholder": "No activity logs to show",
+
+  "filterByText": "Filter by:",
+  "selectProjectPlaceholder": "Select Project",
+
+  "taskColumn": "Task",
+  "nameColumn": "Name",
+  "projectColumn": "Project",
+  "statusColumn": "Status",
+  "priorityColumn": "Priority",
+  "dueDateColumn": "Due Date",
+  "completedDateColumn": "Completed Date",
+  "estimatedTimeColumn": "Estimated Time",
+  "loggedTimeColumn": "Logged Time",
+  "overloggedTimeColumn": "Overlogged Time",
+  "daysLeftColumn": "Days Left/Overdue",
+  "startDateColumn": "Start Date",
+  "endDateColumn": "End Date",
+  "actualTimeColumn": "Actual Time",
+  "projectHealthColumn": "Project Health",
+  "categoryColumn": "Category",
+  "projectManagerColumn": "Project Manager",
+
+  "tasksStatsOverviewDrawerTitle": "'s Tasks",
+  "projectsStatsOverviewDrawerTitle": "'s Projects",
+
+  "cancelledText": "Cancelled",
+  "blockedText": "Blocked",
+  "onHoldText": "On Hold",
+  "proposedText": "Proposed",
+  "inPlanningText": "In Planning",
+  "inProgressText": "In Progress",
+  "completedText": "Completed",
+  "continuousText": "Continuous",
+
+  "daysLeftText": "days left",
+  "daysOverdueText": "days overdue",
+
+  "notSetText": "NotSet",
+  "needsAttentionText": "Needs Attention",
+  "atRiskText": "At Risk",
+  "goodText": "Good"
+}

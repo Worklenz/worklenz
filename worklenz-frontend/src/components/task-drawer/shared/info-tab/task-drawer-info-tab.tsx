@@ -8,6 +8,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskDetailsForm from './task-details-form';
 import { fetchTask } from '@/features/tasks/tasks.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { TFunction } from 'i18next';
 import { subTasksApiService } from '@/api/tasks/subtasks.api.service';
 import { ISubTask } from '@/types/tasks/subTask.types';
@@ -24,6 +25,7 @@ import AttachmentsGrid from './attachments/attachments-grid';
 import TaskComments from './comments/task-comments';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
+import { ITaskViewModel } from '@/types/tasks/task.types';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
@@ -125,7 +127,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
           <Button
             shape="circle"
             icon={<ReloadOutlined spin={loadingSubTasks} />}
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation(); // Prevent click from bubbling up
               fetchSubTasks();
             }}
@@ -148,7 +150,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       label: <Typography.Text strong>{t('taskInfoTab.dependencies.title')}</Typography.Text>,
       children: (
         <DependenciesTable
-          task={taskFormViewModel?.task || {}}
+          task={(taskFormViewModel?.task as ITaskViewModel) || {} as ITaskViewModel}
           t={t}
           taskDependencies={taskDependencies}
           loadingTaskDependencies={loadingTaskDependencies}
@@ -182,19 +184,15 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       label: <Typography.Text strong>{t('taskInfoTab.comments.title')}</Typography.Text>,
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
-      children: (
-        <TaskComments
-          taskId={selectedTaskId || ''}
-          t={t}
-        />
-      ),
+      children: <TaskComments taskId={selectedTaskId || ''} t={t} />,
     },
   ];
 
-  // Filter out the 'subTasks' item if this task is a subtask
-  const infoItems = taskFormViewModel?.task?.parent_task_id 
-    ? allInfoItems.filter(item => item.key !== 'subTasks')
-    : allInfoItems;
+  // Filter out the 'subTasks' item if this task is more than level 2
+  const infoItems =
+    (taskFormViewModel?.task?.task_level ?? 0) >= 2
+      ? allInfoItems.filter(item => item.key !== 'subTasks')
+      : allInfoItems;
 
   const fetchSubTasks = async () => {
     if (!selectedTaskId || loadingSubTasks) return;
@@ -218,6 +216,14 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       const res = await taskDependenciesApiService.getTaskDependencies(selectedTaskId);
       if (res.done) {
         setTaskDependencies(res.body);
+        
+        // Update Redux state with the current dependency status
+        dispatch(updateTaskCounts({
+          taskId: selectedTaskId,
+          counts: {
+            has_dependencies: res.body.length > 0
+          }
+        }));
       }
     } catch (error) {
       logger.error('Error fetching task dependencies:', error);
@@ -233,6 +239,14 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       const res = await taskAttachmentsApiService.getTaskAttachments(selectedTaskId);
       if (res.done) {
         setTaskAttachments(res.body);
+        
+        // Update Redux state with the current attachment count
+        dispatch(updateTaskCounts({
+          taskId: selectedTaskId,
+          counts: {
+            attachments_count: res.body.length
+          }
+        }));
       }
     } catch (error) {
       logger.error('Error fetching task attachments:', error);
@@ -281,7 +295,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
           defaultActiveKey={[
             'details',
             'description',
-            ...(taskFormViewModel?.task?.parent_task_id ? [] : ['subTasks']),
+            'subTasks',
             'dependencies',
             'attachments',
             'comments',

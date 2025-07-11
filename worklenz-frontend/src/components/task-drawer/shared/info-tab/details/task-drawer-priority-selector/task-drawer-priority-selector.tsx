@@ -15,6 +15,7 @@ import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priorit
 import { setTaskPriority } from '@/features/task-drawer/task-drawer.slice';
 import { updateTaskPriority as updateBoardTaskPriority } from '@/features/board/board-slice';
 import { updateTaskPriority as updateTasksListTaskPriority } from '@/features/tasks/tasks.slice';
+import { updateEnhancedKanbanTaskPriority } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 type PriorityDropdownProps = {
   task: ITaskViewModel;
@@ -28,7 +29,7 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
   const currentSession = useAuthService().getCurrentSession();
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
-  
+
   const handlePriorityChange = (priorityId: string) => {
     if (!task.id || !priorityId) return;
 
@@ -48,7 +49,7 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
           dispatch(updateTasksListTaskPriority(data));
         }
         if (tab === 'board') {
-          dispatch(updateBoardTaskPriority(data));
+          dispatch(updateEnhancedKanbanTaskPriority(data));
         }
       }
     );
@@ -92,7 +93,7 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
 
   return (
     <>
-      {(
+      {
         <Select
           value={task?.priority_id}
           onChange={handlePriorityChange}
@@ -104,10 +105,9 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
                 ? selectedPriority?.color_code_dark
                 : selectedPriority?.color_code + ALPHA_CHANNEL,
           }}
-
           options={options}
         />
-      )}
+      }
     </>
   );
 };

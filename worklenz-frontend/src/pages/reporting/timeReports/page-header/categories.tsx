@@ -1,4 +1,9 @@
-import { fetchReportingProjects, setNoCategory, setSelectOrDeselectAllCategories, setSelectOrDeselectCategory } from '@/features/reporting/time-reports/time-reports-overview.slice';
+import {
+  fetchReportingProjects,
+  setNoCategory,
+  setSelectOrDeselectAllCategories,
+  setSelectOrDeselectCategory,
+} from '@/features/reporting/time-reports/time-reports-overview.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { CaretDownFilled } from '@ant-design/icons';
@@ -36,7 +41,6 @@ const Categories: React.FC = () => {
     await dispatch(setNoCategory(isChecked));
     await dispatch(setSelectOrDeselectAllCategories(isChecked));
     await dispatch(fetchReportingProjects());
-
   };
 
   const handleNoCategoryChange = async (checked: boolean) => {
@@ -51,15 +55,17 @@ const Categories: React.FC = () => {
         placement="bottomLeft"
         trigger={['click']}
         dropdownRender={() => (
-          <div style={{ 
-            background: token.colorBgContainer,
-            borderRadius: token.borderRadius,
-            boxShadow: token.boxShadow,
-            padding: '4px 0',
-            maxHeight: '330px',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
+          <div
+            style={{
+              background: token.colorBgContainer,
+              borderRadius: token.borderRadius,
+              boxShadow: token.boxShadow,
+              padding: '4px 0',
+              maxHeight: '330px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
             <div style={{ padding: '8px', flexShrink: 0 }}>
               <Input
                 onClick={e => e.stopPropagation()}
@@ -89,17 +95,19 @@ const Categories: React.FC = () => {
               </Checkbox>
             </div>
             <Divider style={{ margin: '4px 0', flexShrink: 0 }} />
-            <div style={{ 
-              overflowY: 'auto',
-              flex: 1
-            }}>
+            <div
+              style={{
+                overflowY: 'auto',
+                flex: 1,
+              }}
+            >
               {filteredItems.length > 0 ? (
                 filteredItems.map(item => (
-                  <div 
+                  <div
                     key={item.id}
-                    style={{ 
+                    style={{
                       padding: '8px 12px',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     <Checkbox
@@ -112,9 +120,7 @@ const Categories: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <div style={{ padding: '8px 12px' }}>
-                  {t('noCategories')}
-                </div>
+                <div style={{ padding: '8px 12px' }}>{t('noCategories')}</div>
               )}
             </div>
           </div>

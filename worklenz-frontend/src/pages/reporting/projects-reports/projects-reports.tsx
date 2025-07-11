@@ -1,4 +1,5 @@
 import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from 'antd';
+import { useMemo, useCallback, memo } from 'react';
 import CustomPageHeader from '@/pages/reporting/page-header/custom-page-header';
 import { DownOutlined } from '@ant-design/icons';
 import ProjectReportsTable from './projects-reports-table/projects-reports-table';
@@ -20,40 +21,61 @@ const ProjectsReports = () => {
 
   const { total, archived } = useAppSelector(state => state.projectReportsReducer);
 
-  const handleExcelExport = () => {
+  // Memoize the title to prevent recalculation on every render
+  const pageTitle = useMemo(() => {
+    return `${total === 1 ? `${total}  ${t('projectCount')}` : `${total}  ${t('projectCountPlural')}`} `;
+  }, [total, t]);
+
+  // Memoize the Excel export handler to prevent recreation on every render
+  const handleExcelExport = useCallback(() => {
     if (currentSession?.team_name) {
       reportingExportApiService.exportProjects(currentSession.team_name);
     }
-  };
+  }, [currentSession?.team_name]);
+
+  // Memoize the archived checkbox handler to prevent recreation on every render
+  const handleArchivedChange = useCallback(() => {
+    dispatch(setArchived(!archived));
+  }, [dispatch, archived]);
+
+  // Memoize the dropdown menu items to prevent recreation on every render
+  const dropdownMenuItems = useMemo(
+    () => [{ key: '1', label: t('excelButton'), onClick: handleExcelExport }],
+    [t, handleExcelExport]
+  );
+
+  // Memoize the header children to prevent recreation on every render
+  const headerChildren = useMemo(
+    () => (
+      <Space>
+        <Button>
+          <Checkbox checked={archived} onChange={handleArchivedChange}>
+            <Typography.Text>{t('includeArchivedButton')}</Typography.Text>
+          </Checkbox>
+        </Button>
+
+        <Dropdown menu={{ items: dropdownMenuItems }}>
+          <Button type="primary" icon={<DownOutlined />} iconPosition="end">
+            {t('exportButton')}
+          </Button>
+        </Dropdown>
+      </Space>
+    ),
+    [archived, handleArchivedChange, t, dropdownMenuItems]
+  );
+
+  // Memoize the card title to prevent recreation on every render
+  const cardTitle = useMemo(() => <ProjectsReportsFilters />, []);
 
   return (
     <Flex vertical>
-      <CustomPageHeader
-        title={`${total === 1 ? `${total}  ${t('projectCount')}` : `${total}  ${t('projectCountPlural')}`} `}
-        children={
-          <Space>
-            <Button>
-              <Checkbox checked={archived} onChange={() => dispatch(setArchived(!archived))}>
-                <Typography.Text>{t('includeArchivedButton')}</Typography.Text>
-              </Checkbox>
-            </Button>
+      <CustomPageHeader title={pageTitle} children={headerChildren} />
 
-            <Dropdown
-              menu={{ items: [{ key: '1', label: t('excelButton'), onClick: handleExcelExport }] }}
-            >
-              <Button type="primary" icon={<DownOutlined />} iconPosition="end">
-                {t('exportButton')}
-              </Button>
-            </Dropdown>
-          </Space>
-        }
-      />
-
-      <Card title={<ProjectsReportsFilters />}>
+      <Card title={cardTitle}>
         <ProjectReportsTable />
       </Card>
     </Flex>
   );
 };
 
-export default ProjectsReports;
+export default memo(ProjectsReports);

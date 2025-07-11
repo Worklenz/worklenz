@@ -3,8 +3,15 @@ import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { colors } from '../../../../../styles/colors';
 import { useTranslation } from 'react-i18next';
-import { fetchTask, setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
-import { ISingleMemberActivityLog, ISingleMemberActivityLogs } from '@/types/reporting/reporting.types';
+import {
+  fetchTask,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
+import {
+  ISingleMemberActivityLog,
+  ISingleMemberActivityLogs,
+} from '@/types/reporting/reporting.types';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 
 type TaskStatus = {

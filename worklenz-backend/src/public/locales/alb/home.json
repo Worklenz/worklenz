@@ -1,0 +1,46 @@
+{
+  "todoList": {
+    "title": "Lista e Detyrave",
+    "refreshTasks": "Rifresko detyrat",
+    "addTask": "+ Shto Detyrë",
+    "noTasks": "Asnjë detyrë",
+    "pressEnter": "Shtyp",
+    "toCreate": "për të krijuar.",
+    "markAsDone": "Shëno si të përfunduar"
+  },
+  "projects": {
+    "title": "Projektet",
+    "refreshProjects": "Rifresko projektet",
+    "noRecentProjects": "Aktualisht nuk jeni caktuar në asnjë projekt.",
+    "noFavouriteProjects": "Asnjë projekt i shënuar si i preferuar.",
+    "recent": "Të Fundit",
+    "favourites": "Të Preferuarat"
+  },
+  "tasks": {
+    "assignedToMe": "Më janë caktuar",
+    "assignedByMe": "I kam caktuar",
+    "all": "Të Gjitha",
+    "today": "Sot",
+    "upcoming": "Ardhj",
+    "overdue": "Të vonuara",
+    "noDueDate": "Pa afat",
+    "noTasks": "Asnjë detyrë për të shfaqur.",
+    "addTask": "+ Shto detyrë",
+    "name": "Emri",
+    "project": "Projekti",
+    "status": "Statusi",
+    "dueDate": "Afati",
+    "dueDatePlaceholder": "Cakto Afatin",
+    "tomorrow": "Nesër",
+    "nextWeek": "Javën e Ardhshme",
+    "nextMonth": "Muajin e Ardhshëm",
+    "projectRequired": "Ju lutemi zgjidhni një projekt",
+    "pressTabToSelectDueDateAndProject": "Shtyp Tab për të zgjedhur afatin dhe projektin",
+    "dueOn": "Detyrat me afat më",
+    "taskRequired": "Ju lutemi shtoni një detyrë",
+    "list": "Listë",
+    "calendar": "Kalendar",
+    "tasks": "Detyrat",
+    "refresh": "Rifresko"
+  }
+}

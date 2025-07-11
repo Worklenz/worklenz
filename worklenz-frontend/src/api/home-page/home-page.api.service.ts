@@ -5,7 +5,7 @@ import { toQueryString } from '@/utils/toQueryString';
 import { IHomeTasksModel, IHomeTasksConfig } from '@/types/home/home-page.types';
 import { IMyTask } from '@/types/home/my-tasks.types';
 import { IProject } from '@/types/project/project.types';
-import { getCsrfToken } from '../api-client';
+import { getCsrfToken, refreshCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 const rootUrl = '/home';
@@ -14,9 +14,18 @@ const api = createApi({
   reducerPath: 'homePageApi',
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}${API_BASE_URL}`,
-    prepareHeaders: headers => {
-      headers.set('X-CSRF-Token', getCsrfToken() || '');
+    prepareHeaders: async headers => {
+      // Get CSRF token, refresh if needed
+      let token = getCsrfToken();
+      if (!token) {
+        token = await refreshCsrfToken();
+      }
+
+      if (token) {
+        headers.set('X-CSRF-Token', token);
+      }
       headers.set('Content-Type', 'application/json');
+      return headers;
     },
     credentials: 'include',
   }),

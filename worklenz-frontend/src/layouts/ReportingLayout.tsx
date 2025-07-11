@@ -22,11 +22,7 @@ const ReportingLayout = () => {
   const currentSession = getCurrentSession();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (currentSession?.is_expired) {
-      navigate('/worklenz/license-expired');
-    }
-  }, [currentSession, navigate]);
+  
 
   // function to handle collapse
   const handleCollapsedToggler = () => {

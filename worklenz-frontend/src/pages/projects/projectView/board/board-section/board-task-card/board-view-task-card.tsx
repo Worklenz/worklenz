@@ -55,6 +55,8 @@ import {
   evt_project_task_list_context_menu_delete,
 } from '@/shared/worklenz-analytics-events';
 import logger from '@/utils/errorLogger';
+import { useAuthService } from '@/hooks/useAuth';
+import PrioritySection from '@/components/board/taskCard/priority-section/priority-section';
 
 interface IBoardViewTaskCardProps {
   task: IProjectTask;
@@ -65,7 +67,7 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('kanban-board');
   const { trackMixpanelEvent } = useMixpanelTracking();
-
+  const currentSession = useAuthService().getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const [isSubTaskShow, setIsSubTaskShow] = useState(false);
@@ -84,27 +86,33 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
     },
   });
 
-  const style = useMemo(() => ({
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }), [transform, transition, isDragging]);
+  const style = useMemo(
+    () => ({
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    }),
+    [transform, transition, isDragging]
+  );
 
-  const handleCardClick = useCallback((e: React.MouseEvent, id: string) => {
-    // Prevent the event from propagating to parent elements
-    e.stopPropagation();
+  const handleCardClick = useCallback(
+    (e: React.MouseEvent, id: string) => {
+      // Prevent the event from propagating to parent elements
+      e.stopPropagation();
 
-    // Don't handle click if we're dragging
-    if (isDragging) return;
+      // Don't handle click if we're dragging
+      if (isDragging) return;
 
-    // Add a small delay to ensure it's a click and not the start of a drag
-    const clickTimeout = setTimeout(() => {
-      dispatch(setSelectedTaskId(id));
-      dispatch(setShowTaskDrawer(true));
-    }, 50);
+      // Add a small delay to ensure it's a click and not the start of a drag
+      const clickTimeout = setTimeout(() => {
+        dispatch(setSelectedTaskId(id));
+        dispatch(setShowTaskDrawer(true));
+      }, 50);
 
-    return () => clearTimeout(clickTimeout);
-  }, [dispatch, isDragging]);
+      return () => clearTimeout(clickTimeout);
+    },
+    [dispatch, isDragging]
+  );
 
   const handleAssignToMe = useCallback(async () => {
     if (!projectId || !task.id || updatingAssignToMe) return;
@@ -187,96 +195,67 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
     setShowNewSubtaskCard(true);
   }, []);
 
-  const handleSubtaskButtonClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    handleSubTaskExpand();
-  }, [handleSubTaskExpand]);
+  const handleSubtaskButtonClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      handleSubTaskExpand();
+    },
+    [handleSubTaskExpand]
+  );
 
-  const items: MenuProps['items'] = useMemo(() => [
-    {
-      label: (
-        <span>
-          <UserAddOutlined />
-          &nbsp;
-          <Typography.Text>{t('assignToMe')}</Typography.Text>
-        </span>
-      ),
-      key: '1',
-      onClick: handleAssignToMe,
-      disabled: updatingAssignToMe,
-    },
-    {
-      label: (
-        <span>
-          <InboxOutlined />
-          &nbsp;
-          <Typography.Text>{t('archive')}</Typography.Text>
-        </span>
-      ),
-      key: '2',
-      onClick: handleArchive,
-    },
-    {
-      label: (
-        <Popconfirm
-          title={t('deleteConfirmationTitle')}
-          icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-          okText={t('deleteConfirmationOk')}
-          cancelText={t('deleteConfirmationCancel')}
-          onConfirm={handleDelete}
-        >
-          <DeleteOutlined />
-          &nbsp;
-          {t('delete')}
-        </Popconfirm>
-      ),
-      key: '3',
-    },
-  ], [t, handleAssignToMe, handleArchive, handleDelete, updatingAssignToMe]);
-
-  const priorityIcon = useMemo(() => {
-    if (task.priority_value === 0) {
-      return (
-        <MinusOutlined
-          style={{
-            color: '#52c41a',
-            marginRight: '0.25rem',
-          }}
-        />
-      );
-    } else if (task.priority_value === 1) {
-      return (
-        <PauseOutlined
-          style={{
-            color: '#faad14',
-            transform: 'rotate(90deg)',
-            marginRight: '0.25rem',
-          }}
-        />
-      );
-    } else {
-      return (
-        <DoubleRightOutlined
-          style={{
-            color: '#f5222d',
-            transform: 'rotate(-90deg)',
-            marginRight: '0.25rem',
-          }}
-        />
-      );
-    }
-  }, [task.priority_value]);
+  const items: MenuProps['items'] = useMemo(
+    () => [
+      {
+        label: (
+          <span>
+            <UserAddOutlined />
+            &nbsp;
+            <Typography.Text>{t('assignToMe')}</Typography.Text>
+          </span>
+        ),
+        key: '1',
+        onClick: handleAssignToMe,
+        disabled: updatingAssignToMe,
+      },
+      {
+        label: (
+          <span>
+            <InboxOutlined />
+            &nbsp;
+            <Typography.Text>{t('archive')}</Typography.Text>
+          </span>
+        ),
+        key: '2',
+        onClick: handleArchive,
+      },
+      {
+        label: (
+          <Popconfirm
+            title={t('deleteConfirmationTitle')}
+            icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+            okText={t('deleteConfirmationOk')}
+            cancelText={t('deleteConfirmationCancel')}
+            onConfirm={handleDelete}
+          >
+            <DeleteOutlined />
+            &nbsp;
+            {t('delete')}
+          </Popconfirm>
+        ),
+        key: '3',
+      },
+    ],
+    [t, handleAssignToMe, handleArchive, handleDelete, updatingAssignToMe]
+  );
 
   const renderLabels = useMemo(() => {
     if (!task?.labels?.length) return null;
-    
+
     return (
       <>
         {task.labels.slice(0, 2).map((label: any) => (
           <Tag key={label.id} style={{ marginRight: '4px' }} color={label?.color_code}>
-            <span style={{ color: themeMode === 'dark' ? '#383838' : '' }}>
-              {label.name}
-            </span>
+            <span style={{ color: themeMode === 'dark' ? '#383838' : '' }}>{label.name}</span>
           </Tag>
         ))}
         {task.labels.length > 2 && <Tag>+ {task.labels.length - 2}</Tag>}
@@ -285,50 +264,48 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
   }, [task.labels, themeMode]);
 
   return (
-    <Dropdown menu={{ items }} trigger={['contextMenu']}>
-      <Flex
-        ref={setNodeRef}
-        {...attributes}
-        {...listeners}
-        vertical
-        gap={12}
-        style={{
-          ...style,
-          width: '100%',
-          padding: 12,
-          backgroundColor: themeMode === 'dark' ? '#292929' : '#fafafa',
-          borderRadius: 6,
-          cursor: 'grab',
-          overflow: 'hidden',
-        }}
-        className={`group outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline board-task-card`}
-        onClick={e => handleCardClick(e, task.id || '')}
-        data-id={task.id}
-        data-dragging={isDragging ? "true" : "false"}
-      >
-        {/* Labels and Progress */}
-        <Flex align="center" justify="space-between">
-          <Flex>
-            {renderLabels}
+    <Flex
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      vertical
+      gap={12}
+      style={{
+        ...style,
+        width: '100%',
+        padding: 12,
+        backgroundColor: themeMode === 'dark' ? '#292929' : '#fafafa',
+        borderRadius: 6,
+        cursor: 'grab',
+        overflow: 'hidden',
+      }}
+      className={`group outline-1 ${themeWiseColor('outline-[#edeae9]', 'outline-[#6a696a]', themeMode)} hover:outline-solid board-task-card`}
+      data-id={task.id}
+      data-dragging={isDragging ? 'true' : 'false'}
+    >
+      <Dropdown menu={{ items }} trigger={['contextMenu']}>
+        {/* Task Card */}
+        <Flex vertical gap={8} onClick={e => handleCardClick(e, task.id || '')}>
+          {/* Labels and Progress */}
+          <Flex align="center" justify="space-between">
+            <Flex>{renderLabels}</Flex>
+
+            <Tooltip title={` ${task?.completed_count} / ${task?.total_tasks_count}`}>
+              <Progress
+                type="circle"
+                percent={task?.complete_ratio}
+                size={26}
+                strokeWidth={(task.complete_ratio || 0) >= 100 ? 9 : 7}
+              />
+            </Tooltip>
           </Flex>
-
-          <Tooltip title={` ${task?.completed_count} / ${task?.total_tasks_count}`}>
-            <Progress type="circle" percent={task?.complete_ratio } size={26} strokeWidth={(task.complete_ratio || 0) >= 100 ? 9 : 7} />
-          </Tooltip>
-        </Flex>
-
-        {/* Action Icons */}
-        <Flex gap={4}>
-          {priorityIcon}
-          <Typography.Text 
-            style={{ fontWeight: 500 }}
-            ellipsis={{ tooltip: task.name }}
-          >
-            {task.name}
-          </Typography.Text>
-        </Flex>
-
-        <Flex vertical gap={8}>
+          <Flex gap={4} align="center">
+            {/* Action Icons */}
+            <PrioritySection task={task} />
+            <Typography.Text style={{ fontWeight: 500 }} ellipsis={{ tooltip: task.name }}>
+              {task.name}
+            </Typography.Text>
+          </Flex>
           <Flex
             align="center"
             justify="space-between"
@@ -366,47 +343,50 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
               </Button>
             </Flex>
           </Flex>
-
-          {isSubTaskShow && (
-            <Flex vertical>
-              <Divider style={{ marginBlock: 0 }} />
-              <List>
-                {task.sub_tasks_loading && (
-                  <List.Item>
-                    <Skeleton active paragraph={{ rows: 2 }} title={false} style={{ marginTop: 8 }} />
-                  </List.Item>
-                )}
-                
-                {!task.sub_tasks_loading && task?.sub_tasks &&
-                  task?.sub_tasks.map((subtask: any) => (
-                    <BoardSubTaskCard key={subtask.id} subtask={subtask} sectionId={sectionId} />
-                  ))}
-
-                {showNewSubtaskCard && (
-                  <BoardCreateSubtaskCard
-                    sectionId={sectionId}
-                    parentTaskId={task.id || ''}
-                    setShowNewSubtaskCard={setShowNewSubtaskCard}
-                  />
-                )}
-              </List>
-              <Button
-                type="text"
-                style={{
-                  width: 'fit-content',
-                  borderRadius: 6,
-                  boxShadow: 'none',
-                }}
-                icon={<PlusOutlined />}
-                onClick={handleAddSubtaskClick}
-              >
-                {t('addSubtask', 'Add Subtask')}
-              </Button>
-            </Flex>
-          )}
         </Flex>
+      </Dropdown>
+      {/* Subtask Section */}
+      <Flex vertical gap={8}>
+        {isSubTaskShow && (
+          <Flex vertical>
+            <Divider style={{ marginBlock: 0 }} />
+            <List>
+              {task.sub_tasks_loading && (
+                <List.Item>
+                  <Skeleton active paragraph={{ rows: 2 }} title={false} style={{ marginTop: 8 }} />
+                </List.Item>
+              )}
+
+              {!task.sub_tasks_loading &&
+                task?.sub_tasks &&
+                task?.sub_tasks.map((subtask: any) => (
+                  <BoardSubTaskCard key={subtask.id} subtask={subtask} sectionId={sectionId} />
+                ))}
+
+              {showNewSubtaskCard && (
+                <BoardCreateSubtaskCard
+                  sectionId={sectionId}
+                  parentTaskId={task.id || ''}
+                  setShowNewSubtaskCard={setShowNewSubtaskCard}
+                />
+              )}
+            </List>
+            <Button
+              type="text"
+              style={{
+                width: 'fit-content',
+                borderRadius: 6,
+                boxShadow: 'none',
+              }}
+              icon={<PlusOutlined />}
+              onClick={handleAddSubtaskClick}
+            >
+              {t('addSubtask', 'Add Subtask')}
+            </Button>
+          </Flex>
+        )}
       </Flex>
-    </Dropdown>
+    </Flex>
   );
 };
 

@@ -164,15 +164,15 @@ const NotificationDrawer = () => {
           await handleVerifyAuth();
         }
         if (notification.project && notification.task_id) {
-          navigate(`${notification.url}${toQueryString({task: notification.params?.task, tab: notification.params?.tab})}`);
+          navigate(
+            `${notification.url}${toQueryString({ task: notification.params?.task, tab: notification.params?.tab })}`
+          );
         }
-
       } catch (error) {
         console.error('Error navigating to URL:', error);
       } finally {
         setIsLoading(false);
       }
-
     }
   };
 

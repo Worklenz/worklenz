@@ -1,0 +1,643 @@
+/* Task Management System Styles */
+
+.task-list-board {
+  width: 100%;
+}
+
+/* Global Confirmation Modal Styles */
+/* Light mode confirmation modal styling (default) */
+.ant-modal-confirm .ant-modal-content {
+  background-color: #ffffff;
+  border: 1px solid #f0f0f0;
+}
+
+.ant-modal-confirm .ant-modal-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-modal-confirm .ant-modal-body {
+  background-color: #ffffff;
+  color: #262626;
+}
+
+.ant-modal-confirm .ant-modal-footer {
+  background-color: #ffffff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.ant-modal-confirm .ant-modal-confirm-title {
+  color: #262626;
+}
+
+.ant-modal-confirm .ant-modal-confirm-content {
+  color: #595959;
+}
+
+/* Dark mode confirmation modal styling */
+.dark .ant-modal-confirm .ant-modal-content,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-content,
+html.dark .ant-modal-confirm .ant-modal-content {
+  background-color: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-header,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-header,
+html.dark .ant-modal-confirm .ant-modal-header {
+  background-color: #1f1f1f !important;
+  border-bottom: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-body,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-body,
+html.dark .ant-modal-confirm .ant-modal-body {
+  background-color: #1f1f1f !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-footer,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-footer,
+html.dark .ant-modal-confirm .ant-modal-footer {
+  background-color: #1f1f1f !important;
+  border-top: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-confirm-title,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-confirm-title,
+html.dark .ant-modal-confirm .ant-modal-confirm-title {
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-confirm-content,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-confirm-content,
+html.dark .ant-modal-confirm .ant-modal-confirm-content {
+  color: #8c8c8c !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-default,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-default,
+html.dark .ant-modal-confirm .ant-btn-default {
+  background-color: #141414 !important;
+  border-color: #303030 !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-default:hover,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-default:hover,
+html.dark .ant-modal-confirm .ant-btn-default:hover {
+  background-color: #262626 !important;
+  border-color: #40a9ff !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-primary,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-primary,
+html.dark .ant-modal-confirm .ant-btn-primary {
+  background-color: #1890ff !important;
+  border-color: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-primary:hover,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-primary:hover,
+html.dark .ant-modal-confirm .ant-btn-primary:hover {
+  background-color: #40a9ff !important;
+  border-color: #40a9ff !important;
+  color: #ffffff !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-dangerous,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-dangerous,
+html.dark .ant-modal-confirm .ant-btn-dangerous {
+  background-color: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  color: #ffffff !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-dangerous:hover,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-dangerous:hover,
+html.dark .ant-modal-confirm .ant-btn-dangerous:hover {
+  background-color: #ff7875 !important;
+  border-color: #ff7875 !important;
+  color: #ffffff !important;
+}
+
+/* Error modal specific styling */
+.dark .ant-modal-error .ant-modal-content,
+[data-theme="dark"] .ant-modal-error .ant-modal-content,
+html.dark .ant-modal-error .ant-modal-content {
+  background-color: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-error .ant-modal-body,
+[data-theme="dark"] .ant-modal-error .ant-modal-body,
+html.dark .ant-modal-error .ant-modal-body {
+  background-color: #1f1f1f !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-error .ant-modal-confirm-title,
+[data-theme="dark"] .ant-modal-error .ant-modal-confirm-title,
+html.dark .ant-modal-error .ant-modal-confirm-title {
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-error .ant-modal-confirm-content,
+[data-theme="dark"] .ant-modal-error .ant-modal-content,
+html.dark .ant-modal-error .ant-modal-confirm-content {
+  color: #8c8c8c !important;
+}
+
+.task-group {
+  transition: all 0.2s ease;
+}
+
+.task-group.drag-over {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.task-group .group-header {
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.task-group .group-header:hover {
+  background: #f5f5f5;
+}
+
+.task-row {
+  border-left: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.task-row:hover {
+  background-color: #f9f9f9 !important;
+  border-left-color: #d9d9d9;
+}
+
+.task-row.selected {
+  background-color: #e6f7ff !important;
+  border-left-color: #1890ff;
+}
+
+.task-row .drag-handle {
+  cursor: grab;
+  transition: opacity 0.2s ease;
+}
+
+.task-row .drag-handle:active {
+  cursor: grabbing;
+}
+
+.task-row:not(:hover) .drag-handle {
+  opacity: 0.3;
+}
+
+/* Progress bars */
+.ant-progress-line {
+  margin: 0;
+}
+
+.ant-progress-bg {
+  border-radius: 2px;
+}
+
+/* Avatar groups */
+.ant-avatar-group .ant-avatar {
+  border: 1px solid #fff;
+}
+
+/* Tags */
+.task-row .ant-tag {
+  margin: 0;
+  padding: 0 4px;
+  height: 16px;
+  line-height: 14px;
+  font-size: 10px;
+  border-radius: 2px;
+}
+
+/* Checkboxes */
+.task-row .ant-checkbox-wrapper {
+  margin-right: 0;
+}
+
+/* Bulk action bar */
+.bulk-action-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+/* Collapsible animations */
+.task-group .ant-collapse-content > .ant-collapse-content-box {
+  padding: 0;
+}
+
+/* Drag overlay */
+.task-row.drag-overlay {
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: rotate(5deg);
+  cursor: grabbing;
+  z-index: 1000;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .task-row {
+    padding: 12px;
+  }
+
+  .task-row .flex {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .task-row .task-metadata {
+    margin-top: 8px;
+    margin-left: 0 !important;
+  }
+}
+
+/* Subtask indentation */
+.task-subtasks {
+  margin-left: 32px;
+  padding-left: 16px;
+  border-left: 2px solid #f0f0f0;
+}
+
+.task-subtasks .task-row {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+/* Status indicators */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.priority-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Animation classes */
+.task-row-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.task-row-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 300ms,
+    transform 300ms;
+}
+
+.task-row-exit {
+  opacity: 1;
+}
+
+.task-row-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition:
+    opacity 300ms,
+    transform 300ms;
+}
+
+/* Custom scrollbar */
+.task-groups-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.task-groups-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.task-groups-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.task-groups-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading states */
+.task-row.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.task-group.loading {
+  opacity: 0.8;
+}
+
+/* Focus styles for accessibility */
+.task-row:focus-within {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+.drag-handle:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Dark mode support using class-based selectors */
+.dark .task-list-board {
+  background-color: #141414;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .task-group {
+  background-color: #1f1f1f;
+  border-color: #303030;
+}
+
+.dark .task-group.drag-over {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3);
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+.dark .task-group .group-header {
+  background: #262626;
+  border-bottom-color: #303030;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .task-group .group-header:hover {
+  background: #2f2f2f;
+}
+
+.dark .task-row {
+  background-color: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+  border-color: #303030;
+}
+
+.dark .task-row:hover {
+  background-color: #262626 !important;
+  border-left-color: #595959;
+}
+
+.dark .task-row.selected {
+  background-color: rgba(24, 144, 255, 0.15) !important;
+  border-left-color: #1890ff;
+}
+
+.dark .task-row .drag-handle {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.dark .task-row .drag-handle:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .bulk-action-bar {
+  background: rgba(24, 144, 255, 0.15);
+  border-color: rgba(24, 144, 255, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .task-row .ant-typography {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .task-row .text-gray-500 {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.dark .task-row .text-gray-600 {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.dark .task-row .text-gray-400 {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.dark .task-row .line-through {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.dark .ant-card {
+  background-color: #1f1f1f;
+  border-color: #303030;
+}
+
+.dark .ant-card-head {
+  background-color: #262626;
+  border-bottom-color: #303030;
+}
+
+.dark .ant-card-body {
+  background-color: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .ant-btn {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .ant-btn:hover {
+  background-color: #2f2f2f;
+  border-color: #505050;
+}
+
+.dark .ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.dark .ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.dark .ant-dropdown-menu {
+  background-color: #1f1f1f;
+  border-color: #303030;
+}
+
+.dark .ant-dropdown-menu-item {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .ant-dropdown-menu-item:hover {
+  background-color: #262626;
+}
+
+.dark .ant-select-selector {
+  background-color: #262626 !important;
+  border-color: #404040 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.dark .ant-checkbox-wrapper {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .ant-checkbox-inner {
+  background-color: #262626;
+  border-color: #404040;
+}
+
+.dark .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.dark .ant-tag {
+  background-color: #262626;
+  border-color: #404040;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .ant-avatar {
+  background-color: #404040;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .ant-tooltip-inner {
+  background-color: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .ant-tooltip-arrow-content {
+  background-color: #1f1f1f;
+}
+
+.dark .ant-popover-inner {
+  background-color: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .ant-popover-arrow-content {
+  background-color: #1f1f1f;
+}
+
+.dark .task-subtasks {
+  border-left-color: #303030;
+}
+
+.dark .task-subtasks .task-row {
+  background-color: #141414;
+}
+
+.dark .task-subtasks .task-row:hover {
+  background-color: #1a1a1a;
+}
+
+.dark .task-groups-container::-webkit-scrollbar-track {
+  background-color: #262626;
+}
+
+.dark .task-groups-container::-webkit-scrollbar-thumb {
+  background-color: #404040;
+}
+
+.dark .task-groups-container::-webkit-scrollbar-thumb:hover {
+  background-color: #505050;
+}
+
+.dark .ant-spin-dot-item {
+  background-color: #1890ff;
+}
+
+.dark .ant-empty {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.dark .ant-empty-description {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.dark .task-row:focus-within {
+  outline-color: #1890ff;
+}
+
+.dark .drag-handle:focus {
+  outline-color: #1890ff;
+}
+
+.dark .border-gray-100 {
+  border-color: #262626 !important;
+}
+
+.dark .border-gray-200 {
+  border-color: #303030 !important;
+}
+
+.dark .border-gray-300 {
+  border-color: #404040 !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: #141414 !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #1a1a1a !important;
+}
+
+.dark .bg-white {
+  background-color: #1f1f1f !important;
+}
+
+.dark .text-red-500 {
+  color: #ff7875 !important;
+}
+
+.dark .text-orange-500 {
+  color: #ffa940 !important;
+}
+
+.dark .task-group .group-header .bg-gray-200 {
+  background-color: #262626 !important;
+}
+
+/* System preference fallback - only apply when explicitly in dark mode */
+@media (prefers-color-scheme: dark) {
+  .task-list-board.dark:not(.light) {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .task-group.dark:not(.light) {
+    background-color: #1f1f1f;
+  }
+
+  .task-row.dark:not(.light) {
+    background-color: #1f1f1f;
+    color: rgba(255, 255, 255, 0.85);
+    border-color: #303030;
+  }
+
+  .task-row.dark:not(.light):hover {
+    background-color: #262626 !important;
+    border-left-color: #595959;
+  }
+}

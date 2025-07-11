@@ -30,5 +30,6 @@ const timeLogSlice = createSlice({
   },
 });
 
-export const { toggleTimeLogDrawer, setSelectedLabel, setLabelAndToggleDrawer } = timeLogSlice.actions;
+export const { toggleTimeLogDrawer, setSelectedLabel, setLabelAndToggleDrawer } =
+  timeLogSlice.actions;
 export default timeLogSlice.reducer;

@@ -4,10 +4,11 @@ import db from "../../config/db";
 import {NotificationsService} from "../../services/notifications/notifications.service";
 import {TASK_STATUS_COLOR_ALPHA} from "../../shared/constants";
 import {SocketEvents} from "../events";
-import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, log, log_error, notifyProjectUpdates} from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
-import {getTaskDetails, logStatusChange} from "../../services/activity-logs/activity-logs.service";
+import {getTaskDetails, logProgressChange, logStatusChange} from "../../services/activity-logs/activity-logs.service";
 import { assignMemberIfNot } from "./on-quick-assign-or-remove";
+import logger from "../../utils/logger";
 
 export async function on_task_status_change(_io: Server, socket: Socket, data?: string) {
   try {
@@ -47,6 +48,63 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
         taskId: body.task_id,
         projectId: changeResponse.project_id
       });
+    }
+
+    // Check if the new status is in a "done" category
+    if (changeResponse.status_category?.is_done) {
+      // Get current progress value
+      const progressResult = await db.query(`
+        SELECT progress_value, manual_progress
+        FROM tasks
+        WHERE id = $1
+      `, [body.task_id]);
+
+      const currentProgress = progressResult.rows[0]?.progress_value;
+      const isManualProgress = progressResult.rows[0]?.manual_progress;
+
+      // Only update if not already 100%
+      if (currentProgress !== 100) {
+        // Update progress to 100%
+        await db.query(`
+          UPDATE tasks
+          SET progress_value = 100, manual_progress = TRUE
+          WHERE id = $1
+        `, [body.task_id]);
+
+        log(`Task ${body.task_id} moved to done status - progress automatically set to 100%`, null);
+
+        // Log the progress change to activity logs
+        await logProgressChange({
+          task_id: body.task_id,
+          old_value: currentProgress !== null ? currentProgress.toString() : "0",
+          new_value: "100",
+          socket
+        });
+
+        // If this is a subtask, update parent task progress
+        if (body.parent_task) {
+          setTimeout(() => {
+            socket.emit(SocketEvents.GET_TASK_PROGRESS.toString(), body.parent_task);
+          }, 100);
+        }
+      }
+    } else {
+      // Task is moving from "done" to "todo" or "doing" - reset manual_progress to FALSE
+      // so progress can be recalculated based on subtasks
+      await db.query(`
+        UPDATE tasks
+        SET manual_progress = FALSE
+        WHERE id = $1
+      `, [body.task_id]);
+
+      log(`Task ${body.task_id} moved from done status - manual_progress reset to FALSE`, null);
+
+      // If this is a subtask, update parent task progress
+      if (body.parent_task) {
+        setTimeout(() => {
+          socket.emit(SocketEvents.GET_TASK_PROGRESS.toString(), body.parent_task);
+        }, 100);
+      }
     }
 
     const info = await TasksControllerV2.getTaskCompleteRatio(body.parent_task || body.task_id);

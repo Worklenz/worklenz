@@ -2,7 +2,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { useAuthService } from '@/hooks/useAuth';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Flex from 'antd/es/flex';
 import useIsomorphicLayoutEffect from '@/hooks/useIsomorphicLayoutEffect';
@@ -61,7 +61,7 @@ import {
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 
 import TaskListTableWrapper from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-wrapper/task-list-table-wrapper';
-import TaskListBulkActionsBar from '@/components/taskListCommon/task-list-bulk-actions-bar/task-list-bulk-actions-bar';
+
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -87,16 +87,22 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
   const loadingAssignees = useAppSelector(state => state.taskReducer.loadingAssignees);
   const { projectId } = useAppSelector(state => state.projectReducer);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
+  // Move useSensors to top level and memoize its configuration
+  const sensorConfig = useMemo(
+    () => ({
       activationConstraint: { distance: 8 },
-    })
+    }),
+    []
   );
+
+  const pointerSensor = useSensor(PointerSensor, sensorConfig);
+  const sensors = useSensors(pointerSensor);
 
   useEffect(() => {
     setGroups(taskGroups);
   }, [taskGroups]);
 
+  // Memoize resetTaskRowStyles to prevent unnecessary re-renders
   const resetTaskRowStyles = useCallback(() => {
     document.querySelectorAll<HTMLElement>('.task-row').forEach(row => {
       row.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
@@ -106,21 +112,19 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
     });
   }, []);
 
-  // Socket handler for assignee updates
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleAssigneesUpdate = (data: ITaskAssigneesUpdateResponse) => {
+  // Memoize socket event handlers
+  const handleAssigneesUpdate = useCallback(
+    (data: ITaskAssigneesUpdateResponse) => {
       if (!data) return;
 
-      const updatedAssignees = data.assignees.map(assignee => ({
-        ...assignee,
-        selected: true,
-      }));
+      const updatedAssignees =
+        data.assignees?.map(assignee => ({
+          ...assignee,
+          selected: true,
+        })) || [];
 
-      // Find the group that contains the task or its subtasks
-      const groupId = groups.find(group =>
-        group.tasks.some(
+      const groupId = groups?.find(group =>
+        group.tasks?.some(
           task =>
             task.id === data.id ||
             (task.sub_tasks && task.sub_tasks.some(subtask => subtask.id === data.id))
@@ -136,47 +140,41 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
           })
         );
 
-        dispatch(setTaskAssignee(data));
+        dispatch(
+          setTaskAssignee({
+            ...data,
+            manual_progress: false,
+          } as IProjectTask)
+        );
 
         if (currentSession?.team_id && !loadingAssignees) {
           dispatch(fetchTaskAssignees(currentSession.team_id));
         }
       }
-    };
+    },
+    [groups, dispatch, currentSession?.team_id, loadingAssignees]
+  );
 
-    socket.on(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handleAssigneesUpdate);
-    return () => {
-      socket.off(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handleAssigneesUpdate);
-    };
-  }, [socket, currentSession?.team_id, loadingAssignees, groups, dispatch]);
+  // Memoize socket event handlers
+  const handleLabelsChange = useCallback(
+    async (labels: ILabelsChangeResponse) => {
+      if (!labels) return;
 
-  // Socket handler for label updates
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleLabelsChange = async (labels: ILabelsChangeResponse) => {
       await Promise.all([
         dispatch(updateTaskLabel(labels)),
         dispatch(setTaskLabels(labels)),
         dispatch(fetchLabels()),
         projectId && dispatch(fetchLabelsByProject(projectId)),
       ]);
-    };
+    },
+    [dispatch, projectId]
+  );
 
-    socket.on(SocketEvents.TASK_LABELS_CHANGE.toString(), handleLabelsChange);
-    socket.on(SocketEvents.CREATE_LABEL.toString(), handleLabelsChange);
+  // Memoize socket event handlers
+  const handleTaskStatusChange = useCallback(
+    (response: ITaskListStatusChangeResponse) => {
+      if (!response) return;
 
-    return () => {
-      socket.off(SocketEvents.TASK_LABELS_CHANGE.toString(), handleLabelsChange);
-      socket.off(SocketEvents.CREATE_LABEL.toString(), handleLabelsChange);
-    };
-  }, [socket, dispatch, projectId]);
-
-  // Socket handler for status updates
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleTaskStatusChange = (response: ITaskListStatusChangeResponse) => {
       if (response.completed_deps === false) {
         alertService.error(
           'Task is not completed',
@@ -186,11 +184,14 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
       }
 
       dispatch(updateTaskStatus(response));
-      // dispatch(setTaskStatus(response));
       dispatch(deselectAll());
-    };
+    },
+    [dispatch]
+  );
 
-    const handleTaskProgress = (data: {
+  // Memoize socket event handlers
+  const handleTaskProgress = useCallback(
+    (data: {
       id: string;
       status: string;
       complete_ratio: number;
@@ -198,6 +199,8 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
       total_tasks_count: number;
       parent_task: string;
     }) => {
+      if (!data) return;
+
       dispatch(
         updateTaskProgress({
           taskId: data.parent_task || data.id,
@@ -206,187 +209,213 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
           completedCount: data.completed_count,
         })
       );
-    };
+    },
+    [dispatch]
+  );
 
-    socket.on(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
-    socket.on(SocketEvents.GET_TASK_PROGRESS.toString(), handleTaskProgress);
+  // Memoize socket event handlers
+  const handlePriorityChange = useCallback(
+    (response: ITaskListPriorityChangeResponse) => {
+      if (!response) return;
 
-    return () => {
-      socket.off(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
-      socket.off(SocketEvents.GET_TASK_PROGRESS.toString(), handleTaskProgress);
-    };
-  }, [socket, dispatch]);
-
-  // Socket handler for priority updates
-  useEffect(() => {
-    if (!socket) return;
-
-    const handlePriorityChange = (response: ITaskListPriorityChangeResponse) => {
       dispatch(updateTaskPriority(response));
       dispatch(setTaskPriority(response));
       dispatch(deselectAll());
-    };
+    },
+    [dispatch]
+  );
 
-    socket.on(SocketEvents.TASK_PRIORITY_CHANGE.toString(), handlePriorityChange);
+  // Memoize socket event handlers
+  const handleEndDateChange = useCallback(
+    (task: { id: string; parent_task: string | null; end_date: string }) => {
+      if (!task) return;
 
-    return () => {
-      socket.off(SocketEvents.TASK_PRIORITY_CHANGE.toString(), handlePriorityChange);
-    };
-  }, [socket, dispatch]);
+      const taskWithProgress = {
+        ...task,
+        manual_progress: false,
+      } as IProjectTask;
 
-  // Socket handler for due date updates
-  useEffect(() => {
-    if (!socket) return;
+      dispatch(updateTaskEndDate({ task: taskWithProgress }));
+      dispatch(setTaskEndDate(taskWithProgress));
+    },
+    [dispatch]
+  );
 
-    const handleEndDateChange = (task: {
-      id: string;
-      parent_task: string | null;
-      end_date: string;
-    }) => {
-      dispatch(updateTaskEndDate({ task }));
-      dispatch(setTaskEndDate(task));
-    };
+  // Memoize socket event handlers
+  const handleTaskNameChange = useCallback(
+    (data: { id: string; parent_task: string; name: string }) => {
+      if (!data) return;
 
-    socket.on(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleEndDateChange);
-
-    return () => {
-      socket.off(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleEndDateChange);
-    };
-  }, [socket, dispatch]);
-
-  // Socket handler for task name updates
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleTaskNameChange = (data: { id: string; parent_task: string; name: string }) => {
       dispatch(updateTaskName(data));
-    };
+    },
+    [dispatch]
+  );
 
-    socket.on(SocketEvents.TASK_NAME_CHANGE.toString(), handleTaskNameChange);
+  // Memoize socket event handlers
+  const handlePhaseChange = useCallback(
+    (data: ITaskPhaseChangeResponse) => {
+      if (!data) return;
 
-    return () => {
-      socket.off(SocketEvents.TASK_NAME_CHANGE.toString(), handleTaskNameChange);
-    };
-  }, [socket, dispatch]);
-
-  // Socket handler for phase updates
-  useEffect(() => {
-    if (!socket) return;
-
-    const handlePhaseChange = (data: ITaskPhaseChangeResponse) => {
       dispatch(updateTaskPhase(data));
       dispatch(deselectAll());
-    };
+    },
+    [dispatch]
+  );
 
-    socket.on(SocketEvents.TASK_PHASE_CHANGE.toString(), handlePhaseChange);
+  // Memoize socket event handlers
+  const handleStartDateChange = useCallback(
+    (task: { id: string; parent_task: string | null; start_date: string }) => {
+      if (!task) return;
 
-    return () => {
-      socket.off(SocketEvents.TASK_PHASE_CHANGE.toString(), handlePhaseChange);
-    };
-  }, [socket, dispatch]);
+      const taskWithProgress = {
+        ...task,
+        manual_progress: false,
+      } as IProjectTask;
 
-  // Socket handler for start date updates
-  useEffect(() => {
-    if (!socket) return;
+      dispatch(updateTaskStartDate({ task: taskWithProgress }));
+      dispatch(setStartDate(taskWithProgress));
+    },
+    [dispatch]
+  );
 
-    const handleStartDateChange = (task: {
-      id: string;
-      parent_task: string | null;
-      start_date: string;
-    }) => {
-      dispatch(updateTaskStartDate({ task }));
-      dispatch(setStartDate(task));
-    };
+  // Memoize socket event handlers
+  const handleTaskSubscribersChange = useCallback(
+    (data: InlineMember[]) => {
+      if (!data) return;
 
-    socket.on(SocketEvents.TASK_START_DATE_CHANGE.toString(), handleStartDateChange);
-
-    return () => {
-      socket.off(SocketEvents.TASK_START_DATE_CHANGE.toString(), handleStartDateChange);
-    };
-  }, [socket, dispatch]);
-
-  // Socket handler for task subscribers updates
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleTaskSubscribersChange = (data: InlineMember[]) => {
       dispatch(setTaskSubscribers(data));
-    };
+    },
+    [dispatch]
+  );
 
-    socket.on(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), handleTaskSubscribersChange);
+  // Memoize socket event handlers
+  const handleEstimationChange = useCallback(
+    (task: { id: string; parent_task: string | null; estimation: number }) => {
+      if (!task) return;
 
-    return () => {
-      socket.off(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), handleTaskSubscribersChange);
-    };
-  }, [socket, dispatch]);
+      const taskWithProgress = {
+        ...task,
+        manual_progress: false,
+      } as IProjectTask;
 
-  // Socket handler for task estimation updates
-  useEffect(() => {
-    if (!socket) return;
+      dispatch(updateTaskEstimation({ task: taskWithProgress }));
+    },
+    [dispatch]
+  );
 
-    const handleEstimationChange = (task: {
-      id: string;
-      parent_task: string | null;
-      estimation: number;
-    }) => {
-      dispatch(updateTaskEstimation({ task }));
-    };
+  // Memoize socket event handlers
+  const handleTaskDescriptionChange = useCallback(
+    (data: { id: string; parent_task: string; description: string }) => {
+      if (!data) return;
 
-    socket.on(SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(), handleEstimationChange);
-
-    return () => {
-      socket.off(SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(), handleEstimationChange);
-    };
-  }, [socket, dispatch]);
-
-  // Socket handler for task description updates
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleTaskDescriptionChange = (data: {
-      id: string;
-      parent_task: string;
-      description: string;
-    }) => {
       dispatch(updateTaskDescription(data));
-    };
+    },
+    [dispatch]
+  );
 
-    socket.on(SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), handleTaskDescriptionChange);
-
-    return () => {
-      socket.off(SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), handleTaskDescriptionChange);
-    };
-  }, [socket, dispatch]);
-
-  // Socket handler for new task creation
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewTaskReceived = (data: IProjectTask) => {
+  // Memoize socket event handlers
+  const handleNewTaskReceived = useCallback(
+    (data: IProjectTask) => {
       if (!data) return;
 
       if (data.parent_task_id) {
         dispatch(updateSubTasks(data));
       }
+    },
+    [dispatch]
+  );
+
+  // Memoize socket event handlers
+  const handleTaskProgressUpdated = useCallback(
+    (data: { task_id: string; progress_value?: number; weight?: number }) => {
+      if (!data || !taskGroups) return;
+
+      if (data.progress_value !== undefined) {
+        for (const group of taskGroups) {
+          const task = group.tasks?.find(task => task.id === data.task_id);
+          if (task) {
+            dispatch(
+              updateTaskProgress({
+                taskId: data.task_id,
+                progress: data.progress_value,
+                totalTasksCount: task.total_tasks_count || 0,
+                completedCount: task.completed_count || 0,
+              })
+            );
+            break;
+          }
+        }
+      }
+    },
+    [dispatch, taskGroups]
+  );
+
+  // Set up socket event listeners
+  useEffect(() => {
+    if (!socket) return;
+
+    const eventHandlers = {
+      [SocketEvents.QUICK_ASSIGNEES_UPDATE.toString()]: handleAssigneesUpdate,
+      [SocketEvents.TASK_LABELS_CHANGE.toString()]: handleLabelsChange,
+      [SocketEvents.CREATE_LABEL.toString()]: handleLabelsChange,
+      [SocketEvents.TASK_STATUS_CHANGE.toString()]: handleTaskStatusChange,
+      [SocketEvents.GET_TASK_PROGRESS.toString()]: handleTaskProgress,
+      [SocketEvents.TASK_PRIORITY_CHANGE.toString()]: handlePriorityChange,
+      [SocketEvents.TASK_END_DATE_CHANGE.toString()]: handleEndDateChange,
+      [SocketEvents.TASK_NAME_CHANGE.toString()]: handleTaskNameChange,
+      [SocketEvents.TASK_PHASE_CHANGE.toString()]: handlePhaseChange,
+      [SocketEvents.TASK_START_DATE_CHANGE.toString()]: handleStartDateChange,
+      [SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString()]: handleTaskSubscribersChange,
+      [SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString()]: handleEstimationChange,
+      [SocketEvents.TASK_DESCRIPTION_CHANGE.toString()]: handleTaskDescriptionChange,
+      [SocketEvents.QUICK_TASK.toString()]: handleNewTaskReceived,
+      [SocketEvents.TASK_PROGRESS_UPDATED.toString()]: handleTaskProgressUpdated,
     };
 
-    socket.on(SocketEvents.QUICK_TASK.toString(), handleNewTaskReceived);
+    // Register all event handlers
+    Object.entries(eventHandlers).forEach(([event, handler]) => {
+      if (handler) {
+        socket.on(event, handler);
+      }
+    });
 
+    // Cleanup function
     return () => {
-      socket.off(SocketEvents.QUICK_TASK.toString(), handleNewTaskReceived);
+      Object.entries(eventHandlers).forEach(([event, handler]) => {
+        if (handler) {
+          socket.off(event, handler);
+        }
+      });
     };
-  }, [socket, dispatch]);
+  }, [
+    socket,
+    handleAssigneesUpdate,
+    handleLabelsChange,
+    handleTaskStatusChange,
+    handleTaskProgress,
+    handlePriorityChange,
+    handleEndDateChange,
+    handleTaskNameChange,
+    handlePhaseChange,
+    handleStartDateChange,
+    handleTaskSubscribersChange,
+    handleEstimationChange,
+    handleTaskDescriptionChange,
+    handleNewTaskReceived,
+    handleTaskProgressUpdated,
+  ]);
 
+  // Memoize drag handlers
   const handleDragStart = useCallback(({ active }: DragStartEvent) => {
     setActiveId(active.id as string);
 
-    // Add smooth transition to the dragged item
     const draggedElement = document.querySelector(`[data-id="${active.id}"]`);
     if (draggedElement) {
       (draggedElement as HTMLElement).style.transition = 'transform 0.2s ease';
     }
   }, []);
 
+  // Memoize drag handlers
   const handleDragEnd = useCallback(
     async ({ active, over }: DragEndEvent) => {
       setActiveId(null);
@@ -405,10 +434,8 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
       const fromIndex = sourceGroup.tasks.findIndex(t => t.id === activeTaskId);
       if (fromIndex === -1) return;
 
-      // Create a deep clone of the task to avoid reference issues
       const task = JSON.parse(JSON.stringify(sourceGroup.tasks[fromIndex]));
 
-      // Check if task dependencies allow the move
       if (activeGroupId !== overGroupId) {
         const canContinue = await checkTaskDependencyStatus(task.id, overGroupId);
         if (!canContinue) {
@@ -420,7 +447,6 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
           return;
         }
 
-        // Update task properties based on target group
         switch (groupBy) {
           case IGroupBy.STATUS:
             task.status = overGroupId;
@@ -433,35 +459,29 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
             task.priority_color_dark = targetGroup.color_code_dark;
             break;
           case IGroupBy.PHASE:
-            // Check if ALPHA_CHANNEL is already added
             const baseColor = targetGroup.color_code.endsWith(ALPHA_CHANNEL)
-              ? targetGroup.color_code.slice(0, -ALPHA_CHANNEL.length) // Remove ALPHA_CHANNEL
-              : targetGroup.color_code; // Use as is if not present
+              ? targetGroup.color_code.slice(0, -ALPHA_CHANNEL.length)
+              : targetGroup.color_code;
             task.phase_id = overGroupId;
-            task.phase_color = baseColor; // Set the cleaned color
+            task.phase_color = baseColor;
             break;
         }
       }
 
       const isTargetGroupEmpty = targetGroup.tasks.length === 0;
-
-      // Calculate toIndex - for empty groups, always add at index 0
       const toIndex = isTargetGroupEmpty
         ? 0
         : overTaskId
           ? targetGroup.tasks.findIndex(t => t.id === overTaskId)
           : targetGroup.tasks.length;
 
-      // Calculate toPos similar to Angular implementation
       const toPos = isTargetGroupEmpty
         ? -1
         : targetGroup.tasks[toIndex]?.sort_order ||
           targetGroup.tasks[targetGroup.tasks.length - 1]?.sort_order ||
           -1;
 
-      // Update Redux state
       if (activeGroupId === overGroupId) {
-        // Same group - move within array
         const updatedTasks = [...sourceGroup.tasks];
         updatedTasks.splice(fromIndex, 1);
         updatedTasks.splice(toIndex, 0, task);
@@ -479,7 +499,6 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
           },
         });
       } else {
-        // Different groups - transfer between arrays
         const updatedSourceTasks = sourceGroup.tasks.filter((_, i) => i !== fromIndex);
         const updatedTargetTasks = [...targetGroup.tasks];
 
@@ -505,7 +524,69 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
         });
       }
 
-      // Emit socket event
+      // NEW SIMPLIFIED APPROACH: Calculate all affected task updates and send them
+      const taskUpdates: Array<{
+        task_id: string;
+        sort_order: number;
+        status_id?: string;
+        priority_id?: string;
+        phase_id?: string;
+      }> = [];
+
+      // Add updates for all tasks in affected groups
+      if (activeGroupId === overGroupId) {
+        // Same group - just reorder
+        const updatedTasks = [...sourceGroup.tasks];
+        updatedTasks.splice(fromIndex, 1);
+        updatedTasks.splice(toIndex, 0, task);
+        
+        updatedTasks.forEach((task, index) => {
+          taskUpdates.push({
+            task_id: task.id,
+            sort_order: index + 1, // 1-based indexing
+          });
+        });
+      } else {
+        // Different groups - update both source and target
+        const updatedSourceTasks = sourceGroup.tasks.filter((_, i) => i !== fromIndex);
+        const updatedTargetTasks = [...targetGroup.tasks];
+        
+        if (isTargetGroupEmpty) {
+          updatedTargetTasks.push(task);
+        } else if (toIndex >= 0 && toIndex <= updatedTargetTasks.length) {
+          updatedTargetTasks.splice(toIndex, 0, task);
+        } else {
+          updatedTargetTasks.push(task);
+        }
+
+        // Add updates for source group
+        updatedSourceTasks.forEach((task, index) => {
+          taskUpdates.push({
+            task_id: task.id,
+            sort_order: index + 1,
+          });
+        });
+
+        // Add updates for target group (including the moved task)
+        updatedTargetTasks.forEach((task, index) => {
+          const update: any = {
+            task_id: task.id,
+            sort_order: index + 1,
+          };
+          
+          // Add group-specific updates
+          if (groupBy === IGroupBy.STATUS) {
+            update.status_id = targetGroup.id;
+          } else if (groupBy === IGroupBy.PRIORITY) {
+            update.priority_id = targetGroup.id;
+          } else if (groupBy === IGroupBy.PHASE) {
+            update.phase_id = targetGroup.id;
+          }
+          
+          taskUpdates.push(update);
+        });
+      }
+
       socket?.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
         project_id: projectId,
         from_index: sourceGroup.tasks[fromIndex].sort_order,
@@ -514,13 +595,12 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
         from_group: sourceGroup.id,
         to_group: targetGroup.id,
         group_by: groupBy,
-        task: sourceGroup.tasks[fromIndex], // Send original task to maintain references
+        task: sourceGroup.tasks[fromIndex],
         team_id: currentSession?.team_id,
+        task_updates: taskUpdates, // NEW: Send calculated updates
       });
 
-      // Reset styles
       setTimeout(resetTaskRowStyles, 0);
-
       trackMixpanelEvent(evt_project_task_list_drag_and_move);
     },
     [
@@ -535,6 +615,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
     ]
   );
 
+  // Memoize drag handlers
   const handleDragOver = useCallback(
     ({ active, over }: DragEndEvent) => {
       if (!over) return;
@@ -554,12 +635,9 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
       if (fromIndex === -1 || toIndex === -1) return;
 
-      // Create a deep clone of the task to avoid reference issues
       const task = JSON.parse(JSON.stringify(sourceGroup.tasks[fromIndex]));
 
-      // Update Redux state
       if (activeGroupId === overGroupId) {
-        // Same group - move within array
         const updatedTasks = [...sourceGroup.tasks];
         updatedTasks.splice(fromIndex, 1);
         updatedTasks.splice(toIndex, 0, task);
@@ -577,10 +655,8 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
           },
         });
       } else {
-        // Different groups - transfer between arrays
         const updatedSourceTasks = sourceGroup.tasks.filter((_, i) => i !== fromIndex);
         const updatedTargetTasks = [...targetGroup.tasks];
-
         updatedTargetTasks.splice(toIndex, 0, task);
 
         dispatch({
@@ -628,7 +704,6 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
   // Handle animation cleanup after drag ends
   useIsomorphicLayoutEffect(() => {
     if (activeId === null) {
-      // Final cleanup after React updates DOM
       const timeoutId = setTimeout(resetTaskRowStyles, 50);
       return () => clearTimeout(timeoutId);
     }
@@ -655,8 +730,6 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
             activeId={activeId}
           />
         ))}
-
-        {createPortal(<TaskListBulkActionsBar />, document.body, 'bulk-action-container')}
 
         {createPortal(
           <TaskTemplateDrawer showDrawer={false} selectedTemplateId="" onClose={() => {}} />,

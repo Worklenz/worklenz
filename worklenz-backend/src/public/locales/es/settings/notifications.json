@@ -1,0 +1,10 @@
+{
+  "emailTitle": "Enviarme notificaciones por correo electrónico",
+  "emailDescription": "Esto incluye nuevas asignaciones de tareas",
+  "dailyDigestTitle": "Enviarme un resumen diario",
+  "dailyDigestDescription": "Cada tarde, recibirás un resumen de la actividad reciente en las tareas.",
+  "popupTitle": "Mostrar notificaciones emergentes en mi computadora cuando Worklenz esté abierto",
+  "popupDescription": "Las notificaciones emergentes pueden ser desactivadas por tu navegador. Cambia la configuración de tu navegador para permitirlas.",
+  "unreadItemsTitle": "Mostrar el número de elementos no leídos",
+  "unreadItemsDescription": "Verás contadores para cada notificación."
+}

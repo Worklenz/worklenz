@@ -42,6 +42,9 @@ tasksApiRouter.get("/list/columns/:id", idParamValidator, safeControllerFunction
 tasksApiRouter.put("/list/columns/:id", idParamValidator, safeControllerFunction(TaskListColumnsController.toggleColumn));
 
 tasksApiRouter.get("/list/v2/:id", idParamValidator, safeControllerFunction(getList));
+tasksApiRouter.get("/list/v3/:id", idParamValidator, safeControllerFunction(TasksControllerV2.getTasksV3));
+tasksApiRouter.post("/refresh-progress/:id", idParamValidator, safeControllerFunction(TasksControllerV2.refreshTaskProgress));
+tasksApiRouter.get("/progress-status/:id", idParamValidator, safeControllerFunction(TasksControllerV2.getTaskProgressStatus));
 tasksApiRouter.get("/assignees/:id", idParamValidator, safeControllerFunction(TasksController.getProjectTaskAssignees));
 
 tasksApiRouter.put("/bulk/status", mapTasksToBulkUpdate, bulkTasksStatusValidator, safeControllerFunction(TasksController.bulkChangeStatus));

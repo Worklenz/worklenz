@@ -35,7 +35,7 @@ const ProjectStatusCell = ({ currentStatus, projectId }: ProjectStatusCellProps)
         {getStatusIcon(status.icon || '', status.color_code || '')}
         {t(`${status.name}`)}
       </Typography.Text>
-    )
+    ),
   }));
 
   const handleStatusChange = (value: string) => {

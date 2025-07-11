@@ -1,0 +1,45 @@
+{
+  "todoList": {
+    "title": "Lista de tareas",
+    "refreshTasks": "Actualizar tareas",
+    "addTask": "+ Agregar tarea",
+    "noTasks": "Sin tareas",
+    "pressEnter": "Presiona",
+    "toCreate": "para crear.",
+    "markAsDone": "Marcar como hecho"
+  },
+  "projects": {
+    "title": "Proyectos",
+    "refreshProjects": "Actualizar proyectos",
+    "noRecentProjects": "Actualmente no estás asignado a ningún proyecto.",
+    "noFavouriteProjects": "No hay proyectos marcados como favoritos.",
+    "recent": "Recientes",
+    "favourites": "Favoritos"
+  },
+  "tasks": {
+    "assignedToMe": "Asignadas a mí",
+    "assignedByMe": "Asignadas por mí",
+    "all": "Todas",
+    "today": "Hoy",
+    "upcoming": "Próximas",
+    "overdue": "Vencidas",
+    "noDueDate": "Sin fecha de vencimiento",
+    "noTasks": "No hay tareas para mostrar.",
+    "addTask": "+ Agregar tarea",
+    "name": "Nombre",
+    "project": "Proyecto",
+    "status": "Estado",
+    "dueDate": "Fecha de vencimiento",
+    "dueDatePlaceholder": "Establecer fecha de vencimiento",
+    "tomorrow": "Mañana",
+    "nextWeek": "La semana que viene",
+    "nextMonth": "El próximo mes",
+    "projectRequired": "Por favor selecciona un proyecto",
+    "dueOn": "Tareas vencidas el",
+    "taskRequired": "Por favor agrega una tarea",
+    "list": "Lista",
+    "calendar": "Calendario",
+    "tasks": "Tareas",
+    "refresh": "Actualizar"
+  }
+}

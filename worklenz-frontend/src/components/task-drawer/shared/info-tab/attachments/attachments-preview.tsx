@@ -1,14 +1,22 @@
-import { useState } from "react";
-import { ITaskAttachmentViewModel } from "@/types/tasks/task-attachment-view-model";
-import { Button, Modal, Spin, Tooltip, Typography, Popconfirm, message } from "antd";
-import { EyeOutlined, DownloadOutlined, DeleteOutlined, QuestionCircleOutlined, LoadingOutlined } from "@ant-design/icons";
-import { attachmentsApiService } from "@/api/attachments/attachments.api.service";
-import { IconsMap } from "@/shared/constants";
+import { useState } from 'react';
+import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
+import { Button, Modal, Spin, Tooltip, Typography, Popconfirm, message } from 'antd';
+import {
+  EyeOutlined,
+  DownloadOutlined,
+  DeleteOutlined,
+  QuestionCircleOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
+import { attachmentsApiService } from '@/api/attachments/attachments.api.service';
+import { IconsMap } from '@/shared/constants';
 import './attachments-preview.css';
-import taskAttachmentsApiService from "@/api/tasks/task-attachments.api.service";
-import logger from "@/utils/errorLogger";
-import taskCommentsApiService from "@/api/tasks/task-comments.api.service";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
+import logger from '@/utils/errorLogger';
+import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 
 interface AttachmentsPreviewProps {
   attachment: ITaskAttachmentViewModel;
@@ -16,12 +24,13 @@ interface AttachmentsPreviewProps {
   isCommentAttachment?: boolean;
 }
 
-const AttachmentsPreview = ({ 
-  attachment, 
+const AttachmentsPreview = ({
+  attachment,
   onDelete,
-  isCommentAttachment = false 
+  isCommentAttachment = false,
 }: AttachmentsPreviewProps) => {
   const { selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
+  const dispatch = useAppDispatch();
   const [deleting, setDeleting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [currentFileUrl, setCurrentFileUrl] = useState<string | null>(null);
@@ -32,12 +41,12 @@ const AttachmentsPreview = ({
   const [previewedFileName, setPreviewedFileName] = useState<string | null>(null);
 
   const getFileIcon = (type?: string) => {
-    if (!type) return "search.png";
-    return IconsMap[type] || "search.png";
+    if (!type) return 'search.png';
+    return IconsMap[type] || 'search.png';
   };
 
   const isImageFile = (): boolean => {
-    const imageTypes = ["jpeg", "jpg", "bmp", "gif", "webp", "png", "ico"];
+    const imageTypes = ['jpeg', 'jpg', 'bmp', 'gif', 'webp', 'png', 'ico'];
     const type = attachment?.type;
     if (type) return imageTypes.includes(type);
     return false;
@@ -53,12 +62,12 @@ const AttachmentsPreview = ({
     if (!id || !name) return;
     try {
       setDownloading(true);
-      const api = isCommentAttachment 
+      const api = isCommentAttachment
         ? attachmentsApiService.downloadAttachment // Assuming this exists, adjust as needed
         : attachmentsApiService.downloadAttachment;
-      
+
       const res = await api(id, name);
-      
+
       if (res && res.done) {
         const link = document.createElement('a');
         link.href = res.body || '';
@@ -82,6 +91,7 @@ const AttachmentsPreview = ({
       if (isCommentAttachment) {
         const res = await taskCommentsApiService.deleteAttachment(id, selectedTaskId);
         if (res.done) {
+          // Let the parent component handle the refetch and Redux update
           document.dispatchEvent(new Event('task-comment-update'));
         }
       } else {
@@ -90,6 +100,7 @@ const AttachmentsPreview = ({
           if (onDelete) {
             onDelete(id);
           }
+          // Parent component will handle the refetch and Redux update
         }
       }
     } catch (e) {
@@ -126,7 +137,7 @@ const AttachmentsPreview = ({
 
     if (!extension) return;
     setIsVisible(true);
-    
+
     if (isImage(extension)) {
       setCurrentFileType('image');
     } else if (isVideo(extension)) {
@@ -149,9 +160,7 @@ const AttachmentsPreview = ({
     <>
       <div className="ant-upload-list-picture-card-container">
         {attachment && (
-          <div 
-            className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card"
-          >
+          <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
             <Tooltip
               title={
                 <div>
@@ -165,26 +174,26 @@ const AttachmentsPreview = ({
               placement="bottom"
             >
               <div className="ant-upload-list-item-info">
-                <img 
-                  src={`/file-types/${getFileIcon(attachment.type)}`} 
-                  className="file-icon" 
-                  alt="" 
+                <img
+                  src={`/file-types/${getFileIcon(attachment.type)}`}
+                  className="file-icon"
+                  alt=""
                 />
-                <div 
-                  className="ant-upload-span" 
-                  style={{ 
-                    backgroundImage: isImageFile() ? `url(${attachment.url})` : '' 
+                <div
+                  className="ant-upload-span"
+                  style={{
+                    backgroundImage: isImageFile() ? `url(${attachment.url})` : '',
                   }}
                 >
-                  <a 
-                    target="_blank" 
+                  <a
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="ant-upload-list-item-thumbnail"
                     href={attachment.url}
                   >
                     {!isImageFile() && (
-                      <span 
-                        className="anticon anticon-file-unknown" 
+                      <span
+                        className="anticon anticon-file-unknown"
                         style={{ fontSize: 34, color: '#cccccc' }}
                       />
                     )}
@@ -194,18 +203,18 @@ const AttachmentsPreview = ({
             </Tooltip>
 
             <span className="ant-upload-list-item-actions">
-              <Button 
-                type="text" 
+              <Button
+                type="text"
                 size="small"
-                title="Preview file" 
+                title="Preview file"
                 onClick={() => previewFile(attachment.url, attachment.id, attachment.name)}
                 className="ant-upload-list-item-card-actions-btn"
               >
                 <EyeOutlined />
               </Button>
 
-              <Button 
-                type="text" 
+              <Button
+                type="text"
                 size="small"
                 title="Download file"
                 onClick={() => download(attachment.id, attachment.name)}
@@ -223,8 +232,8 @@ const AttachmentsPreview = ({
                 okText="Yes"
                 cancelText="No"
               >
-                <Button 
-                  type="text" 
+                <Button
+                  type="text"
                   size="small"
                   title="Remove file"
                   loading={deleting}
@@ -247,23 +256,23 @@ const AttachmentsPreview = ({
         className="attachment-preview-modal"
         footer={[
           previewedFileId && previewedFileName && (
-            <Button 
+            <Button
               key="download"
-              onClick={() => download(previewedFileId, previewedFileName)} 
+              onClick={() => download(previewedFileId, previewedFileName)}
               loading={downloading}
             >
               <DownloadOutlined /> Download
             </Button>
-          )
+          ),
         ]}
       >
-        <div className="preview-container text-center position-relative">         
+        <div className="preview-container text-center position-relative">
           {currentFileType === 'image' && (
             <>
               <img src={currentFileUrl || ''} className="img-fluid position-relative" alt="" />
             </>
           )}
-          
+
           {currentFileType === 'video' && (
             <>
               <video className="position-relative" controls>
@@ -271,7 +280,7 @@ const AttachmentsPreview = ({
               </video>
             </>
           )}
-          
+
           {currentFileType === 'audio' && (
             <>
               <audio className="position-relative" controls>
@@ -279,23 +288,21 @@ const AttachmentsPreview = ({
               </audio>
             </>
           )}
-          
+
           {currentFileType === 'document' && (
             <>
               {currentFileUrl && (
-                <iframe 
+                <iframe
                   src={`https://docs.google.com/viewer?url=${encodeURIComponent(currentFileUrl)}&embedded=true`}
-                  width="100%" 
-                  height="500px" 
+                  width="100%"
+                  height="500px"
                   style={{ border: 'none' }}
                 />
               )}
             </>
           )}
-          
-          {currentFileType === 'unknown' && (
-            <p>The preview for this file type is not available.</p>
-          )}
+
+          {currentFileType === 'unknown' && <p>The preview for this file type is not available.</p>}
         </div>
       </Modal>
     </>

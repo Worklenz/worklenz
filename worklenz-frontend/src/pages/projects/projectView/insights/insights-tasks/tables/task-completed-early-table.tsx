@@ -20,7 +20,6 @@ const TaskCompletedEarlyTable = ({
   const [loading, setLoading] = useState(true);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
 
-
   const getEarlyCompletedTasks = async () => {
     try {
       setLoading(true);

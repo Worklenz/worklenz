@@ -1,6 +1,6 @@
 import { Flex, Typography } from 'antd';
-import logo from '../assets/images/logo.png';
-import logoDark from '@/assets/images/logo-dark-mode.png';
+import logo from '@/assets/images/worklenz-light-mode.png';
+import logoDark from '@/assets/images/worklenz-dark-mode.png';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 type AuthPageHeaderProp = {

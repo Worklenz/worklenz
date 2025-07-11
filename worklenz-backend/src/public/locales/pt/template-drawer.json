@@ -1,0 +1,19 @@
+{
+  "title": "Editar Template de Tarefa",
+  "cancelText": "Cancelar",
+  "saveText": "Salvar",
+  "templateNameText": "Nome do Template",
+  "selectedTasks": "Tarefas Selecionadas",
+  "removeTask": "Remover",
+  "description": "Descrição",
+  "phase": "Fase",
+  "statuses": "Status",
+  "priorities": "Prioridades",
+  "labels": "Rótulos",
+  "tasks": "Tarefas",
+  "noTemplateSelected": "Nenhum template selecionado",
+  "noDescription": "Sem descrição",
+  "worklenzTemplates": "Templates de Worklenz",
+  "yourTemplatesLibrary": "Sua Biblioteca",
+  "searchTemplates": "Pesquisar Templates"
+}

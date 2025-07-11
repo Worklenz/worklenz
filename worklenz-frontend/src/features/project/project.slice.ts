@@ -55,10 +55,9 @@ const initialState: TaskListState = {
 
 export const getProject = createAsyncThunk(
   'project/getProject',
-  async (projectId: string, { rejectWithValue, dispatch }) => {
+  async (projectId: string, { rejectWithValue }) => {
     try {
       const response = await projectsApiService.getProject(projectId);
-      dispatch(setProject(response.body));
       return response.body;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch project');
@@ -171,7 +170,7 @@ const projectSlice = createSlice({
       }
     },
     reset: () => initialState,
-    setRefreshTimestamp: (state) => {
+    setRefreshTimestamp: state => {
       state.refreshTimestamp = new Date().getTime().toString();
     },
     setProjectView: (state, action: PayloadAction<'list' | 'kanban'>) => {
@@ -215,7 +214,7 @@ export const {
   setCreateTaskTemplateDrawerOpen,
   setProjectView,
   updatePhaseLabel,
-  setRefreshTimestamp
+  setRefreshTimestamp,
 } = projectSlice.actions;
 
 export default projectSlice.reducer;

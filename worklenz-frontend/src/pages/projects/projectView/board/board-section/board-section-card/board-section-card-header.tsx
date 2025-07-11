@@ -50,7 +50,10 @@ import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.t
 import { update } from 'lodash';
 import logger from '@/utils/errorLogger';
 import { toggleDrawer } from '@/features/projects/status/StatusSlice';
-import { deleteStatusToggleDrawer, seletedStatusCategory } from '@/features/projects/status/DeleteStatusSlice';
+import {
+  deleteStatusToggleDrawer,
+  seletedStatusCategory,
+} from '@/features/projects/status/DeleteStatusSlice';
 
 interface BoardSectionCardHeaderProps {
   groupId: string;
@@ -110,20 +113,20 @@ const BoardSectionCardHeader: React.FC<BoardSectionCardHeaderProps> = ({
   const getUniqueSectionName = (baseName: string): string => {
     // Check if the base name already exists
     const existingNames = status.map(status => status.name?.toLowerCase());
-    
+
     if (!existingNames.includes(baseName.toLowerCase())) {
       return baseName;
     }
-    
+
     // If the base name exists, add a number suffix
     let counter = 1;
     let newName = `${baseName.trim()} (${counter})`;
-    
+
     while (existingNames.includes(newName.toLowerCase())) {
       counter++;
       newName = `${baseName.trim()} (${counter})`;
     }
-    
+
     return newName;
   };
 
@@ -198,11 +201,18 @@ const BoardSectionCardHeader: React.FC<BoardSectionCardHeaderProps> = ({
       if (groupBy === IGroupBy.STATUS) {
         const replacingStatusId = '';
         const res = await statusApiService.deleteStatus(groupId, projectId, replacingStatusId);
-        if (res.message === 'At least one status should exists under each category.') return
+        if (res.message === 'At least one status should exists under each category.') return;
         if (res.done) {
           dispatch(deleteSection({ sectionId: groupId }));
         } else {
-          dispatch(seletedStatusCategory({ id: groupId, name: name, category_id: categoryId ?? '', message: res.message ?? '' }));
+          dispatch(
+            seletedStatusCategory({
+              id: groupId,
+              name: name,
+              category_id: categoryId ?? '',
+              message: res.message ?? '',
+            })
+          );
           dispatch(deleteStatusToggleDrawer());
         }
       } else if (groupBy === IGroupBy.PHASE) {
@@ -373,5 +383,3 @@ const BoardSectionCardHeader: React.FC<BoardSectionCardHeaderProps> = ({
 };
 
 export default BoardSectionCardHeader;
-
-

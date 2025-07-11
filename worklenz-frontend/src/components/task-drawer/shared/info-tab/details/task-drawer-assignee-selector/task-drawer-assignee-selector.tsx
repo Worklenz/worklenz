@@ -26,6 +26,7 @@ import { setTaskAssignee } from '@/features/task-drawer/task-drawer.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { updateTaskAssignees as updateBoardTaskAssignees } from '@/features/board/board-slice';
 import { updateTaskAssignees as updateTasksListTaskAssignees } from '@/features/tasks/tasks.slice';
+import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 interface TaskDrawerAssigneeSelectorProps {
   task: ITaskViewModel;
 }
@@ -85,17 +86,17 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
 
       socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
       socket?.once(
-            SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
-            (data: ITaskAssigneesUpdateResponse) => {
-              dispatch(setTaskAssignee(data));
-              // if (tab === 'tasks-list') {
-              //   dispatch(updateTasksListTaskAssignees(data));
-              // }
-              // if (tab === 'board') {
-              //   dispatch(updateBoardTaskAssignees(data));
-              // }
-            }
-          );
+        SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
+        (data: ITaskAssigneesUpdateResponse) => {
+          dispatch(setTaskAssignee(data));
+          if (tab === 'tasks-list') {
+            dispatch(updateTasksListTaskAssignees(data));
+          }
+          if (tab === 'board') {
+            dispatch(updateEnhancedKanbanTaskAssignees(data));
+          }
+        }
+      );
     } catch (error) {
       console.error('Error updating assignee:', error);
     }
@@ -147,16 +148,16 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
                   />
                 </div>
                 <Flex vertical>
-                    <Typography.Text>{member.name}</Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {member.email}&nbsp;
-                      {member.pending_invitation && (
-                        <Typography.Text type="danger" style={{ fontSize: 10 }}>
-                          ({t('pendingInvitation')})
-                        </Typography.Text>
-                      )}
-                    </Typography.Text>
-                  </Flex>
+                  <Typography.Text>{member.name}</Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {member.email}&nbsp;
+                    {member.pending_invitation && (
+                      <Typography.Text type="danger" style={{ fontSize: 10 }}>
+                        ({t('pendingInvitation')})
+                      </Typography.Text>
+                    )}
+                  </Typography.Text>
+                </Flex>
               </List.Item>
             ))
           ) : (

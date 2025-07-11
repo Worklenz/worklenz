@@ -1,7 +1,7 @@
 import { FloatButton, Space, Tooltip } from 'antd';
 import { FormatPainterOutlined } from '@ant-design/icons';
-import LanguageSelector from '../features/i18n/language-selector';
-import ThemeSelector from '../features/theme/ThemeSelector';
+// import LanguageSelector from '../features/i18n/language-selector';
+// import ThemeSelector from '../features/theme/ThemeSelector';
 
 const PreferenceSelector = () => {
   return (
@@ -17,7 +17,7 @@ const PreferenceSelector = () => {
               justifyContent: 'center',
             }}
           >
-            <ThemeSelector />
+            {/* <ThemeSelector /> */}
           </Space>
         </FloatButton.Group>
       </div>

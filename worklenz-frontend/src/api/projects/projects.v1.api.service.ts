@@ -5,7 +5,7 @@ import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { IProjectsViewModel } from '@/types/project/projectsViewModel.types';
 import { IServerResponse } from '@/types/common.types';
 import { IProjectMembersViewModel } from '@/types/projectMember.types';
-import { getCsrfToken } from '../api-client';
+import { getCsrfToken, refreshCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 const rootUrl = '/projects';
@@ -14,9 +14,18 @@ export const projectsApi = createApi({
   reducerPath: 'projectsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}${API_BASE_URL}`,
-    prepareHeaders: headers => {
-      headers.set('X-CSRF-Token', getCsrfToken() || '');
+    prepareHeaders: async headers => {
+      // Get CSRF token, refresh if needed
+      let token = getCsrfToken();
+      if (!token) {
+        token = await refreshCsrfToken();
+      }
+
+      if (token) {
+        headers.set('X-CSRF-Token', token);
+      }
       headers.set('Content-Type', 'application/json');
+      return headers;
     },
     credentials: 'include',
   }),

@@ -1,0 +1,31 @@
+{
+  "continue": "Continue",
+
+  "setupYourAccount": "Setup Your Worklenz Account.",
+  "organizationStepTitle": "Name Your Organization",
+  "organizationStepLabel": "Pick a name for your Worklenz account.",
+
+  "projectStepTitle": "Create your first project",
+  "projectStepLabel": "What project are you working on right now?",
+  "projectStepPlaceholder": "e.g. Marketing Plan",
+
+  "tasksStepTitle": "Create your first tasks",
+  "tasksStepLabel": "Type a few tasks that you are going to do in",
+  "tasksStepAddAnother": "Add another",
+
+  "emailPlaceholder": "Email address",
+  "invalidEmail": "Please enter a valid email address",
+  "or": "or",
+  "templateButton": "Import from template",
+  "goBack": "Go Back",
+  "cancel": "Cancel",
+  "create": "Create",
+  "templateDrawerTitle": "Select from templates",
+  "step3InputLabel": "Invite with email",
+  "addAnother": "Add another",
+  "skipForNow": "Skip for now",
+  "formTitle": "Create your first task.",
+  "step3Title": "Invite your team to work with",
+  "maxMembers": " (You can invite up to 5 members)",
+  "maxTasks": " (You can create up to 5 tasks)"
+}

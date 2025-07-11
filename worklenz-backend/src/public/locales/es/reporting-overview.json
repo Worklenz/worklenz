@@ -1,0 +1,25 @@
+{
+  "overviewTitle": "Resumen",
+  "includeArchivedButton": "Incluir Proyectos Archivados",
+
+  "teamCount": "Equipo",
+  "teamCountPlural": "Equipos",
+  "projectCount": "Proyecto",
+  "projectCountPlural": "Proyectos",
+  "memberCount": "Miembro",
+  "memberCountPlural": "Miembros",
+  "activeProjectCount": "Proyecto Activo",
+  "activeProjectCountPlural": "Proyectos Activos",
+  "overdueProjectCount": "Proyecto Atrasado",
+  "overdueProjectCountPlural": "Proyectos Atrasados",
+  "unassignedMemberCount": "Miembro Sin Asignar",
+  "unassignedMemberCountPlural": "Miembros Sin Asignar",
+  "memberWithOverdueTaskCount": "Miembro Con Tarea Atrasada",
+  "memberWithOverdueTaskCountPlural": "Miembros Con Tareas Atrasadas",
+
+  "teamsText": "Equipos",
+
+  "nameColumn": "Nombre",
+  "projectsColumn": "Proyectos",
+  "membersColumn": "Miembros"
+}

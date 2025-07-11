@@ -1,0 +1,127 @@
+.enhanced-kanban-task-card {
+  background: var(--ant-color-bg-container);
+  border: 1px solid var(--ant-color-border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px var(--ant-color-shadow);
+  cursor: grab;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  position: relative;
+}
+
+html.light .enhanced-kanban-task-card {
+  border: 1.5px solid #e1e4e8 !important; /* Asana-like light border */
+  box-shadow: 0 1px 4px 0 rgba(60, 64, 67, 0.08), 0 0.5px 1.5px 0 rgba(60, 64, 67, 0.03);
+  background: #fff !important;
+}
+
+.enhanced-kanban-task-card:hover {
+  box-shadow: 0 2px 6px var(--ant-color-shadow);
+  transform: translateY(-1px);
+}
+
+.enhanced-kanban-task-card:active {
+  cursor: grabbing;
+}
+
+.enhanced-kanban-task-card.dragging {
+  opacity: 0.5;
+  box-shadow: 0 4px 12px var(--ant-color-shadow);
+}
+
+.enhanced-kanban-task-card.active {
+  border-color: var(--ant-color-primary);
+  box-shadow: 0 0 0 2px var(--ant-color-primary-border);
+}
+
+.enhanced-kanban-task-card.drag-overlay {
+  cursor: grabbing;
+  box-shadow: 0 8px 24px var(--ant-color-shadow);
+  z-index: 1000;
+}
+
+/* Drop target visual feedback */
+.enhanced-kanban-task-card.drop-target {
+  border-color: var(--ant-color-primary);
+  background: var(--ant-color-primary-bg);
+  box-shadow: 0 0 0 2px var(--ant-color-primary-border);
+  transform: scale(1.02);
+}
+
+.enhanced-kanban-task-card.drop-target::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid var(--ant-color-primary);
+  border-radius: 8px;
+  animation: dropTargetPulse 1s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes dropTargetPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.02);
+  }
+}
+
+.task-drag-handle {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.enhanced-kanban-task-card:hover .task-drag-handle {
+  opacity: 1;
+}
+
+.drag-indicator {
+  font-size: 12px;
+  color: var(--ant-color-text-secondary);
+  line-height: 1;
+  user-select: none;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title {
+  font-weight: 500;
+  color: var(--ant-color-text);
+  margin-bottom: 4px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.task-key {
+  font-size: 12px;
+  color: var(--ant-color-text-secondary);
+  font-family: monospace;
+  margin-bottom: 4px;
+}
+
+.task-assignees {
+  font-size: 12px;
+  color: var(--ant-color-text-tertiary);
+  margin-top: 4px;
+}
