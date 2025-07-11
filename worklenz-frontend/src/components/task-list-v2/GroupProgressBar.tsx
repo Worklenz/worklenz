@@ -38,26 +38,26 @@ const GroupProgressBar: React.FC<GroupProgressBarProps> = ({
       {/* Compact progress bar */}
       <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
         <div className="h-full flex">
-          {/* Todo section - light gray */}
+          {/* Todo section - light green */}
           {todoProgress > 0 && (
             <div
-              className="bg-gray-300 dark:bg-gray-600 transition-all duration-300"
+              className="bg-green-200 dark:bg-green-800 transition-all duration-300"
               style={{ width: `${(todoProgress / total) * 100}%` }}
               title={`${t('todo')}: ${todoProgress}%`}
             />
           )}
-          {/* Doing section - blue */}
+          {/* Doing section - medium green */}
           {doingProgress > 0 && (
             <div
-              className="bg-blue-500 transition-all duration-300"
+              className="bg-green-400 dark:bg-green-600 transition-all duration-300"
               style={{ width: `${(doingProgress / total) * 100}%` }}
               title={`${t('inProgress')}: ${doingProgress}%`}
             />
           )}
-          {/* Done section - green */}
+          {/* Done section - dark green */}
           {doneProgress > 0 && (
             <div
-              className="bg-green-500 transition-all duration-300"
+              className="bg-green-600 dark:bg-green-400 transition-all duration-300"
               style={{ width: `${(doneProgress / total) * 100}%` }}
               title={`${t('done')}: ${doneProgress}%`}
             />
@@ -69,19 +69,19 @@ const GroupProgressBar: React.FC<GroupProgressBarProps> = ({
       <div className="flex items-center gap-1">
         {todoProgress > 0 && (
           <div 
-            className="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full" 
+            className="w-1.5 h-1.5 bg-green-200 dark:bg-green-800 rounded-full" 
             title={`${t('todo')}: ${todoProgress}%`}
           />
         )}
         {doingProgress > 0 && (
           <div 
-            className="w-1.5 h-1.5 bg-blue-500 rounded-full" 
+            className="w-1.5 h-1.5 bg-green-400 dark:bg-green-600 rounded-full" 
             title={`${t('inProgress')}: ${doingProgress}%`}
           />
         )}
         {doneProgress > 0 && (
           <div 
-            className="w-1.5 h-1.5 bg-green-500 rounded-full" 
+            className="w-1.5 h-1.5 bg-green-600 dark:bg-green-400 rounded-full" 
             title={`${t('done')}: ${doneProgress}%`}
           />
         )}

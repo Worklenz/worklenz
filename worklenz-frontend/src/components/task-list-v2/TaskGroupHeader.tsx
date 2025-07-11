@@ -9,7 +9,7 @@ import { getContrastColor } from '@/utils/colorUtils';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { selectSelectedTaskIds, selectTask, deselectTask } from '@/features/task-management/selection.slice';
-import { selectGroups, fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { selectGroups, fetchTasksV3, selectAllTasksArray } from '@/features/task-management/task-management.slice';
 import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
@@ -43,8 +43,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
   const dispatch = useAppDispatch();
   const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
   const groups = useAppSelector(selectGroups);
+  const allTasks = useAppSelector(selectAllTasksArray);
   const currentGrouping = useAppSelector(selectCurrentGrouping);
-  const { statusCategories } = useAppSelector(state => state.taskStatusReducer);
+  const { statusCategories, status: statusList } = useAppSelector(state => state.taskStatusReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isOwnerOrAdmin } = useAuthService();
   
@@ -66,6 +67,74 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
   const tasksInGroup = useMemo(() => {
     return currentGroup?.taskIds || [];
   }, [currentGroup]);
+
+  // Calculate group progress values dynamically
+  const groupProgressValues = useMemo(() => {
+    if (!currentGroup || !allTasks.length) {
+      return { todoProgress: 0, doingProgress: 0, doneProgress: 0 };
+    }
+
+    const tasksInCurrentGroup = currentGroup.taskIds
+      .map(taskId => allTasks.find(task => task.id === taskId))
+      .filter(task => task !== undefined);
+
+    if (tasksInCurrentGroup.length === 0) {
+      return { todoProgress: 0, doingProgress: 0, doneProgress: 0 };
+    }
+
+    // If we're grouping by status, show progress based on task completion
+    if (currentGrouping === 'status') {
+      // For status grouping, calculate based on task progress values
+      const progressStats = tasksInCurrentGroup.reduce((acc, task) => {
+        const progress = task.progress || 0;
+        if (progress === 0) {
+          acc.todo += 1;
+        } else if (progress === 100) {
+          acc.done += 1;
+        } else {
+          acc.doing += 1;
+        }
+        return acc;
+      }, { todo: 0, doing: 0, done: 0 });
+
+      const totalTasks = tasksInCurrentGroup.length;
+      
+      return {
+        todoProgress: totalTasks > 0 ? Math.round((progressStats.todo / totalTasks) * 100) : 0,
+        doingProgress: totalTasks > 0 ? Math.round((progressStats.doing / totalTasks) * 100) : 0,
+        doneProgress: totalTasks > 0 ? Math.round((progressStats.done / totalTasks) * 100) : 0,
+      };
+    } else {
+      // For priority/phase grouping, show progress based on status distribution
+      // Use a simplified approach based on status names and common patterns
+      const statusCounts = tasksInCurrentGroup.reduce((acc, task) => {
+        // Find the status by ID first
+        const statusInfo = statusList.find(s => s.id === task.status);
+        const statusName = statusInfo?.name?.toLowerCase() || task.status?.toLowerCase() || '';
+        
+        // Categorize based on common status name patterns
+        if (statusName.includes('todo') || statusName.includes('to do') || statusName.includes('pending') || statusName.includes('open') || statusName.includes('backlog')) {
+          acc.todo += 1;
+        } else if (statusName.includes('doing') || statusName.includes('progress') || statusName.includes('active') || statusName.includes('working') || statusName.includes('development')) {
+          acc.doing += 1;
+        } else if (statusName.includes('done') || statusName.includes('completed') || statusName.includes('finished') || statusName.includes('closed') || statusName.includes('resolved')) {
+          acc.done += 1;
+        } else {
+          // Default unknown statuses to "doing" (in progress)
+          acc.doing += 1;
+        }
+        return acc;
+      }, { todo: 0, doing: 0, done: 0 });
+
+      const totalTasks = tasksInCurrentGroup.length;
+      
+      return {
+        todoProgress: totalTasks > 0 ? Math.round((statusCounts.todo / totalTasks) * 100) : 0,
+        doingProgress: totalTasks > 0 ? Math.round((statusCounts.doing / totalTasks) * 100) : 0,
+        doneProgress: totalTasks > 0 ? Math.round((statusCounts.done / totalTasks) * 100) : 0,
+      };
+    }
+  }, [currentGroup, allTasks, statusList, currentGrouping]);
 
   // Calculate selection state for this group
   const { isAllSelected, isPartiallySelected } = useMemo(() => {
@@ -369,7 +438,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
     
       {/* Progress Bar - sticky to the right edge during horizontal scroll */}
       {(currentGrouping === 'priority' || currentGrouping === 'phase') && 
-       (group.todo_progress || group.doing_progress || group.done_progress) && (
+       (groupProgressValues.todoProgress || groupProgressValues.doingProgress || groupProgressValues.doneProgress) && (
         <div 
           className="flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm px-3 py-1.5 ml-auto"
           style={{ 
@@ -381,9 +450,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({ group, isCollapsed, o
           }}
         >
           <GroupProgressBar
-            todoProgress={group.todo_progress || 0}
-            doingProgress={group.doing_progress || 0}
-            doneProgress={group.done_progress || 0}
+            todoProgress={groupProgressValues.todoProgress}
+            doingProgress={groupProgressValues.doingProgress}
+            doneProgress={groupProgressValues.doneProgress}
             groupType={group.groupType || currentGrouping || ''}
           />
         </div>

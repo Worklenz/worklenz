@@ -65,6 +65,7 @@ import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-t
 import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
 import TaskListSkeleton from './components/TaskListSkeleton';
+import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
 
 // Hooks and utilities
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
@@ -766,6 +767,9 @@ const TaskListV2Section: React.FC = () => {
 
         {/* Custom Column Modal */}
         {createPortal(<CustomColumnModal />, document.body, 'custom-column-modal')}
+        
+        {/* Convert To Subtask Drawer */}
+        {createPortal(<ConvertToSubtaskDrawer />, document.body, 'convert-to-subtask-drawer')}
       </div>
     </DndContext>
   );

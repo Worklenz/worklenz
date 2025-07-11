@@ -17,5 +17,22 @@
   "renamePhase": "Renomear Fase",
   "changeCategory": "Alterar Categoria",
   "clickToEditGroupName": "Clique para editar o nome do grupo",
-  "enterGroupName": "Digite o nome do grupo"
+  "enterGroupName": "Digite o nome do grupo",
+  "todo": "A Fazer",
+  "inProgress": "Em Andamento",
+  "done": "Concluído",
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} subtarefa",
+      "subtasks_plural": "{{count}} subtarefas",
+      "comments": "{{count}} comentário",
+      "comments_plural": "{{count}} comentários",
+      "attachments": "{{count}} anexo",
+      "attachments_plural": "{{count}} anexos",
+      "subscribers": "Tarefa tem assinantes",
+      "dependencies": "Tarefa tem dependências",
+      "recurring": "Tarefa recorrente"
+    }
+  }
 }
