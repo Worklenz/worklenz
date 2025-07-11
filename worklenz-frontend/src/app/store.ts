@@ -6,6 +6,7 @@ import userReducer from '@features/user/userSlice';
 
 // Home Page
 import homePageReducer from '@features/home-page/home-page.slice';
+import userActivityReducer from '@features/home-page/user-activity.slice';
 
 // Account Setup
 import accountSetupReducer from '@features/account-setup/account-setup.slice';
@@ -75,12 +76,13 @@ import teamMembersReducer from '@features/team-members/team-members.slice';
 import groupByFilterDropdownReducer from '../features/group-by-filter-dropdown/group-by-filter-dropdown-slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
+import { userActivityApiService } from '@/api/home-page/user-activity.api.service';
 
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: false,
-    }).concat(homePageApiService.middleware, projectsApi.middleware),
+    }).concat(homePageApiService.middleware, projectsApi.middleware, userActivityApiService.middleware),
   reducer: {
     // Auth & User
     auth: authReducer,
@@ -93,6 +95,9 @@ export const store = configureStore({
     homePageReducer: homePageReducer,
     [homePageApiService.reducerPath]: homePageApiService.reducer,
     [projectsApi.reducerPath]: projectsApi.reducer,
+    userActivityReducer: userActivityReducer,
+    [userActivityApiService.reducerPath]: userActivityApiService.reducer,
+
     // Core UI
     themeReducer: themeReducer,
     localesReducer: localesReducer,

@@ -41,6 +41,11 @@
     "list": "Listë",
     "calendar": "Kalendar",
     "tasks": "Detyrat",
-    "refresh": "Rifresko"
+    "refresh": "Rifresko",
+    "recentActivity": "Aktiviteti i Fundit",
+    "recentTasks": "Detyrat e Fundit",
+    "timeLoggedTasks": "Koha e Regjistruar",
+    "noRecentTasks": "Asnjë detyrë e fundit",
+    "noTimeLoggedTasks": "Asnjë detyrë me kohë të regjistruar"
   }
 }
