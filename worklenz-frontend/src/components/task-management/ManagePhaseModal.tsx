@@ -18,6 +18,7 @@ import {
   deletePhaseOption,
   updatePhaseColor,
 } from '@/features/projects/singleProject/phase/phases.slice';
+import { updatePhaseLabel } from '@/features/project/project.slice';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { Modal as AntModal } from 'antd';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
@@ -307,7 +308,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({
     if (!newPhaseName.trim() || !finalProjectId) return;
 
     try {
-      await dispatch(addPhaseOption({ projectId: finalProjectId }));
+      await dispatch(addPhaseOption({ projectId: finalProjectId, name: newPhaseName.trim() }));
       await dispatch(fetchPhasesByProjectId(finalProjectId));
       await refreshTasks();
       setNewPhaseName('');
@@ -408,6 +409,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({
       ).unwrap();
       
       if (res.done) {
+        dispatch(updatePhaseLabel(phaseName));
         setInitialPhaseName(phaseName);
         await refreshTasks();
       }
@@ -428,7 +430,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({
         <Title level={4} className={`m-0 font-semibold ${
           isDarkMode ? 'text-gray-100' : 'text-gray-800'
         }`}>
-          {t('configurePhases')}
+          {t('configure')} {phaseName || project?.phase_label || t('phasesText')}
         </Title>
       }
       open={open}
@@ -495,7 +497,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({
           <Text className={`text-xs font-medium ${
             isDarkMode ? 'text-gray-300' : 'text-blue-700'
           }`}>
-            🎨 Drag phases to reorder them. Click on a phase name to rename it. Each phase can have a custom color.
+            🎨 Drag {(phaseName || project?.phase_label || t('phasesText')).toLowerCase()} to reorder them. Click on a {(phaseName || project?.phase_label || t('phaseText')).toLowerCase()} name to rename it. Each {(phaseName || project?.phase_label || t('phaseText')).toLowerCase()} can have a custom color.
           </Text>
         </div>
 
@@ -558,7 +560,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({
               <Text className={`text-xs font-medium ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                {t('phaseOptions')}
+                {phaseName || project?.phase_label || t('phasesText')} {t('optionsText')}
               </Text>
               <Button 
                 type="primary" 
@@ -601,7 +603,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({
             isDarkMode ? 'text-gray-400' : 'text-gray-500'
           }`}>
             <Text className="text-sm font-medium">
-              {t('noPhasesFound')}
+              {t('no')} {(phaseName || project?.phase_label || t('phasesText')).toLowerCase()} {t('found')}
             </Text>
             <br />
             <Button

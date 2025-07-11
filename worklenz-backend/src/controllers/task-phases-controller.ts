@@ -16,19 +16,23 @@ export default class TaskPhasesController extends WorklenzControllerBase {
     if (!req.query.id)
       return res.status(400).send(new ServerResponse(false, null, "Invalid request"));
 
+    // Use custom name if provided, otherwise use default naming pattern
+    const phaseName = req.body.name?.trim() || 
+      `Untitled Phase (${(await db.query("SELECT COUNT(*) FROM project_phases WHERE project_id = $1", [req.query.id])).rows[0].count + 1})`;
+
     const q = `
         INSERT INTO project_phases (name, color_code, project_id, sort_index)
         VALUES (
-                CONCAT('Untitled Phase (', (SELECT COUNT(*) FROM project_phases WHERE project_id = $2) + 1, ')'),
                 $1,
                 $2,
-                (SELECT COUNT(*) FROM project_phases WHERE project_id = $2) + 1)
+                $3,
+                (SELECT COUNT(*) FROM project_phases WHERE project_id = $3) + 1)
         RETURNING id, name, color_code, sort_index;
     `;
 
     req.body.color_code = this.DEFAULT_PHASE_COLOR;
 
-    const result = await db.query(q, [req.body.color_code, req.query.id]);
+    const result = await db.query(q, [phaseName, req.body.color_code, req.query.id]);
     const [data] = result.rows;
 
     data.color_code = getColor(data.name) + TASK_STATUS_COLOR_ALPHA;
