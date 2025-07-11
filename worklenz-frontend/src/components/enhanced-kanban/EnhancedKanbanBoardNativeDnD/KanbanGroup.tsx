@@ -480,15 +480,15 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                     )}
 
                     {/* If group is empty, render a drop zone */}
-                    {group.tasks.length === 0 && !showNewCardTop && !showNewCardBottom && (
+                    {group.tasks.length === 0 && !showNewCardTop && !showNewCardBottom && hoveredGroupId !== group.id && (
                         <div
                             className="empty-drop-zone"
                             style={{
                                 padding: 8,
                                 height: 500,
                                 background: themeWiseColor(
-                                    'linear-gradient( 180deg, #fafafa, rgba(245, 243, 243, 0))',
-                                    'linear-gradient( 180deg, #2a2b2d, rgba(42, 43, 45, 0))',
+                                    'linear-gradient( 180deg,#E2EAF4, rgba(245, 243, 243, 0))',
+                                    'linear-gradient( 180deg, #2a2a2a, rgba(42, 43, 45, 0))',
                                     themeMode
                                 ),
                                 borderRadius: 6,
@@ -503,12 +503,6 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                             onDragOver={e => { e.preventDefault(); onTaskDragOver(e, group.id, 0); }}
                             onDrop={e => { e.preventDefault(); onTaskDrop(e, group.id, 0); }}
                         >
-                            {/* Drop indicator at the end of the group */}
-                            {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
-                                <div className="drop-preview-indicator">
-                                    <div className="drop-line" />
-                                </div>
-                            )}
                             {(isOwnerOrAdmin || isProjectManager) && !showNewCardTop && !showNewCardBottom && (
                                 <button
                                     type="button"
@@ -602,13 +596,6 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                             </svg>
                             {t('addTask')}
                         </button>
-                    )}
-
-                    {/* Drop indicator at the end of the group */}
-                    {hoveredGroupId === group.id && hoveredTaskIdx === group.tasks.length && (
-                        <div className="drop-preview-indicator">
-                            <div className="drop-line" />
-                        </div>
                     )}
                 </div>
             </div>
