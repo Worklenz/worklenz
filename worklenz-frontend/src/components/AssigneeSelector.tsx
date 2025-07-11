@@ -18,12 +18,14 @@ interface AssigneeSelectorProps {
   task: IProjectTask;
   groupId?: string | null;
   isDarkMode?: boolean;
+  kanbanMode?: boolean;
 }
 
 const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({ 
   task, 
   groupId = null, 
-  isDarkMode = false 
+  isDarkMode = false,
+  kanbanMode = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -233,7 +235,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
           ref={dropdownRef}
           onClick={e => e.stopPropagation()}
           className={`
-            fixed z-9999 w-72 rounded-md shadow-lg border
+            fixed z-[99999] w-72 rounded-md shadow-lg border
             ${isDarkMode 
               ? 'bg-gray-800 border-gray-600' 
               : 'bg-white border-gray-200'

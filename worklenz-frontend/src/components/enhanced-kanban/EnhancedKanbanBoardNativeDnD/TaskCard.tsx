@@ -424,7 +424,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                         </div>
                     </div>
                 </div>
-                <div 
+                <div
                     className="subtasks-container"
                     style={{
                         overflow: 'hidden',
@@ -456,14 +456,17 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                         >
                                             {sub.end_date ? format(new Date(sub.end_date), 'MMM d, yyyy') : ''}
                                         </span>
-                                        {sub.names && sub.names.length > 0 && (
-                                            <AvatarGroup
-                                                members={sub.names}
-                                                maxCount={2}
-                                                isDarkMode={themeMode === 'dark'}
-                                                size={18}
-                                            />
-                                        )}
+                                        <span className="flex items-center">
+                                            {sub.names && sub.names.length > 0 && (
+                                                <AvatarGroup
+                                                    members={sub.names}
+                                                    maxCount={2}
+                                                    isDarkMode={themeMode === 'dark'}
+                                                    size={18}
+                                                />
+                                            )}
+                                            <LazyAssigneeSelectorWrapper task={sub} groupId={groupId} isDarkMode={themeMode === 'dark'} kanbanMode={true} />
+                                        </span>
                                     </li>
                                 ))}
                             </ul>
