@@ -25,6 +25,7 @@ export default defineConfig(({ command, mode }) => {
         { find: '@shared', replacement: path.resolve(__dirname, './src/shared') },
         { find: '@layouts', replacement: path.resolve(__dirname, './src/layouts') },
         { find: '@services', replacement: path.resolve(__dirname, './src/services') },
+
       ],
       // **Ensure single React instance**
       dedupe: ['react', 'react-dom'],

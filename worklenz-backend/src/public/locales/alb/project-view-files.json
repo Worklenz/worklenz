@@ -1,0 +1,14 @@
+{
+  "nameColumn": "Emri",
+  "attachedTaskColumn": "Detyra e Bashkangjitur",
+  "sizeColumn": "Madhësia",
+  "uploadedByColumn": "Ngarkuar Nga",
+  "uploadedAtColumn": "Ngarkuar Më",
+  "fileIconAlt": "Ikona e skedarit",
+  "titleDescriptionText": "Të gjitha bashkëngjitjet e detyrave në këtë projekt do të shfahen këtu.",
+  "deleteConfirmationTitle": "Jeni i sigurt?",
+  "deleteConfirmationOk": "Po",
+  "deleteConfirmationCancel": "Anulo",
+  "segmentedTooltip": "Së shpejti! Kaloni midis pamjes listë dhe pamjes miniaturash.",
+  "emptyText": "Nuk ka bashkëngjitje në projekt."
+}

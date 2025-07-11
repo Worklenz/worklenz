@@ -1,0 +1,20 @@
+{
+  "nameColumn": "Nome",
+  "deleteConfirmationTitle": "Tem a certeza?",
+  "deleteConfirmationOk": "Sim",
+  "deleteConfirmationCancel": "Cancelar",
+  "searchPlaceholder": "Pesquisar por nome",
+  "createJobTitleButton": "Criar Título de Emprego",
+  "pinTooltip": "Clique para fixar isso no menu principal",
+  "createJobTitleDrawerTitle": "Criar Título de Emprego",
+  "updateJobTitleDrawerTitle": "Atualizar Título de Emprego",
+  "nameLabel": "Nome",
+  "namePlaceholder": "Nome",
+  "nameRequiredError": "Por favor, insira um Nome",
+  "createButton": "Criar",
+  "updateButton": "Atualizar",
+  "createJobTitleSuccessMessage": "Criar título de emprego com sucesso!",
+  "createJobTitleErrorMessage": "Falha ao criar título de emprego!",
+  "updateJobTitleSuccessMessage": "Atualizar título de emprego com sucesso!",
+  "updateJobTitleErrorMessage": "Falha ao atualizar título de emprego!"
+}

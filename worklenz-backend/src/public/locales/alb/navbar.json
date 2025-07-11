@@ -1,0 +1,31 @@
+{
+  "logoAlt": "Logoja e Worklenz",
+  "home": "Kryefaqja",
+  "projects": "Projektet",
+  "schedule": "Orari",
+  "reporting": "Raportimi",
+  "clients": "Klientët",
+  "teams": "Ekipet",
+  "labels": "Etiketa",
+  "jobTitles": "Tituj Pune",
+  "upgradePlan": "Përmirëso Abonimin",
+  "upgradePlanTooltip": "Përmirëso abonimin",
+  "invite": "Fto",
+  "inviteTooltip": "Fto anëtarë të ekipit të bashkohen",
+  "switchTeamTooltip": "Ndrysho ekipin",
+  "help": "Ndihmë",
+  "notificationTooltip": "Shiko njoftimet",
+  "profileTooltip": "Shiko profilin",
+  "adminCenter": "Qendra Administrative",
+  "settings": "Cilësimet",
+  "logOut": "Dil",
+  "notificationsDrawer": {
+    "read": "Lexuara e njoftimet ",
+    "unread": "Njoftimet e palexuara",
+    "markAsRead": "Shëno si të lexuara",
+    "readAndJoin": "Lexo & Bashkohu",
+    "accept": "Prano",
+    "acceptAndJoin": "Prano & Bashkohu",
+    "noNotifications": "Asnjë njoftim"
+  }
+}

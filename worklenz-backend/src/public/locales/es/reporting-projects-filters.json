@@ -1,0 +1,35 @@
+{
+  "searchByNamePlaceholder": "Buscar por nombre",
+  "searchByCategoryPlaceholder": "Buscar por categoría",
+
+  "statusText": "Estado",
+  "healthText": "Salud",
+  "categoryText": "Categoría",
+  "projectManagerText": "Gerente de Proyecto",
+  "showFieldsText": "Mostrar campos",
+
+  "cancelledText": "Cancelado",
+  "blockedText": "Bloqueado",
+  "onHoldText": "En Espera",
+  "proposedText": "Propuesto",
+  "inPlanningText": "En Planificación",
+  "inProgressText": "En Progreso",
+  "completedText": "Completado",
+  "continuousText": "Continuo",
+
+  "notSetText": "No Establecido",
+  "needsAttentionText": "Necesita Atención",
+  "atRiskText": "En Riesgo",
+  "goodText": "Bien",
+
+  "nameText": "Proyecto",
+  "estimatedVsActualText": "Estimado vs Real",
+  "tasksProgressText": "Progreso de Tareas",
+  "lastActivityText": "Última Actividad",
+  "datesText": "Fechas de Inicio/Fin",
+  "daysLeftText": "Días Restantes/Atrasados",
+  "projectHealthText": "Salud del Proyecto",
+  "projectUpdateText": "Actualización del Proyecto",
+  "clientText": "Cliente",
+  "teamText": "Equipo"
+}

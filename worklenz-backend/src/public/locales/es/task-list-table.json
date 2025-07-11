@@ -1,0 +1,136 @@
+{
+  "keyColumn": "Clave",
+  "taskColumn": "Tarea",
+  "descriptionColumn": "Descripción",
+  "progressColumn": "Progreso",
+  "membersColumn": "Miembros",
+  "assigneesColumn": "Asignados",
+  "labelsColumn": "Etiquetas",
+  "phasesColumn": "Fases",
+  "phaseColumn": "Fase",
+  "statusColumn": "Estado",
+  "priorityColumn": "Prioridad",
+  "timeTrackingColumn": "Seguimiento de tiempo",
+  "timetrackingColumn": "Seguimiento de tiempo",
+  "estimationColumn": "Estimación",
+  "startDateColumn": "Fecha de inicio",
+  "startdateColumn": "Fecha de inicio",
+  "dueDateColumn": "Fecha de vencimiento",
+  "duedateColumn": "Fecha de vencimiento",
+  "completedDateColumn": "Fecha de completado",
+  "completeddateColumn": "Fecha de completado",
+  "createdDateColumn": "Fecha de creación",
+  "createddateColumn": "Fecha de creación",
+  "lastUpdatedColumn": "Última actualización",
+  "lastupdatedColumn": "Última actualización",
+  "reporterColumn": "Reportador",
+  "dueTimeColumn": "Hora de vencimiento",
+  "todoSelectorText": "Por hacer",
+  "doingSelectorText": "En progreso",
+  "doneSelectorText": "Completado",
+
+  "lowSelectorText": "Baja",
+  "mediumSelectorText": "Media",
+  "highSelectorText": "Alta",
+
+  "selectText": "Seleccionar",
+  "labelsSelectorInputTip": "¡Presiona enter para crear!",
+
+  "addTaskText": "Agregar tarea",
+  "addSubTaskText": "Agregar subtarea",
+  "noTasksInGroup": "No hay tareas en este grupo",
+  "addTaskInputPlaceholder": "Escribe tu tarea y presiona enter",
+
+  "openButton": "Abrir",
+  "okButton": "Aceptar",
+
+  "noLabelsFound": "No se encontraron etiquetas",
+  "searchInputPlaceholder": "Buscar o crear",
+  "assigneeSelectorInviteButton": "Invitar a un nuevo miembro por correo",
+  "labelInputPlaceholder": "Buscar o crear",
+  "searchLabelsPlaceholder": "Buscar etiquetas...",
+  "createLabelButton": "Crear \"{{name}}\"",
+  "manageLabelsPath": "Configuración → Etiquetas",
+
+  "pendingInvitation": "Invitación pendiente",
+
+  "contextMenu": {
+    "assignToMe": "Asignar a mí",
+    "moveTo": "Mover a",
+    "unarchive": "Desarchivar",
+    "archive": "Archivar",
+    "convertToSubTask": "Convertir en subtarea",
+    "convertToTask": "Convertir en tarea",
+    "delete": "Eliminar",
+    "searchByNameInputPlaceholder": "Buscar por nombre"
+  },
+  "setDueDate": "Establecer fecha de vencimiento",
+  "setStartDate": "Establecer fecha de inicio",
+  "clearDueDate": "Limpiar fecha de vencimiento",
+  "clearStartDate": "Limpiar fecha de inicio",
+  "dueDatePlaceholder": "Fecha de vencimiento",
+  "startDatePlaceholder": "Fecha de inicio",
+
+  "emptyStates": {
+    "noTaskGroups": "No se encontraron grupos de tareas",
+    "noTaskGroupsDescription": "Las tareas aparecerán aquí cuando se creen o cuando se apliquen filtros.",
+    "errorPrefix": "Error:",
+    "dragTaskFallback": "Tarea"
+  },
+
+  "customColumns": {
+    "addCustomColumn": "Agregar una columna personalizada",
+    "customColumnHeader": "Columna Personalizada",
+    "customColumnSettings": "Configuración de columna personalizada",
+    "noCustomValue": "Sin valor",
+    "peopleField": "Campo de personas",
+    "noDate": "Sin fecha",
+    "unsupportedField": "Tipo de campo no compatible",
+    
+    "modal": {
+      "addFieldTitle": "Agregar campo",
+      "editFieldTitle": "Editar campo",
+      "fieldTitle": "Título del campo",
+      "fieldTitleRequired": "El título del campo es obligatorio",
+      "columnTitlePlaceholder": "Título de la columna",
+      "type": "Tipo",
+      "deleteConfirmTitle": "¿Está seguro de que desea eliminar esta columna personalizada?",
+      "deleteConfirmDescription": "Esta acción no se puede deshacer. Todos los datos asociados con esta columna se eliminarán permanentemente.",
+      "deleteButton": "Eliminar",
+      "cancelButton": "Cancelar",
+      "createButton": "Crear",
+      "updateButton": "Actualizar",
+      "createSuccessMessage": "Columna personalizada creada exitosamente",
+      "updateSuccessMessage": "Columna personalizada actualizada exitosamente",
+      "deleteSuccessMessage": "Columna personalizada eliminada exitosamente",
+      "deleteErrorMessage": "Error al eliminar la columna personalizada",
+      "createErrorMessage": "Error al crear la columna personalizada",
+      "updateErrorMessage": "Error al actualizar la columna personalizada"
+    },
+    
+    "fieldTypes": {
+      "people": "Personas",
+      "number": "Número",
+      "date": "Fecha",
+      "selection": "Selección",
+      "checkbox": "Casilla de verificación",
+      "labels": "Etiquetas",
+      "key": "Clave",
+      "formula": "Fórmula"
+    }
+  },
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} subtarea",
+      "subtasks_plural": "{{count}} subtareas",
+      "comments": "{{count}} comentario",
+      "comments_plural": "{{count}} comentarios",
+      "attachments": "{{count}} archivo adjunto",
+      "attachments_plural": "{{count}} archivos adjuntos",
+      "subscribers": "La tarea tiene suscriptores",
+      "dependencies": "La tarea tiene dependencias",
+      "recurring": "Tarea recurrente"
+    }
+  }
+}

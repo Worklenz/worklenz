@@ -39,7 +39,7 @@ import { resetState as resetEnhancedKanbanState } from '@/features/enhanced-kanb
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import { useTranslation } from 'react-i18next';
-import { ensureTranslationsLoaded } from '@/i18n';
+
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -96,21 +96,10 @@ const ProjectView = React.memo(() => {
     setTaskId(urlParams.taskId);
   }, [urlParams]);
 
-  // Ensure translations are loaded for project-view namespace
+  // Remove translation preloading since we're using simple load-as-you-go approach
   useEffect(() => {
-    const loadTranslations = async () => {
-      try {
-        await ensureTranslationsLoaded(['project-view'], [i18n.language]);
-        updateTabLabels();
-        setTranslationsReady(true);
-      } catch (error) {
-        console.error('Failed to load project-view translations:', error);
-        // Set ready to true anyway to prevent infinite loading
-        setTranslationsReady(true);
-      }
-    };
-
-    loadTranslations();
+    updateTabLabels();
+    setTranslationsReady(true);
   }, [i18n.language]);
 
   // Update tab labels when language changes

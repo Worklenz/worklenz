@@ -1,0 +1,19 @@
+{
+  "configurePhases": "Konfiguro Fazat",
+  "phaseLabel": "Etiketa e Fazës",
+  "enterPhaseName": "Vendosni një emër për etiketën e fazës",
+  "addOption": "Shto Opsion",
+  "phaseOptions": "Opsionet e Fazës:",
+  "dragToReorderPhases": "Zvarrit fazat për t'i rirenditur. Çdo fazë mund të ketë një ngjyrë të ndryshme.",
+  "enterNewPhaseName": "Shkruani emrin e fazës së re...",
+  "addPhase": "Shto Fazë",
+  "noPhasesFound": "Nuk u gjetën faza. Krijoni fazën tuaj të parë më sipër.",
+  "deletePhase": "Fshi Fazën",
+  "deletePhaseConfirm": "Jeni të sigurt që doni të fshini këtë fazë? Ky veprim nuk mund të zhbëhet.",
+  "rename": "Riemëro",
+  "delete": "Fshi",
+  "enterPhaseName": "Shkruani emrin e fazës",
+  "selectColor": "Zgjidh ngjyrën",
+  "managePhases": "Menaxho Fazat",
+  "close": "Mbyll"
+}

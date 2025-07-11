@@ -1,0 +1,27 @@
+{
+  "headerDescription": "Login to your account",
+  "emailLabel": "Email",
+  "emailPlaceholder": "Enter your email",
+  "emailRequired": "Please enter your Email!",
+  "passwordLabel": "Password",
+  "passwordPlaceholder": "Enter your password",
+  "passwordRequired": "Please enter your Password!",
+  "rememberMe": "Remember me",
+  "loginButton": "Log in",
+  "signupButton": "Sign up",
+  "forgotPasswordButton": "Forgot password?",
+  "signInWithGoogleButton": "Sign in with Google",
+  "dontHaveAccountText": "Don’t have an account?",
+  "orText": "OR",
+  "successMessage": "You have successfully logged in!",
+  "loginError": "Login failed",
+  "googleLoginError": "Google login failed",
+  "validationMessages": {
+    "email": "Please enter a valid email address",
+    "password": "Password must be at least 8 characters long"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "Login failed",
+    "loginErrorMessage": "Please check your email and password and try again"
+  }
+}

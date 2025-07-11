@@ -1,0 +1,11 @@
+{
+  "title": "Benachrichtigungseinstellungen",
+  "emailTitle": "E-Mail-Benachrichtigungen erhalten",
+  "emailDescription": "Dies beinhaltet neue Aufgaben-Zuweisungen",
+  "dailyDigestTitle": "Tägliche Übersicht erhalten",
+  "dailyDigestDescription": "Jeden Abend erhalten Sie eine Zusammenfassung der letzten Aktivitäten in Aufgaben.",
+  "popupTitle": "Popup-Benachrichtigungen auf meinem Computer anzeigen, wenn Worklenz geöffnet ist",
+  "popupDescription": "Popup-Benachrichtigungen können von Ihrem Browser blockiert werden. Ändern Sie Ihre Browser-Einstellungen, um diese zu erlauben.",
+  "unreadItemsTitle": "Anzahl ungelesener Elemente anzeigen",
+  "unreadItemsDescription": "Sie sehen Zähler für jede Benachrichtigung."
+}

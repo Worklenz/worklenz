@@ -1,0 +1,27 @@
+{
+  "title": "Salvar como Modelo",
+  "templateName": "Nome do Modelo",
+  "includes": "O que deve ser incluído no modelo do projeto?",
+  "includesOptions": {
+    "statuses": "Status",
+    "phases": "Fases",
+    "labels": "Etiquetas"
+  },
+  "taskIncludes": "O que deve ser incluído no modelo das tarefas?",
+  "taskIncludesOptions": {
+    "statuses": "Status",
+    "phases": "Fases",
+    "labels": "Etiquetas",
+    "name": "Nome",
+    "priority": "Prioridade",
+    "status": "Status",
+    "phase": "Fase",
+    "label": "Etiqueta",
+    "timeEstimate": "Estimativa de Tempo",
+    "description": "Descrição",
+    "subTasks": "Subtarefas"
+  },
+  "cancel": "Cancelar",
+  "save": "Salvar",
+  "templateNamePlaceholder": "Digite o nome do modelo"
+}

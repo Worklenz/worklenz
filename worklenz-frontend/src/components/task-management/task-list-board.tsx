@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useTaskManagementTranslations } from '@/hooks/useTranslationPreloader';
+import { useTranslation } from 'react-i18next';
 import {
   DndContext,
   DragOverlay,
@@ -123,7 +123,7 @@ const throttle = <T extends (...args: any[]) => void>(func: T, delay: number): T
 
 const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = '' }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { t, ready, isLoading } = useTaskManagementTranslations();
+  const { t } = useTranslation(['task-management', 'task-list-table']);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [dragState, setDragState] = useState<DragState>({
     activeTask: null,
@@ -757,16 +757,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     };
   }, []);
 
-  // Don't render until translations are ready to prevent Suspense
-  if (!ready || isLoading) {
-    return (
-      <Card className={className}>
-        <div className="flex justify-center items-center py-8">
-          <Spin size="large" />
-        </div>
-      </Card>
-    );
-  }
+  // Remove translation loading check since we're using simple load-as-you-go approach
 
   if (error) {
     return (

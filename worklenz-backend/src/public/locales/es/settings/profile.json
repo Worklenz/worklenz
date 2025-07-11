@@ -1,0 +1,14 @@
+{
+  "uploadError": "¡Solo puedes subir archivos JPG/PNG!",
+  "uploadSizeError": "¡La imagen debe ser menor de 2MB!",
+  "upload": "Subir",
+  "nameLabel": "Nombre",
+  "nameRequiredError": "El nombre es obligatorio",
+  "emailLabel": "Correo electrónico",
+  "emailRequiredError": "El correo electrónico es obligatorio",
+  "saveChanges": "Guardar cambios",
+  "profileJoinedText": "Se unió hace un mes",
+  "profileLastUpdatedText": "Última actualización hace un mes",
+  "avatarTooltip": "Haz clic para subir un avatar",
+  "title": "Configuración del Perfil"
+}

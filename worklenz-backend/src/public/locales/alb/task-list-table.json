@@ -1,0 +1,136 @@
+{
+  "keyColumn": "Çelësi",
+  "taskColumn": "Detyra",
+  "descriptionColumn": "Përshkrimi",
+  "progressColumn": "Progresi",
+  "membersColumn": "Anëtarët",
+  "assigneesColumn": "Përgjegjësit",
+  "labelsColumn": "Etiketa",
+  "phasesColumn": "Fazat",
+  "phaseColumn": "Faza",
+  "statusColumn": "Statusi",
+  "priorityColumn": "Prioriteti",
+  "timeTrackingColumn": "Gjurmimi i Kohës",
+  "timetrackingColumn": "Gjurmimi i Kohës",
+  "estimationColumn": "Vlerësimi",
+  "startDateColumn": "Data e Fillimit",
+  "startdateColumn": "Data e Fillimit",
+  "dueDateColumn": "Data e Afatit",
+  "duedateColumn": "Data e Afatit",
+  "completedDateColumn": "Data e Përfundimit",
+  "completeddateColumn": "Data e Përfundimit",
+  "createdDateColumn": "Data e Krijimit",
+  "createddateColumn": "Data e Krijimit",
+  "lastUpdatedColumn": "Përditësuar Së Fundi",
+  "lastupdatedColumn": "Përditësuar Së Fundi",
+  "reporterColumn": "Raportuesi",
+  "dueTimeColumn": "Koha e Afatit",
+  "todoSelectorText": "Për të Bërë",
+  "doingSelectorText": "Duke bërë",
+  "doneSelectorText": "E Përfunduar",
+
+  "lowSelectorText": "I ulët",
+  "mediumSelectorText": "I mesëm",
+  "highSelectorText": "I lartë",
+
+  "selectText": "Zgjidh",
+  "labelsSelectorInputTip": "Shtyp Enter për të krijuar!",
+
+  "addTaskText": "Shto Detyrë",
+  "addSubTaskText": "+ Shto Nën-Detyrë",
+  "noTasksInGroup": "Nuk ka detyra në këtë grup",
+  "addTaskInputPlaceholder": "Shkruaj detyrën dhe shtyp Enter",
+
+  "openButton": "Hap",
+  "okButton": "Në rregull",
+
+  "noLabelsFound": "Nuk u gjetën etiketa",
+  "searchInputPlaceholder": "Kërko ose krijo",
+  "assigneeSelectorInviteButton": "Fto një anëtar të ri me email",
+  "labelInputPlaceholder": "Kërko ose krijo",
+  "searchLabelsPlaceholder": "Kërko etiketa...",
+  "createLabelButton": "Krijo \"{{name}}\"",
+  "manageLabelsPath": "Cilësimet → Etiketat",
+
+  "pendingInvitation": "Ftesë në Pritje",
+
+  "contextMenu": {
+    "assignToMe": "Cakto mua",
+    "moveTo": "Zhvendos në",
+    "unarchive": "Ç'arkivizo",
+    "archive": "Arkivizo",
+    "convertToSubTask": "Shndërro në Nën-Detyrë",
+    "convertToTask": "Shndërro në Detyrë",
+    "delete": "Fshi",
+    "searchByNameInputPlaceholder": "Kërko sipas emrit"
+  },
+  "setDueDate": "Cakto datën e afatit",
+  "setStartDate": "Cakto datën e fillimit",
+  "clearDueDate": "Pastro datën e afatit",
+  "clearStartDate": "Pastro datën e fillimit",
+  "dueDatePlaceholder": "Data e afatit",
+  "startDatePlaceholder": "Data e fillimit",
+
+  "emptyStates": {
+    "noTaskGroups": "Nuk u gjetën grupe detyrash",
+    "noTaskGroupsDescription": "Detyrat do të shfaqen këtu kur krijohen ose kur aplikohen filtra.",
+    "errorPrefix": "Gabim:",
+    "dragTaskFallback": "Detyrë"
+  },
+
+  "customColumns": {
+    "addCustomColumn": "Shto një kolonë të personalizuar",
+    "customColumnHeader": "Kolona e Personalizuar",
+    "customColumnSettings": "Cilësimet e kolonës së personalizuar",
+    "noCustomValue": "Asnjë vlerë",
+    "peopleField": "Fusha e njerëzve",
+    "noDate": "Asnjë datë",
+    "unsupportedField": "Lloj fushe i pambështetur",
+    
+    "modal": {
+      "addFieldTitle": "Shto fushë",
+      "editFieldTitle": "Redakto fushën",
+      "fieldTitle": "Titulli i fushës",
+      "fieldTitleRequired": "Titulli i fushës është i kërkuar",
+      "columnTitlePlaceholder": "Titulli i kolonës",
+      "type": "Lloji",
+      "deleteConfirmTitle": "Jeni i sigurt që doni të fshini këtë kolonë të personalizuar?",
+      "deleteConfirmDescription": "Kjo veprim nuk mund të zhbëhet. Të gjitha të dhënat e lidhura me këtë kolonë do të fshihen përgjithmonë.",
+      "deleteButton": "Fshi",
+      "cancelButton": "Anulo",
+      "createButton": "Krijo",
+      "updateButton": "Përditëso",
+      "createSuccessMessage": "Kolona e personalizuar u krijua me sukses",
+      "updateSuccessMessage": "Kolona e personalizuar u përditësua me sukses",
+      "deleteSuccessMessage": "Kolona e personalizuar u fshi me sukses",
+      "deleteErrorMessage": "Dështoi në fshirjen e kolonës së personalizuar",
+      "createErrorMessage": "Dështoi në krijimin e kolonës së personalizuar",
+      "updateErrorMessage": "Dështoi në përditësimin e kolonës së personalizuar"
+    },
+    
+    "fieldTypes": {
+      "people": "Njerëz",
+      "number": "Numër",
+      "date": "Data",
+      "selection": "Zgjedhje",
+      "checkbox": "Kutia e kontrollit",
+      "labels": "Etiketat",
+      "key": "Çelësi",
+      "formula": "Formula"
+    }
+  },
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} nën-detyrë",
+      "subtasks_plural": "{{count}} nën-detyra",
+      "comments": "{{count}} koment",
+      "comments_plural": "{{count}} komente",
+      "attachments": "{{count}} bashkëngjitje",
+      "attachments_plural": "{{count}} bashkëngjitje",
+      "subscribers": "Detyra ka pajtues",
+      "dependencies": "Detyra ka varësi",
+      "recurring": "Detyrë përsëritëse"
+    }
+  }
+}

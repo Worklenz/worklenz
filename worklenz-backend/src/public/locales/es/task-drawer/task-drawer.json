@@ -1,0 +1,123 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "Escriba su Tarea",
+    "deleteTask": "Eliminar Tarea"
+  },
+  "taskInfoTab": {
+    "title": "Información",
+    "details": {
+      "title": "Detalles",
+      "task-key": "Clave de Tarea",
+      "phase": "Fase",
+      "assignees": "Asignados",
+      "due-date": "Fecha de Vencimiento",
+      "time-estimation": "Estimación de Tiempo",
+      "priority": "Prioridad",
+      "labels": "Etiquetas",
+      "billable": "Facturable",
+      "notify": "Notificar",
+      "when-done-notify": "Al terminar, notificar",
+      "start-date": "Fecha de Inicio",
+      "end-date": "Fecha de Fin",
+      "hide-start-date": "Ocultar Fecha de Inicio",
+      "show-start-date": "Mostrar Fecha de Inicio",
+      "hours": "Horas",
+      "minutes": "Minutos",
+      "progressValue": "Valor de Progreso",
+      "progressValueTooltip": "Establecer el porcentaje de progreso (0-100%)",
+      "progressValueRequired": "Por favor, introduzca un valor de progreso",
+      "progressValueRange": "El progreso debe estar entre 0 y 100",
+      "taskWeight": "Peso de la Tarea",
+      "taskWeightTooltip": "Establecer el peso de esta subtarea (porcentaje)",
+      "taskWeightRequired": "Por favor, introduzca un peso de tarea",
+      "taskWeightRange": "El peso debe estar entre 0 y 100",
+      "recurring": "Recurrente"
+    },
+    "labels": {
+      "labelInputPlaceholder": "Buscar o crear",
+      "labelsSelectorInputTip": "Presiona Enter para crear"
+    },
+    "description": {
+      "title": "Descripción",
+      "placeholder": "Añadir una descripción más detallada..."
+    },
+    "subTasks": {
+      "title": "Sub Tareas",
+      "addSubTask": "Agregar Sub Tarea",
+      "addSubTaskInputPlaceholder": "Escriba su tarea y presione enter",
+      "refreshSubTasks": "Actualizar Sub Tareas",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "confirmDeleteSubTask": "¿Está seguro de que desea eliminar esta subtarea?",
+      "deleteSubTask": "Eliminar Sub Tarea"
+    },
+    "dependencies": {
+      "title": "Dependencias",
+      "addDependency": "+ Agregar nueva dependencia",
+      "blockedBy": "Bloqueado por",
+      "searchTask": "Escribir para buscar tarea",
+      "noTasksFound": "No se encontraron tareas",
+      "confirmDeleteDependency": "¿Está seguro de que desea eliminar?"
+    },
+    "attachments": {
+      "title": "Adjuntos",
+      "chooseOrDropFileToUpload": "Elija o arrastre un archivo para subir",
+      "uploading": "Subiendo..."
+    },
+    "comments": {
+      "title": "Comentarios",
+      "addComment": "+ Agregar nuevo comentario",
+      "noComments": "Aún no hay comentarios. ¡Sé el primero en comentar!",
+      "delete": "Eliminar",
+      "confirmDeleteComment": "¿Está seguro de que desea eliminar este comentario?",
+      "addCommentPlaceholder": "Agregar un comentario...",
+      "cancel": "Cancelar",
+      "commentButton": "Comentar",
+      "attachFiles": "Adjuntar archivos",
+      "addMoreFiles": "Agregar más archivos",
+      "selectedFiles": "Archivos Seleccionados (Hasta 25MB, Máximo {count})",
+      "maxFilesError": "Solo puede subir un máximo de {count} archivos",
+      "processFilesError": "Error al procesar archivos",
+      "addCommentError": "Por favor agregue un comentario o adjunte archivos",
+      "createdBy": "Creado {{time}} por {{user}}",
+      "updatedTime": "Actualizado {{time}}"
+    },
+    "searchInputPlaceholder": "Buscar por nombre",
+    "pendingInvitation": "Invitación Pendiente"
+  },
+  "taskTimeLogTab": {
+    "title": "Registro de Tiempo",
+    "addTimeLog": "Añadir nuevo registro de tiempo",
+    "totalLogged": "Total Registrado",
+    "exportToExcel": "Exportar a Excel",
+    "noTimeLogsFound": "No se encontraron registros de tiempo",
+    "timeLogForm": {
+      "date": "Fecha",
+      "startTime": "Hora de Inicio",
+      "endTime": "Hora de Fin",
+      "workDescription": "Descripción del Trabajo",
+      "descriptionPlaceholder": "Agregar una descripción",
+      "logTime": "Registrar tiempo",
+      "updateTime": "Actualizar tiempo",
+      "cancel": "Cancelar",
+      "selectDateError": "Por favor seleccione una fecha",
+      "selectStartTimeError": "Por favor seleccione la hora de inicio",
+      "selectEndTimeError": "Por favor seleccione la hora de fin",
+      "endTimeAfterStartError": "La hora de fin debe ser posterior a la hora de inicio"
+    }
+  },
+  "taskActivityLogTab": {
+    "title": "Registro de Actividad",
+    "add": "AGREGAR",
+    "remove": "QUITAR",
+    "none": "Ninguno",
+    "weight": "Peso",
+    "createdTask": "creó la tarea."
+  },
+  "taskProgress": {
+    "markAsDoneTitle": "¿Marcar Tarea como Completada?",
+    "confirmMarkAsDone": "Sí, marcar como completada",
+    "cancelMarkAsDone": "No, mantener estado actual",
+    "markAsDoneDescription": "Ha establecido el progreso al 100%. ¿Le gustaría actualizar el estado de la tarea a \"Completada\"?"
+  }
+}
