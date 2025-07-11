@@ -5497,8 +5497,15 @@ $$
 DECLARE
     _iterator  NUMERIC := 0;
     _status_id TEXT;
+    _project_id UUID;
+    _base_sort_order NUMERIC;
 BEGIN
+    -- Get the project_id from the first status to ensure we update all statuses in the same project
+    SELECT project_id INTO _project_id
+    FROM task_statuses 
+    WHERE id = (SELECT TRIM(BOTH '"' FROM JSON_ARRAY_ELEMENTS(_status_ids)::TEXT) LIMIT 1)::UUID;
 
+    -- Update the sort_order for statuses in the provided order
     FOR _status_id IN SELECT * FROM JSON_ARRAY_ELEMENTS((_status_ids)::JSON)
         LOOP
             UPDATE task_statuses
@@ -5506,6 +5513,29 @@ BEGIN
             WHERE id = (SELECT TRIM(BOTH '"' FROM _status_id))::UUID;
             _iterator := _iterator + 1;
         END LOOP;
+
+    -- Get the base sort order for remaining statuses (simple count approach)
+    SELECT COUNT(*) INTO _base_sort_order
+    FROM task_statuses ts2 
+    WHERE ts2.project_id = _project_id 
+    AND ts2.id = ANY(SELECT (TRIM(BOTH '"' FROM JSON_ARRAY_ELEMENTS(_status_ids)::TEXT))::UUID);
+
+    -- Update remaining statuses with simple sequential numbering
+    -- Reset iterator to start from base_sort_order
+    _iterator := _base_sort_order;
+    
+    -- Use a cursor approach to avoid window functions
+    FOR _status_id IN 
+        SELECT id::TEXT FROM task_statuses 
+        WHERE project_id = _project_id 
+        AND id NOT IN (SELECT (TRIM(BOTH '"' FROM JSON_ARRAY_ELEMENTS(_status_ids)::TEXT))::UUID)
+        ORDER BY sort_order
+    LOOP
+        UPDATE task_statuses 
+        SET sort_order = _iterator
+        WHERE id = _status_id::UUID;
+        _iterator := _iterator + 1;
+    END LOOP;
 
     RETURN;
 END
@@ -6394,7 +6424,7 @@ DECLARE
     _offset INT := 0;
     _affected_rows INT;
 BEGIN
-    -- PERFORMANCE OPTIMIZATION: Use CTE for better query planning
+    -- PERFORMANCE OPTIMIZATION: Use direct updates without CTE in UPDATE
     IF (_to_index = -1)
     THEN
         _to_index = COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = _project_id), 0);
@@ -6404,18 +6434,15 @@ BEGIN
     IF _to_index > _from_index
     THEN
         LOOP
-            WITH batch_update AS (
-                UPDATE tasks
-                SET sort_order = sort_order - 1
-                WHERE project_id = _project_id
-                  AND sort_order > _from_index
-                  AND sort_order < _to_index
-                  AND sort_order > _offset
-                  AND sort_order <= _offset + _batch_size
-                RETURNING 1
-            )
-            SELECT COUNT(*) INTO _affected_rows FROM batch_update;
+            UPDATE tasks
+            SET sort_order = sort_order - 1
+            WHERE project_id = _project_id
+              AND sort_order > _from_index
+              AND sort_order < _to_index
+              AND sort_order > _offset
+              AND sort_order <= _offset + _batch_size;
             
+            GET DIAGNOSTICS _affected_rows = ROW_COUNT;
             EXIT WHEN _affected_rows = 0;
             _offset := _offset + _batch_size;
         END LOOP;
@@ -6427,18 +6454,15 @@ BEGIN
     THEN
         _offset := 0;
         LOOP
-            WITH batch_update AS (
-                UPDATE tasks
-                SET sort_order = sort_order + 1
-                WHERE project_id = _project_id
-                  AND sort_order > _to_index
-                  AND sort_order < _from_index
-                  AND sort_order > _offset
-                  AND sort_order <= _offset + _batch_size
-                RETURNING 1
-            )
-            SELECT COUNT(*) INTO _affected_rows FROM batch_update;
+            UPDATE tasks
+            SET sort_order = sort_order + 1
+            WHERE project_id = _project_id
+              AND sort_order > _to_index
+              AND sort_order < _from_index
+              AND sort_order > _offset
+              AND sort_order <= _offset + _batch_size;
             
+            GET DIAGNOSTICS _affected_rows = ROW_COUNT;
             EXIT WHEN _affected_rows = 0;
             _offset := _offset + _batch_size;
         END LOOP;
@@ -6457,22 +6481,19 @@ DECLARE
     _offset INT := 0;
     _affected_rows INT;
 BEGIN
-    -- PERFORMANCE OPTIMIZATION: Batch updates for large datasets
+    -- PERFORMANCE OPTIMIZATION: Batch updates for large datasets without CTE in UPDATE
     IF _to_index > _from_index
     THEN
         LOOP
-            WITH batch_update AS (
-                UPDATE tasks
-                SET sort_order = sort_order - 1
-                WHERE project_id = _project_id
-                  AND sort_order > _from_index
-                  AND sort_order <= _to_index
-                  AND sort_order > _offset
-                  AND sort_order <= _offset + _batch_size
-                RETURNING 1
-            )
-            SELECT COUNT(*) INTO _affected_rows FROM batch_update;
+            UPDATE tasks
+            SET sort_order = sort_order - 1
+            WHERE project_id = _project_id
+              AND sort_order > _from_index
+              AND sort_order <= _to_index
+              AND sort_order > _offset
+              AND sort_order <= _offset + _batch_size;
             
+            GET DIAGNOSTICS _affected_rows = ROW_COUNT;
             EXIT WHEN _affected_rows = 0;
             _offset := _offset + _batch_size;
         END LOOP;
@@ -6482,23 +6503,55 @@ BEGIN
     THEN
         _offset := 0;
         LOOP
-            WITH batch_update AS (
-                UPDATE tasks
-                SET sort_order = sort_order + 1
-                WHERE project_id = _project_id
-                  AND sort_order >= _to_index
-                  AND sort_order < _from_index
-                  AND sort_order > _offset
-                  AND sort_order <= _offset + _batch_size
-                RETURNING 1
-            )
-            SELECT COUNT(*) INTO _affected_rows FROM batch_update;
+            UPDATE tasks
+            SET sort_order = sort_order + 1
+            WHERE project_id = _project_id
+              AND sort_order >= _to_index
+              AND sort_order < _from_index
+              AND sort_order > _offset
+              AND sort_order <= _offset + _batch_size;
             
+            GET DIAGNOSTICS _affected_rows = ROW_COUNT;
             EXIT WHEN _affected_rows = 0;
             _offset := _offset + _batch_size;
         END LOOP;
     END IF;
 
     UPDATE tasks SET sort_order = _to_index WHERE id = _task_id AND project_id = _project_id;
+END
+$$;
+
+-- Simple function to update task sort orders in bulk
+CREATE OR REPLACE FUNCTION update_task_sort_orders_bulk(_updates json) RETURNS void
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _update_record RECORD;
+BEGIN
+    -- Simple approach: update each task's sort_order from the provided array
+    FOR _update_record IN 
+        SELECT 
+            (item->>'task_id')::uuid as task_id,
+            (item->>'sort_order')::int as sort_order,
+            (item->>'status_id')::uuid as status_id,
+            (item->>'priority_id')::uuid as priority_id,
+            (item->>'phase_id')::uuid as phase_id
+        FROM json_array_elements(_updates) as item
+    LOOP
+        UPDATE tasks 
+        SET 
+            sort_order = _update_record.sort_order,
+            status_id = COALESCE(_update_record.status_id, status_id),
+            priority_id = COALESCE(_update_record.priority_id, priority_id)
+        WHERE id = _update_record.task_id;
+        
+        -- Handle phase updates separately since it's in a different table
+        IF _update_record.phase_id IS NOT NULL THEN
+            INSERT INTO task_phase (task_id, phase_id)
+            VALUES (_update_record.task_id, _update_record.phase_id)
+            ON CONFLICT (task_id) DO UPDATE SET phase_id = _update_record.phase_id;
+        END IF;
+    END LOOP;
 END
 $$;

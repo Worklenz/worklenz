@@ -33,7 +33,7 @@ export const GROUP_BY_OPTIONS: IGroupByOption[] = [
   { label: 'Phase', value: IGroupBy.PHASE },
 ];
 
-const LOCALSTORAGE_GROUP_KEY = 'worklenz.enhanced-kanban.group_by';
+const LOCALSTORAGE_GROUP_KEY = 'worklenz.kanban.group_by';
 
 export const getCurrentGroup = (): IGroupBy => {
   const key = localStorage.getItem(LOCALSTORAGE_GROUP_KEY);

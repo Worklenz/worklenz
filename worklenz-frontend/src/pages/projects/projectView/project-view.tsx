@@ -7,8 +7,6 @@ import {
   Button,
   ConfigProvider,
   Flex,
-  Tooltip,
-  Badge,
   Tabs,
   PushpinFilled,
   PushpinOutlined,
@@ -20,7 +18,6 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { getProject, setProjectId, setProjectView } from '@/features/project/project.slice';
 import { fetchStatuses, resetStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { projectsApiService } from '@/api/projects/projects.api.service';
-import { colors } from '@/styles/colors';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import ProjectViewHeader from './project-view-header';
 import './project-view.css';
@@ -43,6 +40,7 @@ import { setProjectId as setInsightsProjectId } from '@/features/projects/insigh
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import { useTranslation } from 'react-i18next';
 
+
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
 
@@ -64,11 +62,14 @@ const ProjectView = React.memo(() => {
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
   const { projectId } = useParams();
-  const { t } = useTranslation('project-view');
+  const { t, i18n } = useTranslation('project-view');
 
   // Memoized selectors to prevent unnecessary re-renders
   const selectedProject = useAppSelector(state => state.projectReducer.project);
   const projectLoading = useAppSelector(state => state.projectReducer.projectLoading);
+
+  // State to track translation loading
+  const [translationsReady, setTranslationsReady] = useState(false);
 
   // Optimize document title updates
   useDocumentTitle(selectedProject?.name || t('projectView'));
@@ -94,6 +95,19 @@ const ProjectView = React.memo(() => {
     setPinnedTab(urlParams.pinnedTab);
     setTaskId(urlParams.taskId);
   }, [urlParams]);
+
+  // Remove translation preloading since we're using simple load-as-you-go approach
+  useEffect(() => {
+    updateTabLabels();
+    setTranslationsReady(true);
+  }, [i18n.language]);
+
+  // Update tab labels when language changes
+  useEffect(() => {
+    if (translationsReady) {
+      updateTabLabels();
+    }
+  }, [t, translationsReady]);
 
   // Comprehensive cleanup function for when leaving project view entirely
   const resetAllProjectData = useCallback(() => {
@@ -176,11 +190,6 @@ const ProjectView = React.memo(() => {
     setIsInitialized(false);
   }, [projectId]);
 
-  // Update tab labels when language changes
-  useEffect(() => {
-    updateTabLabels();
-  }, [t]);
-
   // Effect for handling task drawer opening from URL params
   useEffect(() => {
     if (taskid && isInitialized) {
@@ -250,6 +259,11 @@ const ProjectView = React.memo(() => {
 
   // Memoized tab menu items with enhanced styling
   const tabMenuItems = useMemo(() => {
+    // Only render tabs when translations are ready
+    if (!translationsReady) {
+      return [];
+    }
+
     const menuItems = tabItems.map(item => ({
       key: item.key,
       label: (
@@ -304,7 +318,7 @@ const ProjectView = React.memo(() => {
     }));
 
     return menuItems;
-  }, [pinnedTab, pinToDefaultTab, t]);
+  }, [pinnedTab, pinToDefaultTab, t, translationsReady]);
 
   // Optimized secondary components loading with better UX
   const [shouldLoadSecondaryComponents, setShouldLoadSecondaryComponents] = useState(false);
@@ -341,8 +355,8 @@ const ProjectView = React.memo(() => {
     [shouldLoadSecondaryComponents]
   );
 
-  // Show loading state while project is being fetched
-  if (projectLoading || !isInitialized) {
+  // Show loading state while project is being fetched or translations are loading
+  if (projectLoading || !isInitialized || !translationsReady) {
     return (
       <div style={{ marginBlockStart: 70, marginBlockEnd: 12, minHeight: '80vh' }}>
         <SuspenseFallback />

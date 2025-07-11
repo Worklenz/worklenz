@@ -1,0 +1,27 @@
+{
+  "headerDescription": "Inicia sesión en tu cuenta",
+  "emailLabel": "Correo electrónico",
+  "emailPlaceholder": "Ingresa tu correo electrónico",
+  "emailRequired": "¡Por favor ingresa tu correo electrónico!",
+  "passwordLabel": "Contraseña",
+  "passwordPlaceholder": "Ingresa tu contraseña",
+  "passwordRequired": "¡Por favor ingresa tu contraseña!",
+  "rememberMe": "Recordarme",
+  "loginButton": "Iniciar sesión",
+  "signupButton": "Registrarse",
+  "forgotPasswordButton": "¿Olvidaste tu contraseña?",
+  "signInWithGoogleButton": "Iniciar sesión con Google",
+  "successMessage": "¡Has iniciado sesión exitosamente!",
+  "dontHaveAccountText": "¿No tienes una cuenta?",
+  "orText": "O",
+  "loginError": "Iniciar sesión falló",
+  "googleLoginError": "Iniciar sesión con Google falló",
+  "validationMessages": {
+    "password": "La contraseña debe tener al menos 8 caracteres",
+    "email": "Por favor ingresa una dirección de correo electrónico válida"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "Iniciar sesión falló",
+    "loginErrorMessage": "Por favor verifica tu correo electrónico y contraseña y vuelve a intentarlo"
+  }
+}

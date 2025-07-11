@@ -1,0 +1,21 @@
+{
+  "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
+  "noTasksInGroupDescription": "Fügen Sie eine Aufgabe hinzu, um zu beginnen",
+  "addFirstTask": "Fügen Sie Ihre erste Aufgabe hinzu",
+  "openTask": "Öffnen",
+  "subtask": "Unteraufgabe",
+  "subtasks": "Unteraufgaben",
+  "comment": "Kommentar",
+  "comments": "Kommentare",
+  "attachment": "Anhang",
+  "attachments": "Anhänge",
+  "enterSubtaskName": "Unteraufgabenname eingeben...",
+  "add": "Hinzufügen",
+  "cancel": "Abbrechen",
+  "renameGroup": "Gruppe umbenennen",
+  "renameStatus": "Status umbenennen",
+  "renamePhase": "Phase umbenennen",
+  "changeCategory": "Kategorie ändern",
+  "clickToEditGroupName": "Klicken Sie, um den Gruppennamen zu bearbeiten",
+  "enterGroupName": "Gruppennamen eingeben"
+}

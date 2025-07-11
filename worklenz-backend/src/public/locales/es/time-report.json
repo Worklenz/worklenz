@@ -1,0 +1,57 @@
+{
+  "includeArchivedProjects": "Incluir Proyectos Archivados",
+  "export": "Exportar",
+  "timeSheet": "Hoja de Tiempo",
+
+  "searchByName": "Buscar por nombre",
+  "selectAll": "Seleccionar Todo",
+  "teams": "Equipos",
+
+  "searchByProject": "Buscar por nombre del proyecto",
+  "projects": "Proyectos",
+
+  "searchByCategory": "Buscar por nombre de categoría",
+  "categories": "Categorías",
+
+  "billable": "Facturable",
+  "nonBillable": "No Facturable",
+
+  "total": "Total",
+
+  "projectsTimeSheet": "Hoja de Tiempo de Proyectos",
+
+  "loggedTime": "Tiempo Registrado(horas)",
+
+  "exportToExcel": "Exportar a Excel",
+  "logged": "registrado",
+  "for": "para",
+
+  "membersTimeSheet": "Hoja de Tiempo de Miembros",
+  "member": "Miembro",
+
+  "estimatedVsActual": "Estimado vs Real",
+  "workingDays": "Días Laborables",
+  "manDays": "Días Hombre",
+  "days": "Días",
+  "estimatedDays": "Días Estimados",
+  "actualDays": "Días Reales",
+
+  "noCategories": "No se encontraron categorías",
+  "noCategory": "Sin Categoría",
+  "noProjects": "No se encontraron proyectos",
+  "noTeams": "No se encontraron equipos",
+  "noData": "No se encontraron datos",
+
+  "groupBy": "Agrupar por",
+  "groupByCategory": "Categoría",
+  "groupByTeam": "Equipo",
+  "groupByStatus": "Estado",
+  "groupByNone": "Ninguno",
+  "clearSearch": "Limpiar búsqueda",
+  "selectedProjects": "Proyectos Seleccionados",
+  "projectsSelected": "proyectos seleccionados",
+  "showSelected": "Mostrar Solo Seleccionados",
+  "expandAll": "Expandir Todo",
+  "collapseAll": "Contraer Todo",
+  "ungrouped": "Sin Agrupar"
+}

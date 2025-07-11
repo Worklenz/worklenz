@@ -1,0 +1,16 @@
+{
+  "title": "Teams",
+  "team": "Team",
+  "teams": "Teams",
+  "name": "Name",
+  "created": "Created",
+  "ownsBy": "Owns By",
+  "edit": "Edit",
+  "editTeam": "Edit Team",
+  "pinTooltip": "Click to pin this into the main menu",
+  "editTeamName": "Edit Team Name",
+  "updateName": "Update Name",
+  "namePlaceholder": "Name",
+  "nameRequired": "Please enter a Name",
+  "updateFailed": "Team name change failed!"
+} 

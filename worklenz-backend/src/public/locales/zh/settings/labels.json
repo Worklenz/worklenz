@@ -1,0 +1,11 @@
+{
+  "labelColumn": "标签",
+  "deleteConfirmationTitle": "您确定吗？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "associatedTaskColumn": "关联任务计数",
+  "searchPlaceholder": "按名称搜索",
+  "emptyText": "标签可以在更新或创建任务时创建。",
+  "pinTooltip": "点击将其固定到主菜单",
+  "colorChangeTooltip": "点击更改颜色"
+}

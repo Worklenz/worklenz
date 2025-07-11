@@ -1,0 +1,14 @@
+{
+  "nameColumn": "Name",
+  "attachedTaskColumn": "Zugehörige Aufgabe",
+  "sizeColumn": "Größe",
+  "uploadedByColumn": "Hochgeladen von",
+  "uploadedAtColumn": "Hochgeladen am",
+  "fileIconAlt": "Dateisymbol",
+  "titleDescriptionText": "Alle Anhänge zu Aufgaben in diesem Projekt werden hier angezeigt.",
+  "deleteConfirmationTitle": "Sind Sie sicher?",
+  "deleteConfirmationOk": "Ja",
+  "deleteConfirmationCancel": "Abbrechen",
+  "segmentedTooltip": "Demnächst verfügbar! Wechseln zwischen Listenansicht und Miniaturansicht.",
+  "emptyText": "Es gibt keine Anhänge in diesem Projekt."
+}

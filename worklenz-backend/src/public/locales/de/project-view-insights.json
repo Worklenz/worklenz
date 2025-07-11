@@ -1,0 +1,41 @@
+{
+  "overview": {
+    "title": "Übersicht",
+    "statusOverview": "Statusübersicht",
+    "priorityOverview": "Prioritätenübersicht",
+    "lastUpdatedTasks": "Zuletzt aktualisierte Aufgaben"
+  },
+  "members": {
+    "title": "Mitglieder",
+    "tooltip": "Mitglieder",
+    "tasksByMembers": "Aufgaben nach Mitgliedern",
+    "tasksByMembersTooltip": "Aufgaben nach Mitgliedern",
+    "name": "Name",
+    "taskCount": "Anzahl Aufgaben",
+    "contribution": "Beitrag",
+    "completed": "Abgeschlossen",
+    "incomplete": "Unvollständig",
+    "overdue": "Überfällig",
+    "progress": "Fortschritt"
+  },
+  "tasks": {
+    "overdueTasks": "Überfällige Aufgaben",
+    "overLoggedTasks": "Aufgaben mit zu viel erfasster Zeit",
+    "tasksCompletedEarly": "Vorzeitig abgeschlossene Aufgaben",
+    "tasksCompletedLate": "Verspätet abgeschlossene Aufgaben",
+    "overLoggedTasksTooltip": "Aufgaben, bei denen mehr Zeit erfasst wurde als geschätzt",
+    "overdueTasksTooltip": "Aufgaben, deren Fälligkeitsdatum überschritten wurde"
+  },
+  "common": {
+    "seeAll": "Alle anzeigen",
+    "totalLoggedHours": "Gesamterfasste Stunden",
+    "totalEstimation": "Gesamtschätzung",
+    "completedTasks": "Abgeschlossene Aufgaben",
+    "incompleteTasks": "Unvollständige Aufgaben",
+    "overdueTasks": "Überfällige Aufgaben",
+    "overdueTasksTooltip": "Aufgaben, deren Fälligkeitsdatum überschritten wurde",
+    "totalLoggedHoursTooltip": "Zeitschätzung und erfasste Zeit für Aufgaben.",
+    "includeArchivedTasks": "Archivierte Aufgaben einbeziehen",
+    "export": "Exportieren"
+  }
+}

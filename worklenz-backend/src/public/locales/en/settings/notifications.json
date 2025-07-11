@@ -1,0 +1,11 @@
+{
+  "title": "Notifications Settings",
+  "emailTitle": "Send me email notifications",
+  "emailDescription": "This includes new task assignments",
+  "dailyDigestTitle": "Send me a daily digest",
+  "dailyDigestDescription": "Every evening, you will receive a summary of recent activity in tasks.",
+  "popupTitle": "Pop up notifications on my computer when Worklenz is open",
+  "popupDescription": "Pop up notifications can be disabled by your browser. Change your browser settings to allow them.",
+  "unreadItemsTitle": "Show the number of unread items",
+  "unreadItemsDescription": "You'll see counts for each notification."
+}

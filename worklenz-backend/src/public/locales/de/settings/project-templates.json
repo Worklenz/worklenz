@@ -1,0 +1,8 @@
+{
+  "nameColumn": "Name",
+  "editToolTip": "Bearbeiten",
+  "deleteToolTip": "Löschen",
+  "confirmText": "Sind Sie sicher?",
+  "okText": "Ja",
+  "cancelText": "Abbrechen"
+}

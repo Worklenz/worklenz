@@ -245,7 +245,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                 className="w-2 h-2 rounded-full inline-block"
                                 style={{ backgroundColor: themeMode === 'dark' ? (task.priority_color_dark || task.priority_color || '#d9d9d9') : (task.priority_color || '#d9d9d9') }}
                             ></span>
-                            <div className="task-title" style={{ marginLeft: 8 }}>{task.name}</div>
+                            <div className="task-title" title={task.name} style={{ marginLeft: 8 }}>{task.name}</div>
                         </div>
 
                         <div className="task-assignees-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -424,7 +424,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                         </div>
                     </div>
                 </div>
-                <div 
+                <div
                     className="subtasks-container"
                     style={{
                         overflow: 'hidden',
@@ -437,7 +437,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                     <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                         {/* Loading state */}
                         {task.sub_tasks_loading && (
-                            <div className="py-2 text-xs text-gray-400 dark:text-gray-500">Loading...</div>
+                            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
                         )}
                         {/* Loaded subtasks */}
                         {!task.sub_tasks_loading && Array.isArray(task.sub_tasks) && task.sub_tasks.length > 0 && (
@@ -456,14 +456,17 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                         >
                                             {sub.end_date ? format(new Date(sub.end_date), 'MMM d, yyyy') : ''}
                                         </span>
-                                        {sub.names && sub.names.length > 0 && (
-                                            <AvatarGroup
-                                                members={sub.names}
-                                                maxCount={2}
-                                                isDarkMode={themeMode === 'dark'}
-                                                size={18}
-                                            />
-                                        )}
+                                        <span className="flex items-center">
+                                            {sub.names && sub.names.length > 0 && (
+                                                <AvatarGroup
+                                                    members={sub.names}
+                                                    maxCount={2}
+                                                    isDarkMode={themeMode === 'dark'}
+                                                    size={18}
+                                                />
+                                            )}
+                                            <LazyAssigneeSelectorWrapper task={sub} groupId={groupId} isDarkMode={themeMode === 'dark'} kanbanMode={true} />
+                                        </span>
                                     </li>
                                 ))}
                             </ul>

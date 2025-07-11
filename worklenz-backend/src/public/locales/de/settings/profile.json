@@ -1,0 +1,14 @@
+{
+  "uploadError": "Sie können nur JPG/PNG-Dateien hochladen!",
+  "uploadSizeError": "Bilder müssen kleiner als 2MB sein!",
+  "upload": "Hochladen",
+  "nameLabel": "Name",
+  "nameRequiredError": "Name ist erforderlich",
+  "emailLabel": "E-Mail",
+  "emailRequiredError": "E-Mail ist erforderlich",
+  "saveChanges": "Änderungen speichern",
+  "profileJoinedText": "Vor einem Monat beigetreten",
+  "profileLastUpdatedText": "Vor einem Monat aktualisiert",
+  "avatarTooltip": "Klicken Sie zum Hochladen eines Avatars",
+  "title": "Profil-Einstellungen"
+}

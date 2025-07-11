@@ -1,0 +1,10 @@
+{
+  "categoryColumn": "类别",
+  "deleteConfirmationTitle": "您确定吗？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "associatedTaskColumn": "关联项目",
+  "searchPlaceholder": "按名称搜索",
+  "emptyText": "在更新或创建项目时可以创建类别。",
+  "colorChangeTooltip": "点击更改颜色"
+}

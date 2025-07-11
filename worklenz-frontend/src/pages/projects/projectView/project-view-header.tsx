@@ -65,6 +65,8 @@ import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/boar
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { ShareAltOutlined } from '@ant-design/icons';
+import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
@@ -100,9 +102,9 @@ const ProjectViewHeader = memo(() => {
 
     switch (tab) {
       case 'tasks-list':
+        dispatch(fetchStatuses(projectId));
         dispatch(fetchTaskListColumns(projectId));
         dispatch(fetchPhasesByProjectId(projectId));
-        dispatch(fetchTaskGroups(projectId));
         dispatch(fetchTasksV3(projectId));
         break;
       case 'board':
@@ -210,7 +212,7 @@ const ProjectViewHeader = memo(() => {
       setCreatingTask(true);
 
       const body: Partial<ITaskCreateRequest> = {
-        name: DEFAULT_TASK_NAME,
+        name: t('defaultTaskName'),
         project_id: selectedProject.id,
         reporter_id: currentSession.id,
         team_id: currentSession.team_id,
@@ -240,7 +242,7 @@ const ProjectViewHeader = memo(() => {
       logger.error('Error creating task', error);
       setCreatingTask(false);
     }
-  }, [selectedProject?.id, currentSession, socket, dispatch, groupBy, tab]);
+  }, [selectedProject?.id, currentSession, socket, dispatch, groupBy, tab, t]);
 
   // Memoized import task template handler
   const handleImportTaskTemplate = useCallback(() => {
@@ -395,8 +397,8 @@ const ProjectViewHeader = memo(() => {
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
         <Tooltip key="invite-tooltip" title={t('inviteTooltip')}>
-          <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
-            {t('invite')}
+          <Button key="invite" type="primary" icon={<ShareAltOutlined />} onClick={handleInvite}>
+            {t('share')}
           </Button>
         </Tooltip>
       );

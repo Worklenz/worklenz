@@ -1,0 +1,14 @@
+{
+  "taskList": "任务列表",
+  "board": "看板",
+  "insights": "数据洞察",
+  "files": "文件",
+  "members": "成员",
+  "updates": "动态更新",
+  "projectView": "项目视图",
+  "loading": "正在加载项目...",
+  "error": "加载项目时出错",
+  "pinnedTab": "已固定为默认标签页",
+  "pinTab": "固定为默认标签页",
+  "unpinTab": "取消固定默认标签页"
+} 

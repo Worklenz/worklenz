@@ -25,6 +25,7 @@ export default defineConfig(({ command, mode }) => {
         { find: '@shared', replacement: path.resolve(__dirname, './src/shared') },
         { find: '@layouts', replacement: path.resolve(__dirname, './src/layouts') },
         { find: '@services', replacement: path.resolve(__dirname, './src/services') },
+
       ],
       // **Ensure single React instance**
       dedupe: ['react', 'react-dom'],
@@ -138,5 +139,8 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __DEV__: !isProduction,
     },
+
+    // **Public Directory** - sw.js will be automatically copied from public/ to build/
+    publicDir: 'public',
   };
 });
