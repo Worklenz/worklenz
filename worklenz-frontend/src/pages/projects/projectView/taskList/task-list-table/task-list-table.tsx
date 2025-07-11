@@ -944,18 +944,7 @@ const SelectionFieldCell: React.FC<{
   columnKey: string;
   updateValue: (taskId: string, columnKey: string, value: string) => void;
 }> = ({ selectionsList, value, task, columnKey, updateValue }) => {
-  // Debug the selectionsList data
-  const [loggedInfo, setLoggedInfo] = useState(false);
 
-  useEffect(() => {
-    if (!loggedInfo) {
-      console.log('Selection column data:', {
-        columnKey,
-        selectionsList,
-      });
-      setLoggedInfo(true);
-    }
-  }, [columnKey, selectionsList, loggedInfo]);
 
   return (
     <CustomColumnSelectionCell
@@ -1256,19 +1245,6 @@ const renderCustomColumnContent = (
       );
     },
     selection: () => {
-      // Debug the selectionsList data
-      const [loggedInfo, setLoggedInfo] = useState(false);
-
-      useEffect(() => {
-        if (!loggedInfo) {
-          console.log('Selection column data:', {
-            columnKey,
-            selectionsList: columnObj?.selectionsList,
-          });
-          setLoggedInfo(true);
-        }
-      }, [columnKey, loggedInfo]);
-
       return (
         <SelectionFieldCell
           selectionsList={columnObj?.selectionsList || []}
@@ -1650,34 +1626,11 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
 
     const activeTask = displayTasks.find(task => task.id === active.id);
     if (!activeTask) {
-      console.error('Active task not found:', {
-        activeId: active.id,
-        displayTasks: displayTasks.map(t => ({ id: t.id, name: t.name })),
-      });
       return;
     }
 
-    console.log('Found activeTask:', {
-      id: activeTask.id,
-      name: activeTask.name,
-      status_id: activeTask.status_id,
-      status: activeTask.status,
-      priority: activeTask.priority,
-      project_id: project?.id,
-      team_id: project?.team_id,
-      fullProject: project,
-    });
-
     // Use the tableId directly as the group ID (it should be the group ID)
     const currentGroupId = tableId;
-
-    console.log('Drag operation:', {
-      activeId: active.id,
-      overId: over.id,
-      tableId,
-      currentGroupId,
-      displayTasksLength: displayTasks.length,
-    });
 
     // Check if this is a reorder within the same group
     const overTask = displayTasks.find(task => task.id === over.id);
@@ -1686,35 +1639,16 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
       const oldIndex = displayTasks.findIndex(task => task.id === active.id);
       const newIndex = displayTasks.findIndex(task => task.id === over.id);
 
-      console.log('Reorder details:', { oldIndex, newIndex, activeTask: activeTask.name });
-
       if (oldIndex !== newIndex && oldIndex !== -1 && newIndex !== -1) {
         // Get the actual sort_order values from the tasks
         const fromSortOrder = activeTask.sort_order || oldIndex;
         const overTaskAtNewIndex = displayTasks[newIndex];
         const toSortOrder = overTaskAtNewIndex?.sort_order || newIndex;
 
-        console.log('Sort order details:', {
-          oldIndex,
-          newIndex,
-          fromSortOrder,
-          toSortOrder,
-          activeTaskSortOrder: activeTask.sort_order,
-          overTaskSortOrder: overTaskAtNewIndex?.sort_order,
-        });
-
         // Create updated task list with reordered tasks
         const updatedTasks = [...displayTasks];
         const [movedTask] = updatedTasks.splice(oldIndex, 1);
         updatedTasks.splice(newIndex, 0, movedTask);
-
-        console.log('Dispatching reorderTasks with:', {
-          activeGroupId: currentGroupId,
-          overGroupId: currentGroupId,
-          fromIndex: oldIndex,
-          toIndex: newIndex,
-          taskName: activeTask.name,
-        });
 
         // Update local state immediately for better UX
         dispatch(
@@ -1758,34 +1692,10 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
 
           // Validate required fields before sending
           if (!body.task.id) {
-            console.error('Cannot send socket event: task.id is missing', { activeTask, active });
             return;
           }
 
-          console.log('Validated values:', {
-            from_index: body.from_index,
-            to_index: body.to_index,
-            status: body.task.status,
-            priority: body.task.priority,
-            team_id: body.team_id,
-            originalStatus: activeTask.status_id || activeTask.status,
-            originalPriority: activeTask.priority,
-            originalTeamId: project.team_id,
-            sessionTeamId: currentSession?.team_id,
-            finalTeamId: body.team_id,
-          });
-
-          console.log('Sending socket event:', body);
           socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), body);
-        } else {
-          console.error('Cannot send socket event: missing required data', {
-            hasSocket: !!socket,
-            hasProjectId: !!project?.id,
-            hasActiveId: !!active.id,
-            hasActiveTaskId: !!activeTask.id,
-            activeTask,
-            active,
-          });
         }
       }
     }
