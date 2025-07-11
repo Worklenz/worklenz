@@ -232,7 +232,7 @@ export const useTaskSocketHandlers = () => {
         dispatch(
           updateTask({
             ...currentTask,
-            status: newStatusValue,
+            status: response.status_id || newStatusValue, // Use actual status_id instead of category
             progress: response.complete_ratio || currentTask.progress,
             updatedAt: new Date().toISOString(),
           })
@@ -243,10 +243,64 @@ export const useTaskSocketHandlers = () => {
           // Find current group containing the task
           const currentGroup = groups.find(group => group.taskIds.includes(response.id));
 
-          // Find target group based on new status value (not UUID)
-          const targetGroup = groups.find(group => group.groupValue === newStatusValue);
+          // Find target group based on new status value with multiple matching strategies
+          let targetGroup = groups.find(group => group.groupValue === newStatusValue);
+          
+          // If not found, try case-insensitive matching
+          if (!targetGroup) {
+            targetGroup = groups.find(group => 
+              group.groupValue?.toLowerCase() === newStatusValue.toLowerCase()
+            );
+          }
+          
+          // If still not found, try matching with title
+          if (!targetGroup) {
+            targetGroup = groups.find(group => 
+              group.title?.toLowerCase() === newStatusValue.toLowerCase()
+            );
+          }
+          
+          // If still not found, try matching common status patterns
+          if (!targetGroup && newStatusValue === 'todo') {
+            targetGroup = groups.find(group => 
+              group.title?.toLowerCase().includes('todo') || 
+              group.title?.toLowerCase().includes('to do') ||
+              group.title?.toLowerCase().includes('pending') ||
+              group.groupValue?.toLowerCase().includes('todo')
+            );
+          } else if (!targetGroup && newStatusValue === 'doing') {
+            targetGroup = groups.find(group => 
+              group.title?.toLowerCase().includes('doing') || 
+              group.title?.toLowerCase().includes('progress') ||
+              group.title?.toLowerCase().includes('active') ||
+              group.groupValue?.toLowerCase().includes('doing')
+            );
+          } else if (!targetGroup && newStatusValue === 'done') {
+            targetGroup = groups.find(group => 
+              group.title?.toLowerCase().includes('done') || 
+              group.title?.toLowerCase().includes('complete') ||
+              group.title?.toLowerCase().includes('finish') ||
+              group.groupValue?.toLowerCase().includes('done')
+            );
+          }
+
+          console.log('🔄 Status change group movement debug:', {
+            taskId: response.id,
+            newStatusValue,
+            currentGroupId: currentGroup?.id,
+            currentGroupValue: currentGroup?.groupValue,
+            currentGroupTitle: currentGroup?.title,
+            targetGroupId: targetGroup?.id,
+            targetGroupValue: targetGroup?.groupValue,
+            targetGroupTitle: targetGroup?.title,
+            allGroups: groups.map(g => ({ id: g.id, title: g.title, groupValue: g.groupValue }))
+          });
 
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+            console.log('✅ Moving task between groups:', {
+              from: currentGroup.title,
+              to: targetGroup.title
+            });
             // Use the action to move task between groups
             dispatch(
               moveTaskBetweenGroups({
@@ -255,8 +309,12 @@ export const useTaskSocketHandlers = () => {
                 targetGroupId: targetGroup.id,
               })
             );
+          } else if (!targetGroup) {
+            console.log('❌ Target group not found for status:', newStatusValue);
+          } else if (!currentGroup) {
+            console.log('❌ Current group not found for task:', response.id);
           } else {
-            console.log('🔧 No group movement needed for status change');
+            console.log('🔧 No group movement needed - task already in correct group');
           }
         } else {
           console.log('🔧 Not grouped by status, skipping group movement');
@@ -612,15 +670,32 @@ export const useTaskSocketHandlers = () => {
 
 
   const handleEstimationChange = useCallback(
-    (task: { id: string; parent_task: string | null; estimation: number }) => {
-      if (!task) return;
+    (data: { id: string; parent_task: string | null; total_hours: number; total_minutes: number }) => {
+      if (!data) return;
 
+      // Update the old task slice (for backward compatibility)
       const taskWithProgress = {
-        ...task,
+        ...data,
         manual_progress: false,
       } as IProjectTask;
 
       dispatch(updateTaskEstimation({ task: taskWithProgress }));
+
+      // Update task-management slice for task-list-v2 components
+      const currentTask = store.getState().taskManagement.entities[data.id];
+      if (currentTask) {
+        const estimatedHours = (data.total_hours || 0) + (data.total_minutes || 0) / 60;
+        const updatedTask: Task = {
+          ...currentTask,
+          timeTracking: {
+            ...currentTask.timeTracking,
+            estimated: estimatedHours,
+          },
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
     },
     [dispatch]
   );
@@ -628,7 +703,21 @@ export const useTaskSocketHandlers = () => {
   const handleTaskDescriptionChange = useCallback(
     (data: { id: string; parent_task: string; description: string }) => {
       if (!data) return;
+      
+      // Update the old task slice (for backward compatibility)
       dispatch(updateTaskDescription(data));
+
+      // Update task-management slice for task-list-v2 components
+      const currentTask = store.getState().taskManagement.entities[data.id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          description: data.description,
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
     },
     [dispatch]
   );
@@ -717,13 +806,7 @@ export const useTaskSocketHandlers = () => {
           task_key: data.task_key || '',
           title: data.name || '',
           description: data.description || '',
-          status: (data.status_category?.is_todo
-            ? 'todo'
-            : data.status_category?.is_doing
-              ? 'doing'
-              : data.status_category?.is_done
-                ? 'done'
-                : 'todo') as 'todo' | 'doing' | 'done',
+          status: data.status || 'todo',
           priority: (data.priority_value === 3
             ? 'critical'
             : data.priority_value === 2
@@ -847,6 +930,56 @@ export const useTaskSocketHandlers = () => {
     // console.log('🔄 Task assignees change (limited data):', data);
   }, []);
 
+  // Handler for timer start events
+  const handleTimerStart = useCallback((data: string) => {
+    try {
+      const { task_id, start_time } = typeof data === 'string' ? JSON.parse(data) : data;
+      if (!task_id) return;
+
+      // Update the task-management slice to include timer state
+      const currentTask = store.getState().taskManagement.entities[task_id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          timeTracking: {
+            ...currentTask.timeTracking,
+            activeTimer: start_time ? (typeof start_time === 'number' ? start_time : parseInt(start_time)) : Date.now(),
+          },
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
+    } catch (error) {
+      logger.error('Error handling timer start event:', error);
+    }
+  }, [dispatch]);
+
+  // Handler for timer stop events  
+  const handleTimerStop = useCallback((data: string) => {
+    try {
+      const { task_id } = typeof data === 'string' ? JSON.parse(data) : data;
+      if (!task_id) return;
+
+      // Update the task-management slice to remove timer state
+      const currentTask = store.getState().taskManagement.entities[task_id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          timeTracking: {
+            ...currentTask.timeTracking,
+            activeTimer: undefined,
+          },
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
+    } catch (error) {
+      logger.error('Error handling timer stop event:', error);
+    }
+  }, [dispatch]);
+
   // Register socket event listeners
   useEffect(() => {
     if (!socket) return;
@@ -878,6 +1011,8 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.QUICK_TASK.toString(), handler: handleNewTaskReceived },
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgressUpdated },
       { event: SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), handler: handleCustomColumnUpdate },
+      { event: SocketEvents.TASK_TIMER_START.toString(), handler: handleTimerStart },
+      { event: SocketEvents.TASK_TIMER_STOP.toString(), handler: handleTimerStop },
 
     ];
 
@@ -910,6 +1045,8 @@ export const useTaskSocketHandlers = () => {
     handleNewTaskReceived,
     handleTaskProgressUpdated,
     handleCustomColumnUpdate,
+    handleTimerStart,
+    handleTimerStop,
 
   ]);
 };

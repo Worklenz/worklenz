@@ -1,0 +1,14 @@
+{
+  "taskList": "Lista de Tarefas",
+  "board": "Quadro Kanban",
+  "insights": "Insights",
+  "files": "Arquivos",
+  "members": "Membros",
+  "updates": "Atualizações",
+  "projectView": "Visualização do Projeto",
+  "loading": "Carregando projeto...",
+  "error": "Erro ao carregar projeto",
+  "pinnedTab": "Fixada como aba padrão",
+  "pinTab": "Fixar como aba padrão",
+  "unpinTab": "Desfixar aba padrão"
+} 

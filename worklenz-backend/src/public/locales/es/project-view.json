@@ -1,0 +1,14 @@
+{
+  "taskList": "Lista de Tareas",
+  "board": "Tablero Kanban",
+  "insights": "Análisis",
+  "files": "Archivos",
+  "members": "Miembros",
+  "updates": "Actualizaciones",
+  "projectView": "Vista del Proyecto",
+  "loading": "Cargando proyecto...",
+  "error": "Error al cargar el proyecto",
+  "pinnedTab": "Fijado como pestaña predeterminada",
+  "pinTab": "Fijar como pestaña predeterminada",
+  "unpinTab": "Desfijar pestaña predeterminada"
+} 

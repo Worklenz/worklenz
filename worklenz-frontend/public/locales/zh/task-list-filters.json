@@ -62,5 +62,22 @@
   "clearing": "清除中...",
   "cancel": "取消",
   "search": "搜索",
-  "groupedBy": "分组依据"
+  "groupedBy": "分组方式",
+  "manage": "管理",
+  "manageStatuses": "管理状态",
+  "managePhases": "管理阶段",
+  "dragToReorderStatuses": "拖拽状态以重新排序。每个状态可以有不同的类别。",
+  "enterNewStatusName": "输入新状态名称...",
+  "addStatus": "添加状态",
+  "noStatusesFound": "未找到状态。请在上面创建您的第一个状态。",
+  "deleteStatus": "删除状态",
+  "deleteStatusConfirm": "您确定要删除此状态吗？此操作无法撤销。",
+  "rename": "重命名",
+  "delete": "删除",
+  "enterStatusName": "输入状态名称",
+  "selectCategory": "选择类别",
+  "close": "关闭",
+  "cannotMoveStatus": "无法移动状态",
+  "cannotMoveStatusMessage": "无法移动此状态，因为这会使\"{{categoryName}}\"类别为空。每个类别必须至少有一个状态。",
+  "ok": "确定"
 }

@@ -1,0 +1,19 @@
+{
+  "title": "Modifiko Shabllon Detyre",
+  "cancelText": "Anulo",
+  "saveText": "Ruaj",
+  "templateNameText": "Emri i Shabllonit",
+  "selectedTasks": "Detyrat e Përzgjedhura",
+  "removeTask": "Hiq",
+  "description": "Përshkrimi",
+  "phase": "Faza",
+  "statuses": "Statuset",
+  "priorities": "Prioritetet",
+  "labels": "Etiketa",
+  "tasks": "Detyrat",
+  "noTemplateSelected": "Asnjë shabllon i përzgjedhur",
+  "noDescription": "Pa përshkrim",
+  "worklenzTemplates": "Shabllonet Worklenz",
+  "yourTemplatesLibrary": "Biblioteka Juaj",
+  "searchTemplates": "Kërko Shabllone"
+}

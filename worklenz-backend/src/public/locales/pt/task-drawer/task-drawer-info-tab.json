@@ -1,0 +1,30 @@
+{
+  "details": {
+    "task-key": "Chave da tarefa",
+    "phase": "Fase",
+    "assignees": "Responsáveis",
+    "due-date": "Data de vencimento",
+    "time-estimation": "Estimativa de tempo",
+    "priority": "Prioridade",
+    "labels": "Etiquetas",
+    "billable": "Faturável",
+    "notify": "Notificar",
+    "when-done-notify": "Quando concluída, notificar",
+    "start-date": "Data de início",
+    "end-date": "Data de término",
+    "hide-start-date": "Ocultar data de início",
+    "show-start-date": "Mostrar data de início",
+    "hours": "Horas",
+    "minutes": "Minutos",
+    "recurring": "Recorrente"
+  },
+  "description": {
+    "title": "Descrição",
+    "placeholder": "Adicionar uma descrição mais detalhada..."
+  },
+  "subTasks": {
+    "title": "Subtarefas",
+    "add-sub-task": "+ Adicionar subtarefa",
+    "refresh-sub-tasks": "Atualizar subtarefas"
+  }
+}

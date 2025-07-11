@@ -1,0 +1,35 @@
+{
+  "yesterdayText": "Ayer",
+  "lastSevenDaysText": "Últimos 7 Días",
+  "lastWeekText": "Última Semana",
+  "lastThirtyDaysText": "Últimos 30 Días",
+  "lastMonthText": "Último Mes",
+  "lastThreeMonthsText": "Últimos 3 Meses",
+  "allTimeText": "Todo el Tiempo",
+  "customRangeText": "Rango personalizado",
+  "startDateInputPlaceholder": "Fecha de inicio",
+  "EndDateInputPlaceholder": "Fecha final",
+  "filterButton": "Filtrar",
+
+  "membersTitle": "Miembros",
+  "includeArchivedButton": "Incluir Proyectos Archivados",
+  "exportButton": "Exportar",
+  "excelButton": "Excel",
+  "searchByNameInputPlaceholder": "Buscar por nombre",
+
+  "memberColumn": "Miembro",
+  "tasksProgressColumn": "Progreso de Tareas",
+  "tasksAssignedColumn": "Tareas Asignadas",
+  "completedTasksColumn": "Tareas Completadas",
+  "overdueTasksColumn": "Tareas Atrasadas",
+  "ongoingTasksColumn": "Tareas en Curso",
+
+  "tasksAssignedColumnTooltip": "Tareas asignadas en el rango de fechas seleccionado",
+  "overdueTasksColumnTooltip": "Tareas atrasadas al final del rango de fechas seleccionado",
+  "completedTasksColumnTooltip": "Tareas completadas en el rango de fechas seleccionado",
+  "ongoingTasksColumnTooltip": "Tareas iniciadas aún no completadas",
+
+  "todoText": "Por Hacer",
+  "doingText": "Haciendo",
+  "doneText": "Hecho"
+}

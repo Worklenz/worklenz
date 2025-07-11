@@ -30,6 +30,7 @@ import {
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
 import { updateSubtask } from '@/features/board/board-slice';
+import { updateEnhancedKanbanSubtask } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 type SubTaskTableProps = {
   subTasks: ISubTask[];
@@ -112,16 +113,20 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
     try {
       await tasksApiService.deleteTask(taskId);
       dispatch(
+        updateEnhancedKanbanSubtask({
+          sectionId: '',
+          subtask: { id: taskId, parent_task_id: selectedTaskId || '', manual_progress: false },
+          mode: 'delete',
+        })
+      );
+      dispatch(
         updateSubtask({
           sectionId: '',
           subtask: { id: taskId, parent_task_id: selectedTaskId || '' },
           mode: 'delete',
         })
       );
-
-      // Note: Enhanced kanban updates are now handled by the global socket handler
-      // No need to dispatch here as it will be handled by useTaskSocketHandlers
-
+      
       refreshSubTasks();
     } catch (error) {
       logger.error('Error deleting subtask:', error);

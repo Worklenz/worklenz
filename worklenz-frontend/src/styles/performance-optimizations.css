@@ -1,0 +1,296 @@
+/* Performance Optimization Styles for Worklenz */
+
+/* Layout shift prevention */
+.prevent-layout-shift {
+  contain: layout style;
+}
+
+/* Efficient animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.efficient-transition {
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+/* Critical loading states */
+.critical-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, transparent 37%, #f0f0f0 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Font loading optimization */
+.font-loading {
+  font-display: swap;
+}
+
+/* Container queries for responsive design */
+.container-responsive {
+  container-type: inline-size;
+}
+
+@container (min-width: 300px) {
+  .container-responsive .content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* CSS containment for performance */
+.layout-contained {
+  contain: layout;
+}
+
+.paint-contained {
+  contain: paint;
+}
+
+.size-contained {
+  contain: size;
+}
+
+.style-contained {
+  contain: style;
+}
+
+/* Optimized scrolling */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevent repaints during animations */
+.animation-optimized {
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Critical path optimizations */
+.above-fold {
+  priority: 1;
+}
+
+.below-fold {
+  priority: 0;
+}
+
+/* Resource hints via CSS */
+.preload-critical::before {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0;
+  background-image: url('/critical-image.webp');
+}
+
+/* Task management specific optimizations */
+.task-list-board {
+  contain: layout style;
+}
+
+.task-groups-container-fixed {
+  contain: strict;
+  transform: translateZ(0);
+}
+
+.task-row {
+  contain: layout style;
+  will-change: transform;
+}
+
+.task-row:hover {
+  transform: translateZ(0);
+}
+
+/* Virtualized components */
+.virtualized-task-groups {
+  contain: strict;
+  transform: translateZ(0);
+}
+
+/* Bulk action bar optimizations */
+.optimized-bulk-action-bar {
+  contain: layout style;
+  transform: translateZ(0);
+}
+
+/* Loading state optimizations */
+.task-loading-skeleton {
+  contain: layout;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Avatar and image optimizations */
+.lazy-image {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.lazy-image.loaded {
+  opacity: 1;
+}
+
+.lazy-image.loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, transparent 37%, #f0f0f0 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1s ease-in-out infinite;
+}
+
+/* Reduce layout shifts for dynamic content */
+.task-content-container {
+  min-height: 40px;
+  contain-intrinsic-size: auto 40px;
+}
+
+.project-content-container {
+  min-height: 60px;
+  contain-intrinsic-size: auto 60px;
+}
+
+/* Performance-optimized grid layouts */
+.task-grid-optimized {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  contain: layout;
+}
+
+.task-grid-optimized .task-card {
+  contain: layout style;
+  transform: translateZ(0);
+}
+
+/* Dark mode optimizations */
+[data-theme="dark"] .critical-loading {
+  background: linear-gradient(90deg, #2a2a2a 25%, transparent 37%, #2a2a2a 63%);
+}
+
+[data-theme="dark"] .lazy-image.loading {
+  background: linear-gradient(90deg, #2a2a2a 25%, transparent 37%, #2a2a2a 63%);
+}
+
+/* Print optimizations */
+@media print {
+  .gpu-accelerated,
+  .animation-optimized {
+    transform: none;
+    will-change: auto;
+    animation: none;
+  }
+}
+
+/* High contrast mode optimizations */
+@media (prefers-contrast: high) {
+  .critical-loading,
+  .lazy-image.loading {
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(0, 0, 0, 0.1) 10px,
+      rgba(0, 0, 0, 0.1) 20px
+    );
+  }
+}
+
+/* Reduced motion optimizations */
+@media (prefers-reduced-motion: reduce) {
+  .efficient-transition,
+  .critical-loading,
+  .lazy-image {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Viewport-based optimizations */
+@media (max-width: 768px) {
+  .task-grid-optimized {
+    grid-template-columns: 1fr;
+  }
+  
+  .prevent-layout-shift {
+    contain: layout;
+  }
+}
+
+/* Memory-conscious styles for large lists */
+.large-list-container {
+  contain: strict;
+  content-visibility: auto;
+}
+
+.large-list-item {
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 50px;
+}
+
+/* Performance monitoring debug styles (dev only) */
+.performance-debug {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 9999;
+  display: none;
+}
+
+.performance-debug.visible {
+  display: block;
+}
+
+/* Critical CSS for above-the-fold content */
+.critical-above-fold {
+  /* Reset and basic typography */
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  
+  /* Layout grid */
+  display: grid;
+  grid-template-areas: 
+    "header header"
+    "sidebar main";
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 250px 1fr;
+  min-height: 100vh;
+  
+  /* Colors and spacing */
+  background-color: #f5f5f5;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+/* Font display optimization */
+@font-face {
+  font-family: 'Inter';
+  font-display: swap;
+  src: url('/fonts/inter-var.woff2') format('woff2');
+}
+
+/* Critical animations only */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+} 

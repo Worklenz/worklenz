@@ -6,6 +6,7 @@ import logger from '@/utils/errorLogger';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { selectTaskById } from '@/features/task-management/task-management.slice';
 
 export const useTaskTimer = (taskId: string, initialStartTime: number | null) => {
   const dispatch = useAppDispatch();
@@ -15,7 +16,10 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
   const hasInitialized = useRef(false); // Track if we've initialized
 
   const activeTimers = useAppSelector(state => state.taskReducer.activeTimers);
-  const reduxStartTime = activeTimers[taskId];
+  const task = useAppSelector(state => selectTaskById(state, taskId));
+  
+  // Check both the old slice (activeTimers) and new slice (task.timeTracking.activeTimer)
+  const reduxStartTime = activeTimers[taskId] || task?.timeTracking?.activeTimer;
   const started = Boolean(reduxStartTime);
 
   const [timeString, setTimeString] = useState(DEFAULT_TIME_LEFT);

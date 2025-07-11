@@ -1,0 +1,27 @@
+{
+  "headerDescription": "Faça login na sua conta",
+  "emailLabel": "Email",
+  "emailPlaceholder": "Digite seu email",
+  "emailRequired": "Por favor, digite seu email!",
+  "passwordLabel": "Senha",
+  "passwordPlaceholder": "Digite sua senha",
+  "passwordRequired": "Por favor, digite sua Senha!",
+  "rememberMe": "Lembre de mim",
+  "loginButton": "Entrar",
+  "signupButton": "Inscrever-se",
+  "forgotPasswordButton": "Esqueceu sua senha?",
+  "signInWithGoogleButton": "Entrar com Google",
+  "successMessage": "Você entrou com sucesso!",
+  "dontHaveAccountText": "Não tem uma conta?",
+  "orText": "OU",
+  "loginError": "Login falhou",
+  "googleLoginError": "Login com Google falhou",
+  "validationMessages": {
+    "password": "A senha deve ter pelo menos 8 caracteres",
+    "email": "Por favor, insira um endereço de e-mail válido"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "Login falhou",
+    "loginErrorMessage": "Por favor, verifique seu e-mail e senha e tente novamente"
+  }
+}

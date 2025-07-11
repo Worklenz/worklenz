@@ -171,10 +171,10 @@ export const fetchTasks = createAsyncThunk(
             logged: convertTimeValue(task.time_spent),
           },
           customFields: {},
-          createdAt: task.created_at || new Date().toISOString(),
-          updatedAt: task.updated_at || new Date().toISOString(),
-          created_at: task.created_at || new Date().toISOString(),
-          updated_at: task.updated_at || new Date().toISOString(),
+          createdAt: task.createdAt || task.created_at || new Date().toISOString(),
+          updatedAt: task.updatedAt || task.updated_at || new Date().toISOString(),
+          created_at: task.createdAt || task.created_at || new Date().toISOString(),
+          updated_at: task.updatedAt || task.updated_at || new Date().toISOString(),
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           // Ensure all Task properties are mapped, even if undefined in API response
           sub_tasks: task.sub_tasks || [],
@@ -189,6 +189,7 @@ export const fetchTasks = createAsyncThunk(
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
           schedule_id: task.schedule_id || null,
+          reporter: task.reporter || undefined,
         }))
       );
 
@@ -226,8 +227,8 @@ export const fetchTasksV3 = createAsyncThunk(
       // Get selected priorities from taskReducer
       const selectedPriorities = state.taskReducer.priorities.join(' ');
 
-      // Get search value from taskReducer
-      const searchValue = state.taskReducer.search || '';
+      // Get search value from taskManagement slice
+      const searchValue = state.taskManagement.search || '';
 
       // Get archived state from task management slice
       const archivedState = state.taskManagement.archived;
@@ -280,15 +281,15 @@ export const fetchTasksV3 = createAsyncThunk(
           dueDate: task.dueDate,
           startDate: task.startDate,
           timeTracking: {
-            estimated: convertTimeValue(task.total_time),
-            logged: convertTimeValue(task.time_spent),
+            estimated: task.timeTracking?.estimated || 0,
+            logged: task.timeTracking?.logged || 0,
           },
           customFields: {},
           custom_column_values: task.custom_column_values || {},
-          createdAt: task.created_at || now,
-          updatedAt: task.updated_at || now,
-          created_at: task.created_at || now,
-          updated_at: task.updated_at || now,
+          createdAt: task.createdAt || task.created_at || now,
+          updatedAt: task.updatedAt || task.updated_at || now,
+          created_at: task.createdAt || task.created_at || now,
+          updated_at: task.updatedAt || task.updated_at || now,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           sub_tasks: task.sub_tasks || [],
           sub_tasks_count: task.sub_tasks_count || 0,
@@ -302,6 +303,7 @@ export const fetchTasksV3 = createAsyncThunk(
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
           schedule_id: task.schedule_id || null,
+          reporter: task.reporter || undefined,
         };
         
         return transformedTask;

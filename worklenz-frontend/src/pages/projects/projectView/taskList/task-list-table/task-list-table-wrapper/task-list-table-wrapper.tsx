@@ -208,6 +208,18 @@ const TaskListTableWrapper = ({
       >
         <Flex vertical>
           <Flex style={{ transform: 'translateY(6px)' }}>
+            {groupBy !== IGroupBy.PRIORITY &&
+              !showRenameInput &&
+              isEditable &&
+              name !== 'Unmapped' && (
+                <Dropdown menu={{ items }}>
+                  <Button
+                    icon={<EllipsisOutlined />}
+                    className="borderless-icon-btn"
+                    title={isEditable ? undefined : t('noPermission')}
+                  />
+                </Dropdown>
+              )}
             <Button
               className="custom-collapse-button"
               style={{
@@ -243,18 +255,6 @@ const TaskListTableWrapper = ({
                 </Typography.Text>
               )}
             </Button>
-            {groupBy !== IGroupBy.PRIORITY &&
-              !showRenameInput &&
-              isEditable &&
-              name !== 'Unmapped' && (
-                <Dropdown menu={{ items }}>
-                  <Button
-                    icon={<EllipsisOutlined />}
-                    className="borderless-icon-btn"
-                    title={isEditable ? undefined : t('noPermission')}
-                  />
-                </Dropdown>
-              )}
           </Flex>
           <Collapsible
             isOpen={isExpanded}

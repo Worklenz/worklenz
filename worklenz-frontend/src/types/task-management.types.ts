@@ -19,9 +19,10 @@ export interface Task {
   dueDate?: string; // Alternative due date field
   startDate?: string; // Start date field
   completedAt?: string; // Completion date
-  updatedAt?: string; // Update timestamp
-  created_at: string;
-  updated_at: string;
+  updatedAt?: string; // Update timestamp (camelCase from API)
+  createdAt?: string; // Creation timestamp (camelCase from API)
+  created_at: string; // Creation timestamp (snake_case, legacy)
+  updated_at: string; // Update timestamp (snake_case, legacy)
   sub_tasks?: Task[];
   sub_tasks_count?: number;
   show_sub_tasks?: boolean;
@@ -44,6 +45,7 @@ export interface Task {
   timeTracking?: { // Time tracking information
     logged?: number;
     estimated?: number;
+    activeTimer?: number; // Active timer start timestamp
   };
   custom_column_values?: Record<string, any>; // Custom column values
   isTemporary?: boolean; // Temporary task indicator

@@ -1,0 +1,39 @@
+{
+  "today": "Today",
+  "week": "Week",
+  "month": "Month",
+
+  "settings": "Settings",
+  "workingDays": "Working days",
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
+  "saturday": "Saturday",
+  "sunday": "Sunday",
+  "workingHours": "Working hours",
+  "hours": "hours",
+  "saveButton": "Save",
+
+  "totalAllocation": "Total Allocation",
+  "timeLogged": "Time Logged",
+  "remainingTime": "Remaining Time",
+  "total": "Total",
+  "perDay": "Per Day",
+  "tasks": "tasks",
+  "startDate": "Start Date",
+  "endDate": "End Date",
+
+  "hoursPerDay": "Hours Per Day",
+  "totalHours": "Total Hours",
+  "deleteButton": "Delete",
+  "cancelButton": "Cancel",
+
+  "tabTitle": "Task without Start & End dates",
+
+  "allocatedTime": "Allocated time",
+  "totalLogged": "Total Logged",
+  "loggedBillable": "Logged Billable",
+  "loggedNonBillable": "Logged Non Billable"
+}

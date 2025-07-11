@@ -1,0 +1,90 @@
+{
+  "exportButton": "Eksporto",
+  "timeLogsButton": "Regjistrimet e Kohës",
+  "activityLogsButton": "Regjistrimet e Aktivitetit",
+  "tasksButton": "Detyrat",
+  "searchByNameInputPlaceholder": "Kërko sipas emrit",
+
+  "overviewTab": "Përmbledhje",
+  "timeLogsTab": "Regjistrimet e Kohës",
+  "activityLogsTab": "Regjistrimet e Aktivitetit",
+  "tasksTab": "Detyrat",
+
+  "projectsText": "Projektet",
+  "totalTasksText": "Detyrat Gjithsej",
+  "assignedTasksText": "Detyrat e Caktuara",
+  "completedTasksText": "Detyrat e Përfunduara",
+  "ongoingTasksText": "Detyrat në Vazhdim",
+  "overdueTasksText": "Detyrat e Vonuara",
+  "loggedHoursText": "Orët e Regjistruara",
+
+  "tasksText": "Detyrat",
+  "allText": "Të Gjitha",
+
+  "tasksByProjectsText": "Detyrat Sipas Projekteve",
+  "tasksByStatusText": "Detyrat Sipas Statusit",
+  "tasksByPriorityText": "Detyrat Sipas Prioritetit",
+
+  "todoText": "Për Të Bërë",
+  "doingText": "Duke bërë",
+  "doneText": "E Përfunduar",
+  "lowText": "I Ulët",
+  "mediumText": "I Mesëm",
+  "highText": "I Lartë",
+
+  "billableButton": "Fakturueshme",
+  "billableText": "Fakturueshme",
+  "nonBillableText": "Jo Fakturueshme",
+
+  "timeLogsEmptyPlaceholder": "Asnjë regjistrim kohe për të shfaqur",
+  "loggedText": "Regjistruar",
+  "forText": "për",
+  "inText": "në",
+  "updatedText": "Përditësuar",
+  "fromText": "Nga",
+  "toText": "në",
+  "withinText": "brenda",
+
+  "activityLogsEmptyPlaceholder": "Asnjë regjistrim aktiviteti për të shfaqur",
+
+  "filterByText": "Filtro sipas:",
+  "selectProjectPlaceholder": "Zgjidh Projektin",
+
+  "taskColumn": "Detyra",
+  "nameColumn": "Emri",
+  "projectColumn": "Projekti",
+  "statusColumn": "Statusi",
+  "priorityColumn": "Prioriteti",
+  "dueDateColumn": "Afati",
+  "completedDateColumn": "Data e Përfundimit",
+  "estimatedTimeColumn": "Koha e Vlerësuar",
+  "loggedTimeColumn": "Koha e Regjistruar",
+  "overloggedTimeColumn": "Koha e Tepërt",
+  "daysLeftColumn": "Ditë të Mbetura/Vonuar",
+  "startDateColumn": "Data e Fillimit",
+  "endDateColumn": "Data e Përfundimit",
+  "actualTimeColumn": "Koha Aktuale",
+  "projectHealthColumn": "Gjendja e Projektit",
+  "categoryColumn": "Kategoria",
+  "projectManagerColumn": "Menaxheri i Projektit",
+
+  "tasksStatsOverviewDrawerTitle": "Detyrat e ",
+  "projectsStatsOverviewDrawerTitle": "Projektet e ",
+
+  "cancelledText": "Anuluar",
+  "blockedText": "E Bllokuar",
+  "onHoldText": "Në Pritje",
+  "proposedText": "E Propozuar",
+  "inPlanningText": "Në Planifikim",
+  "inProgressText": "Në Progres",
+  "completedText": "E Përfunduar",
+  "continuousText": "E Vazhdueshme",
+
+  "daysLeftText": "ditë të mbetura",
+  "daysOverdueText": "ditë vonuar",
+
+  "notSetText": "Pa Caktuar",
+  "needsAttentionText": "Kërkon Vëmendje",
+  "atRiskText": "Në Rrezik",
+  "goodText": "Në Rregull"
+}

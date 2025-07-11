@@ -1,0 +1,44 @@
+{
+  "includeArchivedProjects": "Përfshij Projektet e Arkivuara",
+  "export": "Eksporto",
+  "timeSheet": "Fletë Kohore",
+
+  "searchByName": "Kërko sipas emrit",
+  "selectAll": "Zgjidh të Gjitha",
+  "teams": "Ekipet",
+
+  "searchByProject": "Kërko sipas emrit të projektit",
+  "projects": "Projektet",
+
+  "searchByCategory": "Kërko sipas emrit të kategorisë",
+  "categories": "Kategoritë",
+
+  "billable": "Fakturueshme",
+  "nonBillable": "Jo Fakturueshme",
+
+  "total": "Total",
+
+  "projectsTimeSheet": "Fletë Kohore e Projekteve",
+
+  "loggedTime": "Koha e Regjistruar(orë)",
+
+  "exportToExcel": "Eksporto në Excel",
+  "logged": "regjistruar",
+  "for": "për",
+
+  "membersTimeSheet": "Fletë Kohore e Anëtarëve",
+  "member": "Anëtar",
+
+  "estimatedVsActual": "Vlerësuar vs Aktual",
+  "workingDays": "Ditë Pune",
+  "manDays": "Ditë Njeri",
+  "days": "Ditë",
+  "estimatedDays": "Ditë të Vlerësuara",
+  "actualDays": "Ditë Aktuale",
+
+  "noCategories": "Nuk u gjetën kategori",
+  "noCategory": "Pa Kategori",
+  "noProjects": "Nuk u gjetën projekte",
+  "noTeams": "Nuk u gjetën ekipe",
+  "noData": "Nuk u gjetën të dhëna"
+}

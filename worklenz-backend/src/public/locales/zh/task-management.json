@@ -1,0 +1,35 @@
+{
+  "noTasksInGroup": "此组中没有任务",
+  "noTasksInGroupDescription": "添加任务开始使用",
+  "addFirstTask": "添加你的第一个任务",
+  "openTask": "打开",
+  "subtask": "子任务",
+  "subtasks": "子任务",
+  "comment": "评论",
+  "comments": "评论",
+  "attachment": "附件",
+  "attachments": "附件",
+  "enterSubtaskName": "输入子任务名称...",
+  "add": "添加",
+  "cancel": "取消",
+  "renameGroup": "重命名组",
+  "renameStatus": "重命名状态",
+  "renamePhase": "重命名阶段",
+  "changeCategory": "更改类别",
+  "clickToEditGroupName": "点击编辑组名称",
+  "enterGroupName": "输入组名称",
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} 个子任务",
+      "subtasks_plural": "{{count}} 个子任务",
+      "comments": "{{count}} 条评论",
+      "comments_plural": "{{count}} 条评论",
+      "attachments": "{{count}} 个附件",
+      "attachments_plural": "{{count}} 个附件",
+      "subscribers": "任务有订阅者",
+      "dependencies": "任务有依赖项",
+      "recurring": "重复任务"
+    }
+  }
+} 

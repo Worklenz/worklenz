@@ -1,0 +1,25 @@
+{
+  "overviewTitle": "Overview",
+  "includeArchivedButton": "Include Archived Projects",
+
+  "teamCount": "Team",
+  "teamCountPlural": "Teams",
+  "projectCount": "Project",
+  "projectCountPlural": "Projects",
+  "memberCount": "Member",
+  "memberCountPlural": "Members",
+  "activeProjectCount": "Active Project",
+  "activeProjectCountPlural": "Active Projects",
+  "overdueProjectCount": "Overdue Project",
+  "overdueProjectCountPlural": "Overdue Projects",
+  "unassignedMemberCount": "Unassigned Member",
+  "unassignedMemberCountPlural": "Unassigned Members",
+  "memberWithOverdueTaskCount": "Member With Overdue Task",
+  "memberWithOverdueTaskCountPlural": "Member With Overdue Tasks",
+
+  "teamsText": "Teams",
+
+  "nameColumn": "Name",
+  "projectsColumn": "Projects",
+  "membersColumn": "Members"
+}
