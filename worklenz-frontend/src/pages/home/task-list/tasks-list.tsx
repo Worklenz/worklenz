@@ -163,7 +163,7 @@ const TasksList: React.FC = React.memo(() => {
                 style={{ margin: 0, paddingInlineEnd: 6, maxWidth: 120 }}
                 ellipsis={{ tooltip: true }}
               >
-                <Badge color={record.phase_color || 'blue'} style={{ marginInlineEnd: 4 }} />
+                <Badge color={record.project_color || 'blue'} style={{ marginInlineEnd: 4 }} />
                 {record.project_name}
               </Typography.Paragraph>
             </Tooltip>
