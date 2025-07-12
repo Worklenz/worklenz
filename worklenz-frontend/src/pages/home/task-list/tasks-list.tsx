@@ -123,11 +123,11 @@ const TasksList: React.FC = React.memo(() => {
             <span>{t('tasks.name')}</span>
           </Flex>
         ),
-        width: '150px',
+        width: '40%',
         render: (_, record) => (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Tooltip title={record.name}>
-              <Typography.Text ellipsis={{ tooltip: true }} style={{ maxWidth: 150 }}>
+              <Typography.Text style={{ flex: 1, marginRight: 8 }}>
                 {record.name}
               </Typography.Text>
             </Tooltip>
@@ -155,13 +155,12 @@ const TasksList: React.FC = React.memo(() => {
       {
         key: 'project',
         title: t('tasks.project'),
-        width: '120px',
+        width: '25%',
         render: (_, record) => {
           return (
             <Tooltip title={record.project_name}>
               <Typography.Paragraph
-                style={{ margin: 0, paddingInlineEnd: 6, maxWidth: 120 }}
-                ellipsis={{ tooltip: true }}
+                style={{ margin: 0, paddingInlineEnd: 6 }}
               >
                 <Badge color={record.project_color || 'blue'} style={{ marginInlineEnd: 4 }} />
                 {record.project_name}
@@ -173,7 +172,7 @@ const TasksList: React.FC = React.memo(() => {
       {
         key: 'status',
         title: t('tasks.status'),
-        width: '180px',
+        width: '20%',
         render: (_, record) => (
           <HomeTasksStatusDropdown task={record} teamId={record.team_id || ''} />
         ),
@@ -181,7 +180,7 @@ const TasksList: React.FC = React.memo(() => {
       {
         key: 'dueDate',
         title: t('tasks.dueDate'),
-        width: '180px',
+        width: '15%',
         dataIndex: 'end_date',
         render: (_, record) => <HomeTasksDatePicker record={record} />,
       },
