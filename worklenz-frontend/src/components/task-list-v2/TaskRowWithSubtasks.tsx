@@ -22,6 +22,8 @@ interface TaskRowWithSubtasksProps {
   }>;
   isFirstInGroup?: boolean;
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
+  depth?: number; // Add depth prop to track nesting level
+  maxDepth?: number; // Add maxDepth prop to limit nesting
 }
 
 interface AddSubtaskRowProps {
@@ -32,14 +34,15 @@ interface AddSubtaskRowProps {
     width: string;
     isSticky?: boolean;
   }>;
-  onSubtaskAdded: () => void; // Simplified - no rowId needed
-  rowId: string; // Unique identifier for this add subtask row
-  autoFocus?: boolean; // Whether this row should auto-focus on mount
-  isActive?: boolean; // Whether this row should show the input/button
-  onActivate?: () => void; // Simplified - no rowId needed
+  onSubtaskAdded: () => void;
+  rowId: string;
+  autoFocus?: boolean;
+  isActive?: boolean;
+  onActivate?: () => void;
+  depth?: number; // Add depth prop for proper indentation
 }
 
-const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({ 
+const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
   parentTaskId, 
   projectId, 
   visibleColumns, 
@@ -47,25 +50,20 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
   rowId,
   autoFocus = false,
   isActive = true,
-  onActivate
+  onActivate,
+  depth = 0
 }) => {
-  const [isAdding, setIsAdding] = useState(autoFocus);
+  const { t } = useTranslation('task-list-table');
+  const [isAdding, setIsAdding] = useState(false);
   const [subtaskName, setSubtaskName] = useState('');
   const inputRef = useRef<any>(null);
-  const { socket, connected } = useSocket();
-  const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
-  
-  // Get session data for reporter_id and team_id
+  const { socket, connected } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
 
-  // Auto-focus when autoFocus prop is true
   useEffect(() => {
     if (autoFocus && inputRef.current) {
-      setIsAdding(true);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
+      inputRef.current.focus();
     }
   }, [autoFocus]);
 
@@ -142,10 +140,14 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
           <div className="flex items-center h-full" style={baseStyle}>
             <div className="flex items-center w-full h-full">
               {/* Match subtask indentation pattern - tighter spacing */}
-              <div className="w-4" />
+              <div className="w-3" />
+              {/* Add additional indentation for deeper levels - 16px per level */}
+              {Array.from({ length: depth }).map((_, i) => (
+                <div key={i} className="w-4" />
+              ))}
               <div className="w-2" />
               
-              {isActive ? (
+                            {isActive ? (
                 !isAdding ? (
                   <button
                     onClick={() => {
@@ -188,7 +190,7 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
       default:
         return <div style={baseStyle} />;
     }
-  }, [isAdding, subtaskName, handleAddSubtask, handleCancel, handleBlur, handleKeyDown, t, isActive, onActivate]);
+  }, [isAdding, subtaskName, handleAddSubtask, handleCancel, handleBlur, handleKeyDown, t, isActive, onActivate, depth]);
 
   return (
     <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px] border-b border-gray-200 dark:border-gray-700">
@@ -203,12 +205,42 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
 
 AddSubtaskRow.displayName = 'AddSubtaskRow';
 
+// Helper function to get background color based on depth
+const getSubtaskBackgroundColor = (depth: number) => {
+  switch (depth) {
+    case 1:
+      return 'bg-gray-50 dark:bg-gray-800/50';
+    case 2:
+      return 'bg-blue-50 dark:bg-blue-900/20';
+    case 3:
+      return 'bg-green-50 dark:bg-green-900/20';
+    default:
+      return 'bg-gray-50 dark:bg-gray-800/50';
+  }
+};
+
+// Helper function to get border color based on depth
+const getBorderColor = (depth: number) => {
+  switch (depth) {
+    case 1:
+      return 'border-blue-200 dark:border-blue-700';
+    case 2:
+      return 'border-green-200 dark:border-green-700';
+    case 3:
+      return 'border-purple-200 dark:border-purple-700';
+    default:
+      return 'border-blue-200 dark:border-blue-700';
+  }
+};
+
 const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({ 
   taskId, 
   projectId, 
   visibleColumns,
   isFirstInGroup = false,
-  updateTaskCustomColumnValue
+  updateTaskCustomColumnValue,
+  depth = 0,
+  maxDepth = 3
 }) => {
   const task = useAppSelector(state => selectTaskById(state, taskId));
   const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
@@ -223,6 +255,9 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
     return null;
   }
 
+  // Don't render subtasks if we've reached the maximum depth
+  const canHaveSubtasks = depth < maxDepth;
+
   return (
     <>
       {/* Main task row */}
@@ -232,10 +267,12 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
         visibleColumns={visibleColumns}
         isFirstInGroup={isFirstInGroup}
         updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+        isSubtask={depth > 0}
+        depth={depth}
       />
       
       {/* Subtasks and add subtask row when expanded */}
-      {task.show_sub_tasks && (
+      {canHaveSubtasks && task.show_sub_tasks && (
         <>
           {/* Show loading skeleton while fetching subtasks */}
           {isLoadingSubtasks && (
@@ -244,22 +281,23 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
             </>
           )}
           
-          {/* Render existing subtasks when not loading */}
+          {/* Render existing subtasks when not loading - RECURSIVELY */}
           {!isLoadingSubtasks && task.sub_tasks?.map((subtask: Task) => (
-            <div key={subtask.id} className="bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-200 dark:border-blue-700">
-              <TaskRow
+            <div key={subtask.id} className={`${getSubtaskBackgroundColor(depth + 1)} border-l-2 ${getBorderColor(depth + 1)}`}>
+              <TaskRowWithSubtasks
                 taskId={subtask.id}
                 projectId={projectId}
                 visibleColumns={visibleColumns}
-                isSubtask={true}
                 updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+                depth={depth + 1}
+                maxDepth={maxDepth}
               />
             </div>
           ))}
           
           {/* Add subtask row - only show when not loading */}
           {!isLoadingSubtasks && (
-            <div className="bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-200 dark:border-blue-700">
+            <div className={`${getSubtaskBackgroundColor(depth + 1)} border-l-2 ${getBorderColor(depth + 1)}`}>
               <AddSubtaskRow
                 parentTaskId={taskId}
                 projectId={projectId}
@@ -267,8 +305,9 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(({
                 onSubtaskAdded={handleSubtaskAdded}
                 rowId={`add-subtask-${taskId}`}
                 autoFocus={false}
-                isActive={true} // Always show the add subtask row
-                onActivate={undefined} // Not needed anymore
+                isActive={true}
+                onActivate={undefined}
+                depth={depth + 1}
               />
             </div>
           )}

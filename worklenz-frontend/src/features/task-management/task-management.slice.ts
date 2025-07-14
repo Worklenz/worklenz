@@ -1010,7 +1010,7 @@ const taskManagementSlice = createSlice({
             order: subtask.sort_order || subtask.order || 0,
             parent_task_id: parentTaskId,
             is_sub_task: true,
-            sub_tasks_count: 0,
+            sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
             show_sub_tasks: false,
           }));
 
