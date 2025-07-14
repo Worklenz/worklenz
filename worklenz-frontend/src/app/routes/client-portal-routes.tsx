@@ -9,7 +9,7 @@ import ClientPortalAddServices from '@/pages/client-portal/services/add-service/
 import ClientPortalChats from '@/pages/client-portal/chats/client-portal-chats';
 import ClientPortalSettings from '@/pages/client-portal/settings/client-portal-settings';
 import ClientPortalInvoices from '@/pages/client-portal/invoices/client-portal-invoices';
-import ClientPortalInvoiceDetails from '@/pages/client-portal/invoices/invoice-details/ClientPortalInvoiceDetails';
+import ClientPortalInvoiceDetails from '@/pages/client-portal/invoices/invoice-details/client-portal-invoice-details';
 
 const clientPortalRoutes: RouteObject[] = [
   {
