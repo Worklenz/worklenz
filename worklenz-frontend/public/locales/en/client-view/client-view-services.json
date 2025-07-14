@@ -1,0 +1,13 @@
+{
+  "title": "{{items}} Services",
+
+  "requestButton": "Make a request",
+
+  "modal": {
+    "title": "Make a request",
+    "submitButton": "Submit"
+  },
+
+  "uploadLogoText": "Click or drag file to this area to upload",
+  "uploadLogoAltText": "Support for a single or bulk upload. Strictly prohibit from uploading company data or other band files"
+}

@@ -1,7 +1,7 @@
 import { Card, Flex, message, Typography, Upload, UploadProps } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import companyLogo from '../../../assets/images/logo.png';
+import companyLogo from '../../../assets/images/client-view-logo.png';
 import { InboxOutlined } from '@ant-design/icons';
 
 const ClientPortalSettings = () => {

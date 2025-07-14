@@ -89,6 +89,9 @@ import taskManagementFieldsReducer from '@features/task-management/taskListField
 //clients portal
 import clientsPortalReducer from '../features/clients-portal';
 
+//client view
+import clientViewReducer from '../features/client-view';
+
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -180,6 +183,9 @@ export const store = configureStore({
 
     //clients portal
     clientsPortalReducer: clientsPortalReducer,
+
+    //client view
+    clientViewReducer: clientViewReducer,
   },
 });
 
