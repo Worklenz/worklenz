@@ -23,5 +23,8 @@
   "createInvoiceSuccessMessage": "Fatura criada com sucesso!",
   "createInvoiceErrorMessage": "Falha ao criar a fatura.",
   "cancelButton": "Cancelar",
-  "createButton": "Criar Fatura"
+  "createButton": "Criar Fatura",
+  "invoiceDetailsTitle": "Detalhes da Fatura",
+  "invoiceNotFound": "Fatura não encontrada.",
+  "backButton": "Voltar"
 } 

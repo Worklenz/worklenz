@@ -23,5 +23,8 @@
   "createInvoiceSuccessMessage": "Invoice created successfully!",
   "createInvoiceErrorMessage": "Failed to create invoice.",
   "cancelButton": "Cancel",
-  "createButton": "Create Invoice"
+  "createButton": "Create Invoice",
+  "invoiceDetailsTitle": "Invoice Details",
+  "invoiceNotFound": "Invoice not found.",
+  "backButton": "Back"
 } 

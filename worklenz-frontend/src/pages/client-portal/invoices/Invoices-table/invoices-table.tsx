@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../../styles/colors';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
+import { useNavigate } from 'react-router-dom';
 
 // Temporary type for invoice data - replace with actual type when available
 interface TempInvoiceType {
@@ -41,6 +42,7 @@ const InvoicesTable = () => {
   );
 
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   // Function to get status color
   const getStatusColor = (status: string) => {
@@ -143,6 +145,10 @@ const InvoicesTable = () => {
         scroll={{
           x: 'max-content',
         }}
+        onRow={(record) => ({
+          onClick: () => navigate(`/worklenz/client-portal/invoices/${record.id}`),
+          style: { cursor: 'pointer' },
+        })}
       />
     </Card>
   );

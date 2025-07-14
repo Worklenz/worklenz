@@ -23,5 +23,8 @@
   "createInvoiceSuccessMessage": "发票创建成功！",
   "createInvoiceErrorMessage": "发票创建失败。",
   "cancelButton": "取消",
-  "createButton": "创建发票"
+  "createButton": "创建发票",
+  "invoiceDetailsTitle": "发票详情",
+  "invoiceNotFound": "未找到发票。",
+  "backButton": "返回"
 } 

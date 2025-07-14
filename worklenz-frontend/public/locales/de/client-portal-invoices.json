@@ -23,5 +23,8 @@
   "createInvoiceSuccessMessage": "Rechnung erfolgreich erstellt!",
   "createInvoiceErrorMessage": "Rechnung konnte nicht erstellt werden.",
   "cancelButton": "Abbrechen",
-  "createButton": "Rechnung erstellen"
+  "createButton": "Rechnung erstellen",
+  "invoiceDetailsTitle": "Rechnungsdetails",
+  "invoiceNotFound": "Rechnung nicht gefunden.",
+  "backButton": "Zurück"
 } 

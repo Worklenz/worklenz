@@ -9,6 +9,7 @@ import ClientPortalAddServices from '@/pages/client-portal/services/add-service/
 import ClientPortalChats from '@/pages/client-portal/chats/client-portal-chats';
 import ClientPortalSettings from '@/pages/client-portal/settings/client-portal-settings';
 import ClientPortalInvoices from '@/pages/client-portal/invoices/client-portal-invoices';
+import ClientPortalInvoiceDetails from '@/pages/client-portal/invoices/invoice-details/ClientPortalInvoiceDetails';
 
 const clientPortalRoutes: RouteObject[] = [
   {
@@ -42,6 +43,10 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'invoices',
         element: <ClientPortalInvoices />,
+      },
+      {
+        path: 'invoices/:invoiceId',
+        element: <ClientPortalInvoiceDetails />,
       },
       {
         path: 'settings',

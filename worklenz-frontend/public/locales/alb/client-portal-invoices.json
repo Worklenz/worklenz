@@ -23,5 +23,8 @@
   "createInvoiceSuccessMessage": "Fatura u krijua me sukses!",
   "createInvoiceErrorMessage": "Dështoi krijimi i faturës.",
   "cancelButton": "Anulo",
-  "createButton": "Krijo Faturë"
+  "createButton": "Krijo Faturë",
+  "invoiceDetailsTitle": "Detajet e Faturës",
+  "invoiceNotFound": "Fatura nuk u gjet.",
+  "backButton": "Kthehu"
 } 
