@@ -24,6 +24,7 @@ interface TitleColumnProps {
   onEditTaskName: (editing: boolean) => void;
   onTaskNameChange: (name: string) => void;
   onTaskNameSave: () => void;
+  depth?: number;
 }
 
 export const TitleColumn: React.FC<TitleColumnProps> = memo(({
@@ -36,7 +37,8 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
   taskName,
   onEditTaskName,
   onTaskNameChange,
-  onTaskNameSave
+  onTaskNameSave,
+  depth = 0
 }) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
@@ -151,10 +153,15 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
         <>
           <div className="flex items-center flex-1 min-w-0">
             {/* Indentation for subtasks - tighter spacing */}
-            {isSubtask && <div className="w-4 flex-shrink-0" />}
+            {isSubtask && <div className="w-3 flex-shrink-0" />}
             
-            {/* Expand/Collapse button - only show for parent tasks */}
-            {!isSubtask && (
+            {/* Additional indentation for deeper levels - 16px per level */}
+            {Array.from({ length: depth }).map((_, i) => (
+              <div key={i} className="w-4 flex-shrink-0" />
+            ))}
+            
+            {/* Expand/Collapse button - show for any task that can have sub-tasks */}
+            {depth < 2 && ( // Only show if not at maximum depth (can still have children)
               <button
                 onClick={handleToggleExpansion}
                 className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out flex-shrink-0 ${
@@ -202,8 +209,8 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
               
               {/* Indicators container - flex-shrink-0 to prevent compression */}
               <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Subtask count indicator - only show if count > 0 */}
-                {!isSubtask && task.sub_tasks_count != null && task.sub_tasks_count > 0 && (
+                {/* Subtask count indicator - show for any task that can have sub-tasks */}
+                {depth < 2 && task.sub_tasks_count != null && task.sub_tasks_count > 0 && (
                   <Tooltip title={t(`indicators.tooltips.subtasks${task.sub_tasks_count === 1 ? '' : '_plural'}`, { count: task.sub_tasks_count })}>
                     <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
                       <span className="text-blue-600 dark:text-blue-400 font-medium">
