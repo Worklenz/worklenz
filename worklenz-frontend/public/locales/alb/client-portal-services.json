@@ -3,5 +3,6 @@
   "nameColumn": "Emri",
   "createdByColumn": "Krijuar Nga",
   "statusColumn": "Statusi",
-  "noOfRequestsColumn": "Nr. i Kërkesave"
+  "noOfRequestsColumn": "Nr. i Kërkesave",
+  "addServiceButton": "Shto Shërbim"
 } 

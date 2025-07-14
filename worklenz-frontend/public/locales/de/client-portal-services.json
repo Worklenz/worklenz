@@ -3,5 +3,6 @@
   "nameColumn": "Name",
   "createdByColumn": "Erstellt von",
   "statusColumn": "Status",
-  "noOfRequestsColumn": "Anzahl der Anfragen"
+  "noOfRequestsColumn": "Anzahl der Anfragen",
+  "addServiceButton": "Dienstleistung hinzufügen"
 } 
