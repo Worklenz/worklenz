@@ -1,7 +1,24 @@
 {
   "configurePhases": "Phasen konfigurieren",
-  "phaseLabel": "Phasenbezeichnung",
-  "enterPhaseName": "Namen für Phasenbezeichnung eingeben",
+  "configure": "Konfigurieren",
+  "phaseLabel": "Phasen-Label",
+  "enterPhaseName": "Phasenname eingeben",
   "addOption": "Option hinzufügen",
-  "phaseOptions": "Phasenoptionen:"
+  "phaseOptions": "Phasenoptionen",
+  "optionsText": "Optionen",
+  "dragToReorderPhases": "Ziehen Sie Phasen, um sie neu zu ordnen. Jede Phase kann eine andere Farbe haben.",
+  "enterNewPhaseName": "Neuen Phasennamen eingeben...",
+  "addPhase": "Phase hinzufügen",
+  "noPhasesFound": "Keine Phasen gefunden",
+  "no": "Keine",
+  "found": "gefunden",
+  "deletePhase": "Phase löschen",
+  "deletePhaseConfirm": "Sind Sie sicher, dass Sie diese Phase löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "rename": "Umbenennen",
+  "delete": "Löschen",
+  "create": "Erstellen",
+  "cancel": "Abbrechen",
+  "selectColor": "Farbe auswählen",
+  "managePhases": "Phasen verwalten",
+  "close": "Schließen"
 }

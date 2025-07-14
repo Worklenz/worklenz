@@ -312,7 +312,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(
                 {groupTasks.length === 0 ? (
                   <div className="task-group-empty">
                     <div className="task-table-fixed-columns">
-                      <div style={{ width: '380px', padding: '20px 12px' }}>
+                      <div style={{ width: '380px', padding: '32px 12px' }}>
                         <div className="text-center text-gray-500">
                           <Text type="secondary">No tasks in this group</Text>
                           <br />
@@ -487,7 +487,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(
 
         .task-group-empty {
           display: flex;
-          height: 80px;
+          height: 120px;
           align-items: center;
           background: var(--task-bg-primary, white);
           transition: background-color 0.3s ease;

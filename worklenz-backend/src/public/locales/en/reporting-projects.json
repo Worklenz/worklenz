@@ -1,0 +1,52 @@
+{
+  "projectCount": "Project",
+  "projectCountPlural": "Projects",
+  "includeArchivedButton": "Include Archived Projects",
+  "exportButton": "Export",
+  "excelButton": "Excel",
+
+  "projectColumn": "Project",
+  "estimatedVsActualColumn": "Estimated Vs Actual",
+  "tasksProgressColumn": "Tasks Progress",
+  "lastActivityColumn": "Last Activity",
+  "statusColumn": "Status",
+  "datesColumn": "Start/End Dates",
+  "daysLeftColumn": "Days Left/Overdue",
+  "projectHealthColumn": "Project Health",
+  "categoryColumn": "Category",
+  "projectUpdateColumn": "Project Update",
+  "clientColumn": "Client",
+  "teamColumn": "Team",
+  "projectManagerColumn": "Project Manager",
+
+  "openButton": "Open",
+
+  "estimatedText": "Estimated",
+  "actualText": "Actual",
+
+  "todoText": "To Do",
+  "doingText": "Doing",
+  "doneText": "Done",
+
+  "cancelledText": "Cancelled",
+  "blockedText": "Blocked",
+  "onHoldText": "On Hold",
+  "proposedText": "Proposed",
+  "inPlanningText": "In Planning",
+  "inProgressText": "In Progress",
+  "completedText": "Completed",
+  "continuousText": "Continuous",
+
+  "daysLeftText": "days left",
+  "dayLeftText": "day left",
+  "daysOverdueText": "days overdue",
+
+  "notSetText": "Not Set",
+  "needsAttentionText": "Needs Attention",
+  "atRiskText": "At Risk",
+  "goodText": "Good",
+
+  "setCategoryText": "Set Category",
+  "searchByNameInputPlaceholder": "Search by name",
+  "todayText": "Today"
+}

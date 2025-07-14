@@ -1,0 +1,22 @@
+{
+  "nameColumn": "Emri",
+  "projectColumn": "Projekti",
+  "noProjectsAvailable": "Nuk ka projekte të disponueshme",
+  "deleteConfirmationTitle": "Jeni i sigurt?",
+  "deleteConfirmationOk": "Po",
+  "deleteConfirmationCancel": "Anulo",
+  "searchPlaceholder": "Kërko sipas emrit",
+  "createClient": "Krijo Klient",
+  "pinTooltip": "Klikoni për ta fiksuar në menynë kryesore",
+  "createClientDrawerTitle": "Krijo Klient",
+  "updateClientDrawerTitle": "Përditëso Klientin",
+  "nameLabel": "Emri",
+  "namePlaceholder": "Emri",
+  "nameRequiredError": "Ju lutemi shkruani një Emër",
+  "createButton": "Krijo",
+  "updateButton": "Përditëso",
+  "createClientSuccessMessage": "Klienti u krijua me sukses!",
+  "createClientErrorMessage": "Krijimi i klientit dështoi!",
+  "updateClientSuccessMessage": "Klienti u përditësua me sukses!",
+  "updateClientErrorMessage": "Përditësimi i klientit dështoi!"
+}

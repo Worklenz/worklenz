@@ -1,0 +1,13 @@
+{
+  "formTitle": "Erstellen Sie Ihr erstes Projekt",
+  "inputLabel": "An welchem Projekt arbeiten Sie gerade?",
+  "or": "oder",
+  "templateButton": "Aus Vorlage importieren",
+  "createFromTemplate": "Aus Vorlage erstellen",
+  "goBack": "Zurück",
+  "continue": "Weitermachen",
+  "cancel": "Abbrechen",
+  "create": "Erstellen",
+  "templateDrawerTitle": "Aus Vorlagen auswählen",
+  "createProject": "Projekt erstellen"
+}

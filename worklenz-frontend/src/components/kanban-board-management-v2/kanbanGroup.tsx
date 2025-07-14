@@ -173,7 +173,7 @@ const KanbanGroup: React.FC<TaskGroupProps> = ({
                 .kanban-group-empty {
                     text-align: center;
                     color: #bfbfbf;
-                    padding: 32px 0;
+                    padding: 48px 16px;
                 }
                 .kanban-group-add-task {
                     padding: 12px;

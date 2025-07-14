@@ -1,0 +1,16 @@
+{
+  "title": "团队",
+  "team": "团队",
+  "teams": "团队",
+  "name": "名称",
+  "created": "创建时间",
+  "ownsBy": "所有者",
+  "edit": "编辑",
+  "editTeam": "编辑团队",
+  "pinTooltip": "点击将此项固定到主菜单",
+  "editTeamName": "编辑团队名称",
+  "updateName": "更新名称",
+  "namePlaceholder": "名称",
+  "nameRequired": "请输入名称",
+  "updateFailed": "团队名称更改失败！"
+} 

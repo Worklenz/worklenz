@@ -28,8 +28,8 @@ interface TaskCardProps {
     onTaskDragOver: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
     onTaskDrop: (e: React.DragEvent, groupId: string, taskIdx: number) => void;
     groupId: string;
-    isDropIndicator: boolean;
     idx: number;
+    onDragEnd: (e: React.DragEvent) => void; // <-- add this
 }
 
 function getDaysInMonth(year: number, month: number) {
@@ -46,8 +46,8 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
     onTaskDragOver,
     onTaskDrop,
     groupId,
-    isDropIndicator,
-    idx
+    idx,
+    onDragEnd // <-- add this
 }) => {
     const { socket } = useSocket();
     const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
@@ -198,31 +198,24 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         while (week.length < 7) week.push(null);
         weeks.push(week);
     }
+    const [isDown, setIsDown] = useState(false);
 
     return (
         <>
-            {isDropIndicator && (
-                <div
-                    
-                    onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
-                    onDragOver={e => onTaskDragOver(e, groupId, idx)}
-                    onDrop={e => onTaskDrop(e, groupId, idx)}
-                >
-                    <div className="w-full h-full bg-red-500"style={{
-                        height: 80,
-                        background: themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0',
-                        borderRadius: 6,
-                        border: `5px`
-                    }}></div>
-                </div>
-            )}
             <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block' }} >
                 <div
                     draggable
                     onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
-                    onDragOver={e => onTaskDragOver(e, groupId, idx)}
+                    onDragOver={e => {
+                        e.preventDefault();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const offsetY = e.clientY - rect.top;
+                        const isDown = offsetY > rect.height / 2;
+                        setIsDown(isDown);
+                        onTaskDragOver(e, groupId, isDown ? idx + 1 : idx);
+                    }}
                     onDrop={e => onTaskDrop(e, groupId, idx)}
-
+                    onDragEnd={onDragEnd} // <-- add this
                     onClick={e => handleCardClick(e, task.id!)}
                 >
                     <div className="task-content">
@@ -252,7 +245,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                 className="w-2 h-2 rounded-full inline-block"
                                 style={{ backgroundColor: themeMode === 'dark' ? (task.priority_color_dark || task.priority_color || '#d9d9d9') : (task.priority_color || '#d9d9d9') }}
                             ></span>
-                            <div className="task-title" style={{ marginLeft: 8 }}>{task.name}</div>
+                            <div className="task-title" title={task.name} style={{ marginLeft: 8 }}>{task.name}</div>
                         </div>
 
                         <div className="task-assignees-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -431,7 +424,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                         </div>
                     </div>
                 </div>
-                <div 
+                <div
                     className="subtasks-container"
                     style={{
                         overflow: 'hidden',
@@ -444,7 +437,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                     <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                         {/* Loading state */}
                         {task.sub_tasks_loading && (
-                            <div className="py-2 text-xs text-gray-400 dark:text-gray-500">Loading...</div>
+                            <div className="h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
                         )}
                         {/* Loaded subtasks */}
                         {!task.sub_tasks_loading && Array.isArray(task.sub_tasks) && task.sub_tasks.length > 0 && (
@@ -463,14 +456,17 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                         >
                                             {sub.end_date ? format(new Date(sub.end_date), 'MMM d, yyyy') : ''}
                                         </span>
-                                        {sub.names && sub.names.length > 0 && (
-                                            <AvatarGroup
-                                                members={sub.names}
-                                                maxCount={2}
-                                                isDarkMode={themeMode === 'dark'}
-                                                size={18}
-                                            />
-                                        )}
+                                        <span className="flex items-center">
+                                            {sub.names && sub.names.length > 0 && (
+                                                <AvatarGroup
+                                                    members={sub.names}
+                                                    maxCount={2}
+                                                    isDarkMode={themeMode === 'dark'}
+                                                    size={18}
+                                                />
+                                            )}
+                                            <LazyAssigneeSelectorWrapper task={sub} groupId={groupId} isDarkMode={themeMode === 'dark'} kanbanMode={true} />
+                                        </span>
                                     </li>
                                 ))}
                             </ul>

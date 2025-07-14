@@ -1,0 +1,35 @@
+{
+  "yesterdayText": "Gestern",
+  "lastSevenDaysText": "Letzte 7 Tage",
+  "lastWeekText": "Letzte Woche",
+  "lastThirtyDaysText": "Letzte 30 Tage",
+  "lastMonthText": "Letzter Monat",
+  "lastThreeMonthsText": "Letzte 3 Monate",
+  "allTimeText": "Gesamter Zeitraum",
+  "customRangeText": "Benutzerdefinierter Bereich",
+  "startDateInputPlaceholder": "Startdatum",
+  "EndDateInputPlaceholder": "Enddatum",
+  "filterButton": "Filtern",
+
+  "membersTitle": "Mitglieder",
+  "includeArchivedButton": "Archivierte Projekte einschließen",
+  "exportButton": "Exportieren",
+  "excelButton": "Excel",
+  "searchByNameInputPlaceholder": "Nach Namen suchen",
+
+  "memberColumn": "Mitglied",
+  "tasksProgressColumn": "Aufgabenfortschritt",
+  "tasksAssignedColumn": "Zugewiesene Aufgaben",
+  "completedTasksColumn": "Abgeschlossene Aufgaben",
+  "overdueTasksColumn": "Überfällige Aufgaben",
+  "ongoingTasksColumn": "Laufende Aufgaben",
+
+  "tasksAssignedColumnTooltip": "Im ausgewählten Zeitraum zugewiesene Aufgaben",
+  "overdueTasksColumnTooltip": "Zum Ende des ausgewählten Zeitraums überfällige Aufgaben",
+  "completedTasksColumnTooltip": "Im ausgewählten Zeitraum abgeschlossene Aufgaben",
+  "ongoingTasksColumnTooltip": "Begonnene, aber noch nicht abgeschlossene Aufgaben",
+
+  "todoText": "Zu erledigen",
+  "doingText": "Tun",
+  "doneText": "Erledigt"
+}

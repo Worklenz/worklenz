@@ -21,6 +21,7 @@ import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
 import Skeleton from 'antd/es/skeleton/Skeleton';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
+import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const dispatch = useDispatch();
@@ -41,6 +42,10 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   const [hoveredTaskIdx, setHoveredTaskIdx] = useState<number | null>(null);
   const [dragType, setDragType] = useState<'group' | 'task' | null>(null);
   const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);
+
+  // Set up socket event handlers for real-time updates
+  useTaskSocketHandlers();
+
   useEffect(() => {
     if (projectId) {
       dispatch(fetchEnhancedKanbanGroups(projectId) as any);
@@ -127,9 +132,9 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     if (draggedTaskId) {
       setHoveredGroupId(groupId);
     }
-    if(taskIdx === null) {
+    if (taskIdx === null) {
       setHoveredTaskIdx(0);
-    }else{
+    } else {
       setHoveredTaskIdx(taskIdx);
     };
   };
@@ -137,16 +142,16 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     if (dragType !== 'task') return;
     e.preventDefault();
     if (!draggedTaskId || !draggedTaskGroupId || hoveredGroupId === null || hoveredTaskIdx === null) return;
-    
+
     // Calculate new order and dispatch
     const sourceGroup = taskGroups.find(g => g.id === draggedTaskGroupId);
     const targetGroup = taskGroups.find(g => g.id === targetGroupId);
     if (!sourceGroup || !targetGroup) return;
-    
-    
+
+
     const taskIdx = sourceGroup.tasks.findIndex(t => t.id === draggedTaskId);
     if (taskIdx === -1) return;
-    
+
     const movedTask = sourceGroup.tasks[taskIdx];
     if (groupBy === 'status' && movedTask.id) {
       if (sourceGroup.id !== targetGroup.id) {
@@ -161,23 +166,23 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       }
     }
     let insertIdx = hoveredTaskIdx;
-    
+
     // Handle same group reordering
     if (sourceGroup.id === targetGroup.id) {
       // Create a single updated array for the same group
       const updatedTasks = [...sourceGroup.tasks];
       updatedTasks.splice(taskIdx, 1); // Remove from original position
-      
+
       // Adjust insert index if moving forward in the same array
       if (taskIdx < insertIdx) {
         insertIdx--;
       }
-      
+
       if (insertIdx < 0) insertIdx = 0;
       if (insertIdx > updatedTasks.length) insertIdx = updatedTasks.length;
-      
+
       updatedTasks.splice(insertIdx, 0, movedTask); // Insert at new position
-      
+
       dispatch(reorderTasks({
         activeGroupId: sourceGroup.id,
         overGroupId: targetGroup.id,
@@ -200,12 +205,12 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       // Handle cross-group reordering
       const updatedSourceTasks = [...sourceGroup.tasks];
       updatedSourceTasks.splice(taskIdx, 1);
-      
+
       const updatedTargetTasks = [...targetGroup.tasks];
       if (insertIdx < 0) insertIdx = 0;
       if (insertIdx > updatedTargetTasks.length) insertIdx = updatedTargetTasks.length;
       updatedTargetTasks.splice(insertIdx, 0, movedTask);
-      
+
       dispatch(reorderTasks({
         activeGroupId: sourceGroup.id,
         overGroupId: targetGroup.id,
@@ -263,36 +268,13 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setDragType(null);
   };
 
-  useEffect(() => {
-    if (!socket) return;
+  const handleDragEnd = () => {
+    setHoveredGroupId(null);
+    setHoveredTaskIdx(null);
+  };
 
-    // Handler for new task received via socket
-    const handleNewTaskReceived = (data: any) => {
-      if (!data) return;
-      if (data.parent_task_id) {
-        // Subtask: update subtasks in the correct group
-        dispatch({
-          type: 'enhancedKanbanReducer/updateEnhancedKanbanSubtask',
-          payload: { sectionId: '', subtask: data, mode: 'add' }
-        });
-      } else {
-        // Regular task: add to the correct group
-        let sectionId = '';
-        if (groupBy === 'status') sectionId = data.status;
-        else if (groupBy === 'priority') sectionId = data.priority;
-        else if (groupBy === 'phase') sectionId = data.phase_id;
-        dispatch({
-          type: 'enhancedKanbanReducer/addTaskToGroup',
-          payload: { sectionId, task: data }
-        });
-      }
-    };
-
-    socket.on(SocketEvents.QUICK_TASK.toString(), handleNewTaskReceived);
-    return () => {
-      socket.off(SocketEvents.QUICK_TASK.toString(), handleNewTaskReceived);
-    };
-  }, [socket, groupBy, dispatch]);
+  // Note: Socket event handlers are now managed by useTaskSocketHandlers hook
+  // This includes TASK_NAME_CHANGE, QUICK_TASK, and other real-time updates
 
   if (error) {
     return (
@@ -311,11 +293,12 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       </div>
       <div className="enhanced-kanban-board">
         {loadingGroups ? (
-          <Card>
-            <div className="flex justify-center items-center py-8">
-              <Skeleton active />
+            <div className="flex flex-row gap-2 h-[600px]">
+              <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '60%' }} />
+              <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '100%' }} />
+              <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '80%' }} />
+              <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '40%' }} />
             </div>
-          </Card>
         ) : taskGroups.length === 0 ? (
           <Card>
             <Empty description="No tasks found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
@@ -332,6 +315,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
                 onTaskDragStart={handleTaskDragStart}
                 onTaskDragOver={handleTaskDragOver}
                 onTaskDrop={handleTaskDrop}
+                onDragEnd={handleDragEnd}
                 hoveredTaskIdx={hoveredGroupId === group.id ? hoveredTaskIdx : null}
                 hoveredGroupId={hoveredGroupId}
               />

@@ -1,0 +1,11 @@
+{
+  "createTaskTemplate": "Criar Template de Tarefa",
+  "editTaskTemplate": "Editar Template de Tarefa",
+  "cancelText": "Cancelar",
+  "saveText": "Salvar",
+  "templateNameText": "Nome do Template",
+  "selectedTasks": "Tarefas Selecionadas",
+  "removeTask": "Remover",
+  "cancelButton": "Cancelar",
+  "saveButton": "Salvar"
+}

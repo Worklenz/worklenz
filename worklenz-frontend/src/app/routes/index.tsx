@@ -30,24 +30,12 @@ const withCodeSplitting = (Component: React.LazyExoticComponent<React.ComponentT
 };
 
 // Memoized guard components with defensive programming
+import { useAuthStatus } from '@/hooks/useAuthStatus';
+
 export const AuthGuard = memo(({ children }: GuardProps) => {
-  const authService = useAuthService();
-  const location = useLocation();
+  const { isAuthenticated, location } = useAuthStatus();
 
-  const shouldRedirect = useMemo(() => {
-    try {
-      // Defensive check to ensure authService and its methods exist
-      if (!authService || typeof authService.isAuthenticated !== 'function') {
-        return false; // Don't redirect if auth service is not ready
-      }
-      return !authService.isAuthenticated();
-    } catch (error) {
-      console.error('Error in AuthGuard:', error);
-      return false; // Don't redirect on error, let the app handle it
-    }
-  }, [authService]);
-
-  if (shouldRedirect) {
+  if (!isAuthenticated) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
@@ -57,41 +45,14 @@ export const AuthGuard = memo(({ children }: GuardProps) => {
 AuthGuard.displayName = 'AuthGuard';
 
 export const AdminGuard = memo(({ children }: GuardProps) => {
-  const authService = useAuthService();
-  const location = useLocation();
+  const { isAuthenticated, isAdmin, location } = useAuthStatus();
 
-  const guardResult = useMemo(() => {
-    try {
-      // Defensive checks to ensure authService and its methods exist
-      if (
-        !authService ||
-        typeof authService.isAuthenticated !== 'function' ||
-        typeof authService.isOwnerOrAdmin !== 'function' ||
-        typeof authService.getCurrentSession !== 'function'
-      ) {
-        return null; // Don't redirect if auth service is not ready
-      }
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
 
-      if (!authService.isAuthenticated()) {
-        return { redirect: '/auth', state: { from: location } };
-      }
-
-      const currentSession = authService.getCurrentSession();
-      const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
-
-      if (!authService.isOwnerOrAdmin() || isFreePlan) {
-        return { redirect: '/worklenz/unauthorized' };
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error in AdminGuard:', error);
-      return null; // Don't redirect on error
-    }
-  }, [authService, location]);
-
-  if (guardResult) {
-    return <Navigate to={guardResult.redirect} state={guardResult.state} replace />;
+  if (!isAdmin) {
+    return <Navigate to="/worklenz/unauthorized" />;
   }
 
   return <>{children}</>;
@@ -100,77 +61,12 @@ export const AdminGuard = memo(({ children }: GuardProps) => {
 AdminGuard.displayName = 'AdminGuard';
 
 export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
-  const authService = useAuthService();
-  const location = useLocation();
+  const { isLicenseExpired, location } = useAuthStatus();
 
-  const shouldRedirect = useMemo(() => {
-    try {
-      // Defensive checks to ensure authService and its methods exist
-      if (
-        !authService ||
-        typeof authService.isAuthenticated !== 'function' ||
-        typeof authService.getCurrentSession !== 'function'
-      ) {
-        return false; // Don't redirect if auth service is not ready
-      }
+  const isAdminCenterRoute = location.pathname.includes('/worklenz/admin-center');
+  const isLicenseExpiredRoute = location.pathname === '/worklenz/license-expired';
 
-      if (!authService.isAuthenticated()) return false;
-
-      const isAdminCenterRoute = location.pathname.includes('/worklenz/admin-center');
-      const isLicenseExpiredRoute = location.pathname === '/worklenz/license-expired';
-
-      // Don't check or redirect if we're already on the license-expired page
-      if (isLicenseExpiredRoute) return false;
-
-      const currentSession = authService.getCurrentSession();
-
-      // Check if trial is expired more than 7 days or if is_expired flag is set
-      const isLicenseExpiredMoreThan7Days = () => {
-        // Quick bail if no session data is available
-        if (!currentSession) return false;
-
-        // Check is_expired flag first
-        if (currentSession.is_expired) {
-          // If no trial_expire_date exists but is_expired is true, defer to backend check
-          if (!currentSession.trial_expire_date) return true;
-
-          // If there is a trial_expire_date, check if it's more than 7 days past
-          const today = new Date();
-          const expiryDate = new Date(currentSession.trial_expire_date);
-          const diffTime = today.getTime() - expiryDate.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-          // Redirect if more than 7 days past expiration
-          return diffDays > 7;
-        }
-
-        // If not marked as expired but has trial_expire_date, do a date check
-        if (
-          currentSession.subscription_type === ISUBSCRIPTION_TYPE.TRIAL &&
-          currentSession.trial_expire_date
-        ) {
-          const today = new Date();
-          const expiryDate = new Date(currentSession.trial_expire_date);
-
-          const diffTime = today.getTime() - expiryDate.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-          // If expired more than 7 days, redirect
-          return diffDays > 7;
-        }
-
-        // No expiration data found
-        return false;
-      };
-
-      return isLicenseExpiredMoreThan7Days() && !isAdminCenterRoute;
-    } catch (error) {
-      console.error('Error in LicenseExpiryGuard:', error);
-      return false; // Don't redirect on error
-    }
-  }, [authService, location.pathname]);
-
-  if (shouldRedirect) {
+  if (isLicenseExpired && !isAdminCenterRoute && !isLicenseExpiredRoute) {
     return <Navigate to="/worklenz/license-expired" replace />;
   }
 
@@ -180,24 +76,14 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
 LicenseExpiryGuard.displayName = 'LicenseExpiryGuard';
 
 export const SetupGuard = memo(({ children }: GuardProps) => {
-  const authService = useAuthService();
-  const location = useLocation();
+  const { isAuthenticated, isSetupComplete, location } = useAuthStatus();
 
-  const shouldRedirect = useMemo(() => {
-    try {
-      // Defensive check to ensure authService and its methods exist
-      if (!authService || typeof authService.isAuthenticated !== 'function') {
-        return false; // Don't redirect if auth service is not ready
-      }
-      return !authService.isAuthenticated();
-    } catch (error) {
-      console.error('Error in SetupGuard:', error);
-      return false; // Don't redirect on error
-    }
-  }, [authService]);
-
-  if (shouldRedirect) {
+  if (!isAuthenticated) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (!isSetupComplete) {
+    return <Navigate to="/worklenz/setup" />;
   }
 
   return <>{children}</>;

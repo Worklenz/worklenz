@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useTaskManagementTranslations } from '@/hooks/useTranslationPreloader';
+import { useTranslation } from 'react-i18next';
 import {
   DndContext,
   DragOverlay,
@@ -77,6 +77,12 @@ import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import ImprovedTaskFilters from './improved-task-filters';
 import PerformanceAnalysis from './performance-analysis';
 
+// Import asset optimizations
+import { AssetPreloader, LazyLoader } from '@/utils/asset-optimizations';
+
+// Import performance monitoring
+import { CustomPerformanceMeasurer } from '@/utils/enhanced-performance-monitoring';
+
 // Import drag and drop performance optimizations
 import './drag-drop-optimized.css';
 import './optimized-bulk-action-bar.css';
@@ -117,7 +123,7 @@ const throttle = <T extends (...args: any[]) => void>(func: T, delay: number): T
 
 const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = '' }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { t, ready, isLoading } = useTaskManagementTranslations();
+  const { t } = useTranslation(['task-management', 'task-list-table']);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [dragState, setDragState] = useState<DragState>({
     activeTask: null,
@@ -210,13 +216,39 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     return () => clearInterval(interval);
   }, []);
 
+  // Initialize asset optimization
+  useEffect(() => {
+    // Preload critical task management assets
+    AssetPreloader.preloadAssets([
+      { url: '/icons/task-status.svg', priority: 'high' },
+      { url: '/icons/priority-high.svg', priority: 'high' },
+      { url: '/icons/priority-medium.svg', priority: 'high' },
+      { url: '/icons/priority-low.svg', priority: 'high' },
+      { url: '/icons/phase.svg', priority: 'medium' },
+      { url: '/icons/assignee.svg', priority: 'medium' },
+    ]);
+
+    // Preload critical images for better performance
+    LazyLoader.preloadCriticalImages([
+      '/icons/task-status.svg',
+      '/icons/priority-high.svg',
+      '/icons/priority-medium.svg',
+      '/icons/priority-low.svg',
+    ]);
+  }, []);
+
   // Fetch task groups when component mounts or dependencies change
   useEffect(() => {
     if (projectId && !hasInitialized.current) {
       hasInitialized.current = true;
 
+      // Measure task loading performance
+      CustomPerformanceMeasurer.mark('task-load-time');
+      
       // Fetch real tasks from V3 API (minimal processing needed)
-      dispatch(fetchTasksV3(projectId));
+      dispatch(fetchTasksV3(projectId)).finally(() => {
+        CustomPerformanceMeasurer.measure('task-load-time');
+      });
     }
   }, [projectId, dispatch]);
 
@@ -725,16 +757,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     };
   }, []);
 
-  // Don't render until translations are ready to prevent Suspense
-  if (!ready || isLoading) {
-    return (
-      <Card className={className}>
-        <div className="flex justify-center items-center py-8">
-          <Spin size="large" />
-        </div>
-      </Card>
-    );
-  }
+  // Remove translation loading check since we're using simple load-as-you-go approach
 
   if (error) {
     return (
