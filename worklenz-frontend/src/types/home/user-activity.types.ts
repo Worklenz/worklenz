@@ -5,6 +5,9 @@ export interface IUserRecentTask {
     project_name: string;
     last_activity_at: string;
     activity_count: number;
+    project_color?: string;
+    task_status?: string;
+    status_color?: string;
 }
 
 export interface IUserTimeLoggedTask {
@@ -16,6 +19,11 @@ export interface IUserTimeLoggedTask {
     total_time_logged_string: string;
     last_logged_at: string;
     logged_by_timer: boolean;
+    project_color?: string;
+    task_status?: string;
+    status_color?: string;
+    log_entries_count?: number;
+    estimated_time?: number;
 }
 
 export enum ActivityFeedType {

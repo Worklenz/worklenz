@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { Card, Segmented, Skeleton, Empty, Typography, Alert } from 'antd';
 import { ClockCircleOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -24,28 +24,62 @@ const UserActivityFeed: React.FC = () => {
     data: recentTasksData,
     isLoading: loadingRecentTasks,
     error: recentTasksError,
+    refetch: refetchRecentTasks,
   } = useGetUserRecentTasksQuery(
     { limit: 10 },
-    { skip: activeTab !== ActivityFeedType.RECENT_TASKS }
+    { 
+      skip: false,
+      refetchOnMountOrArgChange: true
+    }
   );
 
   const {
     data: timeLoggedTasksData,
     isLoading: loadingTimeLoggedTasks,
     error: timeLoggedTasksError,
+    refetch: refetchTimeLoggedTasks,
   } = useGetUserTimeLoggedTasksQuery(
     { limit: 10 },
-    { skip: activeTab !== ActivityFeedType.TIME_LOGGED_TASKS }
+    { 
+      skip: false,
+      refetchOnMountOrArgChange: true
+    }
   );
 
   const recentTasks = useMemo(() => {
     if (!recentTasksData) return [];
-    return Array.isArray(recentTasksData) ? recentTasksData : [];
+    // Handle both array and object responses from the API
+    if (Array.isArray(recentTasksData)) {
+      return recentTasksData;
+    }
+    // If it's an object with a data property (common API pattern)
+    if (recentTasksData && typeof recentTasksData === 'object' && 'data' in recentTasksData) {
+      return Array.isArray(recentTasksData.data) ? recentTasksData.data : [];
+    }
+    // If it's a different object structure, try to extract tasks
+    if (recentTasksData && typeof recentTasksData === 'object') {
+      const possibleArrays = Object.values(recentTasksData).filter(Array.isArray);
+      return possibleArrays.length > 0 ? possibleArrays[0] : [];
+    }
+    return [];
   }, [recentTasksData]);
 
   const timeLoggedTasks = useMemo(() => {
     if (!timeLoggedTasksData) return [];
-    return Array.isArray(timeLoggedTasksData) ? timeLoggedTasksData : [];
+    // Handle both array and object responses from the API
+    if (Array.isArray(timeLoggedTasksData)) {
+      return timeLoggedTasksData;
+    }
+    // If it's an object with a data property (common API pattern)
+    if (timeLoggedTasksData && typeof timeLoggedTasksData === 'object' && 'data' in timeLoggedTasksData) {
+      return Array.isArray(timeLoggedTasksData.data) ? timeLoggedTasksData.data : [];
+    }
+    // If it's a different object structure, try to extract tasks
+    if (timeLoggedTasksData && typeof timeLoggedTasksData === 'object') {
+      const possibleArrays = Object.values(timeLoggedTasksData).filter(Array.isArray);
+      return possibleArrays.length > 0 ? possibleArrays[0] : [];
+    }
+    return [];
   }, [timeLoggedTasksData]);
 
   const segmentOptions = useMemo(
@@ -79,24 +113,33 @@ const UserActivityFeed: React.FC = () => {
     [dispatch]
   );
 
+  // Refetch data when the active tab changes
+  useEffect(() => {
+    if (activeTab === ActivityFeedType.RECENT_TASKS) {
+      refetchRecentTasks();
+    } else if (activeTab === ActivityFeedType.TIME_LOGGED_TASKS) {
+      refetchTimeLoggedTasks();
+    }
+  }, [activeTab, refetchRecentTasks, refetchTimeLoggedTasks]);
+
   const renderContent = () => {
     if (activeTab === ActivityFeedType.RECENT_TASKS) {
-      if (recentTasksError) {
-        return <Alert message={t('Error Loading Recent Tasks')} type="error" showIcon />;
-      }
       if (loadingRecentTasks) {
         return <Skeleton active />;
+      }
+      if (recentTasksError) {
+        return <Alert message={t('Error Loading Recent Tasks')} type="error" showIcon />;
       }
       if (recentTasks.length === 0) {
         return <Empty description={t('No Recent Tasks')} />;
       }
       return <TaskActivityList tasks={recentTasks} />;
     } else {
-      if (timeLoggedTasksError) {
-        return <Alert message={t('Error Loading Time Logged Tasks')} type="error" showIcon />;
-      }
       if (loadingTimeLoggedTasks) {
         return <Skeleton active />;
+      }
+      if (timeLoggedTasksError) {
+        return <Alert message={t('Error Loading Time Logged Tasks')} type="error" showIcon />;
       }
       if (timeLoggedTasks.length === 0) {
         return <Empty description={t('No Time Logged Tasks')} />;
@@ -106,16 +149,12 @@ const UserActivityFeed: React.FC = () => {
   };
 
   return (
-    <Card>
+    <Card title={t('Recent Activity')}>
       <div style={{ marginBottom: 16 }}>
-        <Title level={5} style={{ marginBottom: 12 }}>
-          {t('Recent Activity')}
-        </Title>
         <Segmented
           options={segmentOptions}
           value={activeTab}
           onChange={handleTabChange}
-          style={{ width: '100%' }}
         />
       </div>
       {renderContent()}

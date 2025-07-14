@@ -45,6 +45,13 @@
     "recentTasks": "Tarefas Recentes",
     "timeLoggedTasks": "Tempo Registrado",
     "noRecentTasks": "Nenhuma tarefa recente",
-    "noTimeLoggedTasks": "Nenhuma tarefa com tempo registrado"
+    "noTimeLoggedTasks": "Nenhuma tarefa com tempo registrado",
+    "activityTag": "Atividade",
+    "timeLogTag": "Registro de Tempo",
+    "timerTag": "Cronômetro",
+    "activitySingular": "atividade",
+    "activityPlural": "atividades",
+    "recentTaskAriaLabel": "Tarefa recente:",
+    "timeLoggedTaskAriaLabel": "Tarefa com tempo registrado:"
   }
 }
