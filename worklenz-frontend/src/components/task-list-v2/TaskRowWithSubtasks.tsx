@@ -139,13 +139,13 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
         return (
           <div className="flex items-center h-full" style={baseStyle}>
             <div className="flex items-center w-full h-full">
-              {/* Match subtask indentation pattern - tighter spacing */}
-              <div className="w-3" />
-              {/* Add additional indentation for deeper levels - 16px per level */}
-              {Array.from({ length: depth }).map((_, i) => (
-                <div key={i} className="w-4" />
-              ))}
+              {/* Match subtask indentation pattern - reduced spacing for level 1 */}
               <div className="w-2" />
+              {/* Add additional indentation for deeper levels - increased spacing for level 2+ */}
+              {Array.from({ length: depth }).map((_, i) => (
+                <div key={i} className="w-6" />
+              ))}
+              <div className="w-1" />
               
                             {isActive ? (
                 !isAdding ? (
