@@ -4,7 +4,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 
 ## Requirements
 
-- Node.js version v16 or newer - [Node.js](https://nodejs.org/en/download/)
+- Node.js version v20 or newer - [Node.js](https://nodejs.org/en/download/)
 - PostgreSQL version v15 or newer - [PostgreSQL](https://www.postgresql.org/download/)
 - S3-compatible storage (like MinIO) for file storage
 
@@ -38,7 +38,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
    npm start
    ```
    
-4. Navigate to [http://localhost:5173](http://localhost:5173)
+4. Navigate to [http://localhost:5173](http://localhost:5173) (development server)
 
 ### Backend installation
    
@@ -126,7 +126,7 @@ For an easier setup, you can use Docker and Docker Compose:
    ```
 
 3. Access the application:
-   - Frontend: http://localhost:5000
+   - Frontend: http://localhost:5000 (Docker production build)
    - Backend API: http://localhost:3000
    - MinIO Console: http://localhost:9001 (login with minioadmin/minioadmin)
 
