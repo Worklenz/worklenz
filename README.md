@@ -7,6 +7,24 @@
 </h1>
 
 <p align="center">
+    <a href="https://github.com/Worklenz/worklenz/blob/main/LICENSE">
+        <img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License">
+    </a>
+    <a href="https://github.com/Worklenz/worklenz/releases">
+        <img src="https://img.shields.io/github/v/release/Worklenz/worklenz" alt="Release">
+    </a>
+    <a href="https://github.com/Worklenz/worklenz/stargazers">
+        <img src="https://img.shields.io/github/stars/Worklenz/worklenz" alt="Stars">
+    </a>
+    <a href="https://github.com/Worklenz/worklenz/network/members">
+        <img src="https://img.shields.io/github/forks/Worklenz/worklenz" alt="Forks">
+    </a>
+    <a href="https://github.com/Worklenz/worklenz/issues">
+        <img src="https://img.shields.io/github/issues/Worklenz/worklenz" alt="Issues">
+    </a>
+</p>
+
+<p align="center">
     <a href="https://worklenz.com/task-management/">Task Management</a> |
     <a href="https://worklenz.com/time-tracking/">Time Tracking</a> |
     <a href="https://worklenz.com/analytics/">Analytics</a> |
@@ -26,6 +44,24 @@
 
 Worklenz is a project management tool designed to help organizations improve their efficiency. It provides a
 comprehensive solution for managing projects, tasks, and collaboration within teams.
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+  - [Quick Start (Docker)](#-quick-start-docker---recommended)
+  - [Manual Installation](#️-manual-installation-for-development)
+- [Deployment](#deployment)
+  - [Local Development](#local-development-with-docker)
+  - [Remote Server Deployment](#remote-server-deployment)
+- [Configuration](#configuration)
+- [MinIO Integration](#minio-integration)
+- [Security](#security)
+- [Analytics](#analytics)
+- [Screenshots](#screenshots)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
@@ -50,41 +86,80 @@ This repository contains the frontend and backend code for Worklenz.
 
 ## Getting Started
 
-These instructions will help you set up and run the Worklenz project on your local machine for development and testing purposes.
+Choose your preferred setup method below. Docker is recommended for quick setup and testing.
 
-### Prerequisites
+### 🚀 Quick Start (Docker - Recommended)
 
-- Node.js (version 18 or higher)
-- PostgreSQL database
-- An S3-compatible storage service (like MinIO) or Azure Blob Storage
+The fastest way to get Worklenz running locally with all dependencies included.
 
-### Option 1: Manual Installation
+**Prerequisites:**
+- Docker and Docker Compose installed on your system
+- Git
 
-1. Clone the repository
+**Steps:**
+
+1. Clone the repository:
 ```bash
 git clone https://github.com/Worklenz/worklenz.git
 cd worklenz
 ```
 
-2. Set up environment variables
-   - Copy the example environment files
-   ```bash
-   cp worklenz-backend/.env.template worklenz-backend/.env
-   ```
-   - Update the environment variables with your configuration
-
-3. Install dependencies
+2. Start the Docker containers:
 ```bash
-# Install backend dependencies
+docker-compose up -d
+```
+
+3. Access the application:
+   - **Frontend**: http://localhost:5000
+   - **Backend API**: http://localhost:3000
+   - **MinIO Console**: http://localhost:9001 (login: minioadmin/minioadmin)
+
+4. To stop the services:
+```bash
+docker-compose down
+```
+
+**Alternative startup methods:**
+- **Windows**: Run `start.bat`
+- **Linux/macOS**: Run `./start.sh`
+
+**Video Guide**: For a visual walkthrough of the local Docker deployment process, check out our [step-by-step video guide](https://www.youtube.com/watch?v=AfwAKxJbqLg).
+
+### 🛠️ Manual Installation (For Development)
+
+For developers who want to run the services individually or customize the setup.
+
+**Prerequisites:**
+- Node.js (version 18 or higher)
+- PostgreSQL (version 15 or higher)
+- An S3-compatible storage service (like MinIO) or Azure Blob Storage
+
+**Steps:**
+
+1. Clone the repository:
+```bash
+git clone https://github.com/Worklenz/worklenz.git
+cd worklenz
+```
+
+2. Set up environment variables:
+```bash
+cp worklenz-backend/.env.template worklenz-backend/.env
+# Update the environment variables with your configuration
+```
+
+3. Install dependencies:
+```bash
+# Backend dependencies
 cd worklenz-backend
 npm install
 
-# Install frontend dependencies
+# Frontend dependencies
 cd ../worklenz-frontend
 npm install
 ```
 
-4. Set up the database
+4. Set up the database:
 ```bash
 # Create a PostgreSQL database named worklenz_db
 cd worklenz-backend
@@ -100,49 +175,47 @@ psql -U your_username -d worklenz_db -f database/sql/2_dml.sql
 psql -U your_username -d worklenz_db -f database/sql/5_database_user.sql
 ```
 
-5. Start the development servers
+5. Start the development servers:
 ```bash
-# In one terminal, start the backend
+# Terminal 1: Start the backend
 cd worklenz-backend
 npm run dev
 
-# In another terminal, start the frontend
+# Terminal 2: Start the frontend
 cd worklenz-frontend
 npm run dev
 ```
 
 6. Access the application at http://localhost:5000
 
-### Option 2: Docker Setup
+## Deployment
 
-The project includes a fully configured Docker setup with:
-- Frontend React application
-- Backend server
-- PostgreSQL database
-- MinIO for S3-compatible storage
+For local development, follow the [Quick Start (Docker)](#-quick-start-docker---recommended) section above.
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Worklenz/worklenz.git
-cd worklenz
-```
+### Remote Server Deployment
 
-2. Start the Docker containers (choose one option):
+When deploying to a remote server:
 
-**Using Docker Compose directly**
-```bash
-docker-compose up -d
-```
+1. Set up the environment files with your server's hostname:
+   ```bash
+   # For HTTP/WS
+   ./update-docker-env.sh your-server-hostname
+   
+   # For HTTPS/WSS
+   ./update-docker-env.sh your-server-hostname true
+   ```
 
-3. The application will be available at:
-   - Frontend: http://localhost:5000
-   - Backend API: http://localhost:3000
-   - MinIO Console: http://localhost:9001 (login with minioadmin/minioadmin)
+2. Pull and run the latest Docker images:
+   ```bash
+   docker-compose pull
+   docker-compose up -d
+   ```
 
-4. To stop the services:
-```bash
-docker-compose down
-```
+3. Access the application through your server's hostname:
+   - Frontend: http://your-server-hostname:5000
+   - Backend API: http://your-server-hostname:3000
+
+4. **Video Guide**: For a complete walkthrough of deploying Worklenz to a remote server, check out our [deployment video guide](https://www.youtube.com/watch?v=CAZGu2iOXQs&t=10s).
 
 ## Configuration
 
@@ -157,15 +230,45 @@ Worklenz requires several environment variables to be configured for proper oper
 
 Please refer to the `.env.example` files for a full list of required variables.
 
-### MinIO Integration
+The Docker setup uses environment variables to configure the services:
+
+- **Frontend:**
+  - `VITE_API_URL`: URL of the backend API (default: http://backend:3000 for container networking)
+  - `VITE_SOCKET_URL`: WebSocket URL for real-time communication (default: ws://backend:3000)
+
+- **Backend:**
+  - Database connection parameters
+  - Storage configuration
+  - Other backend settings
+
+For custom configuration, edit the `.env` file or the `update-docker-env.sh` script.
+
+## MinIO Integration
 
 The project uses MinIO as an S3-compatible object storage service, which provides an open-source alternative to AWS S3 for development and production.
+
+### Working with MinIO
+
+MinIO provides an S3-compatible API, so any code that works with S3 will work with MinIO by simply changing the endpoint URL. The backend has been configured to use MinIO by default, with no additional configuration required.
 
 - **MinIO Console**: http://localhost:9001
   - Username: minioadmin
   - Password: minioadmin
 
 - **Default Bucket**: worklenz-bucket (created automatically when the containers start)
+
+### Backend Storage Configuration
+
+The backend is pre-configured to use MinIO with the following settings:
+
+```javascript
+// S3 credentials with MinIO defaults
+export const REGION = process.env.AWS_REGION || "us-east-1";
+export const BUCKET = process.env.AWS_BUCKET || "worklenz-bucket";
+export const S3_URL = process.env.S3_URL || "http://minio:9000/worklenz-bucket";
+export const S3_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "minioadmin";
+export const S3_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "minioadmin";
+```
 
 ### Security Considerations
 
@@ -177,19 +280,11 @@ For production deployments:
 4. Enable HTTPS for all public endpoints
 5. Review and update dependencies regularly
 
-## Contributing
-
-We welcome contributions from the community! If you'd like to contribute, please follow our [contributing guidelines](CONTRIBUTING.md).
-
 ## Security
 
 If you believe you have found a security vulnerability in Worklenz, we encourage you to responsibly disclose this and not open a public issue. We will investigate all legitimate reports.
 
 Email [info@worklenz.com](mailto:info@worklenz.com) to disclose any security vulnerabilities.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
 
 ## Analytics
 
@@ -260,215 +355,13 @@ If you've previously opted in and want to opt-out:
   </a>
 </p>
 
-### Contributing
+## Contributing
 
-We welcome contributions from the community! If you'd like to contribute, please follow
-our [contributing guidelines](CONTRIBUTING.md).
+We welcome contributions from the community! If you'd like to contribute, please follow our [contributing guidelines](CONTRIBUTING.md).
 
-### License
+## License
 
 Worklenz is open source and released under the [GNU Affero General Public License Version 3 (AGPLv3)](LICENSE).
 
 By contributing to Worklenz, you agree that your contributions will be licensed under its AGPL.
-
-# Worklenz React
-
-This repository contains the React version of Worklenz with a Docker setup for easy development and deployment.
-
-## Getting Started with Docker
-
-The project includes a fully configured Docker setup with:
-- Frontend React application
-- Backend server
-- PostgreSQL database
-- MinIO for S3-compatible storage
-
-### Prerequisites
-
-- Docker and Docker Compose installed on your system
-- Git
-
-### Quick Start
-
-1. Clone the repository:
-```bash
-git clone https://github.com/Worklenz/worklenz.git
-cd worklenz
-```
-
-2. Start the Docker containers (choose one option):
-
-**Option 1: Using the provided scripts (easiest)**
-- On Windows:
-  ```
-  start.bat
-  ```
-- On Linux/macOS:
-  ```bash
-  ./start.sh
-  ```
-
-**Option 2: Using Docker Compose directly**
-```bash
-docker-compose up -d
-```
-
-3. The application will be available at:
-   - Frontend: http://localhost:5000
-   - Backend API: http://localhost:3000
-   - MinIO Console: http://localhost:9001 (login with minioadmin/minioadmin)
-
-4. To stop the services (choose one option):
-
-**Option 1: Using the provided scripts**
-- On Windows:
-  ```
-  stop.bat
-  ```
-- On Linux/macOS:
-  ```bash
-  ./stop.sh
-  ```
-
-**Option 2: Using Docker Compose directly**
-```bash
-docker-compose down
-```
-
-
-## MinIO Integration
-
-The project uses MinIO as an S3-compatible object storage service, which provides an open-source alternative to AWS S3 for development and production.
-
-### Working with MinIO
-
-MinIO provides an S3-compatible API, so any code that works with S3 will work with MinIO by simply changing the endpoint URL. The backend has been configured to use MinIO by default, with no additional configuration required.
-
-- **MinIO Console**: http://localhost:9001
-  - Username: minioadmin
-  - Password: minioadmin
-
-- **Default Bucket**: worklenz-bucket (created automatically when the containers start)
-
-### Backend Storage Configuration
-
-The backend is pre-configured to use MinIO with the following settings:
-
-```javascript
-// S3 credentials with MinIO defaults
-export const REGION = process.env.AWS_REGION || "us-east-1";
-export const BUCKET = process.env.AWS_BUCKET || "worklenz-bucket";
-export const S3_URL = process.env.S3_URL || "http://minio:9000/worklenz-bucket";
-export const S3_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "minioadmin";
-export const S3_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "minioadmin";
-```
-
-The S3 client is initialized with special MinIO configuration:
-
-```javascript
-const s3Client = new S3Client({
-  region: REGION,
-  credentials: {
-    accessKeyId: S3_ACCESS_KEY_ID || "",
-    secretAccessKey: S3_SECRET_ACCESS_KEY || "",
-  },
-  endpoint: getEndpointFromUrl(), // Extracts endpoint from S3_URL
-  forcePathStyle: true, // Required for MinIO
-});
-```
-
-### Environment Configuration
-
-The project uses the following environment file structure:
-
-- **Frontend**:
-  - `worklenz-frontend/.env.development` - Development environment variables
-  - `worklenz-frontend/.env.production` - Production build variables
-  
-- **Backend**:
-  - `worklenz-backend/.env` - Backend environment variables
-
-### Setting Up Environment Files
-
-The Docker environment script will create or overwrite all environment files:
-
-```bash
-# For HTTP/WS
-./update-docker-env.sh your-hostname
-
-# For HTTPS/WSS
-./update-docker-env.sh your-hostname true
-```
-
-This script generates properly configured environment files for both development and production environments.
-
-## Docker Deployment
-
-### Local Development with Docker
-
-1. Set up the environment files:
-   ```bash
-   # For HTTP/WS
-   ./update-docker-env.sh
-   
-   # For HTTPS/WSS
-   ./update-docker-env.sh localhost true
-   ```
-
-2. Run the application using Docker Compose:
-   ```bash
-   docker-compose up -d
-   ```
-
-3. Access the application:
-   - Frontend: http://localhost:5000
-   - Backend API: http://localhost:3000 (or https://localhost:3000 with SSL)
-
-4. Video Guide
-   
-   For a visual walkthrough of the local Docker deployment process, check out our [step-by-step video guide](https://www.youtube.com/watch?v=AfwAKxJbqLg).
-
-### Remote Server Deployment
-
-When deploying to a remote server:
-
-1. Set up the environment files with your server's hostname:
-   ```bash
-   # For HTTP/WS
-   ./update-docker-env.sh your-server-hostname
-   
-   # For HTTPS/WSS
-   ./update-docker-env.sh your-server-hostname true
-   ```
-   
-   This ensures that the frontend correctly connects to the backend API.
-
-2. Pull and run the latest Docker images:
-   ```bash
-   docker-compose pull
-   docker-compose up -d
-   ```
-
-3. Access the application through your server's hostname:
-   - Frontend: http://your-server-hostname:5000
-   - Backend API: http://your-server-hostname:3000
-
-4. Video Guide
-   
-   For a complete walkthrough of deploying Worklenz to a remote server, check out our [deployment video guide](https://www.youtube.com/watch?v=CAZGu2iOXQs&t=10s).
-
-### Environment Configuration
-
-The Docker setup uses environment variables to configure the services:
-
-- Frontend:
-  - `VITE_API_URL`: URL of the backend API (default: http://backend:3000 for container networking)
-  - `VITE_SOCKET_URL`: WebSocket URL for real-time communication (default: ws://backend:3000)
-
-- Backend:
-  - Database connection parameters
-  - Storage configuration
-  - Other backend settings
-
-For custom configuration, edit the `.env` file or the `update-docker-env.sh` script.
 
