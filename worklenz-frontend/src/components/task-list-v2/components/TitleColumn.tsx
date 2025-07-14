@@ -152,12 +152,12 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
         /* Normal layout when not editing */
         <>
           <div className="flex items-center flex-1 min-w-0">
-            {/* Indentation for subtasks - tighter spacing */}
-            {isSubtask && <div className="w-3 flex-shrink-0" />}
+            {/* Indentation for subtasks - reduced spacing for level 1 */}
+            {isSubtask && <div className="w-2 flex-shrink-0" />}
             
-            {/* Additional indentation for deeper levels - 16px per level */}
+            {/* Additional indentation for deeper levels - increased spacing for level 2+ */}
             {Array.from({ length: depth }).map((_, i) => (
-              <div key={i} className="w-4 flex-shrink-0" />
+              <div key={i} className="w-6 flex-shrink-0" />
             ))}
             
             {/* Expand/Collapse button - show for any task that can have sub-tasks */}
@@ -182,8 +182,8 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
               </button>
             )}
             
-            {/* Additional indentation for subtasks after the expand button space */}
-            {isSubtask && <div className="w-2 flex-shrink-0" />}
+            {/* Additional indentation for subtasks after the expand button space - reduced for level 1 */}
+            {isSubtask && <div className="w-1 flex-shrink-0" />}
             
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {/* Task name with dynamic width */}
