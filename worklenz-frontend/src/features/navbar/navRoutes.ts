@@ -33,7 +33,7 @@ export const navRoutes: NavRoutesType[] = [
   {
     name: 'client-portal',
     path: '/worklenz/client-portal/clients',
-    adminOnly: false,
+    adminOnly: true,
     freePlanFeature: false,
   },
 ];
