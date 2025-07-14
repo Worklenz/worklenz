@@ -4,7 +4,7 @@
   "private": true,
   "engines": {
     "npm": ">=8.11.0",
-    "node": ">=16.13.0",
+    "node": ">=20.0.0",
     "yarn": "WARNING: Please use npm package manager instead of yarn"
   },
   "main": "build/bin/www",
@@ -68,7 +68,6 @@
     "express-rate-limit": "^6.8.0",
     "express-session": "^1.17.3",
     "express-validator": "^6.15.0",
-    "grunt-cli": "^1.5.0",
     "helmet": "^6.2.0",
     "hpp": "^0.2.3",
     "http-errors": "^2.0.0",
