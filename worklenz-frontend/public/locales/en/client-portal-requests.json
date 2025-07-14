@@ -1,0 +1,8 @@
+{
+  "title": "Requests",
+  "reqNoColumn": "Request No",
+  "serviceColumn": "Service",
+  "clientColumn": "Client",
+  "statusColumn": "Status",
+  "timeColumn": "Time"
+} 

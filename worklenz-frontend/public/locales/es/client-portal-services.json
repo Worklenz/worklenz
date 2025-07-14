@@ -1,0 +1,7 @@
+{
+  "title": "Servicios",
+  "nameColumn": "Nombre",
+  "createdByColumn": "Creado Por",
+  "statusColumn": "Estado",
+  "noOfRequestsColumn": "Nº de Solicitudes"
+} 

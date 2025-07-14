@@ -1,0 +1,7 @@
+{
+  "title": "Services",
+  "nameColumn": "Name",
+  "createdByColumn": "Created By",
+  "statusColumn": "Status",
+  "noOfRequestsColumn": "No. of Requests"
+} 

@@ -1,0 +1,10 @@
+{
+  "client-portal": "Client Portal",
+  "dashboard": "Dashboard",
+  "chats": "Chats",
+  "invoices": "Invoices",
+  "services": "Services",
+  "settings": "Settings",
+  "clients": "Clients",
+  "requests": "Requests"
+} 

@@ -1,0 +1,10 @@
+{
+  "client-portal": "Portal del Cliente",
+  "dashboard": "Panel",
+  "chats": "Chats",
+  "invoices": "Facturas",
+  "services": "Servicios",
+  "settings": "Configuración",
+  "clients": "Clientes",
+  "requests": "Solicitudes"
+} 

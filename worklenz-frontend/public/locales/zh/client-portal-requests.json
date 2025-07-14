@@ -1,0 +1,8 @@
+{
+  "title": "请求",
+  "reqNoColumn": "请求编号",
+  "serviceColumn": "服务",
+  "clientColumn": "客户",
+  "statusColumn": "状态",
+  "timeColumn": "时间"
+} 

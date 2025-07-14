@@ -1,0 +1,7 @@
+{
+  "title": "服务",
+  "nameColumn": "名称",
+  "createdByColumn": "创建者",
+  "statusColumn": "状态",
+  "noOfRequestsColumn": "请求数量"
+} 
