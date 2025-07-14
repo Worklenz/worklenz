@@ -7,14 +7,14 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../../../../../../styles/colors';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 
-const CustomColumnLabelCell = ({ 
-  labelsList, 
+const CustomColumnLabelCell = ({
+  labelsList,
   selectedLabels = [],
-  onChange
-}: { 
-  labelsList: ITaskLabel[],
-  selectedLabels?: string[],
-  onChange?: (labels: string[]) => void
+  onChange,
+}: {
+  labelsList: ITaskLabel[];
+  selectedLabels?: string[];
+  onChange?: (labels: string[]) => void;
 }) => {
   const [currentLabelOption, setCurrentLabelOption] = useState<ITaskLabel | null>(null);
 

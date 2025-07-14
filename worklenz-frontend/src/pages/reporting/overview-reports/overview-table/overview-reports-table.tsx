@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import { ConfigProvider, Table, TableColumnsType } from 'antd';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import CustomTableTitle from '../../../../components/CustomTableTitle';
@@ -11,7 +11,7 @@ import Avatars from '@/components/avatars/avatars';
 import OverviewTeamInfoDrawer from '@/components/reporting/drawers/overview-team-info/overview-team-info-drawer';
 import { toggleOverViewTeamDrawer } from '@/features/reporting/reporting.slice';
 
-const OverviewReportsTable = () => {
+const OverviewReportsTable = memo(() => {
   const { t } = useTranslation('reporting-overview');
   const dispatch = useAppDispatch();
 
@@ -22,7 +22,7 @@ const OverviewReportsTable = () => {
   const [teams, setTeams] = useState<IRPTTeam[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const getTeams = async () => {
+  const getTeams = useCallback(async () => {
     setLoading(true);
     try {
       const { done, body } = await reportingApiService.getOverviewTeams(includeArchivedProjects);
@@ -34,66 +34,85 @@ const OverviewReportsTable = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [includeArchivedProjects]);
 
   useEffect(() => {
     getTeams();
-  }, [includeArchivedProjects]);
+  }, [getTeams]);
 
-  const handleDrawerOpen = (team: IRPTTeam) => {
-    setSelectedTeam(team);
-    dispatch(toggleOverViewTeamDrawer());
-  };
+  const handleDrawerOpen = useCallback(
+    (team: IRPTTeam) => {
+      setSelectedTeam(team);
+      dispatch(toggleOverViewTeamDrawer());
+    },
+    [dispatch]
+  );
 
-  const columns: TableColumnsType = [
-    {
-      key: 'name',
-      title: <CustomTableTitle title={t('nameColumn')} />,
-      className: 'group-hover:text-[#1890ff]',
-      dataIndex: 'name',
-    },
-    {
-      key: 'projects',
-      title: <CustomTableTitle title={t('projectsColumn')} />,
-      className: 'group-hover:text-[#1890ff]',
-      dataIndex: 'projects_count',
-    },
-    {
-      key: 'members',
-      title: <CustomTableTitle title={t('membersColumn')} />,
-      render: record => <Avatars members={record.members} maxCount={3} />,
-    },
-  ];
+  // Memoize table columns to prevent recreation on every render
+  const columns: TableColumnsType<IRPTTeam> = useMemo(
+    () => [
+      {
+        key: 'name',
+        title: <CustomTableTitle title={t('nameColumn')} />,
+        className: 'group-hover:text-[#1890ff]',
+        dataIndex: 'name',
+      },
+      {
+        key: 'projects',
+        title: <CustomTableTitle title={t('projectsColumn')} />,
+        className: 'group-hover:text-[#1890ff]',
+        dataIndex: 'projects_count',
+      },
+      {
+        key: 'members',
+        title: <CustomTableTitle title={t('membersColumn')} />,
+        render: (record: IRPTTeam) => <Avatars members={record.members} maxCount={3} />,
+      },
+    ],
+    [t]
+  );
 
-  return (
-    <ConfigProvider
-      theme={{
+  // Memoize table configuration
+  const tableConfig = useMemo(
+    () => ({
+      theme: {
         components: {
           Table: {
             cellPaddingBlock: 8,
             cellPaddingInline: 10,
           },
         },
-      }}
-    >
+      },
+    }),
+    []
+  );
+
+  // Memoize row props generator
+  const getRowProps = useCallback(
+    (record: IRPTTeam) => ({
+      onClick: () => handleDrawerOpen(record),
+      style: { height: 48, cursor: 'pointer' },
+      className: 'group even:bg-[#4e4e4e10]',
+    }),
+    [handleDrawerOpen]
+  );
+
+  return (
+    <ConfigProvider {...tableConfig}>
       <Table
         columns={columns}
         dataSource={teams}
         scroll={{ x: 'max-content' }}
         rowKey={record => record.id}
         loading={loading}
-        onRow={record => {
-          return {
-            onClick: () => handleDrawerOpen(record as IRPTTeam),
-            style: { height: 48, cursor: 'pointer' },
-            className: 'group even:bg-[#4e4e4e10]',
-          };
-        }}
+        onRow={getRowProps}
       />
 
       <OverviewTeamInfoDrawer team={selectedTeam} />
     </ConfigProvider>
   );
-};
+});
 
-export default memo(OverviewReportsTable);
+OverviewReportsTable.displayName = 'OverviewReportsTable';
+
+export default OverviewReportsTable;

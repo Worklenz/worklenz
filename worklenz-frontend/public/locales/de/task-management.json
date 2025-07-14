@@ -1,0 +1,39 @@
+{
+  "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
+  "noTasksInGroupDescription": "Fügen Sie eine Aufgabe hinzu, um zu beginnen",
+  "addFirstTask": "Fügen Sie Ihre erste Aufgabe hinzu",
+  "openTask": "Öffnen",
+  "subtask": "Unteraufgabe",
+  "subtasks": "Unteraufgaben",
+  "comment": "Kommentar",
+  "comments": "Kommentare",
+  "attachment": "Anhang",
+  "attachments": "Anhänge",
+  "enterSubtaskName": "Geben Sie den Namen der Unteraufgabe ein...",
+  "add": "Hinzufügen",
+  "cancel": "Abbrechen",
+  "renameGroup": "Gruppe umbenennen",
+  "renameStatus": "Status umbenennen",
+  "renamePhase": "Phase umbenennen",
+  "changeCategory": "Kategorie ändern",
+  "clickToEditGroupName": "Klicken Sie, um den Gruppennamen zu bearbeiten",
+  "enterGroupName": "Geben Sie den Gruppennamen ein",
+  "todo": "Zu erledigen",
+  "inProgress": "In Bearbeitung",
+  "done": "Erledigt",
+  "defaultTaskName": "Unbenannte Aufgabe",
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} Unteraufgabe",
+      "subtasks_plural": "{{count}} Unteraufgaben",
+      "comments": "{{count}} Kommentar",
+      "comments_plural": "{{count}} Kommentare",
+      "attachments": "{{count}} Anhang",
+      "attachments_plural": "{{count}} Anhänge",
+      "subscribers": "Aufgabe hat Abonnenten",
+      "dependencies": "Aufgabe hat Abhängigkeiten",
+      "recurring": "Wiederkehrende Aufgabe"
+    }
+  }
+}

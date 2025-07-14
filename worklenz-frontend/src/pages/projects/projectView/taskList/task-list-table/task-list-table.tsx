@@ -6,16 +6,33 @@ import Tooltip from 'antd/es/tooltip';
 import Input, { InputRef } from 'antd/es/input';
 import Typography from 'antd/es/typography';
 import Flex from 'antd/es/flex';
-import { HolderOutlined, SettingOutlined, UsergroupAddOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  HolderOutlined,
+  SettingOutlined,
+  UsergroupAddOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DraggableAttributes, UniqueIdentifier } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
-import { DragOverlay } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  DragOverlay,
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  KeyboardSensor,
+  TouchSensor,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
-import { DragEndEvent } from '@dnd-kit/core';
+import { DragOverEvent } from '@dnd-kit/core';
 import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from 'antd';
 import dayjs from 'dayjs';
 
@@ -44,25 +61,36 @@ import TaskListReporterCell from './task-list-table-cells/task-list-reporter-cel
 import TaskListDueTimeCell from './task-list-table-cells/task-list-due-time-cell/task-list-due-time-cell';
 
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { CustomFieldsTypes, setCustomColumnModalAttributes, toggleCustomColumnModalOpen } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+import {
+  CustomFieldsTypes,
+  setCustomColumnModalAttributes,
+  toggleCustomColumnModalOpen,
+} from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { selectTaskIds, selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
 import StatusDropdown from '@/components/task-list-common/status-dropdown/status-dropdown';
 import PriorityDropdown from '@/components/task-list-common/priorityDropdown/priority-dropdown';
 import AddCustomColumnButton from './custom-columns/custom-column-modal/add-custom-column-button';
-import { fetchSubTasks, reorderTasks, toggleTaskRowExpansion, updateCustomColumnValue } from '@/features/tasks/tasks.slice';
+import {
+  fetchSubTasks,
+  reorderTasks,
+  toggleTaskRowExpansion,
+  updateCustomColumnValue,
+} from '@/features/tasks/tasks.slice';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import ConfigPhaseButton from '@/features/projects/singleProject/phase/ConfigPhaseButton';
 import PhaseDropdown from '@/components/taskListCommon/phase-dropdown/phase-dropdown';
 import CustomColumnModal from './custom-columns/custom-column-modal/custom-column-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { useSocket } from '@/socket/socketContext';
-import { SocketEvents } from '@/shared/socket-events';
 
 interface TaskListTableProps {
   taskList: IProjectTask[] | null;
   tableId: string;
   activeId?: string | null;
+  groupBy?: string;
+  isOver?: boolean; // Add this line
 }
 
 interface DraggableRowProps {
@@ -71,44 +99,53 @@ interface DraggableRowProps {
   groupId: string;
 }
 
-// Add a simplified EmptyRow component that doesn't use hooks
-const EmptyRow = () => null;
-
-// Simplify DraggableRow to eliminate conditional hook calls
+// Remove the EmptyRow component and fix the DraggableRow
 const DraggableRow = ({ task, children, groupId }: DraggableRowProps) => {
-  // Return the EmptyRow component without using any hooks
-  if (!task?.id) return <EmptyRow />;
-
+  // Always call hooks in the same order - never conditionally
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: task.id as UniqueIdentifier,
+    id: task?.id || 'empty-task', // Provide fallback ID
     data: {
       type: 'task',
       task,
       groupId,
     },
+    disabled: !task?.id, // Disable dragging for invalid tasks
+    transition: null, // Disable sortable transitions
   });
+
+  // If task is invalid, return null to not render anything
+  if (!task?.id) {
+    return null;
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? 'none' : transition, // Disable transition during drag
     opacity: isDragging ? 0.3 : 1,
     position: 'relative' as const,
     zIndex: isDragging ? 1 : 'auto',
     backgroundColor: isDragging ? 'var(--dragging-bg)' : undefined,
-  };
-
-  // Handle border styling separately to avoid conflicts
-  const borderStyle = {
-    borderStyle: isDragging ? 'solid' : undefined,
-    borderWidth: isDragging ? '1px' : undefined,
-    borderColor: isDragging ? 'var(--border-color)' : undefined,
-    borderBottomWidth: document.documentElement.getAttribute('data-theme') === 'light' && !isDragging ? '2px' : undefined
+    // Handle border styling to avoid conflicts between shorthand and individual properties
+    ...(isDragging
+      ? {
+          borderTopWidth: '1px',
+          borderRightWidth: '1px',
+          borderBottomWidth: '1px',
+          borderLeftWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: 'var(--border-color)',
+        }
+      : {
+          // Only set borderBottomWidth when not dragging to avoid conflicts
+          borderBottomWidth:
+            document.documentElement.getAttribute('data-theme') === 'light' ? '2px' : undefined,
+        }),
   };
 
   return (
     <tr
       ref={setNodeRef}
-      style={{ ...style, ...borderStyle }}
+      style={style}
       className={`task-row h-[42px] ${isDragging ? 'shadow-lg' : ''}`}
       data-is-dragging={isDragging ? 'true' : 'false'}
       data-group-id={groupId}
@@ -137,32 +174,96 @@ const CustomColumnHeader: React.FC<{
 };
 
 // Fix the CustomCell component to handle nullable column keys
-const CustomCell = React.memo(({ 
-  column, 
-  task, 
-  isSubtask, 
-  renderCustomColumnContent, 
-  renderColumnContent,
-  updateTaskCustomColumnValue
-}: { 
-  column: any; 
-  task: IProjectTask; 
-  isSubtask: boolean; 
-  renderCustomColumnContent: any; 
-  renderColumnContent: any;
-  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
-}) => {
-  if (column.custom_column && column.key && column.pinned) {
-    return renderCustomColumnContent(
-      column.custom_column_obj || {},
-      column.custom_column_obj?.fieldType,
-      task,
-      column.key,
-      updateTaskCustomColumnValue
-    );
+const CustomCell = React.memo(
+  ({
+    column,
+    task,
+    isSubtask,
+    renderCustomColumnContent,
+    renderColumnContent,
+    updateTaskCustomColumnValue,
+  }: {
+    column: any;
+    task: IProjectTask;
+    isSubtask: boolean;
+    renderCustomColumnContent: any;
+    renderColumnContent: any;
+    updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+  }) => {
+    try {
+      if (column.custom_column && column.key && column.pinned) {
+        return renderCustomColumnContent(
+          column.custom_column_obj || {},
+          column.custom_column_obj?.fieldType,
+          task,
+          column.key,
+          updateTaskCustomColumnValue
+        );
+      }
+
+      const result = renderColumnContent(column.key || '', task, isSubtask);
+
+      // If renderColumnContent returns null or undefined, provide a fallback
+      if (result === null || result === undefined) {
+        // Handle specific column types with fallbacks
+        switch (column.key) {
+          case 'STATUS':
+            return (
+              <div className="px-2 py-1 text-xs rounded-sm bg-gray-100 text-gray-600">
+                {task.status_name || task.status || 'To Do'}
+              </div>
+            );
+          case 'PRIORITY':
+            return (
+              <div className="px-2 py-1 text-xs rounded-sm bg-gray-100 text-gray-600">
+                {task.priority_name || task.priority || 'Medium'}
+              </div>
+            );
+          case 'ASSIGNEES':
+            return (
+              <div className="text-xs text-gray-500">
+                {task.assignees?.length ? `${task.assignees.length} assignee(s)` : 'No assignees'}
+              </div>
+            );
+          case 'LABELS':
+            return (
+              <div className="text-xs text-gray-500">
+                {task.labels?.length ? `${task.labels.length} label(s)` : 'No labels'}
+              </div>
+            );
+          default:
+            return <div className="text-xs text-gray-400">-</div>;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error rendering task cell:', error, { column: column.key, task: task.id });
+
+      // Fallback rendering for errors
+      switch (column.key) {
+        case 'STATUS':
+          return (
+            <div className="px-2 py-1 text-xs rounded-sm bg-red-100 text-red-600">
+              {task.status_name || task.status || 'Error'}
+            </div>
+          );
+        case 'PRIORITY':
+          return (
+            <div className="px-2 py-1 text-xs rounded-sm bg-red-100 text-red-600">
+              {task.priority_name || task.priority || 'Error'}
+            </div>
+          );
+        case 'ASSIGNEES':
+          return <div className="text-xs text-red-500">Error loading assignees</div>;
+        case 'LABELS':
+          return <div className="text-xs text-red-500">Error loading labels</div>;
+        default:
+          return <div className="text-xs text-red-400">Error</div>;
+      }
+    }
   }
-  return renderColumnContent(column.key || '', task, isSubtask);
-});
+);
 
 // First, let's extract the custom column cell to a completely separate component
 // This component will be responsible for rendering the appropriate cell based on field type
@@ -201,64 +302,76 @@ const CustomColumnCell: React.FC<{
   // Create cell components based on field type
   switch (fieldType) {
     case 'people':
-      return <PeopleFieldCell 
-        selectedMemberIds={selectedMemberIds} 
-        task={task} 
-        columnKey={columnKey} 
-        updateValue={updateTaskCustomColumnValue} 
-      />;
+      return (
+        <PeopleFieldCell
+          selectedMemberIds={selectedMemberIds}
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
+        />
+      );
     case 'date':
-      return <DateFieldCell 
-        value={customValue} 
-        task={task} 
-        columnKey={columnKey} 
-        updateValue={updateTaskCustomColumnValue} 
-      />;
+      return (
+        <DateFieldCell
+          value={customValue}
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
+        />
+      );
     case 'checkbox':
-      return <CheckboxFieldCell 
-        value={customValue} 
-        task={task} 
-        columnKey={columnKey} 
-        updateValue={updateTaskCustomColumnValue} 
-      />;
+      return (
+        <CheckboxFieldCell
+          value={customValue}
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
+        />
+      );
     case 'key':
       return <KeyFieldCell taskId={task.id || ''} />;
     case 'number':
-      return <NumberFieldCell 
-        value={customValue} 
-        task={task} 
-        columnKey={columnKey} 
-        columnObj={columnObj} 
-        updateValue={updateTaskCustomColumnValue} 
-      />;
+      return (
+        <NumberFieldCell
+          value={customValue}
+          task={task}
+          columnKey={columnKey}
+          columnObj={columnObj}
+          updateValue={updateTaskCustomColumnValue}
+        />
+      );
     case 'formula':
       return <FormulaFieldCell columnObj={columnObj} />;
     case 'labels':
-      return <LabelsFieldCell 
-        labelsList={columnObj?.labelsList || []} 
-        selectedLabels={selectedMemberIds} 
-        task={task} 
-        columnKey={columnKey} 
-        updateValue={updateTaskCustomColumnValue} 
-      />;
+      return (
+        <LabelsFieldCell
+          labelsList={columnObj?.labelsList || []}
+          selectedLabels={selectedMemberIds}
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
+        />
+      );
     case 'selection':
-      return <SelectionFieldCell 
-        selectionsList={columnObj?.selectionsList || []} 
-        value={customValue || ''} 
-        task={task} 
-        columnKey={columnKey} 
-        updateValue={updateTaskCustomColumnValue} 
-      />;
+      return (
+        <SelectionFieldCell
+          selectionsList={columnObj?.selectionsList || []}
+          value={customValue || ''}
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
+        />
+      );
     default:
       return <span>Unsupported field type: {fieldType}</span>;
   }
 });
 
 // Define each field type component separately
-const PeopleFieldCell: React.FC<{ 
-  selectedMemberIds: string[]; 
-  task: IProjectTask; 
-  columnKey: string; 
+const PeopleFieldCell: React.FC<{
+  selectedMemberIds: string[];
+  task: IProjectTask;
+  columnKey: string;
   updateValue: (taskId: string, columnKey: string, value: string) => void;
 }> = ({ selectedMemberIds, task, columnKey, updateValue }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -293,14 +406,10 @@ const PeopleFieldCell: React.FC<{
     const newSelectedIds = selectedMemberIds.includes(memberId)
       ? selectedMemberIds.filter((id: string) => id !== memberId)
       : [...selectedMemberIds, memberId];
-    
+
     // Update the custom column value
     if (task.id) {
-      updateValue(
-        task.id,
-        columnKey,
-        JSON.stringify(newSelectedIds)
-      );
+      updateValue(task.id, columnKey, JSON.stringify(newSelectedIds));
     }
   };
 
@@ -330,8 +439,8 @@ const PeopleFieldCell: React.FC<{
                 }}
                 onClick={() => member.id && handleMemberSelection(member.id)}
               >
-                <Checkbox 
-                  checked={member.id ? selectedMemberIds.includes(member.id) : false} 
+                <Checkbox
+                  checked={member.id ? selectedMemberIds.includes(member.id) : false}
                   onClick={e => e.stopPropagation()}
                   onChange={() => member.id && handleMemberSelection(member.id)}
                 />
@@ -394,13 +503,10 @@ const PeopleFieldCell: React.FC<{
     >
       <Flex align="center" gap={4}>
         {selectedMembers.length > 0 ? (
-          <Avatar.Group max={{count: 3}} size="small">
+          <Avatar.Group max={{ count: 3 }} size="small">
             {selectedMembers.map(member => (
               <Tooltip key={member.id} title={member.name}>
-                <Avatar 
-                  src={member.avatar_url} 
-                  style={{ fontSize: '14px' }}
-                >
+                <Avatar src={member.avatar_url} style={{ fontSize: '14px' }}>
                   {!member.avatar_url && member.name ? member.name.charAt(0).toUpperCase() : null}
                 </Avatar>
               </Tooltip>
@@ -436,21 +542,17 @@ const DateFieldCell: React.FC<{
   updateValue: (taskId: string, columnKey: string, value: string) => void;
 }> = ({ value, task, columnKey, updateValue }) => {
   const dateValue = value ? dayjs(value) : undefined;
-  
+
   return (
     <DatePicker
       placeholder="Set Date"
       format="MMM DD, YYYY"
       suffixIcon={null}
       value={dateValue}
-      onChange={(date) => {
+      onChange={date => {
         if (task.id) {
           // Format as ISO string for storage
-          updateValue(
-            task.id,
-            columnKey,
-            date ? date.toISOString() : ''
-          );
+          updateValue(task.id, columnKey, date ? date.toISOString() : '');
         }
       }}
       style={{
@@ -469,17 +571,13 @@ const CheckboxFieldCell: React.FC<{
   updateValue: (taskId: string, columnKey: string, value: string) => void;
 }> = ({ value, task, columnKey, updateValue }) => {
   const isChecked = value === true || value === 'true';
-  
+
   return (
-    <Checkbox 
+    <Checkbox
       checked={isChecked}
-      onChange={(e) => {
+      onChange={e => {
         if (task.id) {
-          updateValue(
-            task.id,
-            columnKey,
-            e.target.checked.toString()
-          );
+          updateValue(task.id, columnKey, e.target.checked.toString());
         }
       }}
     />
@@ -504,34 +602,32 @@ const NumberFieldCell: React.FC<{
   const initialNumberValue = value !== undefined ? Number(value) : undefined;
   // This stores the raw input value for display during editing
   const [inputValue, setInputValue] = useState<string>(
-    initialNumberValue !== undefined ? 
-      initialNumberValue.toString() : 
-      ''
+    initialNumberValue !== undefined ? initialNumberValue.toString() : ''
   );
   // This stores the formatted value for display when not editing
   const [formattedValue, setFormattedValue] = useState<string>(
-    initialNumberValue !== undefined && !isNaN(initialNumberValue) ? 
-      formatNumberWithDecimals(initialNumberValue, columnObj?.decimals || 0) : 
-      ''
+    initialNumberValue !== undefined && !isNaN(initialNumberValue)
+      ? formatNumberWithDecimals(initialNumberValue, columnObj?.decimals || 0)
+      : ''
   );
   // Track if input is being edited
   const [isEditing, setIsEditing] = useState(false);
-  
+
   // Track if this is the initial render to avoid unnecessary updates
   const isInitialMount = useRef(true);
-  
+
   // Function to format number with specified decimals
   function formatNumberWithDecimals(num: number, decimals: number): string {
     return num.toFixed(decimals);
   }
-  
+
   useEffect(() => {
     // Skip the first render to avoid unnecessary updates
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
-    
+
     // Update values when the prop value changes (from external sources)
     if (value !== undefined && value !== null) {
       const numValue = Number(value);
@@ -544,29 +640,29 @@ const NumberFieldCell: React.FC<{
       setFormattedValue('');
     }
   }, [value, columnObj?.decimals]);
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    
+
     // Validate input to allow only numeric values
     // Allow: empty string, numbers, one decimal point, and minus sign at the beginning
     const isValidInput = /^-?\d*\.?\d*$/.test(newValue);
-    
+
     if (!isValidInput && newValue !== '') {
       return; // Reject invalid input
     }
-    
+
     // Only update the input value during editing, not the formatted value
     setInputValue(newValue);
   };
-  
+
   const handleInputFocus = () => {
     setIsEditing(true);
   };
-  
+
   const formatAndCommitValue = () => {
     setIsEditing(false);
-    
+
     // Don't format empty values
     if (inputValue.trim() === '') {
       setFormattedValue('');
@@ -575,17 +671,17 @@ const NumberFieldCell: React.FC<{
       }
       return;
     }
-    
+
     // Parse the input value
     const numValue = parseFloat(inputValue);
-    
+
     // Format the value with decimals
     if (!isNaN(numValue)) {
       const decimals = columnObj?.decimals || 0;
       const formatted = formatNumberWithDecimals(numValue, decimals);
       setFormattedValue(formatted);
       setInputValue(numValue.toString()); // Keep the raw value without trailing zeros
-      
+
       // Update the value in the task
       if (task.id) {
         updateValue(task.id, columnKey, numValue.toString());
@@ -597,18 +693,18 @@ const NumberFieldCell: React.FC<{
   const decimals = columnObj?.decimals || 0;
   const label = columnObj?.label || '';
   const labelPosition = columnObj?.labelPosition || 'left';
-  
+
   // Determine which value to display based on editing state
   const displayValue = isEditing ? inputValue : formattedValue;
-  
+
   // For percentage type, add % symbol when not editing
   const getDisplayValue = () => {
     if (displayValue === '') return '';
-    
+
     if (numberType === 'percentage' && !isEditing) {
       return `${displayValue}%`;
     }
-    
+
     return displayValue;
   };
 
@@ -630,7 +726,7 @@ const NumberFieldCell: React.FC<{
           onBlur={formatAndCommitValue}
           onPressEnter={formatAndCommitValue}
           style={commonInputStyle}
-          onKeyDown={(e) => {
+          onKeyDown={e => {
             // Allow: backspace, delete, tab, escape, enter, decimal point, minus sign
             if (
               ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', '.', '-'].includes(e.key) ||
@@ -641,7 +737,7 @@ const NumberFieldCell: React.FC<{
             ) {
               // Allow these keys
               // For decimal point, only allow one
-              if (e.key === '.' && (e.currentTarget.value.includes('.'))) {
+              if (e.key === '.' && e.currentTarget.value.includes('.')) {
                 e.preventDefault();
               }
               // For minus sign, only allow at the beginning
@@ -650,7 +746,7 @@ const NumberFieldCell: React.FC<{
               }
               return;
             }
-            
+
             // Block non-numeric keys
             if (!/^\d$/.test(e.key)) {
               e.preventDefault();
@@ -671,9 +767,9 @@ const NumberFieldCell: React.FC<{
             style={{
               ...commonInputStyle,
               width: '100%',
-              textAlign: labelPosition === 'right' ? 'right' : 'left' as const,
+              textAlign: labelPosition === 'right' ? 'right' : ('left' as const),
             }}
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               // Allow: backspace, delete, tab, escape, enter, decimal point, minus sign
               if (
                 ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', '.', '-'].includes(e.key) ||
@@ -684,7 +780,7 @@ const NumberFieldCell: React.FC<{
               ) {
                 // Allow these keys
                 // For decimal point, only allow one
-                if (e.key === '.' && (e.currentTarget.value.includes('.'))) {
+                if (e.key === '.' && e.currentTarget.value.includes('.')) {
                   e.preventDefault();
                 }
                 // For minus sign, only allow at the beginning
@@ -693,7 +789,7 @@ const NumberFieldCell: React.FC<{
                 }
                 return;
               }
-              
+
               // Block non-numeric keys
               if (!/^\d$/.test(e.key)) {
                 e.preventDefault();
@@ -722,7 +818,7 @@ const NumberFieldCell: React.FC<{
             }
           }}
           style={commonInputStyle}
-          onKeyDown={(e) => {
+          onKeyDown={e => {
             // Allow: backspace, delete, tab, escape, enter, decimal point, minus sign
             if (
               ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', '.', '-'].includes(e.key) ||
@@ -733,7 +829,7 @@ const NumberFieldCell: React.FC<{
             ) {
               // Allow these keys
               // For decimal point, only allow one
-              if (e.key === '.' && (e.currentTarget.value.includes('.'))) {
+              if (e.key === '.' && e.currentTarget.value.includes('.')) {
                 e.preventDefault();
               }
               // For minus sign, only allow at the beginning
@@ -742,7 +838,7 @@ const NumberFieldCell: React.FC<{
               }
               return;
             }
-            
+
             // Block non-numeric keys
             if (!/^\d$/.test(e.key)) {
               e.preventDefault();
@@ -754,16 +850,19 @@ const NumberFieldCell: React.FC<{
       return (
         <Input
           value={getDisplayValue()}
-          onChange={(e) => {
+          onChange={e => {
             // Remove the % sign if present
             const value = e.target.value.replace('%', '');
-            handleInputChange({ ...e, target: { ...e.target, value } } as React.ChangeEvent<HTMLInputElement>);
+            handleInputChange({
+              ...e,
+              target: { ...e.target, value },
+            } as React.ChangeEvent<HTMLInputElement>);
           }}
           onFocus={handleInputFocus}
           onBlur={formatAndCommitValue}
           onPressEnter={formatAndCommitValue}
           style={commonInputStyle}
-          onKeyDown={(e) => {
+          onKeyDown={e => {
             // Allow: backspace, delete, tab, escape, enter, decimal point
             if (
               ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', '.'].includes(e.key) ||
@@ -774,12 +873,12 @@ const NumberFieldCell: React.FC<{
             ) {
               // Allow these keys
               // For decimal point, only allow one
-              if (e.key === '.' && (e.currentTarget.value.includes('.'))) {
+              if (e.key === '.' && e.currentTarget.value.includes('.')) {
                 e.preventDefault();
               }
               return;
             }
-            
+
             // Block non-numeric keys
             if (!/^\d$/.test(e.key)) {
               e.preventDefault();
@@ -818,61 +917,42 @@ const FormulaFieldCell: React.FC<{ columnObj: any }> = ({ columnObj }) => {
   return <Typography.Text>{calculateResult() ?? 'Invalid Formula'}</Typography.Text>;
 };
 
-const LabelsFieldCell: React.FC<{ 
-  labelsList: any[]; 
+const LabelsFieldCell: React.FC<{
+  labelsList: any[];
   selectedLabels: any[];
   task: IProjectTask;
   columnKey: string;
   updateValue: (taskId: string, columnKey: string, value: string) => void;
 }> = ({ labelsList, selectedLabels, task, columnKey, updateValue }) => {
   return (
-    <CustomColumnLabelCell 
-      labelsList={labelsList} 
+    <CustomColumnLabelCell
+      labelsList={labelsList}
       selectedLabels={selectedLabels}
-      onChange={(labels) => {
+      onChange={labels => {
         if (task.id) {
-          updateValue(
-            task.id,
-            columnKey,
-            JSON.stringify(labels)
-          );
+          updateValue(task.id, columnKey, JSON.stringify(labels));
         }
       }}
     />
   );
 };
 
-const SelectionFieldCell: React.FC<{ 
-  selectionsList: any[]; 
+const SelectionFieldCell: React.FC<{
+  selectionsList: any[];
   value: string;
   task: IProjectTask;
   columnKey: string;
   updateValue: (taskId: string, columnKey: string, value: string) => void;
 }> = ({ selectionsList, value, task, columnKey, updateValue }) => {
-  // Debug the selectionsList data
-  const [loggedInfo, setLoggedInfo] = useState(false);
 
-  useEffect(() => {
-    if (!loggedInfo) {
-      console.log('Selection column data:', {
-        columnKey,
-        selectionsList,
-      });
-      setLoggedInfo(true);
-    }
-  }, [columnKey, selectionsList, loggedInfo]);
 
   return (
-    <CustomColumnSelectionCell 
-      selectionsList={selectionsList} 
+    <CustomColumnSelectionCell
+      selectionsList={selectionsList}
       value={value}
-      onChange={(value) => {
+      onChange={value => {
         if (task.id) {
-          updateValue(
-            task.id,
-            columnKey,
-            value
-          );
+          updateValue(task.id, columnKey, value);
         }
       }}
     />
@@ -963,14 +1043,10 @@ const renderCustomColumnContent = (
           const newSelectedIds = selectedMemberIds.includes(memberId)
             ? selectedMemberIds.filter((id: string) => id !== memberId)
             : [...selectedMemberIds, memberId];
-          
+
           // Update the custom column value
           if (task.id) {
-            updateTaskCustomColumnValue(
-              task.id,
-              columnKey,
-              JSON.stringify(newSelectedIds)
-            );
+            updateTaskCustomColumnValue(task.id, columnKey, JSON.stringify(newSelectedIds));
           }
         };
 
@@ -1000,8 +1076,8 @@ const renderCustomColumnContent = (
                       }}
                       onClick={() => member.id && handleMemberSelection(member.id)}
                     >
-                      <Checkbox 
-                        checked={member.id ? selectedMemberIds.includes(member.id) : false} 
+                      <Checkbox
+                        checked={member.id ? selectedMemberIds.includes(member.id) : false}
                         onClick={e => e.stopPropagation()}
                         onChange={() => member.id && handleMemberSelection(member.id)}
                       />
@@ -1064,14 +1140,13 @@ const renderCustomColumnContent = (
           >
             <Flex align="center" gap={4}>
               {selectedMembers.length > 0 ? (
-                <Avatar.Group max={{count: 3}} size="small">
+                <Avatar.Group max={{ count: 3 }} size="small">
                   {selectedMembers.map(member => (
                     <Tooltip key={member.id} title={member.name}>
-                      <Avatar 
-                        src={member.avatar_url} 
-                        style={{ fontSize: '14px' }}
-                      >
-                        {!member.avatar_url && member.name ? member.name.charAt(0).toUpperCase() : null}
+                      <Avatar src={member.avatar_url} style={{ fontSize: '14px' }}>
+                        {!member.avatar_url && member.name
+                          ? member.name.charAt(0).toUpperCase()
+                          : null}
                       </Avatar>
                     </Tooltip>
                   ))}
@@ -1102,21 +1177,17 @@ const renderCustomColumnContent = (
     },
     date: () => {
       const dateValue = customValue ? dayjs(customValue) : undefined;
-      
+
       return (
         <DatePicker
           placeholder="Set Date"
           format="MMM DD, YYYY"
           suffixIcon={null}
           value={dateValue}
-          onChange={(date) => {
+          onChange={date => {
             if (task.id) {
               // Format as ISO string for storage
-              updateTaskCustomColumnValue(
-                task.id,
-                columnKey,
-                date ? date.toISOString() : ''
-              );
+              updateTaskCustomColumnValue(task.id, columnKey, date ? date.toISOString() : '');
             }
           }}
           style={{
@@ -1129,17 +1200,13 @@ const renderCustomColumnContent = (
     },
     checkbox: () => {
       const isChecked = customValue === true || customValue === 'true';
-      
+
       return (
-        <Checkbox 
+        <Checkbox
           checked={isChecked}
-          onChange={(e) => {
+          onChange={e => {
             if (task.id) {
-              updateTaskCustomColumnValue(
-                task.id,
-                columnKey,
-                e.target.checked.toString()
-              );
+              updateTaskCustomColumnValue(task.id, columnKey, e.target.checked.toString());
             }
           }}
         />
@@ -1154,65 +1221,72 @@ const renderCustomColumnContent = (
     },
     number: () => {
       return (
-        <NumberFieldCell 
-          value={customValue} 
-          task={task} 
-          columnKey={columnKey} 
-          columnObj={columnObj} 
-          updateValue={updateTaskCustomColumnValue} 
+        <NumberFieldCell
+          value={customValue}
+          task={task}
+          columnKey={columnKey}
+          columnObj={columnObj}
+          updateValue={updateTaskCustomColumnValue}
         />
       );
     },
     formula: () => {
-      return (
-        <FormulaFieldCell columnObj={columnObj} />
-      );
+      return <FormulaFieldCell columnObj={columnObj} />;
     },
     labels: () => {
       return (
-        <LabelsFieldCell 
-          labelsList={columnObj?.labelsList || []} 
+        <LabelsFieldCell
+          labelsList={columnObj?.labelsList || []}
           selectedLabels={selectedLabels}
-          task={task} 
-          columnKey={columnKey} 
-          updateValue={updateTaskCustomColumnValue} 
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
         />
       );
     },
     selection: () => {
-      // Debug the selectionsList data
-      const [loggedInfo, setLoggedInfo] = useState(false);
-    
-      useEffect(() => {
-        if (!loggedInfo) {
-          console.log('Selection column data:', {
-            columnKey,
-            selectionsList: columnObj?.selectionsList,
-          });
-          setLoggedInfo(true);
-        }
-      }, [columnKey, loggedInfo]);
-    
       return (
-        <SelectionFieldCell 
-          selectionsList={columnObj?.selectionsList || []} 
+        <SelectionFieldCell
+          selectionsList={columnObj?.selectionsList || []}
           value={memoizedValue}
-          task={task} 
-          columnKey={columnKey} 
-          updateValue={updateTaskCustomColumnValue} 
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
         />
       );
-    }
+    },
   };
 
   return customComponents[fieldType] ? customComponents[fieldType]() : null;
 };
 
-const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, activeId }) => {
+const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, activeId, groupBy }) => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
+
+  // Add drag state
+  const [dragActiveId, setDragActiveId] = useState<string | null>(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState<number | null>(null);
+
+  // Configure sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const columnList = useAppSelector(state => state.taskReducer.columns);
@@ -1267,6 +1341,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editColumnKey, setEditColumnKey] = useState<string | null>(null);
+  const [showAddSubtaskFor, setShowAddSubtaskFor] = useState<string | null>(null);
 
   const toggleTaskExpansion = (taskId: string) => {
     const task = displayTasks.find(t => t.id === taskId);
@@ -1385,7 +1460,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
         case 'TASK':
           return `sticky left-[48px] z-10 after:content after:absolute after:top-0 after:-right-1 after:h-full after:-z-10 after:w-1.5 after:bg-transparent ${
             scrollingTables[tableId]
-              ? 'after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent'
+              ? 'after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent'
               : ''
           }`;
         default:
@@ -1503,11 +1578,11 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                 data-task-cell
                 onContextMenu={e => handleContextMenu(e, task)}
               >
-                <CustomCell 
-                  column={column} 
-                  task={task} 
-                  isSubtask={isSubtask} 
-                  renderCustomColumnContent={renderCustomColumnContent} 
+                <CustomCell
+                  column={column}
+                  task={task}
+                  isSubtask={isSubtask}
+                  renderCustomColumnContent={renderCustomColumnContent}
                   renderColumnContent={renderColumnContent}
                   updateTaskCustomColumnValue={updateTaskCustomColumnValue}
                 />
@@ -1525,136 +1600,264 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   // Use the tasks from the current group if available, otherwise fall back to taskList prop
   const displayTasks = currentGroup?.tasks || taskList || [];
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+  // Remove the local handleDragEnd as it conflicts with the main DndContext
+  // All drag handling is now done at the TaskGroupWrapperOptimized level
 
-    const activeIndex = displayTasks.findIndex(task => task.id === active.id);
-    const overIndex = displayTasks.findIndex(task => task.id === over.id);
-
-    if (activeIndex !== -1 && overIndex !== -1) {
-      dispatch(
-        reorderTasks({
-          activeGroupId: tableId,
-          overGroupId: tableId,
-          fromIndex: activeIndex,
-          toIndex: overIndex,
-          task: displayTasks[activeIndex],
-          updatedSourceTasks: displayTasks,
-          updatedTargetTasks: displayTasks,
-        })
-      );
-    }
-  };
-
-  const handleCustomColumnSettings = (columnKey: string) => {   
-    console.log('columnKey', columnKey);
+  const handleCustomColumnSettings = (columnKey: string) => {
     if (!columnKey) return;
     setEditColumnKey(columnKey);
-    dispatch(setCustomColumnModalAttributes({modalType: 'edit', columnId: columnKey}));
+    dispatch(setCustomColumnModalAttributes({ modalType: 'edit', columnId: columnKey }));
     dispatch(toggleCustomColumnModalOpen(true));
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (event: any) => {
+    setDragActiveId(event.active.id);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDragActiveId(null);
+    setPlaceholderIndex(null); // Reset placeholder index
+
+    if (!over || !active || active.id === over.id) {
+      return;
+    }
+
+    const activeTask = displayTasks.find(task => task.id === active.id);
+    if (!activeTask) {
+      return;
+    }
+
+    // Use the tableId directly as the group ID (it should be the group ID)
+    const currentGroupId = tableId;
+
+    // Check if this is a reorder within the same group
+    const overTask = displayTasks.find(task => task.id === over.id);
+    if (overTask) {
+      // Reordering within the same group
+      const oldIndex = displayTasks.findIndex(task => task.id === active.id);
+      const newIndex = displayTasks.findIndex(task => task.id === over.id);
+
+      if (oldIndex !== newIndex && oldIndex !== -1 && newIndex !== -1) {
+        // Get the actual sort_order values from the tasks
+        const fromSortOrder = activeTask.sort_order || oldIndex;
+        const overTaskAtNewIndex = displayTasks[newIndex];
+        const toSortOrder = overTaskAtNewIndex?.sort_order || newIndex;
+
+        // Create updated task list with reordered tasks
+        const updatedTasks = [...displayTasks];
+        const [movedTask] = updatedTasks.splice(oldIndex, 1);
+        updatedTasks.splice(newIndex, 0, movedTask);
+
+        // Update local state immediately for better UX
+        dispatch(
+          reorderTasks({
+            activeGroupId: currentGroupId,
+            overGroupId: currentGroupId,
+            fromIndex: oldIndex,
+            toIndex: newIndex,
+            task: activeTask,
+            updatedSourceTasks: updatedTasks,
+            updatedTargetTasks: updatedTasks,
+          })
+        );
+
+        // Send socket event for backend sync
+        if (socket && project?.id && active.id && activeTask.id) {
+          // Helper function to validate UUID or return null
+          const validateUUID = (value: string | undefined | null): string | null => {
+            if (!value || value.trim() === '') return null;
+            // Basic UUID format check (8-4-4-4-12 characters)
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            return uuidRegex.test(value) ? value : null;
+          };
+
+          const body = {
+            from_index: fromSortOrder,
+            to_index: toSortOrder,
+            project_id: project.id,
+            from_group: currentGroupId,
+            to_group: currentGroupId,
+            group_by: groupBy || 'status', // Use the groupBy prop
+            to_last_index: false,
+            task: {
+              id: activeTask.id, // Use activeTask.id instead of active.id to ensure it's valid
+              project_id: project.id,
+              status: validateUUID(activeTask.status_id || activeTask.status),
+              priority: validateUUID(activeTask.priority),
+            },
+            team_id: project.team_id || currentSession?.team_id || '',
+          };
+
+          // Validate required fields before sending
+          if (!body.task.id) {
+            return;
+          }
+
+          socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), body);
+        }
+      }
+    }
   };
 
   return (
     <div className={`border-x border-b ${customBorderColor}`}>
-      <SortableContext
-        items={(displayTasks?.map(t => t.id).filter(Boolean) || []) as string[]}
-        strategy={verticalListSortingStrategy}
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver} // Add this line
+        autoScroll={false} // Disable auto-scroll animations
       >
-        <div className={`tasklist-container-${tableId} min-h-0 max-w-full overflow-x-auto`}>
-          <table className="rounded-2 w-full min-w-max border-collapse relative">
-            <thead className="h-[42px]">
-              <tr>
-                <th
-                  className={getColumnStyles('selector', true)}
-                  style={{ width: 56, fontWeight: 500 }}
-                >
-                  <Flex justify="flex-start" style={{ marginInlineStart: 22 }}>
-                    <Checkbox checked={isSelectAll} onChange={toggleSelectAll} />
-                  </Flex>
-                </th>
-                {visibleColumns.map(column => (
+        <SortableContext
+          items={
+            (displayTasks
+              ?.filter(t => t?.id)
+              .map(t => t.id)
+              .filter(Boolean) || []) as string[]
+          }
+          strategy={verticalListSortingStrategy}
+        >
+          <div className={`tasklist-container-${tableId} min-h-0 max-w-full overflow-x-auto`}>
+            <table className="rounded-2 w-full min-w-max border-collapse relative">
+              <thead className="h-[42px]">
+                <tr>
                   <th
-                    key={column.key}
-                    className={getColumnStyles(column.key, true)}
-                    style={{ fontWeight: 500 }}
+                    className={getColumnStyles('selector', true)}
+                    style={{ width: 56, fontWeight: 500 }}
                   >
-                    <Flex align="center" gap={4}>
-                      {column.key === 'PHASE' && (
-                        <Flex
-                          align="center"
-                          gap={4}
-                          justify="space-between"
-                          className="w-full min-w-[120px]"
-                        >
-                          {project?.phase_label}
-                          <ConfigPhaseButton />
-                        </Flex>
-                      )}
-                      {column.key !== 'PHASE' &&
-                        ((column.custom_column && column.pinned) ? (
-                          <CustomColumnHeader
-                            column={column}
-                            onSettingsClick={() => handleCustomColumnSettings(column.id || '')}
-                          />
-                        ) : (
-                          t(`${column.key?.replace('_', '').toLowerCase()}Column`)
-                        ))}
+                    <Flex justify="flex-start" style={{ marginInlineStart: 22 }}>
+                      <Checkbox checked={isSelectAll} onChange={toggleSelectAll} />
                     </Flex>
                   </th>
-                ))}
-                <th className={getColumnStyles('customColumn', true)}>
-                  <Flex justify="flex-start" style={{ marginInlineStart: 22 }}>
-                    <AddCustomColumnButton />
-                  </Flex>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayTasks && displayTasks.length > 0 ? (
-                displayTasks.map(task => {
-                  const updatedTask = findTaskInGroups(task.id || '') || task;
-
-                  return (
-                    <React.Fragment key={updatedTask.id}>
-                      {renderTaskRow(updatedTask)}
-                      {updatedTask.show_sub_tasks && (
-                        <>
-                          {updatedTask?.sub_tasks?.map(subtask => renderTaskRow(subtask, true))}
-                            <tr>
-                            <td colSpan={visibleColumns.length + 1}>
-                              <AddTaskListRow groupId={tableId} parentTask={updatedTask.id} />
-                            </td>
-                            </tr>
-                        </>
-                      )}
-                    </React.Fragment>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={visibleColumns.length + 1} className="ps-2 py-2">
-                    {t('noTasksAvailable', 'No tasks available')}
-                  </td>
+                  {visibleColumns.map(column => (
+                    <th
+                      key={column.key}
+                      className={getColumnStyles(column.key, true)}
+                      style={{ fontWeight: 500 }}
+                    >
+                      <Flex align="center" gap={4}>
+                        {column.key === 'PHASE' && (
+                          <Flex
+                            align="center"
+                            gap={4}
+                            justify="space-between"
+                            className="w-full min-w-[120px]"
+                          >
+                            {project?.phase_label}
+                            <ConfigPhaseButton />
+                          </Flex>
+                        )}
+                        {column.key !== 'PHASE' &&
+                          (column.custom_column && column.pinned ? (
+                            <CustomColumnHeader
+                              column={column}
+                              onSettingsClick={() => handleCustomColumnSettings(column.id || '')}
+                            />
+                          ) : (
+                            t(`${column.key?.replace('_', '').toLowerCase()}Column`)
+                          ))}
+                      </Flex>
+                    </th>
+                  ))}
+                  <th className={getColumnStyles('customColumn', true)}>
+                    <Flex justify="flex-start" style={{ marginInlineStart: 22 }}>
+                      <AddCustomColumnButton />
+                    </Flex>
+                  </th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </SortableContext>
+              </thead>
+              <tbody>
+                {displayTasks && displayTasks.length > 0 ? (
+                  displayTasks
+                    .filter(task => task?.id) // Filter out tasks without valid IDs
+                    .map((task, index) => {
+                      const updatedTask = findTaskInGroups(task.id || '') || task;
+                      const isDraggingCurrent = dragActiveId === updatedTask.id;
 
-      <DragOverlay
-        dropAnimation={{
-          duration: 200,
-          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-        }}
-      >
-        {activeId && displayTasks?.length ? (
-          <table className="w-full">
-            <tbody>{renderTaskRow(displayTasks.find(t => t.id === activeId))}</tbody>
-          </table>
-        ) : null}
-      </DragOverlay>
+                      return (
+                        <React.Fragment key={updatedTask.id}>
+                          {placeholderIndex === index && (
+                            <tr className="placeholder-row">
+                              <td colSpan={visibleColumns.length + 2}>
+                                <div className="h-10 border-2 border-dashed border-blue-400 rounded-md flex items-center justify-center text-blue-500">
+                                  Drop task here
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                          {!isDraggingCurrent && renderTaskRow(updatedTask)}
+                          {updatedTask.show_sub_tasks && (
+                            <>
+                              {updatedTask?.sub_tasks?.map(subtask =>
+                                subtask?.id ? renderTaskRow(subtask, true) : null
+                              )}
+                              {showAddSubtaskFor !== updatedTask.id && (
+                                <tr key={`add-subtask-link-${updatedTask.id}`}>
+                                  <td colSpan={visibleColumns.length + 1}>
+                                    <div
+                                      style={{
+                                        padding: '8px 16px',
+                                        color: '#1677ff',
+                                        cursor: 'pointer',
+                                        fontWeight: 500,
+                                        background: '#f6f8fa',
+                                      }}
+                                      onClick={() => setShowAddSubtaskFor(updatedTask.id)}
+                                    >
+                                      + Add Sub Task
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                              {showAddSubtaskFor === updatedTask.id && (
+                                <tr key={`add-subtask-input-${updatedTask.id}`}>
+                                  <td colSpan={visibleColumns.length + 1}>
+                                    <AddTaskListRow
+                                      groupId={tableId}
+                                      parentTask={updatedTask.id}
+                                      onCancel={() => setShowAddSubtaskFor(null)}
+                                    />
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          )}
+                        </React.Fragment>
+                      );
+                    })
+                ) : (
+                  <tr>
+                    <td colSpan={visibleColumns.length + 1} className="ps-2 py-2">
+                      {t('noTasksAvailable', 'No tasks available')}
+                    </td>
+                  </tr>
+                )}
+                {placeholderIndex === displayTasks.length && (
+                  <tr className="placeholder-row">
+                    <td colSpan={visibleColumns.length + 2}>
+                      <div className="h-10 border-2 border-dashed border-blue-400 rounded-md flex items-center justify-center text-blue-500">
+                        Drop task here
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </SortableContext>
+
+        <DragOverlay
+          dropAnimation={null} // Disable drop animation
+        >
+          {dragActiveId ? (
+            <div className="bg-white dark:bg-gray-800 shadow-lg rounded-sm border p-2 opacity-90">
+              <span className="text-sm font-medium">Moving task...</span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Add task row is positioned outside of the scrollable area */}
       <div className={`border-t ${customBorderColor}`}>

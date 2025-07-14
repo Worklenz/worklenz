@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect, memo, useMemo, useCallback } from 'react';
 import { useMediaQuery } from 'react-responsive';
 import Col from 'antd/es/col';
 import Flex from 'antd/es/flex';
@@ -21,48 +21,89 @@ import { fetchProjectCategories } from '@/features/projects/lookups/projectCateg
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
 import { fetchProjects } from '@/features/home-page/home-page.slice';
 import { createPortal } from 'react-dom';
-import React from 'react';
 import UserActivityFeed from './user-activity-feed/user-activity-feed';
 
 const DESKTOP_MIN_WIDTH = 1024;
 const TASK_LIST_MIN_WIDTH = 500;
 const SIDEBAR_MAX_WIDTH = 400;
-const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
 
-const HomePage = () => {
+// Lazy load heavy components
+const TaskDrawer = React.lazy(() => import('@/components/task-drawer/task-drawer'));
+
+const HomePage = memo(() => {
   const dispatch = useAppDispatch();
   const isDesktop = useMediaQuery({ query: `(min-width: ${DESKTOP_MIN_WIDTH}px)` });
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+
   useDocumentTitle('Home');
 
+  // Preload TaskDrawer component to prevent dynamic import failures
   useEffect(() => {
-    const fetchLookups = async () => {
-      const fetchPromises = [
-        dispatch(fetchProjectHealth()),
-        dispatch(fetchProjectCategories()),
-        dispatch(fetchProjectStatuses()),
-        dispatch(fetchProjects()),
-      ].filter(Boolean);
-
-      await Promise.all(fetchPromises);
+    const preloadTaskDrawer = async () => {
+      try {
+        await import('@/components/task-drawer/task-drawer');
+      } catch (error) {
+        console.warn('Failed to preload TaskDrawer:', error);
+      }
     };
-    fetchLookups();
+    
+    preloadTaskDrawer();
+  }, []);
+
+  // Memoize fetch function to prevent recreation on every render
+  const fetchLookups = useCallback(async () => {
+    const fetchPromises = [
+      dispatch(fetchProjectHealth()),
+      dispatch(fetchProjectCategories()),
+      dispatch(fetchProjectStatuses()),
+      dispatch(fetchProjects()),
+    ].filter(Boolean);
+
+    await Promise.all(fetchPromises);
   }, [dispatch]);
 
-  const CreateProjectButtonComponent = () =>
-    isDesktop ? (
+  useEffect(() => {
+    fetchLookups();
+  }, [fetchLookups]);
+
+  // Memoize project drawer close handler
+  const handleProjectDrawerClose = useCallback(() => {}, []);
+
+  // Memoize desktop flex styles to prevent object recreation
+  const desktopFlexStyle = useMemo(
+    () => ({
+      minWidth: TASK_LIST_MIN_WIDTH,
+      width: '100%',
+    }),
+    []
+  );
+
+  const sidebarFlexStyle = useMemo(
+    () => ({
+      width: '100%',
+      maxWidth: SIDEBAR_MAX_WIDTH,
+    }),
+    []
+  );
+
+  // Memoize components to prevent unnecessary re-renders
+  const CreateProjectButtonComponent = useMemo(() => {
+    if (!isOwnerOrAdmin) return null;
+
+    return isDesktop ? (
       <div className="absolute right-0 top-1/2 -translate-y-1/2">
-        {isOwnerOrAdmin && <CreateProjectButton />}
+        <CreateProjectButton />
       </div>
     ) : (
-      isOwnerOrAdmin && <CreateProjectButton />
+      <CreateProjectButton />
     );
+  }, [isDesktop, isOwnerOrAdmin]);
 
   return (
     <div className="my-24 min-h-[90vh]">
       <Col className="flex flex-col gap-6">
         <GreetingWithTime />
-        <CreateProjectButtonComponent />
+        {CreateProjectButtonComponent}
       </Col>
 
       <Row gutter={[24, 24]} className="mt-12">
@@ -89,6 +130,8 @@ const HomePage = () => {
       {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
     </div>
   );
-};
+});
+
+HomePage.displayName = 'HomePage';
 
 export default HomePage;

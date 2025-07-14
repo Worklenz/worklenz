@@ -8,4 +8,4 @@ export const AuthenticatedLayout = () => {
       <Outlet />
     </SocketProvider>
   );
-}; 
+};

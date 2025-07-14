@@ -1,0 +1,17 @@
+{
+  "nameColumn": "Nome",
+  "jobTitleColumn": "Título do Cargo",
+  "emailColumn": "Email",
+  "tasksColumn": "Tarefas",
+  "taskProgressColumn": "Progresso da Tarefa",
+  "accessColumn": "Acesso",
+  "fileIconAlt": "Ícone do Arquivo",
+  "deleteConfirmationTitle": "Tem a certeza?",
+  "deleteConfirmationOk": "Sim",
+  "deleteConfirmationCancel": "Cancelar",
+  "refreshButtonTooltip": "Atualizar membros",
+  "deleteButtonTooltip": "Remover do projeto",
+  "memberCount": "Membro",
+  "membersCountPlural": "Membros",
+  "emptyText": "Não há anexos no projeto."
+}

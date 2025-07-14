@@ -17,7 +17,6 @@ import { SearchOutlined } from '@ant-design/icons';
 
 import { setBoardSearch } from '@/features/board/board-slice';
 
-
 const SearchDropdown = () => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useDispatch();

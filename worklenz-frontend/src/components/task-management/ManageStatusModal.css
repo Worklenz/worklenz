@@ -1,0 +1,355 @@
+/* ManageStatusModal.css */
+
+/* Dark mode modal styling */
+.dark-modal .ant-modal-content {
+  background-color: #1f1f1f;
+  border: 1px solid #303030;
+}
+
+.dark-modal .ant-modal-header {
+  background-color: #1f1f1f;
+  border-bottom: 1px solid #303030;
+}
+
+.dark-modal .ant-modal-body {
+  background-color: #1f1f1f;
+}
+
+.dark-modal .ant-modal-footer {
+  background-color: #1f1f1f;
+  border-top: 1px solid #303030;
+}
+
+/* Dark mode confirmation modal styling */
+.dark .ant-modal-confirm .ant-modal-content,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-content {
+  background-color: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-header,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-header {
+  background-color: #1f1f1f !important;
+  border-bottom: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-body,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-body {
+  background-color: #1f1f1f !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-footer,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-footer {
+  background-color: #1f1f1f !important;
+  border-top: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-confirm-title,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-confirm-title {
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-confirm-content,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-confirm-content {
+  color: #8c8c8c !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-default,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-default {
+  background-color: #141414 !important;
+  border-color: #303030 !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-default:hover,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-default:hover {
+  background-color: #262626 !important;
+  border-color: #40a9ff !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-primary,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-primary {
+  background-color: #1890ff !important;
+  border-color: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-primary:hover,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-primary:hover {
+  background-color: #40a9ff !important;
+  border-color: #40a9ff !important;
+  color: #ffffff !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-dangerous,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-dangerous {
+  background-color: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  color: #ffffff !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-dangerous:hover,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-dangerous:hover {
+  background-color: #ff7875 !important;
+  border-color: #ff7875 !important;
+  color: #ffffff !important;
+}
+
+/* Light mode confirmation modal styling (ensure consistency) */
+.ant-modal-confirm .ant-modal-content {
+  background-color: #ffffff;
+  border: 1px solid #f0f0f0;
+}
+
+.ant-modal-confirm .ant-modal-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-modal-confirm .ant-modal-body {
+  background-color: #ffffff;
+  color: #262626;
+}
+
+.ant-modal-confirm .ant-modal-footer {
+  background-color: #ffffff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.ant-modal-confirm .ant-modal-confirm-title {
+  color: #262626;
+}
+
+.ant-modal-confirm .ant-modal-confirm-content {
+  color: #595959;
+}
+
+.dark-modal .ant-form-item-label > label {
+  color: #d9d9d9;
+}
+
+.dark-modal .ant-input,
+.dark-modal .ant-select-selector {
+  background-color: #141414;
+  border-color: #303030;
+  color: #d9d9d9;
+}
+
+.dark-modal .ant-select-dropdown {
+  background-color: #1f1f1f;
+  border-color: #303030;
+}
+
+.dark-modal .ant-select-item {
+  color: #d9d9d9;
+}
+
+.dark-modal .ant-select-item:hover {
+  background-color: #262626;
+}
+
+.dark-modal .ant-select-item-option-selected {
+  background-color: #1890ff;
+  color: white;
+}
+
+/* Category select styling */
+.category-select .ant-select-selector {
+  height: 28px !important;
+  min-height: 28px !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.category-select:hover .ant-select-selector {
+  border-color: #40a9ff !important;
+}
+
+.dark-modal .category-select .ant-select-selector {
+  background-color: #141414;
+  border-color: #303030;
+  color: #d9d9d9;
+}
+
+.dark-modal .category-select:hover .ant-select-selector {
+  border-color: #40a9ff !important;
+  background-color: #1a1a1a;
+}
+
+/* Improved drag handle */
+.drag-handle {
+  cursor: grab;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark-modal .drag-handle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+/* Status color dot enhancement */
+.status-color-dot {
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-color-dot:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dark-modal .status-color-dot {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark-modal .status-color-dot:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.dark-modal .ant-input::placeholder {
+  color: #8c8c8c;
+}
+
+.dark-modal .ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.dark-modal .ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.dark-modal .ant-btn-text:hover {
+  background-color: #262626;
+}
+
+/* Status management section styling */
+.status-item {
+  transition: all 0.2s ease;
+}
+
+.status-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.dark-modal .status-item:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Enhanced status card styling */
+.status-card {
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.dark-modal .status-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Drag handle styling */
+.drag-handle {
+  cursor: grab;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Status color indicator */
+.status-color {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.dark-modal .status-color {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Sortable item styling */
+.sortable-status-item {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.sortable-status-item.is-dragging {
+  transform: scale(1.02);
+  z-index: 999;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.dark-modal .sortable-status-item.is-dragging {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .dark-modal .ant-modal {
+    width: 95% !important;
+    margin: 10px;
+  }
+  
+  .dark-modal .ant-modal-body {
+    padding: 16px;
+  }
+  
+  .status-item {
+    padding: 12px;
+  }
+}
+
+/* Accessibility improvements */
+.drag-handle:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+.dark-modal .drag-handle:focus {
+  outline-color: #40a9ff;
+}
+
+/* Animation for status creation */
+.status-item-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.status-item-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.status-item-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.status-item-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+} 

@@ -18,7 +18,9 @@ const AccountStorage = ({ themeMode }: IAccountStorageProps) => {
   const dispatch = useAppDispatch();
   const [subscriptionType, setSubscriptionType] = useState<string>(SUBSCRIPTION_STATUS.TRIALING);
 
-  const { loadingBillingInfo, billingInfo, storageInfo } = useAppSelector(state => state.adminCenterReducer);
+  const { loadingBillingInfo, billingInfo, storageInfo } = useAppSelector(
+    state => state.adminCenterReducer
+  );
 
   const formatBytes = useMemo(
     () =>
@@ -68,7 +70,7 @@ const AccountStorage = ({ themeMode }: IAccountStorageProps) => {
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ padding: '0 16px' }}>
           <Progress
-            percent={billingInfo?.usedPercentage ?? 0}
+            percent={billingInfo?.used_percent ?? 0}
             type="circle"
             format={percent => <span style={{ fontSize: '13px' }}>{percent}% Used</span>}
           />

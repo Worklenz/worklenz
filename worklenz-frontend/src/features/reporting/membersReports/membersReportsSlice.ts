@@ -107,6 +107,10 @@ const membersReportsSlice = createSlice({
     setDateRange: (state, action) => {
       state.dateRange = action.payload;
     },
+    setPagination: (state, action) => {
+      state.index = action.payload.index;
+      state.pageSize = action.payload.pageSize;
+    },
   },
   extraReducers: builder => {
     builder
@@ -139,5 +143,6 @@ export const {
   setOrder,
   setDuration,
   setDateRange,
+  setPagination,
 } = membersReportsSlice.actions;
 export default membersReportsSlice.reducer;

@@ -1,0 +1,39 @@
+{
+  "today": "Hoy",
+  "week": "Semana",
+  "month": "Mes",
+
+  "settings": "Configuración",
+  "workingDays": "Días laborables",
+  "monday": "Lunes",
+  "tuesday": "Martes",
+  "wednesday": "Miércoles",
+  "thursday": "Jueves",
+  "friday": "Viernes",
+  "saturday": "Sábado",
+  "sunday": "Domingo",
+  "workingHours": "Horas laborables",
+  "hours": "horas",
+  "saveButton": "Guardar",
+
+  "totalAllocation": "Asignación Total",
+  "timeLogged": "Tiempo Registrado",
+  "remainingTime": "Tiempo Restante",
+  "total": "Total",
+  "perDay": "Por Día",
+  "tasks": "tareas",
+  "startDate": "Fecha de Inicio",
+  "endDate": "Fecha de Fin",
+
+  "hoursPerDay": "Horas Por Día",
+  "totalHours": "Horas Totales",
+  "deleteButton": "Eliminar",
+  "cancelButton": "Cancelar",
+
+  "tabTitle": "Tarea sin Fechas de Inicio y Fin",
+
+  "allocatedTime": "Tiempo Asignado",
+  "totalLogged": "Total Registrado",
+  "loggedBillable": "Registrado Facturable",
+  "loggedNonBillable": "Registrado No Facturable"
+}

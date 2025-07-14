@@ -1,0 +1,11 @@
+{
+  "labelColumn": "Etiketa",
+  "deleteConfirmationTitle": "Jeni i sigurt?",
+  "deleteConfirmationOk": "Po",
+  "deleteConfirmationCancel": "Anulo",
+  "associatedTaskColumn": "Numri i Detyrave të Lidhura",
+  "searchPlaceholder": "Kërko sipas emrit",
+  "emptyText": "Etiketat mund të krijohen gjatë përditësimit ose krijimit të detyrave.",
+  "pinTooltip": "Klikoni për ta fiksuar në menynë kryesore",
+  "colorChangeTooltip": "Klikoni për të ndryshuar ngjyrën"
+}

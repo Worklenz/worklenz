@@ -1,0 +1,35 @@
+{
+  "noTasksInGroup": "No tasks in this group",
+  "noTasksInGroupDescription": "Add a task to get started",
+  "addFirstTask": "Add your first task",
+  "openTask": "Open",
+  "subtask": "subtask",
+  "subtasks": "subtasks",
+  "comment": "comment",
+  "comments": "comments",
+  "attachment": "attachment",
+  "attachments": "attachments",
+  "enterSubtaskName": "Enter subtask name...",
+  "add": "Add",
+  "cancel": "Cancel",
+  "renameGroup": "Rename Group",
+  "renameStatus": "Rename Status",
+  "renamePhase": "Rename Phase",
+  "changeCategory": "Change Category",
+  "clickToEditGroupName": "Click to edit group name",
+  "enterGroupName": "Enter group name",
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} subtask",
+      "subtasks_plural": "{{count}} subtasks",
+      "comments": "{{count}} comment",
+      "comments_plural": "{{count}} comments",
+      "attachments": "{{count}} attachment",
+      "attachments_plural": "{{count}} attachments",
+      "subscribers": "Task has subscribers",
+      "dependencies": "Task has dependencies",
+      "recurring": "Recurring task"
+    }
+  }
+}

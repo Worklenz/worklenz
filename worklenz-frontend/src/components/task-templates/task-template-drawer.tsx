@@ -29,7 +29,7 @@ const TaskTemplateDrawer = ({
   const [updatingTemplate, setUpdatingTemplate] = useState(false);
 
   const { selectedTasks } = useAppSelector(state => state.bulkActionReducer);
-  
+
   const onCloseDrawer = () => {
     form.resetFields();
     setTemplateData({});
@@ -59,6 +59,7 @@ const TaskTemplateDrawer = ({
       fetchTemplateData();
       return;
     }
+    // Tasks should already have the name property set correctly
     setTemplateData({ tasks: selectedTasks });
   };
 
@@ -126,11 +127,15 @@ const TaskTemplateDrawer = ({
       open={showDrawer}
       onClose={onCloseDrawer}
       afterOpenChange={afterOpenChange}
-      destroyOnClose={true}
+      destroyOnHidden={true}
       footer={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'right' }}>
           <Button onClick={onCloseDrawer}>{t('cancelButton')}</Button>
-          <Button type="primary" onClick={handleSaveTemplate} loading={creatingTemplate || updatingTemplate}>
+          <Button
+            type="primary"
+            onClick={handleSaveTemplate}
+            loading={creatingTemplate || updatingTemplate}
+          >
             {t('saveButton')}
           </Button>
         </div>

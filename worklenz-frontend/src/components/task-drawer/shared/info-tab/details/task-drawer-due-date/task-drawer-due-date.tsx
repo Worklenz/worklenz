@@ -14,6 +14,11 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setStartDate, setTaskEndDate } from '@/features/task-drawer/task-drawer.slice';
+import {
+  updateEnhancedKanbanTaskStartDate,
+  updateEnhancedKanbanTaskEndDate,
+} from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import useTabSearchParam from '@/hooks/useTabSearchParam';
 interface TaskDrawerDueDateProps {
   task: ITaskViewModel;
   t: TFunction;
@@ -24,6 +29,7 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
   const { socket } = useSocket();
   const [isShowStartDate, setIsShowStartDate] = useState(false);
   const dispatch = useAppDispatch();
+  const { tab } = useTabSearchParam();
   // Date handling
   const startDayjs = task?.start_date ? dayjs(task.start_date) : null;
   const dueDayjs = task?.end_date ? dayjs(task.end_date) : null;
@@ -58,14 +64,15 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
             : Intl.DateTimeFormat().resolvedOptions().timeZone,
         })
       );
-      socket?.once(
-            SocketEvents.TASK_START_DATE_CHANGE.toString(),
-            (data: IProjectTask) => {
-              dispatch(setStartDate(data));
-              
-            }
-          );
-    } catch (error) { 
+      socket?.once(SocketEvents.TASK_START_DATE_CHANGE.toString(), (data: IProjectTask) => {
+        dispatch(setStartDate(data));
+
+        // Also update enhanced kanban if on board tab
+        if (tab === 'board') {
+          dispatch(updateEnhancedKanbanTaskStartDate({ task: data }));
+        }
+      });
+    } catch (error) {
       logger.error('Failed to update start date:', error);
     }
   };
@@ -83,13 +90,14 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
             : Intl.DateTimeFormat().resolvedOptions().timeZone,
         })
       );
-      socket?.once(
-        SocketEvents.TASK_END_DATE_CHANGE.toString(),
-        (data: IProjectTask) => {
-          dispatch(setTaskEndDate(data));
-          
+      socket?.once(SocketEvents.TASK_END_DATE_CHANGE.toString(), (data: IProjectTask) => {
+        dispatch(setTaskEndDate(data));
+
+        // Also update enhanced kanban if on board tab
+        if (tab === 'board') {
+          dispatch(updateEnhancedKanbanTaskEndDate({ task: data }));
         }
-      );
+      });
     } catch (error) {
       logger.error('Failed to update due date:', error);
     }
@@ -123,7 +131,9 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
           onClick={() => setIsShowStartDate(prev => !prev)}
           style={{ color: isShowStartDate ? 'red' : colors.skyBlue }}
         >
-          {isShowStartDate ? t('taskInfoTab.details.hide-start-date') : t('taskInfoTab.details.show-start-date')}
+          {isShowStartDate
+            ? t('taskInfoTab.details.hide-start-date')
+            : t('taskInfoTab.details.show-start-date')}
         </Button>
       </Flex>
     </Form.Item>

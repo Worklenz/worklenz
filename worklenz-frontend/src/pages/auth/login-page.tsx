@@ -77,6 +77,18 @@ const LoginPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // Check and unregister ngsw-worker if present
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        const ngswWorker = registrations.find(reg => reg.active?.scriptURL.includes('ngsw-worker'));
+        if (ngswWorker) {
+          ngswWorker.unregister().then(() => {
+            window.location.reload();
+          });
+        }
+      });
+    }
+
     trackMixpanelEvent(evt_login_page_visit);
     if (currentSession && !currentSession?.setup_completed) {
       navigate('/worklenz/setup');

@@ -71,10 +71,9 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
       if (res.done) {
         const { id: taskId, assignees } = res.body;
         trackMixpanelEvent(evt_project_task_list_context_menu_assign_me);
-        const groupId = taskGroups.find(group => 
-          group.tasks.some(task => 
-            task.id === taskId || 
-            task.sub_tasks?.some(subtask => subtask.id === taskId)
+        const groupId = taskGroups.find(group =>
+          group.tasks.some(
+            task => task.id === taskId || task.sub_tasks?.some(subtask => subtask.id === taskId)
           )
         )?.id;
 
@@ -115,7 +114,8 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
         trackMixpanelEvent(evt_project_task_list_context_menu_archive);
         dispatch(deleteTask({ taskId: selectedTask.id }));
         dispatch(deselectAll());
-        if (selectedTask.parent_task_id) socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), selectedTask.parent_task_id);
+        if (selectedTask.parent_task_id)
+          socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), selectedTask.parent_task_id);
       }
     } catch (error) {
       console.error(error);
@@ -135,7 +135,8 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
         trackMixpanelEvent(evt_project_task_list_context_menu_delete);
         dispatch(deleteTask({ taskId: selectedTask.id }));
         dispatch(deselectAll());
-        if (selectedTask.parent_task_id) socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), selectedTask.parent_task_id);
+        if (selectedTask.parent_task_id)
+          socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), selectedTask.parent_task_id);
       }
     } catch (error) {
       console.error(error);
@@ -264,14 +265,16 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
       label: t('contextMenu.moveTo'),
       children: getMoveToOptions(),
     },
-    ...(!selectedTask?.parent_task_id ? [
-      {
-        key: '3',
-        icon: <InboxOutlined />,
-        label: archived ? t('contextMenu.unarchive' ) : t('contextMenu.archive'),
-        onClick: handleArchive,
-      },
-    ] : []),
+    ...(!selectedTask?.parent_task_id
+      ? [
+          {
+            key: '3',
+            icon: <InboxOutlined />,
+            label: archived ? t('contextMenu.unarchive') : t('contextMenu.archive'),
+            onClick: handleArchive,
+          },
+        ]
+      : []),
     ...(selectedTask?.sub_tasks_count === 0 && !selectedTask?.parent_task_id
       ? [
           {

@@ -1,0 +1,27 @@
+{
+  "title": "Save as Template",
+  "templateName": "Template Name",
+  "includes": "What should be included in the template from the project ?",
+  "includesOptions": {
+    "statuses": "Statuses",
+    "phases": "Phases",
+    "labels": "Labels"
+  },
+  "taskIncludes": "What should be included in the template from the tasks ?",
+  "taskIncludesOptions": {
+    "statuses": "Statuses",
+    "phases": "Phases",
+    "labels": "Labels",
+    "name": "Name",
+    "priority": "Priority",
+    "status": "Status",
+    "phase": "Phase",
+    "label": "Label",
+    "timeEstimate": "Time Estimate",
+    "description": "Description",
+    "subTasks": "Sub Tasks"
+  },
+  "cancel": "Cancel",
+  "save": "Save",
+  "templateNamePlaceholder": "Enter template name"
+}

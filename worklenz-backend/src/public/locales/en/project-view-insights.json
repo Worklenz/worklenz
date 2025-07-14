@@ -1,0 +1,41 @@
+{
+  "overview": {
+    "title": "Overview",
+    "statusOverview": "Status Overview",
+    "priorityOverview": "Priority Overview",
+    "lastUpdatedTasks": "Last Updated Tasks"
+  },
+  "members": {
+    "title": "Members",
+    "tooltip": "Members",
+    "tasksByMembers": "Tasks by members",
+    "tasksByMembersTooltip": "Tasks by members",
+    "name": "Name",
+    "taskCount": "Task Count",
+    "contribution": "Contribution",
+    "completed": "Completed",
+    "incomplete": "Incomplete",
+    "overdue": "Overdue",
+    "progress": "Progress"
+  },
+  "tasks": {
+    "overdueTasks": "Overdue Tasks",
+    "overLoggedTasks": "Over logged Tasks",
+    "tasksCompletedEarly": "Tasks completed early",
+    "tasksCompletedLate": "Tasks completed late",
+    "overLoggedTasksTooltip": "Tasks that has time logged past their estimated time",
+    "overdueTasksTooltip": "Tasks that are past their due date"
+  },
+  "common": {
+    "seeAll": "See all",
+    "totalLoggedHours": "Total logged hours",
+    "totalEstimation": "Total estimation",
+    "completedTasks": "Completed tasks",
+    "incompleteTasks": "Incomplete tasks",
+    "overdueTasks": "Overdue tasks",
+    "overdueTasksTooltip": "Tasks that are past their due date",
+    "totalLoggedHoursTooltip": "Task estimation and logged time for tasks.",
+    "includeArchivedTasks": "Include Archived Tasks",
+    "export": "Export"
+  }
+}

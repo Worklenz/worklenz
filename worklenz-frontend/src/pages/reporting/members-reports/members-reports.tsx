@@ -25,15 +25,17 @@ const MembersReports = () => {
   useDocumentTitle('Reporting - Members');
   const currentSession = useAuthService().getCurrentSession();
 
-  const { archived, searchQuery } = useAppSelector(
-    state => state.membersReportsReducer,
-  );
+  const { archived, searchQuery, total } = useAppSelector(state => state.membersReportsReducer);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
-
 
   const handleExport = () => {
     if (!currentSession?.team_name) return;
-    reportingExportApiService.exportMembers(currentSession.team_name, duration, dateRange, archived);
+    reportingExportApiService.exportMembers(
+      currentSession.team_name,
+      duration,
+      dateRange,
+      archived
+    );
   };
 
   useEffect(() => {
@@ -44,7 +46,7 @@ const MembersReports = () => {
   return (
     <Flex vertical>
       <CustomPageHeader
-        title={`Members`}
+        title={`Members (${total})`}
         children={
           <Space>
             <Button>

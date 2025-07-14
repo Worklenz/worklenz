@@ -45,9 +45,6 @@ const memberSlice = createSlice({
   },
 });
 
-export const { 
-  toggleInviteMemberDrawer, 
-  toggleUpdateMemberDrawer,
-  triggerTeamMembersRefresh,
-} = memberSlice.actions;
+export const { toggleInviteMemberDrawer, toggleUpdateMemberDrawer, triggerTeamMembersRefresh } =
+  memberSlice.actions;
 export default memberSlice.reducer;

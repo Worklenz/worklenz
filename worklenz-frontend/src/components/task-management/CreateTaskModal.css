@@ -1,0 +1,188 @@
+/* CreateTaskModal.css */
+
+/* Dark mode modal styling */
+.dark-modal .ant-modal-content {
+  background-color: #1f1f1f;
+  border: 1px solid #303030;
+}
+
+.dark-modal .ant-modal-header {
+  background-color: #1f1f1f;
+  border-bottom: 1px solid #303030;
+}
+
+.dark-modal .ant-modal-body {
+  background-color: #1f1f1f;
+}
+
+.dark-modal .ant-modal-footer {
+  background-color: #1f1f1f;
+  border-top: 1px solid #303030;
+}
+
+.dark-modal .ant-tabs-content-holder {
+  background-color: #1f1f1f;
+}
+
+.dark-modal .ant-tabs-tab {
+  color: #d9d9d9;
+}
+
+.dark-modal .ant-tabs-tab-active {
+  color: #ffffff;
+}
+
+.dark-modal .ant-form-item-label > label {
+  color: #d9d9d9;
+}
+
+.dark-modal .ant-input,
+.dark-modal .ant-select-selector,
+.dark-modal .ant-picker {
+  background-color: #141414;
+  border-color: #303030;
+  color: #d9d9d9;
+}
+
+.dark-modal .ant-input::placeholder,
+.dark-modal .ant-select-selection-placeholder {
+  color: #8c8c8c;
+}
+
+.dark-modal .ant-select-dropdown {
+  background-color: #1f1f1f;
+  border-color: #303030;
+}
+
+.dark-modal .ant-select-item {
+  color: #d9d9d9;
+}
+
+.dark-modal .ant-select-item-option-selected {
+  background-color: #262626;
+}
+
+.dark-modal .ant-select-item:hover {
+  background-color: #262626;
+}
+
+/* Status management section styling */
+.status-item {
+  transition: all 0.2s ease;
+}
+
+.status-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dark-modal .status-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Drag handle styling */
+.drag-handle {
+  cursor: grab;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Status color indicator */
+.status-color {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.dark-modal .status-color {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Sortable item styling */
+.sortable-status-item {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.sortable-status-item.is-dragging {
+  transform: scale(1.02);
+  z-index: 999;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.dark-modal .sortable-status-item.is-dragging {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Form styling improvements */
+.dark-modal .ant-form-item-required::before {
+  color: #ff4d4f;
+}
+
+.dark-modal .ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.dark-modal .ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.dark-modal .ant-btn-text:hover {
+  background-color: #262626;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .dark-modal .ant-modal {
+    width: 95% !important;
+    margin: 10px;
+  }
+  
+  .dark-modal .ant-modal-body {
+    padding: 16px;
+  }
+  
+  .status-item {
+    padding: 12px;
+  }
+}
+
+/* Accessibility improvements */
+.drag-handle:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+.dark-modal .drag-handle:focus {
+  outline-color: #40a9ff;
+}
+
+/* Animation for status creation */
+.status-item-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.status-item-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.status-item-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.status-item-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+} 

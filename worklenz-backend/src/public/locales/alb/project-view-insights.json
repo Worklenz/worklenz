@@ -1,0 +1,41 @@
+{
+  "overview": {
+    "title": "Përmbledhje",
+    "statusOverview": "Përmbledhje Statusi",
+    "priorityOverview": "Përmbledhje Prioriteti",
+    "lastUpdatedTasks": "Detyrat e Përditësuara Së Fundi"
+  },
+  "members": {
+    "title": "Anëtarët",
+    "tooltip": "Anëtarët",
+    "tasksByMembers": "Detyrat sipas anëtarëve",
+    "tasksByMembersTooltip": "Detyrat sipas anëtarëve",
+    "name": "Emri",
+    "taskCount": "Numri i Detyrave",
+    "contribution": "Kontributi",
+    "completed": "Të Përfunduara",
+    "incomplete": "Të Papërfunduara",
+    "overdue": "Të Vonuara",
+    "progress": "Progresi"
+  },
+  "tasks": {
+    "overdueTasks": "Detyrat e Vonuara",
+    "overLoggedTasks": "Detyrat me regjistrim të tepërt",
+    "tasksCompletedEarly": "Detyrat e përfunduara para afatit",
+    "tasksCompletedLate": "Detyrat e përfunduara pas afatit",
+    "overLoggedTasksTooltip": "Detyrat me kohë të regjistruar mbi kohën e vlerësuar",
+    "overdueTasksTooltip": "Detyrat që kanë kaluar afatin e tyre"
+  },
+  "common": {
+    "seeAll": "Shiko të gjitha",
+    "totalLoggedHours": "Orët totale të regjistruara",
+    "totalEstimation": "Vlerësimi total",
+    "completedTasks": "Detyrat e përfunduara",
+    "incompleteTasks": "Detyrat e papërfunduara",
+    "overdueTasks": "Detyrat e vonuara",
+    "overdueTasksTooltip": "Detyrat që kanë kaluar afatin e tyre",
+    "totalLoggedHoursTooltip": "Vlerësimi dhe koha e regjistruar për detyrat.",
+    "includeArchivedTasks": "Përfshi Detyrat e Arkivuara",
+    "export": "Eksporto"
+  }
+}

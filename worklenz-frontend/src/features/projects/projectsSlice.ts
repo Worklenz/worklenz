@@ -5,11 +5,16 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import { IProjectManager } from '@/types/project/projectManager.types';
+import { IGroupedProjectsViewModel } from '@/types/project/groupedProjectsViewModel.types';
 
 interface ProjectState {
   projects: {
     data: IProjectViewModel[];
     total: number;
+  };
+  groupedProjects: {
+    data: IGroupedProjectsViewModel | null;
+    loading: boolean;
   };
   categories: IProjectCategory[];
   loading: boolean;
@@ -29,6 +34,17 @@ interface ProjectState {
     statuses: string | null;
     categories: string | null;
   };
+  groupedRequestParams: {
+    index: number;
+    size: number;
+    field: string;
+    order: string;
+    search: string;
+    groupBy: string;
+    filter: number;
+    statuses: string | null;
+    categories: string | null;
+  };
   projectManagers: IProjectManager[];
   projectManagersLoading: boolean;
 }
@@ -37,6 +53,10 @@ const initialState: ProjectState = {
   projects: {
     data: [],
     total: 0,
+  },
+  groupedProjects: {
+    data: null,
+    loading: false,
   },
   categories: [],
   loading: false,
@@ -52,6 +72,17 @@ const initialState: ProjectState = {
     field: 'name',
     order: 'ascend',
     search: '',
+    filter: 0,
+    statuses: null,
+    categories: null,
+  },
+  groupedRequestParams: {
+    index: 1,
+    size: DEFAULT_PAGE_SIZE,
+    field: 'name',
+    order: 'ascend',
+    search: '',
+    groupBy: '',
     filter: 0,
     statuses: null,
     categories: null,
@@ -98,6 +129,46 @@ export const fetchProjects = createAsyncThunk(
   }
 );
 
+// Create async thunk for fetching grouped projects
+export const fetchGroupedProjects = createAsyncThunk(
+  'projects/fetchGroupedProjects',
+  async (
+    params: {
+      index: number;
+      size: number;
+      field: string;
+      order: string;
+      search: string;
+      groupBy: string;
+      filter: number;
+      statuses: string | null;
+      categories: string | null;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const groupedProjectsResponse = await projectsApiService.getGroupedProjects(
+        params.index,
+        params.size,
+        params.field,
+        params.order,
+        params.search,
+        params.groupBy,
+        params.filter,
+        params.statuses,
+        params.categories
+      );
+      return groupedProjectsResponse.body;
+    } catch (error) {
+      logger.error('Fetch Grouped Projects', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to fetch grouped projects');
+    }
+  }
+);
+
 export const toggleFavoriteProject = createAsyncThunk(
   'projects/toggleFavoriteProject',
   async (id: string, { rejectWithValue }) => {
@@ -131,7 +202,7 @@ export const createProject = createAsyncThunk(
 export const updateProject = createAsyncThunk(
   'projects/updateProject',
   async ({ id, project }: { id: string; project: IProjectViewModel }, { rejectWithValue }) => {
-    const response = await projectsApiService.updateProject(id, project);
+    const response = await projectsApiService.updateProject({ id, ...project });
     return response.body;
   }
 );
@@ -196,6 +267,15 @@ const projectSlice = createSlice({
         ...action.payload,
       };
     },
+    setGroupedRequestParams: (
+      state,
+      action: PayloadAction<Partial<ProjectState['groupedRequestParams']>>
+    ) => {
+      state.groupedRequestParams = {
+        ...state.groupedRequestParams,
+        ...action.payload,
+      };
+    },
   },
   extraReducers: builder => {
     builder
@@ -212,6 +292,16 @@ const projectSlice = createSlice({
       })
       .addCase(fetchProjects.rejected, state => {
         state.loading = false;
+      })
+      .addCase(fetchGroupedProjects.pending, state => {
+        state.groupedProjects.loading = true;
+      })
+      .addCase(fetchGroupedProjects.fulfilled, (state, action) => {
+        state.groupedProjects.loading = false;
+        state.groupedProjects.data = action.payload;
+      })
+      .addCase(fetchGroupedProjects.rejected, state => {
+        state.groupedProjects.loading = false;
       })
       .addCase(createProject.pending, state => {
         state.creatingProject = true;
@@ -248,5 +338,6 @@ export const {
   setFilteredCategories,
   setFilteredStatuses,
   setRequestParams,
+  setGroupedRequestParams,
 } = projectSlice.actions;
 export default projectSlice.reducer;

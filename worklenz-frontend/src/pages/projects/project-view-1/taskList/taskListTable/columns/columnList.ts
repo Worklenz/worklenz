@@ -23,6 +23,11 @@ export const columnList: CustomTableColumnsType[] = [
     width: 60,
   },
   {
+    key: 'status',
+    columnHeader: 'status',
+    width: 120,
+  },
+  {
     key: 'members',
     columnHeader: 'members',
     width: 150,
@@ -36,11 +41,6 @@ export const columnList: CustomTableColumnsType[] = [
     key: 'phases',
     columnHeader: phaseHeader,
     width: 150,
-  },
-  {
-    key: 'status',
-    columnHeader: 'status',
-    width: 120,
   },
   {
     key: 'priority',

@@ -1,5 +1,18 @@
-import { Button, ConfigProvider, Flex, Form, Mentions, Skeleton, Space, Tooltip, Typography } from 'antd';
-import { useEffect, useState, useCallback } from 'react';
+import {
+  Button,
+  ConfigProvider,
+  Flex,
+  Form,
+  Mentions,
+  Skeleton,
+  Space,
+  Tooltip,
+  Typography,
+  Dropdown,
+  Menu,
+  Popconfirm,
+} from 'antd';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
 import { useParams } from 'react-router-dom';
@@ -10,7 +23,6 @@ import {
   IMentionMemberSelectOption,
   IMentionMemberViewModel,
 } from '@/types/project/projectComments.types';
-import { projectsApiService } from '@/api/projects/projects.api.service';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { IProjectUpdateCommentViewModel } from '@/types/project/project.types';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
@@ -20,6 +32,16 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { DeleteOutlined } from '@ant-design/icons';
 
 const MAX_COMMENT_LENGTH = 2000;
+
+// Compile RegExp once for linkify
+const urlRegex = /((https?:\/\/|www\.)[\w\-._~:/?#[\]@!$&'()*+,;=%]+)/gi;
+
+function linkify(text: string): string {
+  return text.replace(urlRegex, url => {
+    const href = url.startsWith('http') ? url : `https://${url}`;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+  });
+}
 
 const ProjectViewUpdates = () => {
   const { projectId } = useParams();
@@ -42,7 +64,14 @@ const ProjectViewUpdates = () => {
     if (!projectId) return;
     try {
       setIsLoading(true);
-      const res = await projectCommentsApiService.getMentionMembers(projectId, 1, 15, null, null, null);
+      const res = await projectCommentsApiService.getMentionMembers(
+        projectId,
+        1,
+        15,
+        null,
+        null,
+        null
+      );
       if (res.done) {
         setMembers(res.body as IMentionMemberViewModel[]);
       }
@@ -68,12 +97,12 @@ const ProjectViewUpdates = () => {
     }
   }, [projectId]);
 
-  const handleAddComment = async () => {
+  const handleAddComment = useCallback(async () => {
     if (!projectId || characterLength === 0) return;
 
     try {
       setIsSubmitting(true);
-      
+
       if (!commentValue) {
         console.error('Comment content is empty');
         return;
@@ -83,12 +112,24 @@ const ProjectViewUpdates = () => {
         project_id: projectId,
         team_id: getUserSession()?.team_id,
         content: commentValue.trim(),
-        mentions: selectedMembers
+        mentions: selectedMembers,
       };
 
       const res = await projectCommentsApiService.createProjectComment(body);
       if (res.done) {
-        await getComments();
+        setComments(prev => [
+          ...prev,
+          {
+            ...(res.body as IProjectUpdateCommentViewModel),
+            created_by: getUserSession()?.name || '',
+            created_at: new Date().toISOString(),
+            content: commentValue.trim(),
+            mentions: (res.body as IProjectUpdateCommentViewModel).mentions ?? [
+              undefined,
+              undefined,
+            ],
+          },
+        ]);
         handleCancel();
       }
     } catch (error) {
@@ -96,15 +137,13 @@ const ProjectViewUpdates = () => {
     } finally {
       setIsSubmitting(false);
       setCommentValue('');
-
-
     }
-  };
+  }, [projectId, characterLength, commentValue, selectedMembers, getComments]);
 
   useEffect(() => {
     void getMembers();
     void getComments();
-  }, [getMembers, getComments,refreshTimestamp]);
+  }, [getMembers, getComments, refreshTimestamp]);
 
   const handleCancel = useCallback(() => {
     form.resetFields(['comment']);
@@ -113,14 +152,18 @@ const ProjectViewUpdates = () => {
     setSelectedMembers([]);
   }, [form]);
 
-  const mentionsOptions =
-    members?.map(member => ({
-      value: member.id,
-      label: member.name,
-    })) ?? [];
+  const mentionsOptions = useMemo(
+    () =>
+      members?.map(member => ({
+        value: member.id,
+        label: member.name,
+      })) ?? [],
+    [members]
+  );
 
   const memberSelectHandler = useCallback((member: IMentionMemberSelectOption) => {
     if (!member?.value || !member?.label) return;
+
     setSelectedMembers(prev =>
       prev.some(mention => mention.id === member.value)
         ? prev
@@ -131,13 +174,11 @@ const ProjectViewUpdates = () => {
       const parts = prev.split('@');
       const lastPart = parts[parts.length - 1];
       const mentionText = member.label;
-      // Keep only the part before the @ and add the new mention
       return prev.slice(0, prev.length - lastPart.length) + mentionText;
     });
   }, []);
 
   const handleCommentChange = useCallback((value: string) => {
-    // Only update the value without trying to replace mentions    
     setCommentValue(value);
     setCharacterLength(value.trim().length);
   }, []);
@@ -157,56 +198,101 @@ const ProjectViewUpdates = () => {
     [getComments]
   );
 
+  // Memoize link click handler for comment links
+  const handleCommentLinkClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'A') {
+      e.preventDefault();
+      const href = (target as HTMLAnchorElement).getAttribute('href');
+      if (href) {
+        window.open(href, '_blank', 'noopener,noreferrer');
+      }
+    }
+  }, []);
+
+  const configProviderTheme = useMemo(
+    () => ({
+      components: {
+        Button: {
+          defaultColor: colors.lightGray,
+          defaultHoverColor: colors.darkGray,
+        },
+      },
+    }),
+    []
+  );
+
+  // Context menu for each comment (memoized)
+  const getCommentMenu = useCallback(
+    (commentId: string) => (
+      <Menu>
+        <Menu.Item key="delete">
+          <Popconfirm
+            title="Are you sure you want to delete this comment?"
+            onConfirm={() => handleDeleteComment(commentId)}
+            okText="Yes"
+            cancelText="No"
+          >
+            Delete
+          </Popconfirm>
+        </Menu.Item>
+      </Menu>
+    ),
+    [handleDeleteComment]
+  );
+
+  const renderComment = useCallback(
+    (comment: IProjectUpdateCommentViewModel) => {
+      const linkifiedContent = linkify(comment.content || '');
+      const sanitizedContent = DOMPurify.sanitize(linkifiedContent);
+      const timeDifference = calculateTimeDifference(comment.created_at || '');
+      const themeClass = theme === 'dark' ? 'dark' : 'light';
+
+      return (
+        <Dropdown
+          key={comment.id ?? ''}
+          overlay={getCommentMenu(comment.id ?? '')}
+          trigger={['contextMenu']}
+        >
+          <div>
+            <Flex gap={8}>
+              <CustomAvatar avatarName={comment.created_by || ''} />
+              <Flex vertical flex={1}>
+                <Space>
+                  <Typography.Text strong style={{ fontSize: 13, color: colors.lightGray }}>
+                    {comment.created_by || ''}
+                  </Typography.Text>
+                  <Tooltip title={comment.created_at}>
+                    <Typography.Text style={{ fontSize: 13, color: colors.deepLightGray }}>
+                      {timeDifference}
+                    </Typography.Text>
+                  </Tooltip>
+                </Space>
+                <Typography.Paragraph
+                  style={{ margin: '8px 0' }}
+                  ellipsis={{ rows: 3, expandable: true }}
+                >
+                  <div
+                    className={`mentions-${themeClass}`}
+                    dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+                    onClick={handleCommentLinkClick}
+                  />
+                </Typography.Paragraph>
+              </Flex>
+            </Flex>
+          </div>
+        </Dropdown>
+      );
+    },
+    [theme, configProviderTheme, handleDeleteComment, handleCommentLinkClick]
+  );
+
+  const commentsList = useMemo(() => comments.map(renderComment), [comments, renderComment]);
+
   return (
     <Flex gap={24} vertical>
       <Flex vertical gap={16}>
-        {
-          isLoadingComments ? (
-            <Skeleton active />
-          ):
-          comments.map(comment => (
-          <Flex key={comment.id} gap={8}>
-            <CustomAvatar avatarName={comment.created_by || ''} />
-            <Flex vertical flex={1}>
-              <Space>
-                <Typography.Text strong style={{ fontSize: 13, color: colors.lightGray }}>
-                  {comment.created_by || ''}
-                </Typography.Text>
-                <Tooltip title={comment.created_at}>
-                  <Typography.Text style={{ fontSize: 13, color: colors.deepLightGray }}>
-                    {calculateTimeDifference(comment.created_at || '')}
-                  </Typography.Text>
-                </Tooltip>
-              </Space>
-              <Typography.Paragraph 
-                style={{ margin: '8px 0' }}
-                ellipsis={{ rows: 3, expandable: true }}
-              >
-                <div className={`mentions-${theme === 'dark' ? 'dark' : 'light'}`} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content || '') }} />
-              </Typography.Paragraph>
-              <ConfigProvider
-                wave={{ disabled: true }}
-
-                theme={{
-                  components: {
-                    Button: {
-                      defaultColor: colors.lightGray,
-                      defaultHoverColor: colors.darkGray,
-                    },
-                  },
-                }}
-              >
-                <Button
-                  icon={<DeleteOutlined />}
-                  shape="circle"
-                  type="text"
-                  size='small'
-                  onClick={() => handleDeleteComment(comment.id)}
-                />
-              </ConfigProvider>
-            </Flex>
-          </Flex>
-        ))}
+        {isLoadingComments ? <Skeleton active /> : commentsList}
       </Flex>
 
       <Form onFinish={handleAddComment}>
@@ -218,11 +304,16 @@ const ProjectViewUpdates = () => {
             options={mentionsOptions}
             autoSize
             maxLength={MAX_COMMENT_LENGTH}
-            onSelect={option => memberSelectHandler(option as IMentionMemberSelectOption)}
+            onSelect={(option, prefix) => memberSelectHandler(option as IMentionMemberSelectOption)}
             onClick={() => setIsCommentBoxExpand(true)}
             onChange={handleCommentChange}
             prefix="@"
             split=""
+            filterOption={(input, option) => {
+              if (!input) return true;
+              const optionLabel = (option as any)?.label || '';
+              return optionLabel.toLowerCase().includes(input.toLowerCase());
+            }}
             style={{
               minHeight: isCommentBoxExpand ? 180 : 60,
               paddingBlockEnd: 24,

@@ -8,7 +8,13 @@ import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { fetchReportingCategories, fetchReportingProjects, fetchReportingTeams, setSelectOrDeselectAllTeams, setSelectOrDeselectTeam } from '@/features/reporting/time-reports/time-reports-overview.slice';
+import {
+  fetchReportingCategories,
+  fetchReportingProjects,
+  fetchReportingTeams,
+  setSelectOrDeselectAllTeams,
+  setSelectOrDeselectTeam,
+} from '@/features/reporting/time-reports/time-reports-overview.slice';
 
 const Team: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -46,15 +52,17 @@ const Team: React.FC = () => {
         placement="bottomLeft"
         trigger={['click']}
         dropdownRender={() => (
-          <div style={{ 
-            background: token.colorBgContainer,
-            borderRadius: token.borderRadius,
-            boxShadow: token.boxShadow,
-            padding: '4px 0',
-            maxHeight: '330px',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
+          <div
+            style={{
+              background: token.colorBgContainer,
+              borderRadius: token.borderRadius,
+              boxShadow: token.boxShadow,
+              padding: '4px 0',
+              maxHeight: '330px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
             <div style={{ padding: '8px', flexShrink: 0 }}>
               <Input
                 placeholder={t('searchByName')}
@@ -73,16 +81,18 @@ const Team: React.FC = () => {
               </Checkbox>
             </div>
             <Divider style={{ margin: '4px 0', flexShrink: 0 }} />
-            <div style={{ 
-              overflowY: 'auto',
-              flex: 1
-            }}>
+            <div
+              style={{
+                overflowY: 'auto',
+                flex: 1,
+              }}
+            >
               {filteredItems.map(item => (
-                <div 
+                <div
                   key={item.id}
-                  style={{ 
+                  style={{
                     padding: '8px 12px',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
                   }}
                 >
                   <Checkbox

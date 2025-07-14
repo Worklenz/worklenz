@@ -49,6 +49,13 @@ const initialState: projectViewTaskListColumnsState = {
       isVisible: false,
     },
     {
+      key: 'status',
+      name: 'status',
+      columnHeader: 'status',
+      width: 120,
+      isVisible: true,
+    },
+    {
       key: 'members',
       name: 'members',
       columnHeader: 'members',
@@ -68,13 +75,6 @@ const initialState: projectViewTaskListColumnsState = {
       columnHeader: React.createElement(PhaseHeader),
       width: 150,
       isVisible: false,
-    },
-    {
-      key: 'status',
-      name: 'status',
-      columnHeader: 'status',
-      width: 120,
-      isVisible: true,
     },
     {
       key: 'priority',

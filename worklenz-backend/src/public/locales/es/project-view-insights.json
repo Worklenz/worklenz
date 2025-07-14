@@ -1,0 +1,41 @@
+{
+  "overview": {
+    "title": "Resumen",
+    "statusOverview": "Resumen de Estado",
+    "priorityOverview": "Resumen de Prioridad",
+    "lastUpdatedTasks": "Últimas Tareas Actualizadas"
+  },
+  "members": {
+    "title": "Miembros",
+    "tooltip": "Miembros",
+    "tasksByMembers": "Tareas por miembros",
+    "tasksByMembersTooltip": "Tareas por miembros",
+    "name": "Nombre",
+    "taskCount": "Cantidad de Tareas",
+    "contribution": "Contribución",
+    "completed": "Completadas",
+    "incomplete": "Incompletas",
+    "overdue": "Atrasadas",
+    "progress": "Progreso"
+  },
+  "tasks": {
+    "overdueTasks": "Tareas Atrasadas",
+    "overLoggedTasks": "Tareas con Exceso de Tiempo",
+    "tasksCompletedEarly": "Tareas completadas antes de tiempo",
+    "tasksCompletedLate": "Tareas completadas tarde",
+    "overLoggedTasksTooltip": "Tareas que tienen tiempo registrado más allá de su tiempo estimado",
+    "overdueTasksTooltip": "Tareas que están más allá de su fecha límite"
+  },
+  "common": {
+    "seeAll": "Ver todo",
+    "totalLoggedHours": "Total de horas registradas",
+    "totalEstimation": "Estimación total",
+    "completedTasks": "Tareas completadas",
+    "incompleteTasks": "Tareas incompletas",
+    "overdueTasks": "Tareas atrasadas",
+    "overdueTasksTooltip": "Tareas que están más allá de su fecha límite",
+    "totalLoggedHoursTooltip": "Estimación de tareas y tiempo registrado para las tareas.",
+    "includeArchivedTasks": "Incluir Tareas Archivadas",
+    "export": "Exportar"
+  }
+}
