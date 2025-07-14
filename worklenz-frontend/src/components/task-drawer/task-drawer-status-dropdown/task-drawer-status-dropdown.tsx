@@ -12,7 +12,8 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { Select } from 'antd';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
+import { updateEnhancedKanbanTaskStatus } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 interface TaskDrawerStatusDropdownProps {
   statuses: ITaskStatus[];
@@ -21,7 +22,7 @@ interface TaskDrawerStatusDropdownProps {
 }
 
 const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDropdownProps) => {
-  const { socket, connected } = useSocket();
+  const { socket } = useSocket();
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { tab } = useTabSearchParam();
@@ -46,12 +47,13 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
       SocketEvents.TASK_STATUS_CHANGE.toString(),
       (data: ITaskListStatusChangeResponse) => {
         dispatch(setTaskStatus(data));
+        socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
 
         if (tab === 'tasks-list') {
           dispatch(updateTaskStatus(data));
         }
         if (tab === 'board') {
-          dispatch(updateBoardTaskStatus(data));
+          dispatch(updateEnhancedKanbanTaskStatus(data));
         }
         if (data.parent_task) getTaskProgress(data.parent_task);
       }
@@ -65,7 +67,6 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
         );
       }
     }
-
   };
 
   const options = useMemo(

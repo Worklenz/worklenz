@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
 import {
   fetchLabelsByProject,
   fetchTaskAssignees,
@@ -15,13 +16,14 @@ import {
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 
-const SearchDropdown = React.lazy(() => import('@components/project-task-filters/filter-dropdowns/search-dropdown'));
-const SortFilterDropdown = React.lazy(() => import('@components/project-task-filters/filter-dropdowns/sort-filter-dropdown'));
-const LabelsFilterDropdown = React.lazy(() => import('@components/project-task-filters/filter-dropdowns/labels-filter-dropdown'));
-const MembersFilterDropdown = React.lazy(() => import('@components/project-task-filters/filter-dropdowns/members-filter-dropdown'));
-const GroupByFilterDropdown = React.lazy(() => import('@components/project-task-filters/filter-dropdowns/group-by-filter-dropdown'));
-const ShowFieldsFilterDropdown = React.lazy(() => import('@components/project-task-filters/filter-dropdowns/show-fields-filter-dropdown'));
-const PriorityFilterDropdown = React.lazy(() => import('@components/project-task-filters/filter-dropdowns/priority-filter-dropdown'));
+// Import filter components synchronously for better performance
+import SearchDropdown from '@components/project-task-filters/filter-dropdowns/search-dropdown';
+import SortFilterDropdown from '@components/project-task-filters/filter-dropdowns/sort-filter-dropdown';
+import LabelsFilterDropdown from '@components/project-task-filters/filter-dropdowns/labels-filter-dropdown';
+import MembersFilterDropdown from '@components/project-task-filters/filter-dropdowns/members-filter-dropdown';
+import GroupByFilterDropdown from '@components/project-task-filters/filter-dropdowns/group-by-filter-dropdown';
+import ShowFieldsFilterDropdown from '@components/project-task-filters/filter-dropdowns/show-fields-filter-dropdown';
+import PriorityFilterDropdown from '@components/project-task-filters/filter-dropdowns/priority-filter-dropdown';
 
 interface TaskListFiltersProps {
   position: 'board' | 'list';
@@ -33,23 +35,53 @@ const TaskListFilters: React.FC<TaskListFiltersProps> = ({ position }) => {
   const { projectView } = useTabSearchParam();
 
   const priorities = useAppSelector(state => state.priorityReducer.priorities);
-
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const archived = useAppSelector(state => state.taskReducer.archived);
 
   const handleShowArchivedChange = () => dispatch(toggleArchived());
 
+  // Optimized filter data loading - staggered and non-blocking
   useEffect(() => {
-    const fetchInitialData = async () => {
-      if (!priorities.length) await dispatch(fetchPriorities());
-      if (projectId) {
-        await dispatch(fetchLabelsByProject(projectId));
-        await dispatch(fetchTaskAssignees(projectId));
+    const loadFilterData = () => {
+      try {
+        // Load priorities first (usually cached/fast) - immediate
+        if (!priorities.length) {
+          dispatch(fetchPriorities());
+        }
+
+        if (projectId) {
+          // Stagger the loading to prevent overwhelming the server
+          // Load project-specific data with delays
+          setTimeout(() => {
+            dispatch(fetchLabelsByProject(projectId));
+          }, 100);
+
+          setTimeout(() => {
+            dispatch(fetchTaskAssignees(projectId));
+          }, 200);
+
+          // Load team members last (heaviest query)
+          setTimeout(() => {
+            dispatch(
+              getTeamMembers({
+                index: 0,
+                size: 50, // Reduce initial load size
+                field: null,
+                order: null,
+                search: null,
+                all: false, // Don't load all at once
+              })
+            );
+          }, 300);
+        }
+      } catch (error) {
+        console.error('Error loading filter data:', error);
+        // Don't throw - filter loading errors shouldn't break the main UI
       }
-      dispatch(getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true }));
     };
 
-    fetchInitialData();
+    // Load immediately without setTimeout to avoid additional delay
+    loadFilterData();
   }, [dispatch, priorities.length, projectId]);
 
   return (

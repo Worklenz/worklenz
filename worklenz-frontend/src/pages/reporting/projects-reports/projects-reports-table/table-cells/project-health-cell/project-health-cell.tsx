@@ -47,10 +47,13 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
   const onClick: MenuProps['onClick'] = e => {
     if (!e.key || !projectId) return;
 
-    socket?.emit(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), JSON.stringify({
-      project_id: projectId,
-      health_id: e.key,
-    }));
+    socket?.emit(
+      SocketEvents.PROJECT_HEALTH_CHANGE.toString(),
+      JSON.stringify({
+        project_id: projectId,
+        health_id: e.key,
+      })
+    );
   };
 
   // dropdown items

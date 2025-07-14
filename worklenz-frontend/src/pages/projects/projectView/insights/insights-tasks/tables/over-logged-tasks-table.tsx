@@ -15,7 +15,6 @@ const OverLoggedTasksTable = () => {
   const [loading, setLoading] = useState(true);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
 
-
   const getOverLoggedTasks = async () => {
     try {
       setLoading(true);
@@ -35,7 +34,7 @@ const OverLoggedTasksTable = () => {
 
   useEffect(() => {
     getOverLoggedTasks();
-  }, [projectId, includeArchivedTasks,refreshTimestamp]);
+  }, [projectId, includeArchivedTasks, refreshTimestamp]);
 
   // table columns
   const columns: TableProps['columns'] = [
@@ -105,8 +104,8 @@ const OverLoggedTasksTable = () => {
     {
       key: 'overLoggedTime',
       title: 'Over Logged Time',
-      render: (record: IInsightTasks) => (
-        <Typography.Text>{record.overlogged_time}</Typography.Text>
+      render: (_, record: IInsightTasks) => (
+        <Typography.Text>{record.overlogged_time_string}</Typography.Text>
       ),
     },
   ];

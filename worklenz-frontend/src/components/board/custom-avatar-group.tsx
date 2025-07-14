@@ -14,7 +14,7 @@ const CustomAvatarGroup = ({ task, sectionId }: CustomAvatarGroupProps) => {
     <Flex
       gap={4}
       align="center"
-      onClick={(e) => e.stopPropagation()}
+      onClick={e => e.stopPropagation()}
       style={{
         borderRadius: 4,
         cursor: 'pointer',

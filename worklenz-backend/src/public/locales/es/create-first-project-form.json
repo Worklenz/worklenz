@@ -1,0 +1,13 @@
+{
+  "formTitle": "Crea tu primer proyecto",
+  "inputLabel": "¿En qué proyecto estás trabajando ahora?",
+  "or": "o",
+  "templateButton": "Importar desde plantilla",
+  "createFromTemplate": "Crear desde plantilla",
+  "goBack": "Volver",
+  "continue": "Continuar",
+  "cancel": "Cancelar",
+  "create": "Crear",
+  "templateDrawerTitle": "Seleccionar de plantillas",
+  "createProject": "Crear proyecto"
+}

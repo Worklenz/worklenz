@@ -16,7 +16,12 @@ import TaskListTable from '../task-list-table';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import Collapsible from '@/components/collapsible/collapsible';
-import { fetchTaskGroups, fetchTaskListColumns, IGroupBy, updateTaskGroupColor } from '@/features/tasks/tasks.slice';
+import {
+  fetchTaskGroups,
+  fetchTaskListColumns,
+  IGroupBy,
+  updateTaskGroupColor,
+} from '@/features/tasks/tasks.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
@@ -131,7 +136,11 @@ const TaskListTableWrapper = ({
         await updateStatus();
       } else if (groupBy === IGroupBy.PHASE) {
         const body = { id: tableId, name: tableName.trim() };
-        const res = await phasesApiService.updateNameOfPhase(tableId, body as ITaskPhase, projectId);
+        const res = await phasesApiService.updateNameOfPhase(
+          tableId,
+          body as ITaskPhase,
+          projectId
+        );
         if (res.done) {
           trackMixpanelEvent(evt_project_board_column_setting_click, { Rename: 'Phase' });
           dispatch(fetchPhasesByProjectId(projectId));
@@ -199,6 +208,18 @@ const TaskListTableWrapper = ({
       >
         <Flex vertical>
           <Flex style={{ transform: 'translateY(6px)' }}>
+            {groupBy !== IGroupBy.PRIORITY &&
+              !showRenameInput &&
+              isEditable &&
+              name !== 'Unmapped' && (
+                <Dropdown menu={{ items }}>
+                  <Button
+                    icon={<EllipsisOutlined />}
+                    className="borderless-icon-btn"
+                    title={isEditable ? undefined : t('noPermission')}
+                  />
+                </Dropdown>
+              )}
             <Button
               className="custom-collapse-button"
               style={{
@@ -211,7 +232,7 @@ const TaskListTableWrapper = ({
               icon={<RightOutlined rotate={isExpanded ? 90 : 0} />}
               onClick={handlToggleExpand}
             >
-              {(showRenameInput && name !== 'Unmapped') ? (
+              {showRenameInput && name !== 'Unmapped' ? (
                 <Input
                   size="small"
                   value={tableName}
@@ -234,22 +255,19 @@ const TaskListTableWrapper = ({
                 </Typography.Text>
               )}
             </Button>
-            {groupBy !== IGroupBy.PRIORITY && !showRenameInput && isEditable && name !== 'Unmapped' && (
-              <Dropdown menu={{ items }}>
-                <Button
-                  icon={<EllipsisOutlined />}
-                  className="borderless-icon-btn"
-                  title={isEditable ? undefined : t('noPermission')}
-                />
-              </Dropdown>
-            )}
           </Flex>
           <Collapsible
             isOpen={isExpanded}
             className={`border-l-[3px] relative after:content after:absolute after:h-full after:w-1 after:z-10 after:top-0 after:left-0`}
             color={color}
           >
-            <TaskListTable taskList={taskList} tableId={tableId} activeId={activeId} />
+            <TaskListTable
+              taskList={taskList}
+              tableId={tableId}
+              activeId={activeId}
+              groupBy={groupBy}
+              isOver={isOver}
+            />
           </Collapsible>
         </Flex>
       </ConfigProvider>

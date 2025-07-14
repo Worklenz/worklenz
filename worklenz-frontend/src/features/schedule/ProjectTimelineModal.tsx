@@ -8,14 +8,26 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { getDayName } from '@/utils/schedule';
 import dayjs from 'dayjs';
 
-const ProjectTimelineModal = ({ setIsModalOpen, defaultData, projectId, memberId }: { setIsModalOpen: (x: boolean) => void, defaultData?: ScheduleData, projectId?:string, memberId?:string }) => {
+const ProjectTimelineModal = ({
+  setIsModalOpen,
+  defaultData,
+  projectId,
+  memberId,
+}: {
+  setIsModalOpen: (x: boolean) => void;
+  defaultData?: ScheduleData;
+  projectId?: string;
+  memberId?: string;
+}) => {
   const [form] = Form.useForm();
   const { t } = useTranslation('schedule');
   const { workingDays } = useAppSelector(state => state.scheduleReducer);
   const dispatch = useAppDispatch();
 
   const handleFormSubmit = async (values: any) => {
-    dispatch(createSchedule({schedule:{ ...values, project_id:projectId, team_member_id:memberId }}));
+    dispatch(
+      createSchedule({ schedule: { ...values, project_id: projectId, team_member_id: memberId } })
+    );
     form.resetFields();
     setIsModalOpen(false);
     dispatch(fetchTeamData());
@@ -25,13 +37,13 @@ const ProjectTimelineModal = ({ setIsModalOpen, defaultData, projectId, memberId
     const startDate = form.getFieldValue('allocated_from'); // Start date
     const endDate = form.getFieldValue('allocated_to'); // End date
     const secondsPerDay = form.getFieldValue('seconds_per_day'); // Seconds per day
-  
+
     if (startDate && endDate && secondsPerDay && !isNaN(Number(secondsPerDay))) {
       const start: any = new Date(startDate);
       const end: any = new Date(endDate);
-  
+
       if (start > end) {
-        console.error("Start date cannot be after end date");
+        console.error('Start date cannot be after end date');
         return;
       }
 
@@ -41,11 +53,11 @@ const ProjectTimelineModal = ({ setIsModalOpen, defaultData, projectId, memberId
           totalWorkingDays++;
         }
       }
-  
+
       const hoursPerDay = secondsPerDay;
-  
+
       const totalHours = totalWorkingDays * hoursPerDay;
-  
+
       form.setFieldsValue({ total_seconds: totalHours.toFixed(2) });
     } else {
       form.setFieldsValue({ total_seconds: 0 });
@@ -65,7 +77,6 @@ const ProjectTimelineModal = ({ setIsModalOpen, defaultData, projectId, memberId
   useEffect(() => {
     form.setFieldsValue({ allocated_from: dayjs(defaultData?.allocated_from) });
     form.setFieldsValue({ allocated_to: dayjs(defaultData?.allocated_to) });
-
   }, [defaultData]);
 
   return (
@@ -95,7 +106,7 @@ const ProjectTimelineModal = ({ setIsModalOpen, defaultData, projectId, memberId
           >
             <span>{t('endDate')}</span>
             <Form.Item name="allocated_to">
-              <DatePicker disabledDate={disabledEndDate} onChange={e => calTotalHours()}/>
+              <DatePicker disabledDate={disabledEndDate} onChange={e => calTotalHours()} />
             </Form.Item>
           </Col>
         </Row>
@@ -103,14 +114,26 @@ const ProjectTimelineModal = ({ setIsModalOpen, defaultData, projectId, memberId
           <Col span={12} style={{ paddingRight: '20px' }}>
             <span>{t('hoursPerDay')}</span>
             <Form.Item name="seconds_per_day">
-              <Input max={24} onChange={e => calTotalHours()} defaultValue={defaultData?.seconds_per_day} type="number" suffix="hours" />
+              <Input
+                max={24}
+                onChange={e => calTotalHours()}
+                defaultValue={defaultData?.seconds_per_day}
+                type="number"
+                suffix="hours"
+              />
             </Form.Item>
           </Col>
 
           <Col span={12} style={{ paddingLeft: '20px' }}>
             <span>{t('totalHours')}</span>
             <Form.Item name="total_seconds">
-              <Input readOnly max={24} defaultValue={defaultData?.total_seconds} type="number" suffix="hours" />
+              <Input
+                readOnly
+                max={24}
+                defaultValue={defaultData?.total_seconds}
+                type="number"
+                suffix="hours"
+              />
             </Form.Item>
           </Col>
         </Row>
@@ -124,7 +147,7 @@ const ProjectTimelineModal = ({ setIsModalOpen, defaultData, projectId, memberId
           <Button type="link">{t('deleteButton')}</Button>
           <div style={{ display: 'flex', gap: '5px' }}>
             <Button onClick={() => setIsModalOpen(false)}>{t('cancelButton')}</Button>
-            <Button htmlType='submit' type="primary">
+            <Button htmlType="submit" type="primary">
               {t('saveButton')}
             </Button>
           </div>

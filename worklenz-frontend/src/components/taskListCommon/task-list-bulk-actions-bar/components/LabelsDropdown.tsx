@@ -35,6 +35,21 @@ const LabelsDropdown = ({
     }
   }, []);
 
+  // Filter labels based on search input
+  const filteredLabels = useMemo(() => {
+    if (!createLabelText.trim()) {
+      return labelsList;
+    }
+    return labelsList.filter(label =>
+      label.name?.toLowerCase().includes(createLabelText.toLowerCase())
+    );
+  }, [labelsList, createLabelText]);
+
+  // Check if the search text matches any existing label exactly
+  const exactMatch = useMemo(() => {
+    return labelsList.some(label => label.name?.toLowerCase() === createLabelText.toLowerCase());
+  }, [labelsList, createLabelText]);
+
   const isOnApply = () => {
     if (!createLabelText.trim() && selectedLabels.length === 0) return;
     onApply();
@@ -42,18 +57,17 @@ const LabelsDropdown = ({
   return (
     <Card className="custom-card" styles={{ body: { padding: 8 } }}>
       <Flex vertical>
-        {/* Always show the list, filtered by input */}
-        {!createLabelText && (
-          <List
-            style={{
-              padding: 0,
-              overflow: 'auto',
-              maxHeight: labelsList.length > 10 ? '200px' : 'auto', // Set max height if more than 10 labels
-              maxWidth: 250,
+        {/* Show filtered labels list */}
+        <List
+          style={{
+            padding: 0,
+            overflow: 'auto',
+            maxHeight: filteredLabels.length > 10 ? '200px' : 'auto',
+            maxWidth: 250,
           }}
         >
-          {labelsList.length > 0 && (
-            labelsList.map(label => (
+          {filteredLabels.length > 0 ? (
+            filteredLabels.map(label => (
               <List.Item
                 className={themeMode === 'dark' ? 'custom-list-item dark' : 'custom-list-item'}
                 key={label.id}
@@ -75,30 +89,65 @@ const LabelsDropdown = ({
                 </Checkbox>
               </List.Item>
             ))
-            )}
-          </List>
-        )}
+          ) : createLabelText.trim() ? (
+            <List.Item
+              className={themeMode === 'dark' ? 'custom-list-item dark' : 'custom-list-item'}
+              style={{
+                display: 'flex',
+                gap: 8,
+                justifyContent: 'flex-start',
+                padding: '4px 8px',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('noMatchingLabels')}
+              </Typography.Text>
+            </List.Item>
+          ) : (
+            <List.Item
+              className={themeMode === 'dark' ? 'custom-list-item dark' : 'custom-list-item'}
+              style={{
+                display: 'flex',
+                gap: 8,
+                justifyContent: 'flex-start',
+                padding: '4px 8px',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('noLabels')}
+              </Typography.Text>
+            </List.Item>
+          )}
+        </List>
 
         <Flex style={{ paddingTop: 8 }} vertical justify="space-between" gap={8}>
           <Input
             ref={labelsInputRef}
             value={createLabelText}
             onChange={e => onCreateLabelTextChange(e.currentTarget.value)}
-            placeholder={t('createLabel')}
+            placeholder={t('searchOrCreateLabel')}
             onPressEnter={() => {
               isOnApply();
             }}
           />
           {createLabelText && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {t('hitEnterToCreate')}
+              {exactMatch ? t('labelExists') : t('hitEnterToCreate')}
             </Typography.Text>
           )}
-          {!createLabelText && (
-            <Button type="primary" size="small" onClick={isOnApply} style={{ width: '100%' }}>
-              {t('apply')}
-            </Button>
-          )}
+          <Button
+            type="primary"
+            size="small"
+            onClick={isOnApply}
+            style={{ width: '100%' }}
+            disabled={!createLabelText.trim() && selectedLabels.length === 0}
+          >
+            {t('apply')}
+          </Button>
         </Flex>
       </Flex>
     </Card>

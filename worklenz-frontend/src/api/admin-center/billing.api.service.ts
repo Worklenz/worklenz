@@ -6,7 +6,10 @@ import { IUpgradeSubscriptionPlanResponse } from '@/types/admin-center/admin-cen
 
 const rootUrl = `${API_BASE_URL}/billing`;
 export const billingApiService = {
-  async upgradeToPaidPlan(plan: string, seatCount: number): Promise<IServerResponse<IUpgradeSubscriptionPlanResponse>> {
+  async upgradeToPaidPlan(
+    plan: string,
+    seatCount: number
+  ): Promise<IServerResponse<IUpgradeSubscriptionPlanResponse>> {
     const q = toQueryString({ plan, seatCount });
     const response = await apiClient.get<IServerResponse<any>>(
       `${rootUrl}/upgrade-to-paid-plan${q}`
@@ -14,7 +17,9 @@ export const billingApiService = {
     return response.data;
   },
 
-  async purchaseMoreSeats(seatCount: number): Promise<IServerResponse<IUpgradeSubscriptionPlanResponse>> {
+  async purchaseMoreSeats(
+    seatCount: number
+  ): Promise<IServerResponse<IUpgradeSubscriptionPlanResponse>> {
     const response = await apiClient.post<IServerResponse<IUpgradeSubscriptionPlanResponse>>(
       `${rootUrl}/purchase-more-seats`,
       { seatCount }
@@ -27,9 +32,5 @@ export const billingApiService = {
       `${rootUrl}/contact-us${toQueryString({ contactNo })}`
     );
     return response.data;
-  }
-
-
-
-
+  },
 };

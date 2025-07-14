@@ -111,10 +111,10 @@ const TaskTemplatesSettings = () => {
       <Table
         loading={isLoading}
         size="small"
-        pagination={{ 
+        pagination={{
           size: 'small',
           showSizeChanger: true,
-          showTotal: (total) => t('totalItems', { total })
+          showTotal: total => t('totalItems', { total }),
         }}
         columns={columns}
         dataSource={taskTemplates}

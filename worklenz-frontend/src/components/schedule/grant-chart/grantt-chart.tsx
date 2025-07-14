@@ -13,7 +13,7 @@ import ProjectTimelineModal from '@/features/schedule/ProjectTimelineModal';
 const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date }, ref) => {
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<string|undefined>(undefined);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
 
   const { teamData } = useAppSelector(state => state.scheduleReducer);
   const { dateList, loading, dayCount } = useAppSelector(state => state.scheduleReducer);
@@ -114,7 +114,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
         style={{
           background: themeWiseColor('#fff', '#141414', themeMode),
         }}
-        className={`after:content relative z-10 after:absolute after:-right-1 after:top-0 after:-z-10 after:h-full after:w-1.5 after:bg-transparent after:bg-gradient-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent`}
+        className={`after:content relative z-10 after:absolute after:-right-1 after:top-0 after:-z-10 after:h-full after:w-1.5 after:bg-transparent after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent`}
       >
         <GranttMembersTable
           members={teamData}
@@ -217,7 +217,13 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
               {expandedProject === member.id && (
                 <div>
                   <Popover
-                    content={<ProjectTimelineModal memberId={member?.team_member_id} projectId={selectedProjectId} setIsModalOpen={setIsModalOpen} />}
+                    content={
+                      <ProjectTimelineModal
+                        memberId={member?.team_member_id}
+                        projectId={selectedProjectId}
+                        setIsModalOpen={setIsModalOpen}
+                      />
+                    }
                     trigger={'click'}
                     open={isModalOpen}
                   ></Popover>
@@ -266,7 +272,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                           >
                             <div
                               style={{ width: '100%', height: '100%' }}
-                              className={`rounded-sm outline-1 hover:outline ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
+                              className={`rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
                             ></div>
                           </div>
                         ))

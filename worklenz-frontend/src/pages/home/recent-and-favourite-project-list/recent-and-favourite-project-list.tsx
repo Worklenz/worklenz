@@ -23,7 +23,7 @@ const MY_PROJECTS_FILTER_KEY = 'my-dashboard-active-projects-filter';
 const RecentAndFavouriteProjectList = () => {
   const { t } = useTranslation('home');
   const navigate = useNavigate();
-  
+
   const [projectSegment, setProjectSegment] = useState<'Recent' | 'Favourites'>('Recent');
 
   const getActiveProjectsFilter = useCallback(() => {
@@ -77,7 +77,9 @@ const RecentAndFavouriteProjectList = () => {
           <Typography.Paragraph
             key={record.id}
             style={{ margin: 0, paddingInlineEnd: 6, cursor: 'pointer' }}
-            onClick={() => navigate(`/worklenz/projects/${record.id}?tab=tasks-list&pinned_tab=tasks-list`)}
+            onClick={() =>
+              navigate(`/worklenz/projects/${record.id}?tab=tasks-list&pinned_tab=tasks-list`)
+            }
           >
             <Badge color={record.color_code} style={{ marginInlineEnd: 4 }} />
             {record.name}
@@ -119,7 +121,7 @@ const RecentAndFavouriteProjectList = () => {
       <Segmented<'Recent' | 'Favourites'>
         options={[
           { value: 'Recent', label: t('projects.recent') },
-          { value: 'Favourites', label: t('projects.favourites') }
+          { value: 'Favourites', label: t('projects.favourites') },
         ]}
         defaultValue={getActiveProjectsFilter() === 0 ? 'Recent' : 'Favourites'}
         onChange={handleSegmentChange}
@@ -132,7 +134,7 @@ const RecentAndFavouriteProjectList = () => {
       <div style={{ maxHeight: 420, overflow: 'auto' }}>
         {projectsData?.body?.length === 0 ? (
           <Empty
-            image="https://app.worklenz.com/assets/images/empty-box.webp"
+            image="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
             imageStyle={{ height: 60 }}
             style={{
               display: 'flex',

@@ -1,0 +1,14 @@
+{
+  "taskList": "Task List",
+  "board": "Board",
+  "insights": "Insights",
+  "files": "Files",
+  "members": "Members",
+  "updates": "Updates",
+  "projectView": "Project View",
+  "loading": "Loading project...",
+  "error": "Error loading project",
+  "pinnedTab": "Pinned as default tab",
+  "pinTab": "Pin as default tab",
+  "unpinTab": "Unpin default tab"
+} 

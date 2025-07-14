@@ -1,4 +1,4 @@
-import { MemberLoggedTimeType } from "../timeSheet/project.types";
+import { MemberLoggedTimeType } from '../timeSheet/project.types';
 
 export interface IAllocationProject {
   name?: string;

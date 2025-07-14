@@ -1,0 +1,19 @@
+{
+  "configurePhases": "Configurar fases",
+  "phaseLabel": "Etiqueta de fase",
+  "enterPhaseName": "Ingrese un nombre para la etiqueta de fase",
+  "addOption": "Agregar opción",
+  "phaseOptions": "Opciones de fase:",
+  "dragToReorderPhases": "Arrastra las fases para reordenarlas. Cada fase puede tener un color diferente.",
+  "enterNewPhaseName": "Introducir nuevo nombre de fase...",
+  "addPhase": "Añadir Fase",
+  "noPhasesFound": "No se encontraron fases. Crea tu primera fase arriba.",
+  "deletePhase": "Eliminar Fase",
+  "deletePhaseConfirm": "¿Estás seguro de que quieres eliminar esta fase? Esta acción no se puede deshacer.",
+  "rename": "Renombrar",
+  "delete": "Eliminar",
+  "enterPhaseName": "Introducir nombre de la fase",
+  "selectColor": "Seleccionar color",
+  "managePhases": "Gestionar Fases",
+  "close": "Cerrar"
+}

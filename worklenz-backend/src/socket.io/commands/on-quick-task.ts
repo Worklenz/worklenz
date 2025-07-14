@@ -56,6 +56,8 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
     const q = `SELECT create_quick_task($1) AS task;`;
     const body = JSON.parse(data as string);
 
+
+
     body.name = (body.name || "").trim();
     body.priority_id = body.priority_id?.trim() || null;
     body.status_id = body.status_id?.trim() || null;
@@ -111,10 +113,12 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
 
         notifyProjectUpdates(socket, d.task.id);
       }
+    } else {
+      // Empty task name, emit null to indicate no task was created
+      socket.emit(SocketEvents.QUICK_TASK.toString(), null);
     }
   } catch (error) {
     log_error(error);
+    socket.emit(SocketEvents.QUICK_TASK.toString(), null);
   }
-
-  socket.emit(SocketEvents.QUICK_TASK.toString(), null);
 }

@@ -1,0 +1,23 @@
+{
+  "bugTracking": "错误跟踪",
+  "construction": "建筑与施工",
+  "designCreative": "设计与创意",
+  "education": "教育",
+  "finance": "金融",
+  "hrRecruiting": "人力资源与招聘",
+  "informationTechnology": "信息技术",
+  "legal": "法律",
+  "manufacturing": "制造业",
+  "marketing": "市场营销",
+  "nonprofit": "非营利",
+  "personalUse": "个人使用",
+  "salesCRM": "销售与客户关系管理",
+  "serviceConsulting": "服务与咨询",
+  "softwareDevelopment": "软件开发",
+  "description": "描述",
+  "phase": "阶段",
+  "statuses": "状态",
+  "priorities": "优先级",
+  "labels": "标签",
+  "tasks": "任务"
+}

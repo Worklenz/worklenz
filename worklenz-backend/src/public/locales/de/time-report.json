@@ -1,0 +1,44 @@
+{
+  "includeArchivedProjects": "Archivierte Projekte einschließen",
+  "export": "Exportieren",
+  "timeSheet": "Stundenzettel",
+
+  "searchByName": "Nach Namen suchen",
+  "selectAll": "Alle auswählen",
+  "teams": "Teams",
+
+  "searchByProject": "Nach Projektnamen suchen",
+  "projects": "Projekte",
+
+  "searchByCategory": "Nach Kategorienamen suchen",
+  "categories": "Kategorien",
+
+  "billable": "Abrechenbar",
+  "nonBillable": "Nicht abrechenbar",
+
+  "total": "Gesamt",
+
+  "projectsTimeSheet": "Projekt-Zeiterfassung",
+
+  "loggedTime": "Erfasste Zeit (Stunden)",
+
+  "exportToExcel": "Nach Excel exportieren",
+  "logged": "erfasst",
+  "for": "für",
+
+  "membersTimeSheet": "Mitglieder-Zeiterfassung",
+  "member": "Mitglied",
+
+  "estimatedVsActual": "Geschätzt vs. Tatsächlich",
+  "workingDays": "Arbeitstage",
+  "manDays": "Manntage",
+  "days": "Tage",
+  "estimatedDays": "Geschätzt Tage",
+  "actualDays": "Tatsächliche Tage",
+
+  "noCategories": "Keine Kategorien gefunden",
+  "noCategory": "Keine Kategorie",
+  "noProjects": "Keine Projekte gefunden",
+  "noTeams": "Keine Teams gefunden",
+  "noData": "Keine Daten gefunden"
+}

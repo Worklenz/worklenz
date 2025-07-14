@@ -1,8 +1,10 @@
 import { RouteObject } from 'react-router-dom';
-import AdminCenterLayout from '@/layouts/admin-center-layout';
+import { Suspense } from 'react';
 import { adminCenterItems } from '@/pages/admin-center/admin-center-constants';
 import { Navigate } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
+import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+import AdminCenterLayout from '@/layouts/AdminCenterLayout';
 
 const AdminCenterGuard = ({ children }: { children: React.ReactNode }) => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
@@ -24,7 +26,11 @@ const adminCenterRoutes: RouteObject[] = [
     ),
     children: adminCenterItems.map(item => ({
       path: item.endpoint,
-      element: item.element,
+      element: (
+        <Suspense fallback={<SuspenseFallback />}>
+          {item.element}
+        </Suspense>
+      ),
     })),
   },
 ];

@@ -5,8 +5,15 @@ import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
 import { colors } from '../styles/colors';
 import { navRoutes, NavRoutesType } from '../features/navbar/navRoutes';
 
+// Props type for the component
+type PinRouteToNavbarButtonProps = {
+  name: string;
+  path: string;
+  adminOnly?: boolean;
+};
+
 // this component pin the given path to navbar
-const PinRouteToNavbarButton = ({ name, path }: NavRoutesType) => {
+const PinRouteToNavbarButton = ({ name, path, adminOnly = false }: PinRouteToNavbarButtonProps) => {
   const navRoutesList: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
 
   const [isPinned, setIsPinned] = useState(
@@ -18,7 +25,7 @@ const PinRouteToNavbarButton = ({ name, path }: NavRoutesType) => {
   const handlePinToNavbar = (name: string, path: string) => {
     let newNavRoutesList;
 
-    const route: NavRoutesType = { name, path };
+    const route: NavRoutesType = { name, path, adminOnly };
 
     if (isPinned) {
       newNavRoutesList = navRoutesList.filter(item => item.name !== route.name);

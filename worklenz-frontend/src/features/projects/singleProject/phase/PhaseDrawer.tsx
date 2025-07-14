@@ -37,6 +37,7 @@ import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { updatePhaseLabel } from '@/features/project/project.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
+import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 
 interface UpdateSortOrderBody {
   from_index: number;
@@ -67,6 +68,7 @@ const PhaseDrawer = () => {
 
   const refreshTasks = async () => {
     if (tab === 'tasks-list') {
+      await dispatch(fetchTasksV3(projectId || ''));
       await dispatch(fetchTaskGroups(projectId || ''));
     } else if (tab === 'board') {
       await dispatch(fetchBoardTaskGroups(projectId || ''));
@@ -75,7 +77,7 @@ const PhaseDrawer = () => {
 
   const handleAddOptions = async () => {
     if (!projectId) return;
-    
+
     await dispatch(addPhaseOption({ projectId: projectId }));
     await dispatch(fetchPhasesByProjectId(projectId));
     await refreshTasks();
@@ -131,6 +133,8 @@ const PhaseDrawer = () => {
       if (res.done) {
         dispatch(updatePhaseLabel(phaseName));
         setInitialPhaseName(phaseName);
+        // Refresh tasks to update phase label in task list
+        await refreshTasks();
       }
     } catch (error) {
       logger.error('Error updating phase name', error);

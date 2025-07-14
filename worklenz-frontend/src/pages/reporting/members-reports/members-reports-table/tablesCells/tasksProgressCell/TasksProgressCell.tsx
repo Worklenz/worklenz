@@ -22,7 +22,6 @@ const TasksProgressCell = ({ tasksStat }: TasksProgressCellProps) => {
     { percent: donePercent, color: '#98d4b1', label: 'done' },
     { percent: doingPercent, color: '#bce3cc', label: 'doing' },
     { percent: todoPercent, color: '#e3f4ea', label: 'todo' },
-
   ];
 
   return (

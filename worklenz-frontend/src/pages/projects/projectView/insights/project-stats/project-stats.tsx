@@ -18,7 +18,6 @@ const ProjectStats = ({ t }: { t: TFunction }) => {
   const [loading, setLoading] = useState(false);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
 
-
   const getProjectStats = async () => {
     if (!projectId) return;
 
@@ -40,7 +39,7 @@ const ProjectStats = ({ t }: { t: TFunction }) => {
 
   useEffect(() => {
     getProjectStats();
-  }, [projectId, includeArchivedTasks,refreshTimestamp]);
+  }, [projectId, includeArchivedTasks, refreshTimestamp]);
 
   const tooltipTable = (
     <table>

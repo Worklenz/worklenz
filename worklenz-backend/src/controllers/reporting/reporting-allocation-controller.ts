@@ -408,6 +408,65 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const { duration, date_range } = req.body;
 
+    // Calculate the date range (start and end)
+    let startDate: moment.Moment;
+    let endDate: moment.Moment;
+    if (date_range && date_range.length === 2) {
+      startDate = moment(date_range[0]);
+      endDate = moment(date_range[1]);
+    } else if (duration === DATE_RANGES.ALL_TIME) {
+      // Fetch the earliest start_date (or created_at if null) from selected projects
+      const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
+      const minDateResult = await db.query(minDateQuery, []);
+      const minDate = minDateResult.rows[0]?.min_date;
+      startDate = minDate ? moment(minDate) : moment('2000-01-01');
+      endDate = moment();
+    } else {
+      switch (duration) {
+        case DATE_RANGES.YESTERDAY:
+          startDate = moment().subtract(1, "day");
+          endDate = moment().subtract(1, "day");
+          break;
+        case DATE_RANGES.LAST_WEEK:
+          startDate = moment().subtract(1, "week").startOf("isoWeek");
+          endDate = moment().subtract(1, "week").endOf("isoWeek");
+          break;
+        case DATE_RANGES.LAST_MONTH:
+          startDate = moment().subtract(1, "month").startOf("month");
+          endDate = moment().subtract(1, "month").endOf("month");
+          break;
+        case DATE_RANGES.LAST_QUARTER:
+          startDate = moment().subtract(3, "months").startOf("quarter");
+          endDate = moment().subtract(1, "quarter").endOf("quarter");
+          break;
+        default:
+          startDate = moment().startOf("day");
+          endDate = moment().endOf("day");
+      }
+    }
+
+    // Count only weekdays (Mon-Fri) in the period
+    let workingDays = 0;
+    let current = startDate.clone();
+    while (current.isSameOrBefore(endDate, 'day')) {
+      const day = current.isoWeekday();
+      if (day >= 1 && day <= 5) workingDays++;
+      current.add(1, 'day');
+    }
+
+    // Get hours_per_day for all selected projects
+    const projectHoursQuery = `SELECT id, hours_per_day FROM projects WHERE id IN (${projectIds})`;
+    const projectHoursResult = await db.query(projectHoursQuery, []);
+    const projectHoursMap: Record<string, number> = {};
+    for (const row of projectHoursResult.rows) {
+      projectHoursMap[row.id] = row.hours_per_day || 8;
+    }
+    // Sum total working hours for all selected projects
+    let totalWorkingHours = 0;
+    for (const pid of Object.keys(projectHoursMap)) {
+      totalWorkingHours += workingDays * projectHoursMap[pid];
+    }
+
     const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
     const archivedClause = archived
       ? ""
@@ -430,6 +489,12 @@ export default class ReportingAllocationController extends ReportingControllerBa
     for (const member of result.rows) {
       member.value = member.logged_time ? parseFloat(moment.duration(member.logged_time, "seconds").asHours().toFixed(2)) : 0;
       member.color_code = getColor(member.name);
+      member.total_working_hours = totalWorkingHours;
+      member.utilization_percent = (totalWorkingHours > 0 && member.logged_time) ? ((parseFloat(member.logged_time) / (totalWorkingHours * 3600)) * 100).toFixed(2) : '0.00';
+      member.utilized_hours = member.logged_time ? (parseFloat(member.logged_time) / 3600).toFixed(2) : '0.00';
+      // Over/under utilized hours: utilized_hours - total_working_hours
+      const overUnder = member.utilized_hours && member.total_working_hours ? (parseFloat(member.utilized_hours) - member.total_working_hours) : 0;
+      member.over_under_utilized_hours = overUnder.toFixed(2);
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));

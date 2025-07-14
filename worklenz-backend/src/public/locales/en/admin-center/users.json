@@ -1,0 +1,9 @@
+{
+  "title": "Users",
+  "subTitle": "users",
+  "placeholder": "Search by name",
+  "user": "User",
+  "email": "Email",
+  "lastActivity": "Last Activity",
+  "refresh": "Refresh users"
+}

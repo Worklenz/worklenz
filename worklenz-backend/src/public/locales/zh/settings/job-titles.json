@@ -1,0 +1,20 @@
+{
+  "nameColumn": "名称",
+  "deleteConfirmationTitle": "您确定吗？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "searchPlaceholder": "按名称搜索",
+  "createJobTitleButton": "创建职位",
+  "pinTooltip": "点击将其固定到主菜单",
+  "createJobTitleDrawerTitle": "创建职位",
+  "updateJobTitleDrawerTitle": "更新职位",
+  "nameLabel": "名称",
+  "namePlaceholder": "名称",
+  "nameRequiredError": "请输入名称",
+  "createButton": "创建",
+  "updateButton": "更新",
+  "createJobTitleSuccessMessage": "职位创建成功！",
+  "createJobTitleErrorMessage": "职位创建失败！",
+  "updateJobTitleSuccessMessage": "职位更新成功！",
+  "updateJobTitleErrorMessage": "职位更新失败！"
+}

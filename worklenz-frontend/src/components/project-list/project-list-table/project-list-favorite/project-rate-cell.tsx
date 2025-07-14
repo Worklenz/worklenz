@@ -37,7 +37,8 @@ export const ProjectRateCell: React.FC<{
   );
 
   useEffect(() => {
-    setIsFavorite(record.favorite);}, [record.favorite]);
+    setIsFavorite(record.favorite);
+  }, [record.favorite]);
 
   return (
     <ConfigProvider wave={{ disabled: true }}>
@@ -48,7 +49,7 @@ export const ProjectRateCell: React.FC<{
           style={{ backgroundColor: colors.transparent }}
           shape="circle"
           icon={<StarFilled style={{ color: checkIconColor, fontSize: '20px' }} />}
-          onClick={(e) => {
+          onClick={e => {
             e.stopPropagation();
             handleFavorite();
           }}

@@ -1,0 +1,256 @@
+/* Optimized Bulk Action Bar Styles */
+.optimized-bulk-action-bar {
+  /* GPU acceleration for smooth animations */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+
+  /* Smooth backdrop blur with fallback */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  /* Prevent layout shifts */
+  contain: layout style paint;
+
+  /* Optimize for animations */
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Entrance animation */
+@keyframes slideUpFadeIn {
+  from {
+    transform: translateX(-50%) translateY(20px);
+    opacity: 0;
+    visibility: hidden;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Exit animation */
+@keyframes slideDownFadeOut {
+  from {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  to {
+    transform: translateX(-50%) translateY(20px);
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.optimized-bulk-action-bar.entering {
+  animation: slideUpFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.optimized-bulk-action-bar.exiting {
+  animation: slideDownFadeOut 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Action button optimizations */
+.bulk-action-button {
+  /* GPU acceleration */
+  will-change: transform, background-color;
+  transform: translateZ(0);
+
+  /* Smooth hover transitions */
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Prevent text selection */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+
+  /* Optimize for touch */
+  touch-action: manipulation;
+}
+
+.bulk-action-button:hover {
+  transform: translateZ(0) scale(1.05);
+}
+
+.bulk-action-button:active {
+  transform: translateZ(0) scale(0.95);
+  transition-duration: 0.1s;
+}
+
+/* Button loading state optimization */
+.bulk-action-button.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Danger button styling */
+.bulk-action-button.danger:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+}
+
+/* Dark mode optimizations */
+.dark .bulk-action-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .bulk-action-button.danger:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Divider styling for better visual separation */
+.bulk-action-divider {
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+/* Badge styling optimizations */
+.bulk-action-badge {
+  /* Smooth scaling animation */
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.bulk-action-badge.updating {
+  transform: scale(1.1);
+}
+
+/* Tooltip optimizations */
+.ant-tooltip {
+  /* Faster tooltip animations */
+  transition: opacity 0.1s ease !important;
+}
+
+/* Dropdown optimizations */
+.bulk-action-dropdown {
+  /* Smooth dropdown animations */
+  animation-duration: 0.2s !important;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Mobile responsive optimizations */
+@media (max-width: 768px) {
+  .optimized-bulk-action-bar {
+    /* Adjust for mobile */
+    bottom: 20px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: calc(100vw - 32px);
+    padding: 10px 16px;
+    gap: 2px;
+  }
+
+  .bulk-action-button {
+    /* Smaller buttons on mobile */
+    min-width: 28px;
+    height: 28px;
+    padding: 4px;
+  }
+
+  /* Hide some actions on very small screens */
+  .bulk-action-secondary {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .optimized-bulk-action-bar {
+    /* Even more compact on small screens */
+    bottom: 16px;
+    padding: 8px 12px;
+    gap: 1px;
+  }
+
+  /* Show only essential actions */
+  .bulk-action-tertiary {
+    display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .optimized-bulk-action-bar {
+    border: 2px solid currentColor;
+    background: var(--background-color);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .bulk-action-button {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .optimized-bulk-action-bar,
+  .bulk-action-button,
+  .bulk-action-badge {
+    transition: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  .bulk-action-button:hover {
+    transform: none;
+  }
+}
+
+/* Focus management for accessibility */
+.bulk-action-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.dark .bulk-action-button:focus-visible {
+  outline-color: #3b82f6;
+}
+
+/* Performance optimization classes */
+.bulk-action-gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.bulk-action-contain-layout {
+  contain: layout style paint;
+}
+
+/* Loading spinner optimization */
+.bulk-action-loading-spinner {
+  animation: spin 1s linear infinite;
+  will-change: transform;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Smooth color transitions for theme switching */
+.bulk-action-theme-transition {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* Optimize for 60fps animations */
+.bulk-action-60fps {
+  animation-duration: 0.25s;
+  animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Prevent layout thrashing during animations */
+.bulk-action-stable-layout {
+  contain: layout;
+  transform: translateZ(0);
+}

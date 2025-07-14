@@ -1,0 +1,19 @@
+{
+  "rename": "重命名",
+  "delete": "删除",
+  "addTask": "添加任务",
+  "addSectionButton": "添加部分",
+  "changeCategory": "更改类别",
+  "deleteTooltip": "删除",
+  "deleteConfirmationTitle": "您确定吗？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "dueDate": "截止日期",
+  "cancel": "取消",
+  "today": "今天",
+  "tomorrow": "明天",
+  "assignToMe": "分配给我",
+  "archive": "归档",
+  "newTaskNamePlaceholder": "写一个任务名称",
+  "newSubtaskNamePlaceholder": "写一个子任务名称"
+}

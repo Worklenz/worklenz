@@ -6,9 +6,14 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import TasksProgressCell from './tablesCells/tasksProgressCell/TasksProgressCell';
 import MemberCell from './tablesCells/memberCell/MemberCell';
-import { fetchMembersData, toggleMembersReportsDrawer } from '@/features/reporting/membersReports/membersReportsSlice';
+import {
+  fetchMembersData,
+  setPagination,
+  toggleMembersReportsDrawer,
+} from '@/features/reporting/membersReports/membersReportsSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import MembersReportsDrawer from '@/features/reporting/membersReports/membersReportsDrawer/members-reports-drawer';
+import { PaginationConfig } from 'antd/es/pagination';
 
 const MembersReportsTable = () => {
   const { t } = useTranslation('reporting-members');
@@ -16,12 +21,18 @@ const MembersReportsTable = () => {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
-  const { membersList, isLoading, total, archived, searchQuery } = useAppSelector(state => state.membersReportsReducer);
+  const { membersList, isLoading, total, archived, searchQuery, index, pageSize } = useAppSelector(
+    state => state.membersReportsReducer
+  );
 
   // function to handle drawer toggle
   const handleDrawerOpen = (id: string) => {
     setSelectedId(id);
     dispatch(toggleMembersReportsDrawer());
+  };
+
+  const handleOnChange = (pagination: any, filters: any, sorter: any, extra: any) => {
+    dispatch(setPagination({ index: pagination.current, pageSize: pagination.pageSize }));
   };
 
   const columns: TableColumnsType = [
@@ -40,7 +51,7 @@ const MembersReportsTable = () => {
       title: <CustomTableTitle title={t('tasksProgressColumn')} />,
       render: record => {
         const { todo, doing, done } = record.tasks_stat;
-        return (todo || doing || done) ? <TasksProgressCell tasksStat={record.tasks_stat} /> : '-';
+        return todo || doing || done ? <TasksProgressCell tasksStat={record.tasks_stat} /> : '-';
       },
     },
     {
@@ -95,7 +106,7 @@ const MembersReportsTable = () => {
 
   useEffect(() => {
     if (!isLoading) dispatch(fetchMembersData({ duration, dateRange }));
-  }, [dispatch, archived, searchQuery, dateRange]);
+  }, [dispatch, archived, searchQuery, dateRange, index, pageSize]);
 
   return (
     <ConfigProvider
@@ -113,6 +124,9 @@ const MembersReportsTable = () => {
         dataSource={membersList}
         rowKey={record => record.id}
         pagination={{ showSizeChanger: true, defaultPageSize: 10, total: total }}
+        onChange={(pagination, filters, sorter, extra) =>
+          handleOnChange(pagination, filters, sorter, extra)
+        }
         scroll={{ x: 'max-content' }}
         loading={isLoading}
         onRow={record => {

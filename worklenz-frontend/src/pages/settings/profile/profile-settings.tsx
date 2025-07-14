@@ -4,11 +4,9 @@ import {
   Card,
   Flex,
   Form,
-  GetProp,
   Input,
   Tooltip,
   Typography,
-  UploadProps,
   Spin,
   Skeleton,
 } from 'antd';
@@ -20,7 +18,6 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
   evt_settings_profile_visit,
-  evt_settings_profile_avatar_upload,
   evt_settings_profile_name_change,
   evt_settings_profile_picture_update,
 } from '@/shared/worklenz-analytics-events';
@@ -167,85 +164,85 @@ const ProfileSettings = () => {
   return (
     <Card style={{ width: '100%' }}>
       {updating ? (
-      <Skeleton />
+        <Skeleton />
       ) : (
-      <Form
-        form={form}
-        onFinish={handleFormSubmit}
-        layout="vertical"
-        initialValues={{
-        name: currentSession?.name,
-        email: currentSession?.email,
-        }}
-        style={{ width: '100%', maxWidth: 350 }}
-      >
-        <Form.Item>
-        <Tooltip title={t('avatarTooltip') || 'Click to upload an avatar'} placement="topLeft">
-          {avatarPreview}
-          <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png, image/jpg, image/jpeg"
-          onChange={handleFileChange}
-          style={{ display: 'none' }}
-          />
-        </Tooltip>
-        </Form.Item>
-        <Form.Item
-        name="name"
-        label={t('nameLabel')}
-        rules={[
-          {
-          required: true,
-          message: t('nameRequiredError'),
-          },
-          {
-          min: 2,
-          message: t('nameMinLengthError') || 'Name must be at least 2 characters',
-          },
-          {
-          max: 50,
-          message: t('nameMaxLengthError') || 'Name cannot exceed 50 characters',
-          },
-        ]}
+        <Form
+          form={form}
+          onFinish={handleFormSubmit}
+          layout="vertical"
+          initialValues={{
+            name: currentSession?.name,
+            email: currentSession?.email,
+          }}
+          style={{ width: '100%', maxWidth: 350 }}
         >
-        <Input style={{ borderRadius: 4 }} />
-        </Form.Item>
-        <Form.Item
-        name="email"
-        label={t('emailLabel')}
-        rules={[
-          {
-          required: true,
-          message: t('emailRequiredError'),
-          },
-        ]}
-        >
-        <Input style={{ borderRadius: 4 }} disabled />
-        </Form.Item>
-        <Form.Item>
-        <Button type="primary" htmlType="submit" loading={updating}>
-          {t('saveChanges')}
-        </Button>
-        </Form.Item>
-      </Form>
+          <Form.Item>
+            <Tooltip title={t('avatarTooltip') || 'Click to upload an avatar'} placement="topLeft">
+              {avatarPreview}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png, image/jpg, image/jpeg"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+            </Tooltip>
+          </Form.Item>
+          <Form.Item
+            name="name"
+            label={t('nameLabel')}
+            rules={[
+              {
+                required: true,
+                message: t('nameRequiredError'),
+              },
+              {
+                min: 2,
+                message: t('nameMinLengthError') || 'Name must be at least 2 characters',
+              },
+              {
+                max: 50,
+                message: t('nameMaxLengthError') || 'Name cannot exceed 50 characters',
+              },
+            ]}
+          >
+            <Input style={{ borderRadius: 4 }} />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            label={t('emailLabel')}
+            rules={[
+              {
+                required: true,
+                message: t('emailRequiredError'),
+              },
+            ]}
+          >
+            <Input style={{ borderRadius: 4 }} disabled />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={updating}>
+              {t('saveChanges')}
+            </Button>
+          </Form.Item>
+        </Form>
       )}
 
       <Flex vertical gap={4} style={{ marginTop: 16 }}>
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        {t('profileJoinedText', {
-        date: currentSession?.created_at
-          ? new Date(currentSession.created_at).toLocaleDateString()
-          : '',
-        })}
-      </Typography.Text>
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        {t('profileLastUpdatedText', {
-        date: currentSession?.updated_at
-          ? new Date(currentSession.updated_at).toLocaleDateString()
-          : '',
-        })}
-      </Typography.Text>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {t('profileJoinedText', {
+            date: currentSession?.created_at
+              ? new Date(currentSession.created_at).toLocaleDateString()
+              : '',
+          })}
+        </Typography.Text>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {t('profileLastUpdatedText', {
+            date: currentSession?.updated_at
+              ? new Date(currentSession.updated_at).toLocaleDateString()
+              : '',
+          })}
+        </Typography.Text>
       </Flex>
     </Card>
   );

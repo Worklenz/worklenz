@@ -1,7 +1,10 @@
 import { AutoComplete, Button, Drawer, Flex, Form, message, Select, Spin, Typography } from 'antd';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleInviteMemberDrawer, triggerTeamMembersRefresh } from '../../../features/settings/member/memberSlice';
+import {
+  toggleInviteMemberDrawer,
+  triggerTeamMembersRefresh,
+} from '../../../features/settings/member/memberSlice';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useCallback } from 'react';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';

@@ -19,7 +19,15 @@ type TimeLogItemProps = {
 };
 
 const TimeLogItem = ({ log, onDelete }: TimeLogItemProps) => {
-  const { user_name, avatar_url, time_spent_text, logged_by_timer, created_at, user_id, description } = log;
+  const {
+    user_name,
+    avatar_url,
+    time_spent_text,
+    logged_by_timer,
+    created_at,
+    user_id,
+    description,
+  } = log;
   const { selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
@@ -57,10 +65,14 @@ const TimeLogItem = ({ log, onDelete }: TimeLogItemProps) => {
 
   const renderActionButtons = () => {
     if (!canDelete) return null;
-    
+
     return (
       <Space size={8}>
-        <Button type="link" onClick={handleEdit} style={{ padding: '0', height: 'auto', fontSize: '14px' }}>
+        <Button
+          type="link"
+          onClick={handleEdit}
+          style={{ padding: '0', height: 'auto', fontSize: '14px' }}
+        >
           Edit
         </Button>
         <Popconfirm
@@ -84,7 +96,9 @@ const TimeLogItem = ({ log, onDelete }: TimeLogItemProps) => {
             <Flex justify="space-between" align="start">
               <Flex vertical>
                 <Typography.Text>
-                  <Typography.Text strong>{user_name}</Typography.Text> logged <Typography.Text strong>{time_spent_text}</Typography.Text> {renderLoggedByTimer()} {calculateTimeGap(created_at || '')}
+                  <Typography.Text strong>{user_name}</Typography.Text> logged{' '}
+                  <Typography.Text strong>{time_spent_text}</Typography.Text>{' '}
+                  {renderLoggedByTimer()} {calculateTimeGap(created_at || '')}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {formatDateTimeWithLocale(created_at || '')}
@@ -92,7 +106,7 @@ const TimeLogItem = ({ log, onDelete }: TimeLogItemProps) => {
               </Flex>
               {renderActionButtons()}
             </Flex>
-            
+
             {description && (
               <Typography.Text style={{ marginTop: 8, display: 'block' }}>
                 {description}

@@ -1,22 +1,21 @@
 import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } from 'antd';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { colors } from '@/styles/colors';
 import { themeWiseColor } from '@/utils/themeWiseColor';
-import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
-import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import {
   IMentionMemberSelectOption,
-  IMentionMemberViewModel,
 } from '@/types/project/projectComments.types';
-import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { ITaskCommentsCreateRequest } from '@/types/tasks/task-comments.types';
 import { ITaskAttachment } from '@/types/tasks/task-attachment-view-model';
 import logger from '@/utils/errorLogger';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
+import { fromNow } from '@/utils/dateUtils';
 
 // Utility function to convert file to base64
 const getBase64 = (file: File): Promise<string> => {
@@ -38,6 +37,7 @@ const formatFileSize = (bytes: number): string => {
 };
 
 const InfoTabFooter = () => {
+  const { t } = useTranslation('task-drawer/task-drawer');
   const MAXIMUM_FILE_COUNT = 5;
 
   const [characterLength, setCharacterLength] = useState<number>(0);
@@ -47,11 +47,14 @@ const InfoTabFooter = () => {
 
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const dispatch = useAppDispatch();
 
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState<boolean>(false);
 
-  const [selectedMembers, setSelectedMembers] = useState<{ team_member_id: string; name: string }[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<
+    { team_member_id: string; name: string }[]
+  >([]);
   const [commentValue, setCommentValue] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
 
@@ -64,6 +67,31 @@ const InfoTabFooter = () => {
   // get member list from project members slice
   const projectMembersList = useAppSelector(state => state.projectMemberReducer.membersList);
 
+  // Calculate relative time values
+  const createdFromNow = useMemo(() => {
+    const createdAt = taskFormViewModel?.task?.created_at;
+    if (!createdAt) return 'N/A';
+    
+    try {
+      return fromNow(createdAt);
+    } catch (error) {
+      console.error('Error formatting created_at:', error, createdAt);
+      return 'N/A';
+    }
+  }, [taskFormViewModel?.task?.created_at]);
+  
+  const updatedFromNow = useMemo(() => {
+    const updatedAt = taskFormViewModel?.task?.updated_at;
+    if (!updatedAt) return 'N/A';
+    
+    try {
+      return fromNow(updatedAt);
+    } catch (error) {
+      console.error('Error formatting updated_at:', error, updatedAt);
+      return 'N/A';
+    }
+  }, [taskFormViewModel?.task?.updated_at]);
+
   // function to handle cancel
   const handleCancel = () => {
     form.resetFields(['comment']);
@@ -71,6 +99,8 @@ const InfoTabFooter = () => {
     setIsCommentBoxExpand(false);
     setSelectedFiles([]);
     setAttachmentComment(false);
+    setCommentValue('');
+    setSelectedMembers([]);
   };
 
   // Check if comment is valid (either has text or files)
@@ -97,30 +127,30 @@ const InfoTabFooter = () => {
   // mentions options
   const mentionsOptions =
     members?.map(member => ({
-      value: member.id,
+      value: member.name,
       label: member.name,
+      key: member.id,
     })) ?? [];
 
-  const memberSelectHandler = useCallback((member: IMentionMemberSelectOption) => {
-    console.log('member', member);
-    if (!member?.value || !member?.label) return;
-    setSelectedMembers(prev =>
-      prev.some(mention => mention.team_member_id === member.value)
-        ? prev
-        : [...prev, { team_member_id: member.value, name: member.label }]
-    );
+  const memberSelectHandler = useCallback(
+    (member: IMentionMemberSelectOption) => {
+      if (!member?.value || !member?.label) return;
 
-    setCommentValue(prev => {
-      const parts = prev.split('@');
-      const lastPart = parts[parts.length - 1];
-      const mentionText = member.label;
-      // Keep only the part before the @ and add the new mention
-      return prev.slice(0, prev.length - lastPart.length) + mentionText;
-    });
-  }, []);
+      // Find the member ID from the members list using the name
+      const selectedMember = members.find(m => m.name === member.value);
+      if (!selectedMember) return;
+
+      // Add to selected members if not already present
+      setSelectedMembers(prev =>
+        prev.some(mention => mention.team_member_id === selectedMember.id)
+          ? prev
+          : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
+      );
+    },
+    [members]
+  );
 
   const handleCommentChange = useCallback((value: string) => {
-    // Only update the value without trying to replace mentions
     setCommentValue(value);
     setCharacterLength(value.trim().length);
   }, []);
@@ -129,7 +159,7 @@ const InfoTabFooter = () => {
     if (!selectedTaskId || !projectId) return;
 
     if (!isCommentValid()) {
-      message.error('Please add a comment or attach files');
+      message.error(t('taskInfoTab.comments.addCommentError'));
       return;
     }
 
@@ -152,10 +182,13 @@ const InfoTabFooter = () => {
         setAttachmentComment(false);
         setIsCommentBoxExpand(false);
         setCommentValue('');
+        setSelectedMembers([]);
         
         // Dispatch event to notify that a comment was created
-        // This will trigger scrolling to the new comment
-        document.dispatchEvent(new Event('task-comment-create'));
+        // This will trigger the task comments component to refresh and update Redux
+        document.dispatchEvent(new CustomEvent('task-comment-create', { 
+          detail: { taskId: selectedTaskId } 
+        }));
       }
     } catch (error) {
       logger.error('Failed to create comment:', error);
@@ -178,7 +211,7 @@ const InfoTabFooter = () => {
     const files = Array.from(event.target.files);
 
     if (selectedFiles.length + files.length > MAXIMUM_FILE_COUNT) {
-      message.error(`You can only upload a maximum of ${MAXIMUM_FILE_COUNT} files`);
+      message.error(t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT }));
       return;
     }
 
@@ -209,7 +242,7 @@ const InfoTabFooter = () => {
       }
     } catch (error) {
       console.error('Failed to process files:', error);
-      message.error('Failed to process files');
+      message.error(t('taskInfoTab.comments.processFilesError'));
     } finally {
       setUploading(false);
 
@@ -269,12 +302,18 @@ const InfoTabFooter = () => {
           }}
         >
           <Mentions
-            placeholder={'Add a comment...'}
+            placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
             options={mentionsOptions}
             autoSize
             maxLength={5000}
             onClick={() => setIsCommentBoxExpand(true)}
             onChange={e => setCharacterLength(e.length)}
+            prefix="@"
+            filterOption={(input, option) => {
+              if (!input) return true;
+              const optionLabel = (option as any)?.label || '';
+              return optionLabel.toLowerCase().includes(input.toLowerCase());
+            }}
             style={{
               minHeight: 60,
               resize: 'none',
@@ -296,7 +335,7 @@ const InfoTabFooter = () => {
           {selectedFiles.length > 0 && (
             <Flex vertical gap={8} style={{ marginTop: 12 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>
-                Selected Files (Up to 25MB, Maximum of {MAXIMUM_FILE_COUNT})
+{t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT })}
               </Typography.Title>
               <Flex
                 vertical
@@ -352,7 +391,7 @@ const InfoTabFooter = () => {
                     icon={<PlusOutlined />}
                     disabled={selectedFiles.length >= MAXIMUM_FILE_COUNT || uploading}
                   >
-                    Add more files
+                    {t('taskInfoTab.comments.addMoreFiles')}
                   </Button>
                 </Flex>
               </Flex>
@@ -362,7 +401,7 @@ const InfoTabFooter = () => {
           <Form.Item name={'comment'} style={{ marginBlock: 12 }}>
             <div>
               <Mentions
-                placeholder={'Add a comment...'}
+                placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
                 options={mentionsOptions}
                 autoSize
                 autoFocus
@@ -371,7 +410,11 @@ const InfoTabFooter = () => {
                 onSelect={option => memberSelectHandler(option as IMentionMemberSelectOption)}
                 onChange={handleCommentChange}
                 prefix="@"
-                split=""
+                filterOption={(input, option) => {
+                  if (!input) return true;
+                  const optionLabel = (option as any)?.label || '';
+                  return optionLabel.toLowerCase().includes(input.toLowerCase());
+                }}
                 style={{
                   minHeight: 100,
                   maxHeight: 200,
@@ -407,8 +450,8 @@ const InfoTabFooter = () => {
               <Tooltip
                 title={
                   selectedFiles.length >= MAXIMUM_FILE_COUNT
-                    ? `Maximum ${MAXIMUM_FILE_COUNT} files allowed`
-                    : 'Attach files'
+                    ? t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT })
+                    : t('taskInfoTab.comments.attachFiles')
                 }
               >
                 <Button
@@ -419,14 +462,14 @@ const InfoTabFooter = () => {
               </Tooltip>
 
               <Space>
-                <Button onClick={handleCancel}>Cancel</Button>
+                <Button onClick={handleCancel}>{t('taskInfoTab.comments.cancel')}</Button>
                 <Button
                   type="primary"
                   disabled={!isCommentValid()}
                   onClick={handleSubmit}
                   loading={uploading}
                 >
-                  Comment
+                  {t('taskInfoTab.comments.commentButton')}
                 </Button>
               </Space>
             </Flex>
@@ -437,31 +480,29 @@ const InfoTabFooter = () => {
       <Flex align="center" justify="space-between" style={{ width: '100%', marginTop: 8 }}>
         <Tooltip
           title={
-            taskFormViewModel?.task?.created_at
-              ? formatDateTimeWithLocale(taskFormViewModel.task.created_at)
+            createdFromNow !== 'N/A'
+              ? `Created ${createdFromNow}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Created{' '}
-            {taskFormViewModel?.task?.created_at
-              ? calculateTimeDifference(taskFormViewModel.task.created_at)
-              : 'N/A'}{' '}
-            by {taskFormViewModel?.task?.reporter}
+            {t('taskInfoTab.comments.createdBy', { 
+              time: createdFromNow,
+              user: taskFormViewModel?.task?.reporter || ''
+            })}
           </Typography.Text>
         </Tooltip>
         <Tooltip
           title={
-            taskFormViewModel?.task?.updated_at
-              ? formatDateTimeWithLocale(taskFormViewModel.task.updated_at)
+            updatedFromNow !== 'N/A'
+              ? `Updated ${updatedFromNow}`
               : 'N/A'
           }
         >
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Updated{' '}
-            {taskFormViewModel?.task?.updated_at
-              ? calculateTimeDifference(taskFormViewModel.task.updated_at)
-              : 'N/A'}
+            {t('taskInfoTab.comments.updatedTime', { 
+              time: updatedFromNow
+            })}
           </Typography.Text>
         </Tooltip>
       </Flex>

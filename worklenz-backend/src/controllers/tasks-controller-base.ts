@@ -1,6 +1,6 @@
 import WorklenzControllerBase from "./worklenz-controller-base";
-import {getColor} from "../shared/utils";
-import {PriorityColorCodes, TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA} from "../shared/constants";
+import { getColor } from "../shared/utils";
+import { PriorityColorCodes, TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
 import moment from "moment/moment";
 
 export const GroupBy = {
@@ -32,10 +32,46 @@ export default class TasksControllerBase extends WorklenzControllerBase {
   }
 
   public static updateTaskViewModel(task: any) {
-    task.progress = ~~(task.total_minutes_spent / task.total_minutes * 100);
+    // For parent tasks (with subtasks), always use calculated progress from subtasks
+    if (task.sub_tasks_count > 0) {
+      // Ensure progress matches complete_ratio for consistency
+      task.progress = task.complete_ratio || 0;
+
+      // Important: Parent tasks should not have manual progress
+      // If they somehow do, reset it
+      if (task.manual_progress) {
+        task.manual_progress = false;
+        task.progress_value = null;
+      }
+    }
+    // For tasks without subtasks, respect manual progress if set
+    else if (task.manual_progress === true && task.progress_value !== null && task.progress_value !== undefined) {
+      // For manually set progress, use that value directly
+      task.progress = parseInt(task.progress_value);
+      task.complete_ratio = parseInt(task.progress_value);
+    }
+    // For tasks with no subtasks and no manual progress
+    else {
+      // Only calculate progress based on time if time-based progress is enabled for the project
+      if (task.project_use_time_progress && task.total_minutes_spent && task.total_minutes) {
+        // Cap the progress at 100% to prevent showing more than 100% progress
+        task.progress = Math.min(~~(task.total_minutes_spent / task.total_minutes * 100), 100);
+      } else {
+        // Default to 0% progress when time-based calculation is not enabled
+        task.progress = 0;
+      }
+
+      // Set complete_ratio to match progress
+      task.complete_ratio = task.progress;
+    }
+
+    // Ensure numeric values
+    task.progress = parseInt(task.progress) || 0;
+    task.complete_ratio = parseInt(task.complete_ratio) || 0;
+
     task.overdue = task.total_minutes < task.total_minutes_spent;
 
-    task.time_spent = {hours: ~~(task.total_minutes_spent / 60), minutes: task.total_minutes_spent % 60};
+    task.time_spent = { hours: ~~(task.total_minutes_spent / 60), minutes: task.total_minutes_spent % 60 };
 
     task.comments_count = Number(task.comments_count) ? +task.comments_count : 0;
     task.attachments_count = Number(task.attachments_count) ? +task.attachments_count : 0;
@@ -73,9 +109,9 @@ export default class TasksControllerBase extends WorklenzControllerBase {
     if (task.timer_start_time)
       task.timer_start_time = moment(task.timer_start_time).valueOf();
 
+    // Set completed_count and total_tasks_count regardless of progress calculation method
     const totalCompleted = (+task.completed_sub_tasks + +task.parent_task_completed) || 0;
-    const totalTasks = +task.sub_tasks_count || 0; // if needed add +1 for parent
-    task.complete_ratio = TasksControllerBase.calculateTaskCompleteRatio(totalCompleted, totalTasks);
+    const totalTasks = +task.sub_tasks_count || 0;
     task.completed_count = totalCompleted;
     task.total_tasks_count = totalTasks;
 

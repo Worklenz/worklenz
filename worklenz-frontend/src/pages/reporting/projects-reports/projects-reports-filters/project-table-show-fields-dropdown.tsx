@@ -35,11 +35,7 @@ const ProjectTableShowFieldsDropdown = () => {
   };
 
   return (
-    <Dropdown
-      menu={menuItems}
-      trigger={['click']}
-      onOpenChange={open => setIsDropdownOpen(open)}
-    >
+    <Dropdown menu={menuItems} trigger={['click']} onOpenChange={open => setIsDropdownOpen(open)}>
       <Button
         icon={<MoreOutlined />}
         className={`transition-colors duration-300 ${

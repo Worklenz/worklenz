@@ -1,5 +1,6 @@
 import { Divider, Form, Input, message, Modal, Typography } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { editTeamName, fetchTeams } from '@/features/teams/teamSlice';
 import { ITeamGetResponse } from '@/types/teams/team.type';
@@ -11,6 +12,7 @@ interface EditTeamNameModalProps {
 }
 
 const EditTeamNameModal = ({ team, isModalOpen, onCancel }: EditTeamNameModalProps) => {
+  const { t } = useTranslation('settings/teams');
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
   const [updating, setUpdating] = useState(false);
@@ -33,7 +35,7 @@ const EditTeamNameModal = ({ team, isModalOpen, onCancel }: EditTeamNameModalPro
       }
       setUpdating(false);
     } catch (error) {
-      message.error('Team name change failed!');
+      message.error(t('updateFailed'));
     } finally {
       setUpdating(false);
     }
@@ -49,13 +51,13 @@ const EditTeamNameModal = ({ team, isModalOpen, onCancel }: EditTeamNameModalPro
             width: '100%',
           }}
         >
-          Edit Team Name
+          {t('editTeamName')}
           <Divider />
         </Typography.Text>
       }
       open={isModalOpen}
       onOk={form.submit}
-      okText="Update Name"
+      okText={t('updateName')}
       onCancel={() => {
         onCancel();
         setUpdating(false);
@@ -67,15 +69,15 @@ const EditTeamNameModal = ({ team, isModalOpen, onCancel }: EditTeamNameModalPro
       <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
         <Form.Item
           name="name"
-          label="Name"
+          label={t('name')}
           rules={[
             {
               required: true,
-              message: 'Please enter a Name',
+              message: t('nameRequired'),
             },
           ]}
         >
-          <Input placeholder="Name" />
+          <Input placeholder={t('namePlaceholder')} />
         </Form.Item>
       </Form>
     </Modal>

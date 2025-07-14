@@ -32,7 +32,6 @@ class AuthService {
     setSession(user);
   }
 
-
   public getCurrentSession(): ILocalSession | null {
     return getUserSession();
   }

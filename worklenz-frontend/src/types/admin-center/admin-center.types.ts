@@ -1,4 +1,4 @@
-import { ISUBSCRIPTION_TYPE } from "@/shared/constants";
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 export interface IOrganization {
   name?: string;
@@ -35,6 +35,7 @@ export interface IOrganizationTeamMember {
   role_id?: string;
   role_name?: string;
   created_at?: string;
+  pending_invitation?: boolean;
 }
 
 export interface IOrganizationTeam {
@@ -78,6 +79,7 @@ export interface IBillingAccountInfo {
   unit_price?: number;
   unit_price_per_month?: number;
   usedPercentage?: number;
+  used_percent?: number;
   usedStorage?: number;
   is_custom?: boolean;
   is_ltd_user?: boolean;
