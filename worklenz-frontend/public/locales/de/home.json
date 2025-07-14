@@ -46,6 +46,13 @@
     "recentTasks": "Aktuelle Aufgaben",
     "timeLoggedTasks": "Erfasste Zeit",
     "noRecentTasks": "Keine aktuellen Aufgaben",
-    "noTimeLoggedTasks": "Keine Aufgaben mit erfasster Zeit"
+    "noTimeLoggedTasks": "Keine Aufgaben mit erfasster Zeit",
+    "activityTag": "Aktivität",
+    "timeLogTag": "Zeiterfassung",
+    "timerTag": "Timer",
+    "activitySingular": "Aktivität",
+    "activityPlural": "Aktivitäten",
+    "recentTaskAriaLabel": "Aktuelle Aufgabe:",
+    "timeLoggedTaskAriaLabel": "Aufgabe mit erfasster Zeit:"
   }
 }
