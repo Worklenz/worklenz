@@ -71,7 +71,7 @@ const ClientPortalInvoiceDetails = () => {
       <div style={{ width: '100%' }}>
         {/* Header */}
         <Flex align="center" gap={12} style={{ marginBottom: 16 }}>
-          <Button icon={<LeftOutlined />} onClick={() => navigate(-1)} />
+          <Button icon={<LeftOutlined />} onClick={() => navigate(-1)} type="text" style={{ boxShadow: 'none' }} />
           <Typography.Title level={4} style={{ margin: 0 }}>{invoice_no}</Typography.Title>
         </Flex>
         <Card style={{ borderRadius: 10, marginBottom: 24, width: '100%' }}>
