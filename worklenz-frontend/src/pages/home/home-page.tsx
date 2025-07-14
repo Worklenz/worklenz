@@ -46,7 +46,7 @@ const HomePage = memo(() => {
         console.warn('Failed to preload TaskDrawer:', error);
       }
     };
-    
+
     preloadTaskDrawer();
   }, []);
 
@@ -108,9 +108,7 @@ const HomePage = memo(() => {
 
       <Row gutter={[24, 24]} className="mt-12">
         <Col xs={24} lg={16}>
-          <Card title="Task List" className="h-full">
-            <TasksList />
-          </Card>
+          <TasksList />
         </Col>
 
         <Col xs={24} lg={8}>
@@ -118,7 +116,7 @@ const HomePage = memo(() => {
             <UserActivityFeed />
 
             <TodoList />
-            
+
             <Card title="Recent & Favorite Projects">
               <RecentAndFavouriteProjectList />
             </Card>
