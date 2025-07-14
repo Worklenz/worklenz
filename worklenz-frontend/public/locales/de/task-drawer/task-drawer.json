@@ -1,22 +1,28 @@
 {
   "taskHeader": {
     "taskNamePlaceholder": "Geben Sie Ihre Aufgabe ein",
-    "deleteTask": "Aufgabe löschen"
+    "deleteTask": "Aufgabe löschen",
+    "parentTask": "Übergeordnete Aufgabe",
+    "currentTask": "Aktuelle Aufgabe",
+    "back": "Zurück",
+    "backToParent": "Zurück zur übergeordneten Aufgabe",
+    "toParentTask": "zur übergeordneten Aufgabe",
+    "loadingHierarchy": "Hierarchie wird geladen..."
   },
   "taskInfoTab": {
     "title": "Info",
     "details": {
       "title": "Details",
-      "task-key": "Aufgaben-Schlüssel",
+      "task-key": "Aufgabenschlüssel",
       "phase": "Phase",
-      "assignees": "Beauftragte",
+      "assignees": "Zugewiesene",
       "due-date": "Fälligkeitsdatum",
       "time-estimation": "Zeitschätzung",
       "priority": "Priorität",
       "labels": "Labels",
       "billable": "Abrechenbar",
       "notify": "Benachrichtigen",
-      "when-done-notify": "Bei Abschluss benachrichtigen",
+      "when-done-notify": "Bei Fertigstellung benachrichtigen",
       "start-date": "Startdatum",
       "end-date": "Enddatum",
       "hide-start-date": "Startdatum ausblenden",
@@ -24,50 +30,50 @@
       "hours": "Stunden",
       "minutes": "Minuten",
       "progressValue": "Fortschrittswert",
-      "progressValueTooltip": "Fortschritt in Prozent einstellen (0-100%)",
+      "progressValueTooltip": "Setzen Sie den Fortschrittsprozentsatz (0-100%)",
       "progressValueRequired": "Bitte geben Sie einen Fortschrittswert ein",
       "progressValueRange": "Fortschritt muss zwischen 0 und 100 liegen",
       "taskWeight": "Aufgabengewicht",
-      "taskWeightTooltip": "Gewicht dieser Teilaufgabe festlegen (Prozent)",
+      "taskWeightTooltip": "Setzen Sie das Gewicht dieser Unteraufgabe (Prozentsatz)",
       "taskWeightRequired": "Bitte geben Sie ein Aufgabengewicht ein",
       "taskWeightRange": "Gewicht muss zwischen 0 und 100 liegen",
       "recurring": "Wiederkehrend"
     },
     "labels": {
       "labelInputPlaceholder": "Suchen oder erstellen",
-      "labelsSelectorInputTip": "Enter drücken zum Erstellen"
+      "labelsSelectorInputTip": "Drücken Sie Enter zum Erstellen"
     },
     "description": {
       "title": "Beschreibung",
-      "placeholder": "Detailliertere Beschreibung hinzufügen..."
+      "placeholder": "Fügen Sie eine detailliertere Beschreibung hinzu..."
     },
     "subTasks": {
-      "title": "Teilaufgaben",
-      "addSubTask": "Teilaufgabe hinzufügen",
+      "title": "Unteraufgaben",
+      "addSubTask": "Unteraufgabe hinzufügen",
       "addSubTaskInputPlaceholder": "Geben Sie Ihre Aufgabe ein und drücken Sie Enter",
-      "refreshSubTasks": "Teilaufgaben aktualisieren",
+      "refreshSubTasks": "Unteraufgaben aktualisieren",
       "edit": "Bearbeiten",
       "delete": "Löschen",
-      "confirmDeleteSubTask": "Sind Sie sicher, dass Sie diese Teilaufgabe löschen möchten?",
-      "deleteSubTask": "Teilaufgabe löschen"
+      "confirmDeleteSubTask": "Sind Sie sicher, dass Sie diese Unteraufgabe löschen möchten?",
+      "deleteSubTask": "Unteraufgabe löschen"
     },
     "dependencies": {
       "title": "Abhängigkeiten",
       "addDependency": "+ Neue Abhängigkeit hinzufügen",
       "blockedBy": "Blockiert von",
-      "searchTask": "Aufgabe suchen",
+      "searchTask": "Zum Suchen der Aufgabe eingeben",
       "noTasksFound": "Keine Aufgaben gefunden",
       "confirmDeleteDependency": "Sind Sie sicher, dass Sie löschen möchten?"
     },
     "attachments": {
       "title": "Anhänge",
-      "chooseOrDropFileToUpload": "Datei zum Hochladen wählen oder ablegen",
+      "chooseOrDropFileToUpload": "Datei zum Hochladen auswählen oder ablegen",
       "uploading": "Wird hochgeladen..."
     },
     "comments": {
       "title": "Kommentare",
       "addComment": "+ Neuen Kommentar hinzufügen",
-      "noComments": "Noch keine Kommentare. Seien Sie der Erste!",
+      "noComments": "Noch keine Kommentare. Seien Sie der Erste, der kommentiert!",
       "delete": "Löschen",
       "confirmDeleteComment": "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?",
       "addCommentPlaceholder": "Kommentar hinzufügen...",
@@ -75,9 +81,9 @@
       "commentButton": "Kommentieren",
       "attachFiles": "Dateien anhängen",
       "addMoreFiles": "Weitere Dateien hinzufügen",
-      "selectedFiles": "Ausgewählte Dateien (Bis zu 25MB, Maximum {count})",
+      "selectedFiles": "Ausgewählte Dateien (Bis zu 25MB, Maximum von {count})",
       "maxFilesError": "Sie können maximal {count} Dateien hochladen",
-      "processFilesError": "Fehler beim Verarbeiten der Dateien",
+      "processFilesError": "Dateien konnten nicht verarbeitet werden",
       "addCommentError": "Bitte fügen Sie einen Kommentar hinzu oder hängen Sie Dateien an",
       "createdBy": "Erstellt {{time}} von {{user}}",
       "updatedTime": "Aktualisiert {{time}}"
@@ -86,18 +92,18 @@
     "pendingInvitation": "Ausstehende Einladung"
   },
   "taskTimeLogTab": {
-    "title": "Zeiterfassung",
-    "addTimeLog": "Neuen Zeiteintrag hinzufügen",
-    "totalLogged": "Gesamt erfasst",
+    "title": "Zeitprotokoll",
+    "addTimeLog": "Neues Zeitprotokoll hinzufügen",
+    "totalLogged": "Gesamt protokolliert",
     "exportToExcel": "Nach Excel exportieren",
-    "noTimeLogsFound": "Keine Zeiteinträge gefunden",
+    "noTimeLogsFound": "Keine Zeitprotokolle gefunden",
     "timeLogForm": {
       "date": "Datum",
       "startTime": "Startzeit",
       "endTime": "Endzeit",
       "workDescription": "Arbeitsbeschreibung",
       "descriptionPlaceholder": "Beschreibung hinzufügen",
-      "logTime": "Zeit erfassen",
+      "logTime": "Zeit protokollieren",
       "updateTime": "Zeit aktualisieren",
       "cancel": "Abbrechen",
       "selectDateError": "Bitte wählen Sie ein Datum",
