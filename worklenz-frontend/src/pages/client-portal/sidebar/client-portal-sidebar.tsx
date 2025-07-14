@@ -30,15 +30,17 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({ items }) => {
         key: item.key,
         icon: item.icon,
         label: (
-          <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-            <Flex align="center" gap={8}>
-              <span>{t(item.name)}</span>
-              {item.key === 'chats' && unreadChatsCount > 0 && (
-                <Badge count={unreadChatsCount} style={{ backgroundColor: '#ff4d4f', marginLeft: 4 }} />
-              )}
+          <Link to={`/worklenz/client-portal/${item.endpoint}`}>
+            <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+              <Flex align="center" gap={8}>
+                <span>{t(item.name)}</span>
+                {item.key === 'chats' && unreadChatsCount > 0 && (
+                  <Badge count={unreadChatsCount} style={{ backgroundColor: '#ff4d4f', marginLeft: 4 }} />
+                )}
+              </Flex>
+              <RightOutlined style={{ fontSize: 12, color: themeWiseColor('#bfbfbf', '#888', themeMode) }} />
             </Flex>
-            <RightOutlined style={{ fontSize: 12, color: themeWiseColor('#bfbfbf', '#888', themeMode) }} />
-          </Flex>
+          </Link>
         ),
       })),
     [t, unreadChatsCount, themeMode, menuSource]
@@ -79,7 +81,7 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({ items }) => {
             paddingBottom: 16,
           }}
         >
-          Client Portal
+          {t('client-portal')}
         </div>
         <Menu
           items={menuItems}
