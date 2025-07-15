@@ -19,7 +19,6 @@ import { useAuthService } from '@/hooks/useAuth';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
-import Skeleton from 'antd/es/skeleton/Skeleton';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 
@@ -148,11 +147,11 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     const targetGroup = taskGroups.find(g => g.id === targetGroupId);
     if (!sourceGroup || !targetGroup) return;
 
-
     const taskIdx = sourceGroup.tasks.findIndex(t => t.id === draggedTaskId);
     if (taskIdx === -1) return;
 
     const movedTask = sourceGroup.tasks[taskIdx];
+    let didStatusChange = false;
     if (groupBy === 'status' && movedTask.id) {
       if (sourceGroup.id !== targetGroup.id) {
         const canContinue = await checkTaskDependencyStatus(movedTask.id, targetGroupId);
@@ -163,6 +162,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
           );
           return;
         }
+        didStatusChange = true;
       }
     }
     let insertIdx = hoveredTaskIdx;
@@ -259,6 +259,18 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         team_id: teamId,
       });
 
+      // Emit progress update if status changed
+      if (didStatusChange) {
+        socket.emit(
+          SocketEvents.TASK_STATUS_CHANGE.toString(),
+          JSON.stringify({
+            task_id: movedTask.id,
+            status_id: targetGroupId,
+            parent_task: movedTask.parent_task_id || null,
+            team_id: teamId,
+          })
+        );
+      }
     }
 
     setDraggedTaskId(null);
