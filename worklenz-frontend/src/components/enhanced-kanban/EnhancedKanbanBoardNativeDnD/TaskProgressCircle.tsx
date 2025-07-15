@@ -2,7 +2,9 @@ import { IProjectTask } from "@/types/project/projectTasksViewModel.types";
 
 // Add a simple circular progress component
 const TaskProgressCircle: React.FC<{ task: IProjectTask; size?: number }> = ({ task, size = 28 }) => {
-    const progress = task.progress ?? 0;
+    const progress = typeof task.complete_ratio === 'number'
+        ? task.complete_ratio
+        : (typeof task.progress === 'number' ? task.progress : 0);
     const strokeWidth = 1.5;
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
@@ -22,7 +24,7 @@ const TaskProgressCircle: React.FC<{ task: IProjectTask; size?: number }> = ({ t
                 strokeLinecap="round"
                 style={{ transition: 'stroke-dashoffset 0.3s' }}
             />
-            <text
+            {task.complete_ratio && <text
                 x="50%"
                 y="50%"
                 textAnchor="middle"
@@ -32,7 +34,7 @@ const TaskProgressCircle: React.FC<{ task: IProjectTask; size?: number }> = ({ t
                 fontWeight="bold"
             >
                 {Math.round(progress)}
-            </text>
+            </text>}
         </svg>
     );
 };

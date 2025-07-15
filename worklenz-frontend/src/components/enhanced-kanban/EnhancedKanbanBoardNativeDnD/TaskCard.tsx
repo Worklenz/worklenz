@@ -70,7 +70,6 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         const d = selectedDate || new Date();
         return new Date(d.getFullYear(), d.getMonth(), 1);
     });
-    const [showSubtasks, setShowSubtasks] = useState(false);
 
     useEffect(() => {
         setSelectedDate(task.end_date ? new Date(task.end_date) : null);
@@ -205,11 +204,9 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         <>
             <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block', position: 'relative' }} >
                 {/* Progress circle at top right */}
-                {task.progress > 0 && (
-                    <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 2 }}>
-                        <TaskProgressCircle task={task} size={20} />
-                    </div>
-                )}
+                <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 2 }}>
+                    <TaskProgressCircle task={task} size={20} />
+                </div>
                 <div
                     draggable
                     onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
