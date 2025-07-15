@@ -90,6 +90,23 @@ export const SetupGuard = memo(({ children }: GuardProps) => {
 
 SetupGuard.displayName = 'SetupGuard';
 
+// Combined guard for routes that require both authentication and setup completion
+export const AuthAndSetupGuard = memo(({ children }: GuardProps) => {
+  const { isAuthenticated, isSetupComplete, location } = useAuthStatus();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (!isSetupComplete) {
+    return <Navigate to="/worklenz/setup" />;
+  }
+
+  return <>{children}</>;
+});
+
+AuthAndSetupGuard.displayName = 'AuthAndSetupGuard';
+
 // Optimized route wrapping function with Suspense boundaries
 const wrapRoutes = (
   routes: RouteObject[],
@@ -171,9 +188,11 @@ StaticLicenseExpired.displayName = 'StaticLicenseExpired';
 // Create route arrays (moved outside of useMemo to avoid hook violations)
 const publicRoutes = [...rootRoutes, ...authRoutes, notFoundRoute];
 
-const protectedMainRoutes = wrapRoutes(mainRoutes, AuthGuard);
+// Apply combined guard to main routes that require both auth and setup completion
+const protectedMainRoutes = wrapRoutes(mainRoutes, AuthAndSetupGuard);
 const adminRoutes = wrapRoutes(reportingRoutes, AdminGuard);
-const setupRoutes = wrapRoutes([accountSetupRoute], SetupGuard);
+// Setup route should be accessible without setup completion, only requires authentication
+const setupRoutes = wrapRoutes([accountSetupRoute], AuthGuard);
 
 // License expiry check function
 const withLicenseExpiryCheck = (routes: RouteObject[]): RouteObject[] => {

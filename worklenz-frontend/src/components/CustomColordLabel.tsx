@@ -39,7 +39,7 @@ const CustomColordLabel = React.forwardRef<HTMLSpanElement, CustomColordLabelPro
       <Tooltip title={label.name}>
         <span
           ref={ref}
-          className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium shrink-0 max-w-[120px]"
+          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium shrink-0 max-w-[100px]"
           style={{ 
             backgroundColor,
             color: textColor,

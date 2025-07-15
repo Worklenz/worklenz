@@ -1,5 +1,5 @@
 import React, { startTransition, useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,6 +18,11 @@ import { IAccountSetupRequest } from '@/types/project-templates/project-template
 import { evt_account_setup_template_complete } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { createPortal } from 'react-dom';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { verifyAuthentication } from '@/features/auth/authSlice';
+import { setUser } from '@/features/user/userSlice';
+import { setSession } from '@/utils/session-helper';
+import { IAuthorizeResponse } from '@/types/auth/login.types';
 
 const { Title } = Typography;
 
@@ -29,7 +34,7 @@ interface Props {
 
 export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = false }) => {
   const { t } = useTranslation('account-setup');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
@@ -69,6 +74,18 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
       if (res.done && res.body.id) {
         toggleTemplateSelector(false);
         trackMixpanelEvent(evt_account_setup_template_complete);
+        
+        // Refresh user session to update setup_completed status
+        try {
+          const authResponse = await dispatch(verifyAuthentication()).unwrap() as IAuthorizeResponse;
+          if (authResponse?.authenticated && authResponse?.user) {
+            setSession(authResponse.user);
+            dispatch(setUser(authResponse.user));
+          }
+        } catch (error) {
+          logger.error('Failed to refresh user session after template setup completion', error);
+        }
+        
         navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {
