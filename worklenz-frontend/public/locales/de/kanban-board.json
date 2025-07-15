@@ -15,6 +15,9 @@
   "deleteTaskConfirm": "Löschen",
   "deleteTaskCancel": "Abbrechen",
 
+  "deleteStatusTitle": "Status löschen",
+  "deleteStatusContent": "Sind Sie sicher, dass Sie diesen Status löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+
   "dueDate": "Fälligkeitsdatum",
   "cancel": "Abbrechen",
 

@@ -15,6 +15,9 @@
   "deleteTaskConfirm": "Fshi",
   "deleteTaskCancel": "Anulo",
 
+  "deleteStatusTitle": "Fshi Statusin",
+  "deleteStatusContent": "Jeni i sigurt që doni të fshini këtë status? Kjo veprim nuk mund të zhbëhet.",
+
   "dueDate": "Data e përfundimit",
   "cancel": "Anulo",
 

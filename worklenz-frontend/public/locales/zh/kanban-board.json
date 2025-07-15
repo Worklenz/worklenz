@@ -19,5 +19,7 @@
   "deleteTaskTitle": "删除任务",
   "deleteTaskContent": "您确定要删除此任务吗？此操作无法撤销。",
   "deleteTaskConfirm": "删除",
-  "deleteTaskCancel": "取消"
+  "deleteTaskCancel": "取消",
+  "deleteStatusTitle": "删除状态",
+  "deleteStatusContent": "您确定要删除此状态吗？此操作无法撤销。"
 }
