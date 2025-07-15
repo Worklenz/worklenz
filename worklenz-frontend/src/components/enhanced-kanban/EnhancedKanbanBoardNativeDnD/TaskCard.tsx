@@ -15,6 +15,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { toggleTaskExpansion, fetchBoardSubTasks } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import TaskProgressCircle from './TaskProgressCircle';
 
 // Simple Portal component
 const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -202,7 +203,13 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
 
     return (
         <>
-            <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block' }} >
+            <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block', position: 'relative' }} >
+                {/* Progress circle at top right */}
+                {task.progress > 0 && (
+                    <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 2 }}>
+                        <TaskProgressCircle task={task} size={20} />
+                    </div>
+                )}
                 <div
                     draggable
                     onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
