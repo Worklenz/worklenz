@@ -37,6 +37,7 @@
   "addSubTaskText": "+ 添加子任务",
   "addTaskInputPlaceholder": "输入任务并按回车键",
   "noTasksInGroup": "此组中没有任务",
+  "dropTaskHere": "将任务拖到这里",
   "openButton": "打开",
   "okButton": "确定",
   "noLabelsFound": "未找到标签",

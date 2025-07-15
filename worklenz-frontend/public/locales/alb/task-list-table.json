@@ -39,6 +39,7 @@
   "addTaskText": "Shto Detyrë",
   "addSubTaskText": "+ Shto Nën-Detyrë",
   "noTasksInGroup": "Nuk ka detyra në këtë grup",
+  "dropTaskHere": "Lëshoje detyrën këtu",
   "addTaskInputPlaceholder": "Shkruaj detyrën dhe shtyp Enter",
 
   "openButton": "Hap",

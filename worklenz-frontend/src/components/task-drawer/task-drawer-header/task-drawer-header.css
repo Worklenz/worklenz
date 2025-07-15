@@ -7,3 +7,28 @@
   outline: 1px solid #d9d9d9;
   border-radius: 4px;
 }
+
+/* Task name display styles */
+.task-name-display {
+  margin: 0;
+  padding: 2px 8px;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 20px;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+}
+
+.task-name-display:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+[data-theme='dark'] .task-name-display:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
