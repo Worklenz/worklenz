@@ -10,6 +10,11 @@
   "deleteConfirmationOk": "Sí",
   "deleteConfirmationCancel": "Cancelar",
 
+  "deleteTaskTitle": "Eliminar tarea",
+  "deleteTaskContent": "¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer.",
+  "deleteTaskConfirm": "Eliminar",
+  "deleteTaskCancel": "Cancelar",
+
   "dueDate": "Fecha de vencimiento",
   "cancel": "Cancelar",
 
