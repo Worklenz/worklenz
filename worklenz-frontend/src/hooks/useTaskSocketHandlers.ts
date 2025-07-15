@@ -33,6 +33,7 @@ import {
   updateTaskDescription,
   updateSubTasks,
   updateTaskProgress,
+  updateTaskTimeTracking,
 } from '@/features/tasks/tasks.slice';
 import {
   addTask,
@@ -936,6 +937,8 @@ export const useTaskSocketHandlers = () => {
       const { task_id, start_time } = typeof data === 'string' ? JSON.parse(data) : data;
       if (!task_id) return;
 
+      const timerTimestamp = start_time ? (typeof start_time === 'number' ? start_time : parseInt(start_time)) : Date.now();
+
       // Update the task-management slice to include timer state
       const currentTask = store.getState().taskManagement.entities[task_id];
       if (currentTask) {
@@ -943,13 +946,16 @@ export const useTaskSocketHandlers = () => {
           ...currentTask,
           timeTracking: {
             ...currentTask.timeTracking,
-            activeTimer: start_time ? (typeof start_time === 'number' ? start_time : parseInt(start_time)) : Date.now(),
+            activeTimer: timerTimestamp,
           },
           updatedAt: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
         dispatch(updateTask(updatedTask));
       }
+
+      // Also update the tasks slice activeTimers to keep both slices in sync
+      dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: timerTimestamp }));
     } catch (error) {
       logger.error('Error handling timer start event:', error);
     }
@@ -975,6 +981,9 @@ export const useTaskSocketHandlers = () => {
         };
         dispatch(updateTask(updatedTask));
       }
+
+      // Also update the tasks slice activeTimers to keep both slices in sync
+      dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: null }));
     } catch (error) {
       logger.error('Error handling timer stop event:', error);
     }

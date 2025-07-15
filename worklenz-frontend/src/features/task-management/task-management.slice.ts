@@ -959,8 +959,26 @@ const taskManagementSlice = createSlice({
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
         state.loading = false;
         const { allTasks, groups, grouping } = action.payload;
-        tasksAdapter.setAll(state as EntityState<Task, string>, allTasks || []); // Ensure allTasks is an array
-        state.ids = (allTasks || []).map(task => task.id); // Also update ids
+        
+        // Preserve existing timer state from old tasks before replacing
+        const oldTasks = state.entities;
+        const tasksWithTimers = (allTasks || []).map(task => {
+          const oldTask = oldTasks[task.id];
+          if (oldTask?.timeTracking?.activeTimer) {
+            // Preserve the timer state from the old task
+            return {
+              ...task,
+              timeTracking: {
+                ...task.timeTracking,
+                activeTimer: oldTask.timeTracking.activeTimer
+              }
+            };
+          }
+          return task;
+        });
+        
+        tasksAdapter.setAll(state as EntityState<Task, string>, tasksWithTimers); // Ensure allTasks is an array
+        state.ids = tasksWithTimers.map(task => task.id); // Also update ids
         state.groups = groups;
         state.grouping = grouping;
       })
