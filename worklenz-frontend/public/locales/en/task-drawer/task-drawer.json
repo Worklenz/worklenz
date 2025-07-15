@@ -1,7 +1,13 @@
 {
   "taskHeader": {
     "taskNamePlaceholder": "Type your Task",
-    "deleteTask": "Delete Task"
+    "deleteTask": "Delete Task",
+    "parentTask": "Parent Task",
+    "currentTask": "Current Task",
+    "back": "Back",
+    "backToParent": "Back to Parent Task",
+    "toParentTask": "to parent task",
+    "loadingHierarchy": "Loading hierarchy..."
   },
   "taskInfoTab": {
     "title": "Info",
