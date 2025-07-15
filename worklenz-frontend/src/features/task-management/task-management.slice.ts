@@ -7,7 +7,7 @@ import {
   EntityId,
   createSelector,
 } from '@reduxjs/toolkit';
-import { Task, TaskManagementState, TaskGroup, TaskGrouping } from '@/types/task-management.types';
+import { Task, TaskManagementState, TaskGroup, TaskGrouping, getSortOrderField } from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
 import {
@@ -661,11 +661,11 @@ const taskManagementSlice = createSlice({
           newTasks.splice(newTasks.indexOf(destinationTaskId), 0, removed);
           group.taskIds = newTasks;
   
-          // Update order for affected tasks. Assuming simple reordering affects order.
-          // This might need more sophisticated logic based on how `order` is used.
+          // Update order for affected tasks using the appropriate sort field
+          const sortField = getSortOrderField(state.grouping?.id);
           newTasks.forEach((id, index) => {
             if (newEntities[id]) {
-              newEntities[id] = { ...newEntities[id], order: index };
+              newEntities[id] = { ...newEntities[id], [sortField]: index };
             }
           });
         }
@@ -723,12 +723,13 @@ const taskManagementSlice = createSlice({
             newEntities[sourceTaskId] = updatedTask;
           }
   
-          // Update order for affected tasks in both groups if necessary
+          // Update order for affected tasks in both groups using the appropriate sort field
+          const sortField = getSortOrderField(state.grouping?.id);
           sourceGroup.taskIds.forEach((id, index) => {
-            if (newEntities[id]) newEntities[id] = { ...newEntities[id], order: index };
+            if (newEntities[id]) newEntities[id] = { ...newEntities[id], [sortField]: index };
           });
           destinationGroup.taskIds.forEach((id, index) => {
-            if (newEntities[id]) newEntities[id] = { ...newEntities[id], order: index };
+            if (newEntities[id]) newEntities[id] = { ...newEntities[id], [sortField]: index };
           });
         }
       }
@@ -958,8 +959,26 @@ const taskManagementSlice = createSlice({
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
         state.loading = false;
         const { allTasks, groups, grouping } = action.payload;
-        tasksAdapter.setAll(state as EntityState<Task, string>, allTasks || []); // Ensure allTasks is an array
-        state.ids = (allTasks || []).map(task => task.id); // Also update ids
+        
+        // Preserve existing timer state from old tasks before replacing
+        const oldTasks = state.entities;
+        const tasksWithTimers = (allTasks || []).map(task => {
+          const oldTask = oldTasks[task.id];
+          if (oldTask?.timeTracking?.activeTimer) {
+            // Preserve the timer state from the old task
+            return {
+              ...task,
+              timeTracking: {
+                ...task.timeTracking,
+                activeTimer: oldTask.timeTracking.activeTimer
+              }
+            };
+          }
+          return task;
+        });
+        
+        tasksAdapter.setAll(state as EntityState<Task, string>, tasksWithTimers); // Ensure allTasks is an array
+        state.ids = tasksWithTimers.map(task => task.id); // Also update ids
         state.groups = groups;
         state.grouping = grouping;
       })
@@ -1010,7 +1029,7 @@ const taskManagementSlice = createSlice({
             order: subtask.sort_order || subtask.order || 0,
             parent_task_id: parentTaskId,
             is_sub_task: true,
-            sub_tasks_count: 0,
+            sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
             show_sub_tasks: false,
           }));
 

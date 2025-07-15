@@ -40,6 +40,7 @@
   "addSubTaskText": "Add Sub Task",
   "addTaskInputPlaceholder": "Type your task and hit enter",
   "noTasksInGroup": "No tasks in this group",
+  "dropTaskHere": "Drop task here",
 
   "openButton": "Open",
   "okButton": "Ok",

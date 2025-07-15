@@ -58,6 +58,9 @@ interface UseTaskRowColumnsProps {
   // Drag and drop
   attributes: any;
   listeners: any;
+  
+  // Depth for nested subtasks
+  depth?: number;
 }
 
 export const useTaskRowColumns = ({
@@ -84,6 +87,7 @@ export const useTaskRowColumns = ({
   handleTaskNameEdit,
   attributes,
   listeners,
+  depth = 0,
 }: UseTaskRowColumnsProps) => {
   
   const renderColumn = useCallback((columnId: string, width: string, isSticky?: boolean, index?: number) => {
@@ -128,6 +132,7 @@ export const useTaskRowColumns = ({
             onEditTaskName={setEditTaskName}
             onTaskNameChange={setTaskName}
             onTaskNameSave={handleTaskNameSave}
+            depth={depth}
           />
         );
 
