@@ -331,6 +331,13 @@ self.addEventListener('message', event => {
       });
       break;
       
+    case 'LOGOUT':
+      // Special handler for logout - clear all caches and unregister
+      handleLogout().then(() => {
+        event.ports[0].postMessage({ success: true });
+      });
+      break;
+      
     default:
       console.log('Service Worker: Unknown message type', type);
   }
@@ -340,6 +347,21 @@ async function clearAllCaches() {
   const cacheNames = await caches.keys();
   await Promise.all(cacheNames.map(name => caches.delete(name)));
   console.log('Service Worker: All caches cleared');
+}
+
+async function handleLogout() {
+  try {
+    // Clear all caches
+    await clearAllCaches();
+    
+    // Unregister the service worker to force fresh registration on next visit
+    await self.registration.unregister();
+    
+    console.log('Service Worker: Logout handled - caches cleared and unregistered');
+  } catch (error) {
+    console.error('Service Worker: Error during logout handling', error);
+    throw error;
+  }
 }
 
 console.log('Service Worker: Loaded successfully'); 
