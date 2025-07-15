@@ -454,7 +454,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                                 style={{ backgroundColor: themeMode === 'dark' ? (sub.priority_color_dark || sub.priority_color || '#d9d9d9') : (sub.priority_color || '#d9d9d9') }}
                                             ></span>
                                         ) : null}
-                                        <span className="flex-1 truncate text-xs text-gray-800 dark:text-gray-100">{sub.name}</span>
+                                        <span className="flex-1 truncate text-xs text-gray-800 dark:text-gray-100" title={sub.name}>{sub.name}</span>
                                         <span
                                             className="task-due-date ml-2 text-[10px] text-gray-500 dark:text-gray-400"
                                         >
