@@ -10,6 +10,11 @@
   "deleteConfirmationOk": "Po",
   "deleteConfirmationCancel": "Anulo",
 
+  "deleteTaskTitle": "Fshi Detyrën",
+  "deleteTaskContent": "Jeni i sigurt që doni të fshini këtë detyrë? Kjo veprim nuk mund të zhbëhet.",
+  "deleteTaskConfirm": "Fshi",
+  "deleteTaskCancel": "Anulo",
+
   "dueDate": "Data e përfundimit",
   "cancel": "Anulo",
 
