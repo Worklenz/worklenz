@@ -4608,31 +4608,31 @@ BEGIN
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
     VALUES (_project_id, 'Progress', 'PROGRESS', 3, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Members', 'ASSIGNEES', 4, TRUE);
+    VALUES (_project_id, 'Status', 'STATUS', 4, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Labels', 'LABELS', 5, TRUE);
+    VALUES (_project_id, 'Members', 'ASSIGNEES', 5, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Status', 'STATUS', 6, TRUE);
+    VALUES (_project_id, 'Labels', 'LABELS', 6, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Priority', 'PRIORITY', 7, TRUE);
+    VALUES (_project_id, 'Phase', 'PHASE', 7, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Time Tracking', 'TIME_TRACKING', 8, TRUE);
+    VALUES (_project_id, 'Priority', 'PRIORITY', 8, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Estimation', 'ESTIMATION', 9, FALSE);
+    VALUES (_project_id, 'Time Tracking', 'TIME_TRACKING', 9, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Start Date', 'START_DATE', 10, FALSE);
+    VALUES (_project_id, 'Estimation', 'ESTIMATION', 10, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Due Date', 'DUE_DATE', 11, TRUE);
+    VALUES (_project_id, 'Start Date', 'START_DATE', 11, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Completed Date', 'COMPLETED_DATE', 12, FALSE);
+    VALUES (_project_id, 'Due Date', 'DUE_DATE', 12, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Created Date', 'CREATED_DATE', 13, FALSE);
+    VALUES (_project_id, 'Completed Date', 'COMPLETED_DATE', 13, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Last Updated', 'LAST_UPDATED', 14, FALSE);
+    VALUES (_project_id, 'Created Date', 'CREATED_DATE', 14, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Reporter', 'REPORTER', 15, FALSE);
+    VALUES (_project_id, 'Last Updated', 'LAST_UPDATED', 15, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Phase', 'PHASE', 16, FALSE);
+    VALUES (_project_id, 'Reporter', 'REPORTER', 16, FALSE);
 END
 $$;
 
@@ -6584,4 +6584,67 @@ BEGIN
         END IF;
     END LOOP;
 END
+$$;
+
+-- Function to get the appropriate sort column name based on grouping type
+CREATE OR REPLACE FUNCTION get_sort_column_name(_group_by TEXT) RETURNS TEXT
+    LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    CASE _group_by
+        WHEN 'status' THEN RETURN 'status_sort_order';
+        WHEN 'priority' THEN RETURN 'priority_sort_order';
+        WHEN 'phase' THEN RETURN 'phase_sort_order';
+        -- For backward compatibility, still support general sort_order but be explicit
+        WHEN 'general' THEN RETURN 'sort_order';
+        ELSE RETURN 'status_sort_order'; -- Default to status sorting
+    END CASE;
+END;
+$$;
+
+-- Updated bulk sort order function to handle different sort columns
+CREATE OR REPLACE FUNCTION update_task_sort_orders_bulk(_updates json, _group_by text DEFAULT 'status') RETURNS void
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _update_record RECORD;
+    _sort_column TEXT;
+    _sql TEXT;
+BEGIN
+    -- Get the appropriate sort column based on grouping
+    _sort_column := get_sort_column_name(_group_by);
+    
+    -- Process each update record
+    FOR _update_record IN 
+        SELECT 
+            (item->>'task_id')::uuid as task_id,
+            (item->>'sort_order')::int as sort_order,
+            (item->>'status_id')::uuid as status_id,
+            (item->>'priority_id')::uuid as priority_id,
+            (item->>'phase_id')::uuid as phase_id
+        FROM json_array_elements(_updates) as item
+    LOOP
+        -- Update the grouping-specific sort column and other fields
+        _sql := 'UPDATE tasks SET ' || _sort_column || ' = $1, ' ||
+                'status_id = COALESCE($2, status_id), ' ||
+                'priority_id = COALESCE($3, priority_id), ' ||
+                'updated_at = CURRENT_TIMESTAMP ' ||
+                'WHERE id = $4';
+        
+        EXECUTE _sql USING 
+            _update_record.sort_order,
+            _update_record.status_id,
+            _update_record.priority_id,
+            _update_record.task_id;
+        
+        -- Handle phase updates separately since it's in a different table
+        IF _update_record.phase_id IS NOT NULL THEN
+            INSERT INTO task_phase (task_id, phase_id)
+            VALUES (_update_record.task_id, _update_record.phase_id)
+            ON CONFLICT (task_id) DO UPDATE SET phase_id = _update_record.phase_id;
+        END IF;
+    END LOOP;
+END;
 $$;
