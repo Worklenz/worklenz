@@ -1,5 +1,5 @@
 import HomeCalendar from '../../../components/calendars/homeCalendar/HomeCalendar';
-import { Tag, Typography } from 'antd';
+import { Tag, Typography, Skeleton } from 'antd';
 import { ClockCircleOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import AddTaskInlineForm from './add-task-inline-form';
@@ -10,7 +10,12 @@ import dayjs from 'dayjs';
 
 const CalendarView = () => {
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
-  const { t } = useTranslation('home');
+  const { t, ready } = useTranslation('home');
+
+  // Don't render until i18n is ready
+  if (!ready) {
+    return <Skeleton active />;
+  }
 
   useEffect(() => {
     if (!homeTasksConfig.selected_date) {
@@ -36,7 +41,7 @@ const CalendarView = () => {
         }}
       >
         <Typography.Text>
-          {t('home:tasks.dueOn')} {homeTasksConfig.selected_date?.format('MMM DD, YYYY')}
+          {t('tasks.dueOn')} {homeTasksConfig.selected_date?.format('MMM DD, YYYY')}
         </Typography.Text>
       </Tag>
 

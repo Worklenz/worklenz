@@ -217,6 +217,17 @@ export const useTaskSocketHandlers = () => {
       const currentGrouping = state.taskManagement.grouping;
 
       if (currentTask) {
+        // Check if current task has a more recent optimistic update
+        const currentUpdateTime = currentTask.updatedAt || currentTask.updated_at;
+        const serverUpdateTime = response.updated_at || response.updatedAt;
+        
+        // If current task was updated more recently than server data, skip this update
+        if (currentUpdateTime && serverUpdateTime && 
+            new Date(currentUpdateTime).getTime() > new Date(serverUpdateTime).getTime()) {
+          console.log(`[TASK_STATUS_CHANGE] Skipping stale update for task ${response.id}`);
+          return;
+        }
+
         // Determine the new status value based on status category
         let newStatusValue: 'todo' | 'doing' | 'done' = 'todo';
         if (response.statusCategory) {
@@ -393,6 +404,17 @@ export const useTaskSocketHandlers = () => {
       const currentGrouping = state.taskManagement.grouping;
 
       if (currentTask) {
+        // Check if current task has a more recent optimistic update
+        const currentUpdateTime = currentTask.updatedAt || currentTask.updated_at;
+        const serverUpdateTime = response.updated_at || response.updatedAt;
+        
+        // If current task was updated more recently than server data, skip this update
+        if (currentUpdateTime && serverUpdateTime && 
+            new Date(currentUpdateTime).getTime() > new Date(serverUpdateTime).getTime()) {
+          console.log(`[TASK_PRIORITY_CHANGE] Skipping stale update for task ${response.id}`);
+          return;
+        }
+
         // Get priority list to map priority_id to priority name
         const priorityList = state.priorityReducer?.priorities || [];
         let newPriorityValue: 'critical' | 'high' | 'medium' | 'low' = 'medium';
@@ -549,6 +571,17 @@ export const useTaskSocketHandlers = () => {
         const currentTask = state.taskManagement.entities[taskId];
 
         if (currentTask) {
+          // Check if current task has a more recent optimistic update
+          const currentUpdateTime = currentTask.updatedAt || currentTask.updated_at;
+          const serverUpdateTime = data.updated_at || data.updatedAt;
+          
+          // If current task was updated more recently than server data, skip this update
+          if (currentUpdateTime && serverUpdateTime && 
+              new Date(currentUpdateTime).getTime() > new Date(serverUpdateTime).getTime()) {
+            console.log(`[TASK_PHASE_CHANGE] Skipping stale update for task ${data.task_id}`);
+            return;
+          }
+
           // Get phase list to map phase_id to phase name
           const phaseList = state.phaseReducer?.phaseList || [];
           let newPhaseValue = '';
@@ -1007,6 +1040,18 @@ export const useTaskSocketHandlers = () => {
       data.forEach((taskData: any) => {
         const currentTask = state.taskManagement.entities[taskData.id];
         if (currentTask) {
+          // Check if current task has a more recent optimistic update
+          const currentUpdateTime = currentTask.updatedAt || currentTask.updated_at;
+          const serverUpdateTime = taskData.updated_at || taskData.updatedAt;
+          
+          // If current task was updated more recently than server data, skip this update
+          // This prevents socket updates from overwriting newer optimistic updates
+          if (currentUpdateTime && serverUpdateTime && 
+              new Date(currentUpdateTime).getTime() > new Date(serverUpdateTime).getTime()) {
+            console.log(`[TASK_SORT_ORDER_CHANGE] Skipping stale update for task ${taskData.id}`);
+            return;
+          }
+
           let updatedTask: Task = {
             ...currentTask,
             order: taskData.sort_order || taskData.current_sort_order || currentTask.order,

@@ -10,6 +10,7 @@ import Tooltip from 'antd/es/tooltip';
 import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
 import Alert from 'antd/es/alert';
+import Skeleton from 'antd/es/skeleton';
 
 import EmptyListPlaceholder from '@components/EmptyListPlaceholder';
 import { IMyTask } from '@/types/home/my-tasks.types';
@@ -24,7 +25,7 @@ import { useCreatePersonalTaskMutation } from '@/api/home-page/home-page.api.ser
 const TodoList = () => {
   const [isAlertShowing, setIsAlertShowing] = useState(false);
   const [form] = Form.useForm();
-  const { t } = useTranslation('home');
+  const { t, ready } = useTranslation('home');
 
   const [createPersonalTask, { isLoading: isCreatingPersonalTask }] =
     useCreatePersonalTaskMutation();
@@ -35,6 +36,11 @@ const TodoList = () => {
   // ref for todo input field
   const todoInputRef = useRef<InputRef | null>(null);
 
+  // Don't render until i18n is ready
+  if (!ready) {
+    return <Skeleton active />;
+  }
+
   // function to handle todo submit
   const handleTodoSubmit = async (values: any) => {
     if (!values.name || values.name.trim() === '') return;
@@ -43,6 +49,7 @@ const TodoList = () => {
       done: false,
       is_task: false,
       color_code: '#000',
+      manual_progress: false,
     };
 
     const res = await createPersonalTask(newTodo);
@@ -69,7 +76,7 @@ const TodoList = () => {
       width: 32,
       render: (record: IMyTask) => (
         <ConfigProvider wave={{ disabled: true }}>
-          <Tooltip title={t('home:todoList.markAsDone')}>
+          <Tooltip title={t('todoList.markAsDone')}>
             <Button
               type="text"
               className="borderless-icon-btn"
@@ -100,11 +107,11 @@ const TodoList = () => {
     <Card
       title={
         <Typography.Title level={5} style={{ marginBlockEnd: 0 }}>
-          {t('home:todoList.title')} ({data?.body.length})
+          {t('todoList.title')} ({data?.body.length})
         </Typography.Title>
       }
       extra={
-        <Tooltip title={t('home:todoList.refreshTasks')}>
+        <Tooltip title={t('todoList.refreshTasks')}>
           <Button shape="circle" icon={<SyncOutlined spin={isFetching} />} onClick={refetch} />
         </Tooltip>
       }
@@ -116,7 +123,7 @@ const TodoList = () => {
             <Flex vertical>
               <Input
                 ref={todoInputRef}
-                placeholder={t('home:todoList.addTask')}
+                placeholder={t('todoList.addTask')}
                 onChange={e => {
                   const inputValue = e.currentTarget.value;
 
@@ -128,8 +135,8 @@ const TodoList = () => {
                 <Alert
                   message={
                     <Typography.Text style={{ fontSize: 11 }}>
-                      {t('home:todoList.pressEnter')} <strong>Enter</strong>{' '}
-                      {t('home:todoList.toCreate')}
+                      {t('todoList.pressEnter')} <strong>Enter</strong>{' '}
+                      {t('todoList.toCreate')}
                     </Typography.Text>
                   }
                   type="info"
@@ -148,7 +155,7 @@ const TodoList = () => {
           {data?.body.length === 0 ? (
             <EmptyListPlaceholder
               imageSrc="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
-              text={t('home:todoList.noTasks')}
+              text={t('todoList.noTasks')}
             />
           ) : (
             <Table

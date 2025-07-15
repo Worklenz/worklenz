@@ -14,6 +14,8 @@ import { IMyTask } from '@/types/home/my-tasks.types';
 import { useSocket } from '@/socket/socketContext';
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
+import { Skeleton } from 'antd';
 
 interface AddTaskInlineFormProps {
   t: TFunction;
@@ -25,35 +27,41 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
   const [isDueDateFieldShowing, setIsDueDateFieldShowing] = useState(false);
   const [isProjectFieldShowing, setIsProjectFieldShowing] = useState(false);
   const [form] = Form.useForm();
+  const { ready } = useTranslation('home');
+
+  const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
+  const { data: projectListData, isFetching: projectListFetching } = useGetProjectsByTeamQuery();
+  const { refetch } = useGetMyTasksQuery(homeTasksConfig);
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
 
-  const { data: projectListData, isFetching: projectListFetching } = useGetProjectsByTeamQuery();
-  const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
-  const { refetch } = useGetMyTasksQuery(homeTasksConfig);
-
   const taskInputRef = useRef<InputRef | null>(null);
+
+  // Don't render until i18n is ready
+  if (!ready) {
+    return <Skeleton active />;
+  }
 
   const dueDateOptions = [
     {
       value: 'Today',
-      label: t('home:tasks.today'),
+      label: t('tasks.today'),
     },
     {
       value: 'Tomorrow',
-      label: t('home:tasks.tomorrow'),
+      label: t('tasks.tomorrow'),
     },
     {
       value: 'Next Week',
-      label: t('home:tasks.nextWeek'),
+      label: t('tasks.nextWeek'),
     },
     {
       value: 'Next Month',
-      label: t('home:tasks.nextMonth'),
+      label: t('tasks.nextMonth'),
     },
     {
       value: 'No Due Date',
-      label: t('home:tasks.noDueDate'),
+      label: t('tasks.noDueDate'),
     },
   ];
 
@@ -169,14 +177,14 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
         rules={[
           {
             required: true,
-            message: t('home:tasks.taskRequired'),
+            message: t('tasks.taskRequired'),
           },
         ]}
       >
         <Flex vertical gap={4}>
           <Input
             ref={taskInputRef}
-            placeholder={t('home:tasks.addTask')}
+            placeholder={t('tasks.addTask')}
             style={{ width: '100%' }}
             onChange={e => {
               const inputValue = e.currentTarget.value;
@@ -200,7 +208,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
             <Alert
               message={
                 <Typography.Text style={{ fontSize: 11 }}>
-                  {t('home:tasks.pressTabToSelectDueDateAndProject')}
+                  {t('tasks.pressTabToSelectDueDateAndProject')}
                 </Typography.Text>
               }
               type="info"
@@ -245,7 +253,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
         rules={[
           {
             required: true,
-            message: t('home:tasks.projectRequired'),
+            message: t('tasks.projectRequired'),
           },
         ]}
       >

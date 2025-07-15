@@ -657,9 +657,15 @@ const taskManagementSlice = createSlice({
         const group = state.groups.find(g => g.id === sourceGroupId);
         if (group) {
           const newTasks = Array.from(group.taskIds);
-          const [removed] = newTasks.splice(newTasks.indexOf(sourceTaskId), 1);
-          newTasks.splice(newTasks.indexOf(destinationTaskId), 0, removed);
-          group.taskIds = newTasks;
+          const sourceIndex = newTasks.indexOf(sourceTaskId);
+          const destIndex = newTasks.indexOf(destinationTaskId);
+          
+          // Only proceed if both tasks are found
+          if (sourceIndex !== -1 && destIndex !== -1) {
+            const [removed] = newTasks.splice(sourceIndex, 1);
+            newTasks.splice(destIndex, 0, removed);
+            group.taskIds = newTasks;
+          }
 
           // Update order for affected tasks using the appropriate sort field
           const sortField = getSortOrderField(state.grouping?.id);
@@ -681,13 +687,20 @@ const taskManagementSlice = createSlice({
           // Add to destination group at the correct position relative to destinationTask
           const destinationIndex = destinationGroup.taskIds.indexOf(destinationTaskId);
           if (destinationIndex !== -1) {
-            destinationGroup.taskIds.splice(destinationIndex, 0, sourceTaskId);
+            // Ensure we don't add duplicate task IDs
+            if (!destinationGroup.taskIds.includes(sourceTaskId)) {
+              destinationGroup.taskIds.splice(destinationIndex, 0, sourceTaskId);
+            }
           } else {
-            destinationGroup.taskIds.push(sourceTaskId); // Add to end if destination task not found
+            // Add to end if destination task not found, but only if not already present
+            if (!destinationGroup.taskIds.includes(sourceTaskId)) {
+              destinationGroup.taskIds.push(sourceTaskId);
+            }
           }
 
-          // Do NOT update the task's grouping field (priority, phase, status) here.
-          // This will be handled by the socket event handler after backend confirmation.
+          // Note: Task's grouping field (priority, phase, status) will also be updated
+          // by the socket event handler after backend confirmation, but for immediate UI
+          // feedback, we update it optimistically in the drag and drop handler.
 
           // Update order for affected tasks in both groups using the appropriate sort field
           const sortField = getSortOrderField(state.grouping?.id);

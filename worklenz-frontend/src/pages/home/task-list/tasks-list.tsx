@@ -61,18 +61,23 @@ const TasksList: React.FC = React.memo(() => {
     refetchOnFocus: false,
   });
 
-  const { t } = useTranslation('home');
+  const { t, ready } = useTranslation('home');
   const { model } = useAppSelector(state => state.homePageReducer);
+
+  // Don't render until i18n is ready
+  if (!ready) {
+    return <Skeleton active />;
+  }
 
   const taskModes = useMemo(
     () => [
       {
         value: 0,
-        label: t('home:tasks.assignedToMe'),
+        label: t('tasks.assignedToMe'),
       },
       {
         value: 1,
-        label: t('home:tasks.assignedByMe'),
+        label: t('tasks.assignedByMe'),
       },
     ],
     [t]

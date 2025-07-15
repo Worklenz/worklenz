@@ -250,6 +250,30 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
           newPosition: insertIndex,
         });
 
+        // Optimistically update task properties immediately for UI responsiveness
+        const updatedTask = { 
+          ...activeTask,
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        // Update task properties based on the grouping type
+        if (currentGrouping === 'priority') {
+          updatedTask.priority = targetGroup.id;
+          updatedTask.priority_id = targetGroup.id;
+        } else if (currentGrouping === 'phase') {
+          updatedTask.phase = targetGroup.id;
+          updatedTask.phase_id = targetGroup.id;
+        } else if (currentGrouping === 'status') {
+          updatedTask.status = targetGroup.id;
+          updatedTask.status_id = targetGroup.id;
+        }
+
+        // Import and dispatch updateTask for immediate UI update
+        import('@/features/task-management/task-management.slice').then(({ updateTask }) => {
+          dispatch(updateTask(updatedTask));
+        });
+
         // reorderTasksInGroup handles both same-group and cross-group moves
         // No need for separate moveTaskBetweenGroups call
         dispatch(

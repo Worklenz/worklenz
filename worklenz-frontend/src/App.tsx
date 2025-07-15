@@ -1,7 +1,8 @@
 // Core dependencies
-import React, { Suspense, useEffect, memo, useMemo, useCallback } from 'react';
+import React, { Suspense, useEffect, memo, useMemo, useCallback, useState } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import i18next from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 // Components
 import ThemeWrapper from './features/theme/ThemeWrapper';
@@ -26,6 +27,24 @@ import { CSSPerformanceMonitor, LayoutStabilizer, CriticalCSSManager } from './u
 
 // Service Worker
 import { registerSW } from './utils/serviceWorkerRegistration';
+
+// i18n ready check component
+const I18nReadyCheck: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { ready } = useTranslation();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (ready) {
+      setIsReady(true);
+    }
+  }, [ready]);
+
+  if (!isReady) {
+    return <SuspenseFallback />;
+  }
+
+  return <>{children}</>;
+};
 
 /**
  * Main App Component - Performance Optimized
@@ -200,18 +219,15 @@ const App: React.FC = memo(() => {
   }, []);
 
   return (
-    <Suspense fallback={<SuspenseFallback />}>
-      <ThemeWrapper>
-        <ModuleErrorBoundary>
-          <RouterProvider
-            router={router}
-            future={{
-              v7_startTransition: true,
-            }}
-          />
-        </ModuleErrorBoundary>
-      </ThemeWrapper>
-    </Suspense>
+    <I18nReadyCheck>
+      <ModuleErrorBoundary>
+        <ThemeWrapper>
+          <Suspense fallback={<SuspenseFallback />}>
+            <RouterProvider router={router} />
+          </Suspense>
+        </ThemeWrapper>
+      </ModuleErrorBoundary>
+    </I18nReadyCheck>
   );
 });
 
