@@ -18,6 +18,9 @@
   "deleteStatusTitle": "Eliminar estado",
   "deleteStatusContent": "¿Estás seguro de que deseas eliminar este estado? Esta acción no se puede deshacer.",
 
+  "deletePhaseTitle": "Eliminar fase",
+  "deletePhaseContent": "¿Estás seguro de que deseas eliminar esta fase? Esta acción no se puede deshacer.",
+
   "dueDate": "Fecha de vencimiento",
   "cancel": "Cancelar",
 
