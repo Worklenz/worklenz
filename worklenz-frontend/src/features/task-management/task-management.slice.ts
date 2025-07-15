@@ -7,7 +7,7 @@ import {
   EntityId,
   createSelector,
 } from '@reduxjs/toolkit';
-import { Task, TaskManagementState, TaskGroup, TaskGrouping } from '@/types/task-management.types';
+import { Task, TaskManagementState, TaskGroup, TaskGrouping, getSortOrderField } from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
 import {
@@ -661,11 +661,11 @@ const taskManagementSlice = createSlice({
           newTasks.splice(newTasks.indexOf(destinationTaskId), 0, removed);
           group.taskIds = newTasks;
   
-          // Update order for affected tasks. Assuming simple reordering affects order.
-          // This might need more sophisticated logic based on how `order` is used.
+          // Update order for affected tasks using the appropriate sort field
+          const sortField = getSortOrderField(state.grouping?.id);
           newTasks.forEach((id, index) => {
             if (newEntities[id]) {
-              newEntities[id] = { ...newEntities[id], order: index };
+              newEntities[id] = { ...newEntities[id], [sortField]: index };
             }
           });
         }
@@ -723,12 +723,13 @@ const taskManagementSlice = createSlice({
             newEntities[sourceTaskId] = updatedTask;
           }
   
-          // Update order for affected tasks in both groups if necessary
+          // Update order for affected tasks in both groups using the appropriate sort field
+          const sortField = getSortOrderField(state.grouping?.id);
           sourceGroup.taskIds.forEach((id, index) => {
-            if (newEntities[id]) newEntities[id] = { ...newEntities[id], order: index };
+            if (newEntities[id]) newEntities[id] = { ...newEntities[id], [sortField]: index };
           });
           destinationGroup.taskIds.forEach((id, index) => {
-            if (newEntities[id]) newEntities[id] = { ...newEntities[id], order: index };
+            if (newEntities[id]) newEntities[id] = { ...newEntities[id], [sortField]: index };
           });
         }
       }

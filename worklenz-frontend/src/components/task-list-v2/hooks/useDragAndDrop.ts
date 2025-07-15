@@ -1,12 +1,83 @@
 import { useState, useCallback } from 'react';
 import { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { reorderTasksInGroup, moveTaskBetweenGroups } from '@/features/task-management/task-management.slice';
-import { Task, TaskGroup } from '@/types/task-management.types';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { reorderTasksInGroup } from '@/features/task-management/task-management.slice';
+import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
+import { Task, TaskGroup, getSortOrderField } from '@/types/task-management.types';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
+import { useParams } from 'react-router-dom';
+import { useAuthService } from '@/hooks/useAuth';
 
 export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
   const dispatch = useAppDispatch();
+  const { socket, connected } = useSocket();
+  const { projectId } = useParams();
+  const currentGrouping = useAppSelector(selectCurrentGrouping);
+  const currentSession = useAuthService().getCurrentSession();
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Helper function to emit socket event for persistence
+  const emitTaskSortChange = useCallback(
+    (taskId: string, sourceGroup: TaskGroup, targetGroup: TaskGroup, insertIndex: number) => {
+      if (!socket || !connected || !projectId) {
+        console.warn('Socket not connected or missing project ID');
+        return;
+      }
+
+      const task = allTasks.find(t => t.id === taskId);
+      if (!task) {
+        console.error('Task not found for socket emission:', taskId);
+        return;
+      }
+
+      // Get team_id from current session
+      const teamId = currentSession?.team_id || '';
+
+      // Calculate sort orders for socket emission using the appropriate sort field
+      const sortField = getSortOrderField(currentGrouping);
+      const fromIndex = (task as any)[sortField] || task.order || 0;
+      let toIndex = 0;
+      let toLastIndex = false;
+
+      if (targetGroup.taskIds.length === 0) {
+        toIndex = 0;
+        toLastIndex = true;
+      } else if (insertIndex >= targetGroup.taskIds.length) {
+        // Dropping at the end
+        const lastTask = allTasks.find(t => t.id === targetGroup.taskIds[targetGroup.taskIds.length - 1]);
+        toIndex = ((lastTask as any)?.[sortField] || lastTask?.order || 0) + 1;
+        toLastIndex = true;
+      } else {
+        // Dropping at specific position
+        const targetTask = allTasks.find(t => t.id === targetGroup.taskIds[insertIndex]);
+        toIndex = (targetTask as any)?.[sortField] || targetTask?.order || insertIndex;
+        toLastIndex = false;
+      }
+
+      const socketData = {
+        project_id: projectId,
+        from_index: fromIndex,
+        to_index: toIndex,
+        to_last_index: toLastIndex,
+        from_group: sourceGroup.id,
+        to_group: targetGroup.id,
+        group_by: currentGrouping || 'status',
+        task: {
+          id: task.id,
+          project_id: projectId,
+          status: task.status || '',
+          priority: task.priority || '',
+        },
+        team_id: teamId,
+      };
+
+      console.log('Emitting TASK_SORT_ORDER_CHANGE:', socketData);
+      socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), socketData);
+    },
+    [socket, connected, projectId, allTasks, currentGrouping, currentSession]
+  );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -124,16 +195,8 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
           newPosition: insertIndex,
         });
 
-        // Move task to the target group
-        dispatch(
-          moveTaskBetweenGroups({
-            taskId: activeId as string,
-            sourceGroupId: activeGroup.id,
-            targetGroupId: targetGroup.id,
-          })
-        );
-
-        // Reorder task within target group at drop position
+        // reorderTasksInGroup handles both same-group and cross-group moves
+        // No need for separate moveTaskBetweenGroups call
         dispatch(
           reorderTasksInGroup({
             sourceTaskId: activeId as string,
@@ -142,6 +205,9 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
             destinationGroupId: targetGroup.id,
           })
         );
+
+        // Emit socket event for persistence
+        emitTaskSortChange(activeId as string, activeGroup, targetGroup, insertIndex);
       } else {
         // Reordering within the same group
         console.log('Reordering task within same group:', {
@@ -161,10 +227,13 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
               destinationGroupId: activeGroup.id,
             })
           );
+
+          // Emit socket event for persistence
+          emitTaskSortChange(activeId as string, activeGroup, targetGroup, insertIndex);
         }
       }
     },
-    [allTasks, groups, dispatch]
+    [allTasks, groups, dispatch, emitTaskSortChange]
   );
 
   return {
