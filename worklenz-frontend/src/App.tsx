@@ -14,6 +14,7 @@ import router from './app/routes';
 import { useAppSelector } from './hooks/useAppSelector';
 import { initMixpanel } from './utils/mixpanelInit';
 import { initializeCsrfToken } from './api/api-client';
+import CacheCleanup from './utils/cache-cleanup';
 
 // Types & Constants
 import { Language } from './features/i18n/localesSlice';
@@ -129,11 +130,9 @@ const App: React.FC = memo(() => {
         event.preventDefault(); // Prevent default browser error handling
         
         // Clear caches and reload
-        import('./utils/cache-cleanup').then(({ default: CacheCleanup }) => {
-          CacheCleanup.clearAllCaches()
-            .then(() => CacheCleanup.forceReload('/auth/login'))
-            .catch(() => window.location.reload());
-        });
+        CacheCleanup.clearAllCaches()
+          .then(() => CacheCleanup.forceReload('/auth/login'))
+          .catch(() => window.location.reload());
       }
     };
 
@@ -150,11 +149,9 @@ const App: React.FC = memo(() => {
         event.preventDefault(); // Prevent default browser error handling
         
         // Clear caches and reload
-        import('./utils/cache-cleanup').then(({ default: CacheCleanup }) => {
-          CacheCleanup.clearAllCaches()
-            .then(() => CacheCleanup.forceReload('/auth/login'))
-            .catch(() => window.location.reload());
-        });
+        CacheCleanup.clearAllCaches()
+          .then(() => CacheCleanup.forceReload('/auth/login'))
+          .catch(() => window.location.reload());
       }
     };
 
