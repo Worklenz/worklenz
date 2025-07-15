@@ -18,6 +18,9 @@
   "deleteStatusTitle": "Excluir Status",
   "deleteStatusContent": "Tem certeza de que deseja excluir este status? Esta ação não pode ser desfeita.",
 
+  "deletePhaseTitle": "Excluir Fase",
+  "deletePhaseContent": "Tem certeza de que deseja excluir esta fase? Esta ação não pode ser desfeita.",
+
   "dueDate": "Data de vencimento",
   "cancel": "Cancelar",
 
