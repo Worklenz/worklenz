@@ -231,6 +231,18 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(({
                     await handleDeleteSection();
                 },
             });
+        } else if (groupBy === IGroupBy.PHASE) {
+            Modal.confirm({
+                title: t('deletePhaseTitle'),
+                content: t('deletePhaseContent'),
+                okText: t('deleteTaskConfirm'),
+                okType: 'danger',
+                cancelText: t('deleteTaskCancel'),
+                centered: true,
+                onOk: async () => {
+                    await handleDeleteSection();
+                },
+            });
         } else {
             Modal.confirm({
                 title: t('deleteConfirmationTitle'),
