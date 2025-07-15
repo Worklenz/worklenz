@@ -5,6 +5,7 @@ import i18next from 'i18next';
 
 // Components
 import ThemeWrapper from './features/theme/ThemeWrapper';
+import ModuleErrorBoundary from './components/ModuleErrorBoundary';
 
 // Routes
 import router from './app/routes';
@@ -13,6 +14,7 @@ import router from './app/routes';
 import { useAppSelector } from './hooks/useAppSelector';
 import { initMixpanel } from './utils/mixpanelInit';
 import { initializeCsrfToken } from './api/api-client';
+import CacheCleanup from './utils/cache-cleanup';
 
 // Types & Constants
 import { Language } from './features/i18n/localesSlice';
@@ -113,6 +115,56 @@ const App: React.FC = memo(() => {
     };
   }, []);
 
+  // Global error handlers for module loading issues
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const error = event.reason;
+      
+      // Check if this is a module loading error
+      if (
+        error?.message?.includes('Failed to fetch dynamically imported module') ||
+        error?.message?.includes('Loading chunk') ||
+        error?.name === 'ChunkLoadError'
+      ) {
+        console.error('Unhandled module loading error:', error);
+        event.preventDefault(); // Prevent default browser error handling
+        
+        // Clear caches and reload
+        CacheCleanup.clearAllCaches()
+          .then(() => CacheCleanup.forceReload('/auth/login'))
+          .catch(() => window.location.reload());
+      }
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      const error = event.error;
+      
+      // Check if this is a module loading error
+      if (
+        error?.message?.includes('Failed to fetch dynamically imported module') ||
+        error?.message?.includes('Loading chunk') ||
+        error?.name === 'ChunkLoadError'
+      ) {
+        console.error('Global module loading error:', error);
+        event.preventDefault(); // Prevent default browser error handling
+        
+        // Clear caches and reload
+        CacheCleanup.clearAllCaches()
+          .then(() => CacheCleanup.forceReload('/auth/login'))
+          .catch(() => window.location.reload());
+      }
+    };
+
+    // Add global error handlers
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
+
   // Register service worker
   useEffect(() => {
     registerSW({
@@ -150,12 +202,14 @@ const App: React.FC = memo(() => {
   return (
     <Suspense fallback={<SuspenseFallback />}>
       <ThemeWrapper>
-        <RouterProvider
-          router={router}
-          future={{
-            v7_startTransition: true,
-          }}
-        />
+        <ModuleErrorBoundary>
+          <RouterProvider
+            router={router}
+            future={{
+              v7_startTransition: true,
+            }}
+          />
+        </ModuleErrorBoundary>
       </ThemeWrapper>
     </Suspense>
   );

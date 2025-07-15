@@ -50,7 +50,11 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
 
   // Timer management effect
   useEffect(() => {
-    if (started && localStarted && reduxStartTime) {
+    if (started && reduxStartTime) {
+      // Sync local state with Redux state
+      if (!localStarted) {
+        setLocalStarted(true);
+      }
       clearTimerInterval();
       timerTick();
       intervalRef.current = setInterval(timerTick, 1000);
