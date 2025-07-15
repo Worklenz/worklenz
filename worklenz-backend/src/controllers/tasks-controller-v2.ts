@@ -109,12 +109,29 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static getQuery(userId: string, options: ParsedQs) {
-    const searchField = options.search ? ["t.name", "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)"] : "sort_order";
+    // Determine which sort column to use based on grouping
+    const groupBy = options.group || 'status';
+    let defaultSortColumn = 'sort_order';
+    switch (groupBy) {
+      case 'status':
+        defaultSortColumn = 'status_sort_order';
+        break;
+      case 'priority':
+        defaultSortColumn = 'priority_sort_order';
+        break;
+      case 'phase':
+        defaultSortColumn = 'phase_sort_order';
+        break;
+      default:
+        defaultSortColumn = 'sort_order';
+    }
+
+    const searchField = options.search ? ["t.name", "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)"] : defaultSortColumn;
     const { searchQuery, sortField } = TasksControllerV2.toPaginationOptions(options, searchField);
 
     const isSubTasks = !!options.parent_task;
 
-    const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
+    const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || defaultSortColumn;
 
     // Filter tasks by statuses
     const statusesFilter = TasksControllerV2.getFilterByStatusWhereClosure(options.statuses as string);
@@ -196,6 +213,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.archived,
              t.description,
              t.sort_order,
+             t.status_sort_order,
+             t.priority_sort_order,
+             t.phase_sort_order,
              t.progress_value,
              t.manual_progress,
              t.weight,
@@ -1088,7 +1108,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         custom_column_values: task.custom_column_values || {}, // Include custom column values
         createdAt: task.created_at || new Date().toISOString(),
         updatedAt: task.updated_at || new Date().toISOString(),
-        order: typeof task.sort_order === "number" ? task.sort_order : 0,
+        order: TasksControllerV2.getTaskSortOrder(task, groupBy),
         // Additional metadata for frontend
         originalStatusId: task.status,
         originalPriorityId: task.priority,
@@ -1290,6 +1310,19 @@ export default class TasksControllerV2 extends TasksControllerBase {
       grouping: groupBy,
       totalTasks: transformedTasks.length
     }));
+  }
+
+  private static getTaskSortOrder(task: any, groupBy: string): number {
+    switch (groupBy) {
+      case GroupBy.STATUS:
+        return typeof task.status_sort_order === "number" ? task.status_sort_order : 0;
+      case GroupBy.PRIORITY:
+        return typeof task.priority_sort_order === "number" ? task.priority_sort_order : 0;
+      case GroupBy.PHASE:
+        return typeof task.phase_sort_order === "number" ? task.phase_sort_order : 0;
+      default:
+        return typeof task.sort_order === "number" ? task.sort_order : 0;
+    }
   }
 
   private static getDefaultGroupColor(groupBy: string, groupValue: string): string {

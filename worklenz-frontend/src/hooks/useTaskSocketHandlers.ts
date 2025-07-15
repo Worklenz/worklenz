@@ -33,6 +33,7 @@ import {
   updateTaskDescription,
   updateSubTasks,
   updateTaskProgress,
+  updateTaskTimeTracking,
 } from '@/features/tasks/tasks.slice';
 import {
   addTask,
@@ -936,6 +937,8 @@ export const useTaskSocketHandlers = () => {
       const { task_id, start_time } = typeof data === 'string' ? JSON.parse(data) : data;
       if (!task_id) return;
 
+      const timerTimestamp = start_time ? (typeof start_time === 'number' ? start_time : parseInt(start_time)) : Date.now();
+
       // Update the task-management slice to include timer state
       const currentTask = store.getState().taskManagement.entities[task_id];
       if (currentTask) {
@@ -943,13 +946,16 @@ export const useTaskSocketHandlers = () => {
           ...currentTask,
           timeTracking: {
             ...currentTask.timeTracking,
-            activeTimer: start_time ? (typeof start_time === 'number' ? start_time : parseInt(start_time)) : Date.now(),
+            activeTimer: timerTimestamp,
           },
           updatedAt: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
         dispatch(updateTask(updatedTask));
       }
+
+      // Also update the tasks slice activeTimers to keep both slices in sync
+      dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: timerTimestamp }));
     } catch (error) {
       logger.error('Error handling timer start event:', error);
     }
@@ -975,8 +981,76 @@ export const useTaskSocketHandlers = () => {
         };
         dispatch(updateTask(updatedTask));
       }
+
+      // Also update the tasks slice activeTimers to keep both slices in sync
+      dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: null }));
     } catch (error) {
       logger.error('Error handling timer stop event:', error);
+    }
+  }, [dispatch]);
+
+  // Handler for task sort order change events
+  const handleTaskSortOrderChange = useCallback((data: any[]) => {
+    try {
+      if (!Array.isArray(data) || data.length === 0) return;
+
+      // DEBUG: Log the data received from the backend
+      console.log('[TASK_SORT_ORDER_CHANGE] Received data:', data);
+
+      // Get canonical lists from Redux
+      const state = store.getState();
+      const priorityList = state.priorityReducer?.priorities || [];
+      const phaseList = state.phaseReducer?.phaseList || [];
+      const statusList = state.taskStatusReducer?.status || [];
+
+      // The backend sends an array of tasks with updated sort orders and possibly grouping fields
+      data.forEach((taskData: any) => {
+        const currentTask = state.taskManagement.entities[taskData.id];
+        if (currentTask) {
+          let updatedTask: Task = {
+            ...currentTask,
+            order: taskData.sort_order || taskData.current_sort_order || currentTask.order,
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          // Update grouping fields if present
+          if (typeof taskData.priority_id !== 'undefined') {
+            const found = priorityList.find(p => p.id === taskData.priority_id);
+            if (found) {
+              updatedTask.priority = found.name;
+              // updatedTask.priority_id = found.id; // Only if Task type has priority_id
+            } else {
+              updatedTask.priority = taskData.priority_id || '';
+              // updatedTask.priority_id = taskData.priority_id;
+            }
+          }
+          if (typeof taskData.phase_id !== 'undefined') {
+            const found = phaseList.find(p => p.id === taskData.phase_id);
+            if (found) {
+              updatedTask.phase = found.name;
+              // updatedTask.phase_id = found.id; // Only if Task type has phase_id
+            } else {
+              updatedTask.phase = taskData.phase_id || '';
+              // updatedTask.phase_id = taskData.phase_id;
+            }
+          }
+          if (typeof taskData.status_id !== 'undefined') {
+            const found = statusList.find(s => s.id === taskData.status_id);
+            if (found) {
+              updatedTask.status = found.name;
+              // updatedTask.status_id = found.id; // Only if Task type has status_id
+            } else {
+              updatedTask.status = taskData.status_id || '';
+              // updatedTask.status_id = taskData.status_id;
+            }
+          }
+
+          dispatch(updateTask(updatedTask));
+        }
+      });
+    } catch (error) {
+      logger.error('Error handling task sort order change event:', error);
     }
   }, [dispatch]);
 
@@ -1013,6 +1087,7 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), handler: handleCustomColumnUpdate },
       { event: SocketEvents.TASK_TIMER_START.toString(), handler: handleTimerStart },
       { event: SocketEvents.TASK_TIMER_STOP.toString(), handler: handleTimerStop },
+      { event: SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), handler: handleTaskSortOrderChange },
 
     ];
 
@@ -1047,6 +1122,7 @@ export const useTaskSocketHandlers = () => {
     handleCustomColumnUpdate,
     handleTimerStart,
     handleTimerStop,
+    handleTaskSortOrderChange,
 
   ]);
 };
