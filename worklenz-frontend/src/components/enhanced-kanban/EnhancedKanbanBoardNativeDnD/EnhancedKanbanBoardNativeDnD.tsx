@@ -118,6 +118,26 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setDragType(null);
   };
 
+  // Utility to recalculate all task orders for all groups
+  function getAllTaskUpdates(allGroups, groupBy) {
+    const taskUpdates = [];
+    let currentSortOrder = 0;
+    for (const group of allGroups) {
+      for (const task of group.tasks) {
+        const update = {
+          task_id: task.id,
+          sort_order: currentSortOrder,
+        };
+        if (groupBy === 'status') update.status_id = group.id;
+        else if (groupBy === 'priority') update.priority_id = group.id;
+        else if (groupBy === 'phase') update.phase_id = group.id;
+        taskUpdates.push(update);
+        currentSortOrder++;
+      }
+    }
+    return taskUpdates;
+  }
+
   // Task drag handlers
   const handleTaskDragStart = (e: React.DragEvent, taskId: string, groupId: string) => {
     setDraggedTaskId(taskId);
@@ -168,6 +188,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     let insertIdx = hoveredTaskIdx;
 
     // Handle same group reordering
+    let newTaskGroups = [...taskGroups];
     if (sourceGroup.id === targetGroup.id) {
       // Create a single updated array for the same group
       const updatedTasks = [...sourceGroup.tasks];
@@ -201,6 +222,8 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         updatedSourceTasks: updatedTasks,
         updatedTargetTasks: updatedTasks,
       }) as any);
+      // Update newTaskGroups for socket emit
+      newTaskGroups = newTaskGroups.map(g => g.id === sourceGroup.id ? { ...g, tasks: updatedTasks } : g);
     } else {
       // Handle cross-group reordering
       const updatedSourceTasks = [...sourceGroup.tasks];
@@ -229,34 +252,33 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         updatedSourceTasks,
         updatedTargetTasks,
       }) as any);
+      // Update newTaskGroups for socket emit
+      newTaskGroups = newTaskGroups.map(g => {
+        if (g.id === sourceGroup.id) return { ...g, tasks: updatedSourceTasks };
+        if (g.id === targetGroup.id) return { ...g, tasks: updatedTargetTasks };
+        return g;
+      });
     }
 
-    // Socket emit for task order
+    // Socket emit for full task order
     if (socket && projectId && teamId && movedTask) {
-      let toSortOrder = -1;
-      let toLastIndex = false;
-      if (insertIdx === targetGroup.tasks.length) {
-        toSortOrder = -1;
-        toLastIndex = true;
-      } else if (targetGroup.tasks[insertIdx]) {
-        const sortOrder = targetGroup.tasks[insertIdx].sort_order;
-        toSortOrder = typeof sortOrder === 'number' ? sortOrder : 0;
-        toLastIndex = false;
-      } else if (targetGroup.tasks.length > 0) {
-        const lastSortOrder = targetGroup.tasks[targetGroup.tasks.length - 1].sort_order;
-        toSortOrder = typeof lastSortOrder === 'number' ? lastSortOrder : 0;
-        toLastIndex = false;
-      }
+      const taskUpdates = getAllTaskUpdates(newTaskGroups, groupBy);
       socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
         project_id: projectId,
-        from_index: movedTask.sort_order ?? 0,
-        to_index: toSortOrder,
-        to_last_index: toLastIndex,
+        group_by: groupBy || 'status',
+        task_updates: taskUpdates,
         from_group: sourceGroup.id,
         to_group: targetGroup.id,
-        group_by: groupBy || 'status',
-        task: movedTask,
         team_id: teamId,
+        from_index: taskIdx,
+        to_index: insertIdx,
+        to_last_index: insertIdx === (targetGroup.id === sourceGroup.id ? newTaskGroups.find(g => g.id === targetGroup.id)?.tasks.length - 1 : targetGroup.tasks.length),
+        task: {
+          id: movedTask.id,
+          project_id: movedTask.project_id || projectId,
+          status: movedTask.status || '',
+          priority: movedTask.priority || '',
+        }
       });
 
       // Emit progress update if status changed
