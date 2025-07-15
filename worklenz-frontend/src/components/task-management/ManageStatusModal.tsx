@@ -15,7 +15,6 @@ import { IKanbanTaskStatus } from '@/types/tasks/taskStatus.types';
 import { Modal as AntModal } from 'antd';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import './ManageStatusModal.css';
 
 const { Title, Text } = Typography;
@@ -594,7 +593,6 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({
       // Refresh from server to ensure consistency
       dispatch(fetchStatuses(finalProjectId));
       dispatch(fetchTasksV3(finalProjectId));
-      dispatch(fetchTaskGroups(finalProjectId));
       dispatch(fetchEnhancedKanbanGroups(finalProjectId));
     } catch (error) {
       console.error('Error changing status category:', error);
@@ -736,7 +734,6 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({
       statusApiService.updateStatusOrder(requestBody, finalProjectId).then(() => {
         // Refresh task lists after status order change
         dispatch(fetchTasksV3(finalProjectId));
-        dispatch(fetchTaskGroups(finalProjectId));
         dispatch(fetchEnhancedKanbanGroups(finalProjectId));
       }).catch(error => {
         console.error('Error updating status order:', error);
@@ -767,7 +764,6 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({
       if (res.done) {
         dispatch(fetchStatuses(finalProjectId));
         dispatch(fetchTasksV3(finalProjectId));
-        dispatch(fetchTaskGroups(finalProjectId));
         dispatch(fetchEnhancedKanbanGroups(finalProjectId));
       }
     } catch (error) {
@@ -791,7 +787,6 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({
       await statusApiService.updateNameOfStatus(id, body, finalProjectId);
       dispatch(fetchStatuses(finalProjectId));
       dispatch(fetchTasksV3(finalProjectId));
-      dispatch(fetchTaskGroups(finalProjectId));
       dispatch(fetchEnhancedKanbanGroups(finalProjectId));
     } catch (error) {
       console.error('Error renaming status:', error);
@@ -813,7 +808,6 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({
           await statusApiService.deleteStatus(id, finalProjectId, replacingStatusId);
           dispatch(fetchStatuses(finalProjectId));
           dispatch(fetchTasksV3(finalProjectId));
-          dispatch(fetchTaskGroups(finalProjectId));
           dispatch(fetchEnhancedKanbanGroups(finalProjectId));
         } catch (error) {
           console.error('Error deleting status:', error);

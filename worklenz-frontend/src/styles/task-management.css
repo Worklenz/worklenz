@@ -4,6 +4,152 @@
   width: 100%;
 }
 
+/* Global Confirmation Modal Styles */
+/* Light mode confirmation modal styling (default) */
+.ant-modal-confirm .ant-modal-content {
+  background-color: #ffffff;
+  border: 1px solid #f0f0f0;
+}
+
+.ant-modal-confirm .ant-modal-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-modal-confirm .ant-modal-body {
+  background-color: #ffffff;
+  color: #262626;
+}
+
+.ant-modal-confirm .ant-modal-footer {
+  background-color: #ffffff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.ant-modal-confirm .ant-modal-confirm-title {
+  color: #262626;
+}
+
+.ant-modal-confirm .ant-modal-confirm-content {
+  color: #595959;
+}
+
+/* Dark mode confirmation modal styling */
+.dark .ant-modal-confirm .ant-modal-content,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-content,
+html.dark .ant-modal-confirm .ant-modal-content {
+  background-color: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-header,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-header,
+html.dark .ant-modal-confirm .ant-modal-header {
+  background-color: #1f1f1f !important;
+  border-bottom: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-body,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-body,
+html.dark .ant-modal-confirm .ant-modal-body {
+  background-color: #1f1f1f !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-footer,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-footer,
+html.dark .ant-modal-confirm .ant-modal-footer {
+  background-color: #1f1f1f !important;
+  border-top: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-confirm-title,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-confirm-title,
+html.dark .ant-modal-confirm .ant-modal-confirm-title {
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-modal-confirm-content,
+[data-theme="dark"] .ant-modal-confirm .ant-modal-confirm-content,
+html.dark .ant-modal-confirm .ant-modal-confirm-content {
+  color: #8c8c8c !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-default,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-default,
+html.dark .ant-modal-confirm .ant-btn-default {
+  background-color: #141414 !important;
+  border-color: #303030 !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-default:hover,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-default:hover,
+html.dark .ant-modal-confirm .ant-btn-default:hover {
+  background-color: #262626 !important;
+  border-color: #40a9ff !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-primary,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-primary,
+html.dark .ant-modal-confirm .ant-btn-primary {
+  background-color: #1890ff !important;
+  border-color: #1890ff !important;
+  color: #ffffff !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-primary:hover,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-primary:hover,
+html.dark .ant-modal-confirm .ant-btn-primary:hover {
+  background-color: #40a9ff !important;
+  border-color: #40a9ff !important;
+  color: #ffffff !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-dangerous,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-dangerous,
+html.dark .ant-modal-confirm .ant-btn-dangerous {
+  background-color: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  color: #ffffff !important;
+}
+
+.dark .ant-modal-confirm .ant-btn-dangerous:hover,
+[data-theme="dark"] .ant-modal-confirm .ant-btn-dangerous:hover,
+html.dark .ant-modal-confirm .ant-btn-dangerous:hover {
+  background-color: #ff7875 !important;
+  border-color: #ff7875 !important;
+  color: #ffffff !important;
+}
+
+/* Error modal specific styling */
+.dark .ant-modal-error .ant-modal-content,
+[data-theme="dark"] .ant-modal-error .ant-modal-content,
+html.dark .ant-modal-error .ant-modal-content {
+  background-color: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.dark .ant-modal-error .ant-modal-body,
+[data-theme="dark"] .ant-modal-error .ant-modal-body,
+html.dark .ant-modal-error .ant-modal-body {
+  background-color: #1f1f1f !important;
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-error .ant-modal-confirm-title,
+[data-theme="dark"] .ant-modal-error .ant-modal-confirm-title,
+html.dark .ant-modal-error .ant-modal-confirm-title {
+  color: #d9d9d9 !important;
+}
+
+.dark .ant-modal-error .ant-modal-confirm-content,
+[data-theme="dark"] .ant-modal-error .ant-modal-content,
+html.dark .ant-modal-error .ant-modal-confirm-content {
+  color: #8c8c8c !important;
+}
+
 .task-group {
   transition: all 0.2s ease;
 }

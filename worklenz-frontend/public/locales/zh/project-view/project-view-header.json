@@ -10,7 +10,7 @@
   "endDate": "结束日期",
   "projectSettings": "项目设置",
   "projectSummary": "项目摘要",
-  "receiveProjectSummary": "每晚接收项目摘要。",
+  "receiveProjectSummary": "每天晚上接收项目摘要。",
   "refreshProject": "刷新项目",
   "saveAsTemplate": "保存为模板",
   "invite": "邀请",
@@ -25,6 +25,7 @@
   "importTaskTooltip": "从模板导入任务",
   "navigateBackTooltip": "返回项目列表",
   "projectStatusTooltip": "项目状态",
-  "projectDatesInfo": "项目时间安排信息",
-  "projectCategoryTooltip": "项目类别"
+  "projectDatesInfo": "项目时间线信息",
+  "projectCategoryTooltip": "项目类别",
+  "defaultTaskName": "无标题任务"
 }

@@ -106,13 +106,8 @@ const BoardCreateSectionCard = () => {
     }
 
     if (groupBy === IGroupBy.PHASE && projectId) {
-      const body = {
-        name: sectionName,
-        project_id: projectId,
-      };
-
       try {
-        const response = await phasesApiService.addPhaseOption(projectId);
+        const response = await phasesApiService.addPhaseOption(projectId, sectionName);
         if (response.done && response.body) {
           dispatch(fetchBoardTaskGroups(projectId));
         }

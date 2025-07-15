@@ -369,6 +369,7 @@ const FilterDropdown: React.FC<{
   dispatch?: any;
   onManageStatus?: () => void;
   onManagePhase?: () => void;
+  projectPhaseLabel?: string; // Add this prop
 }> = ({
   section,
   onSelectionChange,
@@ -380,6 +381,7 @@ const FilterDropdown: React.FC<{
   dispatch,
   onManageStatus,
   onManagePhase,
+  projectPhaseLabel, // Add this prop
 }) => {
   const { t } = useTranslation('task-list-filters');
   // Add permission checks for groupBy section
@@ -495,7 +497,7 @@ const FilterDropdown: React.FC<{
                 isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
               }`}
             >
-              {t('managePhases')}
+              {t('manage')} {projectPhaseLabel || t('phasesText')}
             </button>
           )}
           {section.selectedValues[0] === 'status' && (
@@ -994,6 +996,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { projectView } = useTabSearchParam();
+  const projectPhaseLabel = useAppSelector(state => state.projectReducer.project?.phase_label);
 
   // Theme-aware class names - memoize to prevent unnecessary re-renders
   // Using greyish colors for both dark and light modes
@@ -1298,6 +1301,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                 dispatch={dispatch}
                 onManageStatus={() => setShowManageStatusModal(true)}
                 onManagePhase={() => setShowManagePhaseModal(true)}
+                projectPhaseLabel={projectPhaseLabel}
               />
             ))
           ) : (

@@ -73,8 +73,17 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
 
   if (tasks.length === 0) {
     return (
-      <div className="virtualized-empty-state" style={{ height }}>
-        <div className="empty-message">No tasks in this group</div>
+      <div className="virtualized-empty-state" style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="empty-message" style={{ 
+          padding: '32px 24px', 
+          color: '#8c8c8c', 
+          fontSize: '14px',
+          backgroundColor: '#fafafa',
+          borderRadius: '8px',
+          border: '1px solid #f0f0f0'
+        }}>
+          No tasks in this group
+        </div>
       </div>
     );
   }

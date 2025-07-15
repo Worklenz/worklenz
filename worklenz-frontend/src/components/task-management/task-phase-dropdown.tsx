@@ -35,8 +35,6 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
     (phaseId: string, phaseName: string) => {
       if (!task.id || !phaseId || !connected) return;
 
-      console.log('🎯 Phase change initiated:', { taskId: task.id, phaseId, phaseName });
-
       socket?.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
         task_id: task.id,
         phase_id: phaseId,
@@ -50,8 +48,6 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
   // Handle phase clear
   const handlePhaseClear = useCallback(() => {
     if (!task.id || !connected) return;
-
-    console.log('🎯 Phase clear initiated:', { taskId: task.id });
 
     socket?.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
       task_id: task.id,

@@ -18,6 +18,10 @@
   "changeCategory": "Change Category",
   "clickToEditGroupName": "Click to edit group name",
   "enterGroupName": "Enter group name",
+  "todo": "To Do",
+  "inProgress": "Doing",
+  "done": "Done",
+  "defaultTaskName": "Untitled Task",
 
   "indicators": {
     "tooltips": {

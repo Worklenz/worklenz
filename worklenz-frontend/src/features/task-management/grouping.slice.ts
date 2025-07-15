@@ -17,8 +17,36 @@ interface LocalGroupingState {
   collapsedGroups: string[];
 }
 
+// Local storage constants
+const LOCALSTORAGE_GROUP_KEY = 'worklenz.tasklist.group_by';
+
+// Utility functions for local storage
+const loadGroupingFromLocalStorage = (): GroupingType | null => {
+  try {
+    const stored = localStorage.getItem(LOCALSTORAGE_GROUP_KEY);
+    if (stored && ['status', 'priority', 'phase'].includes(stored)) {
+      return stored as GroupingType;
+    }
+  } catch (error) {
+    console.warn('Failed to load grouping from localStorage:', error);
+  }
+  return 'status'; // Default to 'status' instead of null
+};
+
+const saveGroupingToLocalStorage = (grouping: GroupingType | null): void => {
+  try {
+    if (grouping) {
+      localStorage.setItem(LOCALSTORAGE_GROUP_KEY, grouping);
+    } else {
+      localStorage.removeItem(LOCALSTORAGE_GROUP_KEY);
+    }
+  } catch (error) {
+    console.warn('Failed to save grouping to localStorage:', error);
+  }
+};
+
 const initialState: LocalGroupingState = {
-  currentGrouping: null,
+  currentGrouping: loadGroupingFromLocalStorage(),
   customPhases: ['Planning', 'Development', 'Testing', 'Deployment'],
   groupOrder: {
     status: ['todo', 'doing', 'done'],
@@ -35,6 +63,7 @@ const groupingSlice = createSlice({
   reducers: {
     setCurrentGrouping: (state, action: PayloadAction<GroupingType | null>) => {
       state.currentGrouping = action.payload;
+      saveGroupingToLocalStorage(action.payload);
     },
 
     addCustomPhase: (state, action: PayloadAction<string>) => {

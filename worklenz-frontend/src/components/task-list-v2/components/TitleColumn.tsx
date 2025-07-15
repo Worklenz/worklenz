@@ -2,6 +2,7 @@ import React, { memo, useCallback, useState, useRef, useEffect } from 'react';
 import { RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@ant-design/icons';
 import { Input, Tooltip } from 'antd';
 import type { InputRef } from 'antd';
+import { createPortal } from 'react-dom';
 import { Task } from '@/types/task-management.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleTaskExpansion, fetchSubTasks } from '@/features/task-management/task-management.slice';
@@ -10,6 +11,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
 import { getTaskDisplayName } from './TaskRowColumns';
+import TaskContextMenu from './TaskContextMenu';
 
 interface TitleColumnProps {
   width: string;
@@ -41,6 +43,10 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
   const { t } = useTranslation('task-list-table');
   const inputRef = useRef<InputRef>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  
+  // Context menu state
+  const [contextMenuVisible, setContextMenuVisible] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
 
   // Handle task expansion toggle
   const handleToggleExpansion = useCallback((e: React.MouseEvent) => {
@@ -70,6 +76,24 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
     }
     onEditTaskName(false);
   }, [taskName, connected, socket, task.id, task.parent_task_id, task.title, task.name, onEditTaskName]);
+
+  // Handle context menu
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Use clientX and clientY directly for fixed positioning
+    setContextMenuPosition({ 
+      x: e.clientX, 
+      y: e.clientY 
+    });
+    setContextMenuVisible(true);
+  }, []);
+
+  // Handle context menu close
+  const handleContextMenuClose = useCallback(() => {
+    setContextMenuVisible(false);
+  }, []);
 
   // Handle click outside for task name editing
   useEffect(() => {
@@ -169,6 +193,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
                     e.preventDefault();
                     onEditTaskName(true);
                   }}
+                  onContextMenu={handleContextMenu}
                   title={taskDisplayName}
                 >
                   {taskDisplayName}
@@ -250,6 +275,17 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
             {t('openButton')}
           </button>
         </>
+      )}
+      
+      {/* Context Menu */}
+      {contextMenuVisible && createPortal(
+        <TaskContextMenu
+          task={task}
+          projectId={projectId}
+          position={contextMenuPosition}
+          onClose={handleContextMenuClose}
+        />,
+        document.body
       )}
     </div>
   );

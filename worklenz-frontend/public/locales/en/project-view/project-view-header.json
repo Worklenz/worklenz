@@ -26,5 +26,6 @@
   "navigateBackTooltip": "Go back to projects list",
   "projectStatusTooltip": "Project status",
   "projectDatesInfo": "Project timeline information",
-  "projectCategoryTooltip": "Project category"
+  "projectCategoryTooltip": "Project category",
+  "defaultTaskName": "Untitled Task"
 }
