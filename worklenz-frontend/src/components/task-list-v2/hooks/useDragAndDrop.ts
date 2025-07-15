@@ -37,7 +37,7 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       const teamId = currentSession?.team_id || '';
 
       // Use new bulk update approach - recalculate ALL task orders to prevent duplicates
-      const taskUpdates = [];
+      const taskUpdates: any[] = [];
       
       // Create a copy of all groups and perform the move operation
       const updatedGroups = groups.map(group => ({
@@ -108,6 +108,32 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
 
       console.log('Emitting TASK_SORT_ORDER_CHANGE:', socketData);
       socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), socketData);
+
+      // Also emit the specific grouping field change event for the moved task
+      if (sourceGroup.id !== targetGroup.id) {
+        if (currentGrouping === 'phase') {
+          // Emit phase change event
+          socket.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
+            task_id: taskId,
+            phase_id: targetGroup.id,
+            parent_task: task.parent_task_id || null,
+          });
+        } else if (currentGrouping === 'priority') {
+          // Emit priority change event
+          socket.emit(SocketEvents.TASK_PRIORITY_CHANGE.toString(), JSON.stringify({
+            task_id: taskId,
+            priority_id: targetGroup.id,
+            team_id: teamId,
+          }));
+        } else if (currentGrouping === 'status') {
+          // Emit status change event
+          socket.emit(SocketEvents.TASK_STATUS_CHANGE.toString(), JSON.stringify({
+            task_id: taskId,
+            status_id: targetGroup.id,
+            team_id: teamId,
+          }));
+        }
+      }
     },
     [socket, connected, projectId, allTasks, groups, currentGrouping, currentSession]
   );
