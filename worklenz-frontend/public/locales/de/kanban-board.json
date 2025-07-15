@@ -18,6 +18,9 @@
   "deleteStatusTitle": "Status löschen",
   "deleteStatusContent": "Sind Sie sicher, dass Sie diesen Status löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
 
+  "deletePhaseTitle": "Phase löschen",
+  "deletePhaseContent": "Sind Sie sicher, dass Sie diese Phase löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+
   "dueDate": "Fälligkeitsdatum",
   "cancel": "Abbrechen",
 
