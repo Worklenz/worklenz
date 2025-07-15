@@ -2,6 +2,7 @@ import React from 'react';
 import { Tooltip } from 'antd';
 import { Label } from '@/types/task-management.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
+import { ALPHA_CHANNEL } from '@/shared/constants';
 
 interface CustomColordLabelProps {
   label: Label | ITaskLabel;
@@ -14,36 +15,21 @@ const CustomColordLabel = React.forwardRef<HTMLSpanElement, CustomColordLabelPro
       label.name && label.name.length > 10 ? `${label.name.substring(0, 10)}...` : label.name;
 
     // Handle different color property names for different types
-    const backgroundColor = (label as Label).color || (label as ITaskLabel).color_code || '#6b7280'; // Default to gray-500 if no color
+    const baseColor = (label as Label).color || (label as ITaskLabel).color_code || '#6b7280'; // Default to gray-500 if no color
     
-    // Function to determine if we should use white or black text based on background color
-    const getTextColor = (bgColor: string): string => {
-      // Remove # if present
-      const color = bgColor.replace('#', '');
-      
-      // Convert to RGB
-      const r = parseInt(color.substr(0, 2), 16);
-      const g = parseInt(color.substr(2, 2), 16);
-      const b = parseInt(color.substr(4, 2), 16);
-      
-      // Calculate luminance
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      
-      // Return white for dark backgrounds, black for light backgrounds
-      return luminance > 0.5 ? '#000000' : '#ffffff';
-    };
-
-    const textColor = getTextColor(backgroundColor);
+    // Add alpha channel to the base color
+    const backgroundColor = baseColor + ALPHA_CHANNEL;
+    const textColor = baseColor;
 
     return (
       <Tooltip title={label.name}>
         <span
           ref={ref}
-          className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium shrink-0 max-w-[120px]"
+          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium shrink-0 max-w-[100px]"
           style={{ 
             backgroundColor,
             color: textColor,
-            border: `1px solid ${backgroundColor}`,
+            border: `1px solid ${baseColor}`,
           }}
         >
           <span className="truncate">{truncatedName}</span>

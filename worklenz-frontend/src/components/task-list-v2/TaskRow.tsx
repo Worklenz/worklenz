@@ -113,7 +113,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({
   const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0 : 1, // Completely hide the original task while dragging
   }), [transform, transition, isDragging]);
 
   return (
