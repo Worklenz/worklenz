@@ -139,7 +139,7 @@ const EnhancedKanbanCreateSection: React.FC = () => {
     }
     if (groupBy === IGroupBy.PHASE) {
       try {
-        const response = await phasesApiService.addPhaseOption(projectId);
+        const response = await phasesApiService.addPhaseOption(projectId, name);
         if (response.done && response.body) {
           dispatch(fetchEnhancedKanbanGroups(projectId));
         }

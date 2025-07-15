@@ -524,6 +524,69 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
         });
       }
 
+      // NEW SIMPLIFIED APPROACH: Calculate all affected task updates and send them
+      const taskUpdates: Array<{
+        task_id: string;
+        sort_order: number;
+        status_id?: string;
+        priority_id?: string;
+        phase_id?: string;
+      }> = [];
+
+      // Add updates for all tasks in affected groups
+      if (activeGroupId === overGroupId) {
+        // Same group - just reorder
+        const updatedTasks = [...sourceGroup.tasks];
+        updatedTasks.splice(fromIndex, 1);
+        updatedTasks.splice(toIndex, 0, task);
+        
+        updatedTasks.forEach((task, index) => {
+          taskUpdates.push({
+            task_id: task.id,
+            sort_order: index + 1, // 1-based indexing
+          });
+        });
+      } else {
+        // Different groups - update both source and target
+        const updatedSourceTasks = sourceGroup.tasks.filter((_, i) => i !== fromIndex);
+        const updatedTargetTasks = [...targetGroup.tasks];
+        
+        if (isTargetGroupEmpty) {
+          updatedTargetTasks.push(task);
+        } else if (toIndex >= 0 && toIndex <= updatedTargetTasks.length) {
+          updatedTargetTasks.splice(toIndex, 0, task);
+        } else {
+          updatedTargetTasks.push(task);
+        }
+
+        // Add updates for source group
+        updatedSourceTasks.forEach((task, index) => {
+          taskUpdates.push({
+            task_id: task.id,
+            sort_order: index + 1,
+          });
+        });
+
+        // Add updates for target group (including the moved task)
+        updatedTargetTasks.forEach((task, index) => {
+          const update: any = {
+            task_id: task.id,
+            sort_order: index + 1,
+          };
+          
+          // Add group-specific updates
+          if (groupBy === IGroupBy.STATUS) {
+            update.status_id = targetGroup.id;
+          } else if (groupBy === IGroupBy.PRIORITY) {
+            update.priority_id = targetGroup.id;
+          } else if (groupBy === IGroupBy.PHASE) {
+            update.phase_id = targetGroup.id;
+          }
+          
+          taskUpdates.push(update);
+        });
+      }
+
       socket?.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
         project_id: projectId,
         from_index: sourceGroup.tasks[fromIndex].sort_order,
@@ -534,6 +597,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
         group_by: groupBy,
         task: sourceGroup.tasks[fromIndex],
         team_id: currentSession?.team_id,
+        task_updates: taskUpdates, // NEW: Send calculated updates
       });
 
       setTimeout(resetTaskRowStyles, 0);

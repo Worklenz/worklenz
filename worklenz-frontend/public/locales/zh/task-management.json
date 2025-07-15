@@ -18,6 +18,10 @@
   "changeCategory": "更改类别",
   "clickToEditGroupName": "点击编辑组名称",
   "enterGroupName": "输入组名称",
+  "todo": "待办",
+  "inProgress": "进行中",
+  "done": "已完成",
+  "defaultTaskName": "无标题任务",
 
   "indicators": {
     "tooltips": {

@@ -1174,9 +1174,39 @@ export default class TasksControllerV2 extends TasksControllerBase {
       }
     });
 
+    // Calculate progress stats for priority and phase grouping
+    if (groupBy === GroupBy.PRIORITY || groupBy === GroupBy.PHASE) {
+      Object.values(groupedResponse).forEach((group: any) => {
+        if (group.tasks && group.tasks.length > 0) {
+          const todoCount = group.tasks.filter((task: any) => {
+            // For tasks, we need to check their original status category
+            const originalTask = tasks.find(t => t.id === task.id);
+            return originalTask?.status_category?.is_todo;
+          }).length;
+          
+          const doingCount = group.tasks.filter((task: any) => {
+            const originalTask = tasks.find(t => t.id === task.id);
+            return originalTask?.status_category?.is_doing;
+          }).length;
+          
+          const doneCount = group.tasks.filter((task: any) => {
+            const originalTask = tasks.find(t => t.id === task.id);
+            return originalTask?.status_category?.is_done;
+          }).length;
+
+          const total = group.tasks.length;
+
+          // Calculate progress percentages
+          group.todo_progress = total > 0 ? +((todoCount / total) * 100).toFixed(0) : 0;
+          group.doing_progress = total > 0 ? +((doingCount / total) * 100).toFixed(0) : 0;
+          group.done_progress = total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
+        }
+      });
+    }
+
     // Create unmapped group if there are tasks without proper phase assignment
     if (unmappedTasks.length > 0 && groupBy === GroupBy.PHASE) {
-      groupedResponse[UNMAPPED.toLowerCase()] = {
+      const unmappedGroup = {
         id: UNMAPPED,
         title: UNMAPPED,
         groupType: groupBy,
@@ -1189,7 +1219,36 @@ export default class TasksControllerV2 extends TasksControllerBase {
         start_date: null,
         end_date: null,
         sort_index: 999, // Put unmapped group at the end
+        todo_progress: 0,
+        doing_progress: 0,
+        done_progress: 0,
       };
+
+      // Calculate progress stats for unmapped group
+      if (unmappedTasks.length > 0) {
+        const todoCount = unmappedTasks.filter((task: any) => {
+          const originalTask = tasks.find(t => t.id === task.id);
+          return originalTask?.status_category?.is_todo;
+        }).length;
+        
+        const doingCount = unmappedTasks.filter((task: any) => {
+          const originalTask = tasks.find(t => t.id === task.id);
+          return originalTask?.status_category?.is_doing;
+        }).length;
+        
+        const doneCount = unmappedTasks.filter((task: any) => {
+          const originalTask = tasks.find(t => t.id === task.id);
+          return originalTask?.status_category?.is_done;
+        }).length;
+
+        const total = unmappedTasks.length;
+
+        unmappedGroup.todo_progress = total > 0 ? +((todoCount / total) * 100).toFixed(0) : 0;
+        unmappedGroup.doing_progress = total > 0 ? +((doingCount / total) * 100).toFixed(0) : 0;
+        unmappedGroup.done_progress = total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
+      }
+
+      groupedResponse[UNMAPPED.toLowerCase()] = unmappedGroup;
     }
 
     // Sort tasks within each group by order

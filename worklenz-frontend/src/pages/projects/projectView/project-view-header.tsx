@@ -212,7 +212,7 @@ const ProjectViewHeader = memo(() => {
       setCreatingTask(true);
 
       const body: Partial<ITaskCreateRequest> = {
-        name: DEFAULT_TASK_NAME,
+        name: t('defaultTaskName'),
         project_id: selectedProject.id,
         reporter_id: currentSession.id,
         team_id: currentSession.team_id,
@@ -242,7 +242,7 @@ const ProjectViewHeader = memo(() => {
       logger.error('Error creating task', error);
       setCreatingTask(false);
     }
-  }, [selectedProject?.id, currentSession, socket, dispatch, groupBy, tab]);
+  }, [selectedProject?.id, currentSession, socket, dispatch, groupBy, tab, t]);
 
   // Memoized import task template handler
   const handleImportTaskTemplate = useCallback(() => {

@@ -54,6 +54,7 @@ import {
   setCustomColumnModalAttributes,
   toggleCustomColumnModalOpen,
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 
 // Components
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
@@ -64,6 +65,7 @@ import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-t
 import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
 import TaskListSkeleton from './components/TaskListSkeleton';
+import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
 
 // Hooks and utilities
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
@@ -212,6 +214,7 @@ const TaskListV2Section: React.FC = () => {
     if (urlProjectId) {
       dispatch(fetchTasksV3(urlProjectId));
       dispatch(fetchTaskListColumns(urlProjectId));
+      dispatch(fetchPhasesByProjectId(urlProjectId));
     }
   }, [dispatch, urlProjectId]);
 
@@ -452,6 +455,10 @@ const TaskListV2Section: React.FC = () => {
               name: group.title,
               count: group.actualCount,
               color: group.color,
+              todo_progress: group.todo_progress,
+              doing_progress: group.doing_progress,
+              done_progress: group.done_progress,
+              groupType: group.groupType,
             }}
             isCollapsed={isGroupCollapsed}
             onToggle={() => handleGroupCollapse(group.id)}
@@ -459,7 +466,7 @@ const TaskListV2Section: React.FC = () => {
           />
           {isGroupEmpty && !isGroupCollapsed && (
             <div className="relative w-full">
-              <div className="flex items-center min-w-max px-1 py-3">
+              <div className="flex items-center min-w-max px-1 py-6">
                 {visibleColumns.map((column, index) => {
                   const emptyColumnStyle = {
                     width: column.width,
@@ -478,7 +485,7 @@ const TaskListV2Section: React.FC = () => {
                 })}
               </div>
               <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center">
-                <div className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-4 py-3 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm">
                   {t('noTasksInGroup')}
                 </div>
               </div>
@@ -760,6 +767,9 @@ const TaskListV2Section: React.FC = () => {
 
         {/* Custom Column Modal */}
         {createPortal(<CustomColumnModal />, document.body, 'custom-column-modal')}
+        
+        {/* Convert To Subtask Drawer */}
+        {createPortal(<ConvertToSubtaskDrawer />, document.body, 'convert-to-subtask-drawer')}
       </div>
     </DndContext>
   );

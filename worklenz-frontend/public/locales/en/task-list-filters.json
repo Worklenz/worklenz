@@ -69,6 +69,7 @@
   "cancel": "Cancel",
   "search": "Search",
   "groupedBy": "Grouped by",
+  "manage": "Manage",
   "manageStatuses": "Manage Statuses",
   "managePhases": "Manage Phases",
   "dragToReorderStatuses": "Statuses are organized by categories. Drag to reorder within categories. Click 'Add Status' to create new statuses in each category.",
