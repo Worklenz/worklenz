@@ -9,6 +9,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useParams } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
+import logger from '@/utils/errorLogger';
 
 export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
   const dispatch = useAppDispatch();
@@ -23,13 +24,13 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
   const emitTaskSortChange = useCallback(
     (taskId: string, sourceGroup: TaskGroup, targetGroup: TaskGroup, insertIndex: number) => {
       if (!socket || !connected || !projectId) {
-        console.warn('Socket not connected or missing project ID');
+        logger.warning('Socket not connected or missing project ID');
         return;
       }
 
       const task = allTasks.find(t => t.id === taskId);
       if (!task) {
-        console.error('Task not found for socket emission:', taskId);
+        logger.error('Task not found for socket emission:', taskId);
         return;
       }
 
@@ -106,7 +107,6 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
         team_id: teamId,
       };
 
-      console.log('Emitting TASK_SORT_ORDER_CHANGE:', socketData);
       socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), socketData);
 
       // Also emit the specific grouping field change event for the moved task
@@ -174,15 +174,6 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       }
 
       if (!activeGroup || !targetGroup) return;
-
-      // If dragging to a different group, we need to handle cross-group movement
-      if (activeGroup.id !== targetGroup.id) {
-        console.log('Cross-group drag detected:', {
-          activeTask: activeTask.id,
-          fromGroup: activeGroup.id,
-          toGroup: targetGroup.id,
-        });
-      }
     },
     [allTasks, groups]
   );
@@ -203,14 +194,14 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       // Find the active task
       const activeTask = allTasks.find(task => task.id === activeId);
       if (!activeTask) {
-        console.error('Active task not found:', activeId);
+        logger.error('Active task not found:', activeId);
         return;
       }
 
       // Find the groups
       const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
       if (!activeGroup) {
-        console.error('Could not find active group for task:', activeId);
+        logger.error('Could not find active group for task:', activeId);
         return;
       }
 
@@ -243,23 +234,12 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       }
 
       if (!targetGroup) {
-        console.error('Could not find target group');
+        logger.error('Could not find target group');
         return;
       }
 
       const isCrossGroup = activeGroup.id !== targetGroup.id;
       const activeIndex = activeGroup.taskIds.indexOf(activeTask.id);
-
-      console.log('Drag operation:', {
-        activeId,
-        overId,
-        activeTask: activeTask.name || activeTask.title,
-        activeGroup: activeGroup.id,
-        targetGroup: targetGroup.id,
-        activeIndex,
-        insertIndex,
-        isCrossGroup,
-      });
 
       if (isCrossGroup) {
         // Moving task between groups
@@ -284,14 +264,6 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
         // Emit socket event for persistence
         emitTaskSortChange(activeId as string, activeGroup, targetGroup, insertIndex);
       } else {
-        // Reordering within the same group
-        console.log('Reordering task within same group:', {
-          task: activeTask.name || activeTask.title,
-          group: activeGroup.title,
-          from: activeIndex,
-          to: insertIndex,
-        });
-
         if (activeIndex !== insertIndex) {
           // Reorder task within same group at drop position
           dispatch(
