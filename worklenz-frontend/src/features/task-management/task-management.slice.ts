@@ -660,7 +660,7 @@ const taskManagementSlice = createSlice({
           const [removed] = newTasks.splice(newTasks.indexOf(sourceTaskId), 1);
           newTasks.splice(newTasks.indexOf(destinationTaskId), 0, removed);
           group.taskIds = newTasks;
-  
+
           // Update order for affected tasks using the appropriate sort field
           const sortField = getSortOrderField(state.grouping?.id);
           newTasks.forEach((id, index) => {
@@ -673,11 +673,11 @@ const taskManagementSlice = createSlice({
         // Moving between different groups
         const sourceGroup = state.groups.find(g => g.id === sourceGroupId);
         const destinationGroup = state.groups.find(g => g.id === destinationGroupId);
-  
+
         if (sourceGroup && destinationGroup) {
           // Remove from source group
           sourceGroup.taskIds = sourceGroup.taskIds.filter(id => id !== sourceTaskId);
-  
+
           // Add to destination group at the correct position relative to destinationTask
           const destinationIndex = destinationGroup.taskIds.indexOf(destinationTaskId);
           if (destinationIndex !== -1) {
@@ -685,44 +685,10 @@ const taskManagementSlice = createSlice({
           } else {
             destinationGroup.taskIds.push(sourceTaskId); // Add to end if destination task not found
           }
-  
-          // Update task's grouping field to reflect new group (e.g., status, priority, phase)
-          // This assumes the group ID directly corresponds to the task's field value
-          if (sourceTask) {
-            let updatedTask = { ...sourceTask };
-            switch (state.grouping?.id) {
-              case IGroupBy.STATUS:
-                updatedTask.status = destinationGroup.id;
-                break;
-              case IGroupBy.PRIORITY:
-                updatedTask.priority = destinationGroup.id;
-                break;
-              case IGroupBy.PHASE:
-                // Handle unmapped group specially
-                if (destinationGroup.id === 'Unmapped' || destinationGroup.title === 'Unmapped') {
-                  updatedTask.phase = ''; // Clear phase for unmapped group
-                } else {
-                  updatedTask.phase = destinationGroup.id;
-                }
-                break;
-              case IGroupBy.MEMBERS:
-                // If moving to a member group, ensure task is assigned to that member
-                // This assumes the group ID is the member ID
-                if (!updatedTask.assignees) {
-                  updatedTask.assignees = [];
-                }
-                if (!updatedTask.assignees.includes(destinationGroup.id)) {
-                  updatedTask.assignees.push(destinationGroup.id);
-                }
-                // If moving from a member group, and the task is no longer in any member group,
-                // consider removing the assignment (more complex logic might be needed here)
-                break;
-              default:
-                break;
-            }
-            newEntities[sourceTaskId] = updatedTask;
-          }
-  
+
+          // Do NOT update the task's grouping field (priority, phase, status) here.
+          // This will be handled by the socket event handler after backend confirmation.
+
           // Update order for affected tasks in both groups using the appropriate sort field
           const sortField = getSortOrderField(state.grouping?.id);
           sourceGroup.taskIds.forEach((id, index) => {
