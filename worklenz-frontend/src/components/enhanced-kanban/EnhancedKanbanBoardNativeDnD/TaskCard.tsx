@@ -15,6 +15,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { toggleTaskExpansion, fetchBoardSubTasks } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import TaskProgressCircle from './TaskProgressCircle';
 
 // Simple Portal component
 const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -69,7 +70,6 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         const d = selectedDate || new Date();
         return new Date(d.getFullYear(), d.getMonth(), 1);
     });
-    const [showSubtasks, setShowSubtasks] = useState(false);
 
     useEffect(() => {
         setSelectedDate(task.end_date ? new Date(task.end_date) : null);
@@ -202,7 +202,11 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
 
     return (
         <>
-            <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block' }} >
+            <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block', position: 'relative' }} >
+                {/* Progress circle at top right */}
+                <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 2 }}>
+                    <TaskProgressCircle task={task} size={20} />
+                </div>
                 <div
                     draggable
                     onDragStart={e => onTaskDragStart(e, task.id!, groupId)}
@@ -450,7 +454,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                                                 style={{ backgroundColor: themeMode === 'dark' ? (sub.priority_color_dark || sub.priority_color || '#d9d9d9') : (sub.priority_color || '#d9d9d9') }}
                                             ></span>
                                         ) : null}
-                                        <span className="flex-1 truncate text-xs text-gray-800 dark:text-gray-100">{sub.name}</span>
+                                        <span className="flex-1 truncate text-xs text-gray-800 dark:text-gray-100" title={sub.name}>{sub.name}</span>
                                         <span
                                             className="task-due-date ml-2 text-[10px] text-gray-500 dark:text-gray-400"
                                         >

@@ -252,10 +252,9 @@ interface LabelsColumnProps {
 }
 
 export const LabelsColumn: React.FC<LabelsColumnProps> = memo(({ width, task, labelsAdapter, isDarkMode, visibleColumns }) => {
-  const labelsColumn = visibleColumns.find(col => col.id === 'labels');
   const labelsStyle = {
     width,
-    ...(labelsColumn?.width === 'auto' ? { minWidth: '200px', flexGrow: 1 } : {})
+    flexShrink: 0
   };
 
   return (

@@ -7,7 +7,7 @@ import {
   EntityId,
   createSelector,
 } from '@reduxjs/toolkit';
-import { Task, TaskManagementState, TaskGroup, TaskGrouping } from '@/types/task-management.types';
+import { Task, TaskManagementState, TaskGroup, TaskGrouping, getSortOrderField } from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
 import {
@@ -660,12 +660,12 @@ const taskManagementSlice = createSlice({
           const [removed] = newTasks.splice(newTasks.indexOf(sourceTaskId), 1);
           newTasks.splice(newTasks.indexOf(destinationTaskId), 0, removed);
           group.taskIds = newTasks;
-  
-          // Update order for affected tasks. Assuming simple reordering affects order.
-          // This might need more sophisticated logic based on how `order` is used.
+
+          // Update order for affected tasks using the appropriate sort field
+          const sortField = getSortOrderField(state.grouping?.id);
           newTasks.forEach((id, index) => {
             if (newEntities[id]) {
-              newEntities[id] = { ...newEntities[id], order: index };
+              newEntities[id] = { ...newEntities[id], [sortField]: index };
             }
           });
         }
@@ -673,11 +673,11 @@ const taskManagementSlice = createSlice({
         // Moving between different groups
         const sourceGroup = state.groups.find(g => g.id === sourceGroupId);
         const destinationGroup = state.groups.find(g => g.id === destinationGroupId);
-  
+
         if (sourceGroup && destinationGroup) {
           // Remove from source group
           sourceGroup.taskIds = sourceGroup.taskIds.filter(id => id !== sourceTaskId);
-  
+
           // Add to destination group at the correct position relative to destinationTask
           const destinationIndex = destinationGroup.taskIds.indexOf(destinationTaskId);
           if (destinationIndex !== -1) {
@@ -685,50 +685,17 @@ const taskManagementSlice = createSlice({
           } else {
             destinationGroup.taskIds.push(sourceTaskId); // Add to end if destination task not found
           }
-  
-          // Update task's grouping field to reflect new group (e.g., status, priority, phase)
-          // This assumes the group ID directly corresponds to the task's field value
-          if (sourceTask) {
-            let updatedTask = { ...sourceTask };
-            switch (state.grouping?.id) {
-              case IGroupBy.STATUS:
-                updatedTask.status = destinationGroup.id;
-                break;
-              case IGroupBy.PRIORITY:
-                updatedTask.priority = destinationGroup.id;
-                break;
-              case IGroupBy.PHASE:
-                // Handle unmapped group specially
-                if (destinationGroup.id === 'Unmapped' || destinationGroup.title === 'Unmapped') {
-                  updatedTask.phase = ''; // Clear phase for unmapped group
-                } else {
-                  updatedTask.phase = destinationGroup.id;
-                }
-                break;
-              case IGroupBy.MEMBERS:
-                // If moving to a member group, ensure task is assigned to that member
-                // This assumes the group ID is the member ID
-                if (!updatedTask.assignees) {
-                  updatedTask.assignees = [];
-                }
-                if (!updatedTask.assignees.includes(destinationGroup.id)) {
-                  updatedTask.assignees.push(destinationGroup.id);
-                }
-                // If moving from a member group, and the task is no longer in any member group,
-                // consider removing the assignment (more complex logic might be needed here)
-                break;
-              default:
-                break;
-            }
-            newEntities[sourceTaskId] = updatedTask;
-          }
-  
-          // Update order for affected tasks in both groups if necessary
+
+          // Do NOT update the task's grouping field (priority, phase, status) here.
+          // This will be handled by the socket event handler after backend confirmation.
+
+          // Update order for affected tasks in both groups using the appropriate sort field
+          const sortField = getSortOrderField(state.grouping?.id);
           sourceGroup.taskIds.forEach((id, index) => {
-            if (newEntities[id]) newEntities[id] = { ...newEntities[id], order: index };
+            if (newEntities[id]) newEntities[id] = { ...newEntities[id], [sortField]: index };
           });
           destinationGroup.taskIds.forEach((id, index) => {
-            if (newEntities[id]) newEntities[id] = { ...newEntities[id], order: index };
+            if (newEntities[id]) newEntities[id] = { ...newEntities[id], [sortField]: index };
           });
         }
       }
@@ -958,8 +925,26 @@ const taskManagementSlice = createSlice({
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
         state.loading = false;
         const { allTasks, groups, grouping } = action.payload;
-        tasksAdapter.setAll(state as EntityState<Task, string>, allTasks || []); // Ensure allTasks is an array
-        state.ids = (allTasks || []).map(task => task.id); // Also update ids
+        
+        // Preserve existing timer state from old tasks before replacing
+        const oldTasks = state.entities;
+        const tasksWithTimers = (allTasks || []).map(task => {
+          const oldTask = oldTasks[task.id];
+          if (oldTask?.timeTracking?.activeTimer) {
+            // Preserve the timer state from the old task
+            return {
+              ...task,
+              timeTracking: {
+                ...task.timeTracking,
+                activeTimer: oldTask.timeTracking.activeTimer
+              }
+            };
+          }
+          return task;
+        });
+        
+        tasksAdapter.setAll(state as EntityState<Task, string>, tasksWithTimers); // Ensure allTasks is an array
+        state.ids = tasksWithTimers.map(task => task.id); // Also update ids
         state.groups = groups;
         state.grouping = grouping;
       })
@@ -1010,7 +995,7 @@ const taskManagementSlice = createSlice({
             order: subtask.sort_order || subtask.order || 0,
             parent_task_id: parentTaskId,
             is_sub_task: true,
-            sub_tasks_count: 0,
+            sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
             show_sub_tasks: false,
           }));
 

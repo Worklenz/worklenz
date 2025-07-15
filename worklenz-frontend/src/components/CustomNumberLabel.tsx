@@ -21,8 +21,8 @@ const CustomNumberLabel = React.forwardRef<HTMLSpanElement, CustomNumberLabelPro
       <Tooltip title={labelList.join(', ')}>
         <span
           ref={ref}
-          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white cursor-help"
-          style={{ backgroundColor }}
+          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium cursor-help"
+          style={{ backgroundColor, color: 'white' }}
         >
           {namesString}
         </span>
