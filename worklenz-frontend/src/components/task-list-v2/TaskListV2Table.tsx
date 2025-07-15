@@ -9,6 +9,7 @@ import {
   KeyboardSensor,
   TouchSensor,
   closestCenter,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -66,6 +67,101 @@ import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
 import TaskListSkeleton from './components/TaskListSkeleton';
 import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
+
+// Empty Group Drop Zone Component
+const EmptyGroupDropZone: React.FC<{
+  groupId: string;
+  visibleColumns: any[];
+  t: (key: string) => string;
+}> = ({ groupId, visibleColumns, t }) => {
+  const { setNodeRef, isOver, active } = useDroppable({
+    id: `empty-group-${groupId}`,
+    data: {
+      type: 'group',
+      groupId: groupId,
+      isEmpty: true,
+    },
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`relative w-full transition-colors duration-200 ${
+        isOver && active ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+      }`}
+    >
+      <div className="flex items-center min-w-max px-1 py-6">
+        {visibleColumns.map((column, index) => {
+          const emptyColumnStyle = {
+            width: column.width,
+            flexShrink: 0,
+          };
+          return (
+            <div
+              key={`empty-${column.id}`}
+              className="border-r border-gray-200 dark:border-gray-700"
+              style={emptyColumnStyle}
+            />
+          );
+        })}
+      </div>
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center">
+        <div 
+          className={`text-sm px-4 py-3 rounded-md border shadow-sm transition-colors duration-200 ${
+            isOver && active 
+              ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600'
+              : 'text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700'
+          }`}
+        >
+          {isOver && active ? t('dropTaskHere') || 'Drop task here' : t('noTasksInGroup')}
+        </div>
+      </div>
+      {isOver && active && (
+        <div className="absolute inset-0 border-2 border-dashed border-blue-400 dark:border-blue-500 rounded-md pointer-events-none" />
+      )}
+    </div>
+  );
+};
+
+// Placeholder Drop Indicator Component
+const PlaceholderDropIndicator: React.FC<{
+  isVisible: boolean;
+  visibleColumns: any[];
+}> = ({ isVisible, visibleColumns }) => {
+  if (!isVisible) return null;
+  
+  return (
+    <div 
+      className="flex items-center min-w-max px-1 border-2 border-dashed border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-md mx-1 my-1 transition-all duration-200 ease-in-out"
+      style={{ minWidth: 'max-content', height: '40px' }}
+    >
+      {visibleColumns.map((column, index) => {
+        const columnStyle = {
+          width: column.width,
+          flexShrink: 0,
+        };
+        return (
+          <div
+            key={`placeholder-${column.id}`}
+            className="flex items-center justify-center h-full"
+            style={columnStyle}
+          >
+            {/* Show "Drop task here" message in the title column */}
+            {column.id === 'title' && (
+              <div className="text-xs text-blue-600 dark:text-blue-400 font-medium opacity-75">
+                Drop task here
+              </div>
+            )}
+            {/* Show subtle placeholder content in other columns */}
+            {column.id !== 'title' && column.id !== 'dragHandle' && (
+              <div className="w-full h-4 mx-1 bg-white dark:bg-gray-700 rounded opacity-50" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 // Hooks and utilities
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
@@ -127,7 +223,7 @@ const TaskListV2Section: React.FC = () => {
   );
 
   // Custom hooks
-  const { activeId, handleDragStart, handleDragOver, handleDragEnd } = useDragAndDrop(
+  const { activeId, overId, handleDragStart, handleDragOver, handleDragEnd } = useDragAndDrop(
     allTasks,
     groups
   );
@@ -465,31 +561,11 @@ const TaskListV2Section: React.FC = () => {
             projectId={urlProjectId || ''}
           />
           {isGroupEmpty && !isGroupCollapsed && (
-            <div className="relative w-full">
-              <div className="flex items-center min-w-max px-1 py-6">
-                {visibleColumns.map((column, index) => {
-                  const emptyColumnStyle = {
-                    width: column.width,
-                    flexShrink: 0,
-                    ...(column.id === 'labels' && column.width === 'auto'
-                      ? { minWidth: '200px', flexGrow: 1 }
-                      : {}),
-                  };
-                  return (
-                    <div
-                      key={`empty-${column.id}`}
-                      className="border-r border-gray-200 dark:border-gray-700"
-                      style={emptyColumnStyle}
-                    />
-                  );
-                })}
-              </div>
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center">
-                <div className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-4 py-3 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm">
-                  {t('noTasksInGroup')}
-                </div>
-              </div>
-            </div>
+            <EmptyGroupDropZone 
+              groupId={group.id}
+              visibleColumns={visibleColumns}
+              t={t}
+            />
           )}
         </div>
       );
@@ -546,12 +622,6 @@ const TaskListV2Section: React.FC = () => {
             const columnStyle: ColumnStyle = {
               width: column.width,
               flexShrink: 0,
-              ...(column.id === 'labels' && column.width === 'auto'
-                ? {
-                    minWidth: '200px',
-                    flexGrow: 1,
-                  }
-                : {}),
               ...((column as any).minWidth && { minWidth: (column as any).minWidth }),
               ...((column as any).maxWidth && { maxWidth: (column as any).maxWidth }),
             };
@@ -687,8 +757,9 @@ const TaskListV2Section: React.FC = () => {
                     {renderGroup(groupIndex)}
 
                     {/* Group Tasks */}
-                    {!collapsedGroups.has(group.id) &&
-                      group.tasks.map((task, taskIndex) => {
+                    {!collapsedGroups.has(group.id) && (
+                      group.tasks.length > 0 ? (
+                        group.tasks.map((task, taskIndex) => {
                         const globalTaskIndex =
                           virtuosoGroups.slice(0, groupIndex).reduce((sum, g) => sum + g.count, 0) +
                           taskIndex;
@@ -696,12 +767,41 @@ const TaskListV2Section: React.FC = () => {
                         // Check if this is the first actual task in the group (not AddTaskRow)
                         const isFirstTaskInGroup = taskIndex === 0 && !('isAddTaskRow' in task);
 
+                        // Check if we should show drop indicators
+                        const isTaskBeingDraggedOver = overId === task.id;
+                        const isGroupBeingDraggedOver = overId === group.id;
+                        const isFirstTaskInGroupBeingDraggedOver = isFirstTaskInGroup && isTaskBeingDraggedOver;
+
                         return (
                           <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
+                            {/* Placeholder drop indicator before first task in group */}
+                            {isFirstTaskInGroupBeingDraggedOver && (
+                              <PlaceholderDropIndicator isVisible={true} visibleColumns={visibleColumns} />
+                            )}
+                            
+                            {/* Placeholder drop indicator between tasks */}
+                            {isTaskBeingDraggedOver && !isFirstTaskInGroup && (
+                              <PlaceholderDropIndicator isVisible={true} visibleColumns={visibleColumns} />
+                            )}
+                            
                             {renderTask(globalTaskIndex, isFirstTaskInGroup)}
+                            
+                            {/* Placeholder drop indicator at end of group when dragging over group */}
+                            {isGroupBeingDraggedOver && taskIndex === group.tasks.length - 1 && (
+                              <PlaceholderDropIndicator isVisible={true} visibleColumns={visibleColumns} />
+                            )}
                           </div>
                         );
-                      })}
+                      })
+                      ) : (
+                        // Handle empty groups with placeholder drop indicator
+                        overId === group.id && (
+                          <div style={{ minWidth: 'max-content' }}>
+                            <PlaceholderDropIndicator isVisible={true} visibleColumns={visibleColumns} />
+                          </div>
+                        )
+                      )
+                    )}
                   </div>
                 ))}
               </div>
@@ -710,12 +810,12 @@ const TaskListV2Section: React.FC = () => {
         </div>
 
         {/* Drag Overlay */}
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay dropAnimation={{ duration: 200, easing: 'ease-in-out' }}>
           {activeId ? (
-            <div className="bg-white dark:bg-gray-800 shadow-xl rounded-md border-2 border-blue-400 opacity-95">
+            <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-lg border-2 border-blue-500 dark:border-blue-400 scale-105">
               <div className="px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <HolderOutlined className="text-blue-500" />
+                  <HolderOutlined className="text-blue-500 dark:text-blue-400" />
                   <div>
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {allTasks.find(task => task.id === activeId)?.name ||

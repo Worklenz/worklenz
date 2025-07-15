@@ -53,11 +53,27 @@ function notifyStatusChange(socket: Socket, config: Config) {
 }
 
 async function emitSortOrderChange(data: ChangeRequest, socket: Socket) {
+  // Determine which sort column to use based on group_by
+  let sortColumn = "sort_order";
+  switch (data.group_by) {
+    case "status":
+      sortColumn = "status_sort_order";
+      break;
+    case "priority":
+      sortColumn = "priority_sort_order";
+      break;
+    case "phase":
+      sortColumn = "phase_sort_order";
+      break;
+    default:
+      sortColumn = "sort_order";
+  }
+
   const q = `
-    SELECT id, sort_order, completed_at
+    SELECT id, sort_order, ${sortColumn} as current_sort_order, completed_at
     FROM tasks
     WHERE project_id = $1
-    ORDER BY sort_order;
+    ORDER BY ${sortColumn};
   `;
   const tasks = await db.query(q, [data.project_id]);
   socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), tasks.rows);
@@ -84,9 +100,9 @@ export async function on_task_sort_order_change(_io: Server, socket: Socket, dat
         }
       }
 
-      // Use the simple bulk update function
-      const q = `SELECT update_task_sort_orders_bulk($1);`;
-      await db.query(q, [JSON.stringify(data.task_updates)]);
+      // Use the simple bulk update function with group_by parameter
+      const q = `SELECT update_task_sort_orders_bulk($1, $2);`;
+      await db.query(q, [JSON.stringify(data.task_updates), data.group_by || "status"]);
       await emitSortOrderChange(data, socket);
       
       // Handle notifications and logging
