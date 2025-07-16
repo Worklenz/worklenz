@@ -8,10 +8,10 @@ import { RootState } from '@/app/store';
 import { useTranslation } from 'react-i18next';
 import OrganizationName from '@/components/admin-center/overview/organization-name/organization-name';
 import OrganizationOwner from '@/components/admin-center/overview/organization-owner/organization-owner';
+import HolidayCalendar from '@/components/admin-center/overview/holiday-calendar/holiday-calendar';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { IOrganization, IOrganizationAdmin } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
-import { tr } from 'date-fns/locale';
 
 const { Text } = Typography;
 
@@ -82,6 +82,8 @@ const Overview: React.FC = () => {
             themeMode={themeMode}
           />
         </Card>
+
+        <HolidayCalendar themeMode={themeMode} />
       </Space>
     </div>
   );
