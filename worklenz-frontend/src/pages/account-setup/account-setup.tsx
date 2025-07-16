@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Space, Steps, Button, Typography } from 'antd/es';
@@ -26,6 +26,7 @@ import { validateEmail } from '@/utils/validateEmail';
 import { sanitizeInput } from '@/utils/sanitizeInput';
 import logo from '@/assets/images/worklenz-light-mode.png';
 import logoDark from '@/assets/images/worklenz-dark-mode.png';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 import './account-setup.css';
 import { IAccountSetupRequest } from '@/types/project-templates/project-templates.types';
@@ -34,7 +35,7 @@ import { profileSettingsApiService } from '@/api/settings/profile/profile-settin
 const { Title } = Typography;
 
 const AccountSetup: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { t } = useTranslation('account-setup');
   useDocumentTitle(t('setupYourAccount', 'Account Setup'));
   const navigate = useNavigate();
@@ -52,8 +53,7 @@ const AccountSetup: React.FC = () => {
     trackMixpanelEvent(evt_account_setup_visit);
     const verifyAuthStatus = async () => {
       try {
-        const response = (await dispatch(verifyAuthentication()).unwrap())
-          .payload as IAuthorizeResponse;
+        const response = await dispatch(verifyAuthentication()).unwrap() as IAuthorizeResponse;
         if (response?.authenticated) {
           setSession(response.user);
           dispatch(setUser(response.user));
@@ -163,6 +163,18 @@ const AccountSetup: React.FC = () => {
       const res = await profileSettingsApiService.setupAccount(model);
       if (res.done && res.body.id) {
         trackMixpanelEvent(skip ? evt_account_setup_skip_invite : evt_account_setup_complete);
+        
+        // Refresh user session to update setup_completed status
+        try {
+          const authResponse = await dispatch(verifyAuthentication()).unwrap() as IAuthorizeResponse;
+          if (authResponse?.authenticated && authResponse?.user) {
+            setSession(authResponse.user);
+            dispatch(setUser(authResponse.user));
+          }
+        } catch (error) {
+          logger.error('Failed to refresh user session after setup completion', error);
+        }
+        
         navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {
