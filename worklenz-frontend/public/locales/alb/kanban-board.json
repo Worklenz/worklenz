@@ -10,6 +10,17 @@
   "deleteConfirmationOk": "Po",
   "deleteConfirmationCancel": "Anulo",
 
+  "deleteTaskTitle": "Fshi Detyrën",
+  "deleteTaskContent": "Jeni i sigurt që doni të fshini këtë detyrë? Kjo veprim nuk mund të zhbëhet.",
+  "deleteTaskConfirm": "Fshi",
+  "deleteTaskCancel": "Anulo",
+
+  "deleteStatusTitle": "Fshi Statusin",
+  "deleteStatusContent": "Jeni i sigurt që doni të fshini këtë status? Kjo veprim nuk mund të zhbëhet.",
+
+  "deletePhaseTitle": "Fshi Fazen",
+  "deletePhaseContent": "Jeni i sigurt që doni të fshini këtë fazë? Kjo veprim nuk mund të zhbëhet.",
+
   "dueDate": "Data e përfundimit",
   "cancel": "Anulo",
 

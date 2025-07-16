@@ -15,5 +15,13 @@
   "assignToMe": "分配给我",
   "archive": "归档",
   "newTaskNamePlaceholder": "写一个任务名称",
-  "newSubtaskNamePlaceholder": "写一个子任务名称"
+  "newSubtaskNamePlaceholder": "写一个子任务名称",
+  "deleteTaskTitle": "删除任务",
+  "deleteTaskContent": "您确定要删除此任务吗？此操作无法撤销。",
+  "deleteTaskConfirm": "删除",
+  "deleteTaskCancel": "取消",
+  "deleteStatusTitle": "删除状态",
+  "deleteStatusContent": "您确定要删除此状态吗？此操作无法撤销。",
+  "deletePhaseTitle": "删除阶段",
+  "deletePhaseContent": "您确定要删除此阶段吗？此操作无法撤销。"
 }
