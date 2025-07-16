@@ -10,6 +10,17 @@
   "deleteConfirmationOk": "Sim",
   "deleteConfirmationCancel": "Cancelar",
 
+  "deleteTaskTitle": "Excluir Tarefa",
+  "deleteTaskContent": "Tem certeza de que deseja excluir esta tarefa? Esta ação não pode ser desfeita.",
+  "deleteTaskConfirm": "Excluir",
+  "deleteTaskCancel": "Cancelar",
+
+  "deleteStatusTitle": "Excluir Status",
+  "deleteStatusContent": "Tem certeza de que deseja excluir este status? Esta ação não pode ser desfeita.",
+
+  "deletePhaseTitle": "Excluir Fase",
+  "deletePhaseContent": "Tem certeza de que deseja excluir esta fase? Esta ação não pode ser desfeita.",
+
   "dueDate": "Data de vencimento",
   "cancel": "Cancelar",
 
