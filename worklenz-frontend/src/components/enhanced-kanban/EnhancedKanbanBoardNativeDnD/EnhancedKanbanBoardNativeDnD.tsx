@@ -21,6 +21,9 @@ import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
+import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
+import { ITaskListGroup } from '@/types/tasks/taskList.types';
+import { fetchPhasesByProjectId, updatePhaseListOrder } from '@/features/projects/singleProject/phase/phases.slice';
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const dispatch = useDispatch();
@@ -34,6 +37,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     loadingGroups,
     error,
   } = useSelector((state: RootState) => state.enhancedKanbanReducer);
+  const { phaseList, loadingPhases } = useAppSelector(state => state.phaseReducer);
   const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [draggedTaskGroupId, setDraggedTaskGroupId] = useState<string | null>(null);
@@ -55,6 +59,9 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
 
     if (!statusCategories.length) {
       dispatch(fetchStatusesCategories() as any);
+    }
+    if ( groupBy === 'phase' && !phaseList.length) {
+      dispatch(fetchPhasesByProjectId(projectId) as any);
     }
   }, [dispatch, projectId]);
   // Reset drag state if taskGroups changes (e.g., real-time update)
@@ -90,9 +97,9 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     reorderedGroups.splice(toIdx, 0, moved);
     dispatch(reorderGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }));
     dispatch(reorderEnhancedKanbanGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }) as any);
-
     // API call for group order
     try {
+      if (groupBy === 'status') {
       const columnOrder = reorderedGroups.map(group => group.id);
       const requestBody = { status_order: columnOrder };
       const response = await statusApiService.updateStatusOrder(requestBody, projectId);
@@ -103,6 +110,22 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         revertedGroups.splice(fromIdx, 0, movedBackGroup);
         dispatch(reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups }));
         alertService.error('Failed to update column order', 'Please try again');
+      }
+      } else if (groupBy === 'phase') {
+        const newPhaseList = [...phaseList];
+        const [movedItem] = newPhaseList.splice(fromIdx, 1);
+        newPhaseList.splice(toIdx, 0, movedItem);
+        dispatch(updatePhaseListOrder(newPhaseList));
+        const requestBody = {
+          from_index: fromIdx,
+          to_index: toIdx,
+          phases: newPhaseList,
+          project_id: projectId,
+        };
+        const response = await phasesApiService.updatePhaseOrder(projectId, requestBody);
+        if (!response.done) {
+          alertService.error('Failed to update phase order', 'Please try again');
+        }
       }
     } catch (error) {
       // Revert the change if API call fails
@@ -119,7 +142,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   };
 
   // Utility to recalculate all task orders for all groups
-  function getAllTaskUpdates(allGroups, groupBy) {
+  function getAllTaskUpdates(allGroups: ITaskListGroup[], groupBy: string) {
     const taskUpdates = [];
     let currentSortOrder = 0;
     for (const group of allGroups) {
