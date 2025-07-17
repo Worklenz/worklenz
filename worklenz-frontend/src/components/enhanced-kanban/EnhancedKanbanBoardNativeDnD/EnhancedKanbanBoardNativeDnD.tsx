@@ -82,6 +82,9 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setDraggedGroupId(groupId);
     setDragType('group');
     e.dataTransfer.effectAllowed = 'move';
+    try {
+      e.dataTransfer.setData('text/plain', groupId);
+    } catch {}
   };
   const handleGroupDragOver = (e: React.DragEvent) => {
     if (dragType !== 'group') return;
@@ -182,6 +185,9 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     setDraggedTaskGroupId(groupId);
     setDragType('task');
     e.dataTransfer.effectAllowed = 'move';
+    try {
+      e.dataTransfer.setData('text/plain', taskId);
+    } catch {}
   };
   const handleTaskDragOver = (e: React.DragEvent, groupId: string, taskIdx: number | null) => {
     if (dragType !== 'task') return;
