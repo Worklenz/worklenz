@@ -8,7 +8,7 @@ import ImprovedTaskFilters from '../../task-management/improved-task-filters';
 import Card from 'antd/es/card';
 import Spin from 'antd/es/spin';
 import Empty from 'antd/es/empty';
-import { reorderGroups, reorderEnhancedKanbanGroups, reorderTasks, reorderEnhancedKanbanTasks, fetchEnhancedKanbanLabels, fetchEnhancedKanbanGroups, fetchEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { reorderGroups, reorderEnhancedKanbanGroups, reorderTasks, reorderEnhancedKanbanTasks, fetchEnhancedKanbanLabels, fetchEnhancedKanbanGroups, fetchEnhancedKanbanTaskAssignees, updateEnhancedKanbanTaskPriority } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import KanbanGroup from './KanbanGroup';
@@ -25,6 +25,7 @@ import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { fetchPhasesByProjectId, updatePhaseListOrder } from '@/features/projects/singleProject/phase/phases.slice';
 import { useTranslation } from 'react-i18next';
+import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const { t } = useTranslation('kanban-board');
@@ -62,7 +63,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     if (!statusCategories.length) {
       dispatch(fetchStatusesCategories() as any);
     }
-    if ( groupBy === 'phase' && !phaseList.length) {
+    if (groupBy === 'phase' && !phaseList.length) {
       dispatch(fetchPhasesByProjectId(projectId) as any);
     }
   }, [dispatch, projectId]);
@@ -102,10 +103,10 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     // API call for group order
     try {
       if (groupBy === 'status') {
-      const columnOrder = reorderedGroups.map(group => group.id);
-      const requestBody = { status_order: columnOrder };
-      const response = await statusApiService.updateStatusOrder(requestBody, projectId);
-              if (!response.done) {
+        const columnOrder = reorderedGroups.map(group => group.id);
+        const requestBody = { status_order: columnOrder };
+        const response = await statusApiService.updateStatusOrder(requestBody, projectId);
+        if (!response.done) {
           // Revert the change if API call fails
           const revertedGroups = [...reorderedGroups];
           const [movedBackGroup] = revertedGroups.splice(toIdx, 1);
@@ -329,6 +330,22 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
           })
         );
       }
+      if (groupBy === 'priority' && movedTask.id) {
+        socket?.emit(
+          SocketEvents.TASK_PRIORITY_CHANGE.toString(),
+          JSON.stringify({
+            task_id: movedTask.id,
+            priority_id: targetGroupId,
+            team_id: teamId,
+          })
+        );
+        socket?.once(
+          SocketEvents.TASK_PRIORITY_CHANGE.toString(),
+          (data: ITaskListPriorityChangeResponse) => {
+            dispatch(updateEnhancedKanbanTaskPriority(data));
+          }
+        );
+      }
     }
 
     setDraggedTaskId(null);
@@ -363,12 +380,12 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       </div>
       <div className="enhanced-kanban-board">
         {loadingGroups ? (
-            <div className="flex flex-row gap-2 h-[600px]">
-              <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '60%' }} />
-              <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '100%' }} />
-              <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '80%' }} />
-              <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '40%' }} />
-            </div>
+          <div className="flex flex-row gap-2 h-[600px]">
+            <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '60%' }} />
+            <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '100%' }} />
+            <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '80%' }} />
+            <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '40%' }} />
+          </div>
         ) : taskGroups.length === 0 ? (
           <Card>
             <Empty description={t('noTasksFound')} image={Empty.PRESENTED_IMAGE_SIMPLE} />

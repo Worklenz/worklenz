@@ -285,23 +285,7 @@ export const useTaskSocketHandlers = () => {
             );
           }
 
-          console.log('🔄 Status change group movement debug:', {
-            taskId: response.id,
-            newStatusValue,
-            currentGroupId: currentGroup?.id,
-            currentGroupValue: currentGroup?.groupValue,
-            currentGroupTitle: currentGroup?.title,
-            targetGroupId: targetGroup?.id,
-            targetGroupValue: targetGroup?.groupValue,
-            targetGroupTitle: targetGroup?.title,
-            allGroups: groups.map(g => ({ id: g.id, title: g.title, groupValue: g.groupValue }))
-          });
-
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-            console.log('✅ Moving task between groups:', {
-              from: currentGroup.title,
-              to: targetGroup.title
-            });
             // Use the action to move task between groups
             dispatch(
               moveTaskBetweenGroups({
@@ -448,12 +432,6 @@ export const useTaskSocketHandlers = () => {
           }
 
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-            console.log('🔄 Moving task between priority groups:', {
-              taskId: response.id,
-              from: currentGroup.title,
-              to: targetGroup.title,
-              newPriorityValue
-            });
             dispatch(
               moveTaskBetweenGroups({
                 taskId: response.id,
@@ -603,12 +581,6 @@ export const useTaskSocketHandlers = () => {
             }
 
             if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-              console.log('🔄 Moving task between phase groups:', {
-                taskId,
-                from: currentGroup.title,
-                to: targetGroup.title,
-                newPhaseValue
-              });
               dispatch(
                 moveTaskBetweenGroups({
                   taskId: taskId,
@@ -925,10 +897,6 @@ export const useTaskSocketHandlers = () => {
   // Handler for TASK_ASSIGNEES_CHANGE (fallback event with limited data)
   const handleTaskAssigneesChange = useCallback((data: { assigneeIds: string[] }) => {
     if (!data || !data.assigneeIds) return;
-
-    // This event only provides assignee IDs, so we update what we can
-    // The full assignee data will come from QUICK_ASSIGNEES_UPDATE
-    // console.log('🔄 Task assignees change (limited data):', data);
   }, []);
 
   // Handler for timer start events
@@ -993,9 +961,6 @@ export const useTaskSocketHandlers = () => {
   const handleTaskSortOrderChange = useCallback((data: any[]) => {
     try {
       if (!Array.isArray(data) || data.length === 0) return;
-
-      // DEBUG: Log the data received from the backend
-      console.log('[TASK_SORT_ORDER_CHANGE] Received data:', data);
 
       // Get canonical lists from Redux
       const state = store.getState();
