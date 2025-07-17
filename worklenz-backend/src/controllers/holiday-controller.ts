@@ -1,14 +1,14 @@
-import { IWorkLenzRequest } from '../interfaces/worklenz-request';
-import { IWorkLenzResponse } from '../interfaces/worklenz-response';
-import db from '../config/db';
-import { ServerResponse } from '../models/server-response';
-import WorklenzControllerBase from './worklenz-controller-base';
-import HandleExceptions from '../decorators/handle-exceptions';
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
+import db from "../config/db";
+import { ServerResponse } from "../models/server-response";
+import WorklenzControllerBase from "./worklenz-controller-base";
+import HandleExceptions from "../decorators/handle-exceptions";
 import {
   ICreateHolidayRequest,
   IUpdateHolidayRequest,
   IImportCountryHolidaysRequest,
-} from '../interfaces/holiday.interface';
+} from "../interfaces/holiday.interface";
 
 export default class HolidayController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -23,7 +23,7 @@ export default class HolidayController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getOrganizationHolidays(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { year } = req.query;
-    const yearFilter = year ? `AND EXTRACT(YEAR FROM date) = $2` : '';
+    const yearFilter = year ? `AND EXTRACT(YEAR FROM date) = $2` : "";
     const params = year ? [req.user?.owner_id, year] : [req.user?.owner_id];
 
     const q = `SELECT oh.id, oh.organization_id, oh.holiday_type_id, oh.name, oh.description, 
@@ -86,11 +86,11 @@ export default class HolidayController extends WorklenzControllerBase {
     }
 
     if (updateFields.length === 0) {
-      return res.status(400).send(new ServerResponse(false, 'No fields to update'));
+      return res.status(400).send(new ServerResponse(false, "No fields to update"));
     }
 
     const q = `UPDATE organization_holidays 
-               SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
+               SET ${updateFields.join(", ")}, updated_at = CURRENT_TIMESTAMP
                WHERE id = $2 AND organization_id = (
                  SELECT id FROM organizations WHERE user_id = $1
                )
@@ -99,7 +99,7 @@ export default class HolidayController extends WorklenzControllerBase {
     const result = await db.query(q, values);
     
     if (result.rows.length === 0) {
-      return res.status(404).send(new ServerResponse(false, 'Holiday not found'));
+      return res.status(404).send(new ServerResponse(false, "Holiday not found"));
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
@@ -118,10 +118,10 @@ export default class HolidayController extends WorklenzControllerBase {
     const result = await db.query(q, [req.user?.owner_id, id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).send(new ServerResponse(false, 'Holiday not found'));
+      return res.status(404).send(new ServerResponse(false, "Holiday not found"));
     }
 
-    return res.status(200).send(new ServerResponse(true, { message: 'Holiday deleted successfully' }));
+    return res.status(200).send(new ServerResponse(true, { message: "Holiday deleted successfully" }));
   }
 
   @HandleExceptions()
@@ -129,10 +129,10 @@ export default class HolidayController extends WorklenzControllerBase {
     const { country_code, year } = req.query;
     
     if (!country_code) {
-      return res.status(400).send(new ServerResponse(false, 'Country code is required'));
+      return res.status(400).send(new ServerResponse(false, "Country code is required"));
     }
 
-    const yearFilter = year ? `AND EXTRACT(YEAR FROM date) = $2` : '';
+    const yearFilter = year ? `AND EXTRACT(YEAR FROM date) = $2` : "";
     const params = year ? [country_code, year] : [country_code];
 
     const q = `SELECT id, country_code, name, description, date, is_recurring, created_at, updated_at
@@ -160,7 +160,7 @@ export default class HolidayController extends WorklenzControllerBase {
     const { country_code, year }: IImportCountryHolidaysRequest = req.body;
     
     if (!country_code) {
-      return res.status(400).send(new ServerResponse(false, 'Country code is required'));
+      return res.status(400).send(new ServerResponse(false, "Country code is required"));
     }
 
     // Get organization ID
@@ -169,7 +169,7 @@ export default class HolidayController extends WorklenzControllerBase {
     const organizationId = orgResult.rows[0]?.id;
 
     if (!organizationId) {
-      return res.status(404).send(new ServerResponse(false, 'Organization not found'));
+      return res.status(404).send(new ServerResponse(false, "Organization not found"));
     }
 
     // Get default holiday type (Public Holiday)
@@ -178,11 +178,11 @@ export default class HolidayController extends WorklenzControllerBase {
     const holidayTypeId = typeResult.rows[0]?.id;
 
     if (!holidayTypeId) {
-      return res.status(404).send(new ServerResponse(false, 'Default holiday type not found'));
+      return res.status(404).send(new ServerResponse(false, "Default holiday type not found"));
     }
 
     // Get country holidays for the specified year
-    const yearFilter = year ? `AND EXTRACT(YEAR FROM date) = $2` : '';
+    const yearFilter = year ? `AND EXTRACT(YEAR FROM date) = $2` : "";
     const params = year ? [country_code, year] : [country_code];
 
     const holidaysQ = `SELECT name, description, date, is_recurring
@@ -192,7 +192,7 @@ export default class HolidayController extends WorklenzControllerBase {
     const holidaysResult = await db.query(holidaysQ, params);
 
     if (holidaysResult.rows.length === 0) {
-      return res.status(404).send(new ServerResponse(false, 'No holidays found for this country and year'));
+      return res.status(404).send(new ServerResponse(false, "No holidays found for this country and year"));
     }
 
     // Import holidays to organization
@@ -229,7 +229,7 @@ export default class HolidayController extends WorklenzControllerBase {
     const { year, month } = req.query;
     
     if (!year || !month) {
-      return res.status(400).send(new ServerResponse(false, 'Year and month are required'));
+      return res.status(400).send(new ServerResponse(false, "Year and month are required"));
     }
 
     const q = `SELECT oh.id, oh.name, oh.description, oh.date, oh.is_recurring,
@@ -260,5 +260,106 @@ export default class HolidayController extends WorklenzControllerBase {
     
     const result = await db.query(q, [req.user?.owner_id, year, month]);
     return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async populateCountryHolidays(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const Holidays = require("date-holidays");
+
+    const countries = [
+      { code: "US", name: "United States" },
+      { code: "GB", name: "United Kingdom" },
+      { code: "CA", name: "Canada" },
+      { code: "AU", name: "Australia" },
+      { code: "DE", name: "Germany" },
+      { code: "FR", name: "France" },
+      { code: "IT", name: "Italy" },
+      { code: "ES", name: "Spain" },
+      { code: "NL", name: "Netherlands" },
+      { code: "BE", name: "Belgium" },
+      { code: "CH", name: "Switzerland" },
+      { code: "AT", name: "Austria" },
+      { code: "SE", name: "Sweden" },
+      { code: "NO", name: "Norway" },
+      { code: "DK", name: "Denmark" },
+      { code: "FI", name: "Finland" },
+      { code: "PL", name: "Poland" },
+      { code: "CZ", name: "Czech Republic" },
+      { code: "HU", name: "Hungary" },
+      { code: "RO", name: "Romania" },
+      { code: "BG", name: "Bulgaria" },
+      { code: "HR", name: "Croatia" },
+      { code: "SI", name: "Slovenia" },
+      { code: "SK", name: "Slovakia" },
+      { code: "LT", name: "Lithuania" },
+      { code: "LV", name: "Latvia" },
+      { code: "EE", name: "Estonia" },
+      { code: "IE", name: "Ireland" },
+      { code: "PT", name: "Portugal" },
+      { code: "GR", name: "Greece" },
+      { code: "CY", name: "Cyprus" },
+      { code: "MT", name: "Malta" },
+      { code: "LU", name: "Luxembourg" },
+      { code: "IS", name: "Iceland" },
+      { code: "CN", name: "China" },
+      { code: "JP", name: "Japan" },
+      { code: "KR", name: "South Korea" },
+      { code: "IN", name: "India" },
+      { code: "BR", name: "Brazil" },
+      { code: "AR", name: "Argentina" },
+      { code: "MX", name: "Mexico" },
+      { code: "ZA", name: "South Africa" },
+      { code: "NZ", name: "New Zealand" }
+    ];
+
+    let totalPopulated = 0;
+    const errors = [];
+
+    for (const country of countries) {
+      try {
+        const hd = new Holidays(country.code);
+        
+        for (let year = 2020; year <= 2030; year++) {
+          const holidays = hd.getHolidays(year);
+          
+          for (const holiday of holidays) {
+            if (!holiday.date || typeof holiday.date !== "object") {
+              continue;
+            }
+            
+            const dateStr = holiday.date.toISOString().split("T")[0];
+            const name = holiday.name || "Unknown Holiday";
+            const description = holiday.type || "Public Holiday";
+            
+            const query = `
+              INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
+              VALUES ($1, $2, $3, $4, $5)
+              ON CONFLICT (country_code, name, date) DO NOTHING
+            `;
+            
+            await db.query(query, [
+              country.code,
+              name,
+              description,
+              dateStr,
+              true
+            ]);
+            
+            totalPopulated++;
+          }
+        }
+      } catch (error) {
+        errors.push(`${country.name}: ${error.message}`);
+      }
+    }
+
+    const response = {
+      success: true,
+      message: `Successfully populated ${totalPopulated} holidays`,
+      total_populated: totalPopulated,
+      errors: errors.length > 0 ? errors : undefined
+    };
+
+    return res.status(200).send(new ServerResponse(true, response));
   }
 } 

@@ -65,4 +65,10 @@ export const holidayApiService = {
     const response = await apiClient.get<IServerResponse<IHolidayCalendarEvent[]>>(`${rootUrl}/calendar?year=${year}&month=${month}`);
     return response.data;
   },
+
+  // Populate holidays
+  populateCountryHolidays: async (): Promise<IServerResponse<any>> => {
+    const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/populate`);
+    return response.data;
+  },
 }; 
