@@ -24,8 +24,10 @@ import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { fetchPhasesByProjectId, updatePhaseListOrder } from '@/features/projects/singleProject/phase/phases.slice';
+import { useTranslation } from 'react-i18next';
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
+  const { t } = useTranslation('kanban-board');
   const dispatch = useDispatch();
   const authService = useAuthService();
   const { socket } = useSocket();
@@ -103,14 +105,14 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       const columnOrder = reorderedGroups.map(group => group.id);
       const requestBody = { status_order: columnOrder };
       const response = await statusApiService.updateStatusOrder(requestBody, projectId);
-      if (!response.done) {
-        // Revert the change if API call fails
-        const revertedGroups = [...reorderedGroups];
-        const [movedBackGroup] = revertedGroups.splice(toIdx, 1);
-        revertedGroups.splice(fromIdx, 0, movedBackGroup);
-        dispatch(reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups }));
-        alertService.error('Failed to update column order', 'Please try again');
-      }
+              if (!response.done) {
+          // Revert the change if API call fails
+          const revertedGroups = [...reorderedGroups];
+          const [movedBackGroup] = revertedGroups.splice(toIdx, 1);
+          revertedGroups.splice(fromIdx, 0, movedBackGroup);
+          dispatch(reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups }));
+          alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
+        }
       } else if (groupBy === 'phase') {
         const newPhaseList = [...phaseList];
         const [movedItem] = newPhaseList.splice(fromIdx, 1);
@@ -124,7 +126,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         };
         const response = await phasesApiService.updatePhaseOrder(projectId, requestBody);
         if (!response.done) {
-          alertService.error('Failed to update phase order', 'Please try again');
+          alertService.error(t('failedToUpdatePhaseOrder'), t('pleaseTryAgain'));
         }
       }
     } catch (error) {
@@ -133,7 +135,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       const [movedBackGroup] = revertedGroups.splice(toIdx, 1);
       revertedGroups.splice(fromIdx, 0, movedBackGroup);
       dispatch(reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups }));
-      alertService.error('Failed to update column order', 'Please try again');
+      alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
       logger.error('Failed to update column order', error);
     }
 
@@ -143,11 +145,23 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
 
   // Utility to recalculate all task orders for all groups
   function getAllTaskUpdates(allGroups: ITaskListGroup[], groupBy: string) {
-    const taskUpdates = [];
+    const taskUpdates: Array<{
+      task_id: string | undefined;
+      sort_order: number;
+      status_id?: string;
+      priority_id?: string;
+      phase_id?: string;
+    }> = [];
     let currentSortOrder = 0;
     for (const group of allGroups) {
       for (const task of group.tasks) {
-        const update = {
+        const update: {
+          task_id: string | undefined;
+          sort_order: number;
+          status_id?: string;
+          priority_id?: string;
+          phase_id?: string;
+        } = {
           task_id: task.id,
           sort_order: currentSortOrder,
         };
@@ -200,8 +214,8 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         const canContinue = await checkTaskDependencyStatus(movedTask.id, targetGroupId);
         if (!canContinue) {
           alertService.error(
-            'Task is not completed',
-            'Please complete the task dependencies before proceeding'
+            t('taskNotCompleted'),
+            t('completeTaskDependencies')
           );
           return;
         }
@@ -295,7 +309,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         team_id: teamId,
         from_index: taskIdx,
         to_index: insertIdx,
-        to_last_index: insertIdx === (targetGroup.id === sourceGroup.id ? newTaskGroups.find(g => g.id === targetGroup.id)?.tasks.length - 1 : targetGroup.tasks.length),
+        to_last_index: insertIdx === (targetGroup.id === sourceGroup.id ? (newTaskGroups.find(g => g.id === targetGroup.id)?.tasks.length || 0) - 1 : targetGroup.tasks.length),
         task: {
           id: movedTask.id,
           project_id: movedTask.project_id || projectId,
@@ -336,7 +350,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   if (error) {
     return (
       <Card>
-        <Empty description={`Error loading tasks: ${error}`} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description={`${t('errorLoadingTasks')}: ${error}`} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       </Card>
     );
   }
@@ -344,7 +358,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   return (
     <>
       <div className="mb-4">
-        <React.Suspense fallback={<div>Loading filters...</div>}>
+        <React.Suspense fallback={<div>{t('loadingFilters')}</div>}>
           <ImprovedTaskFilters position="board" />
         </React.Suspense>
       </div>
@@ -358,7 +372,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
             </div>
         ) : taskGroups.length === 0 ? (
           <Card>
-            <Empty description="No tasks found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description={t('noTasksFound')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
           </Card>
         ) : (
           <div className="kanban-groups-container">
