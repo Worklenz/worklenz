@@ -167,7 +167,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         };
         if (groupBy === 'status') update.status_id = group.id;
         else if (groupBy === 'priority') update.priority_id = group.id;
-        else if (groupBy === 'phase') update.phase_id = group.id;
+        else if (groupBy === 'phase' && group.name !== 'Unmapped') update.phase_id = group.id;
         taskUpdates.push(update);
         currentSortOrder++;
       }
@@ -240,7 +240,6 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       if (insertIdx > updatedTasks.length) insertIdx = updatedTasks.length;
 
       updatedTasks.splice(insertIdx, 0, movedTask); // Insert at new position
-
       dispatch(reorderTasks({
         activeGroupId: sourceGroup.id,
         overGroupId: targetGroup.id,
