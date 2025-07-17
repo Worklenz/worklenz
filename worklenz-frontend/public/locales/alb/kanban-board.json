@@ -37,5 +37,17 @@
   "noDueDate": "Pa datë përfundimi",
   "save": "Ruaj",
   "clear": "Pastro",
-  "nextWeek": "Javën e ardhshme"
+  "nextWeek": "Javën e ardhshme",
+  "noSubtasks": "Pa nëndetyra",
+  "showSubtasks": "Shfaq nëndetyrat",
+  "hideSubtasks": "Fshih nëndetyrat",
+  
+  "errorLoadingTasks": "Gabim gjatë ngarkimit të detyrave",
+  "noTasksFound": "Nuk u gjetën detyra",
+  "loadingFilters": "Duke ngarkuar filtra...",
+  "failedToUpdateColumnOrder": "Dështoi përditësimi i rendit të kolonave",
+  "failedToUpdatePhaseOrder": "Dështoi përditësimi i rendit të fazave",
+  "pleaseTryAgain": "Ju lutemi provoni përsëri",
+  "taskNotCompleted": "Detyra nuk është përfunduar",
+  "completeTaskDependencies": "Ju lutemi përfundoni varësitë e detyrës para se të vazhdoni"
 }

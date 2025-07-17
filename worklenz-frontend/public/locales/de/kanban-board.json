@@ -37,5 +37,17 @@
   "noDueDate": "Kein Fälligkeitsdatum",
   "save": "Speichern",
   "clear": "Löschen",
-  "nextWeek": "Nächste Woche"
+  "nextWeek": "Nächste Woche",
+  "noSubtasks": "Keine Unteraufgaben",
+  "showSubtasks": "Unteraufgaben anzeigen",
+  "hideSubtasks": "Unteraufgaben ausblenden",
+  
+  "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
+  "noTasksFound": "Keine Aufgaben gefunden",
+  "loadingFilters": "Filter werden geladen...",
+  "failedToUpdateColumnOrder": "Fehler beim Aktualisieren der Spaltenreihenfolge",
+  "failedToUpdatePhaseOrder": "Fehler beim Aktualisieren der Phasenreihenfolge",
+  "pleaseTryAgain": "Bitte versuchen Sie es erneut",
+  "taskNotCompleted": "Aufgabe ist nicht abgeschlossen",
+  "completeTaskDependencies": "Bitte schließen Sie die Aufgabenabhängigkeiten ab, bevor Sie fortfahren"
 }

@@ -37,5 +37,17 @@
   "noDueDate": "Sin fecha de vencimiento",
   "save": "Guardar",
   "clear": "Limpiar",
-  "nextWeek": "Próxima semana"
+  "nextWeek": "Próxima semana",
+  "noSubtasks": "Sin subtareas",
+  "showSubtasks": "Mostrar subtareas",
+  "hideSubtasks": "Ocultar subtareas",
+  
+  "errorLoadingTasks": "Error al cargar tareas",
+  "noTasksFound": "No se encontraron tareas",
+  "loadingFilters": "Cargando filtros...",
+  "failedToUpdateColumnOrder": "Error al actualizar el orden de las columnas",
+  "failedToUpdatePhaseOrder": "Error al actualizar el orden de las fases",
+  "pleaseTryAgain": "Por favor, inténtalo de nuevo",
+  "taskNotCompleted": "La tarea no está completada",
+  "completeTaskDependencies": "Por favor, completa las dependencias de la tarea antes de continuar"
 }
