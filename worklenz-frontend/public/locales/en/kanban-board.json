@@ -40,5 +40,14 @@
   "nextWeek": "Next week",
   "noSubtasks": "No subtasks",
   "showSubtasks": "Show subtasks",
-  "hideSubtasks": "Hide subtasks"
+  "hideSubtasks": "Hide subtasks",
+  
+  "errorLoadingTasks": "Error loading tasks",
+  "noTasksFound": "No tasks found",
+  "loadingFilters": "Loading filters...",
+  "failedToUpdateColumnOrder": "Failed to update column order",
+  "failedToUpdatePhaseOrder": "Failed to update phase order",
+  "pleaseTryAgain": "Please try again",
+  "taskNotCompleted": "Task is not completed",
+  "completeTaskDependencies": "Please complete the task dependencies before proceeding"
 }
