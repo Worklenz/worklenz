@@ -1,0 +1,19 @@
+.activity-feed-item:hover {
+  background-color: var(--activity-hover, #fafafa);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.activity-feed-item:active {
+  transform: translateY(0);
+  background-color: var(--activity-active, #f0f0f0);
+}
+
+/* Dark theme support */
+[data-theme="dark"] .activity-feed-item:hover {
+  background-color: var(--activity-hover, #262626);
+}
+
+[data-theme="dark"] .activity-feed-item:active {
+  background-color: var(--activity-active, #1f1f1f);
+}
