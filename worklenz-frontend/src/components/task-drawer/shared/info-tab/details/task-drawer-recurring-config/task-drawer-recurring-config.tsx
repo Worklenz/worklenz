@@ -11,7 +11,11 @@ import {
   Skeleton,
   Row,
   Col,
+  DatePicker,
+  Tag,
+  Space,
 } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import { SettingOutlined } from '@ant-design/icons';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -29,6 +33,7 @@ import { updateTaskCounts } from '@/features/task-management/task-management.sli
 import { taskRecurringApiService } from '@/api/tasks/task-recurring.api.service';
 import logger from '@/utils/errorLogger';
 import { setTaskRecurringSchedule } from '@/features/task-drawer/task-drawer.slice';
+import moment from 'moment-timezone';
 
 const monthlyDateOptions = Array.from({ length: 28 }, (_, i) => i + 1);
 
@@ -66,6 +71,21 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
 
   const dayOptions = daysOfWeek.map(d => ({ label: d.label, value: d.value }));
 
+  // Get common timezones
+  const timezoneOptions = [
+    { label: 'UTC', value: 'UTC' },
+    { label: 'US Eastern', value: 'America/New_York' },
+    { label: 'US Central', value: 'America/Chicago' },
+    { label: 'US Mountain', value: 'America/Denver' },
+    { label: 'US Pacific', value: 'America/Los_Angeles' },
+    { label: 'Europe/London', value: 'Europe/London' },
+    { label: 'Europe/Paris', value: 'Europe/Paris' },
+    { label: 'Asia/Tokyo', value: 'Asia/Tokyo' },
+    { label: 'Asia/Shanghai', value: 'Asia/Shanghai' },
+    { label: 'Asia/Kolkata', value: 'Asia/Kolkata' },
+    { label: 'Australia/Sydney', value: 'Australia/Sydney' },
+  ];
+
   const [recurring, setRecurring] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [repeatOption, setRepeatOption] = useState<IRepeatOption>({});
@@ -80,6 +100,10 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
   const [loadingData, setLoadingData] = useState(false);
   const [updatingData, setUpdatingData] = useState(false);
   const [scheduleData, setScheduleData] = useState<ITaskRecurringSchedule>({});
+  const [timezone, setTimezone] = useState('UTC');
+  const [endDate, setEndDate] = useState<moment.Moment | null>(null);
+  const [excludedDates, setExcludedDates] = useState<string[]>([]);
+  const [newExcludeDate, setNewExcludeDate] = useState<moment.Moment | null>(null);
 
   const handleChange = (checked: boolean) => {
     if (!task.id) return;
@@ -140,6 +164,9 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     const body: ITaskRecurringSchedule = {
       id: task.id,
       schedule_type: repeatOption.value,
+      timezone: timezone,
+      end_date: endDate ? endDate.format('YYYY-MM-DD') : null,
+      excluded_dates: excludedDates,
     };
 
     switch (repeatOption.value) {
@@ -213,13 +240,16 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
           const selected = repeatOptions.find(e => e.value == res.body.schedule_type);
           if (selected) {
             setRepeatOption(selected);
-            setSelectedMonthlyDate(scheduleData.date_of_month || 1);
-            setSelectedMonthlyDay(scheduleData.day_of_month || 0);
-            setSelectedMonthlyWeek(scheduleData.week_of_month || 0);
-            setIntervalDays(scheduleData.interval_days || 1);
-            setIntervalWeeks(scheduleData.interval_weeks || 1);
-            setIntervalMonths(scheduleData.interval_months || 1);
-            setMonthlyOption(selectedMonthlyDate ? 'date' : 'day');
+            setSelectedMonthlyDate(res.body.date_of_month || 1);
+            setSelectedMonthlyDay(res.body.day_of_month || 0);
+            setSelectedMonthlyWeek(res.body.week_of_month || 0);
+            setIntervalDays(res.body.interval_days || 1);
+            setIntervalWeeks(res.body.interval_weeks || 1);
+            setIntervalMonths(res.body.interval_months || 1);
+            setTimezone(res.body.timezone || 'UTC');
+            setEndDate(res.body.end_date ? moment(res.body.end_date) : null);
+            setExcludedDates(res.body.excluded_dates || []);
+            setMonthlyOption(res.body.date_of_month ? 'date' : 'day');
             updateDaysOfWeek();
           }
         }
@@ -365,6 +395,69 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
                         />
                       </Form.Item>
                     )}
+
+                    {/* Timezone Selection */}
+                    <Form.Item label={t('timezone')}>
+                      <Select
+                        value={timezone}
+                        onChange={setTimezone}
+                        options={timezoneOptions}
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+
+                    {/* End Date */}
+                    <Form.Item label={t('endDate')}>
+                      <DatePicker
+                        value={endDate}
+                        onChange={setEndDate}
+                        style={{ width: '100%' }}
+                        placeholder={t('selectEndDate')}
+                        disabledDate={(current) => current && current < moment().endOf('day')}
+                      />
+                    </Form.Item>
+
+                    {/* Excluded Dates */}
+                    <Form.Item label={t('excludedDates')}>
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        <DatePicker
+                          value={newExcludeDate}
+                          onChange={setNewExcludeDate}
+                          style={{ width: '100%' }}
+                          placeholder={t('selectDateToExclude')}
+                          disabledDate={(current) => current && current < moment().endOf('day')}
+                        />
+                        {newExcludeDate && (
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              const dateStr = newExcludeDate.format('YYYY-MM-DD');
+                              if (!excludedDates.includes(dateStr)) {
+                                setExcludedDates([...excludedDates, dateStr]);
+                                setNewExcludeDate(null);
+                              }
+                            }}
+                          >
+                            {t('addExcludedDate')}
+                          </Button>
+                        )}
+                        <div style={{ marginTop: 8 }}>
+                          {excludedDates.map((date) => (
+                            <Tag
+                              key={date}
+                              closable
+                              onClose={() => {
+                                setExcludedDates(excludedDates.filter(d => d !== date));
+                              }}
+                              style={{ marginBottom: 4 }}
+                            >
+                              {date}
+                            </Tag>
+                          ))}
+                        </div>
+                      </Space>
+                    </Form.Item>
+
                     <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
                       <Button
                         type="primary"

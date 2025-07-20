@@ -18,6 +18,9 @@ export interface ITaskRecurringSchedule {
   interval_weeks?: number | null;
   schedule_type?: ITaskRecurring;
   week_of_month?: number | null;
+  timezone?: string;
+  end_date?: string | null;
+  excluded_dates?: string[] | null;
 }
 
 export interface IRepeatOption {

@@ -6,6 +6,7 @@ import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import { calculateNextEndDate, log_error } from "../shared/utils";
+import { RecurringTasksAuditLogger, RecurringTaskOperationType } from "../utils/recurring-tasks-audit-logger";
 
 export default class TaskRecurringController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -34,7 +35,7 @@ export default class TaskRecurringController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async createTaskSchedule(taskId: string) {
+  public static async createTaskSchedule(taskId: string, userId?: string) {
     const q = `INSERT INTO task_recurring_schedules (schedule_type) VALUES ('daily') RETURNING id, schedule_type;`;
     const result = await db.query(q, []);
     const [data] = result.rows;
@@ -43,6 +44,15 @@ export default class TaskRecurringController extends WorklenzControllerBase {
     await db.query(updateQ, [data.id, taskId]);
 
     await TaskRecurringController.insertTaskRecurringTemplate(taskId, data.id);
+
+    // Log schedule creation
+    await RecurringTasksAuditLogger.logScheduleChange(
+      RecurringTaskOperationType.SCHEDULE_CREATED,
+      data.id,
+      taskId,
+      userId,
+      { schedule_type: data.schedule_type }
+    );
 
     return data;
   }
@@ -56,9 +66,9 @@ export default class TaskRecurringController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async updateSchedule(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { id } = req.params;
-    const { schedule_type, days_of_week, day_of_month, week_of_month, interval_days, interval_weeks, interval_months, date_of_month } = req.body;
+    const { schedule_type, days_of_week, day_of_month, week_of_month, interval_days, interval_weeks, interval_months, date_of_month, timezone, end_date, excluded_dates } = req.body;
 
-    const deleteQ = `UPDATE task_recurring_schedules
+    const updateQ = `UPDATE task_recurring_schedules
                       SET schedule_type   = $1,
                           days_of_week    = $2,
                           date_of_month   = $3,
@@ -66,9 +76,27 @@ export default class TaskRecurringController extends WorklenzControllerBase {
                           week_of_month   = $5,
                           interval_days   = $6,
                           interval_weeks  = $7,
-                          interval_months = $8
-                      WHERE id = $9;`;
-    await db.query(deleteQ, [schedule_type, days_of_week, date_of_month, day_of_month, week_of_month, interval_days, interval_weeks, interval_months, id]);
+                          interval_months = $8,
+                          timezone        = COALESCE($9, timezone, 'UTC'),
+                          end_date        = $10,
+                          excluded_dates  = $11
+                      WHERE id = $12;`;
+    await db.query(updateQ, [schedule_type, days_of_week, date_of_month, day_of_month, week_of_month, interval_days, interval_weeks, interval_months, timezone, end_date, excluded_dates, id]);
+    
+    // Log schedule update
+    await RecurringTasksAuditLogger.logScheduleChange(
+      RecurringTaskOperationType.SCHEDULE_UPDATED,
+      id,
+      undefined,
+      req.user?.id,
+      { 
+        schedule_type, 
+        timezone, 
+        end_date,
+        excluded_dates_count: excluded_dates?.length || 0 
+      }
+    );
+    
     return res.status(200).send(new ServerResponse(true, null));
   }
 

@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "bull": "^4.16.5",
+    "ioredis": "^5.6.1"
+  },
+  "devDependencies": {
+    "@types/bull": "^3.15.9"
+  }
+}

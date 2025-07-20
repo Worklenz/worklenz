@@ -12,6 +12,9 @@ export interface IRecurringSchedule {
   last_checked_at: Date | null;
   last_task_end_date: Date | null;
   created_at: Date;
+  timezone?: string;
+  end_date?: Date | null;
+  excluded_dates?: string[] | null;
 }
 
 interface ITaskTemplateAssignee {
