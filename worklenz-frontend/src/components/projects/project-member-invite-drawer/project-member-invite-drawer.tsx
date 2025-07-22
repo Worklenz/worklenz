@@ -22,7 +22,7 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 
 const ProjectMemberDrawer = () => {
   const { t } = useTranslation('project-view/project-member-drawer');
-  const { isDrawerOpen, currentMembersList, isLoading } = useAppSelector(
+  const { isDrawerOpen, currentMembersList, isLoading, isFromAssigner } = useAppSelector(
     state => state.projectMemberReducer
   );
   const { projectId } = useAppSelector(state => state.projectReducer);
@@ -176,8 +176,9 @@ const ProjectMemberDrawer = () => {
   );
 
   const renderNotFoundContent = () => (
-    <Flex>
+    <Flex style={{ display: 'block'}}>
       <Button
+        className='mb-2'
         block
         type="primary"
         onClick={sendInviteToProject}
@@ -189,19 +190,23 @@ const ProjectMemberDrawer = () => {
           {validateEmail(searchTerm) ? t('inviteAsAMember') : t('inviteNewMemberByEmail')}
         </span>
       </Button>
+      {isFromAssigner && <Flex>
+          <input className='mr-2' type="checkbox" checked={true} name={t('alsoInviteToProject')} id="AlsoInviteToProject" />
+          <label htmlFor={t('alsoInviteToProject')}>{t('alsoInviteToProject')}</label>
+        </Flex>}
     </Flex>
   );
 
   return (
       <Modal
         title={
-          <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>{t('title')}</Typography.Text>
+          <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>{isFromAssigner ? t('inviteMember') : t('title')}</Typography.Text>
         }
         open={isDrawerOpen}
         onCancel={() => dispatch(toggleProjectMemberDrawer())}
         afterOpenChange={handleOpenChange}
         footer={
-          <Button
+          !isFromAssigner && <Button
             style={{ width: 140, fontSize: 12 }}
             block
             icon={<LinkOutlined />}
@@ -232,7 +237,7 @@ const ProjectMemberDrawer = () => {
             />
           </Form.Item>
         </Form>
-        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>{t('members')}</div>
+        {!isFromAssigner && <><div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>{t('members')}</div>
         <div style={{ maxHeight: 360, minHeight: 120, overflowY: 'auto', marginBottom: 16 }}>
           <List
             loading={isLoading}
@@ -248,7 +253,8 @@ const ProjectMemberDrawer = () => {
               </List.Item>
             )}
           />
-        </div>
+        </div></>
+        }
       </Modal>
   );
 };

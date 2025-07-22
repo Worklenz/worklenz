@@ -5,5 +5,7 @@
   "inviteAsAMember": "Als Mitglied einladen",
   "inviteNewMemberByEmail": "Neues Mitglied per E-Mail einladen",
   "members": "Mitglieder",
-  "copyProjectLink": "Projektlink kopieren"
+  "copyProjectLink": "Projektlink kopieren",
+  "inviteMember": "Mitglied einladen",
+  "alsoInviteToProject": "Auch zum Projekt einladen"
 }
