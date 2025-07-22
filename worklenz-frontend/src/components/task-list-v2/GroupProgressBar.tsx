@@ -16,6 +16,7 @@ const GroupProgressBar: React.FC<GroupProgressBarProps> = ({
   groupType
 }) => {
   const { t } = useTranslation('task-management');
+  console.log(todoProgress, doingProgress, doneProgress);
   
   // Only show for priority and phase grouping
   if (groupType !== 'priority' && groupType !== 'phase') {

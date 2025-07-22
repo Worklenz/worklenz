@@ -89,14 +89,29 @@ const EmptyGroupDropZone: React.FC<{
       className={`relative w-full transition-colors duration-200 ${
         isOver && active ? 'bg-blue-50 dark:bg-blue-900/20' : ''
       }`}
-      style={{ minHeight: 80 }}
     >
-      <div className="flex items-center min-w-max px-1 py-2">
+      <div className="flex items-center min-w-max px-1" style={{ height: '40px' }}>
         {visibleColumns.map((column, index) => {
           const emptyColumnStyle = {
             width: column.width,
             flexShrink: 0,
           };
+          
+          // Show text in the title column
+          if (column.id === 'title') {
+            return (
+              <div
+                key={`empty-${column.id}`}
+                className="flex items-center pl-1"
+                style={emptyColumnStyle}
+              >
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  No tasks in this group
+                </span>
+              </div>
+            );
+          }
+          
           return (
             <div
               key={`empty-${column.id}`}
@@ -105,13 +120,6 @@ const EmptyGroupDropZone: React.FC<{
             />
           );
         })}
-      </div>
-      {/* Left-aligned visually appealing empty state */}
-      <div className="pl-4 flex items-center">
-        <EmptyListPlaceholder
-          textKey="noTasksInGroup"
-          imageHeight={48}
-        />
       </div>
       {isOver && active && (
         <div className="absolute inset-0 border-2 border-dashed border-blue-400 dark:border-blue-500 rounded-md pointer-events-none" />
@@ -178,7 +186,7 @@ const TaskListV2Section: React.FC = () => {
   const { socket, connected } = useSocket();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
-  
+
   // Redux state selectors
   const allTasks = useAppSelector(selectAllTasksArray);
   const groups = useAppSelector(selectGroups);
@@ -698,10 +706,7 @@ const TaskListV2Section: React.FC = () => {
         count: 1, // For the add task row
         startIndex: 0
       };
-
-      
-      const unmappedVirtuosoGroups = [unmappedGroup];
-      
+     
       return (
         <DndContext
           sensors={sensors}
