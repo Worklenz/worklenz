@@ -1,4 +1,4 @@
-import { Drawer, Flex, Form, Select, Typography, List, Button } from 'antd/es';
+import { Drawer, Flex, Form, Select, Typography, List, Button, Modal, Divider } from 'antd/es';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 
@@ -13,6 +13,7 @@ import {
 } from '@/features/projects/singleProject/members/projectMembersSlice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { DeleteOutlined, MailOutlined } from '@ant-design/icons';
+import { LinkOutlined } from '@ant-design/icons';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import logger from '@/utils/errorLogger';
 import { validateEmail } from '@/utils/validateEmail';
@@ -192,56 +193,63 @@ const ProjectMemberDrawer = () => {
   );
 
   return (
-    <Drawer
-      title={
-        <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>{t('title')}</Typography.Text>
-      }
-      open={isDrawerOpen}
-      onClose={() => dispatch(toggleProjectMemberDrawer())}
-      afterOpenChange={handleOpenChange}
-    >
-      <Form form={form} layout="vertical" onFinish={handleSelectChange}>
-        <Form.Item name="memberName" label={t('searchLabel')}>
-          <Select
-            loading={teamMembersLoading}
-            placeholder={t('searchPlaceholder')}
-            showSearch
-            onSearch={handleSearch}
-            onChange={handleSelectChange}
-            onKeyDown={handleKeyDown}
-            options={members?.data?.map(member => ({
-              key: member.id,
-              value: member.id,
-              name: member.name,
-              label: renderMemberOption(member),
-            }))}
-            filterOption={false}
-            notFoundContent={renderNotFoundContent()}
-            optionLabelProp="name"
+      <Modal
+        title={
+          <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>{t('title')}</Typography.Text>
+        }
+        open={isDrawerOpen}
+        onCancel={() => dispatch(toggleProjectMemberDrawer())}
+        afterOpenChange={handleOpenChange}
+        footer={
+          <Button
+            style={{ width: 140, fontSize: 12 }}
+            block
+            icon={<LinkOutlined />}
+            disabled
+          >
+            {t('copyProjectLink')}
+          </Button>
+        }
+      >
+        <Form form={form} layout="vertical" onFinish={handleSelectChange}>
+          <Form.Item name="memberName" label={t('searchLabel')}>
+            <Select
+              loading={teamMembersLoading}
+              placeholder={t('searchPlaceholder')}
+              showSearch
+              onSearch={handleSearch}
+              onChange={handleSelectChange}
+              onKeyDown={handleKeyDown}
+              options={members?.data?.map(member => ({
+                key: member.id,
+                value: member.id,
+                name: member.name,
+                label: renderMemberOption(member),
+              }))}
+              filterOption={false}
+              notFoundContent={renderNotFoundContent()}
+              optionLabelProp="name"
+            />
+          </Form.Item>
+        </Form>
+        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>{t('members')}</div>
+        <div style={{ maxHeight: 360, minHeight: 120, overflowY: 'auto', marginBottom: 16 }}>
+          <List
+            loading={isLoading}
+            bordered
+            size="small"
+            itemLayout="horizontal"
+            dataSource={currentMembersList}
+            renderItem={member => (
+              <List.Item key={member.id} >
+                <Flex gap={4} align="center" justify="space-between" style={{ width: '100%' }}>
+                  {renderMemberOption(member)}
+                </Flex>
+              </List.Item>
+            )}
           />
-        </Form.Item>
-      </Form>
-
-      <List
-        loading={isLoading}
-        bordered
-        size="small"
-        itemLayout="horizontal"
-        dataSource={currentMembersList}
-        renderItem={member => (
-          <List.Item key={member.id}>
-            <Flex gap={4} align="center" justify="space-between" style={{ width: '100%' }}>
-              {renderMemberOption(member)}
-              <Button
-                onClick={() => handleDeleteMember(member.id)}
-                size="small"
-                icon={<DeleteOutlined />}
-              />
-            </Flex>
-          </List.Item>
-        )}
-      />
-    </Drawer>
+        </div>
+      </Modal>
   );
 };
 
