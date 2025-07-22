@@ -5,9 +5,16 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
-import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../shared/constants";
+import {
+  TASK_PRIORITY_COLOR_ALPHA,
+  TASK_STATUS_COLOR_ALPHA,
+  UNMAPPED,
+} from "../shared/constants";
 import { getColor, log_error } from "../shared/utils";
-import TasksControllerBase, { GroupBy, ITaskGroup } from "./tasks-controller-base";
+import TasksControllerBase, {
+  GroupBy,
+  ITaskGroup,
+} from "./tasks-controller-base";
 
 export class TaskListGroup implements ITaskGroup {
   name: string;
@@ -45,7 +52,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static flatString(text: string) {
-    return (text || "").split(" ").map(s => `'${s}'`).join(",");
+    return (text || "")
+      .split(" ")
+      .map((s) => `'${s}'`)
+      .join(",");
   }
 
   private static getFilterByStatusWhereClosure(text: string) {
@@ -58,13 +68,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   private static getFilterByLabelsWhereClosure(text: string) {
     return text
-      ? `id IN (SELECT task_id FROM task_labels WHERE label_id IN (${this.flatString(text)}))`
+      ? `id IN (SELECT task_id FROM task_labels WHERE label_id IN (${this.flatString(
+          text
+        )}))`
       : "";
   }
 
   private static getFilterByMembersWhereClosure(text: string) {
     return text
-      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${this.flatString(text)}))`
+      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${this.flatString(
+          text
+        )}))`
       : "";
   }
 
@@ -95,10 +109,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
     total_tasks: number;
   } | null> {
     try {
-      const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [taskId]);
+      const result = await db.query(
+        "SELECT get_task_complete_ratio($1) AS info;",
+        [taskId]
+      );
       const [data] = result.rows;
       if (data && data.info && data.info.ratio !== undefined) {
-        data.info.ratio = +((data.info.ratio || 0).toFixed());
+        data.info.ratio = +(data.info.ratio || 0).toFixed();
         return data.info;
       }
       return null;
@@ -110,43 +127,67 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   private static getQuery(userId: string, options: ParsedQs) {
     // Determine which sort column to use based on grouping
-    const groupBy = options.group || 'status';
-    let defaultSortColumn = 'sort_order';
+    const groupBy = options.group || "status";
+    let defaultSortColumn = "sort_order";
     switch (groupBy) {
-      case 'status':
-        defaultSortColumn = 'status_sort_order';
+      case "status":
+        defaultSortColumn = "status_sort_order";
         break;
-      case 'priority':
-        defaultSortColumn = 'priority_sort_order';
+      case "priority":
+        defaultSortColumn = "priority_sort_order";
         break;
-      case 'phase':
-        defaultSortColumn = 'phase_sort_order';
+      case "phase":
+        defaultSortColumn = "phase_sort_order";
         break;
       default:
-        defaultSortColumn = 'sort_order';
+        defaultSortColumn = "sort_order";
     }
 
-    const searchField = options.search ? ["t.name", "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)"] : defaultSortColumn;
-    const { searchQuery, sortField } = TasksControllerV2.toPaginationOptions(options, searchField);
+    const searchField = options.search
+      ? [
+          "t.name",
+          "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)",
+        ]
+      : defaultSortColumn;
+    const { searchQuery, sortField } = TasksControllerV2.toPaginationOptions(
+      options,
+      searchField
+    );
 
     const isSubTasks = !!options.parent_task;
 
-    const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || defaultSortColumn;
+    const sortFields =
+      sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") ||
+      defaultSortColumn;
 
     // Filter tasks by statuses
-    const statusesFilter = TasksControllerV2.getFilterByStatusWhereClosure(options.statuses as string);
+    const statusesFilter = TasksControllerV2.getFilterByStatusWhereClosure(
+      options.statuses as string
+    );
     // Filter tasks by labels
-    const labelsFilter = TasksControllerV2.getFilterByLabelsWhereClosure(options.labels as string);
+    const labelsFilter = TasksControllerV2.getFilterByLabelsWhereClosure(
+      options.labels as string
+    );
     // Filter tasks by its members
-    const membersFilter = TasksControllerV2.getFilterByMembersWhereClosure(options.members as string);
+    const membersFilter = TasksControllerV2.getFilterByMembersWhereClosure(
+      options.members as string
+    );
     // Filter tasks by projects
-    const projectsFilter = TasksControllerV2.getFilterByProjectsWhereClosure(options.projects as string);
+    const projectsFilter = TasksControllerV2.getFilterByProjectsWhereClosure(
+      options.projects as string
+    );
     // Filter tasks by priorities
-    const priorityFilter = TasksControllerV2.getFilterByPriorityWhereClosure(options.priorities as string);
+    const priorityFilter = TasksControllerV2.getFilterByPriorityWhereClosure(
+      options.priorities as string
+    );
     // Filter tasks by a single assignee
-    const filterByAssignee = TasksControllerV2.getFilterByAssignee(options.filterBy as string);
+    const filterByAssignee = TasksControllerV2.getFilterByAssignee(
+      options.filterBy as string
+    );
     // Returns statuses of each task as a json array if filterBy === "member"
-    const statusesQuery = TasksControllerV2.getStatusesQuery(options.filterBy as string);
+    const statusesQuery = TasksControllerV2.getStatusesQuery(
+      options.filterBy as string
+    );
 
     // Custom columns data query
     const customColumnsQuery = options.customColumns
@@ -175,26 +216,31 @@ export default class TasksControllerV2 extends TasksControllerBase {
           WHERE custom_cols.value IS NOT NULL) AS custom_column_values`
       : "";
 
-    const archivedFilter = options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
+    const archivedFilter =
+      options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
 
     let subTasksFilter;
 
     if (options.isSubtasksInclude === "true") {
       subTasksFilter = "";
     } else {
-      subTasksFilter = isSubTasks ? "parent_task_id = $2" : "parent_task_id IS NULL";
+      subTasksFilter = isSubTasks
+        ? "parent_task_id = $2"
+        : "parent_task_id IS NULL";
     }
 
     const filters = [
       subTasksFilter,
-      (isSubTasks ? "1 = 1" : archivedFilter),
-      (isSubTasks ? "$1 = $1" : filterByAssignee), // ignored filter by member in peoples page for sub-tasks
+      isSubTasks ? "1 = 1" : archivedFilter,
+      isSubTasks ? "$1 = $1" : filterByAssignee, // ignored filter by member in peoples page for sub-tasks
       statusesFilter,
       priorityFilter,
       labelsFilter,
       membersFilter,
-      projectsFilter
-    ].filter(i => !!i).join(" AND ");
+      projectsFilter,
+    ]
+      .filter((i) => !!i)
+      .join(" AND ");
 
     return `
       SELECT id,
@@ -292,7 +338,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
     `;
   }
 
-  public static async getGroups(groupBy: string, projectId: string): Promise<ITaskGroup[]> {
+  public static async getGroups(
+    groupBy: string,
+    projectId: string
+  ): Promise<ITaskGroup[]> {
     let q = "";
     let params: any[] = [];
     switch (groupBy) {
@@ -345,19 +394,30 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async getList(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getList(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
-    console.log(`[PERFORMANCE] getList method called for project ${req.params.id} - THIS METHOD IS DEPRECATED, USE getTasksV3 INSTEAD`);
+    console.log(
+      `[PERFORMANCE] getList method called for project ${req.params.id} - THIS METHOD IS DEPRECATED, USE getTasksV3 INSTEAD`
+    );
 
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
     // Progress values are already calculated and stored in the database
     // Only refresh if explicitly requested via refresh_progress=true query parameter
     if (req.query.refresh_progress === "true" && req.params.id) {
-      console.log(`[PERFORMANCE] Starting progress refresh for project ${req.params.id} (getList)`);
+      console.log(
+        `[PERFORMANCE] Starting progress refresh for project ${req.params.id} (getList)`
+      );
       const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
       const progressEndTime = performance.now();
-      console.log(`[PERFORMANCE] Progress refresh completed in ${(progressEndTime - progressStartTime).toFixed(2)}ms`);
+      console.log(
+        `[PERFORMANCE] Progress refresh completed in ${(
+          progressEndTime - progressStartTime
+        ).toFixed(2)}ms`
+      );
     }
 
     const isSubTasks = !!req.query.parent_task;
@@ -367,21 +427,22 @@ export default class TasksControllerV2 extends TasksControllerBase {
     req.query.customColumns = "true";
 
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const params = isSubTasks
+      ? [req.params.id || null, req.query.parent_task]
+      : [req.params.id || null];
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
 
     const groups = await this.getGroups(groupBy, req.params.id);
     const map = groups.reduce((g: { [x: string]: ITaskGroup }, group) => {
-      if (group.id)
-        g[group.id] = new TaskListGroup(group);
+      if (group.id) g[group.id] = new TaskListGroup(group);
       return g;
     }, {});
 
     await this.updateMapByGroup(tasks, groupBy, map);
 
-    const updatedGroups = Object.keys(map).map(key => {
+    const updatedGroups = Object.keys(map).map((key) => {
       const group = map[key];
 
       TasksControllerV2.updateTaskProgresses(group);
@@ -391,23 +452,35 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
       return {
         id: key,
-        ...group
+        ...group,
       };
     });
 
     const endTime = performance.now();
     const totalTime = endTime - startTime;
-    console.log(`[PERFORMANCE] getList method completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${tasks.length} tasks`);
+    console.log(
+      `[PERFORMANCE] getList method completed in ${totalTime.toFixed(
+        2
+      )}ms for project ${req.params.id} with ${tasks.length} tasks`
+    );
 
     // Log warning if this deprecated method is taking too long
     if (totalTime > 1000) {
-      console.warn(`[PERFORMANCE WARNING] DEPRECATED getList method taking ${totalTime.toFixed(2)}ms - Frontend should use getTasksV3 instead!`);
+      console.warn(
+        `[PERFORMANCE WARNING] DEPRECATED getList method taking ${totalTime.toFixed(
+          2
+        )}ms - Frontend should use getTasksV3 instead!`
+      );
     }
 
     return res.status(200).send(new ServerResponse(true, updatedGroups));
   }
 
-  public static async updateMapByGroup(tasks: any[], groupBy: string, map: { [p: string]: ITaskGroup }) {
+  public static async updateMapByGroup(
+    tasks: any[],
+    groupBy: string,
+    map: { [p: string]: ITaskGroup }
+  ) {
     let index = 0;
     const unmapped = [];
 
@@ -436,15 +509,22 @@ export default class TasksControllerV2 extends TasksControllerBase {
         name: UNMAPPED,
         category_id: null,
         color_code: "#fbc84c69",
-        tasks: unmapped
+        color_code_dark: "#fbc84c69",
+        tasks: unmapped,
       };
     }
   }
 
   public static updateTaskProgresses(group: ITaskGroup) {
-    const todoCount = group.tasks.filter(t => t.status_category?.is_todo).length;
-    const doingCount = group.tasks.filter(t => t.status_category?.is_doing).length;
-    const doneCount = group.tasks.filter(t => t.status_category?.is_done).length;
+    const todoCount = group.tasks.filter(
+      (t) => t.status_category?.is_todo
+    ).length;
+    const doingCount = group.tasks.filter(
+      (t) => t.status_category?.is_doing
+    ).length;
+    const doneCount = group.tasks.filter(
+      (t) => t.status_category?.is_done
+    ).length;
 
     const total = group.tasks.length;
 
@@ -454,19 +534,30 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async getTasksOnly(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getTasksOnly(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
-    console.log(`[PERFORMANCE] getTasksOnly method called for project ${req.params.id} - Consider using getTasksV3 for better performance`);
+    console.log(
+      `[PERFORMANCE] getTasksOnly method called for project ${req.params.id} - Consider using getTasksV3 for better performance`
+    );
 
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
     // Progress values are already calculated and stored in the database
     // Only refresh if explicitly requested via refresh_progress=true query parameter
     if (req.query.refresh_progress === "true" && req.params.id) {
-      console.log(`[PERFORMANCE] Starting progress refresh for project ${req.params.id} (getTasksOnly)`);
+      console.log(
+        `[PERFORMANCE] Starting progress refresh for project ${req.params.id} (getTasksOnly)`
+      );
       const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
       const progressEndTime = performance.now();
-      console.log(`[PERFORMANCE] Progress refresh completed in ${(progressEndTime - progressStartTime).toFixed(2)}ms`);
+      console.log(
+        `[PERFORMANCE] Progress refresh completed in ${(
+          progressEndTime - progressStartTime
+        ).toFixed(2)}ms`
+      );
     }
 
     const isSubTasks = !!req.query.parent_task;
@@ -475,7 +566,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     req.query.customColumns = "true";
 
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const params = isSubTasks
+      ? [req.params.id || null, req.query.parent_task]
+      : [req.params.id || null];
     const result = await db.query(q, params);
 
     let data: any[] = [];
@@ -483,7 +576,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // if true, we only return the record count
     if (this.isCountsOnly(req.query)) {
       [data] = result.rows;
-    } else { // else we return a flat list of tasks
+    } else {
+      // else we return a flat list of tasks
       data = [...result.rows];
 
       // PERFORMANCE OPTIMIZATION: Remove expensive individual DB calls for each task
@@ -497,18 +591,29 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const endTime = performance.now();
     const totalTime = endTime - startTime;
-    console.log(`[PERFORMANCE] getTasksOnly method completed in ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${data.length} tasks`);
+    console.log(
+      `[PERFORMANCE] getTasksOnly method completed in ${totalTime.toFixed(
+        2
+      )}ms for project ${req.params.id} with ${data.length} tasks`
+    );
 
     // Log warning if this method is taking too long
     if (totalTime > 1000) {
-      console.warn(`[PERFORMANCE WARNING] getTasksOnly method taking ${totalTime.toFixed(2)}ms - Consider using getTasksV3 for better performance!`);
+      console.warn(
+        `[PERFORMANCE WARNING] getTasksOnly method taking ${totalTime.toFixed(
+          2
+        )}ms - Consider using getTasksV3 for better performance!`
+      );
     }
 
     return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions()
-  public static async convertToTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async convertToTask(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `
       UPDATE tasks
       SET parent_task_id = NULL,
@@ -517,14 +622,19 @@ export default class TasksControllerV2 extends TasksControllerBase {
     `;
     await db.query(q, [req.body.id, req.body.project_id]);
 
-    const result = await db.query("SELECT get_single_task($1) AS task;", [req.body.id]);
+    const result = await db.query("SELECT get_single_task($1) AS task;", [
+      req.body.id,
+    ]);
     const [data] = result.rows;
     const model = TasksControllerV2.updateTaskViewModel(data.task);
     return res.status(200).send(new ServerResponse(true, model));
   }
 
   @HandleExceptions()
-  public static async getNewKanbanTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getNewKanbanTask(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const result = await db.query("SELECT get_single_task($1) AS task;", [id]);
     const [data] = result.rows;
@@ -533,7 +643,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async resetParentTaskManualProgress(parentTaskId: string): Promise<void> {
+  public static async resetParentTaskManualProgress(
+    parentTaskId: string
+  ): Promise<void> {
     try {
       // Check if this task has subtasks
       const subTasksResult = await db.query(
@@ -541,7 +653,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
         [parentTaskId]
       );
 
-      const subtaskCount = parseInt(subTasksResult.rows[0]?.subtask_count || "0");
+      const subtaskCount = parseInt(
+        subTasksResult.rows[0]?.subtask_count || "0"
+      );
 
       // If it has subtasks, reset the manual_progress flag to false
       if (subtaskCount > 0) {
@@ -549,7 +663,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
           "UPDATE tasks SET manual_progress = false WHERE id = $1",
           [parentTaskId]
         );
-        console.log(`Reset manual progress for parent task ${parentTaskId} with ${subtaskCount} subtasks`);
+        console.log(
+          `Reset manual progress for parent task ${parentTaskId} with ${subtaskCount} subtasks`
+        );
 
         // Get the project settings to determine which calculation method to use
         const projectResult = await db.query(
@@ -571,7 +687,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
           // Emit the updated progress value to all clients
           // Note: We don't have socket context here, so we can't directly emit
           // This will be picked up on the next client refresh
-          console.log(`Recalculated progress for parent task ${parentTaskId}: ${progressRatio}%`);
+          console.log(
+            `Recalculated progress for parent task ${parentTaskId}: ${progressRatio}%`
+          );
         }
       }
     } catch (error) {
@@ -580,8 +698,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async convertToSubtask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-
+  public static async convertToSubtask(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const groupType = req.body.group_by;
     let q = ``;
 
@@ -602,21 +722,29 @@ export default class TasksControllerV2 extends TasksControllerBase {
         WHERE id = $1;
       `;
     } else if (groupType === "phase") {
-      await db.query(`
+      await db.query(
+        `
         UPDATE tasks
         SET parent_task_id = $3,
             sort_order     = COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = $2), 0)
         WHERE id = $1;
-      `, [req.body.id, req.body.project_id, req.body.parent_task_id]);
+      `,
+        [req.body.id, req.body.project_id, req.body.parent_task_id]
+      );
       q = `SELECT handle_on_task_phase_change($1, $2);`;
     }
 
-    if (req.body.to_group_id === UNMAPPED)
-      req.body.to_group_id = null;
+    if (req.body.to_group_id === UNMAPPED) req.body.to_group_id = null;
 
-    const params = groupType === "phase"
-      ? [req.body.id, req.body.to_group_id]
-      : [req.body.id, req.body.project_id, req.body.parent_task_id, req.body.to_group_id];
+    const params =
+      groupType === "phase"
+        ? [req.body.id, req.body.to_group_id]
+        : [
+            req.body.id,
+            req.body.project_id,
+            req.body.parent_task_id,
+            req.body.to_group_id,
+          ];
     await db.query(q, params);
 
     // Reset the parent task's manual progress when converting a task to a subtask
@@ -624,7 +752,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
       await this.resetParentTaskManualProgress(req.body.parent_task_id);
     }
 
-    const result = await db.query("SELECT get_single_task($1) AS task;", [req.body.id]);
+    const result = await db.query("SELECT get_single_task($1) AS task;", [
+      req.body.id,
+    ]);
     const [data] = result.rows;
     const model = TasksControllerV2.updateTaskViewModel(data.task);
     return res.status(200).send(new ServerResponse(true, model));
@@ -639,8 +769,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     `;
     const result = await db.query(q, [taskId]);
 
-    for (const member of result.rows)
-      member.color_code = getColor(member.name);
+    for (const member of result.rows) member.color_code = getColor(member.name);
 
     return this.createTagList(result.rows);
   }
@@ -654,13 +783,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
     `;
     const result = await db.query(q, [projectId]);
 
-    for (const member of result.rows)
-      member.color_code = getColor(member.name);
+    for (const member of result.rows) member.color_code = getColor(member.name);
 
     return this.createTagList(result.rows);
   }
 
-  public static async checkUserAssignedToTask(taskId: string, userId: string, teamId: string) {
+  public static async checkUserAssignedToTask(
+    taskId: string,
+    userId: string,
+    teamId: string
+  ) {
     const q = `
     SELECT EXISTS(
         SELECT * FROM tasks_assignees WHERE task_id = $1 AND team_member_id = (SELECT team_member_id FROM team_member_info_view WHERE user_id = $2 AND team_id = $3)
@@ -670,10 +802,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const [data] = result.rows;
 
     return data.exists;
-
   }
 
-  public static async getTasksByName(searchString: string, projectId: string, taskId: string) {
+  public static async getTasksByName(
+    searchString: string,
+    projectId: string,
+    taskId: string
+  ) {
     const q = `SELECT id AS value ,
        name AS label,
        CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key
@@ -687,27 +822,48 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async getSubscribers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getSubscribers(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const subscribers = await this.getTaskSubscribers(req.params.id);
     return res.status(200).send(new ServerResponse(true, subscribers));
   }
 
   @HandleExceptions()
-  public static async searchTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async searchTasks(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const { projectId, taskId, searchQuery } = req.query;
-    const tasks = await this.getTasksByName(searchQuery as string, projectId as string, taskId as string);
+    const tasks = await this.getTasksByName(
+      searchQuery as string,
+      projectId as string,
+      taskId as string
+    );
     return res.status(200).send(new ServerResponse(true, tasks));
   }
 
   @HandleExceptions()
-  public static async getTaskDependencyStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getTaskDependencyStatus(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const { statusId, taskId } = req.query;
-    const canContinue = await TasksControllerV2.checkForCompletedDependencies(taskId as string, statusId as string);
-    return res.status(200).send(new ServerResponse(true, { can_continue: canContinue }));
+    const canContinue = await TasksControllerV2.checkForCompletedDependencies(
+      taskId as string,
+      statusId as string
+    );
+    return res
+      .status(200)
+      .send(new ServerResponse(true, { can_continue: canContinue }));
   }
 
   @HandleExceptions()
-  public static async checkForCompletedDependencies(taskId: string, nextStatusId: string): Promise<IWorkLenzResponse> {
+  public static async checkForCompletedDependencies(
+    taskId: string,
+    nextStatusId: string
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT
     CASE
         WHEN EXISTS (
@@ -759,7 +915,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async assignLabelsToTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async assignLabelsToTask(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const { labels }: { labels: string[] } = req.body;
 
@@ -767,7 +926,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
       const q = `SELECT add_or_remove_task_label($1, $2) AS labels;`;
       await db.query(q, [id, label]);
     });
-    return res.status(200).send(new ServerResponse(true, null, "Labels assigned successfully"));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, null, "Labels assigned successfully"));
   }
 
   /**
@@ -784,7 +945,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const { column_key, value, project_id } = req.body;
 
     if (!taskId || !column_key || value === undefined || !project_id) {
-      return res.status(400).send(new ServerResponse(false, "Missing required parameters"));
+      return res
+        .status(400)
+        .send(new ServerResponse(false, "Missing required parameters"));
     }
 
     // Get column information
@@ -796,7 +959,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const columnResult = await db.query(columnQuery, [project_id, column_key]);
 
     if (columnResult.rowCount === 0) {
-      return res.status(404).send(new ServerResponse(false, "Custom column not found"));
+      return res
+        .status(404)
+        .send(new ServerResponse(false, "Custom column not found"));
     }
 
     const column = columnResult.rows[0];
@@ -833,7 +998,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
       FROM cc_column_values
       WHERE task_id = $1 AND column_id = $2
     `;
-    const existingValueResult = await db.query(existingValueQuery, [taskId, columnId]);
+    const existingValueResult = await db.query(existingValueQuery, [
+      taskId,
+      columnId,
+    ]);
 
     if (existingValueResult.rowCount && existingValueResult.rowCount > 0) {
       // Update existing value
@@ -854,7 +1022,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         booleanValue,
         jsonValue,
         taskId,
-        columnId
+        columnId,
       ]);
     } else {
       // Insert new value
@@ -870,18 +1038,22 @@ export default class TasksControllerV2 extends TasksControllerBase {
         numberValue,
         dateValue,
         booleanValue,
-        jsonValue
+        jsonValue,
       ]);
     }
 
-    return res.status(200).send(new ServerResponse(true, {
-      task_id: taskId,
-      column_key,
-      value
-    }));
+    return res.status(200).send(
+      new ServerResponse(true, {
+        task_id: taskId,
+        column_key,
+        value,
+      })
+    );
   }
 
-  public static async refreshProjectTaskProgressValues(projectId: string): Promise<void> {
+  public static async refreshProjectTaskProgressValues(
+    projectId: string
+  ): Promise<void> {
     try {
       // Run the recalculate_all_task_progress function only for tasks in this project
       const query = `
@@ -941,7 +1113,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
       `;
 
       await db.query(query);
-      console.log(`Finished refreshing progress values for project ${projectId}`);
+      console.log(
+        `Finished refreshing progress values for project ${projectId}`
+      );
     } catch (error) {
       log_error("Error refreshing project task progress values", error);
     }
@@ -950,17 +1124,20 @@ export default class TasksControllerV2 extends TasksControllerBase {
   public static async updateTaskProgress(taskId: string): Promise<void> {
     try {
       // Calculate the task's progress using get_task_complete_ratio
-      const result = await db.query("SELECT get_task_complete_ratio($1) AS info;", [taskId]);
+      const result = await db.query(
+        "SELECT get_task_complete_ratio($1) AS info;",
+        [taskId]
+      );
       const [data] = result.rows;
 
       if (data && data.info && data.info.ratio !== undefined) {
-        const progressValue = +((data.info.ratio || 0).toFixed());
+        const progressValue = +(data.info.ratio || 0).toFixed();
 
         // Update the task's progress_value in the database
-        await db.query(
-          "UPDATE tasks SET progress_value = $1 WHERE id = $2",
-          [progressValue, taskId]
-        );
+        await db.query("UPDATE tasks SET progress_value = $1 WHERE id = $2", [
+          progressValue,
+          taskId,
+        ]);
 
         console.log(`Updated progress for task ${taskId} to ${progressValue}%`);
 
@@ -970,7 +1147,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
           [taskId]
         );
 
-        if (parentResult.rows.length > 0 && parentResult.rows[0].parent_task_id) {
+        if (
+          parentResult.rows.length > 0 &&
+          parentResult.rows[0].parent_task_id
+        ) {
           await this.updateTaskProgress(parentResult.rows[0].parent_task_id);
         }
       }
@@ -980,13 +1160,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   // Add this method to update progress when a task's weight is changed
-  public static async updateTaskWeight(taskId: string, weight: number): Promise<void> {
+  public static async updateTaskWeight(
+    taskId: string,
+    weight: number
+  ): Promise<void> {
     try {
       // Update the task's weight
-      await db.query(
-        "UPDATE tasks SET weight = $1 WHERE id = $2",
-        [weight, taskId]
-      );
+      await db.query("UPDATE tasks SET weight = $1 WHERE id = $2", [
+        weight,
+        taskId,
+      ]);
 
       // Get the parent task ID
       const parentResult = await db.query(
@@ -1004,11 +1187,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async getTasksV3(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getTasksV3(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
     const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
-    const archived = req.query.archived === "true";
 
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
     // Progress values are already calculated and stored in the database
@@ -1017,29 +1202,25 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const shouldRefreshProgress = req.query.refresh_progress === "true";
 
     if (shouldRefreshProgress && req.params.id) {
-      const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
-      const progressEndTime = performance.now();
     }
 
-    const queryStartTime = performance.now();
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const params = isSubTasks
+      ? [req.params.id || null, req.query.parent_task]
+      : [req.params.id || null];
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
-    const queryEndTime = performance.now();
 
     // Get groups metadata dynamically from database
-    const groupsStartTime = performance.now();
     const groups = await this.getGroups(groupBy, req.params.id);
-    const groupsEndTime = performance.now();
 
     // Create priority value to name mapping
     const priorityMap: Record<string, string> = {
       "0": "low",
       "1": "medium",
-      "2": "high"
+      "2": "high",
     };
 
     // Create status category mapping based on actual status names from database
@@ -1047,14 +1228,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
     for (const group of groups) {
       if (groupBy === GroupBy.STATUS && group.id) {
         // Use the actual status name from database, convert to lowercase for consistency
-        statusCategoryMap[group.id] = group.name.toLowerCase().replace(/\s+/g, "_");
+        statusCategoryMap[group.id] = group.name
+          .toLowerCase()
+          .replace(/\s+/g, "_");
       }
     }
 
-
-
     // Transform tasks with all necessary data preprocessing
-    const transformStartTime = performance.now();
     const transformedTasks = tasks.map((task, index) => {
       // Update task with calculated values (lightweight version)
       TasksControllerV2.updateTaskViewModel(task);
@@ -1071,7 +1251,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
           if ("hours" in value || "minutes" in value) {
             const hours = Number(value.hours || 0);
             const minutes = Number(value.minutes || 0);
-            return hours + (minutes / 60);
+            return hours + minutes / 60;
           }
         }
         return 0;
@@ -1088,16 +1268,18 @@ export default class TasksControllerV2 extends TasksControllerBase {
         priority: priorityMap[task.priority_value?.toString()] || "medium",
         // Use actual phase name from database
         phase: task.phase_name || "Development",
-        progress: typeof task.complete_ratio === "number" ? task.complete_ratio : 0,
+        progress:
+          typeof task.complete_ratio === "number" ? task.complete_ratio : 0,
         assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
         assignee_names: task.assignee_names || task.names || [],
-        labels: task.labels?.map((l: any) => ({
-          id: l.id || l.label_id,
-          name: l.name,
-          color: l.color_code || "#1890ff",
-          end: l.end,
-          names: l.names
-        })) || [],
+        labels:
+          task.labels?.map((l: any) => ({
+            id: l.id || l.label_id,
+            name: l.name,
+            color: l.color_code || "#1890ff",
+            end: l.end,
+            names: l.names,
+          })) || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
         timeTracking: {
@@ -1125,19 +1307,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
         reporter: task.reporter || null,
       };
     });
-    const transformEndTime = performance.now();
-
-    // Create groups based on dynamic data from database
-    const groupingStartTime = performance.now();
     const groupedResponse: Record<string, any> = {};
 
     // Initialize groups from database data
-    groups.forEach(group => {
-      const groupKey = groupBy === GroupBy.STATUS
-        ? group.name.toLowerCase().replace(/\s+/g, "_")
-        : groupBy === GroupBy.PRIORITY
-        ? priorityMap[(group as any).value?.toString()] || group.name.toLowerCase()
-        : group.name.toLowerCase().replace(/\s+/g, "_");
+    groups.forEach((group) => {
+      const groupKey =
+        groupBy === GroupBy.STATUS
+          ? group.name.toLowerCase().replace(/\s+/g, "_")
+          : groupBy === GroupBy.PRIORITY
+          ? priorityMap[(group as any).value?.toString()] ||
+            group.name.toLowerCase()
+          : group.name.toLowerCase().replace(/\s+/g, "_");
 
       groupedResponse[groupKey] = {
         id: group.id,
@@ -1148,6 +1328,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         tasks: [],
         taskIds: [],
         color: group.color_code || this.getDefaultGroupColor(groupBy, groupKey),
+        color_code_dark:
+          group.color_code_dark || this.getDefaultGroupColor(groupBy, groupKey),
         // Include additional metadata from database
         category_id: group.category_id,
         start_date: group.start_date,
@@ -1159,7 +1341,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Distribute tasks into groups
     const unmappedTasks: any[] = [];
 
-    transformedTasks.forEach(task => {
+    transformedTasks.forEach((task) => {
       let groupKey: string;
       let taskAssigned = false;
 
@@ -1200,27 +1382,33 @@ export default class TasksControllerV2 extends TasksControllerBase {
         if (group.tasks && group.tasks.length > 0) {
           const todoCount = group.tasks.filter((task: any) => {
             // For tasks, we need to check their original status category
-            const originalTask = tasks.find(t => t.id === task.id);
+            const originalTask = tasks.find((t) => t.id === task.id);
             return originalTask?.status_category?.is_todo;
           }).length;
-          
+
           const doingCount = group.tasks.filter((task: any) => {
-            const originalTask = tasks.find(t => t.id === task.id);
+            const originalTask = tasks.find((t) => t.id === task.id);
             return originalTask?.status_category?.is_doing;
           }).length;
-          
+
           const doneCount = group.tasks.filter((task: any) => {
-            const originalTask = tasks.find(t => t.id === task.id);
+            const originalTask = tasks.find((t) => t.id === task.id);
             return originalTask?.status_category?.is_done;
           }).length;
 
           const total = group.tasks.length;
 
           // Calculate progress percentages
-          group.todo_progress = total > 0 ? +((todoCount / total) * 100).toFixed(0) : 0;
-          group.doing_progress = total > 0 ? +((doingCount / total) * 100).toFixed(0) : 0;
-          group.done_progress = total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
+          group.todo_progress =
+            total > 0 ? +((todoCount / total) * 100).toFixed(0) : 0;
+          group.doing_progress =
+            total > 0 ? +((doingCount / total) * 100).toFixed(0) : 0;
+          group.done_progress =
+            total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
         }
+        group.todo_progress = 0;
+        group.doing_progress = 0;
+        group.done_progress = 0;
       });
     }
 
@@ -1233,7 +1421,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         groupValue: UNMAPPED.toLowerCase(),
         collapsed: false,
         tasks: unmappedTasks,
-        taskIds: unmappedTasks.map(task => task.id),
+        taskIds: unmappedTasks.map((task) => task.id),
         color: "#fbc84c69", // Orange color with transparency
         category_id: null,
         start_date: null,
@@ -1247,25 +1435,28 @@ export default class TasksControllerV2 extends TasksControllerBase {
       // Calculate progress stats for unmapped group
       if (unmappedTasks.length > 0) {
         const todoCount = unmappedTasks.filter((task: any) => {
-          const originalTask = tasks.find(t => t.id === task.id);
+          const originalTask = tasks.find((t) => t.id === task.id);
           return originalTask?.status_category?.is_todo;
         }).length;
-        
+
         const doingCount = unmappedTasks.filter((task: any) => {
-          const originalTask = tasks.find(t => t.id === task.id);
+          const originalTask = tasks.find((t) => t.id === task.id);
           return originalTask?.status_category?.is_doing;
         }).length;
-        
+
         const doneCount = unmappedTasks.filter((task: any) => {
-          const originalTask = tasks.find(t => t.id === task.id);
+          const originalTask = tasks.find((t) => t.id === task.id);
           return originalTask?.status_category?.is_done;
         }).length;
 
         const total = unmappedTasks.length;
 
-        unmappedGroup.todo_progress = total > 0 ? +((todoCount / total) * 100).toFixed(0) : 0;
-        unmappedGroup.doing_progress = total > 0 ? +((doingCount / total) * 100).toFixed(0) : 0;
-        unmappedGroup.done_progress = total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
+        unmappedGroup.todo_progress =
+          total > 0 ? +((todoCount / total) * 100).toFixed(0) : 0;
+        unmappedGroup.doing_progress =
+          total > 0 ? +((doingCount / total) * 100).toFixed(0) : 0;
+        unmappedGroup.done_progress =
+          total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
       }
 
       groupedResponse[UNMAPPED.toLowerCase()] = unmappedGroup;
@@ -1278,54 +1469,73 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Convert to array format expected by frontend, maintaining database order
     const responseGroups = groups
-      .map(group => {
-        const groupKey = groupBy === GroupBy.STATUS
-          ? group.name.toLowerCase().replace(/\s+/g, "_")
-          : groupBy === GroupBy.PRIORITY
-          ? priorityMap[(group as any).value?.toString()] || group.name.toLowerCase()
-          : group.name.toLowerCase().replace(/\s+/g, "_");
+      .map((group) => {
+        const groupKey =
+          groupBy === GroupBy.STATUS
+            ? group.name.toLowerCase().replace(/\s+/g, "_")
+            : groupBy === GroupBy.PRIORITY
+            ? priorityMap[(group as any).value?.toString()] ||
+              group.name.toLowerCase()
+            : group.name.toLowerCase().replace(/\s+/g, "_");
 
         return groupedResponse[groupKey];
       })
-      .filter(group => group && (group.tasks.length > 0 || req.query.include_empty === "true"));
+      .filter(
+        (group) =>
+          group &&
+          (group.tasks.length > 0 || req.query.include_empty === "true")
+      );
 
     // Add unmapped group to the end if it exists
     if (groupedResponse[UNMAPPED.toLowerCase()]) {
       responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
     }
 
-    const groupingEndTime = performance.now();
-
     const endTime = performance.now();
     const totalTime = endTime - startTime;
 
     // Log warning if request is taking too long
     if (totalTime > 1000) {
-      console.warn(`[PERFORMANCE WARNING] Slow request detected: ${totalTime.toFixed(2)}ms for project ${req.params.id} with ${transformedTasks.length} tasks`);
+      console.warn(
+        `[PERFORMANCE WARNING] Slow request detected: ${totalTime.toFixed(
+          2
+        )}ms for project ${req.params.id} with ${transformedTasks.length} tasks`
+      );
     }
 
-    return res.status(200).send(new ServerResponse(true, {
-      groups: responseGroups,
-      allTasks: transformedTasks,
-      grouping: groupBy,
-      totalTasks: transformedTasks.length
-    }));
+    return res.status(200).send(
+      new ServerResponse(true, {
+        groups: responseGroups,
+        allTasks: transformedTasks,
+        grouping: groupBy,
+        totalTasks: transformedTasks.length,
+      })
+    );
   }
 
   private static getTaskSortOrder(task: any, groupBy: string): number {
     switch (groupBy) {
       case GroupBy.STATUS:
-        return typeof task.status_sort_order === "number" ? task.status_sort_order : 0;
+        return typeof task.status_sort_order === "number"
+          ? task.status_sort_order
+          : 0;
       case GroupBy.PRIORITY:
-        return typeof task.priority_sort_order === "number" ? task.priority_sort_order : 0;
+        return typeof task.priority_sort_order === "number"
+          ? task.priority_sort_order
+          : 0;
       case GroupBy.PHASE:
-        return typeof task.phase_sort_order === "number" ? task.phase_sort_order : 0;
+        return typeof task.phase_sort_order === "number"
+          ? task.phase_sort_order
+          : 0;
       default:
         return typeof task.sort_order === "number" ? task.sort_order : 0;
     }
   }
 
-  private static getDefaultGroupColor(groupBy: string, groupValue: string): string {
+  private static getDefaultGroupColor(
+    groupBy: string,
+    groupValue: string
+  ): string {
     const colorMaps: Record<string, Record<string, string>> = {
       [GroupBy.STATUS]: {
         todo: "#f0f0f0",
@@ -1333,16 +1543,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
         done: "#52c41a",
       },
       [GroupBy.PRIORITY]: {
-        critical: "#ff4d4f",
         high: "#ff7a45",
         medium: "#faad14",
         low: "#52c41a",
       },
       [GroupBy.PHASE]: {
-        planning: "#722ed1",
-        development: "#1890ff",
-        testing: "#faad14",
-        deployment: "#52c41a",
         unmapped: "#fbc84c69",
       },
     };
@@ -1351,43 +1556,66 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async refreshTaskProgress(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async refreshTaskProgress(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     try {
       const startTime = performance.now();
 
       if (req.params.id) {
-        console.log(`[PERFORMANCE] Starting background progress refresh for project ${req.params.id}`);
+        console.log(
+          `[PERFORMANCE] Starting background progress refresh for project ${req.params.id}`
+        );
         await this.refreshProjectTaskProgressValues(req.params.id);
 
         const endTime = performance.now();
         const totalTime = endTime - startTime;
-        console.log(`[PERFORMANCE] Background progress refresh completed in ${totalTime.toFixed(2)}ms for project ${req.params.id}`);
+        console.log(
+          `[PERFORMANCE] Background progress refresh completed in ${totalTime.toFixed(
+            2
+          )}ms for project ${req.params.id}`
+        );
 
-        return res.status(200).send(new ServerResponse(true, {
-          message: "Task progress values refreshed successfully",
-          performanceMetrics: {
-            refreshTime: Math.round(totalTime),
-            projectId: req.params.id
-          }
-        }));
+        return res.status(200).send(
+          new ServerResponse(true, {
+            message: "Task progress values refreshed successfully",
+            performanceMetrics: {
+              refreshTime: Math.round(totalTime),
+              projectId: req.params.id,
+            },
+          })
+        );
       }
-      return res.status(400).send(new ServerResponse(false, null, "Project ID is required"));
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Project ID is required"));
     } catch (error) {
       console.error("Error refreshing task progress:", error);
-      return res.status(500).send(new ServerResponse(false, null, "Failed to refresh task progress"));
+      return res
+        .status(500)
+        .send(
+          new ServerResponse(false, null, "Failed to refresh task progress")
+        );
     }
   }
 
   // Optimized method for getting task progress without blocking main UI
   @HandleExceptions()
-  public static async getTaskProgressStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getTaskProgressStatus(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     try {
       if (!req.params.id) {
-        return res.status(400).send(new ServerResponse(false, null, "Project ID is required"));
+        return res
+          .status(400)
+          .send(new ServerResponse(false, null, "Project ID is required"));
       }
 
       // Get basic progress stats without expensive calculations
-      const result = await db.query(`
+      const result = await db.query(
+        `
         SELECT
           COUNT(*) as total_tasks,
           COUNT(CASE WHEN EXISTS(
@@ -1402,22 +1630,36 @@ export default class TasksControllerV2 extends TasksControllerBase {
           MAX(updated_at) as last_updated
         FROM tasks
         WHERE project_id = $1 AND archived IS FALSE
-      `, [req.params.id]);
+      `,
+        [req.params.id]
+      );
 
       const [stats] = result.rows;
 
-      return res.status(200).send(new ServerResponse(true, {
-        projectId: req.params.id,
-        totalTasks: parseInt(stats.total_tasks) || 0,
-        completedTasks: parseInt(stats.completed_tasks) || 0,
-        avgProgress: parseFloat(stats.avg_progress) || 0,
-        lastUpdated: stats.last_updated,
-        completionPercentage: stats.total_tasks > 0 ?
-          Math.round((parseInt(stats.completed_tasks) / parseInt(stats.total_tasks)) * 100) : 0
-      }));
+      return res.status(200).send(
+        new ServerResponse(true, {
+          projectId: req.params.id,
+          totalTasks: parseInt(stats.total_tasks) || 0,
+          completedTasks: parseInt(stats.completed_tasks) || 0,
+          avgProgress: parseFloat(stats.avg_progress) || 0,
+          lastUpdated: stats.last_updated,
+          completionPercentage:
+            stats.total_tasks > 0
+              ? Math.round(
+                  (parseInt(stats.completed_tasks) /
+                    parseInt(stats.total_tasks)) *
+                    100
+                )
+              : 0,
+        })
+      );
     } catch (error) {
       console.error("Error getting task progress status:", error);
-      return res.status(500).send(new ServerResponse(false, null, "Failed to get task progress status"));
+      return res
+        .status(500)
+        .send(
+          new ServerResponse(false, null, "Failed to get task progress status")
+        );
     }
   }
 }

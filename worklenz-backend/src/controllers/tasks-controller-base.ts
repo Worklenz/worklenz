@@ -16,6 +16,7 @@ export interface ITaskGroup {
   start_date?: string;
   end_date?: string;
   color_code: string;
+  color_code_dark: string;
   category_id: string | null;
   old_category_id?: string;
   todo_progress?: number;
