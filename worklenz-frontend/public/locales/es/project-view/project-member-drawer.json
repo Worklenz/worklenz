@@ -3,5 +3,7 @@
   "searchLabel": "Agregar miembros ingresando su nombre o correo electrónico",
   "searchPlaceholder": "Escriba nombre o correo electrónico",
   "inviteAsAMember": "Invitar como miembro",
-  "inviteNewMemberByEmail": "Invitar nuevo miembro por correo electrónico"
+  "inviteNewMemberByEmail": "Invitar nuevo miembro por correo electrónico",
+  "members": "Miembros",
+  "copyProjectLink": "Copiar enlace del proyecto"
 }
