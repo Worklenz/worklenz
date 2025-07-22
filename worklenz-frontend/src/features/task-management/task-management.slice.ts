@@ -526,9 +526,25 @@ const taskManagementSlice = createSlice({
     },
     addTaskToGroup: (state, action: PayloadAction<{ task: Task; groupId: string }>) => {
       const { task, groupId } = action.payload;
+      
       state.ids.push(task.id);
       state.entities[task.id] = task;
-      const group = state.groups.find(g => g.id === groupId);
+      let group = state.groups.find(g => g.id === groupId);
+      
+      // If group doesn't exist and it's "Unmapped", create it dynamically
+      if (!group && groupId === 'Unmapped') {
+        const unmappedGroup = {
+          id: 'Unmapped',
+          title: 'Unmapped',
+          taskIds: [],
+          type: 'phase' as const,
+          color: '#fbc84c69',
+          groupValue: 'Unmapped'
+        };
+        state.groups.push(unmappedGroup);
+        group = unmappedGroup;
+      }
+      
       if (group) {
         group.taskIds.push(task.id);
       }
@@ -1170,7 +1186,7 @@ export default taskManagementSlice.reducer;
 
 // V3 API selectors - no processing needed, data is pre-processed by backend
 export const selectTaskGroupsV3 = (state: RootState) => state.taskManagement.groups;
-export const selectCurrentGroupingV3 = (state: RootState) => state.taskManagement.grouping;
+export const selectCurrentGroupingV3 = (state: RootState) => state.grouping.currentGrouping;
 
 // Column-related selectors
 export const selectColumns = (state: RootState) => state.taskManagement.columns;

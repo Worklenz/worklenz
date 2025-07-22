@@ -110,20 +110,20 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   private static getQuery(userId: string, options: ParsedQs) {
     // Determine which sort column to use based on grouping
-    const groupBy = options.group || 'status';
-    let defaultSortColumn = 'sort_order';
+    const groupBy = options.group || "status";
+    let defaultSortColumn = "sort_order";
     switch (groupBy) {
-      case 'status':
-        defaultSortColumn = 'status_sort_order';
+      case "status":
+        defaultSortColumn = "status_sort_order";
         break;
-      case 'priority':
-        defaultSortColumn = 'priority_sort_order';
+      case "priority":
+        defaultSortColumn = "priority_sort_order";
         break;
-      case 'phase':
-        defaultSortColumn = 'phase_sort_order';
+      case "phase":
+        defaultSortColumn = "phase_sort_order";
         break;
       default:
-        defaultSortColumn = 'sort_order';
+        defaultSortColumn = "sort_order";
     }
 
     const searchField = options.search ? ["t.name", "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)"] : defaultSortColumn;
@@ -436,6 +436,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         name: UNMAPPED,
         category_id: null,
         color_code: "#fbc84c69",
+        color_code_dark: "#fbc84c69",
         tasks: unmapped
       };
     }
@@ -1008,7 +1009,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const startTime = performance.now();
     const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
-    const archived = req.query.archived === "true";
 
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
     // Progress values are already calculated and stored in the database
@@ -1017,23 +1017,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const shouldRefreshProgress = req.query.refresh_progress === "true";
 
     if (shouldRefreshProgress && req.params.id) {
-      const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
-      const progressEndTime = performance.now();
     }
 
-    const queryStartTime = performance.now();
     const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
     const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
-    const queryEndTime = performance.now();
 
     // Get groups metadata dynamically from database
-    const groupsStartTime = performance.now();
     const groups = await this.getGroups(groupBy, req.params.id);
-    const groupsEndTime = performance.now();
 
     // Create priority value to name mapping
     const priorityMap: Record<string, string> = {
@@ -1051,10 +1045,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       }
     }
 
-
-
     // Transform tasks with all necessary data preprocessing
-    const transformStartTime = performance.now();
     const transformedTasks = tasks.map((task, index) => {
       // Update task with calculated values (lightweight version)
       TasksControllerV2.updateTaskViewModel(task);
@@ -1125,10 +1116,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
         reporter: task.reporter || null,
       };
     });
-    const transformEndTime = performance.now();
-
-    // Create groups based on dynamic data from database
-    const groupingStartTime = performance.now();
     const groupedResponse: Record<string, any> = {};
 
     // Initialize groups from database data
@@ -1148,6 +1135,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         tasks: [],
         taskIds: [],
         color: group.color_code || this.getDefaultGroupColor(groupBy, groupKey),
+        color_code_dark: group.color_code_dark || this.getDefaultGroupColor(groupBy, groupKey),
         // Include additional metadata from database
         category_id: group.category_id,
         start_date: group.start_date,
@@ -1294,8 +1282,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
       responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
     }
 
-    const groupingEndTime = performance.now();
-
     const endTime = performance.now();
     const totalTime = endTime - startTime;
 
@@ -1333,16 +1319,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
         done: "#52c41a",
       },
       [GroupBy.PRIORITY]: {
-        critical: "#ff4d4f",
         high: "#ff7a45",
         medium: "#faad14",
         low: "#52c41a",
       },
       [GroupBy.PHASE]: {
-        planning: "#722ed1",
-        development: "#1890ff",
-        testing: "#faad14",
-        deployment: "#52c41a",
         unmapped: "#fbc84c69",
       },
     };

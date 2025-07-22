@@ -60,7 +60,6 @@ import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/
 // Components
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
 import TaskGroupHeader from './TaskGroupHeader';
-import ImprovedTaskFilters from '@/components/task-management/improved-task-filters';
 import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-action-bar';
 import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 import AddTaskRow from './components/AddTaskRow';
@@ -177,7 +176,9 @@ const TaskListV2Section: React.FC = () => {
   const { projectId: urlProjectId } = useParams();
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
-
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const isDarkMode = themeMode === 'dark';
+  
   // Redux state selectors
   const allTasks = useAppSelector(selectAllTasksArray);
   const groups = useAppSelector(selectGroups);
@@ -490,7 +491,7 @@ const TaskListV2Section: React.FC = () => {
               isAddTaskRow: true,
               groupId: group.id,
               groupType: currentGrouping || 'status',
-              groupValue: group.id, // Use the actual database ID from backend
+              groupValue: group.id, // Send the UUID that backend expects
               projectId: urlProjectId,
               rowId: `add-task-${group.id}-0`,
               autoFocus: false,
@@ -501,7 +502,7 @@ const TaskListV2Section: React.FC = () => {
               isAddTaskRow: true,
               groupId: group.id,
               groupType: currentGrouping || 'status',
-              groupValue: group.id,
+              groupValue: group.id, // Send the UUID that backend expects
               projectId: urlProjectId,
               rowId: rowId,
               autoFocus: index === groupAddRows.length - 1, // Auto-focus the latest row
@@ -534,6 +535,7 @@ const TaskListV2Section: React.FC = () => {
     return virtuosoGroups.flatMap(group => group.tasks);
   }, [virtuosoGroups]);
 
+
   // Render functions
   const renderGroup = useCallback(
     (groupIndex: number) => {
@@ -548,7 +550,7 @@ const TaskListV2Section: React.FC = () => {
               id: group.id,
               name: group.title,
               count: group.actualCount,
-              color: group.color,
+              color: isDarkMode ? group.color_code_dark : group.color,
             }}
             isCollapsed={isGroupCollapsed}
             onToggle={() => handleGroupCollapse(group.id)}
@@ -679,13 +681,97 @@ const TaskListV2Section: React.FC = () => {
       </div>
     );
 
-  // Show message when no data
+  // Show message when no data - but for phase grouping, create an unmapped group
   if (groups.length === 0 && !loading) {
+    // If grouped by phase, show an unmapped group to allow task creation
+    if (currentGrouping === 'phase') {
+      const unmappedGroup = {
+        id: 'Unmapped',
+        title: 'Unmapped',
+        groupType: 'phase',
+        groupValue: 'Unmapped', // Use same ID as groupValue for consistency
+        collapsed: false,
+        tasks: [],
+        taskIds: [],
+        color: '#fbc84c69',
+        actualCount: 0,
+        count: 1, // For the add task row
+        startIndex: 0
+      };
+
+      
+      const unmappedVirtuosoGroups = [unmappedGroup];
+      
+      return (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
+            <div
+              className="border border-gray-200 dark:border-gray-700 rounded-lg"
+              style={{
+                height: 'calc(100vh - 240px)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                ref={contentScrollRef}
+                className="flex-1 bg-white dark:bg-gray-900 relative"
+                style={{
+                  overflowX: 'auto',
+                  overflowY: 'auto',
+                  minHeight: 0,
+                }}
+              >
+                {/* Sticky Column Headers */}
+                <div
+                  className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
+                  style={{ width: '100%', minWidth: 'max-content' }}
+                >
+                  {renderColumnHeaders()}
+                </div>
+                
+                <div style={{ minWidth: 'max-content' }}>
+                  <div className="mt-2">
+                    <TaskGroupHeader
+                      group={{
+                        id: 'Unmapped',
+                        name: 'Unmapped',
+                        count: 0,
+                        color: '#fbc84c69',
+                      }}
+                      isCollapsed={false}
+                      onToggle={() => {}}
+                      projectId={urlProjectId || ''}
+                    />
+                    <AddTaskRow
+                      groupId="Unmapped"
+                      groupType="phase"
+                      groupValue="Unmapped"
+                      projectId={urlProjectId || ''}
+                      visibleColumns={visibleColumns}
+                      onTaskAdded={handleTaskAdded}
+                      rowId="add-task-Unmapped-0"
+                      autoFocus={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DndContext>
+      );
+    }
+    
+    // For other groupings, show the empty state message
     return (
       <div className="flex flex-col bg-white dark:bg-gray-900 h-full">
-        <div className="flex-none" style={{ height: '74px', flexShrink: 0 }}>
-          <ImprovedTaskFilters position="list" />
-        </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -806,19 +892,17 @@ const TaskListV2Section: React.FC = () => {
         {/* Drag Overlay */}
         <DragOverlay dropAnimation={{ duration: 200, easing: 'ease-in-out' }}>
           {activeId ? (
-            <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-lg border-2 border-blue-500 dark:border-blue-400 scale-105">
-              <div className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <HolderOutlined className="text-blue-500 dark:text-blue-400" />
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {allTasks.find(task => task.id === activeId)?.name ||
-                        allTasks.find(task => task.id === activeId)?.title ||
-                        t('emptyStates.dragTaskFallback')}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {allTasks.find(task => task.id === activeId)?.task_key}
-                    </div>
+            <div 
+              className="bg-white dark:bg-gray-800 shadow-lg rounded-md border border-blue-400 dark:border-blue-500 opacity-90"
+              style={{ width: visibleColumns.find(col => col.id === 'title')?.width || '300px' }}
+            >
+              <div className="px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <HolderOutlined className="text-gray-400 dark:text-gray-500 text-xs" />
+                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate flex-1">
+                    {allTasks.find(task => task.id === activeId)?.name ||
+                      allTasks.find(task => task.id === activeId)?.title ||
+                      t('emptyStates.dragTaskFallback')}
                   </div>
                 </div>
               </div>
