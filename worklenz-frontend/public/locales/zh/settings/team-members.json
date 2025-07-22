@@ -28,7 +28,7 @@
   "jobTitleLabel": "职位",
   "jobTitlePlaceholder": "选择或搜索职位（可选）",
   "memberAccessLabel": "访问级别",
-  "addToTeamButton": "将成员添加到团队",
+  "addToTeamButton": "发送邀请",
   "updateButton": "保存更改",
   "resendInvitationButton": "重新发送邀请邮件",
   "invitationSentSuccessMessage": "团队邀请已成功发送！",
@@ -43,5 +43,6 @@
   "updatedText": "已更新",
   "noResultFound": "输入电子邮件地址并按回车键...",
   "jobTitlesFetchError": "获取职位失败",
-  "invitationResent": "邀请重新发送成功！"
+  "invitationResent": "邀请重新发送成功！",
+  "copyTeamLink": "复制团队链接"
 }
