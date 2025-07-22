@@ -90,7 +90,7 @@ const EmptyGroupDropZone: React.FC<{
         isOver && active ? 'bg-blue-50 dark:bg-blue-900/20' : ''
       }`}
     >
-      <div className="flex items-center min-w-max px-1" style={{ height: '40px' }}>
+      <div className="flex items-center min-w-max px-1 border-t border-b border-gray-200 dark:border-gray-700" style={{ height: '40px' }}>
         {visibleColumns.map((column, index) => {
           const emptyColumnStyle = {
             width: column.width,
