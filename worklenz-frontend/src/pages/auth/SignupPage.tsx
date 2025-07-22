@@ -293,15 +293,19 @@ const SignupPage = () => {
     password: [
       {
         required: true,
-        message: null,
+        message: t('passwordRequired'),
       },
       {
         min: 8,
-        message: null,
+        message: t('passwordMinCharacterRequired'),
+      },
+      {
+        max: 32,
+        message: t('passwordMaxCharacterRequired'),
       },
       {
         pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])/,
-        message: null,
+        message: t('passwordPatternRequired'),
       },
     ],
   };
@@ -336,7 +340,7 @@ const SignupPage = () => {
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [passwordValue, setPasswordValue] = useState('');
-  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [passwordActive, setPasswordActive] = useState(false);
 
   return (
     <Card
@@ -396,31 +400,41 @@ const SignupPage = () => {
               size="large"
               style={{ borderRadius: 4 }}
               value={passwordValue}
+              onFocus={() => setPasswordActive(true)}
               onChange={e => {
                 setPasswordValue(e.target.value);
-                if (!passwordTouched) setPasswordTouched(true);
+                setPasswordActive(true);
               }}
-              onBlur={() => setPasswordTouched(true)}
+              onBlur={() => {
+                if (!passwordValue) setPasswordActive(false);
+              }}
             />
-            <div style={{ marginTop: 8, marginBottom: 4 }}>
-              {passwordChecklistItems.map(item => {
-                const passed = item.test(passwordValue);
-                // Only green if passed, otherwise neutral (never red)
-                let color = passed
-                  ? (themeMode === 'dark' ? '#52c41a' : '#389e0d')
-                  : (themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf');
-                return (
-                  <Flex key={item.key} align="center" gap={8} style={{ color, fontSize: 13 }}>
-                    {passed ? (
-                      <CheckCircleTwoTone twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'} />
-                    ) : (
-                      <CloseCircleTwoTone twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'} />
-                    )}
-                    <span>{item.label}</span>
-                  </Flex>
-                );
+            <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 0, display: 'block' }}>
+              {t('passwordGuideline', {
+                defaultValue: 'Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.'
               })}
-            </div>
+            </Typography.Text>
+            {passwordActive && (
+              <div style={{ marginTop: 8, marginBottom: 4 }}>
+                {passwordChecklistItems.map(item => {
+                  const passed = item.test(passwordValue);
+                  // Only green if passed, otherwise neutral (never red)
+                  let color = passed
+                    ? (themeMode === 'dark' ? '#52c41a' : '#389e0d')
+                    : (themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf');
+                  return (
+                    <Flex key={item.key} align="center" gap={8} style={{ color, fontSize: 13 }}>
+                      {passed ? (
+                        <CheckCircleTwoTone twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'} />
+                      ) : (
+                        <CloseCircleTwoTone twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'} />
+                      )}
+                      <span>{item.label}</span>
+                    </Flex>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </Form.Item>
 
