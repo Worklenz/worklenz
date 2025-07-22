@@ -5,5 +5,7 @@
   "inviteAsAMember": "Fto si anëtar",
   "inviteNewMemberByEmail": "Fto anëtar të ri me email",
   "members": "Anëtarë",
-  "copyProjectLink": "Kopjo lidhjen e projektit"
+  "copyProjectLink": "Kopjo lidhjen e projektit",
+  "inviteMember": "Fto anëtar",
+  "alsoInviteToProject": "Fto edhe në projekt"
 }

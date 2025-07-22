@@ -11,7 +11,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { Avatar, Button, Checkbox } from '@/components';
 import { sortTeamMembers } from '@/utils/sort-team-members';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
+import { setIsFromAssigner, toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 interface AssigneeSelectorProps {
@@ -206,6 +206,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
   const handleInviteProjectMemberDrawer = () => {
     setIsOpen(false); // Close the assignee dropdown first
+    dispatch(setIsFromAssigner(true));
     dispatch(toggleProjectMemberDrawer()); // Then open the invite drawer
   };
 
