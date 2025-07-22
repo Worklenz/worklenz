@@ -855,9 +855,10 @@ export const useTaskSocketHandlers = () => {
           // For priority grouping, use priority field (which contains the priority UUID)
           groupId = data.priority;
         } else if (grouping === 'phase') {
-          // For phase grouping, use phase_id
-          groupId = data.phase_id;
+          // For phase grouping, use phase_id, or 'Unmapped' if no phase_id
+          groupId = data.phase_id || 'Unmapped';
         }
+
 
         // Use addTaskToGroup with the actual group UUID
         dispatch(addTaskToGroup({ task, groupId: groupId || '' }));
