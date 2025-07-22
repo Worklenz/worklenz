@@ -67,6 +67,7 @@ import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
 import TaskListSkeleton from './components/TaskListSkeleton';
 import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
+import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
 
 // Empty Group Drop Zone Component
 const EmptyGroupDropZone: React.FC<{
@@ -89,8 +90,9 @@ const EmptyGroupDropZone: React.FC<{
       className={`relative w-full transition-colors duration-200 ${
         isOver && active ? 'bg-blue-50 dark:bg-blue-900/20' : ''
       }`}
+      style={{ minHeight: 80 }}
     >
-      <div className="flex items-center min-w-max px-1 py-6">
+      <div className="flex items-center min-w-max px-1 py-2">
         {visibleColumns.map((column, index) => {
           const emptyColumnStyle = {
             width: column.width,
@@ -105,16 +107,12 @@ const EmptyGroupDropZone: React.FC<{
           );
         })}
       </div>
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center">
-        <div 
-          className={`text-sm px-4 py-3 rounded-md border shadow-sm transition-colors duration-200 ${
-            isOver && active 
-              ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600'
-              : 'text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700'
-          }`}
-        >
-          {isOver && active ? t('dropTaskHere') || 'Drop task here' : t('noTasksInGroup')}
-        </div>
+      {/* Left-aligned visually appealing empty state */}
+      <div className="pl-4 flex items-center">
+        <EmptyListPlaceholder
+          textKey="noTasksInGroup"
+          imageHeight={48}
+        />
       </div>
       {isOver && active && (
         <div className="absolute inset-0 border-2 border-dashed border-blue-400 dark:border-blue-500 rounded-md pointer-events-none" />
@@ -551,10 +549,6 @@ const TaskListV2Section: React.FC = () => {
               name: group.title,
               count: group.actualCount,
               color: group.color,
-              todo_progress: group.todo_progress,
-              doing_progress: group.doing_progress,
-              done_progress: group.done_progress,
-              groupType: group.groupType,
             }}
             isCollapsed={isGroupCollapsed}
             onToggle={() => handleGroupCollapse(group.id)}
