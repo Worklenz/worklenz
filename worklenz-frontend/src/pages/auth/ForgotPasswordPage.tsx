@@ -118,7 +118,7 @@ const ForgotPasswordPage = () => {
             >
               <Input
                 prefix={<UserOutlined />}
-                placeholder={t('emailPlaceholder')}
+                placeholder={t('emailPlaceholder', {defaultValue: 'Enter your email'})}
                 size="large"
                 style={{ borderRadius: 4 }}
               />
@@ -134,7 +134,7 @@ const ForgotPasswordPage = () => {
                   loading={isLoading}
                   style={{ borderRadius: 4 }}
                 >
-                  {t('resetPasswordButton')}
+                  {t('resetPasswordButton', {defaultValue: 'Reset Password'})}
                 </Button>
                 <Typography.Text style={{ textAlign: 'center' }}>{t('orText')}</Typography.Text>
                 <Link to="/auth/login">
@@ -146,7 +146,7 @@ const ForgotPasswordPage = () => {
                       borderRadius: 4,
                     }}
                   >
-                    {t('returnToLoginButton')}
+                    {t('returnToLoginButton', {defaultValue: 'Return to Login'})}
                   </Button>
                 </Link>
               </Flex>

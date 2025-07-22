@@ -62,6 +62,7 @@ export interface TaskGroup {
   taskIds: string[];
   type?: 'status' | 'priority' | 'phase' | 'members';
   color?: string;
+  color_code_dark?: string;
   collapsed?: boolean;
   groupValue?: string;
   // Add any other group properties as needed
