@@ -125,9 +125,9 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({
         return <div className="border-r border-gray-200 dark:border-gray-700" style={labelsStyle} />;
       case 'title':
         return (
-          <div className="flex items-center h-full border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
+          <div className="flex items-center h-full" style={baseStyle}>
             <div className="flex items-center w-full h-full">
-              <div className="w-4 mr-1" />
+              <div className="w-1 mr-1" />
               
               {!isAdding ? (
                 <button
