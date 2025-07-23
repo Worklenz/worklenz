@@ -125,9 +125,9 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({
         return <div className="border-r border-gray-200 dark:border-gray-700" style={labelsStyle} />;
       case 'title':
         return (
-          <div className="flex items-center h-full border-r border-gray-200 dark:border-gray-700" style={baseStyle}>
+          <div className="flex items-center h-full" style={baseStyle}>
             <div className="flex items-center w-full h-full">
-              <div className="w-4 mr-1" />
+              <div className="w-1 mr-1" />
               
               {!isAdding ? (
                 <button
@@ -165,7 +165,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({
   }, [isAdding, taskName, handleAddTask, handleCancel, handleKeyDown, t]);
 
   return (
-    <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px] border-b border-gray-200 dark:border-gray-700">
+    <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px]">
       {visibleColumns.map((column, index) => (
         <React.Fragment key={column.id}>
           {renderColumn(column.id, column.width)}
