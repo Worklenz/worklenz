@@ -1,7 +1,7 @@
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
-import { Tooltip } from 'antd';
+import { Tooltip } from '@/shared/antd-imports';
 
 export const ProjectListUpdatedAt: React.FC<{ record: IProjectViewModel }> = ({ record }) => {
   return (

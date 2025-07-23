@@ -4,7 +4,7 @@ import {
   ClockCircleOutlined,
   CloseCircleOutlined,
   StopOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 
 export const avatarNamesMap: { [x: string]: string } = {

@@ -1,7 +1,7 @@
-import { Button, Drawer, Dropdown } from 'antd';
+import { Button, Drawer, Dropdown } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { DownOutlined, EditOutlined, ImportOutlined } from '@ant-design/icons';
+import { DownOutlined, EditOutlined, ImportOutlined } from '@/shared/antd-imports';
 import TemplateDrawer from '@/components/common/template-drawer/template-drawer';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';

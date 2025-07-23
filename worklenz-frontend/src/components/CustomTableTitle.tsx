@@ -1,6 +1,6 @@
-import { Flex, Tooltip, Typography } from 'antd';
+import { Flex, Tooltip, Typography } from '@/shared/antd-imports';
 import { colors } from '../styles/colors';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { ExclamationCircleOutlined } from '@/shared/antd-imports';
 
 // this custom table title used when the typography font weigh 500 needed
 const CustomTableTitle = ({ title, tooltip }: { title: string; tooltip?: string | null }) => {

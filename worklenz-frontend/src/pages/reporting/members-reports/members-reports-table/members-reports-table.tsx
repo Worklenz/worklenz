@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ConfigProvider, Table, TableColumnsType } from 'antd';
+import { ConfigProvider, Table, TableColumnsType } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';

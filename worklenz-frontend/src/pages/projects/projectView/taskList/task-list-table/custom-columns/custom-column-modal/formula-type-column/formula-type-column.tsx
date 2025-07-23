@@ -1,4 +1,4 @@
-import { Flex, Form, Select, Typography } from 'antd';
+import { Flex, Form, Select, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { themeWiseColor } from '../../../../../../../../utils/themeWiseColor';
 import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';

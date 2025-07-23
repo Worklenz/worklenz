@@ -11,7 +11,7 @@ import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.ty
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
-import { Select } from 'antd';
+import { Select } from '@/shared/antd-imports';
 import { useMemo } from 'react';
 import { updateEnhancedKanbanTaskStatus } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 

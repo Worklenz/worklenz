@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip } from 'antd';
+import { Tooltip } from '@/shared/antd-imports';
 import { Label } from '@/types/task-management.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 

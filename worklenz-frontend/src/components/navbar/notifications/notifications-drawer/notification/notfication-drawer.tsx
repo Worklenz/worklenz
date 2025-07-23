@@ -1,4 +1,4 @@
-import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex } from 'antd';
+import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

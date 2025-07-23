@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Tooltip } from '@/shared/antd-imports';
 
 interface GroupProgressBarProps {
   todoProgress: number;
@@ -15,24 +16,34 @@ const GroupProgressBar: React.FC<GroupProgressBarProps> = ({
   groupType
 }) => {
   const { t } = useTranslation('task-management');
+  console.log(todoProgress, doingProgress, doneProgress);
   
   // Only show for priority and phase grouping
   if (groupType !== 'priority' && groupType !== 'phase') {
     return null;
   }
 
-  const total = todoProgress + doingProgress + doneProgress;
+  const total = (todoProgress || 0) + (doingProgress || 0) + (doneProgress || 0);
   
   // Don't show if no progress values exist
   if (total === 0) {
     return null;
   }
 
+  // Tooltip content with all values in rows
+  const tooltipContent = (
+    <div>
+      <div>{t('todo')}: {todoProgress || 0}%</div>
+      <div>{t('inProgress')}: {doingProgress || 0}%</div>
+      <div>{t('done')}: {doneProgress || 0}%</div>
+    </div>
+  );
+
   return (
     <div className="flex items-center gap-2">
       {/* Compact progress text */}
       <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap font-medium">
-        {doneProgress}% {t('done')}
+        {doneProgress || 0}% {t('done')}
       </span>
       
       {/* Compact progress bar */}
@@ -40,27 +51,30 @@ const GroupProgressBar: React.FC<GroupProgressBarProps> = ({
         <div className="h-full flex">
           {/* Todo section - light green */}
           {todoProgress > 0 && (
-            <div
-              className="bg-green-200 dark:bg-green-800 transition-all duration-300"
-              style={{ width: `${(todoProgress / total) * 100}%` }}
-              title={`${t('todo')}: ${todoProgress}%`}
-            />
+            <Tooltip title={tooltipContent} placement="top">
+              <div
+                className="bg-green-200 dark:bg-green-800 transition-all duration-300"
+                style={{ width: `${(todoProgress / total) * 100}%` }}
+              />
+            </Tooltip>
           )}
           {/* Doing section - medium green */}
           {doingProgress > 0 && (
-            <div
-              className="bg-green-400 dark:bg-green-600 transition-all duration-300"
-              style={{ width: `${(doingProgress / total) * 100}%` }}
-              title={`${t('inProgress')}: ${doingProgress}%`}
-            />
+            <Tooltip title={tooltipContent} placement="top">
+              <div
+                className="bg-green-400 dark:bg-green-600 transition-all duration-300"
+                style={{ width: `${(doingProgress / total) * 100}%` }}
+              />
+            </Tooltip>
           )}
           {/* Done section - dark green */}
           {doneProgress > 0 && (
-            <div
-              className="bg-green-600 dark:bg-green-400 transition-all duration-300"
-              style={{ width: `${(doneProgress / total) * 100}%` }}
-              title={`${t('done')}: ${doneProgress}%`}
-            />
+            <Tooltip title={tooltipContent} placement="top">
+              <div
+                className="bg-green-600 dark:bg-green-400 transition-all duration-300"
+                style={{ width: `${(doneProgress / total) * 100}%` }}
+              />
+            </Tooltip>
           )}
         </div>
       </div>
@@ -68,22 +82,25 @@ const GroupProgressBar: React.FC<GroupProgressBarProps> = ({
       {/* Small legend dots with better spacing */}
       <div className="flex items-center gap-1">
         {todoProgress > 0 && (
-          <div 
-            className="w-1.5 h-1.5 bg-green-200 dark:bg-green-800 rounded-full" 
-            title={`${t('todo')}: ${todoProgress}%`}
-          />
+          <Tooltip title={tooltipContent} placement="top">
+            <div 
+              className="w-1.5 h-1.5 bg-green-200 dark:bg-green-800 rounded-full" 
+            />
+          </Tooltip>
         )}
         {doingProgress > 0 && (
-          <div 
-            className="w-1.5 h-1.5 bg-green-400 dark:bg-green-600 rounded-full" 
-            title={`${t('inProgress')}: ${doingProgress}%`}
-          />
+          <Tooltip title={tooltipContent} placement="top">
+            <div 
+              className="w-1.5 h-1.5 bg-green-400 dark:bg-green-600 rounded-full" 
+            />
+          </Tooltip>
         )}
         {doneProgress > 0 && (
-          <div 
-            className="w-1.5 h-1.5 bg-green-600 dark:bg-green-400 rounded-full" 
-            title={`${t('done')}: ${doneProgress}%`}
-          />
+          <Tooltip title={tooltipContent} placement="top">
+            <div 
+              className="w-1.5 h-1.5 bg-green-600 dark:bg-green-400 rounded-full" 
+            />
+          </Tooltip>
         )}
       </div>
     </div>

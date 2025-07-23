@@ -1,4 +1,4 @@
-import { Button, Col, DatePicker, Flex, Input, Row } from 'antd';
+import { Button, Col, DatePicker, Flex, Input, Row } from '@/shared/antd-imports';
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import { toggleModal } from './scheduleSlice';

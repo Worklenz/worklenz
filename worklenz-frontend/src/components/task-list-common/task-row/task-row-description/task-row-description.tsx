@@ -1,4 +1,4 @@
-import { Typography } from 'antd';
+import { Typography } from '@/shared/antd-imports';
 
 const TaskRowDescription = ({ description }: { description: string }) => {
   return (

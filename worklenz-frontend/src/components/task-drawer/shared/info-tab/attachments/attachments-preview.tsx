@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
-import { Button, Modal, Spin, Tooltip, Typography, Popconfirm, message } from 'antd';
+import { Button, Modal, Spin, Tooltip, Typography, Popconfirm, message } from '@/shared/antd-imports';
 import {
   EyeOutlined,
   DownloadOutlined,
   DeleteOutlined,
   QuestionCircleOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { attachmentsApiService } from '@/api/attachments/attachments.api.service';
 import { IconsMap } from '@/shared/constants';
 import './attachments-preview.css';

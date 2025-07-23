@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
-import { PlusOutlined, TagOutlined } from '@ant-design/icons';
+import { PlusOutlined, TagOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

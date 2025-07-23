@@ -14,7 +14,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Card, Spin, Empty, Alert } from 'antd';
+import { Card, Spin, Empty, Alert } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import {
   selectAllTasks,

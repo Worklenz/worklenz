@@ -1,5 +1,5 @@
-import { EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons';
-import { Button, Card, Form, Input, notification, Row, Typography } from 'antd';
+import { EyeInvisibleOutlined, EyeOutlined } from '@/shared/antd-imports';
+import { Button, Card, Form, Input, notification, Row, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';

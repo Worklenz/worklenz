@@ -1,4 +1,4 @@
-import { ConfigProvider, theme } from 'antd';
+import { ConfigProvider, theme } from '@/shared/antd-imports';
 import React, { useEffect, useRef, memo, useMemo, useCallback } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

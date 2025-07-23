@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Button, Flex } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Button, Flex } from '@/shared/antd-imports';
+import { PlusOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { nanoid } from '@reduxjs/toolkit';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@/utils/themeWiseColor';

@@ -1,4 +1,4 @@
-import { Card, Flex, Skeleton, Table, Typography } from 'antd';
+import { Card, Flex, Skeleton, Table, Typography } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { colors } from '@/styles/colors';
 import { TableProps } from 'antd/lib';

@@ -5,8 +5,8 @@ import {
   LoadingOutlined,
   RetweetOutlined,
   UserAddOutlined,
-} from '@ant-design/icons';
-import { Badge, Dropdown, Flex, Typography, Modal } from 'antd';
+} from '@/shared/antd-imports';
+import { Badge, Dropdown, Flex, Typography, Modal } from '@/shared/antd-imports';
 import { MenuProps } from 'antd/lib';
 import { useState } from 'react';
 import { TFunction } from 'i18next';

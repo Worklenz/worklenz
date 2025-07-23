@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Flex, Skeleton } from 'antd';
+import { Flex, Skeleton } from '@/shared/antd-imports';
 import TaskListFilters from '@/pages/projects/project-view-1/taskList/taskListFilters/TaskListFilters';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { ITaskListConfigV2, ITaskListGroup } from '@/types/tasks/taskList.types';
