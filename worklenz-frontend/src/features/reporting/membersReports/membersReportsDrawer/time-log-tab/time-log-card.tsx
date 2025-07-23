@@ -1,4 +1,4 @@
-import { Card, ConfigProvider, Tag, Timeline, Typography } from 'antd';
+import { Card, ConfigProvider, Tag, Timeline, Typography } from '@/shared/antd-imports';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';

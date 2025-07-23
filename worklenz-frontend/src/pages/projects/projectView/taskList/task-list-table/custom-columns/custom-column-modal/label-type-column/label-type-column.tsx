@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
-import { Button, Flex, Input, Select, Tag, Typography } from 'antd';
-import { CloseCircleOutlined, HolderOutlined } from '@ant-design/icons';
+import { Button, Flex, Input, Select, Tag, Typography } from '@/shared/antd-imports';
+import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
 import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
 import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
 import { setLabelsList } from '../../../../../../../../features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';

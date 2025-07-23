@@ -1,4 +1,4 @@
-import { Drawer, Typography } from 'antd';
+import { Drawer, Typography } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

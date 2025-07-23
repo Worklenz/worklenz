@@ -1,5 +1,5 @@
-import { StarFilled } from '@ant-design/icons';
-import { Button, ConfigProvider, Tooltip } from 'antd';
+import { StarFilled } from '@/shared/antd-imports';
+import { Button, ConfigProvider, Tooltip } from '@/shared/antd-imports';
 import { useMemo } from 'react';
 import { colors } from '@/styles/colors';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';

@@ -1,4 +1,4 @@
-import { Flex, Skeleton } from 'antd';
+import { Flex, Skeleton } from '@/shared/antd-imports';
 import React, { useEffect, useMemo, useState } from 'react';
 import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
 import ActivityLogCard from './activity-log-card';

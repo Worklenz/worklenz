@@ -11,7 +11,7 @@ import {
   Dropdown,
   Menu,
   Popconfirm,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
@@ -29,7 +29,7 @@ import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { getUserSession } from '@/utils/session-helper';
 import './project-view-updates.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@/shared/antd-imports';
 
 const MAX_COMMENT_LENGTH = 2000;
 

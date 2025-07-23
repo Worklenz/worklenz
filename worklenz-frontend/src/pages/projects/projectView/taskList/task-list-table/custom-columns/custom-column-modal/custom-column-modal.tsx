@@ -51,7 +51,7 @@ import {
 } from '@/features/task-management/task-management.slice';
 import { useParams } from 'react-router-dom';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
-import { ExclamationCircleFilled } from '@ant-design/icons';
+import { ExclamationCircleFilled } from '@/shared/antd-imports';
 
 const CustomColumnModal = () => {
   const [mainForm] = Form.useForm();

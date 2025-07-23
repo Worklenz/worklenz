@@ -9,7 +9,7 @@ import {
   Dropdown,
   MenuProps,
   Button,
-} from 'antd';
+} from '@/shared/antd-imports';
 import {
   DoubleRightOutlined,
   PauseOutlined,
@@ -20,7 +20,7 @@ import {
   ForkOutlined,
   CaretRightFilled,
   CaretDownFilled,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import './TaskCard.css';
 import dayjs, { Dayjs } from 'dayjs';
 import AddMembersDropdown from '../../add-members-dropdown/add-members-dropdown';

@@ -1,7 +1,7 @@
-import { Button, Card, Col, Form, Input, notification, Row, Tag, Typography } from 'antd';
+import { Button, Card, Col, Form, Input, notification, Row, Tag, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import './upgrade-plans-lkr.css';
-import { CheckCircleFilled } from '@ant-design/icons';
+import { CheckCircleFilled } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';

@@ -1,7 +1,7 @@
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { columnList } from './columns/columnList';
 import AddTaskListRow from './taskListTableRows/AddTaskListRow';
-import { Checkbox, Flex, Tag, Tooltip } from 'antd';
+import { Checkbox, Flex, Tag, Tooltip } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { useSelectedProject } from '@/hooks/useSelectedProject';
 import TaskCell from './taskListTableCells/TaskCell';
@@ -12,7 +12,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { deselectAll } from '@features/projects/bulkActions/bulkActionSlice';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { HolderOutlined } from '@ant-design/icons';
+import { HolderOutlined } from '@/shared/antd-imports';
 
 const TaskListTable = ({
   taskList,

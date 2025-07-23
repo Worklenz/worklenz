@@ -1,4 +1,4 @@
-import { Tag, Typography } from 'antd';
+import { Tag, Typography } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { ALPHA_CHANNEL } from '@/shared/constants';

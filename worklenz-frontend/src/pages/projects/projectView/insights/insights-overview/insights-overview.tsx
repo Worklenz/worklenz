@@ -1,4 +1,4 @@
-import { Button, Card, Flex, Typography } from 'antd';
+import { Button, Card, Flex, Typography } from '@/shared/antd-imports';
 
 import StatusOverview from './graphs/status-overview';
 import PriorityOverview from './graphs/priority-overview';

@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Skeleton } from 'antd';
+import { Skeleton } from '@/shared/antd-imports';
 
 // Lightweight loading component with skeleton animation
 export const SuspenseFallback = memo(() => {

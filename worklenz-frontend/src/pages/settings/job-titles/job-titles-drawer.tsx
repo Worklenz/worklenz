@@ -1,4 +1,4 @@
-import { Button, Drawer, Form, Input, message, Typography } from 'antd';
+import { Button, Drawer, Form, Input, message, Typography } from '@/shared/antd-imports';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';

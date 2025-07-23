@@ -1,6 +1,6 @@
-import { Button, Collapse, CollapseProps, Flex, Skeleton, Tooltip, Typography, Upload } from 'antd';
+import { Button, Collapse, CollapseProps, Flex, Skeleton, Tooltip, Typography } from '@/shared/antd-imports';
 import React, { useEffect, useState, useRef } from 'react';
-import { ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@/shared/antd-imports';
 import DescriptionEditor from './description-editor';
 import SubTaskTable from './subtask-table';
 import DependenciesTable from './dependencies-table';

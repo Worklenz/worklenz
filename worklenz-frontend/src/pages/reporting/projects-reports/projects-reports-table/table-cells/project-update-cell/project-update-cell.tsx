@@ -1,4 +1,4 @@
-import { Typography } from 'antd';
+import { Typography } from '@/shared/antd-imports';
 import React from 'react';
 
 type ProjectUpdateCellProps = {

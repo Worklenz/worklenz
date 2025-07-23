@@ -6,8 +6,8 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { formatDateRange } from '@/utils/project-list-utils';
-import { CalendarOutlined } from '@ant-design/icons';
-import { Badge, Tooltip } from 'antd';
+import { CalendarOutlined } from '@/shared/antd-imports';
+import { Badge, Tooltip } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { NavigateFunction } from 'react-router-dom';
 

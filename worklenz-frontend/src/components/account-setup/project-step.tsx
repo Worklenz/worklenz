@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { Button, Drawer, Form, Input, InputRef, Select, Typography } from 'antd';
+import { Button, Drawer, Form, Input, InputRef, Select, Typography } from '@/shared/antd-imports';
 import TemplateDrawer from '../common/template-drawer/template-drawer';
 
 import { RootState } from '@/app/store';

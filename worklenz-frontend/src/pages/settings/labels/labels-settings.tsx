@@ -8,12 +8,12 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useMemo, useState } from 'react';
 
 import PinRouteToNavbarButton from '../../../components/PinRouteToNavbarButton';
 import { useTranslation } from 'react-i18next';
-import { DeleteOutlined, ExclamationCircleFilled, SearchOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled, SearchOutlined } from '@/shared/antd-imports';
 import { ITaskLabel } from '@/types/label.type';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
 import CustomColorLabel from '@components/task-list-common/labelsSelector/custom-color-label';

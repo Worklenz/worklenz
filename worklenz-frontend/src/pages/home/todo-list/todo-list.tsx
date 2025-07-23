@@ -1,4 +1,4 @@
-import { CheckCircleOutlined, SyncOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, SyncOutlined } from '@/shared/antd-imports';
 import { useRef, useState } from 'react';
 import Form from 'antd/es/form';
 import Input, { InputRef } from 'antd/es/input';

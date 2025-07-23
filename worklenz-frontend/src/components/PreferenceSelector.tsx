@@ -1,5 +1,5 @@
-import { FloatButton, Space, Tooltip } from 'antd';
-import { FormatPainterOutlined } from '@ant-design/icons';
+import { FloatButton, Space, Tooltip } from '@/shared/antd-imports';
+import { FormatPainterOutlined } from '@/shared/antd-imports';
 // import LanguageSelector from '../features/i18n/language-selector';
 // import ThemeSelector from '../features/theme/ThemeSelector';
 

@@ -16,14 +16,14 @@ import {
   Table,
   TablePaginationConfig,
   Tooltip,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
 import {
   SearchOutlined,
   SyncOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
 
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';

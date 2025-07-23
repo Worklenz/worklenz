@@ -1,5 +1,5 @@
-import { SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Dropdown, Flex, Input, InputRef, Space } from 'antd';
+import { SearchOutlined } from '@/shared/antd-imports';
+import { Button, Card, Dropdown, Flex, Input, InputRef, Space } from '@/shared/antd-imports';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 

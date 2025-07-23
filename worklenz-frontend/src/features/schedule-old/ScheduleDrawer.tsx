@@ -1,4 +1,4 @@
-import { Avatar, Drawer, Tabs, TabsProps } from 'antd';
+import { Avatar, Drawer, Tabs, TabsProps } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleScheduleDrawer } from './scheduleSlice';

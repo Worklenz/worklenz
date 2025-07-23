@@ -1,7 +1,7 @@
-import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } from 'antd';
+import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } from '@/shared/antd-imports';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { colors } from '@/styles/colors';

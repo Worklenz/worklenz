@@ -1,8 +1,8 @@
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { IOrganization } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
-import { MailOutlined, PhoneOutlined, EditOutlined } from '@ant-design/icons';
-import { Card, Tooltip, Input, Button, Typography, InputRef } from 'antd';
+import { MailOutlined, PhoneOutlined, EditOutlined } from '@/shared/antd-imports';
+import { Card, Tooltip, Input, Button, Typography, InputRef } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { useEffect, useRef, useState } from 'react';
 

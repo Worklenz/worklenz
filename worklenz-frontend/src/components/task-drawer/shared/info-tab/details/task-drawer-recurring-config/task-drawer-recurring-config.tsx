@@ -11,8 +11,8 @@ import {
   Skeleton,
   Row,
   Col,
-} from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
+} from '@/shared/antd-imports';
+import { SettingOutlined } from '@/shared/antd-imports';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import {

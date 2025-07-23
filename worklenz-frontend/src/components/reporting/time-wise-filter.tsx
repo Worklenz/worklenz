@@ -1,5 +1,5 @@
-import { CaretDownFilled, DownOutlined } from '@ant-design/icons';
-import { Button, Card, DatePicker, Divider, Dropdown, Flex, List, Typography } from 'antd';
+import { DownOutlined } from '@/shared/antd-imports';
+import { Button, Card, DatePicker, Divider, Dropdown, Flex, List, Typography } from '@/shared/antd-imports';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';

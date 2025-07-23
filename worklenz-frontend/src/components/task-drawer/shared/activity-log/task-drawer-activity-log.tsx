@@ -1,7 +1,7 @@
-import { Timeline, Typography, Flex, ConfigProvider, Tag, Tooltip, Skeleton } from 'antd';
+import { Timeline, Typography, Flex, ConfigProvider, Tag, Tooltip, Skeleton } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRightOutlined } from '@ant-design/icons';
+import { ArrowRightOutlined } from '@/shared/antd-imports';
 
 import {
   IActivityLog,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Form, Input, InputRef, Typography } from 'antd';
+import { Form, Input, InputRef, Typography } from '@/shared/antd-imports';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { setOrganizationName } from '@/features/account-setup/account-setup.slice';

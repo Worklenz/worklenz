@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Checkbox, Button, Flex, Typography, Space, Divider, message } from 'antd';
-import { SettingOutlined, UpOutlined, DownOutlined } from '@ant-design/icons';
+import { Modal, Checkbox, Button, Flex, Typography, Space, Divider, message } from '@/shared/antd-imports';
+import { SettingOutlined, UpOutlined, DownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 // Configuration interface for column visibility

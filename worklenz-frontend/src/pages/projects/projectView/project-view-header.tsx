@@ -65,7 +65,7 @@ import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/boar
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
-import { ShareAltOutlined } from '@ant-design/icons';
+import { ShareAltOutlined } from '@/shared/antd-imports';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 
 const ProjectViewHeader = memo(() => {

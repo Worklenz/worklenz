@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Flex, DatePicker, Typography, Button, Form, FormInstance } from 'antd';
+import { Flex, DatePicker, Typography, Button, Form, FormInstance } from '@/shared/antd-imports';
 import { t, TFunction } from 'i18next';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';

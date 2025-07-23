@@ -1,5 +1,5 @@
-import { CaretDownFilled } from '@ant-design/icons';
-import { ConfigProvider, Flex, Select } from 'antd';
+import { CaretDownFilled } from '@/shared/antd-imports';
+import { ConfigProvider, Flex, Select } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { colors } from '@/styles/colors';
 import ConfigPhaseButton from '@features/projects/singleProject/phase/ConfigPhaseButton';

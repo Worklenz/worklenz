@@ -11,7 +11,7 @@ import {
   TableProps,
   Typography,
   Tooltip,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import './settings-drawer.css';
