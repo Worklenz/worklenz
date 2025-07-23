@@ -25,7 +25,7 @@ import {
   CaretDownFilled,
   ExclamationCircleFilled,
   PlusOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';

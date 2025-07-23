@@ -9,7 +9,7 @@ import {
   fetchTask,
   setSelectedTaskId,
 } from '@/features/task-drawer/task-drawer.slice';
-import { DoubleRightOutlined } from '@ant-design/icons';
+import { DoubleRightOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';

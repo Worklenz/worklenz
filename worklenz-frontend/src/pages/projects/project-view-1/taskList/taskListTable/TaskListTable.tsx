@@ -12,7 +12,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { deselectAll } from '@features/projects/bulkActions/bulkActionSlice';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { HolderOutlined } from '@ant-design/icons';
+import { HolderOutlined } from '@/shared/antd-imports';
 
 const TaskListTable = ({
   taskList,

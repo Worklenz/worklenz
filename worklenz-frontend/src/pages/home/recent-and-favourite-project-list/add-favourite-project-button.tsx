@@ -1,4 +1,4 @@
-import { StarFilled } from '@ant-design/icons';
+import { StarFilled } from '@/shared/antd-imports';
 import { Button, ConfigProvider, Tooltip } from '@/shared/antd-imports';
 import { useMemo } from 'react';
 import { colors } from '@/styles/colors';

@@ -1,4 +1,4 @@
-import { BellOutlined } from '@ant-design/icons';
+import { BellOutlined } from '@/shared/antd-imports';
 import { Badge, Button, Tooltip } from '@/shared/antd-imports';
 import { toggleDrawer } from '@features/navbar/notificationSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

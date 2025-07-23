@@ -1,4 +1,4 @@
-import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
+import { DownloadOutlined, PlusOutlined } from '@/shared/antd-imports';
 import { Button, Divider, Flex, Skeleton, Typography } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 

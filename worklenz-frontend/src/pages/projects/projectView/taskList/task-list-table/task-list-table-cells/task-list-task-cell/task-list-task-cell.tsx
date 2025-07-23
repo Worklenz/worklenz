@@ -10,7 +10,7 @@ import {
   PaperClipOutlined,
   MinusCircleOutlined,
   RetweetOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';

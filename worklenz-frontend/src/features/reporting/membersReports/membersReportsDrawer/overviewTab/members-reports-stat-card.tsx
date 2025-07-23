@@ -2,7 +2,7 @@ import {
   ClockCircleOutlined,
   ExclamationCircleOutlined,
   FileExcelOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { Button, Card, Flex } from '@/shared/antd-imports';
 import React, { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -11,7 +11,7 @@ import {
   DownOutlined,
   RightOutlined,
   FilterOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import {
   Button,
   Checkbox,

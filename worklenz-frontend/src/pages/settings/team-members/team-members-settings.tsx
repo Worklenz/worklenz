@@ -5,7 +5,7 @@ import {
   SearchOutlined,
   SyncOutlined,
   UserSwitchOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import {
   Avatar,
   Badge,

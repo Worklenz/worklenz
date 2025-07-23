@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Modal, Form, Input, Button, Space, Divider, Typography, Flex, ColorPicker, Tooltip } from '@/shared/antd-imports';
-import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';

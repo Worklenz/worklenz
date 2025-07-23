@@ -6,7 +6,7 @@ import {
   LoadingOutlined,
   MoreOutlined,
   PlusOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { setTaskCardDisabled, initializeStatus } from '../../../features/board/create-card.slice';
 import { TaskType } from '../../../types/task.types';
 import TaskCreateCard from '../taskCreateCard/TaskCreateCard';

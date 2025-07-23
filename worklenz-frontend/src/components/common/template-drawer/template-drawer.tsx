@@ -22,7 +22,7 @@ import {
   IWorklenzTemplate,
 } from '@/types/project-templates/project-templates.types';
 import './template-drawer.css';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 
 const { Title, Text } = Typography;

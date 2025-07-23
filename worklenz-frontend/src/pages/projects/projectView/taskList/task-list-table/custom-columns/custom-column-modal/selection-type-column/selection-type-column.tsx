@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
 import { Button, Flex, Input, Select, Tag, Typography } from '@/shared/antd-imports';
-import { CloseCircleOutlined, HolderOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
 import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';

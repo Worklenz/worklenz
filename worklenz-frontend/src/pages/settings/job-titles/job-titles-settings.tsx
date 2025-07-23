@@ -3,7 +3,7 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
   SearchOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';

@@ -13,7 +13,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import logger from '@/utils/errorLogger';
-import { SettingOutlined, InboxOutlined } from '@ant-design/icons';
+import { SettingOutlined, InboxOutlined } from '@/shared/antd-imports';
 import { Tooltip, Button, Popconfirm, Space } from '@/shared/antd-imports';
 import {
   evt_projects_archive,

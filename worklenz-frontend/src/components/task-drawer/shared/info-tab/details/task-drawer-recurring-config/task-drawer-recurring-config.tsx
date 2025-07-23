@@ -12,7 +12,7 @@ import {
   Row,
   Col,
 } from '@/shared/antd-imports';
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@/shared/antd-imports';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import {

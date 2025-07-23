@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { setSelectedProject, toggleProjectReportsDrawer } from '../project-reports-slice';
-import { BankOutlined, DownOutlined } from '@ant-design/icons';
+import { BankOutlined, DownOutlined } from '@/shared/antd-imports';
 import ProjectReportsDrawerTabs from './ProjectReportsDrawerTabs';
 import { colors } from '../../../../styles/colors';
 import { useTranslation } from 'react-i18next';

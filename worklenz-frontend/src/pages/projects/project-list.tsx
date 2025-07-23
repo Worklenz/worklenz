@@ -23,7 +23,7 @@ import {
   SyncOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
 
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';

@@ -1,4 +1,4 @@
-import { RightOutlined } from '@ant-design/icons';
+import { RightOutlined } from '@/shared/antd-imports';
 import { ConfigProvider, Flex, Menu, MenuProps } from '@/shared/antd-imports';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '@/styles/colors';

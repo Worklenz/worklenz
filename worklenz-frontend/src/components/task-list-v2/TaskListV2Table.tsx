@@ -19,8 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Skeleton } from '@/shared/antd-imports';
-import { HolderOutlined } from '@ant-design/icons';
+import { HolderOutlined } from '@/shared/antd-imports';
 
 // Redux hooks and selectors
 import { useAppSelector } from '@/hooks/useAppSelector';

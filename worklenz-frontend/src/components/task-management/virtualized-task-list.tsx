@@ -4,7 +4,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { Empty, Button, Input } from '@/shared/antd-imports';
-import { RightOutlined, DownOutlined } from '@ant-design/icons';
+import { RightOutlined, DownOutlined } from '@/shared/antd-imports';
 import {
   taskManagementSelectors,
   toggleTaskExpansion,

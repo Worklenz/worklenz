@@ -7,7 +7,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
-import { DoubleLeftOutlined, MinusOutlined, PauseOutlined } from '@ant-design/icons';
+import { DoubleLeftOutlined, MinusOutlined, PauseOutlined } from '@/shared/antd-imports';
 
 type PriorityDropdownProps = {
   task: IProjectTask;

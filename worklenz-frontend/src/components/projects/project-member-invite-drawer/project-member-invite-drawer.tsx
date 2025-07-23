@@ -12,7 +12,7 @@ import {
   toggleProjectMemberDrawer,
 } from '@/features/projects/singleProject/members/projectMembersSlice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { DeleteOutlined, MailOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MailOutlined } from '@/shared/antd-imports';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import logger from '@/utils/errorLogger';
 import { validateEmail } from '@/utils/validateEmail';

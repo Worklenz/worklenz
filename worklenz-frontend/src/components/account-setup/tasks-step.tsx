@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Form, Input, Button, Typography, List, InputRef } from '@/shared/antd-imports';
-import { PlusOutlined, DeleteOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, CloseCircleOutlined } from '@/shared/antd-imports';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { RootState } from '@/app/store';

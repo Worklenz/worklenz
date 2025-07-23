@@ -11,7 +11,7 @@ import {
   SettingOutlined,
   UsergroupAddOutlined,
   PlusOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';

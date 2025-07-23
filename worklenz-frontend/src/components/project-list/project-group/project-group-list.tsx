@@ -14,7 +14,6 @@ import {
   Divider,
 } from '@/shared/antd-imports';
 import {
-  ClockCircleOutlined,
   TeamOutlined,
   CheckCircleOutlined,
   ProjectOutlined,
@@ -22,7 +21,7 @@ import {
   SettingOutlined,
   InboxOutlined,
   MoreOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { ProjectGroupListProps } from '@/types/project/project.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

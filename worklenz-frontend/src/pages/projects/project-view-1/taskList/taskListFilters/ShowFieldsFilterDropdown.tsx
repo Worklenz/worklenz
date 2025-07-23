@@ -1,4 +1,4 @@
-import { MoreOutlined } from '@ant-design/icons';
+import { MoreOutlined } from '@/shared/antd-imports';
 import { Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

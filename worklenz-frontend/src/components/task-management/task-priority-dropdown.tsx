@@ -4,7 +4,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { Task } from '@/types/task-management.types';
-import { MinusOutlined, PauseOutlined, DoubleRightOutlined } from '@ant-design/icons';
+import { MinusOutlined, PauseOutlined, DoubleRightOutlined } from '@/shared/antd-imports';
 
 interface TaskPriorityDropdownProps {
   task: Task;

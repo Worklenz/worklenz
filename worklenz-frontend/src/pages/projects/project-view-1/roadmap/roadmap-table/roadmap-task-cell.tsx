@@ -4,7 +4,7 @@ import {
   DownOutlined,
   RightOutlined,
   ExpandAltOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { NewTaskType, toggleTaskExpansion } from '@features/roadmap/roadmap-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleTaskDrawer } from '@features/tasks/taskSlice';

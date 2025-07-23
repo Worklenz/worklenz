@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleTimeLogDrawer } from './timeLogSlice';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined } from '@/shared/antd-imports';
 import jsonData from './ProjectTimeLog.json';
 import { AvatarNamesMap, durations } from '../../../shared/constants';
 import './ProjectTimeLogDrawer.css';

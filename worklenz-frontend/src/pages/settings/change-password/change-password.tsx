@@ -1,4 +1,4 @@
-import { EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons';
+import { EyeInvisibleOutlined, EyeOutlined } from '@/shared/antd-imports';
 import { Button, Card, Form, Input, notification, Row, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';

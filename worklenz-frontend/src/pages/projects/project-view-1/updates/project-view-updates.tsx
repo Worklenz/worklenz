@@ -29,7 +29,7 @@ import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { getUserSession } from '@/utils/session-helper';
 import './project-view-updates.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@/shared/antd-imports';
 
 const MAX_COMMENT_LENGTH = 2000;
 

@@ -1,5 +1,5 @@
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
-import { BankOutlined } from '@ant-design/icons';
+import { BankOutlined } from '@/shared/antd-imports';
 import { Button, Tag, Typography, theme } from '@/shared/antd-imports';
 import DOMPurify from 'dompurify';
 import React, { useState } from 'react';

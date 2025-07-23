@@ -2,7 +2,7 @@ import { Drawer, Typography, Flex, Button, Space, Dropdown } from '@/shared/antd
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleMembersReportsDrawer } from '../membersReportsSlice';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@/shared/antd-imports';
 import MembersReportsDrawerTabs from './members-reports-drawer-tabs';
 import { useTranslation } from 'react-i18next';
 import MembersOverviewTasksStatsDrawer from './overviewTab/members-overview-tasks-stats-drawer/members-overview-tasks-stats-drawer';

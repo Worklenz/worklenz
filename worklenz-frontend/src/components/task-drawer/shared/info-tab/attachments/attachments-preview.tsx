@@ -6,8 +6,7 @@ import {
   DownloadOutlined,
   DeleteOutlined,
   QuestionCircleOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { attachmentsApiService } from '@/api/attachments/attachments.api.service';
 import { IconsMap } from '@/shared/constants';
 import './attachments-preview.css';

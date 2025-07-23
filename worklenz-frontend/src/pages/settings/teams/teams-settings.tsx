@@ -2,7 +2,7 @@ import { Button, Card, Flex, Table, TableProps, Tooltip, Typography } from '@/sh
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { durationDateFormat } from '@utils/durationDateFormat';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import EditTeamModal from '@/components/settings/edit-team-name-modal';
 import { useTranslation } from 'react-i18next';

@@ -3,7 +3,7 @@ import {
   ClockCircleOutlined,
   ExclamationCircleOutlined,
   FileExcelOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { Card, Flex, Typography } from '@/shared/antd-imports';
 import React, { ReactNode } from 'react';
 import { colors } from '../../../../../styles/colors';
