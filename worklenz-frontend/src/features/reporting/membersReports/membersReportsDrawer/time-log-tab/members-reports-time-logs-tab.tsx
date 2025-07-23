@@ -1,4 +1,4 @@
-import { Flex, Skeleton } from 'antd';
+import { Flex, Skeleton } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import BillableFilter from './billable-filter';
 import { fetchData } from '@/utils/fetchData';

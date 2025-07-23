@@ -1,4 +1,4 @@
-import { Badge, Card, Dropdown, Flex, Menu, MenuProps } from 'antd';
+import { Badge, Card, Dropdown, Flex, Menu, MenuProps } from '@/shared/antd-imports';
 import React from 'react';
 import { TaskStatusType } from '../../../types/task.types';
 import { colors } from '../../../styles/colors';

@@ -1,4 +1,4 @@
-import { Flex, Skeleton } from 'antd';
+import { Flex, Skeleton } from '@/shared/antd-imports';
 import React, { useEffect, useMemo, useState } from 'react';
 import CustomSearchbar from '../../../../CustomSearchbar';
 import { useTranslation } from 'react-i18next';

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Dropdown, Input, InputRef, MenuProps, Typography } from 'antd';
+import { Button, Dropdown, Input, InputRef, MenuProps, Typography } from '@/shared/antd-imports';
 import {
   DeleteOutlined,
   EditOutlined,

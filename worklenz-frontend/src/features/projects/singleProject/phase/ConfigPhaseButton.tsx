@@ -1,5 +1,5 @@
 import { SettingOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import { Button, Tooltip } from '@/shared/antd-imports';
 import React from 'react';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { toggleDrawer } from './phases.slice';

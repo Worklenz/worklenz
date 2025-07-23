@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Card, Flex, Skeleton, Tooltip, Typography } from 'antd';
+import { Card, Flex, Skeleton, Tooltip, Typography } from '@/shared/antd-imports';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { colors } from '@/styles/colors';
 

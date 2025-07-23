@@ -1,5 +1,5 @@
 import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Checkbox, Divider, Dropdown, Input, theme } from 'antd';
+import { Button, Checkbox, Divider, Dropdown, Input, theme } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { useTranslation } from 'react-i18next';

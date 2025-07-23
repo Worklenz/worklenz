@@ -1,6 +1,6 @@
 import { AlertConfig, AlertState, AlertType } from '@/types/alert.types';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { notification } from 'antd';
+import { notification } from '@/shared/antd-imports';
 import DOMPurify from 'dompurify';
 
 const initialState: AlertState = {

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Modal, Form, Input, Button, Tabs, Space, Divider, Typography, Flex, DatePicker, Select } from 'antd';
+import { Modal, Form, Input, Button, Tabs, Space, Divider, Typography, Flex, DatePicker, Select } from '@/shared/antd-imports';
 import { PlusOutlined, DragOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -14,7 +14,7 @@ import LabelsSelector from '@/components/LabelsSelector';
 import { createStatus, fetchStatuses, fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
-import { Modal as AntModal } from 'antd';
+import { Modal as AntModal } from '@/shared/antd-imports';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';

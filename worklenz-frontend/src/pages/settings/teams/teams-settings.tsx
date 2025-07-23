@@ -1,4 +1,4 @@
-import { Button, Card, Flex, Table, TableProps, Tooltip, Typography } from 'antd';
+import { Button, Card, Flex, Table, TableProps, Tooltip, Typography } from '@/shared/antd-imports';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { durationDateFormat } from '@utils/durationDateFormat';

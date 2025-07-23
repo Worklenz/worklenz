@@ -1,4 +1,4 @@
-import { Button, Flex, Input, Popconfirm, Progress, Table, Tag, Tooltip } from 'antd';
+import { Button, Flex, Input, Popconfirm, Progress, Table, Tag, Tooltip } from '@/shared/antd-imports';
 import { useState, useMemo, useEffect } from 'react';
 import { DeleteOutlined, EditOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { nanoid } from '@reduxjs/toolkit';

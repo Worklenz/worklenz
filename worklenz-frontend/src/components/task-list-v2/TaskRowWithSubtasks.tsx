@@ -5,7 +5,7 @@ import { selectTaskById, createSubtask, selectSubtaskLoading } from '@/features/
 import TaskRow from './TaskRow';
 import SubtaskLoadingSkeleton from './SubtaskLoadingSkeleton';
 import { Task } from '@/types/task-management.types';
-import { Input, Button } from 'antd';
+import { Input, Button } from '@/shared/antd-imports';
 import { PlusOutlined } from '@ant-design/icons';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Spin } from 'antd';
+import { Spin } from '@/shared/antd-imports';
 
 // Lazy load Chart.js components
 const LazyBarChart = lazy(() => 

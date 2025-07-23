@@ -1,4 +1,4 @@
-import { Badge, Flex, Select } from 'antd';
+import { Badge, Flex, Select } from '@/shared/antd-imports';
 import './home-tasks-status-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';

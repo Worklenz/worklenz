@@ -11,7 +11,7 @@ import {
   InputRef,
   List,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

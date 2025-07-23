@@ -9,7 +9,7 @@ import {
   Typography,
   Spin,
   Skeleton,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { changeUserName, setUser } from '@features/user/userSlice';

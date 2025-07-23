@@ -1,4 +1,4 @@
-import { Badge, Button, Flex, Tooltip } from 'antd';
+import { Badge, Button, Flex, Tooltip } from '@/shared/antd-imports';
 import React, { useCallback } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import CustomAvatar from '../../CustomAvatar';

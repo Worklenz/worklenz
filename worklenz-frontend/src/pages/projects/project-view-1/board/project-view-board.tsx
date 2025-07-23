@@ -10,7 +10,7 @@ import {
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskListFilters from '../taskList/taskListFilters/TaskListFilters';
-import { Button, Skeleton } from 'antd';
+import { Button, Skeleton } from '@/shared/antd-imports';
 import { PlusOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { toggleDrawer } from '@/features/projects/status/StatusSlice';

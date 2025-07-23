@@ -1,4 +1,4 @@
-import { Form, InputNumber, Tooltip, Modal } from 'antd';
+import { Form, InputNumber, Tooltip, Modal } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';

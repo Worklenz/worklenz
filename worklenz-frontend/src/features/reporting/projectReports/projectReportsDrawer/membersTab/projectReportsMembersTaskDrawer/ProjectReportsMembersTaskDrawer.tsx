@@ -1,4 +1,4 @@
-import { Drawer, Typography, Flex, Button } from 'antd';
+import { Drawer, Typography, Flex, Button } from '@/shared/antd-imports';
 import React, { useMemo, useState } from 'react';
 import { FileOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';

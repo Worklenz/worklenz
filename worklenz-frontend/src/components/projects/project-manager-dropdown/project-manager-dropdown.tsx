@@ -4,7 +4,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { CloseCircleFilled, PlusCircleOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Flex, Input, InputRef, theme, Typography } from 'antd';
+import { Button, Dropdown, Flex, Input, InputRef, theme, Typography } from '@/shared/antd-imports';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './project-manager-dropdown.css';

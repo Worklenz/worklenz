@@ -1,4 +1,4 @@
-import { Card, Dropdown, Flex, Menu, MenuProps, Typography } from 'antd';
+import { Card, Dropdown, Flex, Menu, MenuProps, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { DoubleLeftOutlined, DownOutlined, MinusOutlined, PauseOutlined } from '@ant-design/icons';
 // custom css file

@@ -9,7 +9,7 @@ import {
   Button,
   ConfigProvider,
   Flex,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';
 import { ITaskFormViewModel, ITaskViewModel } from '@/types/tasks/task.types';

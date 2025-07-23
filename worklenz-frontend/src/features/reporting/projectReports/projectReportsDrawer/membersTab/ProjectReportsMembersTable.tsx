@@ -1,4 +1,4 @@
-import { Progress, Table, TableColumnsType } from 'antd';
+import { Progress, Table, TableColumnsType } from '@/shared/antd-imports';
 import React from 'react';
 import CustomTableTitle from '../../../../../components/CustomTableTitle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

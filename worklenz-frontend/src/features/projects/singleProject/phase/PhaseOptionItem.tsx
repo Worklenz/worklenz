@@ -1,4 +1,4 @@
-import { Button, ColorPicker, ConfigProvider, Flex, Input } from 'antd';
+import { Button, ColorPicker, ConfigProvider, Flex, Input } from '@/shared/antd-imports';
 import { CloseCircleOutlined, HolderOutlined } from '@ant-design/icons';
 import { nanoid } from '@reduxjs/toolkit';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

@@ -5,7 +5,7 @@ import {
   RetweetOutlined,
   UserAddOutlined,
 } from '@ant-design/icons';
-import { Badge, Dropdown, Flex, Typography } from 'antd';
+import { Badge, Dropdown, Flex, Typography } from '@/shared/antd-imports';
 import { MenuProps } from 'antd/lib';
 import React from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';

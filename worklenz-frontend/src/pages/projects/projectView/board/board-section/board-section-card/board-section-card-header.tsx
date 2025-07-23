@@ -9,7 +9,7 @@ import {
   Popconfirm,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -19,7 +19,7 @@ import {
   PlusOutlined,
   RetweetOutlined,
 } from '@ant-design/icons';
-import { MenuProps } from 'antd';
+import { MenuProps } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 import ChangeCategoryDropdown from '@/components/board/changeCategoryDropdown/ChangeCategoryDropdown';

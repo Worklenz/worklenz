@@ -1,4 +1,4 @@
-import { Button, Flex } from 'antd';
+import { Button, Flex } from '@/shared/antd-imports';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';

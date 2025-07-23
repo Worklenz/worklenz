@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip } from 'antd';
+import { Tooltip } from '@/shared/antd-imports';
 import { NumbersColorMap } from '@/shared/constants';
 
 interface CustomNumberLabelProps {

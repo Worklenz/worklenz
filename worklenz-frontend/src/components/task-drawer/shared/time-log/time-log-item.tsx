@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Divider, Flex, Popconfirm, Typography, Space } from 'antd';
+import { Button, Divider, Flex, Popconfirm, Typography, Space } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';

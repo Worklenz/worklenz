@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Form, Input, Button, Typography, List, InputRef } from 'antd';
+import { Form, Input, Button, Typography, List, InputRef } from '@/shared/antd-imports';
 import { PlusOutlined, DeleteOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';

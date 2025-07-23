@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Checkbox, Button, Flex, Typography, Space, Divider, message } from 'antd';
+import { Modal, Checkbox, Button, Flex, Typography, Space, Divider, message } from '@/shared/antd-imports';
 import { SettingOutlined, UpOutlined, DownOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 

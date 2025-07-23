@@ -1,4 +1,4 @@
-import { Calendar } from 'antd';
+import { Calendar } from '@/shared/antd-imports';
 import React, { useEffect } from 'react';
 import type { Dayjs } from 'dayjs';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Checkbox, Flex, Tag, Tooltip } from 'antd';
+import { Checkbox, Flex, Tag, Tooltip } from '@/shared/antd-imports';
 import { HolderOutlined } from '@ant-design/icons';
 import {
   DndContext,

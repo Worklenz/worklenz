@@ -11,7 +11,7 @@ import {
   Dropdown,
   Menu,
   Popconfirm,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';

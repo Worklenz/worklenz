@@ -2,7 +2,7 @@
 import { BankOutlined, CaretDownFilled, CheckCircleFilled } from '@ant-design/icons';
 
 // Ant Design Components
-import { Card, Divider, Dropdown, Flex, Tooltip, Typography } from 'antd';
+import { Card, Divider, Dropdown, Flex, Tooltip, Typography } from '@/shared/antd-imports';
 
 // Redux Hooks
 import { useAppDispatch } from '@/hooks/useAppDispatch';

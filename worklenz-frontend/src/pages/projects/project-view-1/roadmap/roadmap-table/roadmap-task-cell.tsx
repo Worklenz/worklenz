@@ -1,4 +1,4 @@
-import { Flex, Typography, Button, Tooltip } from 'antd';
+import { Flex, Typography, Button, Tooltip } from '@/shared/antd-imports';
 import {
   DoubleRightOutlined,
   DownOutlined,

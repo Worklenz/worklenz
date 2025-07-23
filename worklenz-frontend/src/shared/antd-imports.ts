@@ -12,6 +12,7 @@ import React from 'react';
 
 // Import Ant Design components using the standard method for better context sharing
 import {
+  AutoComplete,
   Button,
   Input,
   Select,
@@ -51,7 +52,20 @@ import {
   notification,
   theme,
   Statistic,
-} from 'antd';
+  Segmented,
+  Switch,
+  Calendar,
+  FloatButton,
+  Pagination,
+  ColorPicker,
+  Popover,
+  Image,
+  Collapse,
+  Breadcrumb,
+  Timeline,
+  Mentions,
+  Radio,
+} from 'antd/es';
 
 // Icons - Import commonly used ones
 export {
@@ -102,12 +116,13 @@ export {
   DoubleRightOutlined,
   UserAddOutlined,
   ArrowsAltOutlined,
-  EllipsisOutlined
+  EllipsisOutlined,
 } from '@ant-design/icons';
 
 // Re-export all components with React
 export {
   React,
+  AutoComplete,
   Button,
   Input,
   Select,
@@ -147,6 +162,19 @@ export {
   notification,
   theme,
   Statistic,
+  Segmented,
+  Switch,
+  Calendar,
+  FloatButton,
+  Pagination,
+  ColorPicker,
+  Popover,
+  Image,
+  Collapse,
+  Breadcrumb,
+  Timeline,
+  Mentions,
+  Radio
 };
 
 // TypeScript Types - Import commonly used ones
@@ -167,7 +195,7 @@ export type {
   TabsProps,
   TableProps,
   TableColumnsType,
-} from 'antd';
+} from 'antd/es';
 
 // Dayjs
 export { default as dayjs } from 'dayjs';

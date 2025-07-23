@@ -3,7 +3,7 @@ import {
   ExclamationCircleOutlined,
   FileExcelOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Flex } from 'antd';
+import { Button, Card, Flex } from '@/shared/antd-imports';
 import React, { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

@@ -1,4 +1,4 @@
-import { Card, Flex, Typography } from 'antd';
+import { Card, Flex, Typography } from '@/shared/antd-imports';
 import TaskByMembersTable from './tables/tasks-by-members';
 
 import MemberStats from '../member-stats/member-stats';

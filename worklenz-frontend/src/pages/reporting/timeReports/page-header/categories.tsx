@@ -7,7 +7,7 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Card, Checkbox, Divider, Dropdown, Input, theme } from 'antd';
+import { Button, Card, Checkbox, Divider, Dropdown, Input, theme } from '@/shared/antd-imports';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';

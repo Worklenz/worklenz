@@ -1,4 +1,4 @@
-import { Button, Drawer, Flex, Input, Skeleton, Spin, Typography } from 'antd';
+import { Button, Drawer, Flex, Input, Skeleton, Spin, Typography } from '@/shared/antd-imports';
 import { useState } from 'react';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';

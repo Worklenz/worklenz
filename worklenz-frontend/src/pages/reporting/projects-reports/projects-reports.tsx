@@ -1,4 +1,4 @@
-import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from 'antd';
+import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from '@/shared/antd-imports';
 import { useMemo, useCallback, memo } from 'react';
 import CustomPageHeader from '@/pages/reporting/page-header/custom-page-header';
 import { DownOutlined } from '@ant-design/icons';

@@ -1,5 +1,5 @@
 import ProjectStatsCard from '@/components/projects/project-stats-card';
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import groupIcon from '@/assets/icons/insightsIcons/group.png';
 import warningIcon from '@/assets/icons/insightsIcons/warning.png';
 import unassignedIcon from '@/assets/icons/insightsIcons/block-user.png';

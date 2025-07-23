@@ -6,7 +6,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { IOrganizationTeam } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
 import { SettingOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Badge, Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from 'antd';
+import { Badge, Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { useState } from 'react';
 import { useMediaQuery } from 'react-responsive';

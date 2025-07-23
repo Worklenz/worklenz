@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Avatar, Tag, Progress, Typography, Button, Tooltip, Space } from 'antd';
+import { Avatar, Tag, Progress, Typography, Button, Tooltip, Space } from '@/shared/antd-imports';
 import {
   HolderOutlined,
   MessageOutlined,

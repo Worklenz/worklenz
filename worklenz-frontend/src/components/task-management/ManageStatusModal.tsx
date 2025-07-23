@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Modal, Form, Input, Button, Space, Divider, Typography, Flex, Select, Tooltip } from 'antd';
+import { Modal, Form, Input, Button, Space, Divider, Typography, Flex, Select, Tooltip } from '@/shared/antd-imports';
 import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, DragOverEvent, useDroppable, closestCenter, DragOverlay } from '@dnd-kit/core';
@@ -12,7 +12,7 @@ import { createStatus, fetchStatuses, fetchStatusesCategories } from '@/features
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
 import { IKanbanTaskStatus } from '@/types/tasks/taskStatus.types';
-import { Modal as AntModal } from 'antd';
+import { Modal as AntModal } from '@/shared/antd-imports';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import './ManageStatusModal.css';

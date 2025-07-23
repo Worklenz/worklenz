@@ -12,7 +12,7 @@ import {
   Divider,
   Popconfirm,
   Skeleton,
-} from 'antd';
+} from '@/shared/antd-imports';
 import {
   DoubleRightOutlined,
   PauseOutlined,

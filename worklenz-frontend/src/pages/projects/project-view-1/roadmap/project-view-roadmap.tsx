@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import './project-view-roadmap.css';
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { TimeFilter } from './time-filter';
 import RoadmapTable from './roadmap-table/roadmap-table';

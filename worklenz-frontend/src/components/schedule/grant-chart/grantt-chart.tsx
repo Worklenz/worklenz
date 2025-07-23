@@ -5,7 +5,7 @@ import { fetchDateList, fetchTeamData } from '../../../features/schedule/schedul
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import GranttMembersTable from './grantt-members-table';
 import { CELL_WIDTH } from '../../../shared/constants';
-import { Flex, Popover } from 'antd';
+import { Flex, Popover } from '@/shared/antd-imports';
 import DayAllocationCell from './day-allocation-cell';
 import ProjectTimelineBar from './project-timeline-bar';
 import ProjectTimelineModal from '@/features/schedule/ProjectTimelineModal';

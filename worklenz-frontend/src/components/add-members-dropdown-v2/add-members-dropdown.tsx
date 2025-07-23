@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Avatar, Button, Checkbox, Dropdown, Input, Menu, Typography } from 'antd';
+import { Avatar, Button, Checkbox, Dropdown, Input, Menu, Typography } from '@/shared/antd-imports';
 import { UserAddOutlined, UsergroupAddOutlined } from '@ant-design/icons';
 import './add-members-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';

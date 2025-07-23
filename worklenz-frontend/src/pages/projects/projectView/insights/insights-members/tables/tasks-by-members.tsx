@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Flex, Progress } from 'antd';
+import { Flex, Progress } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@/utils/themeWiseColor';

@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useState, useRef } from 'react';
 import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@ant-design/icons';
-import { Checkbox, DatePicker, Tooltip, Input } from 'antd';
-import type { InputRef } from 'antd';
+import { Checkbox, DatePicker, Tooltip, Input } from '@/shared/antd-imports';
+import type { InputRef } from '@/shared/antd-imports';
 import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';

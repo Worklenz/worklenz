@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
-import { Input } from 'antd';
+import { Input } from '@/shared/antd-imports';
 import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useSocket } from '@/socket/socketContext';

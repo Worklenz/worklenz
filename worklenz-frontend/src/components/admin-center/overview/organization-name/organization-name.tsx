@@ -1,7 +1,7 @@
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
 import { EnterOutlined, EditOutlined } from '@ant-design/icons';
-import { Card, Button, Tooltip, Typography } from 'antd';
+import { Card, Button, Tooltip, Typography } from '@/shared/antd-imports';
 import TextArea from 'antd/es/input/TextArea';
 import Paragraph from 'antd/es/typography/Paragraph';
 import { TFunction } from 'i18next';

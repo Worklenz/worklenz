@@ -1,4 +1,4 @@
-import { ConfigProvider, Select, Typography } from 'antd';
+import { ConfigProvider, Select, Typography } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
