@@ -1,4 +1,4 @@
-import { Button, Flex, Select, Typography } from 'antd';
+import { Button, Flex, Select, Typography } from '@/shared/antd-imports';
 import { useState } from 'react';
 import StatusGroupTables from '../../../projects/project-view-1/taskList/statusTables/StatusGroupTables';
 import { TaskType } from '../../../../types/task.types';

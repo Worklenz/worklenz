@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Dropdown, Input, Menu, Badge, Tooltip } from 'antd';
+import { Button, Dropdown, Input, Menu, Badge, Tooltip } from '@/shared/antd-imports';
 import {
   RightOutlined,
   LoadingOutlined,

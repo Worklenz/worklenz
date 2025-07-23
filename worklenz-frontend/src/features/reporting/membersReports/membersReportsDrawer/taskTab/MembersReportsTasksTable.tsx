@@ -1,4 +1,4 @@
-import { Badge, Flex, Table, TableColumnsType, Tag, Typography } from 'antd';
+import { Badge, Flex, Table, TableColumnsType, Tag, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import dayjs from 'dayjs';
 import { DoubleRightOutlined } from '@ant-design/icons';

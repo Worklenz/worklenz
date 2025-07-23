@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Skeleton, Avatar, Tooltip, Popconfirm } from 'antd';
+import { Skeleton, Avatar, Tooltip, Popconfirm } from '@/shared/antd-imports';
 import { Comment } from '@ant-design/compatible';
 import dayjs from 'dayjs';
 

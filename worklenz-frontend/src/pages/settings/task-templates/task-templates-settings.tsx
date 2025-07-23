@@ -1,4 +1,4 @@
-import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from 'antd';
+import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './task-templates-settings.css';

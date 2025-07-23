@@ -1,4 +1,4 @@
-import { Avatar, Checkbox, DatePicker, Flex, Select, Tag } from 'antd';
+import { Avatar, Checkbox, DatePicker, Flex, Select, Tag } from '@/shared/antd-imports';
 import { createColumnHelper, ColumnDef } from '@tanstack/react-table';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { HolderOutlined, PlusOutlined } from '@ant-design/icons';

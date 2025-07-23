@@ -459,7 +459,7 @@ const UpgradePlans = () => {
             <Card
               style={{ ...isSelected(paddlePlans.MONTHLY), height: '100%' }}
               hoverable
-              title={<span style={cardStyles.title}>{t('monthlyPlan')}</span>}
+              title={<span style={cardStyles.title}>{t('monthlyPlan', 'Monthly Plan')}</span>}
               onClick={() => setSelectedCard(paddlePlans.MONTHLY)}
             >
               <div style={cardStyles.priceContainer}>
@@ -480,16 +480,16 @@ const UpgradePlans = () => {
                   </Typography.Text>
                 </Flex>
                 <Flex justify="center" align="center">
-                  <Typography.Text>{t('billedMonthly')}</Typography.Text>
+                  <Typography.Text>{t('billedMonthly', 'Billed Monthly')}</Typography.Text>
                 </Flex>
               </div>
 
               <div style={cardStyles.featureList}>
-                {renderFeature(t('startupText01'))}
-                {renderFeature(t('startupText02'))}
-                {renderFeature(t('startupText03'))}
-                {renderFeature(t('startupText04'))}
-                {renderFeature(t('startupText05'))}
+                {renderFeature(t('startupText01', 'Unlimited Projects'))}
+                {renderFeature(t('startupText02', 'Unlimited Team Members'))}
+                {renderFeature(t('startupText03', 'Unlimited Storage'))}
+                {renderFeature(t('startupText04', 'Priority Support'))}
+                {renderFeature(t('startupText05', 'Advanced Analytics'))}
               </div>
             </Card>
           </Col>
@@ -520,8 +520,8 @@ const UpgradePlans = () => {
             disabled={billingInfo?.plan_id === plans.annual_plan_id}
           >
             {billingInfo?.status === SUBSCRIPTION_STATUS.ACTIVE
-              ? t('changeToPlan', { plan: t('annualPlan') })
-              : t('continueWith', { plan: t('annualPlan') })}
+              ? t('changeToPlan', 'Change to {{plan}}', { plan: t('annualPlan', 'Annual Plan') })
+              : t('continueWith', 'Continue with {{plan}}', { plan: t('annualPlan', 'Annual Plan') })}
           </Button>
         )}
         {selectedPlan === paddlePlans.MONTHLY && (
@@ -533,8 +533,8 @@ const UpgradePlans = () => {
             disabled={billingInfo?.plan_id === plans.monthly_plan_id}
           >
             {billingInfo?.status === SUBSCRIPTION_STATUS.ACTIVE
-              ? t('changeToPlan', { plan: t('monthlyPlan') })
-              : t('continueWith', { plan: t('monthlyPlan') })}
+              ? t('changeToPlan', 'Change to {{plan}}', { plan: t('monthlyPlan', 'Monthly Plan') })
+              : t('continueWith', 'Continue with {{plan}}', { plan: t('monthlyPlan', 'Monthly Plan') })}
           </Button>
         )}
       </Row>

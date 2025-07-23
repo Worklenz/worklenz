@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import ConfigPhaseButton from './ConfigPhaseButton';
 import { colors } from '../../../../styles/colors';
 import { useTranslation } from 'react-i18next';

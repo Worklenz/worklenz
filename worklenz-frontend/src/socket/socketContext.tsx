@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { SOCKET_CONFIG } from './config';
 import logger from '@/utils/errorLogger';
-import { Modal, message } from 'antd';
+import { Modal, message } from '@/shared/antd-imports';
 import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
 

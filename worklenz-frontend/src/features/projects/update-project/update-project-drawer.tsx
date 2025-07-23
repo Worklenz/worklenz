@@ -11,7 +11,7 @@ import {
   Select,
   Tag,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useRef, useState } from 'react';
 import {
   healthStatusData,

@@ -33,7 +33,7 @@ import {
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import { DragOverEvent } from '@dnd-kit/core';
-import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from 'antd';
+import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 
 import { useAppSelector } from '@/hooks/useAppSelector';

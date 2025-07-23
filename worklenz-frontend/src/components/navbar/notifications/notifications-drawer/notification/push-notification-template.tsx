@@ -1,4 +1,4 @@
-import { notification } from 'antd';
+import { notification } from '@/shared/antd-imports';
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { toQueryString } from '@/utils/toQueryString';

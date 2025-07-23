@@ -1,7 +1,7 @@
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { columnList } from './columns/columnList';
 import AddTaskListRow from './taskListTableRows/AddTaskListRow';
-import { Checkbox, Flex, Tag, Tooltip } from 'antd';
+import { Checkbox, Flex, Tag, Tooltip } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { useSelectedProject } from '@/hooks/useSelectedProject';
 import TaskCell from './taskListTableCells/TaskCell';

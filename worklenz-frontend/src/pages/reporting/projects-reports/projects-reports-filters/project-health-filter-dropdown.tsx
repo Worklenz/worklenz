@@ -7,7 +7,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectHealth } from '@/types/project/projectHealth.types';
 import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Card, Checkbox, Dropdown, List, Space } from 'antd';
+import { Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import debounce from 'lodash/debounce'; // Install lodash if not already present

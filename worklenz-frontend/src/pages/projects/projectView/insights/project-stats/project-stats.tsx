@@ -1,5 +1,5 @@
 import ProjectStatsCard from '@/components/projects/project-stats-card';
-import { Flex, Tooltip } from 'antd';
+import { Flex, Tooltip } from '@/shared/antd-imports';
 import checkIcon from '@assets/icons/insightsIcons/insights-check.png';
 import clipboardIcon from '@assets/icons/insightsIcons/clipboard.png';
 import clockIcon from '@assets/icons/insightsIcons/clock-green.png';

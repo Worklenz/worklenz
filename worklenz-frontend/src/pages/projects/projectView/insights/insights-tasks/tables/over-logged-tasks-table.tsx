@@ -1,4 +1,4 @@
-import { Avatar, Button, Flex, Table, Typography } from 'antd';
+import { Avatar, Button, Flex, Table, Typography } from '@/shared/antd-imports';
 import { useState, useEffect } from 'react';
 import { colors } from '@/styles/colors';
 import { TableProps } from 'antd/lib';

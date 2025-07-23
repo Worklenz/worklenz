@@ -12,7 +12,7 @@ import {
   Tooltip,
   Typography,
   Pagination,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';

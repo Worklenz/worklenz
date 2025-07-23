@@ -1,6 +1,6 @@
 // TaskNameCell.tsx
 import React from 'react';
-import { Flex, Typography, Button } from 'antd';
+import { Flex, Typography, Button } from '@/shared/antd-imports';
 import {
   DoubleRightOutlined,
   DownOutlined,

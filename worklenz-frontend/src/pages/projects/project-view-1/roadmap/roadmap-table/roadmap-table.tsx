@@ -1,5 +1,5 @@
 import React from 'react';
-import { DatePicker, Typography } from 'antd';
+import { DatePicker, Typography } from '@/shared/antd-imports';
 import dayjs, { Dayjs } from 'dayjs';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

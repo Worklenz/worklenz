@@ -3,7 +3,7 @@ import { FixedSizeList as List, FixedSizeList } from 'react-window';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Empty, Button, Input } from 'antd';
+import { Empty, Button, Input } from '@/shared/antd-imports';
 import { RightOutlined, DownOutlined } from '@ant-design/icons';
 import {
   taskManagementSelectors,

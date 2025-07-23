@@ -2,7 +2,7 @@ import { CaretDownFilled } from '@ant-design/icons';
 import { useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Badge, Button, Card, Checkbox, Dropdown, List, Space } from 'antd';
+import { Badge, Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';

@@ -7,7 +7,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectStatus } from '@/types/project/projectStatus.types';
 import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Card, Checkbox, Dropdown, List, Space } from 'antd';
+import { Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
 import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

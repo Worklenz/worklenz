@@ -1,5 +1,5 @@
-import { Flex, Typography, Button, Input, Tooltip } from 'antd';
-import type { InputRef } from 'antd';
+import { Flex, Typography, Button, Input, Tooltip } from '@/shared/antd-imports';
+import type { InputRef } from '@/shared/antd-imports';
 import {
   DoubleRightOutlined,
   DownOutlined,

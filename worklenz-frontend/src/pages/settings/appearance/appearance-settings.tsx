@@ -1,4 +1,4 @@
-import { Card, Divider, Flex, Switch, Typography } from 'antd';
+import { Card, Flex, Switch, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';

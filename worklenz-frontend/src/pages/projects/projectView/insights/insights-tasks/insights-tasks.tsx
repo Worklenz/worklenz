@@ -1,4 +1,4 @@
-import { Button, Card, Flex, Tooltip, Typography } from 'antd';
+import { Button, Card, Flex, Tooltip, Typography } from '@/shared/antd-imports';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { colors } from '@/styles/colors';
 import OverdueTasksTable from './tables/overdue-tasks-table';

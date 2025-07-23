@@ -18,7 +18,7 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';

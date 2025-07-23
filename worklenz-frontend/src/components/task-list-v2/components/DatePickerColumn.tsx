@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState } from 'react';
-import { DatePicker, Tooltip } from 'antd';
+import { DatePicker, Tooltip } from '@/shared/antd-imports';
 import { CloseOutlined } from '@ant-design/icons';
 import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';

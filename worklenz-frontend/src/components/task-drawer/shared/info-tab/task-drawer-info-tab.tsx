@@ -1,4 +1,4 @@
-import { Button, Collapse, CollapseProps, Flex, Skeleton, Tooltip, Typography, Upload } from 'antd';
+import { Button, Collapse, CollapseProps, Flex, Skeleton, Tooltip, Typography, Upload } from '@/shared/antd-imports';
 import React, { useEffect, useState, useRef } from 'react';
 import { ReloadOutlined } from '@ant-design/icons';
 import DescriptionEditor from './description-editor';

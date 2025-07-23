@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Breadcrumb, Button, Typography, Tooltip } from 'antd';
+import { Breadcrumb, Button, Typography, Tooltip } from '@/shared/antd-imports';
 import { HomeOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

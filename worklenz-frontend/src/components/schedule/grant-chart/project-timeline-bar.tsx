@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flex, Popover, Typography } from 'antd';
+import { Flex, Popover, Typography } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';

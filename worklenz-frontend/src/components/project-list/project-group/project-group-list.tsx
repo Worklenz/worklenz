@@ -10,10 +10,9 @@ import {
   Tooltip,
   Badge,
   Space,
-  Avatar,
   theme,
   Divider,
-} from 'antd';
+} from '@/shared/antd-imports';
 import {
   ClockCircleOutlined,
   TeamOutlined,

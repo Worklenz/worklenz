@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useMemo } from 'react';
-import { Button, Card, Checkbox, Flex, Typography } from 'antd';
+import { Button, Card, Checkbox, Flex, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';

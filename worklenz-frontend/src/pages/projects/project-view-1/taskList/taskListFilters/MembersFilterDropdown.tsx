@@ -13,7 +13,7 @@ import {
   List,
   Space,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';

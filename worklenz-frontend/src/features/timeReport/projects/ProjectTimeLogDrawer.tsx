@@ -1,4 +1,4 @@
-import { Avatar, Button, Card, Divider, Drawer, Tag, Timeline, Typography } from 'antd';
+import { Avatar, Button, Card, Divider, Drawer, Tag, Timeline, Typography } from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

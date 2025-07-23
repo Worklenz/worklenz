@@ -9,7 +9,7 @@ import {
   Dropdown,
   MenuProps,
   Button,
-} from 'antd';
+} from '@/shared/antd-imports';
 import {
   DoubleRightOutlined,
   PauseOutlined,

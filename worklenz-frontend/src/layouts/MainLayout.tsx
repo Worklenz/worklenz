@@ -1,4 +1,4 @@
-import { Col, ConfigProvider, Layout } from 'antd';
+import { Col, ConfigProvider, Layout } from '@/shared/antd-imports';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { memo, useMemo, useEffect, useRef } from 'react';
 import { useMediaQuery } from 'react-responsive';

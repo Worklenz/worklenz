@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Avatar, Col, DatePicker, Divider, Flex, Row, Tooltip, Typography } from 'antd';
+import { Avatar, Col, DatePicker, Divider, Flex, Row, Tooltip, Typography } from '@/shared/antd-imports';
 import StatusDropdown from '../../taskListCommon/statusDropdown/StatusDropdown';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';

@@ -1,4 +1,4 @@
-import type { MenuProps } from 'antd';
+import type { MenuProps } from '@/shared/antd-imports';
 import {
   Empty,
   List,
@@ -10,8 +10,7 @@ import {
   Image,
   Input,
   Flex,
-  Button,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';

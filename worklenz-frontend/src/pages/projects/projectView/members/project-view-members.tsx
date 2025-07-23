@@ -11,7 +11,7 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 
 // Icons
 import { DeleteOutlined, ExclamationCircleFilled, SyncOutlined } from '@ant-design/icons';

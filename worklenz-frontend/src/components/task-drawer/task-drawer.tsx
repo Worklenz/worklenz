@@ -1,4 +1,4 @@
-import { TabsProps, Tabs, Button } from 'antd';
+import { TabsProps, Tabs, Button } from '@/shared/antd-imports';
 import Drawer from 'antd/es/drawer';
 import { InputRef } from 'antd/es/input';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,7 @@ import TimeLogForm from './shared/time-log/time-log-form';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import InfoTabFooter from './shared/info-tab/info-tab-footer';
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 
 const TaskDrawer = () => {
   const { t } = useTranslation('task-drawer/task-drawer');

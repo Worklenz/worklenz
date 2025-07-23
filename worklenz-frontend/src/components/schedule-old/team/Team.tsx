@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AvatarNamesMap } from '@/shared/constants';
 import { Member } from '@/types/schedule/schedule.types';
-import { Avatar, Badge, Button, Col, Flex, Popover, Row, Tooltip } from 'antd';
+import { Avatar, Badge, Button, Col, Flex, Popover, Row, Tooltip } from '@/shared/antd-imports';
 import { CaretDownOutlined, CaretRightFilled } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import './Team.css';

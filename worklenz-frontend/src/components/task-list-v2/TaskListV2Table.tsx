@@ -19,7 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Skeleton } from 'antd';
+import { Skeleton } from '@/shared/antd-imports';
 import { HolderOutlined } from '@ant-design/icons';
 
 // Redux hooks and selectors

@@ -16,7 +16,7 @@ import {
   Table,
   TablePaginationConfig,
   Tooltip,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
 import {
   SearchOutlined,

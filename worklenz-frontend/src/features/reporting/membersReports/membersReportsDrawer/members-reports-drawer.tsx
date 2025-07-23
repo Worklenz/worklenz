@@ -1,4 +1,4 @@
-import { Drawer, Typography, Flex, Button, Space, Dropdown } from 'antd';
+import { Drawer, Typography, Flex, Button, Space, Dropdown } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleMembersReportsDrawer } from '../membersReportsSlice';

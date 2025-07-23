@@ -1,4 +1,4 @@
-import { Flex, Select, Typography } from 'antd';
+import { Flex, Select, Typography } from '@/shared/antd-imports';
 import './priority-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useState, useEffect, useMemo } from 'react';

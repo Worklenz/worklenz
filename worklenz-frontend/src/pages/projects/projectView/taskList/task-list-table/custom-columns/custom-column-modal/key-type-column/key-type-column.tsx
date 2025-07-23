@@ -1,4 +1,4 @@
-import { Flex, Form, Input, Typography } from 'antd';
+import { Flex, Form, Input, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 
 const KeyTypeColumn = () => {

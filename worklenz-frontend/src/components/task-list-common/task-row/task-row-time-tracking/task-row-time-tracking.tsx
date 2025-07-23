@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Divider, Empty, Flex, Popover, Typography } from 'antd';
+import { Divider, Empty, Flex, Popover, Typography } from '@/shared/antd-imports';
 import { PlayCircleFilled } from '@ant-design/icons';
 import { colors } from '@/styles/colors';
 import CustomAvatar from '@components/CustomAvatar';

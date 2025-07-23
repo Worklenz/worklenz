@@ -52,14 +52,14 @@ Common icons including: EditOutlined, DeleteOutlined, PlusOutlined, MoreOutlined
 ## Implementation Guidelines
 
 ### When Creating New Components:
-1. **Always** import from `@antd-imports` or `@/shared/antd-imports`
+1. **Always** import from `@/shared/antd-imports`
 2. Use `appMessage` and `appNotification` for user feedback
 3. Apply `antdConfig` for consistent styling
 4. Use `taskManagementAntdConfig` for task-related components
 
 ### When Refactoring Existing Code:
-1. Replace direct 'antd' imports with `@antd-imports`
-2. Replace direct '@ant-design/icons' imports with `@antd-imports`
+1. Replace direct 'antd' imports with `@/shared/antd-imports`
+2. Replace direct '@ant-design/icons' imports with `@/shared/antd-imports`
 3. Update any custom message/notification calls to use the utilities
 
 ### File Location

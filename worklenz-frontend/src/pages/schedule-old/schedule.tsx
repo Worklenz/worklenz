@@ -1,4 +1,4 @@
-import { Button, DatePicker, DatePickerProps, Select, Space } from 'antd';
+import { Button, DatePicker, DatePickerProps, Select, Space } from '@/shared/antd-imports';
 import React, { Suspense, useState } from 'react';
 import Team from '../../components/schedule-old/team/Team';
 import { SettingOutlined } from '@ant-design/icons';

@@ -1,4 +1,4 @@
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import BoardSectionCard from './board-section-card/board-section-card';
 import BoardCreateSectionCard from './board-section-card/board-create-section-card';

@@ -23,9 +23,9 @@ import {
   fetchBoardSubTasks,
   toggleTaskExpansion,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import { Divider } from 'antd';
-import { List } from 'antd';
-import { Skeleton } from 'antd';
+import { Divider } from '@/shared/antd-imports';
+import { List } from '@/shared/antd-imports';
+import { Skeleton } from '@/shared/antd-imports';
 import { PlusOutlined } from '@ant-design/icons';
 import BoardSubTaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-sub-task-card';
 import BoardCreateSubtaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-create-sub-task-card';

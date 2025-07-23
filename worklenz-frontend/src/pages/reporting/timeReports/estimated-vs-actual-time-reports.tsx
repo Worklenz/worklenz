@@ -1,4 +1,4 @@
-import { Card, Flex, Segmented } from 'antd';
+import { Card, Flex, Segmented } from '@/shared/antd-imports';
 import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time-report-page-header';
 import EstimatedVsActualTimeSheet, {
   EstimatedVsActualTimeSheetRef,
