@@ -50,6 +50,7 @@ import {
   message,
   notification,
   theme,
+  Statistic,
 } from 'antd';
 
 // Icons - Import commonly used ones
@@ -145,6 +146,7 @@ export {
   message,
   notification,
   theme,
+  Statistic,
 };
 
 // TypeScript Types - Import commonly used ones

@@ -11,7 +11,7 @@ import {
   Tooltip,
   Typography,
   message,
-} from 'antd/es';
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
@@ -69,16 +69,27 @@ const UpgradePlans = () => {
 
     const step = 5;
     const maxSeats = 90;
-    const minValue = Math.min(currentSeats + 1);
+    const minValue = Math.max(1, currentSeats + 1); // Start from 1 or currentSeats + 1, whichever is higher
     const rangeStart = Math.ceil(minValue / step) * step;
     const range = Array.from(
       { length: Math.floor((maxSeats - rangeStart) / step) + 1 },
       (_, i) => rangeStart + i * step
     );
 
-    return currentSeats < step
-      ? [...Array.from({ length: rangeStart - minValue }, (_, i) => minValue + i), ...range]
-      : range;
+    // Always include 1 as the first option
+    const options = [1];
+    
+    if (currentSeats < step) {
+      // Add individual numbers from minValue to rangeStart
+      for (let i = Math.max(2, minValue); i < rangeStart; i++) {
+        options.push(i);
+      }
+    }
+    
+    // Add the range of step-based numbers
+    options.push(...range);
+    
+    return options;
   };
 
   const fetchPricingPlans = async () => {
@@ -343,14 +354,14 @@ const UpgradePlans = () => {
       <Flex justify="center" align="center">
         <Typography.Title level={2}>
           {billingInfo?.status === SUBSCRIPTION_STATUS.TRIALING
-            ? t('selectPlan')
-            : t('changeSubscriptionPlan')}
+            ? t('selectPlan', 'Select Plan')
+            : t('changeSubscriptionPlan', 'Change Subscription Plan')}
         </Typography.Title>
       </Flex>
 
       <Flex justify="center" align="center">
         <Form form={form}>
-          <Form.Item name="seatCount" label={t('noOfSeats')}>
+          <Form.Item name="seatCount" label={t('noOfSeats', 'Number of Seats')}>
             <Select
               style={{ width: 100 }}
               value={selectedSeatCount}
@@ -371,25 +382,25 @@ const UpgradePlans = () => {
             <Card
               style={{ ...isSelected(paddlePlans.FREE), height: '100%' }}
               hoverable
-              title={<span style={cardStyles.title}>{t('freePlan')}</span>}
+              title={<span style={cardStyles.title}>{t('freePlan', 'Free Plan')}</span>}
               onClick={() => setSelectedCard(paddlePlans.FREE)}
             >
               <div style={cardStyles.priceContainer}>
                 <Flex justify="space-between" align="center">
                   <Typography.Title level={1}>$ 0.00</Typography.Title>
-                  <Typography.Text>{t('freeForever')}</Typography.Text>
+                  <Typography.Text>{t('freeForever', 'Free Forever')}</Typography.Text>
                 </Flex>
                 <Flex justify="center" align="center">
                   <Typography.Text strong style={{ fontSize: '16px' }}>
-                    {t('bestForPersonalUse')}
+                    {t('bestForPersonalUse', 'Best for Personal Use')}
                   </Typography.Text>
                 </Flex>
               </div>
 
               <div style={cardStyles.featureList}>
-                {renderFeature(`${plans.free_tier_storage} ${t('storage')}`)}
-                {renderFeature(`${plans.projects_limit} ${t('projects')}`)}
-                {renderFeature(`${plans.team_member_limit} ${t('teamMembers')}`)}
+                {renderFeature(`${plans.free_tier_storage} ${t('storage', 'Storage')}`)}
+                {renderFeature(`${plans.projects_limit} ${t('projects', 'Projects')}`)}
+                {renderFeature(`${plans.team_member_limit} ${t('teamMembers', 'Team Members')}`)}
               </div>
             </Card>
           </Col>
@@ -401,9 +412,9 @@ const UpgradePlans = () => {
               hoverable
               title={
                 <span style={cardStyles.title}>
-                  {t('annualPlan')}{' '}
+                  {t('annualPlan', 'Annual Plan')}{' '}
                   <Tag color="volcano" style={{ lineHeight: '21px' }}>
-                    {t('tag')}
+                    {t('tag', 'Popular')}
                   </Tag>
                 </span>
               }
@@ -429,16 +440,16 @@ const UpgradePlans = () => {
                   </Typography.Text>
                 </Flex>
                 <Flex justify="center" align="center">
-                  <Typography.Text>{t('billedAnnually')}</Typography.Text>
+                  <Typography.Text>{t('billedAnnually', 'Billed Annually')}</Typography.Text>
                 </Flex>
               </div>
 
               <div style={cardStyles.featureList} className="mt-4">
-                {renderFeature(t('startupText01'))}
-                {renderFeature(t('startupText02'))}
-                {renderFeature(t('startupText03'))}
-                {renderFeature(t('startupText04'))}
-                {renderFeature(t('startupText05'))}
+                {renderFeature(t('startupText01', 'Unlimited Projects'))}
+                {renderFeature(t('startupText02', 'Unlimited Team Members'))}
+                {renderFeature(t('startupText03', 'Unlimited Storage'))}
+                {renderFeature(t('startupText04', 'Priority Support'))}
+                {renderFeature(t('startupText05', 'Advanced Analytics'))}
               </div>
             </Card>
           </Col>
