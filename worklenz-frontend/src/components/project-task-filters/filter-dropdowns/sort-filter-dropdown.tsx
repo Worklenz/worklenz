@@ -1,4 +1,4 @@
-import { CaretDownFilled, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
+import { CaretDownFilled, SortAscendingOutlined, SortDescendingOutlined } from '@/shared/antd-imports';
 
 import Badge from 'antd/es/badge';
 import Button from 'antd/es/button';

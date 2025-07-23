@@ -1,5 +1,5 @@
-import { BellOutlined } from '@ant-design/icons';
-import { Badge, Button, Tooltip } from 'antd';
+import { BellOutlined } from '@/shared/antd-imports';
+import { Badge, Button, Tooltip } from '@/shared/antd-imports';
 import { toggleDrawer } from '@features/navbar/notificationSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';

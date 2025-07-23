@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Button, Drawer, Form, Input, InputRef, Typography } from 'antd';
+import { Button, Drawer, Form, Input, InputRef, Typography } from '@/shared/antd-imports';
 import { fetchTeams } from '@features/teams/teamSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';

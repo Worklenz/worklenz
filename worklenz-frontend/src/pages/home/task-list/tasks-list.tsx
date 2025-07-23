@@ -1,4 +1,4 @@
-import { ExpandAltOutlined, SyncOutlined } from '@ant-design/icons';
+import { ExpandAltOutlined, SyncOutlined } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -12,9 +12,10 @@ import {
   Tooltip,
   Typography,
   Pagination,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMediaQuery } from 'react-responsive';
 
 import ListView from './list-view';
 import CalendarView from './calendar-view';
@@ -61,21 +62,22 @@ const TasksList: React.FC = React.memo(() => {
     refetchOnFocus: false,
   });
 
-  const { t } = useTranslation('home');
+  const { t, ready } = useTranslation('home');
   const { model } = useAppSelector(state => state.homePageReducer);
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const taskModes = useMemo(
     () => [
       {
         value: 0,
-        label: t('home:tasks.assignedToMe'),
+        label: ready ? t('tasks.assignedToMe') : 'Assigned to me',
       },
       {
         value: 1,
-        label: t('home:tasks.assignedByMe'),
+        label: ready ? t('tasks.assignedByMe') : 'Assigned by me',
       },
     ],
-    [t]
+    [t, ready]
   );
 
   const handleSegmentChange = (value: 'List' | 'Calendar') => {
@@ -123,7 +125,7 @@ const TasksList: React.FC = React.memo(() => {
             <span>{t('tasks.name')}</span>
           </Flex>
         ),
-        width: '40%',
+        width: isMobile ? '50%' : '40%',
         render: (_, record) => (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Tooltip title={record.name}>
@@ -155,7 +157,7 @@ const TasksList: React.FC = React.memo(() => {
       {
         key: 'project',
         title: t('tasks.project'),
-        width: '25%',
+        width: isMobile ? '30%' : '25%',
         render: (_, record) => {
           return (
             <Tooltip title={record.project_name}>
@@ -185,7 +187,7 @@ const TasksList: React.FC = React.memo(() => {
         render: (_, record) => <HomeTasksDatePicker record={record} />,
       },
     ],
-    [t, data?.body?.total, currentPage, pageSize, handlePageChange]
+    [t, data?.body?.total, currentPage, pageSize, handlePageChange, isMobile]
   );
 
   const handleTaskModeChange = (value: number) => {
@@ -210,23 +212,27 @@ const TasksList: React.FC = React.memo(() => {
     );
   }, [dispatch]);
 
+
   return (
     <Card
+      className="task-list-card"
       title={
-        <Flex gap={8} align="center">
+        <Flex gap={8} align="center" className="task-list-mobile-header">
           <Typography.Title level={5} style={{ margin: 0 }}>
             {t('tasks.tasks')}
           </Typography.Title>
           <Select
-            defaultValue={taskModes[0].label}
+            value={homeTasksConfig.tasks_group_by || 0}
             options={taskModes}
             onChange={value => handleTaskModeChange(+value)}
             fieldNames={{ label: 'label', value: 'value' }}
+            className="task-list-mobile-select"
+            style={{ minWidth: 160 }}
           />
         </Flex>
       }
       extra={
-        <Flex gap={8} align="center">
+        <Flex gap={8} align="center" className="task-list-mobile-controls">
           <Tooltip title={t('tasks.refresh')} trigger={'hover'}>
             <Button
               shape="circle"
@@ -241,6 +247,7 @@ const TasksList: React.FC = React.memo(() => {
             ]}
             defaultValue="List"
             onChange={handleSegmentChange}
+            className="task-list-mobile-segmented"
           />
         </Flex>
       }
@@ -283,6 +290,7 @@ const TasksList: React.FC = React.memo(() => {
             rowClassName={() => 'custom-row-height'}
             loading={homeTasksFetching && skipAutoRefetch}
             pagination={false}
+            scroll={{ x: 'max-content' }}
           />
 
           <div

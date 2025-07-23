@@ -13,7 +13,7 @@ import Space from 'antd/es/space';
 import Dropdown from 'antd/es/dropdown';
 
 import { setSearch } from '@/features/tasks/tasks.slice';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@/shared/antd-imports';
 
 import { setBoardSearch } from '@/features/board/board-slice';
 

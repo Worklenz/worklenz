@@ -1,7 +1,7 @@
 import Input, { InputRef } from 'antd/es/input';
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { Spin } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import { Spin } from '@/shared/antd-imports';
+import { LoadingOutlined } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';

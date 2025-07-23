@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, Form, Input, Space } from 'antd';
+import { Button, Form, Input, Space } from '@/shared/antd-imports';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import logger from '@/utils/errorLogger';

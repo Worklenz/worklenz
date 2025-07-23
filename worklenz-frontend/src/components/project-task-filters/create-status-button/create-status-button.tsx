@@ -1,4 +1,4 @@
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@/shared/antd-imports';
 import Tooltip from 'antd/es/tooltip';
 import Button from 'antd/es/button';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

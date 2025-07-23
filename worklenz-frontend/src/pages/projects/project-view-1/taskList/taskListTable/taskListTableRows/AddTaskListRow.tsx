@@ -1,4 +1,4 @@
-import { Input } from 'antd';
+import { Input } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';

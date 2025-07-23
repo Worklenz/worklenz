@@ -1,4 +1,4 @@
-import { DatePicker } from 'antd';
+import { DatePicker } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '@/socket/socketContext';

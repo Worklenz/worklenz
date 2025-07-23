@@ -8,7 +8,7 @@ import './i18n';
 import { Provider } from 'react-redux';
 import { store } from './app/store';
 import { applyCssVariables } from './styles/colors';
-import { ConfigProvider, theme } from 'antd';
+import { ConfigProvider, theme } from '@/shared/antd-imports';
 import { colors } from './styles/colors';
 import { getInitialTheme } from './utils/get-initial-theme';
 import { initializePerformanceMonitoring } from './utils/enhanced-performance-monitoring';

@@ -1,5 +1,5 @@
-import { UsergroupAddOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import { UsergroupAddOutlined } from '@/shared/antd-imports';
+import { Button, Tooltip } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../styles/colors';

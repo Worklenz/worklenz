@@ -1,6 +1,6 @@
 import React from 'react';
 import notFoundImg from '../../assets/images/not-found-img.png';
-import { Button, Flex, Layout, Typography } from 'antd';
+import { Button, Flex, Layout, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 const NotFoundPage = () => {

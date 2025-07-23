@@ -1,6 +1,6 @@
 import { Doughnut } from 'react-chartjs-2';
 import { Chart, ArcElement, Tooltip } from 'chart.js';
-import { Badge, Card, Flex, Typography, Tooltip as AntTooltip } from 'antd';
+import { Badge, Card, Flex, Typography, Tooltip as AntTooltip } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { IRPTOverviewMemberChartData } from '@/types/reporting/reporting.types';
 

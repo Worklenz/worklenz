@@ -1,8 +1,8 @@
-import { notification } from 'antd';
+import { notification } from '@/shared/antd-imports';
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { toQueryString } from '@/utils/toQueryString';
-import { BankOutlined } from '@ant-design/icons';
+import { BankOutlined } from '@/shared/antd-imports';
 import './push-notification-template.css';
 
 const PushNotificationTemplate = ({

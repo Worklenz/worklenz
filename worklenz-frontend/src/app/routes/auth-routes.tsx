@@ -4,12 +4,12 @@ import { Navigate } from 'react-router-dom';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
 // Lazy load auth page components for better code splitting
-const LoginPage = lazy(() => import('@/pages/auth/login-page'));
-const SignupPage = lazy(() => import('@/pages/auth/signup-page'));
-const ForgotPasswordPage = lazy(() => import('@/pages/auth/forgot-password-page'));
-const LoggingOutPage = lazy(() => import('@/pages/auth/logging-out'));
-const AuthenticatingPage = lazy(() => import('@/pages/auth/authenticating'));
-const VerifyResetEmailPage = lazy(() => import('@/pages/auth/verify-reset-email'));
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
+const SignupPage = lazy(() => import('@/pages/auth/SignupPage'));
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
+const LoggingOutPage = lazy(() => import('@/pages/auth/LoggingOutPage'));
+const AuthenticatingPage = lazy(() => import('@/pages/auth/AuthenticatingPage'));
+const VerifyResetEmailPage = lazy(() => import('@/pages/auth/VerifyResetEmailPage'));
 
 const authRoutes = [
   {

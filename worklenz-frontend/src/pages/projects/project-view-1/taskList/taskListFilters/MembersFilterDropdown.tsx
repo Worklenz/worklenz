@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { CaretDownFilled } from '@ant-design/icons';
+import { CaretDownFilled } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -13,7 +13,7 @@ import {
   List,
   Space,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';

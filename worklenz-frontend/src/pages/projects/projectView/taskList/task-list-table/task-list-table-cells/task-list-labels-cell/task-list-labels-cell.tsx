@@ -1,4 +1,4 @@
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import CustomNumberLabel from '@/components/taskListCommon/labelsSelector/CustomNumberLabel';
 import LabelsSelector from '@/components/taskListCommon/labelsSelector/LabelsSelector';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

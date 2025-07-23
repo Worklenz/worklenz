@@ -1,4 +1,4 @@
-import { Form, Input, Select, Typography } from 'antd';
+import { Form, Input, Select, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
 import { themeWiseColor } from '../../../../../../../../utils/themeWiseColor';

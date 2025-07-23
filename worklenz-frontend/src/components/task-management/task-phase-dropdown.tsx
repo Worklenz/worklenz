@@ -4,7 +4,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { Task } from '@/types/task-management.types';
-import { ClearOutlined } from '@ant-design/icons';
+import { ClearOutlined } from '@/shared/antd-imports';
 
 interface TaskPhaseDropdownProps {
   task: Task;

@@ -1,8 +1,8 @@
 import { useSocket } from '@/socket/socketContext';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { Select } from 'antd';
+import { Select } from '@/shared/antd-imports';
 
-import { Form } from 'antd';
+import { Form } from '@/shared/antd-imports';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 

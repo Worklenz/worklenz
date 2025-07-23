@@ -1,4 +1,4 @@
-import { Flex, Select, Typography } from 'antd';
+import { Flex, Select, Typography } from '@/shared/antd-imports';
 import './priority-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useState, useEffect, useMemo } from 'react';
@@ -7,7 +7,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
-import { DoubleLeftOutlined, MinusOutlined, PauseOutlined } from '@ant-design/icons';
+import { DoubleLeftOutlined, MinusOutlined, PauseOutlined } from '@/shared/antd-imports';
 
 type PriorityDropdownProps = {
   task: IProjectTask;

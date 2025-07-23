@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Button, Result } from 'antd';
+import { Button, Result } from '@/shared/antd-imports';
 import CacheCleanup from '@/utils/cache-cleanup';
 
 interface Props {

@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Flex, Form, Mentions, Space, Tooltip, Typography } from 'antd';
+import { Button, ConfigProvider, Flex, Form, Mentions, Space, Tooltip, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../../hooks/useAppSelector';

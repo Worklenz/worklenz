@@ -3,8 +3,6 @@ import AttachmentsPreview from './attachments-preview';
 import './attachments-preview.css';
 import type { RcFile, UploadProps } from 'antd/es/upload';
 import { TFunction } from 'i18next';
-import { ReloadOutlined } from '@ant-design/icons';
-import { message } from 'antd';
 import AttachmentsUpload from './attachments-upload';
 
 interface AttachmentsGridProps {

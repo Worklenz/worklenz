@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { getJSONFromLocalStorage, saveJSONToLocalStorage } from '../utils/localStorageFunctions';
-import { Button, ConfigProvider, Tooltip } from 'antd';
-import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
+import { Button, ConfigProvider, Tooltip } from '@/shared/antd-imports';
+import { PushpinFilled, PushpinOutlined } from '@/shared/antd-imports';
 import { colors } from '../styles/colors';
 import { navRoutes, NavRoutesType } from '../features/navbar/navRoutes';
 

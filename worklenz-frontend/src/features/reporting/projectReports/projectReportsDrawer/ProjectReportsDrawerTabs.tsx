@@ -1,4 +1,4 @@
-import { Tabs } from 'antd';
+import { Tabs } from '@/shared/antd-imports';
 import { TabsProps } from 'antd/lib';
 import { useTranslation } from 'react-i18next';
 

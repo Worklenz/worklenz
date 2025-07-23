@@ -4,7 +4,7 @@ import {
   ProfileOutlined,
   TeamOutlined,
   UserOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 const Overview = lazy(() => import('./overview/overview'));
 const Users = lazy(() => import('./users/users'));

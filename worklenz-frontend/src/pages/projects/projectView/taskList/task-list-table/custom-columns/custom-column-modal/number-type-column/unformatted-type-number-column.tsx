@@ -1,4 +1,4 @@
-import { Form, Typography } from 'antd';
+import { Form, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
 

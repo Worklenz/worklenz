@@ -1,4 +1,4 @@
-import { Button, Flex } from 'antd';
+import { Button, Flex } from '@/shared/antd-imports';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
@@ -9,7 +9,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import BoardSectionCardHeader from './board-section-card-header';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/shared/antd-imports';
 import BoardViewTaskCard from '../board-task-card/board-view-task-card';
 import BoardViewCreateTaskCard from '../board-task-card/board-view-create-task-card';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';

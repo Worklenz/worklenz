@@ -1,4 +1,4 @@
-import { Avatar, Flex, Typography } from 'antd';
+import { Avatar, Flex, Typography } from '@/shared/antd-imports';
 import CustomAvatar from '@components/CustomAvatar';
 
 type ProjectMangerCellProps = {

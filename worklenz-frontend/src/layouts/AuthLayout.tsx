@@ -1,4 +1,4 @@
-import { ConfigProvider, Flex, Layout } from 'antd';
+import { ConfigProvider, Flex, Layout } from '@/shared/antd-imports';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';

@@ -1,5 +1,5 @@
-import { SearchOutlined } from '@ant-design/icons';
-import { Input } from 'antd';
+import { SearchOutlined } from '@/shared/antd-imports';
+import { Input } from '@/shared/antd-imports';
 
 type CustomSearchbarProps = {
   placeholderText: string;

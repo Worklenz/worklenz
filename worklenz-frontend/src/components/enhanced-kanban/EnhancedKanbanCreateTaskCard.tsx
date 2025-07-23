@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Button, Flex, Input, InputRef } from 'antd';
+import { Button, Flex, Input, InputRef } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { nanoid } from '@reduxjs/toolkit';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

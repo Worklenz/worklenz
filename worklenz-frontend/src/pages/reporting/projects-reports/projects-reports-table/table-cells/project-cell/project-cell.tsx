@@ -1,4 +1,4 @@
-import { Badge, Flex, Space, Tooltip, Typography } from 'antd';
+import { Badge, Flex, Space, Tooltip, Typography } from '@/shared/antd-imports';
 import React from 'react';
 
 type ProjectCellProps = {

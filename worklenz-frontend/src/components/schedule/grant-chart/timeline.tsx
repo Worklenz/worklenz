@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Flex, Typography } from 'antd';
+import { Flex, Typography } from '@/shared/antd-imports';
 import { Member } from '../../../types/schedule/schedule.types';
 import DayAllocationCell from './day-allocation-cell';
 import { CELL_WIDTH } from '../../../shared/constants';

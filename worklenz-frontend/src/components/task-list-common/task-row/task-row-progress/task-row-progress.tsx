@@ -1,4 +1,4 @@
-import { Progress, Tooltip } from 'antd';
+import { Progress, Tooltip } from '@/shared/antd-imports';
 import './task-row-progress.css';
 import React from 'react';
 
