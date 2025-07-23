@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Drawer, Alert, Card, Select, Button, Typography, Badge, Form } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import Form from 'antd/es/form';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchStatuses, fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
@@ -9,9 +9,7 @@ import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 
 import { deleteStatusToggleDrawer } from '@/features/projects/status/DeleteStatusSlice';
-import { Drawer, Alert, Card, Select, Button, Typography, Badge } from '@/shared/antd-imports';
 import { DownOutlined } from '@/shared/antd-imports';
-import { useSelector } from 'react-redux';
 import {
     deleteSection,
     IGroupBy,
@@ -21,7 +19,6 @@ import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service
 import logger from '@/utils/errorLogger';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 const DeleteStatusDrawer: React.FC = () => {
   const [currentStatus, setCurrentStatus] = useState<string>('');

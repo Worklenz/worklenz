@@ -1,8 +1,6 @@
 import React from 'react';
-import Tooltip from 'antd/es/tooltip';
-import Avatar from 'antd/es/avatar';
-
 import { AvatarNamesMap } from '../shared/constants';
+import { Avatar, Tooltip } from '@/shared/antd-imports';
 
 interface CustomAvatarProps {
   avatarName: string;

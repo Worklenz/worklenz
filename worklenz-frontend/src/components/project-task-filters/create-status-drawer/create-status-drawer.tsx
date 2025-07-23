@@ -1,26 +1,24 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
+import { Form, Input, Select, Button, Drawer, Flex, Badge } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import Flex from 'antd/es/flex';
-import Badge from 'antd/es/badge';
-import Drawer from 'antd/es/drawer';
-import Form from 'antd/es/form';
-import Input from 'antd/es/input';
-import Select from 'antd/es/select';
-import Button from 'antd/es/button/button';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleDrawer } from '@/features/projects/status/StatusSlice';
 
-import './create-status-drawer.css';
-
-import { createStatus, fetchStatusesCategories, fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import {
+  createStatus,
+  fetchStatusesCategories,
+  fetchStatuses,
+} from '@/features/taskAttributes/taskStatusSlice';
 import { ITaskStatusCategory } from '@/types/status.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { evt_project_board_create_status } from '@/shared/worklenz-analytics-events';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { fetchBoardTaskGroups } from '@/features/board/board-slice';
+
+import './create-status-drawer.css';
 
 const StatusDrawer: React.FC = () => {
   const dispatch = useAppDispatch();

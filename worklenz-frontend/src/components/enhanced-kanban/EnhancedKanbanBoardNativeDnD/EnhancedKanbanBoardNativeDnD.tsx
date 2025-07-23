@@ -1,26 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Card, Empty } from '@/shared/antd-imports';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/store';
-import '../EnhancedKanbanBoard.css';
-import '../EnhancedKanbanGroup.css';
-import '../EnhancedKanbanTaskCard.css';
-import ImprovedTaskFilters from '../../task-management/improved-task-filters';
-import Card from 'antd/es/card';
-import Spin from 'antd/es/spin';
-import Empty from 'antd/es/empty';
-import { reorderGroups, reorderEnhancedKanbanGroups, reorderTasks, reorderEnhancedKanbanTasks, fetchEnhancedKanbanLabels, fetchEnhancedKanbanGroups, fetchEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import KanbanGroup from './KanbanGroup';
-import EnhancedKanbanCreateSection from '../EnhancedKanbanCreateSection';
-import { useSocket } from '@/socket/socketContext';
-import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
+import { useSocket } from '@/socket/socketContext';
+import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
+import {
+  reorderGroups,
+  reorderEnhancedKanbanGroups,
+  reorderTasks,
+  reorderEnhancedKanbanTasks,
+  fetchEnhancedKanbanLabels,
+  fetchEnhancedKanbanGroups,
+  fetchEnhancedKanbanTaskAssignees,
+} from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
-import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
+import KanbanGroup from './KanbanGroup';
+import EnhancedKanbanCreateSection from '../EnhancedKanbanCreateSection';
+import ImprovedTaskFilters from '../../task-management/improved-task-filters';
+import { SocketEvents } from '@/shared/socket-events';
+import '../EnhancedKanbanBoard.css';
+import '../EnhancedKanbanGroup.css';
+import '../EnhancedKanbanTaskCard.css';
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const dispatch = useDispatch();

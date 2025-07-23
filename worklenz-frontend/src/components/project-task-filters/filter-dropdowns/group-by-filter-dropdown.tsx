@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CaretDownFilled } from '@/shared/antd-imports';
-import { ConfigProvider, Flex, Dropdown, Button } from 'antd/es';
+import { CaretDownFilled, Dropdown, Button, Flex, ConfigProvider } from '@/shared/antd-imports';
 import { useSearchParams } from 'react-router-dom';
 
 import ConfigPhaseButton from '@features/projects/singleProject/phase/ConfigPhaseButton';

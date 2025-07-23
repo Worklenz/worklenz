@@ -67,6 +67,8 @@ import {
   Radio,
 } from 'antd/es';
 
+import TextArea from 'antd/es/input/TextArea';
+
 // Icons - Import commonly used ones
 export {
   EditOutlined,
@@ -240,6 +242,7 @@ export {
   Timeline,
   Mentions,
   Radio,
+  TextArea
 };
 
 // TypeScript Types - Import commonly used ones
@@ -263,6 +266,7 @@ export type {
   PaginationProps,
   CollapseProps,
   TablePaginationConfig,
+  CheckboxChangeEvent
 } from 'antd/es';
 
 // Dayjs

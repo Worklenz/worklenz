@@ -1,6 +1,4 @@
-import { SettingOutlined } from '@/shared/antd-imports';
-import Tooltip from 'antd/es/tooltip';
-import Button from 'antd/es/button';
+import { SettingOutlined, Tooltip, Button } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleDrawer } from '../../../features/projects/status/StatusSlice';
 import { colors } from '@/styles/colors';
