@@ -70,7 +70,7 @@ const UpgradePlans = () => {
 
     const step = 5;
     const maxSeats = 90;
-    const minValue = currentSeats + 1;
+    const minValue = currentSeats;
     const options: { value: number; disabled: boolean }[] = [];
 
     // Always show 1-5, but disable if less than minValue
