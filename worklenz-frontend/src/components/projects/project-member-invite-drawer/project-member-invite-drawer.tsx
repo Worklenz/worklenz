@@ -190,10 +190,10 @@ const ProjectMemberDrawer = () => {
           {validateEmail(searchTerm) ? t('inviteAsAMember') : t('inviteNewMemberByEmail')}
         </span>
       </Button>
-      {isFromAssigner && <Flex>
+      {/* {isFromAssigner && <Flex>
           <input className='mr-2' type="checkbox" checked={true} name={t('alsoInviteToProject')} id="AlsoInviteToProject" />
           <label htmlFor={t('alsoInviteToProject')}>{t('alsoInviteToProject')}</label>
-        </Flex>}
+        </Flex>} */}
     </Flex>
   );
 
@@ -206,14 +206,16 @@ const ProjectMemberDrawer = () => {
         onCancel={() => dispatch(toggleProjectMemberDrawer())}
         afterOpenChange={handleOpenChange}
         footer={
-          !isFromAssigner && <Button
+          <>
+          {/* {!isFromAssigner && <Button
             style={{ width: 140, fontSize: 12 }}
             block
             icon={<LinkOutlined />}
             disabled
           >
             {t('copyProjectLink')}
-          </Button>
+          </Button>} */}
+          </>
         }
       >
         <Form form={form} layout="vertical" onFinish={handleSelectChange}>

@@ -102,14 +102,14 @@ const InviteTeamMembers = () => {
       loading={loading}
       footer={
         <Flex justify="space-between">
-          <Button
+          {/* <Button
             style={{ width: 140, fontSize: 12 }}
             block
             icon={<LinkOutlined />}
             disabled
           >
             {t('copyTeamLink')}
-          </Button>
+          </Button> */}
           <Flex justify="end">
             <Button onClick={form.submit} style={{ fontSize: 12 }}>
               {t('addToTeamButton')}
