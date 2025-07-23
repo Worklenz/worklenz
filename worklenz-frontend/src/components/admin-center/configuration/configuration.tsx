@@ -101,8 +101,8 @@ const Configuration: React.FC = React.memo(() => {
     <div>
       <Card title={<span style={titleStyle}>Billing Details</span>} style={cardStyle}>
         <Form form={form} initialValues={configuration} onFinish={handleSave}>
-          <Row>
-            <Col span={8} style={colStyle}>
+          <Row gutter={[0, 0]}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item
                 name="name"
                 label="Name"
@@ -116,7 +116,7 @@ const Configuration: React.FC = React.memo(() => {
                 <Input placeholder="Name" disabled />
               </Form.Item>
             </Col>
-            <Col span={8} style={colStyle}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item
                 name="email"
                 label="Email Address"
@@ -130,7 +130,7 @@ const Configuration: React.FC = React.memo(() => {
                 <Input placeholder="Email Address" disabled />
               </Form.Item>
             </Col>
-            <Col span={8} style={colStyle}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item
                 name="phone"
                 label="Contact Number"
@@ -147,29 +147,29 @@ const Configuration: React.FC = React.memo(() => {
             </Col>
           </Row>
 
-          <Divider orientation="left" style={dividerStyle}>
+          <Divider orientation="left" style={{ ...dividerStyle, fontSize: '14px' }}>
             <span style={dividerTitleStyle}>Company Details</span>
           </Divider>
 
-          <Row>
-            <Col span={8} style={colStyle}>
+          <Row gutter={[0, 0]}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item name="company_name" label="Company Name" layout="vertical">
                 <Input placeholder="Company Name" />
               </Form.Item>
             </Col>
-            <Col span={8} style={colStyle}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item name="address_line_1" label="Address Line 01" layout="vertical">
                 <Input placeholder="Address Line 01" />
               </Form.Item>
             </Col>
-            <Col span={8} style={colStyle}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item name="address_line_2" label="Address Line 02" layout="vertical">
                 <Input placeholder="Address Line 02" />
               </Form.Item>
             </Col>
           </Row>
-          <Row>
-            <Col span={8} style={colStyle}>
+          <Row gutter={[0, 0]}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item name="country" label="Country" layout="vertical">
                 <Select
                   dropdownStyle={{ maxHeight: 256, overflow: 'auto' }}
@@ -182,28 +182,28 @@ const Configuration: React.FC = React.memo(() => {
                 />
               </Form.Item>
             </Col>
-            <Col span={8} style={colStyle}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item name="city" label="City" layout="vertical">
                 <Input placeholder="City" />
               </Form.Item>
             </Col>
-            <Col span={8} style={colStyle}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item name="state" label="State" layout="vertical">
                 <Input placeholder="State" />
               </Form.Item>
             </Col>
           </Row>
-          <Row>
-            <Col span={8} style={colStyle}>
+          <Row gutter={[0, 0]}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item name="postal_code" label="Postal Code" layout="vertical">
                 <Input placeholder="Postal Code" />
               </Form.Item>
             </Col>
           </Row>
           <Row>
-            <Col style={buttonColStyle}>
+            <Col xs={24} sm={24} md={8} lg={8} xl={8} style={{ ...buttonColStyle, marginTop: 8 }}>
               <Form.Item>
-                <Button type="primary" htmlType="submit" loading={loading}>
+                <Button type="primary" htmlType="submit" loading={loading} block>
                   Save
                 </Button>
               </Form.Item>
