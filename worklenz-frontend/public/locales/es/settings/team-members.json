@@ -38,10 +38,16 @@
   "updateMemberErrorMessage": "Error al actualizar miembro del equipo. Por favor, intente nuevamente.",
   "memberText": "Miembro del equipo",
   "adminText": "Administrador",
+  "guestText": "Invitado (Solo lectura)",
   "ownerText": "Propietario del equipo",
   "addedText": "Agregado",
   "updatedText": "Actualizado",
   "noResultFound": "Escriba una dirección de correo electrónico y presione enter...",
   "jobTitlesFetchError": "Error al obtener los cargos",
-  "invitationResent": "¡Invitación reenviada exitosamente!"
+  "invitationResent": "¡Invitación reenviada exitosamente!",
+  "emailsStepDescription": "Ingrese las direcciones de correo de los miembros del equipo que desea invitar",
+  "personalMessageLabel": "Mensaje Personal",
+  "personalMessagePlaceholder": "Agregue un mensaje personal a su invitación (opcional)",
+  "optionalFieldLabel": "(Opcional)",
+  "inviteTeamMembersModalTitle": "Invitar miembros del equipo"
 }

@@ -38,10 +38,16 @@
   "updateMemberErrorMessage": "Aktualisierung des Teammitglieds fehlgeschlagen. Bitte versuchen Sie es erneut.",
   "memberText": "Mitglied",
   "adminText": "Administrator",
+  "guestText": "Gast (Nur Lesen)",
   "ownerText": "Team-Besitzer",
   "addedText": "Hinzugefügt",
   "updatedText": "Aktualisiert",
   "noResultFound": "Geben Sie eine E-Mail-Adresse ein und drücken Sie Enter...",
   "jobTitlesFetchError": "Fehler beim Abrufen der Jobtitel",
-  "invitationResent": "Einladung erfolgreich erneut gesendet!"
+  "invitationResent": "Einladung erfolgreich erneut gesendet!",
+  "emailsStepDescription": "Geben Sie E-Mail-Adressen für Teammitglieder ein, die Sie einladen möchten",
+  "personalMessageLabel": "Persönliche Nachricht",
+  "personalMessagePlaceholder": "Fügen Sie eine persönliche Nachricht zu Ihrer Einladung hinzu (optional)",
+  "optionalFieldLabel": "(Optional)",
+  "inviteTeamMembersModalTitle": "Teammitglieder einladen"
 }

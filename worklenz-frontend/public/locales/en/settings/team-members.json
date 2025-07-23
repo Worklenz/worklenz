@@ -38,10 +38,16 @@
   "updateMemberErrorMessage": "Failed to update team member. Please try again.",
   "memberText": "Member",
   "adminText": "Admin",
+  "guestText": "Guest (Read-only)",
   "ownerText": "Team Owner",
   "addedText": "Added",
   "updatedText": "Updated",
   "noResultFound": "Type an email address and hit enter...",
   "jobTitlesFetchError": "Failed to fetch job titles",
-  "invitationResent": "Invitation resent successfully!"
+  "invitationResent": "Invitation resent successfully!",
+  "emailsStepDescription": "Enter email addresses for team members you'd like to invite",
+  "personalMessageLabel": "Personal Message",
+  "personalMessagePlaceholder": "Add a personal message to your invitation (optional)",
+  "optionalFieldLabel": "(Optional)",
+  "inviteTeamMembersModalTitle": "Invite team members"
 }
