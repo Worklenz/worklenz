@@ -30,6 +30,7 @@ import { billingApiService } from '@/api/admin-center/billing.api.service';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { setSession } from '@/utils/session-helper';
+import './upgrade-plans.css';
 
 // Extend Window interface to include Paddle
 declare global {
@@ -65,30 +66,23 @@ const UpgradePlans = () => {
   const [paddleError, setPaddleError] = useState<string | null>(null);
 
   const populateSeatCountOptions = (currentSeats: number) => {
-    if (!currentSeats) return [];
+    if (typeof currentSeats !== 'number') return [];
 
     const step = 5;
     const maxSeats = 90;
-    const minValue = Math.max(1, currentSeats + 1); // Start from 1 or currentSeats + 1, whichever is higher
-    const rangeStart = Math.ceil(minValue / step) * step;
-    const range = Array.from(
-      { length: Math.floor((maxSeats - rangeStart) / step) + 1 },
-      (_, i) => rangeStart + i * step
-    );
+    const minValue = currentSeats + 1;
+    const options: { value: number; disabled: boolean }[] = [];
 
-    // Always include 1 as the first option
-    const options = [1];
-    
-    if (currentSeats < step) {
-      // Add individual numbers from minValue to rangeStart
-      for (let i = Math.max(2, minValue); i < rangeStart; i++) {
-        options.push(i);
-      }
+    // Always show 1-5, but disable if less than minValue
+    for (let i = 1; i <= 5; i++) {
+      options.push({ value: i, disabled: i < minValue });
     }
-    
-    // Add the range of step-based numbers
-    options.push(...range);
-    
+
+    // Show all multiples of 5 from 10 to maxSeats
+    for (let i = 10; i <= maxSeats; i += step) {
+      options.push({ value: i, disabled: i < minValue });
+    }
+
     return options;
   };
 
@@ -350,7 +344,7 @@ const UpgradePlans = () => {
   }, []);
 
   return (
-    <div>
+    <div className="upgrade-plans-responsive">
       <Flex justify="center" align="center">
         <Typography.Title level={2}>
           {billingInfo?.status === SUBSCRIPTION_STATUS.TRIALING
@@ -366,8 +360,9 @@ const UpgradePlans = () => {
               style={{ width: 100 }}
               value={selectedSeatCount}
               options={seatCountOptions.map(option => ({
-                value: option,
-                text: option.toString(),
+                value: option.value,
+                label: option.value.toString(),
+                disabled: option.disabled,
               }))}
               onChange={setSelectedSeatCount}
             />
@@ -376,7 +371,7 @@ const UpgradePlans = () => {
       </Flex>
 
       <Flex>
-        <Row className="w-full">
+        <Row className="w-full upgrade-plans-row-responsive">
           {/* Free Plan */}
           <Col span={8} style={{ padding: '0 4px' }}>
             <Card
