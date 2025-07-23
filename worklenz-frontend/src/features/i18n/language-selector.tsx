@@ -1,4 +1,4 @@
-import { Button, Dropdown } from 'antd';
+import { Button, Dropdown } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { ILanguageType, setLanguage } from './localesSlice';

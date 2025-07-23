@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Col, ConfigProvider, Flex, Menu, MenuProps, Alert } from 'antd';
+import { Col, ConfigProvider, Flex, Menu, MenuProps, Alert } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
 
 import InviteTeamMembers from '../../components/common/invite-team-members/invite-team-members';

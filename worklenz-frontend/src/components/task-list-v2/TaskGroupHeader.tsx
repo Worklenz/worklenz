@@ -8,7 +8,7 @@ import {
   PencilIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
-import { Checkbox, Dropdown, Menu, Input, Modal, Badge, Flex } from 'antd';
+import { Checkbox, Dropdown, Menu, Input, Modal, Badge, Flex } from '@/shared/antd-imports';
 import GroupProgressBar from './GroupProgressBar';
 import { useTranslation } from 'react-i18next';
 import { getContrastColor } from '@/utils/colorUtils';

@@ -1,6 +1,6 @@
 import { useSocket } from '@/socket/socketContext';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { DatePicker } from 'antd';
+import { DatePicker } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 import calendar from 'dayjs/plugin/calendar';
 import { SocketEvents } from '@/shared/socket-events';

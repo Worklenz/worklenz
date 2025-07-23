@@ -1,5 +1,5 @@
-import { DownloadOutlined } from '@ant-design/icons';
-import { Badge, Button, Checkbox, Flex, Segmented } from 'antd';
+import { DownloadOutlined } from '@/shared/antd-imports';
+import { Badge, Button, Checkbox, Flex, Segmented } from '@/shared/antd-imports';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

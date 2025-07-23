@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { Divider, Empty, Flex, Popover, Typography } from 'antd';
-import { PlayCircleFilled } from '@ant-design/icons';
+import { Divider, Empty, Flex, Popover, Typography } from '@/shared/antd-imports';
+import { PlayCircleFilled } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import CustomAvatar from '@components/CustomAvatar';
 import { mockTimeLogs } from '@/pages/projects/project-view-1/taskList/taskListTable/taskListTableCells/mockTimeLogs';

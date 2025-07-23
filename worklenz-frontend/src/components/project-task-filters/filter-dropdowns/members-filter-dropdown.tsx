@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CaretDownFilled } from '@ant-design/icons';
+import { CaretDownFilled } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -13,8 +13,8 @@ import {
   List,
   Space,
   Typography,
-} from 'antd';
-import type { InputRef } from 'antd';
+  InputRef
+} from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';

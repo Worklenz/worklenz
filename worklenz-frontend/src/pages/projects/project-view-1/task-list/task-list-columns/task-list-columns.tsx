@@ -1,7 +1,7 @@
-import { Avatar, Checkbox, DatePicker, Flex, Select, Tag } from 'antd';
+import { Avatar, Checkbox, DatePicker, Flex, Select, Tag } from '@/shared/antd-imports';
 import { createColumnHelper, ColumnDef } from '@tanstack/react-table';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { HolderOutlined, PlusOutlined } from '@ant-design/icons';
+import { HolderOutlined, PlusOutlined } from '@/shared/antd-imports';
 import StatusDropdown from '@/components/task-list-common/status-dropdown/status-dropdown';
 import Avatars from '@/components/avatars/avatars';
 import LabelsSelector from '@/components/task-list-common/labelsSelector/labels-selector';

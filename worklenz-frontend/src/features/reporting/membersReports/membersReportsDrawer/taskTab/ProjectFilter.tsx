@@ -1,5 +1,5 @@
 import { IRPTOverviewProject } from '@/types/reporting/reporting.types';
-import { Flex, Select, Typography } from 'antd';
+import { Flex, Select, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 type ProjectFilterProps = {

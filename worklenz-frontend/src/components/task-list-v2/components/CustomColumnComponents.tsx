@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
-import { Button, Tooltip, Flex, Dropdown, DatePicker, Input } from 'antd';
-import { PlusOutlined, SettingOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import { Tooltip, Flex, Dropdown, DatePicker, Input } from '@/shared/antd-imports';
+import { PlusOutlined, SettingOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

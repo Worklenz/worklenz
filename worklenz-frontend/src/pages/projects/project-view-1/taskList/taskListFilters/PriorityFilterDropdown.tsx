@@ -1,5 +1,5 @@
-import { CaretDownFilled } from '@ant-design/icons';
-import { Badge, Button, Card, Checkbox, Dropdown, List, Space } from 'antd';
+import { CaretDownFilled } from '@/shared/antd-imports';
+import { Badge, Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
 import { useState } from 'react';
 
 import { colors } from '@/styles/colors';

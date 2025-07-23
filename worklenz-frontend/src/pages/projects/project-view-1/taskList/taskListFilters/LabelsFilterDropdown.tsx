@@ -1,4 +1,4 @@
-import { CaretDownFilled } from '@ant-design/icons';
+import { CaretDownFilled } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -11,7 +11,7 @@ import {
   InputRef,
   List,
   Space,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useRef, useState } from 'react';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';

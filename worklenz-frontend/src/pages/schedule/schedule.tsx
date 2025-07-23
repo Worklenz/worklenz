@@ -1,5 +1,5 @@
-import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from 'antd';
-import React, { useRef, useState } from 'react';
+import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from '@/shared/antd-imports';
+import React, { useRef } from 'react';
 import { SettingOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { setDate, setType, toggleSettingsDrawer } from '@/features/schedule/scheduleSlice';

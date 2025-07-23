@@ -17,7 +17,7 @@ import {
   Switch,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 
 import { fetchClients } from '@/features/settings/client/clientSlice';

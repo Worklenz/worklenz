@@ -1,4 +1,4 @@
-import { Card, Flex } from 'antd';
+import { Card, Flex } from '@/shared/antd-imports';
 import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time-report-page-header';
 import ProjectTimeSheetChart, {
   ProjectTimeSheetChartRef,

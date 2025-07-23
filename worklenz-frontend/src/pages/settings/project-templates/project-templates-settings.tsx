@@ -1,8 +1,8 @@
-import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from '@/shared/antd-imports';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';

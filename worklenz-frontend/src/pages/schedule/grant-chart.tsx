@@ -10,7 +10,7 @@
 //   Row,
 //   Tooltip,
 //   Typography,
-// } from 'antd';
+// } from '@/shared/antd-imports';
 // import { avatarNamesMap } from '../../../shared/constants';
 // import { CaretDownOutlined, CaretRightFilled } from '@ant-design/icons';
 // import { useAppSelector } from '@/hooks/useAppSelector';
@@ -563,7 +563,7 @@ export default Grant;
 //   useState,
 // } from 'react';
 // import { Member } from '../../../../types/schedule/schedule.types';
-// import { Col, Flex, Row, Typography } from 'antd';
+// import { Col, Flex, Row, Typography } from '@/shared/antd-imports';
 // import { useAppSelector } from '../../../../hooks/useAppSelector';
 // import { useDispatch } from 'react-redux';
 // import { toggleScheduleDrawer } from '../../../../features/schedule/scheduleSlice';

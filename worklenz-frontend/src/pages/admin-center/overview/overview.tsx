@@ -1,6 +1,6 @@
-import { EditOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
+import { EditOutlined, MailOutlined, PhoneOutlined } from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
-import { Button, Card, Input, Space, Tooltip, Typography } from 'antd';
+import { Button, Card, Input, Space, Tooltip, Typography } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import OrganizationAdminsTable from '@/components/admin-center/overview/organization-admins-table/organization-admins-table';
 import { useAppSelector } from '@/hooks/useAppSelector';

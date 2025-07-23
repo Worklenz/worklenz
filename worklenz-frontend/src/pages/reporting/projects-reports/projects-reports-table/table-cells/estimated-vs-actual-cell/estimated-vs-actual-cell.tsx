@@ -2,7 +2,7 @@ import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart, BarElement, CategoryScale, LinearScale } from 'chart.js';
 import { ChartOptions } from 'chart.js';
-import { Typography } from 'antd';
+import { Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 Chart.register(BarElement, CategoryScale, LinearScale);
