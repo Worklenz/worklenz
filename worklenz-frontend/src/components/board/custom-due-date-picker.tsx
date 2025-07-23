@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { DatePicker, Button, Flex } from '@/shared/antd-imports';
-import { CalendarOutlined } from '@ant-design/icons';
+import { CalendarOutlined } from '@/shared/antd-imports';
 import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';

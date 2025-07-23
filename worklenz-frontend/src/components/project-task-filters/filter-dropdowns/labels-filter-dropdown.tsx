@@ -1,4 +1,4 @@
-import { CaretDownFilled } from '@ant-design/icons';
+import { CaretDownFilled } from '@/shared/antd-imports';
 import Badge from 'antd/es/badge';
 import Button from 'antd/es/button';
 import Card from 'antd/es/card';

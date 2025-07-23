@@ -1,7 +1,7 @@
 import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from '@/shared/antd-imports';
 import { useMemo, useCallback, memo } from 'react';
 import CustomPageHeader from '@/pages/reporting/page-header/custom-page-header';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@/shared/antd-imports';
 import ProjectReportsTable from './projects-reports-table/projects-reports-table';
 import ProjectsReportsFilters from './projects-reports-filters/project-reports-filters';
 import { useAppSelector } from '@/hooks/useAppSelector';

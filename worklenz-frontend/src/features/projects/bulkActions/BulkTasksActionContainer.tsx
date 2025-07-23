@@ -7,7 +7,7 @@ import {
   TagsOutlined,
   UserAddOutlined,
   UsergroupAddOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { Button, Flex, Tooltip, Typography } from '@/shared/antd-imports';
 import { colors } from '../../../styles/colors';
 

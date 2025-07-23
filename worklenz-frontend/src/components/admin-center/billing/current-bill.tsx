@@ -1,7 +1,7 @@
 import { Card, Col, Row, Tooltip } from '@/shared/antd-imports';
 import React, { useEffect, useMemo, useCallback } from 'react';
 import './current-bill.css';
-import { InfoCircleTwoTone } from '@ant-design/icons';
+import { InfoCircleTwoTone } from '@/shared/antd-imports';
 import ChargesTable from './billing-tables/charges-table';
 import InvoicesTable from './billing-tables/invoices-table';
 

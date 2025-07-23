@@ -3,7 +3,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { Badge, Flex, Table, TableColumnsType, Tag, Typography } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
-import { DoubleRightOutlined } from '@ant-design/icons';
+import { DoubleRightOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';

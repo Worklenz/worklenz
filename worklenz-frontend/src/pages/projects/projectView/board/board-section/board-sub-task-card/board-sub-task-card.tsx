@@ -6,7 +6,7 @@ import {
   DeleteOutlined,
   ExclamationCircleFilled,
   InboxOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import CustomAvatarGroup from '@/components/board/custom-avatar-group';
 import CustomDueDatePicker from '@/components/board/custom-due-date-picker';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

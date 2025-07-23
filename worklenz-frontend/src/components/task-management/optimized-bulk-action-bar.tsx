@@ -12,7 +12,7 @@ import {
   FlagOutlined,
   BulbOutlined,
   MoreOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';

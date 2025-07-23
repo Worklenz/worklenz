@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
-import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined, UserOutlined } from '@/shared/antd-imports';
 import { Form, Card, Input, Flex, Button, Typography, Space, message } from 'antd/es';
 import { Rule } from 'antd/es/form';
-import { CheckCircleTwoTone, CloseCircleTwoTone } from '@ant-design/icons';
+import { CheckCircleTwoTone, CloseCircleTwoTone } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 import googleIcon from '@/assets/images/google-icon.png';

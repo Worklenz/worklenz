@@ -3,7 +3,7 @@ import React from 'react';
 import { TaskStatusType } from '../../../types/task.types';
 import { colors } from '../../../styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { RetweetOutlined, RightOutlined } from '@ant-design/icons';
+import { RetweetOutlined, RightOutlined } from '@/shared/antd-imports';
 import './ChangeCategoryDropdown.css';
 import { updateStatusCategory } from '../../../features/projects/status/StatusSlice';
 import { useTranslation } from 'react-i18next';

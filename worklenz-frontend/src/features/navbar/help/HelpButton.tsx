@@ -1,4 +1,4 @@
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { QuestionCircleOutlined } from '@/shared/antd-imports';
 import { Button, Tooltip } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';

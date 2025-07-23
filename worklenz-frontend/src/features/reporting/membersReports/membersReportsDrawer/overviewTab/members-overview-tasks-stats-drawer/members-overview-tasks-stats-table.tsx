@@ -3,7 +3,7 @@ import CustomTableTitle from '@components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import dayjs from 'dayjs';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { DoubleRightOutlined } from '@ant-design/icons';
+import { DoubleRightOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 

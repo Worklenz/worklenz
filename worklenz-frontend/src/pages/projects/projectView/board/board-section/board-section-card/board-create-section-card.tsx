@@ -1,5 +1,5 @@
 import { Button, Flex } from '@/shared/antd-imports';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { nanoid } from '@reduxjs/toolkit';
 

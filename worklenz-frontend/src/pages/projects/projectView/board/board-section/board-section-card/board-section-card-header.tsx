@@ -18,7 +18,7 @@ import {
   MoreOutlined,
   PlusOutlined,
   RetweetOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { MenuProps } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 

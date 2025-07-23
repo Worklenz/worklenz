@@ -6,7 +6,7 @@ import {
   LoadingOutlined,
   MoreOutlined,
   PlusOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';

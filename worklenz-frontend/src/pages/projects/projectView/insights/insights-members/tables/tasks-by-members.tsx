@@ -3,7 +3,7 @@ import { Flex, Progress } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@/utils/themeWiseColor';
-import { DownOutlined, ExclamationCircleOutlined, RightOutlined } from '@ant-design/icons';
+import { DownOutlined, ExclamationCircleOutlined, RightOutlined } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { useTranslation } from 'react-i18next';

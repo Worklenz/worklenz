@@ -3,7 +3,7 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
   SearchOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import {
   Button,
   Card,

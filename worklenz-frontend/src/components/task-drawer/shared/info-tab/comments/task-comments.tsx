@@ -3,7 +3,7 @@ import { Skeleton, Avatar, Tooltip, Popconfirm } from '@/shared/antd-imports';
 import { Comment } from '@ant-design/compatible';
 import dayjs from 'dayjs';
 
-import { LikeOutlined, LikeTwoTone } from '@ant-design/icons';
+import { LikeOutlined, LikeTwoTone } from '@/shared/antd-imports';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { useAuthService } from '@/hooks/useAuth';

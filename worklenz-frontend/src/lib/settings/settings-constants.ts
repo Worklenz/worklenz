@@ -12,7 +12,7 @@ import {
   UserOutlined,
   UserSwitchOutlined,
   BulbOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
 const NotificationsSettings = lazy(() => import('../../pages/settings/notifications/notifications-settings'));

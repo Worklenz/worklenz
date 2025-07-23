@@ -1,4 +1,4 @@
-import { ExpandAltOutlined, SyncOutlined } from '@ant-design/icons';
+import { ExpandAltOutlined, SyncOutlined } from '@/shared/antd-imports';
 import {
   Badge,
   Button,

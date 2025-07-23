@@ -1,4 +1,4 @@
-import { MoreOutlined, SettingOutlined } from '@ant-design/icons';
+import { MoreOutlined, SettingOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import Button from 'antd/es/button';
 import Checkbox from 'antd/es/checkbox';

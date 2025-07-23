@@ -6,7 +6,7 @@ import {
   DownOutlined,
   RightOutlined,
   ExpandAltOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';

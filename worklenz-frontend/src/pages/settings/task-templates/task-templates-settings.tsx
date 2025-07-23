@@ -2,7 +2,7 @@ import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './task-templates-settings.css';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 import { useAppSelector } from '@/hooks/useAppSelector';

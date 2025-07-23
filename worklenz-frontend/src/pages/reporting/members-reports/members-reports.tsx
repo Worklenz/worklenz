@@ -1,5 +1,5 @@
 import { Button, Card, Checkbox, Dropdown, Flex, Skeleton, Space, Typography } from '@/shared/antd-imports';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@/shared/antd-imports';
 import MembersReportsTable from './members-reports-table/members-reports-table';
 import TimeWiseFilter from '@/components/reporting/time-wise-filter';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

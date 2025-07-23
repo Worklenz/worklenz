@@ -6,7 +6,7 @@ import {
   EllipsisOutlined,
   EditOutlined,
   RetweetOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { ITaskStatusCategory } from '@/types/status.types';
 import { useAppSelector } from '@/hooks/useAppSelector';

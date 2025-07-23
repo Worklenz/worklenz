@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
-import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateTaskCounts } from '@/features/task-management/task-management.slice';

@@ -1,4 +1,4 @@
-import { CaretDownFilled } from '@ant-design/icons';
+import { CaretDownFilled } from '@/shared/antd-imports';
 import { useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 

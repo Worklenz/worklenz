@@ -1,5 +1,5 @@
 import { IGroupBy } from '@/features/board/board-slice';
-import { CaretDownFilled } from '@ant-design/icons';
+import { CaretDownFilled } from '@/shared/antd-imports';
 import { Flex, Select } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';

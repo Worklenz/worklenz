@@ -7,7 +7,7 @@ import {
   MessageOutlined,
   PaperClipOutlined,
   ClockCircleOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
 import { useTranslation } from 'react-i18next';

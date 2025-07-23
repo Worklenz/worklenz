@@ -17,7 +17,7 @@ import {
   DragEndEvent,
   DragStartEvent,
 } from '@dnd-kit/core';
-import { EditOutlined, EllipsisOutlined, RetweetOutlined, RightOutlined } from '@ant-design/icons';
+import { EditOutlined, EllipsisOutlined, RetweetOutlined, RightOutlined } from '@/shared/antd-imports';
 
 import { colors } from '@/styles/colors';
 import { useAppSelector } from '@/hooks/useAppSelector';

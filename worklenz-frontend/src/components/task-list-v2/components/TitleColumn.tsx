@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState, useRef, useEffect } from 'react';
-import { RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@ant-design/icons';
+import { RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@/shared/antd-imports';
 import { Input, Tooltip } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';

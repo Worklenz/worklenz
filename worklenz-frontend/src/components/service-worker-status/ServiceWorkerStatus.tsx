@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Badge, Button, Space, Tooltip, message } from '@/shared/antd-imports';
-import { WifiOutlined, DisconnectOutlined, ReloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { WifiOutlined, DisconnectOutlined, ReloadOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useServiceWorker } from '../../utils/serviceWorkerRegistration';
 
 interface ServiceWorkerStatusProps {

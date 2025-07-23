@@ -15,10 +15,10 @@ import PrioritySection from '../board/taskCard/priority-section/priority-section
 import Typography from 'antd/es/typography';
 import CustomDueDatePicker from '../board/custom-due-date-picker';
 import { themeWiseColor } from '@/utils/themeWiseColor';
-import { ForkOutlined } from '@ant-design/icons';
+import { ForkOutlined } from '@/shared/antd-imports';
 import { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { CaretDownFilled, CaretRightFilled } from '@ant-design/icons';
+import { CaretDownFilled, CaretRightFilled } from '@/shared/antd-imports';
 import {
   fetchBoardSubTasks,
   toggleTaskExpansion,
@@ -26,7 +26,7 @@ import {
 import { Divider } from '@/shared/antd-imports';
 import { List } from '@/shared/antd-imports';
 import { Skeleton } from '@/shared/antd-imports';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/shared/antd-imports';
 import BoardSubTaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-sub-task-card';
 import BoardCreateSubtaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-create-sub-task-card';
 import { useTranslation } from 'react-i18next';

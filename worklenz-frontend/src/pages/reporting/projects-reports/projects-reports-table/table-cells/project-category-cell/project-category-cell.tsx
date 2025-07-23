@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@/shared/antd-imports';
 import { Badge, Card, Dropdown, Flex, Input, InputRef, Menu, MenuProps, Typography } from '@/shared/antd-imports';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';

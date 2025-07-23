@@ -18,7 +18,7 @@ import {
   DeleteOutlined,
   ExclamationCircleFilled,
   ExclamationCircleOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { durationDateFormat } from '@utils/durationDateFormat';
 import { DEFAULT_PAGE_SIZE, IconsMap } from '@/shared/constants';

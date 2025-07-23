@@ -1,4 +1,4 @@
-import { GlobalOutlined, LeftCircleOutlined, RightCircleOutlined } from '@ant-design/icons';
+import { GlobalOutlined, LeftCircleOutlined, RightCircleOutlined } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { colors } from '@/styles/colors';
 import { Button, Flex, Tooltip, Typography } from '@/shared/antd-imports';

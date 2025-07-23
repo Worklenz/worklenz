@@ -3,7 +3,7 @@ import Drawer from 'antd/es/drawer';
 import { InputRef } from 'antd/es/input';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from 'react';
-import { PlusOutlined, CloseOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { PlusOutlined, CloseOutlined, ArrowLeftOutlined } from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
