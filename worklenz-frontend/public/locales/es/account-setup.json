@@ -28,5 +28,43 @@
   "step3Title": "Invita a tu equipo a trabajar",
 
   "maxMembers": " (Puedes invitar hasta 5 miembros)",
-  "maxTasks": " (Puedes crear hasta 5 tareas)"
+  "maxTasks": " (Puedes crear hasta 5 tareas)",
+
+  "surveyStepTitle": "Cuéntanos sobre ti",
+  "surveyStepLabel": "Ayúdanos a personalizar tu experiencia de Worklenz respondiendo algunas preguntas.",
+  
+  "organizationType": "¿Qué describe mejor tu organización?",
+  "organizationTypeFreelancer": "Freelancer",
+  "organizationTypeStartup": "Startup",
+  "organizationTypeSmallMediumBusiness": "Pequeña o Mediana Empresa",
+  "organizationTypeAgency": "Agencia",
+  "organizationTypeEnterprise": "Empresa",
+  "organizationTypeOther": "Otro",
+  
+  "userRole": "¿Cuál es tu rol?",
+  "userRoleFounderCeo": "Fundador / CEO",
+  "userRoleProjectManager": "Gerente de Proyecto",
+  "userRoleSoftwareDeveloper": "Desarrollador de Software",
+  "userRoleDesigner": "Diseñador",
+  "userRoleOperations": "Operaciones",
+  "userRoleOther": "Otro",
+  
+  "mainUseCases": "¿Para qué usarás principalmente Worklenz?",
+  "mainUseCasesTaskManagement": "Gestión de tareas",
+  "mainUseCasesTeamCollaboration": "Colaboración de equipo",
+  "mainUseCasesResourcePlanning": "Planificación de recursos",
+  "mainUseCasesClientCommunication": "Comunicación con clientes e informes",
+  "mainUseCasesTimeTracking": "Seguimiento de tiempo",
+  "mainUseCasesOther": "Otro",
+  
+  "previousTools": "¿Qué herramienta(s) usabas antes de Worklenz?",
+  "previousToolsPlaceholder": "ej. Trello, Asana, Monday.com",
+  
+  "howHeardAbout": "¿Cómo conociste Worklenz?",
+  "howHeardAboutGoogleSearch": "Búsqueda de Google",
+  "howHeardAboutTwitter": "Twitter",
+  "howHeardAboutLinkedin": "LinkedIn",
+  "howHeardAboutFriendColleague": "Un amigo o colega",
+  "howHeardAboutBlogArticle": "Un blog o artículo",
+  "howHeardAboutOther": "Otro"
 }
