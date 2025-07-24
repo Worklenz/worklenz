@@ -14,10 +14,10 @@ export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzR
   const teamIds = teams.map(id => `'${id}'`).join(",");
   const projects = (req.body.projects || []) as string[];
   const projectIds = projects.map(p => `'${p}'`).join(",");
-  const billable = req.body.billable;
+  const {billable} = req.body;
   
   // Get user timezone from request or database
-  const userTimezone = req.body.timezone || await getUserTimezone(req.user?.id || '');
+  const userTimezone = req.body.timezone || await getUserTimezone(req.user?.id || "");
   
   if (!teamIds || !projectIds.length)
     return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
@@ -30,13 +30,13 @@ export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzR
   
   if (date_range && date_range.length === 2) {
     // Convert user's local dates to their timezone's start/end of day
-    startDate = moment.tz(date_range[0], userTimezone).startOf('day');
-    endDate = moment.tz(date_range[1], userTimezone).endOf('day');
+    startDate = moment.tz(date_range[0], userTimezone).startOf("day");
+    endDate = moment.tz(date_range[1], userTimezone).endOf("day");
   } else if (duration === DATE_RANGES.ALL_TIME) {
     const minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIds})`;
     const minDateResult = await db.query(minDateQuery, []);
     const minDate = minDateResult.rows[0]?.min_date;
-    startDate = minDate ? moment.tz(minDate, userTimezone) : moment.tz('2000-01-01', userTimezone);
+    startDate = minDate ? moment.tz(minDate, userTimezone) : moment.tz("2000-01-01", userTimezone);
     endDate = moment.tz(userTimezone);
   } else {
     // Calculate ranges based on user's timezone
@@ -44,8 +44,8 @@ export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzR
     
     switch (duration) {
       case DATE_RANGES.YESTERDAY:
-        startDate = now.clone().subtract(1, "day").startOf('day');
-        endDate = now.clone().subtract(1, "day").endOf('day');
+        startDate = now.clone().subtract(1, "day").startOf("day");
+        endDate = now.clone().subtract(1, "day").endOf("day");
         break;
       case DATE_RANGES.LAST_WEEK:
         startDate = now.clone().subtract(1, "week").startOf("isoWeek");
@@ -74,11 +74,11 @@ export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzR
   let workingDays = 0;
   
   const current = startDate.clone();
-  while (current.isSameOrBefore(endDate, 'day')) {
+  while (current.isSameOrBefore(endDate, "day")) {
     if (current.isoWeekday() >= 1 && current.isoWeekday() <= 5) {
       workingDays++;
     }
-    current.add(1, 'day');
+    current.add(1, "day");
   }
   
   // Updated SQL query with proper timezone handling
@@ -154,9 +154,12 @@ export async function getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzR
 }
 
 async function getUserTimezone(userId: string): Promise<string> {
-  const q = `SELECT timezone FROM users WHERE id = $1`;
+  const q = `SELECT tz.name as timezone 
+             FROM users u 
+             JOIN timezones tz ON u.timezone_id = tz.id 
+             WHERE u.id = $1`;
   const result = await db.query(q, [userId]);
-  return result.rows[0]?.timezone || 'UTC';
+  return result.rows[0]?.timezone || "UTC";
 }
 
 function buildBillableQuery(billable: { billable: boolean; nonBillable: boolean }): string {

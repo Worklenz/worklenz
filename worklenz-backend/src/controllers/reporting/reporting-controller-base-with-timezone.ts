@@ -12,7 +12,10 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
    * @returns The user's timezone or 'UTC' as default
    */
   protected static async getUserTimezone(userId: string): Promise<string> {
-    const q = `SELECT timezone FROM users WHERE id = $1`;
+    const q = `SELECT tz.name as timezone 
+               FROM users u 
+               JOIN timezones tz ON u.timezone_id = tz.id 
+               WHERE u.id = $1`;
     const result = await db.query(q, [userId]);
     return result.rows[0]?.timezone || 'UTC';
   }
