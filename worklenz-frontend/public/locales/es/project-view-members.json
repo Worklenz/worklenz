@@ -13,5 +13,6 @@
   "deleteButtonTooltip": "Eliminar del proyecto",
   "memberCount": "Miembro",
   "membersCountPlural": "Miembros",
-  "emptyText": "No hay archivos adjuntos en el proyecto."
+  "emptyText": "No hay archivos adjuntos en el proyecto.",
+  "searchPlaceholder": "Buscar miembros"
 }

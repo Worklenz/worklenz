@@ -8,6 +8,7 @@ interface ProjectMembersState {
   currentMembersList: IMentionMemberViewModel[];
   isDrawerOpen: boolean;
   isLoading: boolean;
+  isFromAssigner: boolean;
   error: string | null;
 }
 
@@ -16,6 +17,7 @@ const initialState: ProjectMembersState = {
   currentMembersList: [],
   isDrawerOpen: false,
   isLoading: false,
+  isFromAssigner: false,
   error: null,
 };
 
@@ -89,6 +91,12 @@ const projectMembersSlice = createSlice({
   reducers: {
     toggleProjectMemberDrawer: state => {
       state.isDrawerOpen = !state.isDrawerOpen;
+      if (state.isDrawerOpen === false) {
+        state.isFromAssigner = false;
+      }
+    },
+    setIsFromAssigner: (state, action: PayloadAction<boolean>) => {
+      state.isFromAssigner = action.payload;
     },
   },
   extraReducers: builder => {
@@ -139,7 +147,7 @@ const projectMembersSlice = createSlice({
   },
 });
 
-export const { toggleProjectMemberDrawer } = projectMembersSlice.actions;
+export const { toggleProjectMemberDrawer, setIsFromAssigner } = projectMembersSlice.actions;
 export {
   getProjectMembers,
   getAllProjectMembers,
