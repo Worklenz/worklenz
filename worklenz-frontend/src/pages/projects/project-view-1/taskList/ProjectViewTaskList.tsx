@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';

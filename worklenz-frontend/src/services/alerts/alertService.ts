@@ -1,6 +1,6 @@
 import { AlertType } from '@/types/alert.types';
 import DOMPurify from 'dompurify';
-import { notification } from 'antd';
+import { notification } from '@/shared/antd-imports';
 class AlertService {
   private static instance: AlertService;
   private activeAlerts: Set<string> = new Set();

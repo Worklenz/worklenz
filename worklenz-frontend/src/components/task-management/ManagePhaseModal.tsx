@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Modal, Form, Input, Button, Space, Divider, Typography, Flex, ColorPicker, Tooltip } from 'antd';
-import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Button, Space, Divider, Typography, Flex, ColorPicker, Tooltip } from '@/shared/antd-imports';
+import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -20,7 +20,7 @@ import {
 } from '@/features/projects/singleProject/phase/phases.slice';
 import { updatePhaseLabel } from '@/features/project/project.slice';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { Modal as AntModal } from 'antd';
+import { Modal as AntModal } from '@/shared/antd-imports';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { PhaseColorCodes } from '@/shared/constants';

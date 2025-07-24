@@ -1,5 +1,5 @@
 import { TFunction } from 'i18next';
-import { Badge, Form, FormInstance, Select, Typography } from 'antd';
+import { Badge, Form, FormInstance, Select, Typography } from '@/shared/antd-imports';
 
 import { IProjectHealth } from '@/types/project/projectHealth.types';
 

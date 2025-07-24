@@ -1,4 +1,4 @@
-import { DatePicker, Flex, Typography } from 'antd';
+import { DatePicker, Flex, Typography } from '@/shared/antd-imports';
 import { useEffect } from 'react';
 import { colors } from '@/styles/colors';
 import dayjs, { Dayjs } from 'dayjs';

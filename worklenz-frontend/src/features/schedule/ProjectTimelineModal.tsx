@@ -1,6 +1,6 @@
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { ScheduleData } from '@/types/schedule/schedule-v2.types';
-import { Button, Col, DatePicker, Flex, Form, Input, Row } from 'antd';
+import { Button, Col, DatePicker, Flex, Form, Input, Row } from '@/shared/antd-imports';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createSchedule, fetchTeamData } from './scheduleSlice';

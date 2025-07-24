@@ -1,10 +1,10 @@
-import { Card, Divider, Flex, Switch, Typography } from 'antd';
+import { Card, Flex, Switch, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { toggleTheme } from '@/features/theme/themeSlice';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { MoonOutlined, SunOutlined } from '@ant-design/icons';
+import { MoonOutlined, SunOutlined } from '@/shared/antd-imports';
 
 const AppearanceSettings = () => {
   const { t } = useTranslation('settings/appearance');

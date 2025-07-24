@@ -3,7 +3,7 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
   SearchOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
@@ -22,7 +22,7 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import JobTitleDrawer from './job-titles-drawer';

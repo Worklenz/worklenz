@@ -1,4 +1,4 @@
-import { Button, Drawer, Flex, Input, Skeleton, Spin, Typography } from 'antd';
+import { Button, Drawer, Flex, Input, Spin, Typography } from '@/shared/antd-imports';
 import { useState } from 'react';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
@@ -11,7 +11,7 @@ import {
   updateProjectPhaseLabel,
 } from './phases.slice';
 import { Divider } from 'antd/lib';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/shared/antd-imports';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PhaseOptionItem from './PhaseOptionItem';

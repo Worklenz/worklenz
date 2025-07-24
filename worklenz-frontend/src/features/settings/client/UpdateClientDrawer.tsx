@@ -1,4 +1,4 @@
-import { Button, Drawer, Form, Input, message, Typography } from 'antd';
+import { Button, Drawer, Form, Input, message, Typography } from '@/shared/antd-imports';
 import React, { useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

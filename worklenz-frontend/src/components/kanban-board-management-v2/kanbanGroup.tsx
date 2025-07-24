@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Button, Typography } from 'antd';
-import { PlusOutlined, MenuOutlined } from '@ant-design/icons';
+import { Button, Typography } from '@/shared/antd-imports';
+import { PlusOutlined, MenuOutlined } from '@/shared/antd-imports';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
 import KanbanTaskCard from './kanbanTaskCard';

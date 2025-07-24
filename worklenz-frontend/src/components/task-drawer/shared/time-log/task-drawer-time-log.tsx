@@ -1,5 +1,5 @@
-import { DownloadOutlined, PlayCircleFilled, PlusOutlined } from '@ant-design/icons';
-import { Button, Divider, Flex, Skeleton, Typography } from 'antd';
+import { DownloadOutlined } from '@/shared/antd-imports';
+import { Button, Divider, Flex, Skeleton, Typography } from '@/shared/antd-imports';
 import { useEffect, useState, useCallback } from 'react';
 import { TFunction } from 'i18next';
 

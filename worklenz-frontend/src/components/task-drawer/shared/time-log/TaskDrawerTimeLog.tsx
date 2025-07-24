@@ -1,5 +1,5 @@
-import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Divider, Flex, Skeleton, Typography } from 'antd';
+import { DownloadOutlined, PlusOutlined } from '@/shared/antd-imports';
+import { Button, Divider, Flex, Skeleton, Typography } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 
 import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';

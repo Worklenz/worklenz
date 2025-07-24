@@ -1,4 +1,4 @@
-import { Avatar, Tooltip } from 'antd';
+import { Avatar, Tooltip } from '@/shared/antd-imports';
 import React, { useCallback, useMemo } from 'react';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 

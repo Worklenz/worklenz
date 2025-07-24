@@ -1,4 +1,4 @@
-import { Tabs } from 'antd';
+import { Tabs } from '@/shared/antd-imports';
 import { TabsProps } from 'antd/lib';
 import React from 'react';
 import MembersReportsOverviewTab from './overviewTab/MembersReportsOverviewTab';

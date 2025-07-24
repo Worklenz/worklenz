@@ -1,4 +1,4 @@
-import { AutoComplete, Button, Drawer, Flex, Form, message, Modal, Select, Spin, Typography } from 'antd';
+import { AutoComplete, Button, Drawer, Flex, Form, message, Modal, Select, Spin, Typography } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {

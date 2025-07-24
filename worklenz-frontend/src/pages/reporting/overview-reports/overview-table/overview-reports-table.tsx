@@ -1,5 +1,5 @@
 import { memo, useEffect, useState, useCallback, useMemo } from 'react';
-import { ConfigProvider, Table, TableColumnsType } from 'antd';
+import { ConfigProvider, Table, TableColumnsType } from '@/shared/antd-imports';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import CustomTableTitle from '../../../../components/CustomTableTitle';
 import { useTranslation } from 'react-i18next';

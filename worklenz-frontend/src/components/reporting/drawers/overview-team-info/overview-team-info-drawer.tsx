@@ -1,8 +1,7 @@
-import { Drawer, Typography, Flex, Button, Dropdown } from 'antd';
-import React, { useState } from 'react';
+import { Drawer, Typography, Flex, Button, Dropdown } from '@/shared/antd-imports';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
-import { BankOutlined, DownOutlined } from '@ant-design/icons';
+import { BankOutlined } from '@/shared/antd-imports';
 import { colors } from '../../../../styles/colors';
 import { useTranslation } from 'react-i18next';
 
@@ -28,7 +27,7 @@ const OverviewTeamInfoDrawer = ({ team }: OverviewTeamInfoDrawerProps) => {
   return (
     <Drawer
       open={isDrawerOpen}
-      destroyOnClose
+      destroyOnHidden
       onClose={handleClose}
       width={900}
       title={

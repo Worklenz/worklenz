@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flex, Popover, Typography } from 'antd';
+import { Flex, Popover, Typography } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -7,7 +7,7 @@ import { getWorking, toggleScheduleDrawer } from '../../../features/schedule/sch
 import ProjectTimelineModal from '../../../features/schedule/ProjectTimelineModal';
 import { Resizable } from 're-resizable';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
-import { MoreOutlined } from '@ant-design/icons';
+import { MoreOutlined } from '@/shared/antd-imports';
 import { CELL_WIDTH } from '../../../shared/constants';
 import { ScheduleData } from '@/types/schedule/schedule-v2.types';
 

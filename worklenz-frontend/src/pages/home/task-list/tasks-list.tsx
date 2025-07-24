@@ -1,4 +1,4 @@
-import { ExpandAltOutlined, SyncOutlined } from '@ant-design/icons';
+import { ExpandAltOutlined, SyncOutlined } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -12,7 +12,7 @@ import {
   Tooltip,
   Typography,
   Pagination,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';

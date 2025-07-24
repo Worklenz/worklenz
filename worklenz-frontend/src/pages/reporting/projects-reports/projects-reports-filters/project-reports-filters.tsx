@@ -1,4 +1,4 @@
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import { useMemo, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import ProjectStatusFilterDropdown from './project-status-filter-dropdown';

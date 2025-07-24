@@ -1,15 +1,13 @@
-import { Col, ConfigProvider, Layout } from 'antd';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Col, ConfigProvider, Layout } from '@/shared/antd-imports';
+import { Outlet } from 'react-router-dom';
 import { memo, useMemo, useEffect, useRef } from 'react';
 import { useMediaQuery } from 'react-responsive';
 
 import Navbar from '../features/navbar/navbar';
 import { useAppSelector } from '../hooks/useAppSelector';
-import { useAppDispatch } from '../hooks/useAppDispatch';
 import { colors } from '../styles/colors';
 
 import { useRenderPerformance } from '@/utils/performance';
-import HubSpot from '@/components/HubSpot';
 import { DynamicCSSLoader, LayoutStabilizer } from '@/utils/css-optimizations';
 
 const MainLayout = memo(() => {

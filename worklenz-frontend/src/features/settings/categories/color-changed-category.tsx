@@ -1,5 +1,5 @@
 import React from 'react';
-import { Select, Tag, Tooltip } from 'antd';
+import { Select, Tag, Tooltip } from '@/shared/antd-imports';
 import { CategoryType } from '../../../types/categories.types';
 import { useTranslation } from 'react-i18next';
 import { PhaseColorCodes } from '../../../shared/constants';

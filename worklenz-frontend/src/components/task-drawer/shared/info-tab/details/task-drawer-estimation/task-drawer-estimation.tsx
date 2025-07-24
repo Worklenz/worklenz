@@ -2,7 +2,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { useSocket } from '@/socket/socketContext';
 import { colors } from '@/styles/colors';
 import { ITaskViewModel } from '@/types/tasks/task.types';
-import { Flex, Form, FormInstance, InputNumber, Typography } from 'antd';
+import { Flex, Form, FormInstance, InputNumber, Typography } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { useState } from 'react';
 

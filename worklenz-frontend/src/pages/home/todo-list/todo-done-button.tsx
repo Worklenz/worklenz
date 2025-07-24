@@ -1,4 +1,4 @@
-import { CheckCircleOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined } from '@/shared/antd-imports';
 import ConfigProvider from 'antd/es/config-provider';
 import Button from 'antd/es/button';
 import Tooltip from 'antd/es/tooltip';

@@ -1,12 +1,12 @@
 // TaskNameCell.tsx
 import React, { useCallback } from 'react';
-import { Flex, Typography, Button } from 'antd';
+import { Flex, Typography, Button } from '@/shared/antd-imports';
 import {
   DoubleRightOutlined,
   DownOutlined,
   RightOutlined,
   ExpandAltOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';

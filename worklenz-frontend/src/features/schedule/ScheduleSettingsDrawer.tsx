@@ -1,4 +1,4 @@
-import { Button, Checkbox, Col, Drawer, Form, Input, Row } from 'antd';
+import { Button, Checkbox, Col, Drawer, Form, Input, Row } from '@/shared/antd-imports';
 import React, { ReactHTMLElement, useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {

@@ -1,0 +1,237 @@
+---
+alwaysApply: true
+---
+# Ant Design Import Rules for Worklenz
+
+## 🚨 CRITICAL: Always Use Centralized Imports
+
+**NEVER import Ant Design components directly from 'antd' or '@ant-design/icons'**
+
+### ✅ Correct Import Pattern
+```typescript
+import { Button, Input, Select, EditOutlined, PlusOutlined } from '@antd-imports';
+// or
+import { Button, Input, Select, EditOutlined, PlusOutlined } from '@/shared/antd-imports';
+```
+
+### ❌ Forbidden Import Patterns
+```typescript
+// NEVER do this:
+import { Button, Input, Select } from 'antd';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+```
+
+## Why This Rule Exists
+
+### Benefits of Centralized Imports:
+- **Better Tree-Shaking**: Optimized bundle size through centralized management
+- **Consistent React Context**: Proper context sharing across components
+- **Type Safety**: Centralized TypeScript definitions
+- **Maintainability**: Single source of truth for all Ant Design imports
+- **Performance**: Reduced bundle size and improved loading times
+
+## What's Available in `@antd-imports`
+
+### Core Components
+- **Layout**: Layout, Row, Col, Flex, Divider, Space
+- **Navigation**: Menu, Tabs, Breadcrumb, Pagination
+- **Data Entry**: Input, Select, DatePicker, TimePicker, Form, Checkbox, InputNumber
+- **Data Display**: Table, List, Card, Tag, Avatar, Badge, Progress, Statistic
+- **Feedback**: Modal, Drawer, Alert, Message, Notification, Spin, Skeleton, Result
+- **Other**: Button, Typography, Tooltip, Popconfirm, Dropdown, ConfigProvider
+
+### Icons
+Common icons including: EditOutlined, DeleteOutlined, PlusOutlined, MoreOutlined, CheckOutlined, CloseOutlined, CalendarOutlined, UserOutlined, TeamOutlined, and many more.
+
+### Utilities
+- **appMessage**: Centralized message utility
+- **appNotification**: Centralized notification utility
+- **antdConfig**: Default Ant Design configuration
+- **taskManagementAntdConfig**: Task-specific configuration
+
+## Implementation Guidelines
+
+### When Creating New Components:
+1. **Always** import from `@/shared/antd-imports`
+2. Use `appMessage` and `appNotification` for user feedback
+3. Apply `antdConfig` for consistent styling
+4. Use `taskManagementAntdConfig` for task-related components
+
+### When Refactoring Existing Code:
+1. Replace direct 'antd' imports with `@/shared/antd-imports`
+2. Replace direct '@ant-design/icons' imports with `@/shared/antd-imports`
+3. Update any custom message/notification calls to use the utilities
+
+### File Location
+The centralized import file is located at: `worklenz-frontend/src/shared/antd-imports.ts`
+
+## Examples
+
+### Component Creation
+```typescript
+import React from 'react';
+import { Button, Input, Modal, EditOutlined, appMessage } from '@antd-imports';
+
+const MyComponent = () => {
+  const handleClick = () => {
+    appMessage.success('Operation completed!');
+  };
+
+  return (
+    <Button icon={<EditOutlined />} onClick={handleClick}>
+      Edit Item
+    </Button>
+  );
+};
+```
+
+### Form Implementation
+```typescript
+import { Form, Input, Select, Button, DatePicker } from '@antd-imports';
+
+const MyForm = () => {
+  return (
+    <Form layout="vertical">
+      <Form.Item label="Name" name="name">
+        <Input />
+      </Form.Item>
+      <Form.Item label="Type" name="type">
+        <Select options={options} />
+      </Form.Item>
+      <Form.Item label="Date" name="date">
+        <DatePicker />
+      </Form.Item>
+    </Form>
+  );
+};
+```
+
+## Enforcement
+
+This rule is **MANDATORY** and applies to:
+- All new component development
+- All code refactoring
+- All bug fixes
+- All feature implementations
+
+**Violations will result in code review rejection.**
+
+### File Path:
+The centralized file is located at: `worklenz-frontend/src/shared/antd-imports.ts`
+# Ant Design Import Rules for Worklenz
+
+## 🚨 CRITICAL: Always Use Centralized Imports
+
+**NEVER import Ant Design components directly from 'antd' or '@ant-design/icons'**
+
+### ✅ Correct Import Pattern
+```typescript
+import { Button, Input, Select, EditOutlined, PlusOutlined } from '@antd-imports';
+// or
+import { Button, Input, Select, EditOutlined, PlusOutlined } from '@/shared/antd-imports';
+```
+
+### ❌ Forbidden Import Patterns
+```typescript
+// NEVER do this:
+import { Button, Input, Select } from 'antd';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+```
+
+## Why This Rule Exists
+
+### Benefits of Centralized Imports:
+- **Better Tree-Shaking**: Optimized bundle size through centralized management
+- **Consistent React Context**: Proper context sharing across components
+- **Type Safety**: Centralized TypeScript definitions
+- **Maintainability**: Single source of truth for all Ant Design imports
+- **Performance**: Reduced bundle size and improved loading times
+
+## What's Available in `@antd-imports`
+
+### Core Components
+- **Layout**: Layout, Row, Col, Flex, Divider, Space
+- **Navigation**: Menu, Tabs, Breadcrumb, Pagination
+- **Data Entry**: Input, Select, DatePicker, TimePicker, Form, Checkbox, InputNumber
+- **Data Display**: Table, List, Card, Tag, Avatar, Badge, Progress, Statistic
+- **Feedback**: Modal, Drawer, Alert, Message, Notification, Spin, Skeleton, Result
+- **Other**: Button, Typography, Tooltip, Popconfirm, Dropdown, ConfigProvider
+
+### Icons
+Common icons including: EditOutlined, DeleteOutlined, PlusOutlined, MoreOutlined, CheckOutlined, CloseOutlined, CalendarOutlined, UserOutlined, TeamOutlined, and many more.
+
+### Utilities
+- **appMessage**: Centralized message utility
+- **appNotification**: Centralized notification utility
+- **antdConfig**: Default Ant Design configuration
+- **taskManagementAntdConfig**: Task-specific configuration
+
+## Implementation Guidelines
+
+### When Creating New Components:
+1. **Always** import from `@antd-imports` or `@/shared/antd-imports`
+2. Use `appMessage` and `appNotification` for user feedback
+3. Apply `antdConfig` for consistent styling
+4. Use `taskManagementAntdConfig` for task-related components
+
+### When Refactoring Existing Code:
+1. Replace direct 'antd' imports with `@antd-imports`
+2. Replace direct '@ant-design/icons' imports with `@antd-imports`
+3. Update any custom message/notification calls to use the utilities
+
+### File Location
+The centralized import file is located at: `worklenz-frontend/src/shared/antd-imports.ts`
+
+## Examples
+
+### Component Creation
+```typescript
+import React from 'react';
+import { Button, Input, Modal, EditOutlined, appMessage } from '@antd-imports';
+
+const MyComponent = () => {
+  const handleClick = () => {
+    appMessage.success('Operation completed!');
+  };
+
+  return (
+    <Button icon={<EditOutlined />} onClick={handleClick}>
+      Edit Item
+    </Button>
+  );
+};
+```
+
+### Form Implementation
+```typescript
+import { Form, Input, Select, Button, DatePicker } from '@antd-imports';
+
+const MyForm = () => {
+  return (
+    <Form layout="vertical">
+      <Form.Item label="Name" name="name">
+        <Input />
+      </Form.Item>
+      <Form.Item label="Type" name="type">
+        <Select options={options} />
+      </Form.Item>
+      <Form.Item label="Date" name="date">
+        <DatePicker />
+      </Form.Item>
+    </Form>
+  );
+};
+```
+
+## Enforcement
+
+This rule is **MANDATORY** and applies to:
+- All new component development
+- All code refactoring
+- All bug fixes
+- All feature implementations
+
+**Violations will result in code review rejection.**
+
+### File Path:
+The centralized file is located at: `worklenz-frontend/src/shared/antd-imports.ts`

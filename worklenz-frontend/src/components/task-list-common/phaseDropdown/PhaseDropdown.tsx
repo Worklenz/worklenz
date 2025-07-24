@@ -1,4 +1,4 @@
-import { Badge, Flex, Select, Typography } from 'antd';
+import { Badge, Flex, Select, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 // custom css file
 import './phaseDropdown.css';

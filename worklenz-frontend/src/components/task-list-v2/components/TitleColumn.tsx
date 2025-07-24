@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useState, useRef, useEffect } from 'react';
-import { RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@ant-design/icons';
-import { Input, Tooltip } from 'antd';
-import type { InputRef } from 'antd';
+import { RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@/shared/antd-imports';
+import { Input, Tooltip } from '@/shared/antd-imports';
+import type { InputRef } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
 import { Task } from '@/types/task-management.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
