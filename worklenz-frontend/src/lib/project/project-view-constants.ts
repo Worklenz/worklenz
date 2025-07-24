@@ -44,6 +44,7 @@ const getTabLabel = (key: string): string => {
         files: 'Files',
         members: 'Members',
         updates: 'Updates',
+        finance: 'Finance',
       };
       return fallbacks[key] || key;
     }
@@ -57,6 +58,7 @@ const getTabLabel = (key: string): string => {
       files: 'Files',
       members: 'Members',
       updates: 'Updates',
+      finance: 'Finance',
     };
     return fallbacks[key] || key;
   }
@@ -152,6 +154,9 @@ export const updateTabLabels = () => {
           break;
         case 'updates':
           item.label = getTabLabel('updates');
+          break;
+        case 'finance':
+          item.label = getTabLabel('finance');
           break;
       }
     });
