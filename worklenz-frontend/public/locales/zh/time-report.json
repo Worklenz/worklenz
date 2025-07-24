@@ -47,5 +47,20 @@
   "showSelected": "仅显示已选择",
   "expandAll": "全部展开",
   "collapseAll": "全部折叠",  
-  "ungrouped": "未分组"
+  "ungrouped": "未分组",
+
+  "totalTimeLogged": "总记录时间",
+  "acrossAllTeamMembers": "跨所有团队成员",
+  "expectedCapacity": "预期容量",
+  "basedOnWorkingSchedule": "基于工作时间表",
+  "teamUtilization": "团队利用率",
+  "targetRange": "目标范围",
+  "variance": "差异",
+  "overCapacity": "超出容量",
+  "underCapacity": "容量不足",
+  "considerWorkloadRedistribution": "考虑工作负载重新分配",
+  "capacityAvailableForNewProjects": "可用于新项目的容量",
+  "optimal": "最佳",
+  "underUtilized": "利用率不足",
+  "overUtilized": "过度利用"
 }

@@ -136,6 +136,8 @@ export interface IRPTMember {
   ongoing: number;
   todo: number;
   member_teams: any;
+  billable_time?: number;
+  non_billable_time?: number;
 }
 
 export interface ISingleMemberLogs {
@@ -409,6 +411,16 @@ export interface IRPTTimeMember {
   utilized_hours?: string;
   utilization_percent?: string;
   over_under_utilized_hours?: string;
+  utilization_state?: string;
+}
+export interface IRPTTimeTotals {
+  total_estimated_hours?: string;
+  total_time_logs?: string;
+  total_utilization?: string;
+}
+export interface IRPTTimeMemberViewModel {
+  filteredRows?: IRPTTimeMember[];
+  totals?: IRPTTimeTotals;
 }
 
 export interface IMemberTaskStatGroupResonse {

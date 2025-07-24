@@ -1,17 +1,21 @@
-import { Card, Flex } from '@/shared/antd-imports';
-import TimeReportPageHeader from '@/components/reporting/time-reports/page-header/TimeReportPageHeader';
-import MembersTimeSheet, {
-  MembersTimeSheetRef,
-} from '@/pages/reporting/time-reports/members-time-sheet/members-time-sheet';
-import TimeReportingRightHeader from '@/components/reporting/time-reports/right-header/TimeReportingRightHeader';
+import { Card, Flex } from 'antd';
+import MembersTimeSheet, { MembersTimeSheetRef } from '@/pages/reporting/time-reports/members-time-sheet/members-time-sheet';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { IRPTTimeTotals } from '@/types/reporting/reporting.types';
+import TimeReportingRightHeader from '@/components/reporting/time-reports/right-header/TimeReportingRightHeader';
+import TimeReportPageHeader from '@/components/reporting/time-reports/page-header/TimeReportPageHeader';
+import TotalTimeUtilization from '@/components/reporting/time-reports/total-time-utilization/total-time-utilization';
 
 const MembersTimeReports = () => {
   const { t } = useTranslation('time-report');
   const chartRef = useRef<MembersTimeSheetRef>(null);
-
+  const [totals, setTotals] = useState<IRPTTimeTotals>({
+    total_time_logs: "0",
+    total_estimated_hours: "0",
+    total_utilization: "0",
+  });
   useDocumentTitle('Reporting - Allocation');
 
   const handleExport = (type: string) => {
@@ -20,24 +24,18 @@ const MembersTimeReports = () => {
     }
   };
 
-  const handleTotalsUpdate = (totals: {
-    total_time_logs: string;
-    total_estimated_hours: string;
-    total_utilization: string;
-  }) => {
-    // Handle totals update if needed
-    // This could be used to display totals in the UI or pass to parent components
-    console.log('Totals updated:', totals);
+  const handleTotalsUpdate = (newTotals: IRPTTimeTotals) => {
+    setTotals(newTotals);
   };
 
   return (
     <Flex vertical>
       <TimeReportingRightHeader
-        title={t('membersTimeSheet')}
+        title={t('Members Time Sheet')}
         exportType={[{ key: 'png', label: 'PNG' }]}
         export={handleExport}
       />
-
+      <TotalTimeUtilization totals={totals} />
       <Card
         style={{ borderRadius: '4px' }}
         title={
@@ -53,7 +51,7 @@ const MembersTimeReports = () => {
           },
         }}
       >
-        <MembersTimeSheet ref={chartRef} onTotalsUpdate={handleTotalsUpdate} />
+        <MembersTimeSheet onTotalsUpdate={handleTotalsUpdate} ref={chartRef} />
       </Card>
     </Flex>
   );

@@ -58,5 +58,20 @@
   "showSelected": "Shfaq Vetëm të Zgjedhurat",
   "expandAll": "Zgjero të Gjitha",
   "collapseAll": "Mbyll të Gjitha",
-  "ungrouped": "Pa Grupuar"
+  "ungrouped": "Pa Grupuar",
+
+  "totalTimeLogged": "Koha Totale e Regjistruar",
+  "acrossAllTeamMembers": "Në të gjithë anëtarët e ekipit",
+  "expectedCapacity": "Kapaciteti i Pritur",
+  "basedOnWorkingSchedule": "Bazuar në orarin e punës",
+  "teamUtilization": "Përdorimi i Ekipit",
+  "targetRange": "Gama e Objektivit",
+  "variance": "Varianca",
+  "overCapacity": "Mbi Kapacitetin",
+  "underCapacity": "Nën Kapacitetin",
+  "considerWorkloadRedistribution": "Konsidero rishpërndarjen e ngarkesës së punës",
+  "capacityAvailableForNewProjects": "Kapaciteti i disponueshëm për projekte të reja",
+  "optimal": "Optimal",
+  "underUtilized": "I Përdorur Pak",
+  "overUtilized": "I Përdorur Shumë"
 }

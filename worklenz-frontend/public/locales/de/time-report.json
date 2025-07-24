@@ -58,5 +58,20 @@
   "showSelected": "Nur Ausgewählte anzeigen",
   "expandAll": "Alle erweitern",
   "collapseAll": "Alle einklappen",
-  "ungrouped": "Nicht gruppiert"
+  "ungrouped": "Nicht gruppiert",
+
+  "totalTimeLogged": "Gesamte erfasste Zeit",
+  "acrossAllTeamMembers": "Über alle Teammitglieder",
+  "expectedCapacity": "Erwartete Kapazität",
+  "basedOnWorkingSchedule": "Basierend auf Arbeitsplan",
+  "teamUtilization": "Team-Auslastung",
+  "targetRange": "Zielbereich",
+  "variance": "Abweichung",
+  "overCapacity": "Überkapazität",
+  "underCapacity": "Unterkapazität",
+  "considerWorkloadRedistribution": "Arbeitslast-Umverteilung erwägen",
+  "capacityAvailableForNewProjects": "Kapazität für neue Projekte verfügbar",
+  "optimal": "Optimal",
+  "underUtilized": "Unterausgelastet",
+  "overUtilized": "Überausgelastet"
 }
