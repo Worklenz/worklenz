@@ -38,5 +38,13 @@
   "createClient": "创建客户",
   "searchInputPlaceholder": "按名称或电子邮件搜索",
   "hoursPerDayValidationMessage": "每天小时数必须是1到24之间的数字",
-  "noPermission": "无权限"
+  "workingDaysValidationMessage": "工作日必须是正数",
+  "manDaysValidationMessage": "人天必须是正数",
+  "noPermission": "无权限",
+  "progressSettings": "进度设置",
+  "manualProgress": "手动进度",
+  "manualProgressTooltip": "允许对没有子任务的任务进行手动进度更新",
+  "weightedProgress": "加权进度",
+  "weightedProgressTooltip": "基于子任务权重计算进度",
+  "timeProgress": "基于时间的进度"
 }

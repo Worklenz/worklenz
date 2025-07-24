@@ -1,9 +1,9 @@
 import { Card, Flex } from '@/shared/antd-imports';
-import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time-report-page-header';
+import TimeReportPageHeader from '@/components/reporting/time-reports/page-header/TimeReportPageHeader';
 import MembersTimeSheet, {
   MembersTimeSheetRef,
 } from '@/pages/reporting/time-reports/members-time-sheet/members-time-sheet';
-import TimeReportingRightHeader from './timeReportingRightHeader/TimeReportingRightHeader';
+import TimeReportingRightHeader from '@/components/reporting/time-reports/right-header/TimeReportingRightHeader';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useRef } from 'react';
@@ -20,10 +20,20 @@ const MembersTimeReports = () => {
     }
   };
 
+  const handleTotalsUpdate = (totals: {
+    total_time_logs: string;
+    total_estimated_hours: string;
+    total_utilization: string;
+  }) => {
+    // Handle totals update if needed
+    // This could be used to display totals in the UI or pass to parent components
+    console.log('Totals updated:', totals);
+  };
+
   return (
     <Flex vertical>
       <TimeReportingRightHeader
-        title={t('Members Time Sheet')}
+        title={t('membersTimeSheet')}
         exportType={[{ key: 'png', label: 'PNG' }]}
         export={handleExport}
       />
@@ -43,7 +53,7 @@ const MembersTimeReports = () => {
           },
         }}
       >
-        <MembersTimeSheet ref={chartRef} />
+        <MembersTimeSheet ref={chartRef} onTotalsUpdate={handleTotalsUpdate} />
       </Card>
     </Flex>
   );

@@ -56,7 +56,7 @@ const LanguageAndRegionSettings = () => {
       label: 'Deutsch',
     },
     {
-      value: Language.ZH_CN,
+      value: Language.ZH,
       label: '简体中文',
     },
   ];

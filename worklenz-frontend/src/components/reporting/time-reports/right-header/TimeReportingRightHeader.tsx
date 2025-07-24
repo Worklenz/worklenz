@@ -2,11 +2,11 @@ import React from 'react';
 import { Button, Checkbox, Dropdown, Space, Typography } from '@/shared/antd-imports';
 import { DownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import CustomPageHeader from '../../page-header/custom-page-header';
-import TimeWiseFilter from '../../../../components/reporting/time-wise-filter';
+import TimeWiseFilter from '@/components/reporting/time-wise-filter';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { setArchived } from '@/features/reporting/time-reports/time-reports-overview.slice';
+import CustomPageHeader from '@/pages/reporting/page-header/custom-page-header';
 
 interface headerState {
   title: string;

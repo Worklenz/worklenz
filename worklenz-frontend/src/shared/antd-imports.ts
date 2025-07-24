@@ -263,6 +263,7 @@ export type {
   PaginationProps,
   CollapseProps,
   TablePaginationConfig,
+  CheckboxChangeEvent
 } from 'antd/es';
 
 // Dayjs

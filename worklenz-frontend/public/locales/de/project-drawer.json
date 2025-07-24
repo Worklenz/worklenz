@@ -38,5 +38,13 @@
   "createClient": "Kunde erstellen",
   "searchInputPlaceholder": "Nach Name oder E-Mail suchen",
   "hoursPerDayValidationMessage": "Stunden pro Tag müssen zwischen 1 und 24",
-  "noPermission": "Keine Berechtigung"
+  "workingDaysValidationMessage": "Arbeitstage müssen eine positive Zahl sein",
+  "manDaysValidationMessage": "Personentage müssen eine positive Zahl sein",
+  "noPermission": "Keine Berechtigung",
+  "progressSettings": "Fortschrittseinstellungen",
+  "manualProgress": "Manueller Fortschritt",
+  "manualProgressTooltip": "Manuelle Fortschrittsaktualisierungen für Aufgaben ohne Unteraufgaben erlauben",
+  "weightedProgress": "Gewichteter Fortschritt",
+  "weightedProgressTooltip": "Fortschritt basierend auf Unteraufgaben-Gewichten berechnen",
+  "timeProgress": "Zeitbasierter Fortschritt"
 }

@@ -26,5 +26,8 @@
   "noDueDate": "Pa datë përfundimi",
   "save": "Ruaj",
   "clear": "Pastro",
-  "nextWeek": "Javën e ardhshme"
+  "nextWeek": "Javën e ardhshme",
+  "noSubtasks": "Pa nëndetyra",
+  "showSubtasks": "Shfaq nëndetyrat",
+  "hideSubtasks": "Fshih nëndetyrat"
 }

@@ -20,7 +20,7 @@ export const currentDateString = (): string => {
     case 'de':
       locale = 'de';
       break;
-    case 'zh_cn':
+    case 'zh':
       locale = 'zh-cn';
       break;
     case 'alb':
@@ -45,7 +45,7 @@ export const currentDateString = (): string => {
     case 'de':
       todayText = 'Heute ist';
       break;
-    case 'zh_cn':
+    case 'zh':
       todayText = '今天是';
       break;
     case 'alb':

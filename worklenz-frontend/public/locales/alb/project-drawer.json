@@ -38,5 +38,13 @@
   "createClient": "Krijo klient",
   "searchInputPlaceholder": "Kërko sipas emrit ose emailit",
   "hoursPerDayValidationMessage": "Orët në ditë duhet të jenë një numër midis 1 dhe 24",
-  "noPermission": "Nuk ka leje"
+  "workingDaysValidationMessage": "Ditët e punës duhet të jenë një numër pozitiv",
+  "manDaysValidationMessage": "Ditët e punëtorëve duhet të jenë një numër pozitiv",
+  "noPermission": "Nuk ka leje",
+  "progressSettings": "Cilësimet e Progresit",
+  "manualProgress": "Progresi Manual",
+  "manualProgressTooltip": "Lejo përditësimet manuale të progresit për detyrat pa nëndetyra",
+  "weightedProgress": "Progresi i Ponderuar",
+  "weightedProgressTooltip": "Llogarit progresin bazuar në peshat e nëndetyrave",
+  "timeProgress": "Progresi i Bazuar në Kohë"
 }

@@ -5,6 +5,7 @@
 
   "searchByName": "Buscar por nombre",
   "selectAll": "Seleccionar Todo",
+  "clearAll": "Limpiar Todo",
   "teams": "Equipos",
 
   "searchByProject": "Buscar por nombre del proyecto",
@@ -15,6 +16,8 @@
 
   "billable": "Facturable",
   "nonBillable": "No Facturable",
+  "allBillableTypes": "Todos los Tipos Facturables",
+  "filterByBillableStatus": "Filtrar por estado facturable",
 
   "total": "Total",
 
@@ -28,6 +31,9 @@
 
   "membersTimeSheet": "Hoja de Tiempo de Miembros",
   "member": "Miembro",
+  "members": "Miembros",
+  "searchByMember": "Buscar por miembro",
+  "utilization": "Utilización",
 
   "estimatedVsActual": "Estimado vs Real",
   "workingDays": "Días Laborables",

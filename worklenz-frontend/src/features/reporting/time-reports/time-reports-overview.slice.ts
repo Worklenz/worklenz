@@ -23,6 +23,12 @@ interface ITimeReportsOverviewState {
     billable: boolean;
     nonBillable: boolean;
   };
+
+  members: any[];
+  loadingMembers: boolean;
+
+  utilization: any[];
+  loadingUtilization: boolean;
 }
 
 const initialState: ITimeReportsOverviewState = {
@@ -42,6 +48,15 @@ const initialState: ITimeReportsOverviewState = {
     billable: true,
     nonBillable: true,
   },
+  members: [],
+  loadingMembers: false,
+
+  utilization: [],
+  loadingUtilization: false,
+};
+
+const selectedMembers = (state: ITimeReportsOverviewState) => {
+  return state.members.filter(member => member.selected).map(member => member.id) as string[];
 };
 
 const selectedTeams = (state: ITimeReportsOverviewState) => {
@@ -53,6 +68,76 @@ const selectedCategories = (state: ITimeReportsOverviewState) => {
     .filter(category => category.selected)
     .map(category => category.id) as string[];
 };
+
+const selectedUtilization = (state: ITimeReportsOverviewState) => {
+  return state.utilization
+    .filter(utilization => utilization.selected)
+    .map(utilization => utilization.id) as string[];
+};
+
+const allUtilization = (state: ITimeReportsOverviewState) => {
+  return state.utilization;
+};
+
+export const fetchReportingUtilization = createAsyncThunk(
+  'timeReportsOverview/fetchReportingUtilization',
+  async (_, { rejectWithValue }) => {
+    try {
+      const utilization = [
+        { id: 'under', name: 'Under-utilized (Under 90%)', selected: true },
+        { id: 'optimal', name: 'Optimal-utilized (90%-110%)', selected: true },
+        { id: 'over', name: 'Over-utilized (Over 110%)', selected: true },
+      ];
+      return utilization;
+    } catch (error) {
+      let errorMessage = 'An error occurred while fetching utilization';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const fetchReportingMembers = createAsyncThunk(
+  'timeReportsOverview/fetchReportingMembers',
+  async (_, { rejectWithValue, getState }) => {
+    const state = getState() as { timeReportsOverviewReducer: ITimeReportsOverviewState };
+    const { timeReportsOverviewReducer } = state;
+
+    try {
+      // If members array is empty (initial load), fetch all members without pagination
+      // Otherwise, use the selected members filter
+      let queryParams;
+      if (timeReportsOverviewReducer.members.length === 0) {
+        // Initial load - fetch all members with a large page size to avoid pagination
+        queryParams = {
+          size: 1000, // Large number to get all members
+          index: 1,
+          search: '',
+          field: 'name',
+          order: 'asc',
+        };
+      } else {
+        // Subsequent calls - use selected members
+        queryParams = selectedMembers(timeReportsOverviewReducer);
+      }
+
+      const res = await reportingApiService.getMembers(queryParams);
+      if (res.done) {
+        return res.body;
+      } else {
+        return rejectWithValue(res.message || 'Failed to fetch members');
+      }
+    } catch (error) {
+      let errorMessage = 'An error occurred while fetching members';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
 
 export const fetchReportingTeams = createAsyncThunk(
   'timeReportsOverview/fetchReportingTeams',
@@ -141,6 +226,34 @@ const timeReportsOverviewSlice = createSlice({
     setArchived: (state, action: PayloadAction<boolean>) => {
       state.archived = action.payload;
     },
+    setSelectOrDeselectMember: (
+      state,
+      action: PayloadAction<{ id: string; selected: boolean }>
+    ) => {
+      const member = state.members.find(member => member.id === action.payload.id);
+      if (member) {
+        member.selected = action.payload.selected;
+      }
+    },
+    setSelectOrDeselectAllMembers: (state, action: PayloadAction<boolean>) => {
+      state.members.forEach(member => {
+        member.selected = action.payload;
+      });
+    },
+    setSelectOrDeselectUtilization: (
+      state,
+      action: PayloadAction<{ id: string; selected: boolean }>
+    ) => {
+      const utilization = state.utilization.find(u => u.id === action.payload.id);
+      if (utilization) {
+        utilization.selected = action.payload.selected;
+      }
+    },
+    setSelectOrDeselectAllUtilization: (state, action: PayloadAction<boolean>) => {
+      state.utilization.forEach(utilization => {
+        utilization.selected = action.payload;
+      });
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchReportingTeams.fulfilled, (state, action) => {
@@ -185,6 +298,37 @@ const timeReportsOverviewSlice = createSlice({
     builder.addCase(fetchReportingProjects.rejected, state => {
       state.loadingProjects = false;
     });
+    builder.addCase(fetchReportingMembers.fulfilled, (state, action) => {
+      const members = action.payload.members.map((member: any) => ({
+        id: member.id,
+        name: member.name,
+        selected: true,
+        avatar_url: member.avatar_url,
+        email: member.email,
+      }));
+      state.members = members;
+      state.loadingMembers = false;
+    });
+
+    builder.addCase(fetchReportingMembers.pending, state => {
+      state.loadingMembers = true;
+    });
+
+    builder.addCase(fetchReportingMembers.rejected, (state, action) => {
+      state.loadingMembers = false;
+      console.error('Error fetching members:', action.payload);
+    });
+    builder.addCase(fetchReportingUtilization.fulfilled, (state, action) => {
+      state.utilization = action.payload;
+      state.loadingUtilization = false;
+    });
+    builder.addCase(fetchReportingUtilization.pending, state => {
+      state.loadingUtilization = true;
+    });
+    builder.addCase(fetchReportingUtilization.rejected, (state, action) => {
+      state.loadingUtilization = false;
+      console.error('Error fetching utilization:', action.payload);
+    });
   },
 });
 
@@ -197,6 +341,10 @@ export const {
   setSelectOrDeselectProject,
   setSelectOrDeselectAllProjects,
   setSelectOrDeselectBillable,
+  setSelectOrDeselectMember,
+  setSelectOrDeselectAllMembers,
+  setSelectOrDeselectUtilization,
+  setSelectOrDeselectAllUtilization,
   setNoCategory,
   setArchived,
 } = timeReportsOverviewSlice.actions;

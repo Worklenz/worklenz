@@ -17,7 +17,7 @@ const LanguageSelector = () => {
     { key: 'pt', label: 'Português' },
     { key: 'alb', label: 'Shqip' },
     { key: 'de', label: 'Deutsch' },
-    { key: 'zh_cn', label: '简体中文' },
+    { key: 'zh', label: '简体中文' },
   ];
 
   const languageLabels = {
@@ -26,7 +26,7 @@ const LanguageSelector = () => {
     pt: 'Pt',
     alb: 'Sq',
     de: 'de',
-    zh_cn: 'zh_cn',
+    zh: 'zh',
   };
 
   return (
