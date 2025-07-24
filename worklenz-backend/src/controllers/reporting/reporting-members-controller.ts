@@ -6,10 +6,10 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, getColor, int } from "../../shared/utils";
-import ReportingControllerBase from "./reporting-controller-base";
+import ReportingControllerBaseWithTimezone from "./reporting-controller-base-with-timezone";
 import Excel from "exceljs";
 
-export default class ReportingMembersController extends ReportingControllerBase {
+export default class ReportingMembersController extends ReportingControllerBaseWithTimezone {
 
   private static async getMembers(
     teamId: string, searchQuery = "",
@@ -487,7 +487,9 @@ export default class ReportingMembersController extends ReportingControllerBase 
       dateRange = date_range.split(",");
     }
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "twl");
+    // Get user timezone for proper date filtering
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
     const minMaxDateClause = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_work_log");
     const memberName = (req.query.member_name as string)?.trim() || null;
 
@@ -1038,7 +1040,9 @@ export default class ReportingMembersController extends ReportingControllerBase 
   public static async getMemberTimelogs(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, team_id, duration, date_range, archived, billable } = req.body;
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration || DATE_RANGES.LAST_WEEK, date_range, "twl");
+    // Get user timezone for proper date filtering
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
     const minMaxDateClause = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_work_log");
 
     const billableQuery = this.buildBillableQuery(billable);
