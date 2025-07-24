@@ -1,4 +1,4 @@
-import { Drawer, Flex, Form, Select, Typography, List, Button } from 'antd/es';
+import { Drawer, Flex, Form, Select, Typography, List, Button, Modal, Divider } from 'antd/es';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 
@@ -21,7 +21,7 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 
 const ProjectMemberDrawer = () => {
   const { t } = useTranslation('project-view/project-member-drawer');
-  const { isDrawerOpen, currentMembersList, isLoading } = useAppSelector(
+  const { isDrawerOpen, currentMembersList, isLoading, isFromAssigner } = useAppSelector(
     state => state.projectMemberReducer
   );
   const { projectId } = useAppSelector(state => state.projectReducer);
@@ -175,8 +175,9 @@ const ProjectMemberDrawer = () => {
   );
 
   const renderNotFoundContent = () => (
-    <Flex>
+    <Flex style={{ display: 'block'}}>
       <Button
+        className='mb-2'
         block
         type="primary"
         onClick={sendInviteToProject}
@@ -188,60 +189,74 @@ const ProjectMemberDrawer = () => {
           {validateEmail(searchTerm) ? t('inviteAsAMember') : t('inviteNewMemberByEmail')}
         </span>
       </Button>
+      {/* {isFromAssigner && <Flex>
+          <input className='mr-2' type="checkbox" checked={true} name={t('alsoInviteToProject')} id="AlsoInviteToProject" />
+          <label htmlFor={t('alsoInviteToProject')}>{t('alsoInviteToProject')}</label>
+        </Flex>} */}
     </Flex>
   );
 
   return (
-    <Drawer
-      title={
-        <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>{t('title')}</Typography.Text>
-      }
-      open={isDrawerOpen}
-      onClose={() => dispatch(toggleProjectMemberDrawer())}
-      afterOpenChange={handleOpenChange}
-    >
-      <Form form={form} layout="vertical" onFinish={handleSelectChange}>
-        <Form.Item name="memberName" label={t('searchLabel')}>
-          <Select
-            loading={teamMembersLoading}
-            placeholder={t('searchPlaceholder')}
-            showSearch
-            onSearch={handleSearch}
-            onChange={handleSelectChange}
-            onKeyDown={handleKeyDown}
-            options={members?.data?.map(member => ({
-              key: member.id,
-              value: member.id,
-              name: member.name,
-              label: renderMemberOption(member),
-            }))}
-            filterOption={false}
-            notFoundContent={renderNotFoundContent()}
-            optionLabelProp="name"
+      <Modal
+        title={
+          <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>{isFromAssigner ? t('inviteMember') : t('title')}</Typography.Text>
+        }
+        open={isDrawerOpen}
+        onCancel={() => dispatch(toggleProjectMemberDrawer())}
+        afterOpenChange={handleOpenChange}
+        footer={
+          <>
+          {/* {!isFromAssigner && <Button
+            style={{ width: 140, fontSize: 12 }}
+            block
+            icon={<LinkOutlined />}
+            disabled
+          >
+            {t('copyProjectLink')}
+          </Button>} */}
+          </>
+        }
+      >
+        <Form form={form} layout="vertical" onFinish={handleSelectChange}>
+          <Form.Item name="memberName" label={t('searchLabel')}>
+            <Select
+              loading={teamMembersLoading}
+              placeholder={t('searchPlaceholder')}
+              showSearch
+              onSearch={handleSearch}
+              onChange={handleSelectChange}
+              onKeyDown={handleKeyDown}
+              options={members?.data?.map(member => ({
+                key: member.id,
+                value: member.id,
+                name: member.name,
+                label: renderMemberOption(member),
+              }))}
+              filterOption={false}
+              notFoundContent={renderNotFoundContent()}
+              optionLabelProp="name"
+            />
+          </Form.Item>
+        </Form>
+        {!isFromAssigner && <><div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>{t('members')}</div>
+        <div style={{ maxHeight: 360, minHeight: 120, overflowY: 'auto', marginBottom: 16 }}>
+          <List
+            loading={isLoading}
+            bordered
+            size="small"
+            itemLayout="horizontal"
+            dataSource={currentMembersList}
+            renderItem={member => (
+              <List.Item key={member.id} >
+                <Flex gap={4} align="center" justify="space-between" style={{ width: '100%' }}>
+                  {renderMemberOption(member)}
+                </Flex>
+              </List.Item>
+            )}
           />
-        </Form.Item>
-      </Form>
-
-      <List
-        loading={isLoading}
-        bordered
-        size="small"
-        itemLayout="horizontal"
-        dataSource={currentMembersList}
-        renderItem={member => (
-          <List.Item key={member.id}>
-            <Flex gap={4} align="center" justify="space-between" style={{ width: '100%' }}>
-              {renderMemberOption(member)}
-              <Button
-                onClick={() => handleDeleteMember(member.id)}
-                size="small"
-                icon={<DeleteOutlined />}
-              />
-            </Flex>
-          </List.Item>
-        )}
-      />
-    </Drawer>
+        </div></>
+        }
+      </Modal>
   );
 };
 

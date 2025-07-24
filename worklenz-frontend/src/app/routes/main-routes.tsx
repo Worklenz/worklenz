@@ -17,6 +17,7 @@ const ProjectTemplateEditView = lazy(
 const LicenseExpired = lazy(() => import('@/pages/license-expired/license-expired'));
 const ProjectView = lazy(() => import('@/pages/projects/projectView/project-view'));
 const Unauthorized = lazy(() => import('@/pages/unauthorized/unauthorized'));
+const GanttDemoPage = lazy(() => import('@/pages/GanttDemoPage'));
 
 // Define AdminGuard component with defensive programming
 const AdminGuard = ({ children }: { children: React.ReactNode }) => {
@@ -103,6 +104,14 @@ const mainRoutes: RouteObject[] = [
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <Unauthorized />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'gantt-demo',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <GanttDemoPage />
           </Suspense>
         ),
       },
