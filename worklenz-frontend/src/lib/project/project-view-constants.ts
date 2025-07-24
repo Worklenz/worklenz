@@ -5,6 +5,7 @@ import i18n from '@/i18n';
 // Import core components synchronously to avoid suspense in main tabs
 import ProjectViewEnhancedBoard from '@/pages/projects/projectView/enhancedBoard/project-view-enhanced-board';
 import TaskListV2 from '@/components/task-list-v2/TaskListV2';
+import ProjectViewFinance from '@/pages/projects/projectView/finance/ProjectViewFinance';
 
 // Lazy load less critical components
 const ProjectViewInsights = React.lazy(
@@ -115,6 +116,16 @@ export const tabItems: TabItems[] = [
       Suspense,
       { fallback: React.createElement(InlineSuspenseFallback) },
       React.createElement(ProjectViewUpdates)
+    ),
+  },
+  {
+    index: 6,
+    key: 'finance',
+    label: getTabLabel('finance'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewFinance)
     ),
   },
 ];

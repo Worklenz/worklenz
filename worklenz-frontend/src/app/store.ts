@@ -86,6 +86,10 @@ import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import projectViewReducer from '@features/project/project-view-slice';
 import taskManagementFieldsReducer from '@features/task-management/taskListFields.slice';
 
+import projectFinanceRateCardReducer from '@/features/finance/project-finance-slice';
+import projectFinancesReducer from '@/features/projects/finance/project-finance.slice';
+import financeReducer from '@/features/projects/finance/finance-slice';
+
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -174,6 +178,11 @@ export const store = configureStore({
     grouping: groupingReducer,
     taskManagementSelection: selectionReducer,
     taskManagementFields: taskManagementFieldsReducer,
+
+    // Finance
+    projectFinanceRateCardReducer: projectFinanceRateCardReducer,
+    projectFinancesReducer: projectFinancesReducer,
+    financeReducer: financeReducer,
   },
 });
 

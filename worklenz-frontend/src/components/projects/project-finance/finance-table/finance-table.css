@@ -1,0 +1,63 @@
+/* Finance Table Styles */
+
+/* Enhanced hierarchy visual indicators */
+.finance-table-task-row {
+  transition: all 0.2s ease-in-out;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dark .finance-table-task-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Hover effect is now handled by inline styles in the component for consistency */
+
+/* Nested task styling */
+.finance-table-nested-task {
+  /* No visual connectors, just clean indentation */
+}
+
+/* Expand/collapse button styling */
+.finance-table-expand-btn {
+  transition: all 0.2s ease-in-out;
+  border-radius: 2px;
+  padding: 2px;
+}
+
+.finance-table-expand-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.1);
+}
+
+.dark .finance-table-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Task name styling for different levels */
+.finance-table-task-name {
+  transition: all 0.2s ease-in-out;
+}
+
+.finance-table-task-name:hover {
+  color: #40a9ff !important;
+}
+
+/* Fixed cost input styling */
+.fixed-cost-input {
+  border-radius: 4px;
+}
+
+.fixed-cost-input:focus {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Responsive adjustments for nested content */
+@media (max-width: 768px) {
+  .finance-table-nested-task {
+    padding-left: 12px;
+  }
+
+  .finance-table-task-name {
+    font-size: 12px !important;
+  }
+}
