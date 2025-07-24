@@ -13,19 +13,25 @@ interface Props {
   onEnter: () => void;
   styles: any;
   organizationNamePlaceholder: string;
+  organizationNameInitialValue?: string;
 }
 
 export const OrganizationStep: React.FC<Props> = ({
   onEnter,
   styles,
   organizationNamePlaceholder,
+  organizationNameInitialValue,
 }) => {
   const { t } = useTranslation('account-setup');
   const dispatch = useDispatch();
   const { organizationName } = useSelector((state: RootState) => state.accountSetupReducer);
   const inputRef = useRef<InputRef>(null);
 
+  // Autofill organization name if not already set
   useEffect(() => {
+    if (!organizationName && organizationNameInitialValue) {
+      dispatch(setOrganizationName(organizationNameInitialValue));
+    }
     setTimeout(() => inputRef.current?.focus(), 300);
   }, []);
 

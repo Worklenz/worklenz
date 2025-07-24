@@ -27,5 +27,43 @@
   "formTitle": "Erstellen Sie Ihre erste Aufgabe.",
   "step3Title": "Laden Sie Ihr Team zur Zusammenarbeit ein",
   "maxMembers": " (Sie können bis zu 5 Mitglieder einladen)",
-  "maxTasks": " (Sie können bis zu 5 Aufgaben erstellen)"
+  "maxTasks": " (Sie können bis zu 5 Aufgaben erstellen)",
+
+  "surveyStepTitle": "Erzählen Sie uns von sich",
+  "surveyStepLabel": "Helfen Sie uns, Ihre Worklenz-Erfahrung zu personalisieren, indem Sie ein paar Fragen beantworten.",
+  
+  "organizationType": "Was beschreibt Ihre Organisation am besten?",
+  "organizationTypeFreelancer": "Freelancer",
+  "organizationTypeStartup": "Startup",
+  "organizationTypeSmallMediumBusiness": "Kleines oder mittleres Unternehmen",
+  "organizationTypeAgency": "Agentur",
+  "organizationTypeEnterprise": "Unternehmen",
+  "organizationTypeOther": "Andere",
+  
+  "userRole": "Was ist Ihre Rolle?",
+  "userRoleFounderCeo": "Gründer / CEO",
+  "userRoleProjectManager": "Projektmanager",
+  "userRoleSoftwareDeveloper": "Software-Entwickler",
+  "userRoleDesigner": "Designer",
+  "userRoleOperations": "Betrieb",
+  "userRoleOther": "Andere",
+  
+  "mainUseCases": "Wofür werden Sie Worklenz hauptsächlich verwenden?",
+  "mainUseCasesTaskManagement": "Aufgabenverwaltung",
+  "mainUseCasesTeamCollaboration": "Teamzusammenarbeit",
+  "mainUseCasesResourcePlanning": "Ressourcenplanung",
+  "mainUseCasesClientCommunication": "Kundenkommunikation & Berichterstattung",
+  "mainUseCasesTimeTracking": "Zeiterfassung",
+  "mainUseCasesOther": "Andere",
+  
+  "previousTools": "Welche Tools haben Sie vor Worklenz verwendet?",
+  "previousToolsPlaceholder": "z.B. Trello, Asana, Monday.com",
+  
+  "howHeardAbout": "Wie haben Sie von Worklenz erfahren?",
+  "howHeardAboutGoogleSearch": "Google-Suche",
+  "howHeardAboutTwitter": "Twitter",
+  "howHeardAboutLinkedin": "LinkedIn",
+  "howHeardAboutFriendColleague": "Ein Freund oder Kollege",
+  "howHeardAboutBlogArticle": "Ein Blog oder Artikel",
+  "howHeardAboutOther": "Andere"
 }

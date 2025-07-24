@@ -23,5 +23,43 @@
   "formTitle": "创建您的第一个任务。",
   "step3Title": "邀请您的团队一起工作",
   "maxMembers": "（您最多可以邀请5名成员）",
-  "maxTasks": "（您最多可以创建5个任务）"
+  "maxTasks": "（您最多可以创建5个任务）",
+
+  "surveyStepTitle": "告诉我们关于您的信息",
+  "surveyStepLabel": "通过回答几个问题帮助我们个性化您的Worklenz体验。",
+  
+  "organizationType": "什么最能描述您的组织？",
+  "organizationTypeFreelancer": "自由职业者",
+  "organizationTypeStartup": "初创公司",
+  "organizationTypeSmallMediumBusiness": "中小企业",
+  "organizationTypeAgency": "代理机构",
+  "organizationTypeEnterprise": "企业",
+  "organizationTypeOther": "其他",
+  
+  "userRole": "您的角色是什么？",
+  "userRoleFounderCeo": "创始人/CEO",
+  "userRoleProjectManager": "项目经理",
+  "userRoleSoftwareDeveloper": "软件开发者",
+  "userRoleDesigner": "设计师",
+  "userRoleOperations": "运营",
+  "userRoleOther": "其他",
+  
+  "mainUseCases": "您主要将Worklenz用于什么？",
+  "mainUseCasesTaskManagement": "任务管理",
+  "mainUseCasesTeamCollaboration": "团队协作",
+  "mainUseCasesResourcePlanning": "资源规划",
+  "mainUseCasesClientCommunication": "客户沟通和报告",
+  "mainUseCasesTimeTracking": "时间跟踪",
+  "mainUseCasesOther": "其他",
+  
+  "previousTools": "您在使用Worklenz之前使用什么工具？",
+  "previousToolsPlaceholder": "例如：Trello、Asana、Monday.com",
+  
+  "howHeardAbout": "您是如何了解Worklenz的？",
+  "howHeardAboutGoogleSearch": "Google搜索",
+  "howHeardAboutTwitter": "Twitter",
+  "howHeardAboutLinkedin": "LinkedIn",
+  "howHeardAboutFriendColleague": "朋友或同事",
+  "howHeardAboutBlogArticle": "博客或文章",
+  "howHeardAboutOther": "其他"
 }
