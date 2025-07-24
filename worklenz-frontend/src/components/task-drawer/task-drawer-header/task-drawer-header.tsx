@@ -1,6 +1,6 @@
-import { Button, Dropdown, Flex, Input, InputRef, MenuProps, Tooltip } from 'antd';
+import { Button, Dropdown, Flex, Input, InputRef, MenuProps, Tooltip } from '@/shared/antd-imports';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { EllipsisOutlined } from '@ant-design/icons';
+import { EllipsisOutlined } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
 import './task-drawer-header.css';

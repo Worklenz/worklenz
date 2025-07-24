@@ -10,7 +10,7 @@ import {
   DeleteOutlined,
   MoreOutlined,
   CloseCircleOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

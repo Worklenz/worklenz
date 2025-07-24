@@ -1,4 +1,4 @@
-import { Flex, Typography } from 'antd';
+import { Flex, Typography } from '@/shared/antd-imports';
 import logo from '@/assets/images/worklenz-light-mode.png';
 import logoDark from '@/assets/images/worklenz-dark-mode.png';
 import { useAppSelector } from '@/hooks/useAppSelector';

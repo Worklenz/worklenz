@@ -10,7 +10,6 @@ import {
   Tabs,
   PushpinFilled,
   PushpinOutlined,
-  type TabsProps,
 } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -40,7 +39,6 @@ import { setProjectId as setInsightsProjectId } from '@/features/projects/insigh
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
-
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';

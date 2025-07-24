@@ -1,5 +1,5 @@
 import { AvatarNamesMap } from '@/shared/constants';
-import { Avatar, Flex, Space } from 'antd';
+import { Avatar, Flex, Space } from '@/shared/antd-imports';
 
 interface SingleAvatarProps {
   avatarUrl?: string;

@@ -1,4 +1,4 @@
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/shared/antd-imports';
 import {
   Button,
   Card,
@@ -10,7 +10,7 @@ import {
   InputRef,
   List,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TFunction } from 'i18next';
 

@@ -1,5 +1,5 @@
-import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Card, Checkbox, Dropdown, List, Space } from 'antd';
+import { CaretDownFilled } from '@/shared/antd-imports';
+import { Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

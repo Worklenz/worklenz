@@ -1,4 +1,4 @@
-import { Button, Flex, Input, InputRef } from 'antd';
+import { Button, Flex, Input, InputRef } from '@/shared/antd-imports';
 import React, { useRef, useState, useEffect } from 'react';
 import { Dayjs } from 'dayjs';
 import { nanoid } from '@reduxjs/toolkit';

@@ -9,7 +9,7 @@ import {
   setConvertToSubtaskDrawerOpen,
   updateTaskStatus,
 } from '@/features/tasks/tasks.slice';
-import { RightOutlined } from '@ant-design/icons';
+import { RightOutlined } from '@/shared/antd-imports';
 import CustomSearchbar from '@/components/CustomSearchbar';
 import { ITaskListConfigV2, tasksApiService } from '@/api/tasks/tasks.api.service';
 import { SocketEvents } from '@/shared/socket-events';

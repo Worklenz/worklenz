@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Form, Input, Button, List, Alert, message, InputRef } from 'antd';
-import { CloseCircleOutlined, MailOutlined, PlusOutlined } from '@ant-design/icons';
+import { Form, Input, Button, List, Alert, message, InputRef } from '@/shared/antd-imports';
+import { CloseCircleOutlined, MailOutlined, PlusOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { Typography } from 'antd';
+import { Typography } from '@/shared/antd-imports';
 import { setTeamMembers, setTasks } from '@/features/account-setup/account-setup.slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/app/store';

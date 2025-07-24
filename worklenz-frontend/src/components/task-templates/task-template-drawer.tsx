@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Drawer, Form, Input, List, Typography } from 'antd';
+import { Button, Drawer, Form, Input, List, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';

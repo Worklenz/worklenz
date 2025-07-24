@@ -11,14 +11,14 @@ import {
   Select,
   Tag,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useRef, useState } from 'react';
 import {
   healthStatusData,
   projectColors,
   statusData,
 } from '../../../lib/project/project-constants';
-import { PlusCircleOutlined, PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { PlusCircleOutlined, PlusOutlined, QuestionCircleOutlined } from '@/shared/antd-imports';
 import { colors } from '../../../styles/colors';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

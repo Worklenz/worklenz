@@ -1,7 +1,7 @@
-import { Flex, Typography, theme } from 'antd';
+import { Flex, Typography, theme } from '@/shared/antd-imports';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import OverviewStatCard from './overview-stat-card';
-import { BankOutlined, FileOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import { BankOutlined, FileOutlined, UsergroupAddOutlined } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { IRPTOverviewStatistics } from '@/types/reporting/reporting.types';

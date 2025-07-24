@@ -11,14 +11,14 @@ import {
   InputRef,
   List,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '../../../features/projects/singleProject/members/projectMembersSlice';
 import CustomAvatar from '../../CustomAvatar';
 import { colors } from '../../../styles/colors';
-import { PlusOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import { PlusOutlined, UsergroupAddOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { ITaskAssignee } from '@/types/tasks/task.types';
 

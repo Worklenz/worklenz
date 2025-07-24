@@ -1,4 +1,4 @@
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import React, { useEffect, useMemo, useState } from 'react';
 import CustomSearchbar from '@components/CustomSearchbar';
 import GroupByFilter from './group-by-filter';

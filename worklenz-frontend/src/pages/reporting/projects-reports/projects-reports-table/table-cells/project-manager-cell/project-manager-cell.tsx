@@ -1,4 +1,4 @@
-import { Avatar, Flex, Typography } from 'antd';
+import { Avatar, Flex, Typography } from '@/shared/antd-imports';
 import CustomAvatar from '@components/CustomAvatar';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';

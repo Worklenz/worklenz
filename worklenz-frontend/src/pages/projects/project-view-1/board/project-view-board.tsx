@@ -10,8 +10,8 @@ import {
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskListFilters from '../taskList/taskListFilters/TaskListFilters';
-import { Button, Skeleton } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Button, Skeleton } from '@/shared/antd-imports';
+import { PlusOutlined } from '@/shared/antd-imports';
 import { useDispatch } from 'react-redux';
 import { toggleDrawer } from '@/features/projects/status/StatusSlice';
 import KanbanGroup from '@/components/board/kanban-group/kanban-group';

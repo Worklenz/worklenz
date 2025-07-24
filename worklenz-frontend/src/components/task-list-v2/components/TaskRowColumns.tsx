@@ -1,10 +1,7 @@
-import React, { memo, useCallback, useState, useRef } from 'react';
-import { CheckCircleOutlined, HolderOutlined, CloseOutlined, DownOutlined, RightOutlined, DoubleRightOutlined, ArrowsAltOutlined, CommentOutlined, EyeOutlined, PaperClipOutlined, MinusCircleOutlined, RetweetOutlined } from '@ant-design/icons';
-import { Checkbox, DatePicker, Tooltip, Input } from 'antd';
-import type { InputRef } from 'antd';
-import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
+import React, { memo } from 'react';
+import { CheckCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
+import { Checkbox } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import AssigneeSelector from '@/components/AssigneeSelector';
 import { format } from 'date-fns';
 import AvatarGroup from '../../AvatarGroup';
@@ -13,9 +10,6 @@ import TaskProgress from '@/pages/projects/project-view-1/taskList/taskListTable
 import TaskStatusDropdown from '@/components/task-management/task-status-dropdown';
 import TaskPriorityDropdown from '@/components/task-management/task-priority-dropdown';
 import TaskPhaseDropdown from '@/components/task-management/task-phase-dropdown';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
-import { useTranslation } from 'react-i18next';
 import TaskTimeTracking from '../TaskTimeTracking';
 import { CustomNumberLabel, CustomColordLabel } from '@/components';
 import LabelsSelector from '@/components/LabelsSelector';

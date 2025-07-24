@@ -1,7 +1,7 @@
 import React from 'react';
 import 'gantt-task-react/dist/index.css';
 import { ViewMode } from 'gantt-task-react';
-import { Flex, Select } from 'antd';
+import { Flex, Select } from '@/shared/antd-imports';
 type TimeFilterProps = {
   onViewModeChange: (viewMode: ViewMode) => void;
 };

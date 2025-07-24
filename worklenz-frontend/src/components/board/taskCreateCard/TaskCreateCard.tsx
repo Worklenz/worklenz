@@ -1,4 +1,4 @@
-import { Avatar, Button, DatePicker, Input, InputRef } from 'antd';
+import { Avatar, Button, DatePicker, Input, InputRef } from '@/shared/antd-imports';
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import AddMembersDropdown from '../../add-members-dropdown/add-members-dropdown';
 import dayjs, { Dayjs } from 'dayjs';

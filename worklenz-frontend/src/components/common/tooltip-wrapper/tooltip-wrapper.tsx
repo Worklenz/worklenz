@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip, TooltipProps } from 'antd';
+import { Tooltip, TooltipProps } from '@/shared/antd-imports';
 
 interface TooltipWrapperProps extends Omit<TooltipProps, 'children'> {
   children: React.ReactElement;

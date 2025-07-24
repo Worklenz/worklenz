@@ -1,5 +1,5 @@
-import { QuestionCircleOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import { QuestionCircleOutlined } from '@/shared/antd-imports';
+import { Button, Tooltip } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import './HelpButton.css';

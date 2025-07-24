@@ -11,11 +11,11 @@ import {
   TableProps,
   Tooltip,
   Typography,
-  Input, // <-- Add this import
-} from 'antd';
+  Input
+} from '@/shared/antd-imports';
 
 // Icons
-import { DeleteOutlined, ExclamationCircleFilled, SyncOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled, SyncOutlined } from '@/shared/antd-imports';
 
 // React & Router
 import { useEffect, useState } from 'react';

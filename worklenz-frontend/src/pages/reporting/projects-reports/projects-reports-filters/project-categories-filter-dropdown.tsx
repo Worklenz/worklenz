@@ -4,8 +4,8 @@ import { setSelectedProjectCategories } from '@/features/reporting/projectReport
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
-import { CaretDownFilled } from '@ant-design/icons';
-import { Badge, Button, Card, Checkbox, Dropdown, Empty, Flex, Input, InputRef, List } from 'antd';
+import { CaretDownFilled } from '@/shared/antd-imports';
+import { Badge, Button, Card, Checkbox, Dropdown, Empty, Flex, Input, InputRef, List } from '@/shared/antd-imports';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

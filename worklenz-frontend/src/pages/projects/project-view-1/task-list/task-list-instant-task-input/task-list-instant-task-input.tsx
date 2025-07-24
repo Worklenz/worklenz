@@ -1,4 +1,4 @@
-import { Input, InputRef, theme } from 'antd';
+import { Input, InputRef, theme } from '@/shared/antd-imports';
 import React, { useState, useMemo, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';

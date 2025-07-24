@@ -1,5 +1,5 @@
 import React from 'react';
-import { Progress, Tooltip } from 'antd';
+import { Progress, Tooltip } from '@/shared/antd-imports';
 import './task-list-progress-cell.css';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
