@@ -11,6 +11,65 @@ import Excel from "exceljs";
 
 export default class ReportingMembersController extends ReportingControllerBaseWithTimezone {
 
+  protected static getPercentage(n: number, total: number) {
+    return +(n ? (n / total) * 100 : 0).toFixed();
+  }
+
+  protected static getCurrentTeamId(req: IWorkLenzRequest): string | null {
+    return req.user?.team_id ?? null;
+  }
+
+  public static convertMinutesToHoursAndMinutes(totalMinutes: number) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
+  }
+
+  public static convertSecondsToHoursAndMinutes(seconds: number) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  }
+
+  protected static formatEndDate(endDate: string) {
+    const end = moment(endDate).format("YYYY-MM-DD");
+    const fEndDate = moment(end);
+    return fEndDate;
+  }
+
+  protected static formatCurrentDate() {
+    const current = moment().format("YYYY-MM-DD");
+    const fCurrentDate = moment(current);
+    return fCurrentDate;
+  }
+
+  protected static getDaysLeft(endDate: string): number | null {
+    if (!endDate) return null;
+
+    const fCurrentDate = this.formatCurrentDate();
+    const fEndDate = this.formatEndDate(endDate);
+
+    return fEndDate.diff(fCurrentDate, "days");
+  }
+
+  protected static isOverdue(endDate: string): boolean {
+    if (!endDate) return false;
+
+    const fCurrentDate = this.formatCurrentDate();
+    const fEndDate = this.formatEndDate(endDate);
+
+    return fEndDate.isBefore(fCurrentDate);
+  }
+
+  protected static isToday(endDate: string): boolean {
+    if (!endDate) return false;
+
+    const fCurrentDate = this.formatCurrentDate();
+    const fEndDate = this.formatEndDate(endDate);
+
+    return fEndDate.isSame(fCurrentDate);
+  }
+
   private static async getMembers(
     teamId: string, searchQuery = "",
     size: number | null = null,
@@ -1234,8 +1293,8 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
     row.actual_time = int(row.actual_time);
     row.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(row.estimated_time));
     row.actual_time_string = this.convertSecondsToHoursAndMinutes(int(row.actual_time));
-    row.days_left = ReportingControllerBase.getDaysLeft(row.end_date);
-    row.is_overdue = ReportingControllerBase.isOverdue(row.end_date);
+    row.days_left = this.getDaysLeft(row.end_date);
+    row.is_overdue = this.isOverdue(row.end_date);
     if (row.days_left && row.is_overdue) {
       row.days_left = row.days_left.toString().replace(/-/g, "");
     }
