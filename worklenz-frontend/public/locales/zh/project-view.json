@@ -10,5 +10,6 @@
   "error": "加载项目时出错",
   "pinnedTab": "已固定为默认标签页",
   "pinTab": "固定为默认标签页",
-  "unpinTab": "取消固定默认标签页"
+  "unpinTab": "取消固定默认标签页",
+  "finance": "财务"
 } 
