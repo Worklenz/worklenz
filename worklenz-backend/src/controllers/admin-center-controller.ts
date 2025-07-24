@@ -1,30 +1,45 @@
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 
 import db from "../config/db";
-import {ServerResponse} from "../models/server-response";
+import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {calculateMonthDays, getColor, log_error, megabytesToBytes} from "../shared/utils";
+import {
+  calculateMonthDays,
+  getColor,
+  log_error,
+  megabytesToBytes,
+} from "../shared/utils";
 import moment from "moment";
-import {calculateStorage} from "../shared/s3";
-import {checkTeamSubscriptionStatus, getActiveTeamMemberCount, getCurrentProjectsCount, getFreePlanSettings, getOwnerIdByTeam, getTeamMemberCount, getUsedStorage} from "../shared/paddle-utils";
+import { calculateStorage } from "../shared/s3";
+import {
+  checkTeamSubscriptionStatus,
+  getActiveTeamMemberCount,
+  getCurrentProjectsCount,
+  getFreePlanSettings,
+  getOwnerIdByTeam,
+  getTeamMemberCount,
+  getUsedStorage,
+} from "../shared/paddle-utils";
 import {
   addModifier,
   cancelSubscription,
   changePlan,
   generatePayLinkRequest,
   pauseOrResumeSubscription,
-  updateUsers
+  updateUsers,
 } from "../shared/paddle-requests";
-import {statusExclude} from "../shared/constants";
-import {NotificationsService} from "../services/notifications/notifications.service";
-import {SocketEvents} from "../socket.io/events";
-import {IO} from "../shared/io";
+import { statusExclude } from "../shared/constants";
+import { NotificationsService } from "../services/notifications/notifications.service";
+import { SocketEvents } from "../socket.io/events";
+import { IO } from "../shared/io";
 
 export default class AdminCenterController extends WorklenzControllerBase {
-
-  public static async checkIfUserActiveInOtherTeams(owner_id: string, email: string) {
+  public static async checkIfUserActiveInOtherTeams(
+    owner_id: string,
+    email: string
+  ) {
     if (!owner_id) throw new Error("Owner not found.");
 
     const q = `SELECT EXISTS(SELECT tmi.team_member_id
@@ -41,7 +56,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
   // organization
   @HandleExceptions()
-  public static async getOrganizationDetails(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getOrganizationDetails(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     // const q = `SELECT organization_name                                      AS name,
     //                   contact_number,
     //                   contact_number_secondary,
@@ -62,7 +80,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async getOrganizationAdmins(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getOrganizationAdmins(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT u.name, email, owner AS is_owner
                FROM users u
                       LEFT JOIN team_members tm ON u.id = tm.user_id
@@ -77,8 +98,14 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async getOrganizationUsers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, ["outer_tmiv.name", "outer_tmiv.email"]);
+  public static async getOrganizationUsers(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, [
+      "outer_tmiv.name",
+      "outer_tmiv.email",
+    ]);
 
     const q = `SELECT ROW_TO_JSON(rec) AS users
             FROM (SELECT COUNT(*) AS total,
@@ -113,8 +140,11 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async updateOrganizationName(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {name} = req.body;
+  public static async updateOrganizationName(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { name } = req.body;
     // const q = `UPDATE users_data
     //            SET organization_name = $1
     //            WHERE user_id = $2;`;
@@ -126,8 +156,11 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async updateOwnerContactNumber(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {contact_number} = req.body;
+  public static async updateOwnerContactNumber(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { contact_number } = req.body;
     const q = `UPDATE organizations
                SET contact_number = $1
                WHERE user_id = $2;`;
@@ -136,7 +169,59 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async updateOrganizationCalculationMethod(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { calculation_method, hours_per_day } = req.body;
+
+    // Validate calculation method
+    if (!["hourly", "man_days"].includes(calculation_method)) {
+      return res
+        .status(400)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "Invalid calculation method. Must be \"hourly\" or \"man_days\""
+          )
+        );
+    }
+
+    const updateQuery = `
+      UPDATE organizations 
+      SET calculation_method = $1, 
+          hours_per_day = COALESCE($2, hours_per_day),
+          updated_at = NOW()
+      WHERE user_id = $3
+      RETURNING id, organization_name, calculation_method, hours_per_day;
+    `;
+
+    const result = await db.query(updateQuery, [
+      calculation_method,
+      hours_per_day,
+      req.user?.owner_id,
+    ]);
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Organization not found"));
+    }
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        organization: result.rows[0],
+        message: "Organization calculation method updated successfully",
+      })
+    );
+  }
+
+  @HandleExceptions()
+  public static async create(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = ``;
     const result = await db.query(q, []);
     const [data] = result.rows;
@@ -144,14 +229,21 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async getOrganizationTeams(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {searchQuery, size, offset} = this.toPaginationOptions(req.query, ["name"]);
+  public static async getOrganizationTeams(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, [
+      "name",
+    ]);
 
     let size_changed = size;
 
     if (offset == 0) size_changed = size_changed - 1;
 
-    const currentTeamClosure = offset == 0 ? `,
+    const currentTeamClosure =
+      offset == 0
+        ? `,
                           (SELECT COALESCE(ROW_TO_JSON(c), '{}'::JSON)
                             FROM (SELECT id,
                                           name,
@@ -168,7 +260,8 @@ export default class AdminCenterController extends WorklenzControllerBase {
                                                         LEFT JOIN users u on team_members.user_id = u.id
                                                 WHERE team_id = teams.id) rec)                        AS team_members
                                   FROM teams
-                                  WHERE user_id = $1 AND teams.id = $4) c) AS current_team_data` : ``;
+                                  WHERE user_id = $1 AND teams.id = $4) c) AS current_team_data`
+        : ``;
 
     const q = `SELECT ROW_TO_JSON(rec) AS teams
                FROM (SELECT COUNT(*)                      AS total,
@@ -194,26 +287,38 @@ export default class AdminCenterController extends WorklenzControllerBase {
                                    ${currentTeamClosure}
                      FROM teams
                      WHERE user_id = $1 ${searchQuery}) rec;`;
-    const result = await db.query(q, [req.user?.owner_id, size_changed, offset, req.user?.team_id]);
+    const result = await db.query(q, [
+      req.user?.owner_id,
+      size_changed,
+      offset,
+      req.user?.team_id,
+    ]);
 
     const [obj] = result.rows;
 
     for (const team of obj.teams?.data || []) {
       team.names = this.createTagList(team?.team_members);
-      team.names.map((a: any) => a.color_code = getColor(a.name));
+      team.names.map((a: any) => (a.color_code = getColor(a.name)));
     }
 
     if (obj.teams.current_team_data) {
-      obj.teams.current_team_data.names = this.createTagList(obj.teams.current_team_data?.team_members);
-      obj.teams.current_team_data.names.map((a: any) => a.color_code = getColor(a.name));
+      obj.teams.current_team_data.names = this.createTagList(
+        obj.teams.current_team_data?.team_members
+      );
+      obj.teams.current_team_data.names.map(
+        (a: any) => (a.color_code = getColor(a.name))
+      );
     }
 
     return res.status(200).send(new ServerResponse(true, obj.teams || {}));
   }
 
   @HandleExceptions()
-  public static async getTeamDetails(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {id} = req.params;
+  public static async getTeamDetails(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
 
     const q = `SELECT id,
                       name,
@@ -249,47 +354,63 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const [obj] = result.rows;
 
     obj.names = this.createTagList(obj?.team_members);
-    obj.names.map((a: any) => a.color_code = getColor(a.name));
+    obj.names.map((a: any) => (a.color_code = getColor(a.name)));
 
     return res.status(200).send(new ServerResponse(true, obj || {}));
   }
 
   @HandleExceptions()
-  public static async updateTeam(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {id} = req.params;
-    const {name, teamMembers} = req.body;
+  public static async updateTeam(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
+    const { name, teamMembers } = req.body;
 
     try {
       // Update team name
       const updateNameQuery = `UPDATE teams SET name = $1 WHERE id = $2 RETURNING id;`;
       const nameResult = await db.query(updateNameQuery, [name, id]);
-      
+
       if (!nameResult.rows.length) {
-        return res.status(404).send(new ServerResponse(false, null, "Team not found"));
+        return res
+          .status(404)
+          .send(new ServerResponse(false, null, "Team not found"));
       }
 
       // Update team member roles if provided
       if (teamMembers?.length) {
         // Use Promise.all to handle all role updates concurrently
-        await Promise.all(teamMembers.map(async (member: { role_name: string; user_id: string; }) => {
-          const roleQuery = `
+        await Promise.all(
+          teamMembers.map(
+            async (member: { role_name: string; user_id: string }) => {
+              const roleQuery = `
             UPDATE team_members 
             SET role_id = (SELECT id FROM roles WHERE roles.team_id = $1 AND name = $2)
             WHERE user_id = $3 AND team_id = $1
             RETURNING id;`;
-          await db.query(roleQuery, [id, member.role_name, member.user_id]);
-        }));
+              await db.query(roleQuery, [id, member.role_name, member.user_id]);
+            }
+          )
+        );
       }
 
-      return res.status(200).send(new ServerResponse(true, null, "Team updated successfully"));
+      return res
+        .status(200)
+        .send(new ServerResponse(true, null, "Team updated successfully"));
     } catch (error) {
       log_error("Error updating team:", error);
-      return res.status(500).send(new ServerResponse(false, null, "Failed to update team"));
+      return res
+        .status(500)
+        .send(new ServerResponse(false, null, "Failed to update team"));
     }
   }
 
   @HandleExceptions()
-  public static async getBillingInfo(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getBillingInfo(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT get_billing_info($1) AS billing_info;`;
     const result = await db.query(q, [req.user?.owner_id]);
     const [data] = result.rows;
@@ -297,7 +418,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const validTillDate = moment(data.billing_info.trial_expire_date);
 
     const daysDifference = validTillDate.diff(moment(), "days");
-    const dateString = calculateMonthDays(moment().format("YYYY-MM-DD"), data.billing_info.trial_expire_date);
+    const dateString = calculateMonthDays(
+      moment().format("YYYY-MM-DD"),
+      data.billing_info.trial_expire_date
+    );
 
     data.billing_info.expire_date_string = dateString;
 
@@ -309,10 +433,14 @@ export default class AdminCenterController extends WorklenzControllerBase {
       data.billing_info.expire_date_string = `Your trial plan expires in ${dateString}.`;
     }
 
-    if (data.billing_info.billing_type === "year") data.billing_info.unit_price_per_month = data.billing_info.unit_price / 12;
+    if (data.billing_info.billing_type === "year")
+      data.billing_info.unit_price_per_month =
+        data.billing_info.unit_price / 12;
 
     const teamMemberData = await getTeamMemberCount(req.user?.owner_id ?? "");
-    const subscriptionData = await checkTeamSubscriptionStatus(req.user?.team_id ?? "");
+    const subscriptionData = await checkTeamSubscriptionStatus(
+      req.user?.team_id ?? ""
+    );
 
     data.billing_info.total_used = teamMemberData.user_count;
     data.billing_info.total_seats = subscriptionData.quantity;
@@ -321,7 +449,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async getBillingTransactions(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getBillingTransactions(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT subscription_payment_id,
                       event_time::date,
                       (next_bill_date::DATE - INTERVAL '1 day')::DATE AS next_bill_date,
@@ -339,7 +470,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async getBillingCharges(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getBillingCharges(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT (SELECT name FROM licensing_pricing_plans lpp WHERE id = lus.plan_id),
                       unit_price::numeric,
                       currency,
@@ -365,11 +499,21 @@ export default class AdminCenterController extends WorklenzControllerBase {
                                              LIMIT 1)::INT;`;
     const countResult = await db.query(countQ, [req.user?.owner_id]);
 
-    return res.status(200).send(new ServerResponse(true, {plan_charges: result.rows, modifiers: countResult.rows}));
+    return res
+      .status(200)
+      .send(
+        new ServerResponse(true, {
+          plan_charges: result.rows,
+          modifiers: countResult.rows,
+        })
+      );
   }
 
   @HandleExceptions()
-  public static async getBillingModifiers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getBillingModifiers(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT created_at
                FROM licensing_user_subscription_modifiers
                WHERE subscription_id = (SELECT subscription_id
@@ -383,7 +527,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async getBillingConfiguration(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getBillingConfiguration(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT name,
                       email,
                       organization_name AS company_name,
@@ -404,8 +551,20 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async updateBillingConfiguration(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {company_name, phone, address_line_1, address_line_2, city, state, postal_code, country} = req.body;
+  public static async updateBillingConfiguration(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const {
+      company_name,
+      phone,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
+      country,
+    } = req.body;
     const q = `UPDATE organizations
                SET organization_name = $1,
                    contact_number    = $2,
@@ -416,24 +575,47 @@ export default class AdminCenterController extends WorklenzControllerBase {
                    postal_code       = $7,
                    country           = $8
                WHERE user_id = $9;`;
-    const result = await db.query(q, [company_name, phone, address_line_1, address_line_2, city, state, postal_code, country, req.user?.owner_id]);
+    const result = await db.query(q, [
+      company_name,
+      phone,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
+      country,
+      req.user?.owner_id,
+    ]);
     const [data] = result.rows;
 
-    return res.status(200).send(new ServerResponse(true, data, "Configuration Updated"));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, data, "Configuration Updated"));
   }
 
   @HandleExceptions()
-  public static async upgradePlan(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {plan} = req.query;
+  public static async upgradePlan(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { plan } = req.query;
 
     const obj = await getTeamMemberCount(req.user?.owner_id ?? "");
-    const axiosResponse = await generatePayLinkRequest(obj, plan as string, req.user?.owner_id, req.user?.id);
+    const axiosResponse = await generatePayLinkRequest(
+      obj,
+      plan as string,
+      req.user?.owner_id,
+      req.user?.id
+    );
 
     return res.status(200).send(new ServerResponse(true, axiosResponse.body));
   }
 
   @HandleExceptions()
-  public static async getPlans(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getPlans(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT
                   ls.default_monthly_plan AS monthly_plan_id,
                   lp_monthly.name AS monthly_plan_name,
@@ -455,8 +637,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
     const obj = await getTeamMemberCount(req.user?.owner_id ?? "");
 
-    data.team_member_limit = data.team_member_limit === 0 ? "Unlimited" : data.team_member_limit;
-    data.projects_limit = data.projects_limit === 0 ? "Unlimited" : data.projects_limit;
+    data.team_member_limit =
+      data.team_member_limit === 0 ? "Unlimited" : data.team_member_limit;
+    data.projects_limit =
+      data.projects_limit === 0 ? "Unlimited" : data.projects_limit;
     data.free_tier_storage = `${data.free_tier_storage}MB`;
     data.current_user_count = obj.user_count;
     data.annual_price = (data.annual_price / 12).toFixed(2);
@@ -465,7 +649,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async purchaseStorage(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async purchaseStorage(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT subscription_id
                FROM licensing_user_subscriptions lus
                WHERE user_id = $1;`;
@@ -478,8 +665,11 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async changePlan(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {plan} = req.query;
+  public static async changePlan(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { plan } = req.query;
 
     const q = `SELECT subscription_id
                FROM licensing_user_subscriptions lus
@@ -487,14 +677,23 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const result = await db.query(q, [req.user?.owner_id]);
     const [data] = result.rows;
 
-    const axiosResponse = await changePlan(plan as string, data.subscription_id);
+    const axiosResponse = await changePlan(
+      plan as string,
+      data.subscription_id
+    );
 
     return res.status(200).send(new ServerResponse(true, axiosResponse.body));
   }
 
   @HandleExceptions()
-  public static async cancelPlan(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    if (!req.user?.owner_id) return res.status(200).send(new ServerResponse(false, "Invalid Request."));
+  public static async cancelPlan(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    if (!req.user?.owner_id)
+      return res
+        .status(200)
+        .send(new ServerResponse(false, "Invalid Request."));
 
     const q = `SELECT subscription_id
                FROM licensing_user_subscriptions lus
@@ -502,14 +701,23 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const result = await db.query(q, [req.user?.owner_id]);
     const [data] = result.rows;
 
-    const axiosResponse = await cancelSubscription(data.subscription_id, req.user?.owner_id);
+    const axiosResponse = await cancelSubscription(
+      data.subscription_id,
+      req.user?.owner_id
+    );
 
     return res.status(200).send(new ServerResponse(true, axiosResponse.body));
   }
 
   @HandleExceptions()
-  public static async pauseSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    if (!req.user?.owner_id) return res.status(200).send(new ServerResponse(false, "Invalid Request."));
+  public static async pauseSubscription(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    if (!req.user?.owner_id)
+      return res
+        .status(200)
+        .send(new ServerResponse(false, "Invalid Request."));
 
     const q = `SELECT subscription_id
                FROM licensing_user_subscriptions lus
@@ -517,14 +725,24 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const result = await db.query(q, [req.user?.owner_id]);
     const [data] = result.rows;
 
-    const axiosResponse = await pauseOrResumeSubscription(data.subscription_id, req.user?.owner_id, true);
+    const axiosResponse = await pauseOrResumeSubscription(
+      data.subscription_id,
+      req.user?.owner_id,
+      true
+    );
 
     return res.status(200).send(new ServerResponse(true, axiosResponse.body));
   }
 
   @HandleExceptions()
-  public static async resumeSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    if (!req.user?.owner_id) return res.status(200).send(new ServerResponse(false, "Invalid Request."));
+  public static async resumeSubscription(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    if (!req.user?.owner_id)
+      return res
+        .status(200)
+        .send(new ServerResponse(false, "Invalid Request."));
 
     const q = `SELECT subscription_id
                FROM licensing_user_subscriptions lus
@@ -532,13 +750,20 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const result = await db.query(q, [req.user?.owner_id]);
     const [data] = result.rows;
 
-    const axiosResponse = await pauseOrResumeSubscription(data.subscription_id, req.user?.owner_id, false);
+    const axiosResponse = await pauseOrResumeSubscription(
+      data.subscription_id,
+      req.user?.owner_id,
+      false
+    );
 
     return res.status(200).send(new ServerResponse(true, axiosResponse.body));
   }
 
   @HandleExceptions()
-  public static async getBillingStorageInfo(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getBillingStorageInfo(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT trial_in_progress,
                       trial_expire_date,
                       ud.storage,
@@ -557,7 +782,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async getAccountStorage(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getAccountStorage(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const teamsQ = `SELECT id
                     FROM teams
                     WHERE user_id = $1;`;
@@ -577,14 +805,19 @@ export default class AdminCenterController extends WorklenzControllerBase {
       storage.used += await calculateStorage(team.id);
     }
 
-    storage.remaining = (storage.total * 1024 * 1024 * 1024) - storage.used;
-    storage.used_percent = Math.ceil((storage.used / (storage.total * 1024 * 1024 * 1024)) * 10000) / 100;
+    storage.remaining = storage.total * 1024 * 1024 * 1024 - storage.used;
+    storage.used_percent =
+      Math.ceil((storage.used / (storage.total * 1024 * 1024 * 1024)) * 10000) /
+      100;
 
     return res.status(200).send(new ServerResponse(true, storage));
   }
 
   @HandleExceptions()
-  public static async getCountries(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getCountries(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT id, name, code
                FROM countries
                ORDER BY name;`;
@@ -594,7 +827,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async switchToFreePlan(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async switchToFreePlan(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const { id: teamId } = req.params;
 
     const limits = await getFreePlanSettings();
@@ -604,18 +840,45 @@ export default class AdminCenterController extends WorklenzControllerBase {
       if (parseInt(limits.team_member_limit) !== 0) {
         const teamMemberCount = await getTeamMemberCount(ownerId);
         if (parseInt(teamMemberCount) > parseInt(limits.team_member_limit)) {
-          return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot have more than ${limits.team_member_limit} members.`));
+          return res
+            .status(200)
+            .send(
+              new ServerResponse(
+                false,
+                [],
+                `Sorry, the free plan cannot have more than ${limits.team_member_limit} members.`
+              )
+            );
         }
       }
 
       const projectsCount = await getCurrentProjectsCount(ownerId);
       if (parseInt(projectsCount) > parseInt(limits.projects_limit)) {
-        return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot have more than ${limits.projects_limit} projects.`));
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              [],
+              `Sorry, the free plan cannot have more than ${limits.projects_limit} projects.`
+            )
+          );
       }
 
       const usedStorage = await getUsedStorage(ownerId);
-      if (parseInt(usedStorage) > megabytesToBytes(parseInt(limits.free_tier_storage))) {
-        return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot exceed ${limits.free_tier_storage}MB of storage.`));
+      if (
+        parseInt(usedStorage) >
+        megabytesToBytes(parseInt(limits.free_tier_storage))
+      ) {
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              [],
+              `Sorry, the free plan cannot exceed ${limits.free_tier_storage}MB of storage.`
+            )
+          );
       }
 
       const update_q = `UPDATE organizations
@@ -626,13 +889,32 @@ export default class AdminCenterController extends WorklenzControllerBase {
         WHERE user_id = $1;`;
       await db.query(update_q, [ownerId]);
 
-      return res.status(200).send(new ServerResponse(true, [], "Your plan has been successfully switched to the Free Plan."));
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            true,
+            [],
+            "Your plan has been successfully switched to the Free Plan."
+          )
+        );
     }
-    return res.status(200).send(new ServerResponse(false, [], "Failed to switch to the Free Plan. Please try again later."));
+    return res
+      .status(200)
+      .send(
+        new ServerResponse(
+          false,
+          [],
+          "Failed to switch to the Free Plan. Please try again later."
+        )
+      );
   }
 
   @HandleExceptions()
-  public static async redeem(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async redeem(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const { code } = req.body;
 
     const q = `SELECT * FROM licensing_coupon_codes WHERE coupon_code = $1 AND is_redeemed IS FALSE AND is_refunded IS FALSE;`;
@@ -640,14 +922,26 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (!result.rows.length)
-      return res.status(200).send(new ServerResponse(false, [], "Redeem Code verification Failed! Please try again."));
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            [],
+            "Redeem Code verification Failed! Please try again."
+          )
+        );
 
     const checkQ = `SELECT  sum(team_members_limit) AS team_member_total FROM licensing_coupon_codes WHERE redeemed_by = $1 AND is_redeemed IS TRUE;`;
     const checkResult = await db.query(checkQ, [req.user?.owner_id]);
     const [total] = checkResult.rows;
 
     if (parseInt(total.team_member_total) > 50)
-      return res.status(200).send(new ServerResponse(false, [], "Maximum number of codes redeemed!"));
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(false, [], "Maximum number of codes redeemed!")
+        );
 
     const updateQ = `UPDATE licensing_coupon_codes
                 SET is_redeemed  = TRUE, redeemed_at = CURRENT_TIMESTAMP,
@@ -663,16 +957,28 @@ export default class AdminCenterController extends WorklenzControllerBase {
         WHERE user_id = $1;`;
     await db.query(updateQ2, [req.user?.owner_id]);
 
-    return res.status(200).send(new ServerResponse(true, [], "Code redeemed successfully!"));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, [], "Code redeemed successfully!"));
   }
 
   @HandleExceptions()
-  public static async deleteTeam(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {id} = req.params;
+  public static async deleteTeam(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
 
     if (id == req.user?.team_id) {
-      return res.status(200).send(new ServerResponse(true, [], "Please switch to another team before attempting deletion.")
-        .withTitle("Unable to remove the presently active team!"));
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            true,
+            [],
+            "Please switch to another team before attempting deletion."
+          ).withTitle("Unable to remove the presently active team!")
+        );
     }
 
     const q = `DELETE FROM teams WHERE id = $1;`;
@@ -682,16 +988,26 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
-  public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {id} = req.params;
-    const {teamId} = req.body;
+  public static async deleteById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
+    const { teamId } = req.body;
 
-    if (!id || !teamId) return res.status(200).send(new ServerResponse(false, "Required fields are missing."));
+    if (!id || !teamId)
+      return res
+        .status(200)
+        .send(new ServerResponse(false, "Required fields are missing."));
 
     // check subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
     if (statusExclude.includes(subscriptionData.subscription_status)) {
-      return res.status(200).send(new ServerResponse(false, "Please check your subscription status."));
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(false, "Please check your subscription status.")
+        );
     }
 
     const q = `SELECT remove_team_member($1, $2, $3) AS member;`;
@@ -702,17 +1018,32 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
     // if (subscriptionData.status === "trialing") break;
     if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
-      if (subscriptionData.subscription_status === "active" && subscriptionData.quantity > 0) {
-
+      if (
+        subscriptionData.subscription_status === "active" &&
+        subscriptionData.quantity > 0
+      ) {
         const obj = await getActiveTeamMemberCount(req.user?.owner_id ?? "");
 
-        const userActiveInOtherTeams  = await this.checkIfUserActiveInOtherTeams(req.user?.owner_id as string, req.query?.email as string);
+        const userActiveInOtherTeams = await this.checkIfUserActiveInOtherTeams(
+          req.user?.owner_id as string,
+          req.query?.email as string
+        );
 
         if (!userActiveInOtherTeams) {
-          const response = await updateUsers(subscriptionData.subscription_id, obj.user_count);
-          if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, response.message || "Please check your subscription."));
+          const response = await updateUsers(
+            subscriptionData.subscription_id,
+            obj.user_count
+          );
+          if (!response.body.subscription_id)
+            return res
+              .status(200)
+              .send(
+                new ServerResponse(
+                  false,
+                  response.message || "Please check your subscription."
+                )
+              );
         }
-
       }
     }
 
@@ -720,26 +1051,39 @@ export default class AdminCenterController extends WorklenzControllerBase {
       receiver_socket_id: data.socket_id,
       message,
       team: data.team,
-      team_id: id
+      team_id: id,
     });
 
-    IO.emitByUserId(data.member.id, req.user?.id || null, SocketEvents.TEAM_MEMBER_REMOVED, {
-      teamId: id,
-      message
-    });
+    IO.emitByUserId(
+      data.member.id,
+      req.user?.id || null,
+      SocketEvents.TEAM_MEMBER_REMOVED,
+      {
+        teamId: id,
+        message,
+      }
+    );
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()
-  public static async getFreePlanLimits(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getFreePlanLimits(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const limits = await getFreePlanSettings();
 
     return res.status(200).send(new ServerResponse(true, limits || {}));
   }
-  
+
   @HandleExceptions()
-  public static async getOrganizationProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, ["p.name"]);
+  public static async getOrganizationProjects(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, [
+      "p.name",
+    ]);
 
     const countQ = `SELECT COUNT(*) AS total
         FROM projects p
@@ -770,7 +1114,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
     const response = {
       total: countResult.rows[0]?.total ?? 0,
-      data: result.rows ?? []
+      data: result.rows ?? [],
     };
 
     return res.status(200).send(new ServerResponse(true, response));

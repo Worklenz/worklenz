@@ -53,13 +53,13 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
         const [workingDays] = workingDaysResults.rows;
 
         // get organization working hours
-        const getDataHoursq = `SELECT working_hours FROM organizations WHERE user_id = $1 GROUP BY id LIMIT 1;`;
+        const getDataHoursq = `SELECT hours_per_day FROM organizations WHERE user_id = $1 GROUP BY id LIMIT 1;`;
 
         const workingHoursResults = await db.query(getDataHoursq, [req.user?.owner_id]);
 
         const [workingHours] = workingHoursResults.rows;
 
-        return res.status(200).send(new ServerResponse(true, { workingDays: workingDays?.working_days, workingHours: workingHours?.working_hours }));
+        return res.status(200).send(new ServerResponse(true, { workingDays: workingDays?.working_days, workingHours: workingHours?.hours_per_day }));
     }
 
     @HandleExceptions()
@@ -74,18 +74,13 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
             .map(day => `${day.toLowerCase()} = ${workingDays.includes(day)}`)
             .join(", ");
 
-        const updateQuery = `
-      UPDATE public.organization_working_days
+        const updateQuery = `UPDATE public.organization_working_days
       SET ${setClause}, updated_at = CURRENT_TIMESTAMP
-      WHERE organization_id IN (
-                                SELECT organization_id FROM organizations 
-                                WHERE user_id = $1
-                            );
-    `;
+      WHERE organization_id IN (SELECT id FROM organizations WHERE user_id = $1);`;
 
         await db.query(updateQuery, [req.user?.owner_id]);
 
-        const getDataHoursq = `UPDATE organizations SET working_hours = $1 WHERE user_id = $2;`;
+        const getDataHoursq = `UPDATE organizations SET hours_per_day = $1 WHERE user_id = $2;`;
 
         await db.query(getDataHoursq, [workingHours, req.user?.owner_id]);
 

@@ -4,6 +4,7 @@ import {
   ProfileOutlined,
   TeamOutlined,
   UserOutlined,
+  SettingOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 const Overview = lazy(() => import('./overview/overview'));
@@ -11,6 +12,7 @@ const Users = lazy(() => import('./users/users'));
 const Teams = lazy(() => import('./teams/teams'));
 const Billing = lazy(() => import('./billing/billing'));
 const Projects = lazy(() => import('./projects/projects'));
+const Settings = lazy(() => import('./settings/settings'));
 
 // type of a menu item in admin center sidebar
 type AdminCenterMenuItems = {
@@ -56,5 +58,12 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     endpoint: 'billing',
     icon: React.createElement(CreditCardOutlined),
     element: React.createElement(Billing),
+  },
+  {
+    key: 'settings',
+    name: 'settings',
+    endpoint: 'settings',
+    icon: React.createElement(SettingOutlined),
+    element: React.createElement(Settings),
   },
 ];

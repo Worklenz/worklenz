@@ -280,4 +280,16 @@ export const adminCenterApiService = {
     );
     return response.data;
   },
+
+  async updateOrganizationCalculationMethod(
+    calculationMethod: 'hourly' | 'man_days'
+  ): Promise<IServerResponse<any>> {
+    const response = await apiClient.put<IServerResponse<any>>(
+      `${rootUrl}/organization/calculation-method`,
+      {
+        calculation_method: calculationMethod,
+      }
+    );
+    return response.data;
+  },
 };

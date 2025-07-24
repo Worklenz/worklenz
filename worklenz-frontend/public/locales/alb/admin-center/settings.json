@@ -1,0 +1,17 @@
+{
+  "settings": "Cilësimet",
+  "organizationWorkingDaysAndHours": "Ditët dhe Orët e Punës së Organizatës",
+  "workingDays": "Ditët e Punës",
+  "workingHours": "Orët e Punës",
+  "hours": "orë",
+  "monday": "E Hënë",
+  "tuesday": "E Martë",
+  "wednesday": "E Mërkurë",
+  "thursday": "E Enjte",
+  "friday": "E Premte",
+  "saturday": "E Shtunë",
+  "sunday": "E Dielë",
+  "saveButton": "Ruaj",
+  "saved": "Cilësimet u ruajtën me sukses",
+  "errorSaving": "Gabim gjatë ruajtjes së cilësimeve"
+}

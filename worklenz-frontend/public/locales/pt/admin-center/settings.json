@@ -1,0 +1,17 @@
+{
+  "settings": "Configurações",
+  "organizationWorkingDaysAndHours": "Dias e Horas de Trabalho da Organização",
+  "workingDays": "Dias de Trabalho",
+  "workingHours": "Horas de Trabalho",
+  "hours": "horas",
+  "monday": "Segunda-feira",
+  "tuesday": "Terça-feira",
+  "wednesday": "Quarta-feira",
+  "thursday": "Quinta-feira",
+  "friday": "Sexta-feira",
+  "saturday": "Sábado",
+  "sunday": "Domingo",
+  "saveButton": "Salvar",
+  "saved": "Configurações salvas com sucesso",
+  "errorSaving": "Erro ao salvar configurações"
+}

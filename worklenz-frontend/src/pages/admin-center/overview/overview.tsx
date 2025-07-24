@@ -1,7 +1,10 @@
-import { EditOutlined, MailOutlined, PhoneOutlined } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
-import { Button, Card, Input, Space, Tooltip, Typography } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
+import {
+  Card,
+  Space,
+  Typography,
+} from '@/shared/antd-imports';
+import { PageHeader } from '@ant-design/pro-components';
 import OrganizationAdminsTable from '@/components/admin-center/overview/organization-admins-table/organization-admins-table';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { RootState } from '@/app/store';
@@ -11,9 +14,6 @@ import OrganizationOwner from '@/components/admin-center/overview/organization-o
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { IOrganization, IOrganizationAdmin } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
-import { tr } from 'date-fns/locale';
-
-const { Text } = Typography;
 
 const Overview: React.FC = () => {
   const [organization, setOrganization] = useState<IOrganization | null>(null);
