@@ -65,24 +65,6 @@ done
 
 echo "✅ Base schema SQL execution complete."
 
-# --------------------------------------------
-# 🚀 STEP 3: Apply SQL migrations
-# --------------------------------------------
 
-if [ -d "$MIGRATIONS_DIR" ] && compgen -G "$MIGRATIONS_DIR/*.sql" > /dev/null; then
-  echo "Applying migrations..."
-  for f in "$MIGRATIONS_DIR"/*.sql; do
-    version=$(basename "$f")
-    if ! psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM schema_migrations WHERE version = '$version'" | grep -q 1; then
-      echo "Applying migration: $version"
-      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
-      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "INSERT INTO schema_migrations (version) VALUES ('$version');"
-    else
-      echo "Skipping already applied migration: $version"
-    fi
-  done
-else
-  echo "No migration files found or directory is empty, skipping migrations."
-fi
 
 echo "🎉 Database initialization completed successfully."

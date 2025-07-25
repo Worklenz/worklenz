@@ -108,6 +108,11 @@ for port in "${ports[@]}"; do
     fi
 done
 
+# Fix line endings (convert CRLF to LF) and set executable permission for 00_init.sh
+dos2unix worklenz-backend/database/00_init.sh 2>/dev/null || true
+chmod +x worklenz-backend/database/00_init.sh
+
+
 # Start the containers
 echo -e "${BLUE}Starting Worklenz services...${NC}"
 $DOCKER_COMPOSE_CMD down
