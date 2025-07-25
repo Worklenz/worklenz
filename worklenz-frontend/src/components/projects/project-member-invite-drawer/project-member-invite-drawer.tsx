@@ -33,6 +33,12 @@ const ProjectMemberDrawer = () => {
   const [members, setMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
   const [teamMembersLoading, setTeamMembersLoading] = useState(false);
 
+  // Filter out members already in the project
+  const currentProjectMemberIds = (currentMembersList || []).map(m => m.team_member_id).filter(Boolean);
+  const availableMembers = (members?.data || []).filter(
+    member => member.id && !currentProjectMemberIds.includes(member.id)
+  );
+
   const fetchProjectMembers = async () => {
     if (!projectId) return;
     dispatch(getAllProjectMembers(projectId));
@@ -226,7 +232,7 @@ const ProjectMemberDrawer = () => {
               onSearch={handleSearch}
               onChange={handleSelectChange}
               onKeyDown={handleKeyDown}
-              options={members?.data?.map(member => ({
+              options={availableMembers.map(member => ({
                 key: member.id,
                 value: member.id,
                 name: member.name,
