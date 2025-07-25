@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Space, Steps, Button, Typography, theme, Dropdown, MenuProps } from '@/shared/antd-imports';
-import { GlobalOutlined } from '@/shared/antd-imports';
+import { GlobalOutlined, MoonOutlined, SunOutlined } from '@/shared/antd-imports';
 
 import logger from '@/utils/errorLogger';
 import { setCurrentStep, setSurveySubStep } from '@/features/account-setup/account-setup.slice';
@@ -33,9 +33,11 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import './account-setup.css';
 import { IAccountSetupRequest } from '@/types/project-templates/project-templates.types';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
+import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 import { surveyApiService } from '@/api/survey/survey.api.service';
 import { ISurveySubmissionRequest, ISurveyAnswer } from '@/types/account-setup/survey.types';
 import { setLanguage } from '@/features/i18n/localesSlice';
+import { toggleTheme } from '@/features/theme/themeSlice';
 
 const { Title } = Typography;
 
@@ -208,6 +210,47 @@ const AccountSetup: React.FC = () => {
       }
     } catch (error) {
       logger.error('completeAccountSetup', error);
+    }
+  };
+
+  const completeAccountSetupWithTemplate = async () => {
+    try {
+      await saveSurveyData(); // Save survey data first
+      
+      const model: IAccountSetupRequest = {
+        team_name: sanitizeInput(organizationName),
+        project_name: null, // No project name when using template
+        template_id: templateId,
+        tasks: [],
+        team_members: [],
+        survey_data: {
+          organization_type: surveyData.organization_type,
+          user_role: surveyData.user_role,
+          main_use_cases: surveyData.main_use_cases,
+          previous_tools: surveyData.previous_tools,
+          how_heard_about: surveyData.how_heard_about,
+        },
+      };
+      
+      const res = await projectTemplatesApiService.setupAccount(model);
+      if (res.done && res.body.id) {
+        trackMixpanelEvent(evt_account_setup_complete);
+        
+        // Refresh user session to update setup_completed status
+        try {
+          const authResponse = await dispatch(verifyAuthentication()).unwrap() as IAuthorizeResponse;
+          if (authResponse?.authenticated && authResponse?.user) {
+            setSession(authResponse.user);
+            dispatch(setUser(authResponse.user));
+          }
+        } catch (error) {
+          logger.error('Failed to refresh user session after template setup completion', error);
+        }
+        
+        navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
+      }
+    } catch (error) {
+      logger.error('completeAccountSetupWithTemplate', error);
     }
   };
 
@@ -389,6 +432,15 @@ const AccountSetup: React.FC = () => {
         dispatch(setCurrentStep(currentStep + 1));
         dispatch(setSurveySubStep(0)); // Reset for next time
       }
+    } else if (currentStep === 2) {
+      // Project step - check if template is selected
+      if (templateId) {
+        // Template selected, complete account setup with template
+        await completeAccountSetupWithTemplate();
+      } else {
+        // No template, proceed to tasks step
+        dispatch(setCurrentStep(currentStep + 1));
+      }
     } else if (currentStep === 4) {
       // Complete setup after members step
       completeAccountSetup();
@@ -412,6 +464,10 @@ const AccountSetup: React.FC = () => {
     i18n.changeLanguage(languageKey);
   };
 
+  const handleThemeToggle = () => {
+    dispatch(toggleTheme());
+  };
+
   const languageMenuItems: MenuProps['items'] = languages.map(lang => ({
     key: lang.key,
     label: (
@@ -427,11 +483,23 @@ const AccountSetup: React.FC = () => {
 
   return (
     <div 
-      className="min-h-screen w-full flex flex-col items-center py-8 px-4 relative"
+      className="account-setup-container min-h-screen w-full flex flex-col items-center py-8 px-4 relative"
       style={{ backgroundColor: token.colorBgLayout }}
     >
-      {/* Language Switcher - Top Right */}
-      <div className="absolute top-6 right-6">
+      {/* Controls - Top Right */}
+      <div className="absolute top-6 right-6 flex items-center space-x-3">
+        {/* Theme Switcher */}
+        <Button
+          type="text"
+          size="small"
+          icon={isDarkMode ? <SunOutlined /> : <MoonOutlined />}
+          onClick={handleThemeToggle}
+          className="flex items-center"
+          style={{ color: token?.colorTextTertiary }}
+          title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        />
+        
+        {/* Language Switcher */}
         <Dropdown
           menu={{ items: languageMenuItems }}
           placement="bottomRight"
@@ -534,7 +602,6 @@ const AccountSetup: React.FC = () => {
                 type="primary"
                 htmlType="submit"
                 disabled={isContinueDisabled()}
-                className="min-h-10 font-medium px-8"
                 onClick={nextStep}
               >
                 {t('continue')}

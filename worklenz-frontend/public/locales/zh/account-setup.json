@@ -50,10 +50,10 @@
   "maxTasks": "（您最多可以创建 5 个任务）",
 
   "membersStepTitle": "邀请您的团队",
-  "membersStepDescription": "将团队成员添加到 \"{organizationName}\" 并开始协作",
-  "memberPlaceholder": "团队成员 {index} - 输入电子邮件地址",
+  "membersStepDescription": "将团队成员添加到 \"{{organizationName}}\" 并开始协作",
+  "memberPlaceholder": "团队成员 {{index}} - 输入电子邮件地址",
   "validEmailAddress": "有效的电子邮件地址",
-  "addAnotherTeamMember": "添加另一个团队成员 ({current}/{max})",
+  "addAnotherTeamMember": "添加另一个团队成员 ({{current}}/{{max}})",
   "canInviteLater": "您可以稍后邀请团队成员",
   "skipStepDescription": "没有准备好电子邮件地址？没关系！您可以跳过此步骤，稍后从项目面板邀请团队成员。",
 
@@ -118,9 +118,9 @@
   "templateStartupDesc": "MVP 开发、融资、增长",
 
   "tasksStepTitle": "添加您的第一个任务",
-  "tasksStepDescription": "将 \"{projectName}\" 拆分为可执行任务以开始",
-  "taskPlaceholder": "任务 {index} - 例如：需要做什么？",
-  "addAnotherTask": "添加另一个任务 ({current}/{max})",
+  "tasksStepDescription": "将 \"{{projectName}}\" 拆分为可执行任务以开始",
+  "taskPlaceholder": "任务 {{index}} - 例如：需要做什么？",
+  "addAnotherTask": "添加另一个任务 ({{current}}/{{max}})",
 
   "surveyStepTitle": "告诉我们关于您的信息",
   "surveyStepLabel": "通过回答几个问题帮助我们个性化您的 Worklenz 体验。",
@@ -158,5 +158,53 @@
   "howHeardAboutLinkedin": "LinkedIn",
   "howHeardAboutFriendColleague": "朋友或同事",
   "howHeardAboutBlogArticle": "博客或文章",
-  "howHeardAboutOther": "其他"
+  "howHeardAboutOther": "其他",
+  
+  "aboutYouStepTitle": "告诉我们关于您的信息",
+  "aboutYouStepDescription": "帮助我们个性化您的体验",
+  "yourNeedsStepTitle": "您的主要需求是什么？",
+  "yourNeedsStepDescription": "选择所有适用的选项，帮助我们设置您的工作空间",
+  "selected": "已选择",
+  "previousToolsLabel": "您之前使用过哪些工具？（可选）",
+  
+  "roleSuggestions": {
+    "designer": "UI/UX、图形、创意",
+    "developer": "前端、后端、全栈", 
+    "projectManager": "规划、协调",
+    "marketing": "内容、社交媒体、增长",
+    "sales": "业务发展、客户关系",
+    "operations": "行政、人力资源、财务"
+  },
+  
+  "languages": {
+    "en": "English",
+    "es": "Español", 
+    "pt": "Português",
+    "de": "Deutsch",
+    "alb": "Shqip",
+    "zh": "简体中文"
+  },
+  
+  "orgSuggestions": {
+    "tech": ["TechCorp", "DevStudio", "CodeCraft", "PixelForge"],
+    "creative": ["Creative Hub", "Design Studio", "Brand Works", "Visual Arts"],
+    "consulting": ["Strategy Group", "Business Solutions", "Expert Advisors", "Growth Partners"],
+    "startup": ["Innovation Labs", "Future Works", "Venture Co", "Next Gen"]
+  },
+  
+  "projectSuggestions": {
+    "freelancer": ["客户项目", "作品集更新", "个人品牌"],
+    "startup": ["MVP开发", "产品发布", "市场调研"],
+    "agency": ["客户活动", "品牌策略", "网站重设计"],
+    "enterprise": ["系统迁移", "流程优化", "团队培训"]
+  },
+  
+  "useCaseDescriptions": {
+    "taskManagement": "组织和跟踪任务",
+    "teamCollaboration": "无缝协作",
+    "resourcePlanning": "管理时间和资源", 
+    "clientCommunication": "与客户保持联系",
+    "timeTracking": "监控项目时间",
+    "other": "其他"
+  }
 }

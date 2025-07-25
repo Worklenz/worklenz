@@ -27,26 +27,18 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token 
 
   const addTask = () => {
     if (tasks.length >= 5) return;
-
     const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 0;
     dispatch(setTasks([...tasks, { id: newId, value: '' }]));
-    setTimeout(() => {
-      const newIndex = tasks.length;
-      inputRefs.current[newIndex]?.focus();
-    }, 100);
+    setTimeout(() => inputRefs.current[tasks.length]?.focus(), 100);
   };
 
   const removeTask = (id: number) => {
-    if (tasks.length > 1) {
-      dispatch(setTasks(tasks.filter(task => task.id !== id)));
-    }
+    if (tasks.length > 1) dispatch(setTasks(tasks.filter(task => task.id !== id)));
   };
 
   const updateTask = (id: number, value: string) => {
     const sanitizedValue = sanitizeInput(value);
-    dispatch(
-      setTasks(tasks.map(task => (task.id === id ? { ...task, value: sanitizedValue } : task)))
-    );
+    dispatch(setTasks(tasks.map(task => (task.id === id ? { ...task, value: sanitizedValue } : task))));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -54,11 +46,8 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token 
       const input = e.currentTarget as HTMLInputElement;
       if (input.value.trim()) {
         e.preventDefault();
-        if (index === tasks.length - 1 && tasks.length < 5) {
-          addTask();
-        } else if (index < tasks.length - 1) {
-          inputRefs.current[index + 1]?.focus();
-        }
+        if (index === tasks.length - 1 && tasks.length < 5) addTask();
+        else if (index < tasks.length - 1) inputRefs.current[index + 1]?.focus();
       }
     }
   };
@@ -84,10 +73,10 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token 
       {/* Header */}
       <div className="text-center mb-8">
         <Title level={3} className="mb-2" style={{ color: token?.colorText }}>
-          Add your first tasks
+          {t('tasksStepTitle')}
         </Title>
         <Paragraph className="text-base" style={{ color: token?.colorTextSecondary }}>
-          Break down "{projectName}" into actionable tasks to get started
+          {t('tasksStepDescription', { projectName })}
         </Paragraph>
       </div>
 
@@ -107,21 +96,13 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token 
               }}
             >
               <div className="flex items-center space-x-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium"
-                     style={{ 
-                       backgroundColor: task.value.trim() ? token?.colorSuccess : token?.colorBorderSecondary,
-                       color: task.value.trim() ? '#fff' : token?.colorTextSecondary 
-                     }}>
-                  {task.value.trim() ? (
-                    <CheckCircleOutlined />
-                  ) : (
-                    index + 1
-                  )}
+                <div className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium" style={{ backgroundColor: task.value.trim() ? token?.colorSuccess : token?.colorBorderSecondary, color: task.value.trim() ? '#fff' : token?.colorTextSecondary }}>
+                  {task.value.trim() ? <CheckCircleOutlined /> : index + 1}
                 </div>
                 
                 <div className="flex-1">
                   <Input
-                    placeholder={`Task ${index + 1} - e.g., What needs to be done?`}
+                    placeholder={t('taskPlaceholder', { index: index + 1 })}
                     value={task.value}
                     onChange={e => updateTask(task.id, e.target.value)}
                     onKeyPress={e => handleKeyPress(e, index)}
@@ -129,41 +110,18 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token 
                     onBlur={() => setFocusedIndex(null)}
                     ref={(el) => { inputRefs.current[index] = el as any; }}
                     className="text-base border-0 shadow-none task-input"
-                    style={{
-                      backgroundColor: 'transparent',
-                      color: token?.colorText
-                    }}
+                    style={{ backgroundColor: 'transparent', color: token?.colorText }}
                   />
                 </div>
 
-                {tasks.length > 1 && (
-                  <Button
-                    type="text"
-                    icon={<CloseCircleOutlined />}
-                    onClick={() => removeTask(task.id)}
-                    className="text-gray-400 hover:text-red-500"
-                    style={{ color: token?.colorTextTertiary }}
-                  />
-                )}
+                {tasks.length > 1 && <Button type="text" icon={<CloseCircleOutlined />} onClick={() => removeTask(task.id)} className="text-gray-400 hover:text-red-500" style={{ color: token?.colorTextTertiary }} />}
               </div>
             </Card>
           ))}
         </div>
 
-        {/* Add Task Button */}
         {tasks.length < 5 && (
-          <Button
-            type="dashed"
-            icon={<PlusOutlined />}
-            onClick={addTask}
-            className="w-full mt-4 h-12 text-base"
-            style={{ 
-              borderColor: token?.colorBorder,
-              color: token?.colorTextSecondary 
-            }}
-          >
-            Add another task ({tasks.length}/5)
-          </Button>
+          <Button type="dashed" icon={<PlusOutlined />} onClick={addTask} className="w-full mt-4 h-12 text-base" style={{ borderColor: token?.colorBorder, color: token?.colorTextSecondary }}>{t('addAnotherTask', { current: tasks.length, max: 5 })}</Button>
         )}
       </div>
 

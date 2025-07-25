@@ -1,3 +1,5 @@
+/* Account Setup Page Styles */
+
 /* Steps styling - using Ant Design theme tokens */
 .ant-steps-item-finish .ant-steps-item-icon {
   border-color: var(--ant-color-primary) !important;
@@ -23,12 +25,17 @@
   opacity: 0.6;
 }
 
+.ant-steps-item-process .ant-steps-item-icon {
+  border-color: var(--ant-color-primary) !important;
+  background-color: var(--ant-color-primary) !important;
+  color: var(--ant-color-white) !important;
+}
+
 .progress-steps .ant-steps-item.ant-steps-item-process .ant-steps-item-title::after {
   background-color: var(--ant-color-primary) !important;
   width: 60px !important;
 }
 
-/* Steps title styling */
 .ant-steps-item-title {
   color: var(--ant-color-text) !important;
 }
@@ -37,7 +44,7 @@
   color: var(--ant-color-text-secondary) !important;
 }
 
-/* Responsive design improvements */
+/* Responsive layout */
 @media (max-width: 1000px) {
   .progress-steps,
   .step,
@@ -72,295 +79,7 @@
   }
 }
 
-@media (max-width: 1000px) {
-  .organization-name-form,
-  .first-project-form,
-  .create-first-task-form {
-    width: 90% !important;
-    max-width: 500px !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .organization-name-form,
-  .first-project-form,
-  .create-first-task-form {
-    width: 95% !important;
-    max-width: 400px !important;
-  }
-}
-
-@media (max-width: 500px) {
-  .organization-name-form,
-  .first-project-form,
-  .create-first-task-form {
-    width: 100% !important;
-    max-width: 300px !important;
-  }
-}
-
-.vert-text {
-  max-width: 40px;
-  background-color: var(--ant-color-bg-container);
-  color: var(--ant-color-text);
-  position: relative;
-  z-index: 99;
-  margin: 2rem auto;
-  text-align: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0.5rem;
-}
-
-.vert-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: 1px;
-  background-color: var(--ant-color-border);
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-/* Legacy dark mode classes for backward compatibility */
-.dark-mode .vert-text,
-.vert-text-dark {
-  background-color: var(--ant-color-bg-container);
-  color: var(--ant-color-text);
-}
-
-.dark-mode .vert-line,
-.vert-line-dark {
-  background-color: var(--ant-color-border);
-}
-
-/* Button and component improvements */
-.custom-close-button:hover {
-  background-color: transparent !important;
-}
-
-.setup-action-buttons {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.setup-action-buttons .ant-btn {
-  min-height: 40px;
-  font-weight: 500;
-}
-
-/* Form styling with Ant Design theme tokens */
-.step-form .ant-form-item-label > label {
-  color: var(--ant-color-text) !important;
-}
-
-.step-form .ant-input,
-.step-form .ant-input-affix-wrapper {
-  background-color: var(--ant-color-bg-container) !important;
-  border-color: var(--ant-color-border) !important;
-  color: var(--ant-color-text) !important;
-}
-
-.step-form .ant-input:focus,
-.step-form .ant-input-affix-wrapper:focus,
-.step-form .ant-input-affix-wrapper-focused {
-  background-color: var(--ant-color-bg-container) !important;
-  border-color: var(--ant-color-primary) !important;
-  color: var(--ant-color-text) !important;
-}
-
-.step-form .ant-input::placeholder {
-  color: var(--ant-color-text-placeholder) !important;
-}
-
-/* Select styling */
-.step-form .ant-select-selector {
-  background-color: var(--ant-color-bg-container) !important;
-  border-color: var(--ant-color-border) !important;
-  color: var(--ant-color-text) !important;
-}
-
-.step-form .ant-select-selection-placeholder {
-  color: var(--ant-color-text-placeholder) !important;
-}
-
-/* Typography */
-.step-form .ant-typography {
-  color: var(--ant-color-text);
-}
-
-.step-form .ant-typography.ant-typography-secondary {
-  color: var(--ant-color-text-secondary);
-}
-
-/* Card styling */
-.step-form .ant-card {
-  background-color: var(--ant-color-bg-container);
-  border-color: var(--ant-color-border);
-}
-
-.step-form .ant-card-body {
-  color: var(--ant-color-text);
-}
-
-/* Checkbox and Radio styling */
-.step-form .ant-checkbox-wrapper {
-  color: var(--ant-color-text);
-}
-
-.step-form .ant-radio-wrapper {
-  color: var(--ant-color-text);
-}
-
-/* Smooth transitions for theme switching */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Survey step transitions */
-.survey-page-transition {
-  animation: fadeInUp 0.4s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Survey option hover effects */
-.survey-option-card {
-  transition: all 0.2s ease;
-}
-
-.survey-option-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Progress bar animation */
-.ant-progress-line {
-  transition: all 0.5s ease-out;
-}
-
-/* Survey button animations */
-.survey-nav-button {
-  transition: all 0.2s ease;
-}
-
-.survey-nav-button:active {
-  transform: scale(0.98);
-}
-
-/* Project step enhancements */
-.project-suggestion-button {
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.project-suggestion-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.project-suggestion-button:active {
-  transform: translateY(0);
-}
-
-.template-preview-card {
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.template-preview-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.template-preview-card.selected {
-  box-shadow: 0 4px 20px rgba(24, 144, 255, 0.2);
-}
-
-/* Enhanced form styling for project step */
-.project-step .ant-input-affix-wrapper {
-  transition: all 0.3s ease;
-}
-
-.project-step .ant-input-affix-wrapper:focus-within {
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
-}
-
-.project-step .ant-card {
-  transition: all 0.3s ease;
-}
-
-.project-step .ant-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-/* Organization step enhancements */
-.organization-step .ant-input-affix-wrapper {
-  transition: all 0.3s ease;
-}
-
-.organization-step .ant-input-affix-wrapper:focus-within {
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
-  border-color: #1890ff;
-}
-
-.organization-step .ant-card {
-  transition: all 0.3s ease;
-}
-
-.organization-step .ant-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.organization-suggestion-button {
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.organization-suggestion-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.organization-suggestion-button:active {
-  transform: translateY(0);
-}
-
-/* Character counter styling */
-.organization-step .character-counter {
-  font-size: 12px;
-  opacity: 0.7;
-  transition: opacity 0.3s ease;
-}
-
-.organization-step .character-counter.active {
-  opacity: 1;
-}
-
-/* Naming tips hover effect */
-.organization-step .naming-tip {
-  transition: all 0.2s ease;
-  padding: 8px;
-}
-
-.organization-step .naming-tip:hover {
-  background-color: rgba(24, 144, 255, 0.05);
-}
-
-/* Tasks step enhancements */
+/* Tasks step specific styles */
 .tasks-step .task-item-card {
   transition: all 0.3s ease;
 }
@@ -377,47 +96,70 @@
   box-shadow: none !important;
 }
 
-.task-suggestion-button {
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.task-suggestion-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.task-suggestion-button:active {
-  transform: translateY(0);
-}
-
-/* Members step enhancements */
-.members-step .member-item-card {
+/* Project step specific styles */
+.project-step .ant-input-affix-wrapper {
   transition: all 0.3s ease;
 }
 
-.members-step .member-item-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.project-step .ant-input-affix-wrapper:focus-within {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
 }
 
-.members-step .member-input {
-  font-size: 16px;
-}
-
-.members-step .member-input:focus {
-  box-shadow: none !important;
-}
-
-.email-suggestion-button {
+.project-suggestion-button {
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
-.email-suggestion-button:hover {
+.project-suggestion-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.email-suggestion-button:active {
+.project-suggestion-button:active {
   transform: translateY(0);
+}
+
+/* Organization step specific styles */
+.organization-step .ant-input-affix-wrapper {
+  transition: all 0.3s ease;
+}
+
+.organization-step .ant-input-affix-wrapper:focus-within {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  border-color: #1890ff;
+}
+
+.organization-suggestion-button {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.organization-suggestion-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.organization-suggestion-button:active {
+  transform: translateY(0);
+}
+
+/* Survey step animations */
+.survey-page-transition {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Theme transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
