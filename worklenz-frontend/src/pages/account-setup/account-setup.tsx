@@ -37,6 +37,7 @@ import { projectTemplatesApiService } from '@/api/project-templates/project-temp
 import { surveyApiService } from '@/api/survey/survey.api.service';
 import { ISurveySubmissionRequest, ISurveyAnswer } from '@/types/account-setup/survey.types';
 import { setLanguage } from '@/features/i18n/localesSlice';
+import { ILanguageType, Language } from '@/features/i18n/localesSlice';
 import { toggleTheme } from '@/features/theme/themeSlice';
 
 const { Title } = Typography;
@@ -74,7 +75,7 @@ const AccountSetup: React.FC = () => {
 
   const { currentStep, organizationName, projectName, templateId, tasks, teamMembers, surveyData, surveySubStep } =
     useSelector((state: RootState) => state.accountSetupReducer);
-  const { language } = useSelector((state: RootState) => state.localesReducer);
+  const lng = useSelector((state: RootState) => state.localesReducer.lng);
   const userDetails = getUserSession();
   const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
   
@@ -451,15 +452,15 @@ const AccountSetup: React.FC = () => {
 
   // Language switcher functionality
   const languages = [
-    { key: 'en', label: 'English', flag: '🇺🇸' },
-    { key: 'es', label: 'Español', flag: '🇪🇸' },
-    { key: 'pt', label: 'Português', flag: '🇵🇹' },
-    { key: 'de', label: 'Deutsch', flag: '🇩🇪' },
-    { key: 'alb', label: 'Shqip', flag: '🇦🇱' },
-    { key: 'zh', label: '简体中文', flag: '🇨🇳' }
+    { key: Language.EN, label: 'English', flag: '🇺🇸' },
+    { key: Language.ES, label: 'Español', flag: '🇪🇸' },
+    { key: Language.PT, label: 'Português', flag: '🇵🇹' },
+    { key: Language.DE, label: 'Deutsch', flag: '🇩🇪' },
+    { key: Language.ALB, label: 'Shqip', flag: '🇦🇱' },
+    { key: Language.ZH_CN, label: '简体中文', flag: '🇨🇳' }
   ];
 
-  const handleLanguageChange = (languageKey: string) => {
+  const handleLanguageChange = (languageKey: ILanguageType) => {
     dispatch(setLanguage(languageKey));
     i18n.changeLanguage(languageKey);
   };
@@ -476,10 +477,10 @@ const AccountSetup: React.FC = () => {
         <span>{lang.label}</span>
       </div>
     ),
-    onClick: () => handleLanguageChange(lang.key)
+    onClick: () => handleLanguageChange(lang.key as ILanguageType)
   }));
 
-  const currentLanguage = languages.find(lang => lang.key === language) || languages[0];
+  const currentLanguage = languages.find(lang => lang.key === lng) || languages[0];
 
   return (
     <div 
