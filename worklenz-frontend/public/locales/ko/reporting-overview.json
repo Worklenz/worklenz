@@ -1,0 +1,22 @@
+{
+  "overviewTitle": "개요",
+  "includeArchivedButton": "보관 된 프로젝트를 포함하십시오",
+  "teamCount": "팀",
+  "teamCountPlural": "팀",
+  "projectCount": "프로젝트",
+  "projectCountPlural": "프로젝트",
+  "memberCount": "회원",
+  "memberCountPlural": "회원",
+  "activeProjectCount": "활성 프로젝트",
+  "activeProjectCountPlural": "활발한 프로젝트",
+  "overdueProjectCount": "기한이 지난 프로젝트",
+  "overdueProjectCountPlural": "기한이 지난 프로젝트",
+  "unassignedMemberCount": "할당되지 않은 회원",
+  "unassignedMemberCountPlural": "할당되지 않은 회원",
+  "memberWithOverdueTaskCount": "기한이 지난 작업이있는 회원",
+  "memberWithOverdueTaskCountPlural": "기한이 지난 작업이있는 회원",
+  "teamsText": "팀",
+  "nameColumn": "이름",
+  "projectsColumn": "프로젝트",
+  "membersColumn": "회원"
+}

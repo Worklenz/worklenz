@@ -7,7 +7,7 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { humanFileSize, log_error, megabytesToBytes } from "../shared/utils";
-import { HTML_TAG_REGEXP, S3_URL } from "../shared/constants";
+import { HTML_TAG_REGEXP, getStorageUrl } from "../shared/constants";
 import { getBaseUrl } from "../cron_jobs/helpers";
 import { ICommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendTaskComment } from "../shared/email-notifications";
@@ -102,7 +102,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     req.body.user_id = req.user?.id;
     req.body.team_id = req.user?.team_id;
     const { mentions, attachments, task_id } = req.body;
-    const url = `${S3_URL}/${getRootDir()}`;
+    const url = `${getStorageUrl()}/${getRootDir()}`;
 
     let commentContent = req.body.content;
     if (mentions.length > 0) {
@@ -124,7 +124,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         const q = `
       INSERT INTO task_comment_attachments (name, type, size, task_id, comment_id, team_id, project_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, name, type, task_id, comment_id, created_at, 
+      RETURNING id, name, type, task_id, comment_id, created_at,
       CONCAT($8::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS url;
     `;
 
@@ -340,7 +340,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
   }
 
   private static async getTaskComments(taskId: string) {
-    const url = `${S3_URL}/${getRootDir()}`;
+    const url = `${getStorageUrl()}/${getRootDir()}`;
 
     const q = `SELECT task_comments.id,
                     tc.text_content AS content,
@@ -525,22 +525,22 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
     const commentId = data.id;
 
-    const url = `${S3_URL}/${getRootDir()}`;
+    const url = `${getStorageUrl()}/${getRootDir()}`;
 
     for (const attachment of attachments) {
       if (req.user?.subscription_status === "free" && req.user?.owner_id) {
         const limits = await getFreePlanSettings();
-    
+
         const usedStorage = await getUsedStorage(req.user?.owner_id);
         if ((parseInt(usedStorage) + attachment.size) > megabytesToBytes(parseInt(limits.free_tier_storage))) {
           return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot exceed ${limits.free_tier_storage}MB of storage.`));
         }
       }
-      
+
       const q = `
         INSERT INTO task_comment_attachments (name, type, size, task_id, comment_id, team_id, project_id)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, name, type, task_id, comment_id, created_at, 
+        RETURNING id, name, type, task_id, comment_id, created_at,
         CONCAT($8::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS url;
       `;
 
