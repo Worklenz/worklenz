@@ -19,6 +19,7 @@ interface AccountSetupState {
   teamMembers: Email[];
   currentStep: number;
   surveyData: IAccountSetupSurveyData;
+  surveySubStep: number;
 }
 
 const initialState: AccountSetupState = {
@@ -29,6 +30,7 @@ const initialState: AccountSetupState = {
   teamMembers: [{ id: 0, value: '' }],
   currentStep: 0,
   surveyData: {},
+  surveySubStep: 0,
 };
 
 const accountSetupSlice = createSlice({
@@ -56,6 +58,9 @@ const accountSetupSlice = createSlice({
     setSurveyData: (state, action: PayloadAction<Partial<IAccountSetupSurveyData>>) => {
       state.surveyData = { ...state.surveyData, ...action.payload };
     },
+    setSurveySubStep: (state, action: PayloadAction<number>) => {
+      state.surveySubStep = action.payload;
+    },
     resetAccountSetup: () => initialState,
   },
 });
@@ -68,6 +73,7 @@ export const {
   setTeamMembers,
   setCurrentStep,
   setSurveyData,
+  setSurveySubStep,
   resetAccountSetup,
 } = accountSetupSlice.actions;
 
