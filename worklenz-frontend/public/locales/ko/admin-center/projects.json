@@ -1,0 +1,12 @@
+{
+  "membersCount": "회원 수",
+  "createdAt": "만들어졌습니다",
+  "projectName": "프로젝트 이름",
+  "teamName": "팀 이름",
+  "refreshProjects": "새로 고침 프로젝트",
+  "searchPlaceholder": "프로젝트 이름으로 검색하십시오",
+  "deleteProject": "이 프로젝트를 삭제 하시겠습니까?",
+  "confirm": "확인하다",
+  "cancel": "취소",
+  "delete": "프로젝트 삭제"
+}
