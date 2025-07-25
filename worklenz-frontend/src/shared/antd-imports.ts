@@ -65,6 +65,7 @@ import {
   Timeline,
   Mentions,
   Radio,
+  Steps
 } from 'antd/es';
 
 // Icons - Import commonly used ones
@@ -240,6 +241,7 @@ export {
   Timeline,
   Mentions,
   Radio,
+  Steps
 };
 
 // TypeScript Types - Import commonly used ones

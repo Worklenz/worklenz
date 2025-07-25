@@ -5,5 +5,6 @@
   "user": "User",
   "email": "Email",
   "lastActivity": "Last Activity",
-  "refresh": "Refresh users"
+  "refresh": "Refresh users",
+  "name": "Name"
 }
