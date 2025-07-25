@@ -1,0 +1,30 @@
+{
+  "details": {
+    "task-key": "작업 키",
+    "phase": "단계",
+    "assignees": "양수인",
+    "due-date": "마감일",
+    "time-estimation": "시간 추정",
+    "priority": "우선 사항",
+    "labels": "라벨",
+    "billable": "청구 가능",
+    "notify": "알림",
+    "when-done-notify": "완료되면 알립니다",
+    "start-date": "시작 날짜",
+    "end-date": "종료 날짜",
+    "hide-start-date": "시작 날짜를 숨기십시오",
+    "show-start-date": "시작 날짜를 표시하십시오",
+    "hours": "시간",
+    "minutes": "분",
+    "recurring": "반복"
+  },
+  "description": {
+    "title": "설명",
+    "placeholder": "더 자세한 설명 추가 ..."
+  },
+  "subTasks": {
+    "title": "하위 작업",
+    "add-sub-task": "하위 작업을 추가하십시오",
+    "refresh-sub-tasks": "하위 작업을 새로 고치십시오"
+  }
+}

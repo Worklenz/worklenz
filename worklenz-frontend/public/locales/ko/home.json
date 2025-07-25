@@ -1,0 +1,46 @@
+{
+  "todoList": {
+    "title": "목록에",
+    "refreshTasks": "작업을 새로 고치십시오",
+    "addTask": "+ 작업 추가",
+    "noTasks": "작업이 없습니다",
+    "pressEnter": "누르다",
+    "toCreate": "생성합니다.",
+    "markAsDone": "한대로 표시하십시오"
+  },
+  "projects": {
+    "title": "프로젝트",
+    "refreshProjects": "새로 고침 프로젝트",
+    "noRecentProjects": "현재 프로젝트에 할당되지 않았습니다.",
+    "noFavouriteProjects": "즐겨 찾기로 표시되지 않았습니다.",
+    "recent": "최근의",
+    "favourites": "즐겨 찾기"
+  },
+  "tasks": {
+    "assignedToMe": "나에게 할당",
+    "assignedByMe": "내가 할당",
+    "all": "모두",
+    "today": "오늘",
+    "upcoming": "다가오는",
+    "overdue": "기한이 지난",
+    "noDueDate": "마감일 없음",
+    "noTasks": "보여줄 작업이 없습니다.",
+    "addTask": "+ 작업 추가",
+    "name": "이름",
+    "project": "프로젝트",
+    "status": "상태",
+    "dueDate": "마감일",
+    "dueDatePlaceholder": "마감일을 설정하십시오",
+    "tomorrow": "내일",
+    "nextWeek": "다음 주",
+    "nextMonth": "다음 달",
+    "projectRequired": "프로젝트를 선택하십시오",
+    "pressTabToSelectDueDateAndProject": "마감일과 프로젝트를 선택하려면 탭을 누릅니다.",
+    "dueOn": "예정된 작업",
+    "taskRequired": "작업을 추가하십시오",
+    "list": "목록",
+    "calendar": "달력",
+    "tasks": "작업",
+    "refresh": "새로 고치다"
+  }
+}

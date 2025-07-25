@@ -1,0 +1,9 @@
+{
+  "nameColumn": "이름",
+  "createdColumn": "생성",
+  "editToolTip": "편집하다",
+  "deleteToolTip": "삭제",
+  "confirmText": "확실합니까?",
+  "okText": "예",
+  "cancelText": "취소"
+}
