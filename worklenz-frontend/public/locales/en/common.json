@@ -5,5 +5,11 @@
   "signup-failed": "Signup failed. Please ensure all required fields are filled and try again.",
   "reconnecting": "Disconnected from server.",
   "connection-lost": "Failed to connect to server. Please check your internet connection.",
-  "connection-restored": "Connected to server successfully"
+  "connection-restored": "Connected to server successfully",
+  "timer": {
+    "conflictTitle": "Timer Already Running",
+    "conflictMessage": "You have an active timer running on \"{{taskName}}\". Do you want to stop it and start a new timer on this task?",
+    "stopAndStartNew": "Stop & Start New",
+    "cancel": "Cancel"
+  }
 }

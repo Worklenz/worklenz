@@ -1,0 +1,17 @@
+{
+  "billingDetails": "Billing Details",
+  "companyDetails": "Company Details",
+  "name": "Name",
+  "emailAddress": "Email Address",
+  "contactNumber": "Contact Number",
+  "companyName": "Company Name",
+  "addressLine01": "Address Line 01",
+  "addressLine02": "Address Line 02",
+  "country": "Country",
+  "city": "City",
+  "state": "State",
+  "postalCode": "Postal Code",
+  "save": "Save",
+  "phoneNumber": "Phone Number",
+  "phoneNumberValidation": "Phone number must be exactly 10 digits"
+}

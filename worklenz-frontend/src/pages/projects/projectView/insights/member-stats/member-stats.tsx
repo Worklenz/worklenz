@@ -1,5 +1,6 @@
 import ProjectStatsCard from '@/components/projects/project-stats-card';
 import { Flex } from 'antd';
+import { useTranslation } from 'react-i18next';
 import groupIcon from '@/assets/icons/insightsIcons/group.png';
 import warningIcon from '@/assets/icons/insightsIcons/warning.png';
 import unassignedIcon from '@/assets/icons/insightsIcons/block-user.png';
@@ -10,6 +11,7 @@ import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 const MemberStats = () => {
+  const { t } = useTranslation('project-insights');
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
 
   const [memberStats, setMemberStats] = useState<IProjectMemberStats | null>(null);
@@ -41,19 +43,19 @@ const MemberStats = () => {
     <Flex gap={24} className="grid sm:grid-cols-2 sm:grid-rows-2 lg:grid-cols-3 lg:grid-rows-1">
       <ProjectStatsCard
         icon={groupIcon}
-        title="Project Members"
+        title={t('projectMembers')}
         children={memberStats?.total_members_count}
         loading={loadingStats}
       />
       <ProjectStatsCard
         icon={warningIcon}
-        title="Assignees with overdue tasks"
+        title={t('assigneesWithOverdueTasks')}
         children={memberStats?.overdue_members}
         loading={loadingStats}
       />
       <ProjectStatsCard
         icon={unassignedIcon}
-        title="Unassigned Members"
+        title={t('unassignedMembers')}
         children={memberStats?.unassigned_members}
         loading={loadingStats}
       />

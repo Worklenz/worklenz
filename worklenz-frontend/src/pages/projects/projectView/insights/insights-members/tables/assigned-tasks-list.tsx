@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Flex, Tooltip, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -14,25 +15,26 @@ interface AssignedTasksListTableProps {
   archived: boolean;
 }
 
-const columnsList = [
-  { key: 'name', columnHeader: 'Name', width: 280 },
-  { key: 'status', columnHeader: 'Status', width: 100 },
-  { key: 'dueDate', columnHeader: 'Due Date', width: 150 },
-  { key: 'overdue', columnHeader: 'Days Overdue', width: 150 },
-  { key: 'completedDate', columnHeader: 'Completed Date', width: 150 },
-  { key: 'totalAllocation', columnHeader: 'Total Allocation', width: 150 },
-  { key: 'overLoggedTime', columnHeader: 'Over Logged Time', width: 150 },
-];
-
 const AssignedTasksListTable: React.FC<AssignedTasksListTableProps> = ({
   memberId,
   projectId,
   archived,
 }) => {
+  const { t } = useTranslation('project-view-insights');
   const [memberTasks, setMemberTasks] = useState<IInsightTasks[]>([]);
   const [loading, setLoading] = useState(true);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+
+  const columnsList = [
+    { key: 'name', columnHeader: t('members.name'), width: 280 },
+    { key: 'status', columnHeader: t('members.status'), width: 100 },
+    { key: 'dueDate', columnHeader: t('members.dueDate'), width: 150 },
+    { key: 'overdue', columnHeader: t('members.daysOverdue'), width: 150 },
+    { key: 'completedDate', columnHeader: t('members.completedDate'), width: 150 },
+    { key: 'totalAllocation', columnHeader: t('members.totalAllocation'), width: 150 },
+    { key: 'overLoggedTime', columnHeader: t('members.overLoggedTime'), width: 150 },
+  ];
 
   useEffect(() => {
     const getTasksByMemberId = async () => {

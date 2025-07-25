@@ -1,0 +1,31 @@
+{
+  "title": "Aufgaben aus CSV importieren",
+  "cancel": "Abbrechen",
+  "importTasks": "Aufgaben importieren",
+  "instructions": {
+    "title": "Anweisungen",
+    "upload": "Laden Sie eine CSV-Datei hoch, um Aufgaben zu importieren.",
+    "format": "Die Datei muss genau zwei Spalten in dieser Reihenfolge enthalten: Aufgabentitel und Beschreibung.",
+    "header": "Die erste Zeile sollte die Kopfzeile sein und wird übersprungen."
+  },
+  "downloadTemplate": "Beispiel-CSV-Vorlage herunterladen",
+  "upload": {
+    "title": "Klicken oder ziehen Sie die CSV-Datei in diesen Bereich zum Hochladen",
+    "hint": "Nur CSV-Dateien werden unterstützt. Maximale Dateigröße ist 5MB."
+  },
+  "validation": {
+    "ready": "Datei bereit zum Import",
+    "selected": "Ausgewählte Datei",
+    "invalidType": "Bitte wählen Sie eine CSV-Datei",
+    "tooLarge": "Dateigröße muss weniger als 5MB sein"
+  },
+  "errors": {
+    "uploadFailed": "Datei-Upload fehlgeschlagen",
+    "importFailed": "Import der Aufgaben fehlgeschlagen",
+    "noFile": "Bitte wählen Sie eine CSV-Datei"
+  },
+  "success": {
+    "imported": "Import abgeschlossen. {{count}} Aufgaben wurden erfolgreich erstellt.",
+    "importedWithSkipped": "Import abgeschlossen. {{tasksCreated}} Aufgaben wurden erstellt. {{rowsSkipped}} Zeilen wurden übersprungen aufgrund fehlender Titel."
+  }
+}

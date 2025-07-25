@@ -1,5 +1,7 @@
 {
     "importTasks": "Import tasks",
+    "importTask": "Import task",
+    "importFromCSV": "Import from CSV",
     "createTask": "Create task",
     "settings": "Settings",
     "subscribe": "Subscribe",
@@ -9,5 +11,8 @@
     "endDate": "End date",
     "projectSettings": "Project settings",
     "projectSummary": "Project summary",
-    "receiveProjectSummary": "Receive a project summary every evening."
+    "receiveProjectSummary": "Receive a project summary every evening.",
+    "refreshProject": "Refresh project",
+    "saveAsTemplate": "Save as template",
+    "invite": "Invite"
 }

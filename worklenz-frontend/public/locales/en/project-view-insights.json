@@ -1,4 +1,9 @@
 {
+  "segments": {
+    "overview": "Overview",
+    "members": "Members", 
+    "tasks": "Tasks"
+  },
   "overview": {
     "title": "Overview",
     "statusOverview": "Status Overview",
@@ -16,7 +21,14 @@
     "completed": "Completed",
     "incomplete": "Incomplete",
     "overdue": "Overdue",
-    "progress": "Progress"
+    "progress": "Progress",
+    "status": "Status",
+    "dueDate": "Due Date",
+    "lastUpdated": "Last Updated",
+    "daysOverdue": "Days Overdue",
+    "completedDate": "Completed Date",
+    "totalAllocation": "Total Allocation",
+    "overLoggedTime": "Over Logged Time"
   },
   "tasks": {
     "overdueTasks": "Overdue Tasks",
@@ -36,6 +48,10 @@
     "overdueTasksTooltip": "Tasks that are past their due date",
     "totalLoggedHoursTooltip": "Task estimation and logged time for tasks.",
     "includeArchivedTasks": "Include Archived Tasks",
-    "export": "Export"
+    "export": "Export",
+    "sortAscending": "Click to sort ascending",
+    "sortDescending": "Click to sort descending",
+    "cancelSort": "Click to cancel sorting",
+    "noData": "N/A"
   }
 }

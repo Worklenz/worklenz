@@ -1,0 +1,38 @@
+{
+  "title": "Import Tasks from CSV",
+  "cancel": "Cancel",
+  "importTasks": "Import Tasks",
+  "instructions": {
+    "title": "Instructions",
+    "upload": "Upload a CSV file to import tasks.",
+    "format": "The file must contain exactly two columns in this order: Task Title and Description.",
+    "header": "The first row should be the header row and will be skipped."
+  },
+  "downloadTemplate": "Download sample CSV template",
+  "upload": {
+    "title": "Click or drag CSV file to this area to upload",
+    "hint": "Only CSV files are supported. Maximum file size is 5MB."
+  },
+  "validation": {
+    "ready": "File ready for import",
+    "selected": "Selected file",
+    "invalidType": "Please select a CSV file",
+    "tooLarge": "File size must be less than 5MB"
+  },
+  "errors": {
+    "uploadFailed": "Failed to upload file",
+    "importFailed": "Import failed",
+    "importFailedDesc": "Failed to import CSV file. Please try again.",
+    "noFile": "No file selected",
+    "noFileDesc": "Please select a CSV file to upload.",
+    "processingFailed": "Failed to process the CSV file."
+  },
+  "success": {
+    "imported": "Import complete. {{count}} tasks were created successfully.",
+    "importedWithSkipped": "Import complete. {{tasksCreated}} tasks were created. {{rowsSkipped}} rows were skipped due to missing title.",
+    "importComplete": "Import completed",
+    "importDesc": "Tasks have been imported successfully.",
+    "processed": "Successfully processed {{processed}} tasks out of {{total}} total.",
+    "skipped": "{{skipped}} rows were skipped (empty titles)."
+  }
+}

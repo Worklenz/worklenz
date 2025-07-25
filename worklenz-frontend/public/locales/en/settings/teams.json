@@ -1,0 +1,10 @@
+{
+  "title": "Team",
+  "titlePlural": "Teams",
+  "name": "Name",
+  "created": "Created",
+  "ownsBy": "Owns By",
+  "edit": "Edit",
+  "pinTooltip": "Click to pin this into the main menu",
+  "page": "page"
+}

@@ -19,6 +19,7 @@ import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { tabItems } from '@/lib/project/project-view-constants';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import { useTranslation } from 'react-i18next';
 
 const DeleteStatusDrawer = React.lazy(() => import('@/components/project-task-filters/delete-status-drawer/delete-status-drawer'));
 const PhaseDrawer = React.lazy(() => import('@features/projects/singleProject/phase/PhaseDrawer'));
@@ -36,6 +37,7 @@ const ProjectView = () => {
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
   const { projectId } = useParams();
+  const {t} = useTranslation('project-view');
 
   const selectedProject = useAppSelector(state => state.projectReducer.project);
   useDocumentTitle(selectedProject?.name || 'Project View');
@@ -106,7 +108,7 @@ const ProjectView = () => {
     key: item.key,
     label: (
       <Flex align="center" style={{ color: colors.skyBlue }}>
-        {item.label}
+        {t(item.label)}
         {item.key === 'tasks-list' || item.key === 'board' ? (
           <ConfigProvider wave={{ disabled: true }}>
             <Button

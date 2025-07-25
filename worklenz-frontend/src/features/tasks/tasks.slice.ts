@@ -74,7 +74,7 @@ interface ITaskState {
   labels: ITaskLabelFilter[];
   priorities: string[];
   members: string[];
-  activeTimers: Record<string, number | null>;
+  activeTimers: Record<string, { userId: string; startTime: number } | null>;
   convertToSubtaskDrawerOpen: boolean;
   customColumns: ITaskListColumn[];
   customColumnValues: Record<string, Record<string, any>>;
@@ -103,6 +103,29 @@ const initialState: ITaskState = {
   convertToSubtaskDrawerOpen: false,
   customColumns: [],
   customColumnValues: {},
+};
+
+// Helper function to sync activeTimers from task data
+const syncActiveTimersFromTasks = (state: ITaskState, userId: string) => {
+  const newActiveTimers: Record<string, { userId: string; startTime: number } | null> = {};
+  
+  for (const group of state.taskGroups) {
+    for (const task of group.tasks) {
+      if (task.timer_start_time && task.id) {
+        newActiveTimers[task.id] = { userId, startTime: task.timer_start_time };
+      }
+      
+      if (task.sub_tasks) {
+        for (const subTask of task.sub_tasks) {
+          if (subTask.timer_start_time && subTask.id) {
+            newActiveTimers[subTask.id] = { userId, startTime: subTask.timer_start_time };
+          }
+        }
+      }
+    }
+  }
+  
+  state.activeTimers = newActiveTimers;
 };
 
 export const COLUMN_KEYS = {
@@ -135,8 +158,8 @@ export const fetchTaskGroups = createAsyncThunk(
   'tasks/fetchTaskGroups',
   async (projectId: string, { rejectWithValue, getState }) => {
     try {
-      const state = getState() as { taskReducer: ITaskState };
-      const { taskReducer } = state;
+      const state = getState() as { taskReducer: ITaskState; userReducer: { id: string } };
+      const { taskReducer, userReducer } = state;
 
       const selectedMembers = taskReducer.taskAssignees
         .filter(member => member.selected)
@@ -164,7 +187,10 @@ export const fetchTaskGroups = createAsyncThunk(
       };
 
       const response = await tasksApiService.getTaskList(config);
-      return response.body;
+      return { 
+        taskGroups: response.body, 
+        userId: userReducer.id 
+      };
     } catch (error) {
       logger.error('Fetch Task Groups', error);
       if (error instanceof Error) {
@@ -181,8 +207,8 @@ export const fetchSubTasks = createAsyncThunk(
     { taskId, projectId }: { taskId: string; projectId: string },
     { rejectWithValue, getState, dispatch }
   ) => {
-    const state = getState() as { taskReducer: ITaskState };
-    const { taskReducer } = state;
+    const state = getState() as { taskReducer: ITaskState; userReducer: { id: string } };
+    const { taskReducer, userReducer } = state;
 
     // Check if the task is already expanded
     const task = taskReducer.taskGroups.flatMap(group => group.tasks).find(t => t.id === taskId);
@@ -223,7 +249,10 @@ export const fetchSubTasks = createAsyncThunk(
       if (response.body.length > 0) {
         dispatch(toggleTaskRowExpansion(taskId));
       }
-      return response.body;
+      return { 
+        subTasks: response.body as IProjectTask[], 
+        userId: userReducer.id 
+      };
     } catch (error) {
       logger.error('Fetch Sub Tasks', error);
       if (error instanceof Error) {
@@ -770,10 +799,23 @@ const taskSlice = createSlice({
       action: PayloadAction<{
         taskId: string;
         timeTracking: number | null;
+        userId?: string;
       }>
     ) => {
-      const { taskId, timeTracking } = action.payload;
-      state.activeTimers[taskId] = timeTracking;
+      const { taskId, timeTracking, userId } = action.payload;
+      if (timeTracking && userId) {
+        state.activeTimers[taskId] = { userId, startTime: timeTracking };
+      } else {
+        state.activeTimers[taskId] = null;
+      }
+    },
+
+    syncActiveTimersFromTaskData: (
+      state,
+      action: PayloadAction<{ userId: string }>
+    ) => {
+      const { userId } = action.payload;
+      syncActiveTimersFromTasks(state, userId);
     },
 
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
@@ -985,7 +1027,11 @@ const taskSlice = createSlice({
       })
       .addCase(fetchTaskGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
-        state.taskGroups = action.payload;
+        state.taskGroups = action.payload.taskGroups;
+        // Sync activeTimers from loaded task data
+        if (action.payload.userId) {
+          syncActiveTimersFromTasks(state, action.payload.userId);
+        }
       })
       .addCase(fetchTaskGroups.rejected, (state, action) => {
         state.loadingGroups = false;
@@ -994,19 +1040,29 @@ const taskSlice = createSlice({
       .addCase(fetchSubTasks.pending, state => {
         state.error = null;
       })
-      .addCase(fetchSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[]>) => {
-        if (action.payload.length > 0) {
-          const taskId = action.payload[0].parent_task_id;
+      .addCase(fetchSubTasks.fulfilled, (state, action) => {
+        const payload = action.payload;
+        // Handle both old array format and new object format
+        const subTasks = Array.isArray(payload) ? payload : payload.subTasks;
+        const userId = Array.isArray(payload) ? null : payload.userId;
+        
+        if (subTasks.length > 0) {
+          const taskId = subTasks[0].parent_task_id;
           if (taskId) {
             for (const group of state.taskGroups) {
               const task = group.tasks.find(t => t.id === taskId);
               if (task) {
-                task.sub_tasks = action.payload;
+                task.sub_tasks = subTasks;
                 task.show_sub_tasks = true;
                 break;
               }
             }
           }
+        }
+        
+        // Sync activeTimers if userId is available
+        if (userId) {
+          syncActiveTimersFromTasks(state, userId);
         }
       })
       .addCase(fetchSubTasks.rejected, (state, action) => {
@@ -1121,6 +1177,7 @@ export const {
   updateTaskStartDate,
   updateTaskEstimation,
   updateTaskTimeTracking,
+  syncActiveTimersFromTaskData,
   toggleTaskRowExpansion,
   resetTaskListData,
   updateTaskStatusColor,

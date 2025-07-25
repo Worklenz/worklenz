@@ -1,5 +1,6 @@
 import { Card, Flex, Skeleton, Table, Typography } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';
 import { TableProps } from 'antd/lib';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
@@ -11,6 +12,7 @@ import warningIcon from '@assets/icons/insightsIcons/warning.png';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 const ProjectDeadline = () => {
+  const { t } = useTranslation('project-insights');
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
 
   const [loading, setLoading] = useState(false);
@@ -43,12 +45,12 @@ const ProjectDeadline = () => {
   const columns: TableProps['columns'] = [
     {
       key: 'name',
-      title: 'Name',
+      title: t('name'),
       render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('status'),
       render: (record: IInsightTasks) => (
         <Flex
           gap={4}
@@ -75,10 +77,10 @@ const ProjectDeadline = () => {
     },
     {
       key: 'dueDate',
-      title: 'Due Date',
+      title: t('dueDate'),
       render: (record: IInsightTasks) => (
         <Typography.Text>
-          {record.end_date ? simpleDateFormat(record.end_date) : 'N/A'}
+          {record.end_date ? simpleDateFormat(record.end_date) : t('noData')}
         </Typography.Text>
       ),
     },
@@ -89,7 +91,7 @@ const ProjectDeadline = () => {
       className="custom-insights-card"
       title={
         <Typography.Text style={{ fontSize: 16, fontWeight: 500 }}>
-          Project Deadline <span style={{ color: colors.lightGray }}>{data?.project_end_date}</span>
+          {t('projectDeadline')} <span style={{ color: colors.lightGray }}>{data?.project_end_date}</span>
         </Typography.Text>
       }
       style={{ width: '100%' }}
@@ -99,15 +101,15 @@ const ProjectDeadline = () => {
           <Skeleton active loading={loading}>
             <ProjectStatsCard
               icon={warningIcon}
-              title="Overdue tasks (hours)"
-              tooltip={'Tasks that has time logged past the end date of the project'}
-              children={data?.deadline_logged_hours_string || 'N/A'}
+              title={t('overdueTasksHours')}
+              tooltip={t('overdueTasksHoursTooltip')}
+              children={data?.deadline_logged_hours_string || t('noData')}
             />
             <ProjectStatsCard
               icon={warningIcon}
-              title="Overdue tasks"
-              tooltip={'Tasks that are past the end date of the project'}
-              children={data?.deadline_tasks_count || 'N/A'}
+              title={t('overdueTasks')}
+              tooltip={t('overdueTasksTooltip')}
+              children={data?.deadline_tasks_count || t('noData')}
             />
           </Skeleton>
         </Flex>

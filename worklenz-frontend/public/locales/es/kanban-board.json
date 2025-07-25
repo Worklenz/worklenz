@@ -2,6 +2,7 @@
   "rename": "Renombrar",
   "delete": "Eliminar",
   "addTask": "Agregar tarea",
+  "addSubtask": "Agregar Subtarea",
   "addSectionButton": "Agregar sección",
   "changeCategory": "Cambiar categoría",
 

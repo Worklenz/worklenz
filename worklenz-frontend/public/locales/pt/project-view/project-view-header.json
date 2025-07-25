@@ -9,5 +9,8 @@
     "endDate": "Data de fim",
     "projectSettings": "Configurações do projeto",
     "projectSummary": "Resumo do projeto",
-    "receiveProjectSummary": "Receber um resumo do projeto todas as noites."
+    "receiveProjectSummary": "Receber um resumo do projeto todas as noites.",
+    "refreshProject": "Atualizar projeto",
+    "saveAsTemplate": "Salvar como modelo",
+    "invite": "Convidar"
 }

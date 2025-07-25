@@ -1,0 +1,14 @@
+{
+  "projectDeadline": "Fecha Límite del Proyecto",
+  "overdueTasksHours": "Tareas atrasadas (horas)",
+  "overdueTasks": "Tareas atrasadas",
+  "overdueTasksHoursTooltip": "Tareas que tienen tiempo registrado después de la fecha límite del proyecto",
+  "overdueTasksTooltip": "Tareas que han pasado la fecha límite del proyecto",
+  "projectMembers": "Miembros del Proyecto",
+  "assigneesWithOverdueTasks": "Asignados con tareas atrasadas",
+  "unassignedMembers": "Miembros sin Asignar",
+  "name": "Nombre",
+  "status": "Estado",
+  "dueDate": "Fecha Límite",
+  "noData": "N/D"
+}

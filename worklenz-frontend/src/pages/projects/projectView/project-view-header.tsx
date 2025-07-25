@@ -43,6 +43,7 @@ import logger from '@/utils/errorLogger';
 import { createPortal } from 'react-dom';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
+import CSVImportModal from '@/components/csv-import/csv-import-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
@@ -67,6 +68,7 @@ const ProjectViewHeader = () => {
   const { loadingGroups, groupBy } = useAppSelector(state => state.taskReducer);
 
   const [creatingTask, setCreatingTask] = useState(false);
+  const [csvImportModalVisible, setCsvImportModalVisible] = useState(false);
 
   const handleRefresh = () => {
     if (!projectId) return;
@@ -158,12 +160,33 @@ const ProjectViewHeader = () => {
     dispatch(setImportTaskTemplateDrawerOpen(true));
   };
 
+  const handleImportCSV = () => {
+    setCsvImportModalVisible(true);
+  };
+
+  const handleCSVImportClose = () => {
+    setCsvImportModalVisible(false);
+  };
+
+  const handleCSVImportComplete = () => {
+    // Refresh the task list after successful import
+    handleRefresh();
+  };
+
   const dropdownItems = [
     {
       key: 'import',
       label: (
         <div style={{ width: '100%', margin: 0, padding: 0 }} onClick={handleImportTaskTemplate}>
-          <ImportOutlined /> Import task
+          <ImportOutlined /> {t('importTask')}
+        </div>
+      ),
+    },
+    {
+      key: 'import-csv',
+      label: (
+        <div style={{ width: '100%', margin: 0, padding: 0 }} onClick={handleImportCSV}>
+          <ImportOutlined /> {t('importFromCSV')}
         </div>
       ),
     },
@@ -213,7 +236,7 @@ const ProjectViewHeader = () => {
 
   const renderHeaderActions = () => (
     <Flex gap={8} align="center">
-      <Tooltip title="Refresh project">
+      <Tooltip title={t('refreshProject')}>
         <Button
           shape="circle"
           icon={<SyncOutlined spin={loadingGroups} />}
@@ -222,7 +245,7 @@ const ProjectViewHeader = () => {
       </Tooltip>
 
       {(isOwnerOrAdmin) && (
-        <Tooltip title="Save as template">
+        <Tooltip title={t('saveAsTemplate')}>
           <Button
             shape="circle"
             icon={<SaveOutlined />}
@@ -231,7 +254,7 @@ const ProjectViewHeader = () => {
         </Tooltip>
       )}
 
-      <Tooltip title="Project settings">
+      <Tooltip title={t('projectSettings')}>
         <Button shape="circle" icon={<SettingOutlined />} onClick={handleSettingsClick} />
       </Tooltip>
 
@@ -251,7 +274,7 @@ const ProjectViewHeader = () => {
           icon={<UsergroupAddOutlined />}
           onClick={() => dispatch(toggleProjectMemberDrawer())}
         >
-          Invite
+          {t('invite')}
         </Button>
       )}
 
@@ -301,7 +324,12 @@ const ProjectViewHeader = () => {
       {createPortal(<ProjectDrawer onClose={() => { }} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
-
+      <CSVImportModal
+        visible={csvImportModalVisible}
+        projectId={selectedProject?.id || ''}
+        onClose={handleCSVImportClose}
+        onImportComplete={handleCSVImportComplete}
+      />
     </>
   );
 };

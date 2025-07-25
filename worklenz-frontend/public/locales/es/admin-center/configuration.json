@@ -1,0 +1,17 @@
+{
+  "billingDetails": "Detalles de Facturación",
+  "companyDetails": "Detalles de la Empresa",
+  "name": "Nombre",
+  "emailAddress": "Dirección de Correo Electrónico",
+  "contactNumber": "Número de Contacto",
+  "companyName": "Nombre de la Empresa",
+  "addressLine01": "Línea de Dirección 01",
+  "addressLine02": "Línea de Dirección 02",
+  "country": "País",
+  "city": "Ciudad",
+  "state": "Estado",
+  "postalCode": "Código Postal",
+  "save": "Guardar",
+  "phoneNumber": "Número de Teléfono",
+  "phoneNumberValidation": "El número de teléfono debe tener exactamente 10 dígitos"
+}

@@ -1,0 +1,35 @@
+/* CSV Import Modal Styles */
+.csv-import-modal .ant-upload-drag {
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  transition: border-color 0.3s ease;
+}
+
+.csv-import-modal .ant-upload-drag:hover {
+  border-color: #40a9ff;
+}
+
+.csv-import-modal .ant-upload-drag-icon {
+  margin-bottom: 16px;
+}
+
+.csv-import-modal .ant-upload-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.csv-import-modal .ant-upload-hint {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.csv-import-modal .ant-alert {
+  border-radius: 8px;
+}
+
+.csv-import-modal .ant-btn-link {
+  color: #1890ff;
+  font-weight: 500;
+}

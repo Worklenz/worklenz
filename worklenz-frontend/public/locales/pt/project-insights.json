@@ -1,0 +1,10 @@
+{
+  "projectDeadline": "Prazo do Projeto",
+  "overdueTasksHours": "Tarefas atrasadas (horas)",
+  "overdueTasks": "Tarefas atrasadas",
+  "overdueTasksHoursTooltip": "Tarefas que têm tempo registrado após a data final do projeto",
+  "overdueTasksTooltip": "Tarefas que passaram da data final do projeto",
+  "projectMembers": "Membros do Projeto",
+  "assigneesWithOverdueTasks": "Responsáveis com tarefas atrasadas",
+  "unassignedMembers": "Membros não atribuídos"
+}

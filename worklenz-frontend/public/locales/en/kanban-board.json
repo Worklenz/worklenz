@@ -2,6 +2,7 @@
   "rename": "Rename",
   "delete": "Delete",
   "addTask": "Add Task",
+  "addSubtask": "Add Subtask",
   "addSectionButton": "Add Section",
   "changeCategory": "Change category",
 

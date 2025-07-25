@@ -5,5 +5,11 @@
   "signup-failed": "Falha no cadastro. Por favor, certifique-se de que todos os campos obrigatórios estão preenchidos e tente novamente.",
   "reconnecting": "Reconectando ao servidor...",
   "connection-lost": "Conexão perdida. Tentando reconectar...",
-  "connection-restored": "Conexão restaurada. Reconectando ao servidor..."
+  "connection-restored": "Conexão restaurada. Reconectando ao servidor...",
+  "timer": {
+    "conflictTitle": "Timer Já Executando",
+    "conflictMessage": "Você tem um timer ativo executando em \"{{taskName}}\". Deseja pará-lo e iniciar um novo timer nesta tarefa?",
+    "stopAndStartNew": "Parar e Iniciar Novo",
+    "cancel": "Cancelar"
+  }
 }

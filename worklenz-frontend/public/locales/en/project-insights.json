@@ -1,0 +1,14 @@
+{
+  "projectDeadline": "Project Deadline",
+  "overdueTasksHours": "Overdue tasks (hours)",
+  "overdueTasks": "Overdue tasks",
+  "overdueTasksHoursTooltip": "Tasks that has time logged past the end date of the project",
+  "overdueTasksTooltip": "Tasks that are past the end date of the project",
+  "projectMembers": "Project Members",
+  "assigneesWithOverdueTasks": "Assignees with overdue tasks",
+  "unassignedMembers": "Unassigned Members",
+  "name": "Name",
+  "status": "Status",
+  "dueDate": "Due Date",
+  "noData": "N/A"
+}

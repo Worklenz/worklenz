@@ -1,9 +1,15 @@
 {
+  "segments": {
+    "overview": "Visão Geral",
+    "members": "Membros", 
+    "tasks": "Tarefas"
+  },
   "overview": {
     "title": "Visão Geral",
     "statusOverview": "Visão Geral do Status",
     "priorityOverview": "Visão Geral da Prioridade",
-    "lastUpdatedTasks": "Últimas Tarefas Atualizadas"
+    "lastUpdatedTasks": "Últimas Tarefas Atualizadas",
+    "ProjectDeadline" : "Prazo do Projeto"
   },
   "members": {
     "title": "Membros",
@@ -16,7 +22,13 @@
     "completed": "Concluído",
     "incomplete": "Incompleto",
     "overdue": "Atrasado",
-    "progress": "Progresso"
+    "progress": "Progresso",
+    "status": "Status",
+    "dueDate": "Data de Vencimento",
+    "daysOverdue": "Dias de Atraso",
+    "completedDate": "Data de Conclusão",
+    "totalAllocation": "Alocação Total",
+    "overLoggedTime": "Tempo Registrado Excedente"
   },
   "tasks": {
     "overdueTasks": "Tarefas Atrasadas",
@@ -36,6 +48,9 @@
     "overdueTasksTooltip": "Tarefas que estão atrasadas",
     "totalLoggedHoursTooltip": "Estimativa de tarefas e tempo registrado.",
     "includeArchivedTasks": "Incluir Tarefas Arquivadas",
-    "export": "Exportar"
+    "export": "Exportar",
+    "sortAscending": "Clique para ordenar crescente",
+    "sortDescending": "Clique para ordenar decrescente",
+    "cancelSort": "Clique para cancelar ordenação"
   }
 }

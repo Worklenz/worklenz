@@ -1,4 +1,9 @@
 {
+  "segments": {
+    "overview": "Resumen",
+    "members": "Miembros", 
+    "tasks": "Tareas"
+  },
   "overview": {
     "title": "Resumen",
     "statusOverview": "Resumen de Estado",
@@ -16,7 +21,14 @@
     "completed": "Completadas",
     "incomplete": "Incompletas",
     "overdue": "Atrasadas",
-    "progress": "Progreso"
+    "progress": "Progreso",
+    "status": "Estado",
+    "dueDate": "Fecha Límite",
+    "lastUpdated": "Última Actualización",
+    "daysOverdue": "Días de Atraso",
+    "completedDate": "Fecha de Finalización",
+    "totalAllocation": "Asignación Total",
+    "overLoggedTime": "Tiempo Excedido"
   },
   "tasks": {
     "overdueTasks": "Tareas Atrasadas",
@@ -36,6 +48,10 @@
     "overdueTasksTooltip": "Tareas que están más allá de su fecha límite",
     "totalLoggedHoursTooltip": "Estimación de tareas y tiempo registrado para las tareas.",
     "includeArchivedTasks": "Incluir Tareas Archivadas",
-    "export": "Exportar"
+    "export": "Exportar",
+    "sortAscending": "Clic para ordenar ascendente",
+    "sortDescending": "Clic para ordenar descendente",
+    "cancelSort": "Clic para cancelar ordenamiento",
+    "noData": "N/D"
   }
 }

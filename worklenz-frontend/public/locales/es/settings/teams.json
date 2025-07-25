@@ -1,0 +1,10 @@
+{
+  "title": "Equipo",
+  "titlePlural": "Equipos",
+  "name": "Nombre",
+  "created": "Creado",
+  "ownsBy": "Propietario",
+  "edit": "Editar",
+  "pinTooltip": "Haga clic para fijar esto en el menú principal",
+  "page": "página"
+}

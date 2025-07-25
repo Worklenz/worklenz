@@ -1,5 +1,6 @@
 import { Button, Card, Col, Divider, Form, Input, notification, Row, Select } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RootState } from '../../../app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IBillingConfigurationCountry } from '@/types/admin-center/country.types';
@@ -8,6 +9,7 @@ import { IBillingConfiguration } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
 
 const Configuration: React.FC = () => {
+  const { t } = useTranslation('admin-center/configuration');
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
 
   const [countries, setCountries] = useState<IBillingConfigurationCountry[]>([]);
@@ -70,7 +72,7 @@ const Configuration: React.FC = () => {
               gap: '4px',
             }}
           >
-            Billing Details
+            {t('billingDetails')}
           </span>
         }
         style={{ marginTop: '16px' }}
@@ -84,7 +86,7 @@ const Configuration: React.FC = () => {
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
               <Form.Item
                 name="name"
-                label="Name"
+                label={t('name')}
                 layout="vertical"
                 rules={[
                   {
@@ -92,13 +94,13 @@ const Configuration: React.FC = () => {
                   },
                 ]}
               >
-                <Input placeholder="Name" />
+                <Input placeholder={t('name')} />
               </Form.Item>
             </Col>
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
               <Form.Item
                 name="email"
-                label="Email Address"
+                label={t('emailAddress')}
                 layout="vertical"
                 rules={[
                   {
@@ -106,23 +108,23 @@ const Configuration: React.FC = () => {
                   },
                 ]}
               >
-                <Input placeholder="Name" disabled />
+                <Input placeholder={t('name')} disabled />
               </Form.Item>
             </Col>
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
               <Form.Item
                 name="phone"
-                label="Contact Number"
+                label={t('contactNumber')}
                 layout="vertical"
                 rules={[
                   {
                     pattern: /^\d{10}$/,
-                    message: 'Phone number must be exactly 10 digits',
+                    message: t('phoneNumberValidation'),
                   },
                 ]}
               >
                 <Input
-                  placeholder="Phone Number"
+                  placeholder={t('phoneNumber')}
                   maxLength={10}
                   onInput={e => {
                     const input = e.target as HTMLInputElement; // Type assertion to access 'value'
@@ -143,24 +145,24 @@ const Configuration: React.FC = () => {
                 gap: '4px',
               }}
             >
-              Company Details
+              {t('companyDetails')}
             </span>
           </Divider>
 
           <Row>
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
-              <Form.Item name="company_name" label="Company Name" layout="vertical">
-                <Input placeholder="Company Name" />
+              <Form.Item name="company_name" label={t('companyName')} layout="vertical">
+                <Input placeholder={t('companyName')} />
               </Form.Item>
             </Col>
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
-              <Form.Item name="address_line_1" label="Address Line 01" layout="vertical">
-                <Input placeholder="Address Line 01" />
+              <Form.Item name="address_line_1" label={t('addressLine01')} layout="vertical">
+                <Input placeholder={t('addressLine01')} />
               </Form.Item>
             </Col>
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
-              <Form.Item name="address_line_2" label="Address Line 02" layout="vertical">
-                <Input placeholder="Address Line 02" />
+              <Form.Item name="address_line_2" label={t('addressLine02')} layout="vertical">
+                <Input placeholder={t('addressLine02')} />
               </Form.Item>
             </Col>
           </Row>
@@ -173,12 +175,12 @@ const Configuration: React.FC = () => {
                 scrollbarColor: 'red',
               }}
             >
-              <Form.Item name="country" label="Country" layout="vertical">
+              <Form.Item name="country" label={t('country')} layout="vertical">
                 <Select
                   dropdownStyle={{ maxHeight: 256, overflow: 'auto' }}
                   placement="topLeft"
                   showSearch
-                  placeholder="Country"
+                  placeholder={t('country')}
                   optionFilterProp="label"
                   
                   allowClear
@@ -187,20 +189,20 @@ const Configuration: React.FC = () => {
               </Form.Item>
             </Col>
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
-              <Form.Item name="city" label="City" layout="vertical">
-                <Input placeholder="City" />
+              <Form.Item name="city" label={t('city')} layout="vertical">
+                <Input placeholder={t('city')} />
               </Form.Item>
             </Col>
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
-              <Form.Item name="state" label="State" layout="vertical">
-                <Input placeholder="State" />
+              <Form.Item name="state" label={t('state')} layout="vertical">
+                <Input placeholder={t('state')} />
               </Form.Item>
             </Col>
           </Row>
           <Row>
             <Col span={8} style={{ padding: '0 12px', height: '86px' }}>
-              <Form.Item name="postal_code" label="Postal Code" layout="vertical">
-                <Input placeholder="Postal Code" />
+              <Form.Item name="postal_code" label={t('postalCode')} layout="vertical">
+                <Input placeholder={t('postalCode')} />
               </Form.Item>
             </Col>
           </Row>
@@ -208,7 +210,7 @@ const Configuration: React.FC = () => {
             <Col style={{ paddingLeft: '12px' }}>
               <Form.Item>
                 <Button type="primary" htmlType="submit">
-                  Save
+                  {t('save')}
                 </Button>
               </Form.Item>
             </Col>

@@ -20,14 +20,14 @@ export const tabItems: TabItems[] = [
   {
     index: 0,
     key: 'tasks-list',
-    label: 'Task List',
+    label: 'tasksList',
     isPinned: true,
     element: React.createElement(ProjectViewTaskList),
   },
   {
     index: 1,
     key: 'board',
-    label: 'Board',
+    label: 'board',
     isPinned: true,
     element: React.createElement(ProjectViewBoard),
   },

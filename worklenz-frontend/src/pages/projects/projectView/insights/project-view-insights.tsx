@@ -137,7 +137,11 @@ const ProjectViewInsights = () => {
     <Flex vertical gap={24}>
       <Flex align="center" justify="space-between">
         <Segmented
-          options={['Overview', 'Members', 'Tasks']}
+          options={[
+            { label: t('segments.overview'), value: 'Overview' },
+            { label: t('segments.members'), value: 'Members' },
+            { label: t('segments.tasks'), value: 'Tasks' }
+          ]}
           defaultValue={activeSegment}
           value={activeSegment}
           onChange={handleSegmentChange}

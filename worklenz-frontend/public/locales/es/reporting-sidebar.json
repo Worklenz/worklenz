@@ -1,8 +1,8 @@
 {
-  "overviewText": "Resumen",
-  "projectsText": "Proyectos",
-  "membersText": "Miembros",
-  "timeReportsText": "Informes de Tiempo",
-  "estimateVsActualText": "Estimado vs Real",
+  "overview": "Resumen",
+  "projects": "Proyectos",
+  "members": "Miembros",
+  "timeReports": "Informes de Tiempo",
+  "estimateVsActual": "Estimado vs Real",
   "currentOrganizationTooltip": "Organización actual"
 }

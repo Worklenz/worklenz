@@ -1,5 +1,6 @@
 import { Flex, Table, Tooltip, Typography } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';
 import { TableProps } from 'antd/lib';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
@@ -11,6 +12,7 @@ import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 
 const LastUpdatedTasks = () => {
+  const { t } = useTranslation('project-view-insights');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
 
@@ -45,12 +47,12 @@ const LastUpdatedTasks = () => {
   const columns: TableProps['columns'] = [
     {
       key: 'name',
-      title: 'Name',
+      title: t('members.name'),
       render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('members.status'),
       render: (record: IInsightTasks) => (
         <Flex
           gap={4}
@@ -77,20 +79,20 @@ const LastUpdatedTasks = () => {
     },
     {
       key: 'dueDate',
-      title: 'Due Date',
+      title: t('members.dueDate'),
       render: (record: IInsightTasks) => (
         <Typography.Text>
-          {record.end_date ? simpleDateFormat(record.end_date) : 'N/A'}
+          {record.end_date ? simpleDateFormat(record.end_date) : t('common.noData')}
         </Typography.Text>
       ),
     },
     {
       key: 'lastUpdated',
-      title: 'Last Updated',
+      title: t('members.lastUpdated'),
       render: (record: IInsightTasks) => (
-        <Tooltip title={record.updated_at ? formatDateTimeWithLocale(record.updated_at) : 'N/A'}>
+        <Tooltip title={record.updated_at ? formatDateTimeWithLocale(record.updated_at) : t('common.noData')}>
           <Typography.Text>
-            {record.updated_at ? calculateTimeDifference(record.updated_at) : 'N/A'}
+            {record.updated_at ? calculateTimeDifference(record.updated_at) : t('common.noData')}
           </Typography.Text>
         </Tooltip>
       ),
