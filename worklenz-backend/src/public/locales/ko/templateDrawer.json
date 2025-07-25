@@ -1,0 +1,23 @@
+{
+  "bugTracking": "버그 추적",
+  "construction": "건설",
+  "designCreative": "디자인 및 크리에이티브",
+  "education": "교육",
+  "finance": "재원",
+  "hrRecruiting": "HR & 채용",
+  "informationTechnology": "정보 기술",
+  "legal": "합법적인",
+  "manufacturing": "조작",
+  "marketing": "마케팅",
+  "nonprofit": "비영리 단체",
+  "personalUse": "개인적 사용",
+  "salesCRM": "영업 및 CRM",
+  "serviceConsulting": "서비스 및 컨설팅",
+  "softwareDevelopment": "소프트웨어 개발",
+  "description": "설명",
+  "phase": "단계",
+  "statuses": "상태",
+  "priorities": "우선 순위",
+  "labels": "라벨",
+  "tasks": "작업"
+}

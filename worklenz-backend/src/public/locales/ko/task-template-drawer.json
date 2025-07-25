@@ -1,0 +1,12 @@
+{
+  "createTaskTemplate": "작업 템플릿을 만듭니다",
+  "editTaskTemplate": "작업 템플릿 편집",
+  "cancelText": "취소",
+  "saveText": "구하다",
+  "templateNameText": "템플릿 이름",
+  "templateNameRequired": "템플릿 이름이 필요합니다",
+  "selectedTasks": "선택된 작업",
+  "removeTask": "제거하다",
+  "cancelButton": "취소",
+  "saveButton": "구하다"
+}

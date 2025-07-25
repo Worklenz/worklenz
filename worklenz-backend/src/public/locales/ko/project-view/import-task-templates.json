@@ -1,0 +1,11 @@
+{
+  "importTaskTemplate": "작업 템플릿 가져 오기",
+  "templateName": "템플릿 이름",
+  "templateDescription": "템플릿 설명",
+  "selectedTasks": "선택된 작업",
+  "tasks": "작업",
+  "templates": "템플릿",
+  "remove": "제거하다",
+  "cancel": "취소",
+  "import": "수입"
+}
