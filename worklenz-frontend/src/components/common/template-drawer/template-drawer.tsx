@@ -38,10 +38,8 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   showBothTabs = false,
   templateSelected = (templateId: string) => {
     if (!templateId) return;
-    templateId;
   },
   selectedTemplateType = (type: 'worklenz' | 'custom') => {
-    type;
   },
 }) => {
   const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
