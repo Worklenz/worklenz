@@ -3,7 +3,7 @@ import { getJSONFromLocalStorage, saveJSONToLocalStorage } from '../utils/localS
 import { Button, ConfigProvider, Tooltip } from '@/shared/antd-imports';
 import { PushpinFilled, PushpinOutlined } from '@/shared/antd-imports';
 import { colors } from '../styles/colors';
-import { navRoutes, NavRoutesType } from '../features/navbar/navRoutes';
+import { navRoutes, NavRoutesType } from '../lib/navbar/navRoutes';
 
 // Props type for the component
 type PinRouteToNavbarButtonProps = {

@@ -1,12 +1,12 @@
 import { UsergroupAddOutlined } from '@/shared/antd-imports';
 import { Button, Tooltip } from '@/shared/antd-imports';
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleInviteMemberDrawer } from '../../settings/member/memberSlice';
+import { toggleInviteMemberDrawer } from '../../../features/settings/member/memberSlice';
 
-const InviteButton = () => {
+const InviteButton = memo(() => {
   const dispatch = useAppDispatch();
 
   // localization
@@ -21,12 +21,14 @@ const InviteButton = () => {
           color: colors.skyBlue,
           borderColor: colors.skyBlue,
         }}
-        onClick={() => dispatch(toggleInviteMemberDrawer())}
+        onClick={useCallback(() => dispatch(toggleInviteMemberDrawer()), [dispatch])}
       >
         {t('invite')}
       </Button>
     </Tooltip>
   );
-};
+});
+
+InviteButton.displayName = 'InviteButton';
 
 export default InviteButton;

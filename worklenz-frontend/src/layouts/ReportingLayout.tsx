@@ -1,12 +1,12 @@
 import { Col, ConfigProvider, Layout } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
-import Navbar from '../features/navbar/navbar';
-import { useAppSelector } from '../hooks/useAppSelector';
-import { colors } from '../styles/colors';
-import { themeWiseColor } from '../utils/themeWiseColor';
-import ReportingSider from '../pages/reporting/sidebar/reporting-sider';
+import Navbar from '@/components/navbar/Navbar';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { colors } from '@/styles/colors';
+import { themeWiseColor } from '@/utils/themeWiseColor';
+import ReportingSider from '@/pages/reporting/sidebar/reporting-sider';
 import { Outlet, useNavigate } from 'react-router-dom';
-import ReportingCollapsedButton from '../pages/reporting/sidebar/reporting-collapsed-button';
+import ReportingCollapsedButton from '@/pages/reporting/sidebar/reporting-collapsed-button';
 import { useAuthService } from '@/hooks/useAuth';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

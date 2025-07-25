@@ -1,14 +1,14 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import logo from '@/assets/images/worklenz-light-mode.png';
 import logoDark from '@/assets/images/worklenz-dark-mode.png';
 
-import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store';
 
-const NavbarLogo = () => {
+const NavbarLogo = memo(() => {
   const { t } = useTranslation('navbar');
   const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
 
@@ -23,6 +23,8 @@ const NavbarLogo = () => {
       </div>
     </Link>
   );
-};
+});
+
+NavbarLogo.displayName = 'NavbarLogo';
 
 export default NavbarLogo;

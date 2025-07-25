@@ -1,55 +1,60 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Col, ConfigProvider, Flex, Menu, MenuProps, Alert } from '@/shared/antd-imports';
+import { Col, ConfigProvider, Flex, Menu } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
 
-import InviteTeamMembers from '../../components/common/invite-team-members/invite-team-members';
+import InviteTeamMembers from '../common/invite-team-members/invite-team-members';
 import InviteButton from './invite/InviteButton';
 import MobileMenuButton from './mobileMenu/MobileMenuButton';
-import NavbarLogo from './navbar-logo';
-import NotificationButton from '../../components/navbar/notifications/notifications-drawer/notification/notification-button';
-import ProfileButton from './user-profile/profile-button';
+import NavbarLogo from './NavbarLogo';
+import NotificationButton from './NotificationButton';
+import ProfileButton from './user-profile/ProfileButton';
 import SwitchTeamButton from './switchTeam/SwitchTeamButton';
 import UpgradePlanButton from './upgradePlan/UpgradePlanButton';
-import NotificationDrawer from '../../components/navbar/notifications/notifications-drawer/notification/notfication-drawer';
+import NotificationDrawer from './notifications/notifications-drawer/notfication-drawer';
 
 import { useResponsive } from '@/hooks/useResponsive';
 import { getJSONFromLocalStorage } from '@/utils/localStorageFunctions';
-import { navRoutes, NavRoutesType } from './navRoutes';
+import { navRoutes, NavRoutesType } from '@/lib/navbar/navRoutes';
 import { useAuthService } from '@/hooks/useAuth';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
-import TimerButton from './timers/timer-button';
 import HelpButton from './help/HelpButton';
 
-const Navbar = () => {
+const Navbar = memo(() => {
   const [current, setCurrent] = useState<string>('home');
-  const currentSession = useAuthService().getCurrentSession();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
   const [daysUntilExpiry, setDaysUntilExpiry] = useState<number | null>(null);
 
   const location = useLocation();
   const { isDesktop, isMobile, isTablet } = useResponsive();
   const { t } = useTranslation('navbar');
-  const authService = useAuthService();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState<boolean>(authService.isOwnerOrAdmin());
-  const showUpgradeTypes = [ISUBSCRIPTION_TYPE.TRIAL];
+  const showUpgradeTypes = useMemo(() => [ISUBSCRIPTION_TYPE.TRIAL], []);
 
   useEffect(() => {
+    let mounted = true;
     authApiService
       .verify()
       .then(authorizeResponse => {
-        if (authorizeResponse.authenticated) {
+        if (mounted && authorizeResponse.authenticated) {
           authService.setCurrentSession(authorizeResponse.user);
           setIsOwnerOrAdmin(!!(authorizeResponse.user.is_admin || authorizeResponse.user.owner));
         }
       })
       .catch(error => {
-        logger.error('Error during authorization', error);
+        if (mounted) {
+          logger.error('Error during authorization', error);
+        }
       });
-  }, []);
+    return () => {
+      mounted = false;
+    };
+  }, [authService]);
 
   useEffect(() => {
     const storedNavRoutesList: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
@@ -183,6 +188,8 @@ const Navbar = () => {
       {createPortal(<NotificationDrawer />, document.body, 'notification-drawer')}
     </Col>
   );
-};
+});
+
+Navbar.displayName = 'Navbar';
 
 export default Navbar;

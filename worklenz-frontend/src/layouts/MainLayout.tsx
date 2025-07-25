@@ -3,9 +3,9 @@ import { Outlet } from 'react-router-dom';
 import { memo, useMemo, useEffect, useRef } from 'react';
 import { useMediaQuery } from 'react-responsive';
 
-import Navbar from '../features/navbar/navbar';
-import { useAppSelector } from '../hooks/useAppSelector';
-import { colors } from '../styles/colors';
+import Navbar from '@/components/navbar/Navbar';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { colors } from '@/styles/colors';
 
 import { useRenderPerformance } from '@/utils/performance';
 import { DynamicCSSLoader, LayoutStabilizer } from '@/utils/css-optimizations';

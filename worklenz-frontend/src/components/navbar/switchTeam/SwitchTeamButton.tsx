@@ -1,33 +1,20 @@
-// Ant Design Icons
 import { BankOutlined, CaretDownFilled, CheckCircleFilled } from '@/shared/antd-imports';
-
-// Ant Design Components
 import { Card, Divider, Dropdown, Flex, Tooltip, Typography } from '@/shared/antd-imports';
-
-// Redux Hooks
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-
-// Redux Actions
 import { fetchTeams, setActiveTeam } from '@/features/teams/teamSlice';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
-
-// Hooks & Services
 import { useAuthService } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
-
-// Components
 import CustomAvatar from '@/components/CustomAvatar';
-
-// Styles
 import { colors } from '@/styles/colors';
-import './switchTeam.css';
-import { useEffect } from 'react';
+import './SwitchTeamButton.css';
+import { useEffect, memo, useCallback, useMemo } from 'react';
 
-const SwitchTeamButton = () => {
+const SwitchTeamButton = memo(() => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const authService = createAuthService(navigate);
@@ -43,32 +30,39 @@ const SwitchTeamButton = () => {
     dispatch(fetchTeams());
   }, [dispatch]);
 
-  const isActiveTeam = (teamId: string): boolean => {
-    if (!teamId || !session?.team_id) return false;
-    return teamId === session.team_id;
-  };
+  const isActiveTeam = useCallback(
+    (teamId: string): boolean => {
+      if (!teamId || !session?.team_id) return false;
+      return teamId === session.team_id;
+    },
+    [session?.team_id]
+  );
 
-  const handleVerifyAuth = async () => {
+  const handleVerifyAuth = useCallback(async () => {
     const result = await dispatch(verifyAuthentication()).unwrap();
     if (result.authenticated) {
       dispatch(setUser(result.user));
       authService.setCurrentSession(result.user);
     }
-  };
+  }, [dispatch, authService]);
 
-  const handleTeamSelect = async (id: string) => {
-    if (!id) return;
+  const handleTeamSelect = useCallback(
+    async (id: string) => {
+      if (!id) return;
 
-    await dispatch(setActiveTeam(id));
-    await handleVerifyAuth();
-    window.location.reload();
-  };
+      await dispatch(setActiveTeam(id));
+      await handleVerifyAuth();
+      window.location.reload();
+    },
+    [dispatch, handleVerifyAuth]
+  );
 
-  const renderTeamCard = (team: any, index: number) => (
+  const renderTeamCard = useCallback(
+    (team: any, index: number) => (
     <Card
       className="switch-team-card"
       onClick={() => handleTeamSelect(team.id)}
-      bordered={false}
+      variant='borderless'
       style={{ width: 230 }}
     >
       <Flex vertical>
@@ -92,14 +86,19 @@ const SwitchTeamButton = () => {
         {index < teamsList.length - 1 && <Divider style={{ margin: 0 }} />}
       </Flex>
     </Card>
+  ),
+  [handleTeamSelect, isActiveTeam, teamsList.length]
   );
 
-  const dropdownItems =
-    teamsList?.map((team, index) => ({
-      key: team.id || '',
-      label: renderTeamCard(team, index),
-      type: 'item' as const,
-    })) || [];
+  const dropdownItems = useMemo(
+    () =>
+      teamsList?.map((team, index) => ({
+        key: team.id || '',
+        label: renderTeamCard(team, index),
+        type: 'item' as const,
+      })) || [],
+    [teamsList, renderTeamCard]
+  );
 
   return (
     <Dropdown
@@ -132,6 +131,8 @@ const SwitchTeamButton = () => {
       </Tooltip>
     </Dropdown>
   );
-};
+});
+
+SwitchTeamButton.displayName = 'SwitchTeamButton';
 
 export default SwitchTeamButton;

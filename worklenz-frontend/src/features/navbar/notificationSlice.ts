@@ -61,7 +61,7 @@ const notificationSlice = createSlice({
   initialState,
   reducers: {
     toggleDrawer: state => {
-      state.isDrawerOpen ? (state.isDrawerOpen = false) : (state.isDrawerOpen = true);
+      state.isDrawerOpen = !state.isDrawerOpen;
     },
     setNotificationType: (state, action) => {
       state.notificationType = action.payload;
@@ -76,12 +76,12 @@ const notificationSlice = createSlice({
       state.invitations = action.payload;
       state.invitationsCount = action.payload.length;
 
-      state.invitations.map(invitation => {
-        state._dataset.push({
+      state._dataset = state._dataset.concat(
+        state.invitations.map(invitation => ({
           type: 'invitation',
           data: invitation,
-        });
-      });
+        }))
+      );
     });
     builder.addCase(fetchInvitations.rejected, state => {
       state.loading = false;
@@ -94,12 +94,12 @@ const notificationSlice = createSlice({
       state.notifications = action.payload;
       state.notificationsCount = action.payload.length;
 
-      state.notifications.map(notification => {
-        state._dataset.push({
+      state._dataset = state._dataset.concat(
+        state.notifications.map(notification => ({
           type: 'notification',
           data: notification,
-        });
-      });
+        }))
+      );
     });
     builder.addCase(fetchUnreadCount.pending, state => {
       state.unreadNotificationsCount = 0;

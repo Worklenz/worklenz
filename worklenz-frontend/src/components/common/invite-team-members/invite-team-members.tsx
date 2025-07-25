@@ -1,4 +1,14 @@
-import { AutoComplete, Button, Drawer, Flex, Form, message, Modal, Select, Spin, Typography } from '@/shared/antd-imports';
+import {
+  AutoComplete,
+  Button,
+  Flex,
+  Form,
+  message,
+  Modal,
+  Select,
+  Spin,
+  Typography,
+} from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -11,7 +21,6 @@ import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.se
 import { IJobTitle } from '@/types/job.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
-import { LinkOutlined } from '@ant-design/icons';
 
 interface FormValues {
   email: string[];

@@ -9,17 +9,17 @@ import { RootState } from '@/app/store';
 
 import { getRole } from '@/utils/session-helper';
 
-import './profile-dropdown.css';
-import './profile-button.css';
+import './ProfileDropdown.css';
+import './ProfileButton.css';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { useAuthService } from '@/hooks/useAuth';
-import { useEffect, useState } from 'react';
+import { memo, useMemo } from 'react';
 
 interface ProfileButtonProps {
   isOwnerOrAdmin: boolean;
 }
 
-const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
+const ProfileButton = memo(({ isOwnerOrAdmin }: ProfileButtonProps) => {
   const { t } = useTranslation('navbar');
   const authService = useAuthService();
   const currentSession = useAppSelector((state: RootState) => state.userReducer);
@@ -27,11 +27,15 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   const role = getRole();
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
 
-  const getLinkStyle = () => ({
-    color: themeMode === 'dark' ? '#ffffffd9' : '#181818',
-  });
+  const getLinkStyle = useMemo(
+    () => ({
+      color: themeMode === 'dark' ? '#ffffffd9' : '#181818',
+    }),
+    [themeMode]
+  );
 
-  const profile: MenuProps['items'] = [
+  const profile: MenuProps['items'] = useMemo(
+    () => [
     {
       key: '1',
       label: (
@@ -81,20 +85,22 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
           style={{ width: 230 }}
         >
           {isOwnerOrAdmin && (
-            <Link to="/worklenz/admin-center/overview" style={getLinkStyle()}>
+            <Link to="/worklenz/admin-center/overview" style={getLinkStyle}>
               {t('adminCenter')}
             </Link>
           )}
-          <Link to="/worklenz/settings/profile" style={getLinkStyle()}>
+          <Link to="/worklenz/settings/profile" style={getLinkStyle}>
             {t('settings')}
           </Link>
-          <Link to="/auth/logging-out" style={getLinkStyle()}>
+          <Link to="/auth/logging-out" style={getLinkStyle}>
             {t('logOut')}
           </Link>
         </Card>
       ),
     },
-  ];
+  ],
+  [currentSession, role, themeMode, getLinkStyle, isOwnerOrAdmin, t]
+  );
 
   return (
     <Dropdown
@@ -123,6 +129,8 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
       </Tooltip>
     </Dropdown>
   );
-};
+});
+
+ProfileButton.displayName = 'ProfileButton';
 
 export default ProfileButton;

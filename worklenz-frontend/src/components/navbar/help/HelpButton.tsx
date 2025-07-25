@@ -1,10 +1,10 @@
 import { QuestionCircleOutlined } from '@/shared/antd-imports';
 import { Button, Tooltip } from '@/shared/antd-imports';
-import React from 'react';
+import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import './HelpButton.css';
 
-const HelpButton = () => {
+const HelpButton = memo(() => {
   // localization
   const { t } = useTranslation('navbar');
 
@@ -18,6 +18,8 @@ const HelpButton = () => {
       />
     </Tooltip>
   );
-};
+});
+
+HelpButton.displayName = 'HelpButton';
 
 export default HelpButton;

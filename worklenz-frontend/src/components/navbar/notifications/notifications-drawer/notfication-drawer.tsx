@@ -1,3 +1,4 @@
+import React, { memo, useCallback, useMemo } from 'react';
 import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -7,7 +8,7 @@ import {
   fetchNotifications,
   setNotificationType,
   toggleDrawer,
-} from '../../../../../features/navbar/notificationSlice';
+} from '../../../../features/navbar/notificationSlice';
 import { NOTIFICATION_OPTION_READ, NOTIFICATION_OPTION_UNREAD } from '@/shared/constants';
 import { useTranslation } from 'react-i18next';
 import { SocketEvents } from '@/shared/socket-events';
@@ -15,13 +16,13 @@ import { IWorklenzNotification } from '@/types/notifications/notifications.types
 import { useSocket } from '@/socket/socketContext';
 import { ITeamInvitationViewModel } from '@/types/notifications/notifications.types';
 import logger from '@/utils/errorLogger';
-import NotificationItem from './notification-item';
-import InvitationItem from './invitation-item';
+import NotificationItem from './notification/NotificationItem';
+import InvitationItem from '../../InvitationItem';
 import { notificationsApiService } from '@/api/notifications/notifications.api.service';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import { INotificationSettings } from '@/types/settings/notifications.types';
 import { toQueryString } from '@/utils/toQueryString';
-import { showNotification } from './push-notification-template';
+import { showNotification } from './notification/PushNotificationTemplate';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { getUserSession } from '@/utils/session-helper';
@@ -30,7 +31,7 @@ import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
 const HTML_TAG_REGEXP = /<[^>]*>/g;
 
-const NotificationDrawer = () => {
+const NotificationDrawer = memo(() => {
   const { isDrawerOpen, notificationType, notifications, invitations } = useAppSelector(
     state => state.notificationReducer
   );
@@ -50,72 +51,88 @@ const NotificationDrawer = () => {
   const navigate = useNavigate();
   const authService = createAuthService(navigate);
 
-  const createPush = (message: string, title: string, teamId: string | null, url?: string) => {
-    if (Notification.permission === 'granted' && showBrowserPush) {
-      const img = 'https://worklenz.com/assets/icons/icon-128x128.png';
-      const notification = new Notification(title, {
-        body: message.replace(HTML_TAG_REGEXP, ''),
-        icon: img,
-        badge: img,
-      });
+  const createPush = useCallback(
+    (message: string, title: string, teamId: string | null, url?: string) => {
+      if (Notification.permission === 'granted' && showBrowserPush) {
+        const img = 'https://worklenz.com/assets/icons/icon-128x128.png';
+        const notification = new Notification(title, {
+          body: message.replace(HTML_TAG_REGEXP, ''),
+          icon: img,
+          badge: img,
+        });
 
-      notification.onclick = async event => {
-        if (url) {
-          window.focus();
+        notification.onclick = async event => {
+          if (url) {
+            window.focus();
 
-          if (teamId) {
-            await teamsApiService.setActiveTeam(teamId);
+            if (teamId) {
+              try {
+                await teamsApiService.setActiveTeam(teamId);
+              } catch (error) {
+                logger.error('Error setting active team from notification', error);
+              }
+            }
+
+            window.location.href = url;
           }
+        };
+      }
+    },
+    [showBrowserPush]
+  );
 
-          window.location.href = url;
+  const handleInvitationsUpdate = useCallback(
+    (data: ITeamInvitationViewModel[]) => {
+      dispatch(fetchInvitations());
+    },
+    [dispatch]
+  );
+
+  const handleNotificationsUpdate = useCallback(
+    async (notification: IWorklenzNotification) => {
+      dispatch(fetchNotifications(notificationType));
+      dispatch(fetchInvitations());
+
+      if (isPushEnabled()) {
+        const title = notification.team ? `${notification.team} | Worklenz` : 'Worklenz';
+        let url = notification.url;
+        if (url && notification.params && Object.keys(notification.params).length) {
+          const q = toQueryString(notification.params);
+          url += q;
         }
-      };
-    }
-  };
 
-  const handleInvitationsUpdate = (data: ITeamInvitationViewModel[]) => {
-    dispatch(fetchInvitations());
-  };
-
-  const handleNotificationsUpdate = async (notification: IWorklenzNotification) => {
-    dispatch(fetchNotifications(notificationType));
-    dispatch(fetchInvitations());
-
-    if (isPushEnabled()) {
-      const title = notification.team ? `${notification.team} | Worklenz` : 'Worklenz';
-      let url = notification.url;
-      if (url && notification.params && Object.keys(notification.params).length) {
-        const q = toQueryString(notification.params);
-        url += q;
+        createPush(notification.message, title, notification.team_id, url);
       }
 
-      createPush(notification.message, title, notification.team_id, url);
-    }
+      // Show notification using the template
+      showNotification(notification);
+    },
+    [dispatch, notificationType, isPushEnabled, createPush]
+  );
 
-    // Show notification using the template
-    showNotification(notification);
-  };
+  const handleTeamInvitationsUpdate = useCallback(
+    async (data: ITeamInvitationViewModel) => {
+      const notification: IWorklenzNotification = {
+        id: data.id || '',
+        team: data.team_name || '',
+        team_id: data.team_id || '',
+        message: `You have been invited to join ${data.team_name || 'a team'}`,
+      };
 
-  const handleTeamInvitationsUpdate = async (data: ITeamInvitationViewModel) => {
-    const notification: IWorklenzNotification = {
-      id: data.id || '',
-      team: data.team_name || '',
-      team_id: data.team_id || '',
-      message: `You have been invited to join ${data.team_name || 'a team'}`,
-    };
+      if (isPushEnabled()) {
+        createPush(
+          notification.message,
+          notification.team || 'Worklenz',
+          notification.team_id || null
+        );
+      }
 
-    if (isPushEnabled()) {
-      createPush(
-        notification.message,
-        notification.team || 'Worklenz',
-        notification.team_id || null
-      );
-    }
-
-    // Show notification using the template
-    showNotification(notification);
-    dispatch(fetchInvitations());
-  };
+      // Show notification using the template
+      showNotification(notification);
+      dispatch(fetchInvitations());
+    },
+    [isPushEnabled, createPush, dispatch]
+  );
 
   const askPushPermission = () => {
     if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
@@ -135,27 +152,40 @@ const NotificationDrawer = () => {
     }
   };
 
-  const markNotificationAsRead = async (id: string) => {
-    if (!id) return;
+  const markNotificationAsRead = useCallback(
+    async (id: string) => {
+      if (!id) return;
 
-    const res = await notificationsApiService.updateNotification(id);
-    if (res.done) {
-      dispatch(fetchNotifications(notificationType));
-      dispatch(fetchInvitations());
+      try {
+        const res = await notificationsApiService.updateNotification(id);
+        if (res.done) {
+          dispatch(fetchNotifications(notificationType));
+          dispatch(fetchInvitations());
+        }
+      } catch (error) {
+        logger.error('Error marking notification as read', error);
+      }
+    },
+    [dispatch, notificationType]
+  );
+  const handleVerifyAuth = useCallback(async () => {
+    try {
+      const result = await dispatch(verifyAuthentication()).unwrap();
+      if (result.authenticated) {
+        dispatch(setUser(result.user));
+        authService.setCurrentSession(result.user);
+      }
+    } catch (error) {
+      logger.error('Error verifying authentication', error);
     }
-  };
-  const handleVerifyAuth = async () => {
-    const result = await dispatch(verifyAuthentication()).unwrap();
-    if (result.authenticated) {
-      dispatch(setUser(result.user));
-      authService.setCurrentSession(result.user);
-    }
-  };
+  }, [dispatch, authService]);
 
-  const goToUrl = async (event: React.MouseEvent, notification: IWorklenzNotification) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (notification.url) {
+  const goToUrl = useCallback(
+    async (event: React.MouseEvent, notification: IWorklenzNotification) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!notification.url) return;
+
       dispatch(toggleDrawer());
       setIsLoading(true);
       try {
@@ -169,12 +199,13 @@ const NotificationDrawer = () => {
           );
         }
       } catch (error) {
-        console.error('Error navigating to URL:', error);
+        logger.error('Error navigating to URL:', error);
       } finally {
         setIsLoading(false);
       }
-    }
-  };
+    },
+    [dispatch, navigate, handleVerifyAuth]
+  );
 
   const fetchNotificationsSettings = async () => {
     try {
@@ -190,11 +221,15 @@ const NotificationDrawer = () => {
     }
   };
 
-  const handleMarkAllAsRead = async () => {
-    await notificationsApiService.readAllNotifications();
-    dispatch(fetchNotifications(notificationType));
-    dispatch(fetchInvitations());
-  };
+  const handleMarkAllAsRead = useCallback(async () => {
+    try {
+      await notificationsApiService.readAllNotifications();
+      dispatch(fetchNotifications(notificationType));
+      dispatch(fetchInvitations());
+    } catch (error) {
+      logger.error('Error marking all notifications as read', error);
+    }
+  }, [dispatch, notificationType]);
 
   useEffect(() => {
     socket?.on(SocketEvents.INVITATIONS_UPDATE.toString(), handleInvitationsUpdate);
@@ -242,12 +277,15 @@ const NotificationDrawer = () => {
         <Segmented<string>
           options={['Unread', 'Read']}
           defaultValue={NOTIFICATION_OPTION_UNREAD}
-          onChange={(value: string) => {
-            if (value === NOTIFICATION_OPTION_UNREAD)
-              dispatch(setNotificationType(NOTIFICATION_OPTION_UNREAD));
-            if (value === NOTIFICATION_OPTION_READ)
-              dispatch(setNotificationType(NOTIFICATION_OPTION_READ));
-          }}
+          onChange={useCallback(
+            (value: string) => {
+              if (value === NOTIFICATION_OPTION_UNREAD)
+                dispatch(setNotificationType(NOTIFICATION_OPTION_UNREAD));
+              if (value === NOTIFICATION_OPTION_READ)
+                dispatch(setNotificationType(NOTIFICATION_OPTION_READ));
+            },
+            [dispatch]
+          )}
         />
 
         <Button type="link" onClick={handleMarkAllAsRead}>
@@ -261,7 +299,7 @@ const NotificationDrawer = () => {
         </div>
       )}
       {invitations && invitations.length > 0 && notificationType === NOTIFICATION_OPTION_UNREAD ? (
-        <div className="notification-list mt-3">
+        <div className="notification-list mt-4 px-2">
           {invitations.map(invitation => (
             <InvitationItem
               key={invitation.id}
@@ -273,13 +311,13 @@ const NotificationDrawer = () => {
         </div>
       ) : null}
       {notifications && notifications.length > 0 ? (
-        <div className="notification-list mt-3">
+        <div className="notification-list mt-4 px-2">
           {notifications.map(notification => (
             <NotificationItem
               key={notification.id}
               notification={notification}
               isUnreadNotifications={notificationType === NOTIFICATION_OPTION_UNREAD}
-              markNotificationAsRead={id => Promise.resolve(markNotificationAsRead(id))}
+              markNotificationAsRead={markNotificationAsRead}
               goToUrl={goToUrl}
             />
           ))}
@@ -288,16 +326,13 @@ const NotificationDrawer = () => {
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           description={t('notificationsDrawer.noNotifications')}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            marginBlockStart: 32,
-          }}
+          className="flex flex-col items-center mt-8"
         />
       )}
     </Drawer>
   );
-};
+});
+
+NotificationDrawer.displayName = 'NotificationDrawer';
 
 export default NotificationDrawer;

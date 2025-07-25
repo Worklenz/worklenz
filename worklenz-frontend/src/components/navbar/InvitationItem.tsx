@@ -17,7 +17,7 @@ interface InvitationItemProps {
   t: TFunction;
 }
 
-const InvitationItem: React.FC<InvitationItemProps> = ({ item, isUnreadNotifications, t }) => {
+const InvitationItem = ({ item, isUnreadNotifications, t }: InvitationItemProps) => {
   const [accepting, setAccepting] = useState(false);
   const [joining, setJoining] = useState(false);
   const dispatch = useAppDispatch();
