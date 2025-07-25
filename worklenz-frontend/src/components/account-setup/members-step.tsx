@@ -22,29 +22,19 @@ interface MembersStepProps {
   token?: any;
 }
 
-// Common email suggestions based on organization
 const getEmailSuggestions = (orgName?: string) => {
   if (!orgName) return [];
-  
   const cleanOrgName = orgName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const suggestions = [
-    `info@${cleanOrgName}.com`,
-    `team@${cleanOrgName}.com`,
-    `hello@${cleanOrgName}.com`,
-    `contact@${cleanOrgName}.com`
-  ];
-  
-  return suggestions;
+  return [`info@${cleanOrgName}.com`, `team@${cleanOrgName}.com`, `hello@${cleanOrgName}.com`, `contact@${cleanOrgName}.com`];
 };
 
-// Role suggestions for team members
-const roleSuggestions = [
-  { role: 'Designer', icon: '🎨', description: 'UI/UX, Graphics, Creative' },
-  { role: 'Developer', icon: '💻', description: 'Frontend, Backend, Full-stack' },
-  { role: 'Project Manager', icon: '📊', description: 'Planning, Coordination' },
-  { role: 'Marketing', icon: '📢', description: 'Content, Social Media, Growth' },
-  { role: 'Sales', icon: '💼', description: 'Business Development, Client Relations' },
-  { role: 'Operations', icon: '⚙️', description: 'Admin, HR, Finance' }
+const getRoleSuggestions = (t: any) => [
+  { role: 'Designer', icon: '🎨', description: t('roleSuggestions.designer') },
+  { role: 'Developer', icon: '💻', description: t('roleSuggestions.developer') },
+  { role: 'Project Manager', icon: '📊', description: t('roleSuggestions.projectManager') },
+  { role: 'Marketing', icon: '📢', description: t('roleSuggestions.marketing') },
+  { role: 'Sales', icon: '💼', description: t('roleSuggestions.sales') },
+  { role: 'Operations', icon: '⚙️', description: t('roleSuggestions.operations') }
 ];
 
 const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) => {
@@ -63,30 +53,18 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
 
   const addEmail = () => {
     if (teamMembers.length >= 5) return;
-
     const newId = teamMembers.length > 0 ? Math.max(...teamMembers.map(t => t.id)) + 1 : 0;
     dispatch(setTeamMembers([...teamMembers, { id: newId, value: '' }]));
-    setTimeout(() => {
-      const newIndex = teamMembers.length;
-      inputRefs.current[newIndex]?.focus();
-    }, 100);
+    setTimeout(() => inputRefs.current[teamMembers.length]?.focus(), 100);
   };
 
   const removeEmail = (id: number) => {
-    if (teamMembers.length > 1) {
-      dispatch(setTeamMembers(teamMembers.filter(teamMember => teamMember.id !== id)));
-    }
+    if (teamMembers.length > 1) dispatch(setTeamMembers(teamMembers.filter(teamMember => teamMember.id !== id)));
   };
 
   const updateEmail = (id: number, value: string) => {
     const sanitizedValue = sanitizeInput(value);
-    dispatch(
-      setTeamMembers(
-        teamMembers.map(teamMember =>
-          teamMember.id === id ? { ...teamMember, value: sanitizedValue } : teamMember
-        )
-      )
-    );
+    dispatch(setTeamMembers(teamMembers.map(teamMember => teamMember.id === id ? { ...teamMember, value: sanitizedValue } : teamMember)));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -94,11 +72,8 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
       const input = e.currentTarget as HTMLInputElement;
       if (input.value.trim() && validateEmail(input.value.trim())) {
         e.preventDefault();
-        if (index === teamMembers.length - 1 && teamMembers.length < 5) {
-          addEmail();
-        } else if (index < teamMembers.length - 1) {
-          inputRefs.current[index + 1]?.focus();
-        }
+        if (index === teamMembers.length - 1 && teamMembers.length < 5) addEmail();
+        else if (index < teamMembers.length - 1) inputRefs.current[index + 1]?.focus();
       }
     }
   };
@@ -115,32 +90,27 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
   };
 
   useEffect(() => {
-    setTimeout(() => {
-      inputRefs.current[0]?.focus();
-    }, 200);
+    setTimeout(() => inputRefs.current[0]?.focus(), 200);
   }, []);
 
   const getEmailStatus = (email: string, memberId: number) => {
     if (!email.trim()) return 'empty';
     if (!validatedEmails.has(memberId)) return 'empty';
-    if (validateEmail(email)) return 'valid';
-    return 'invalid';
+    return validateEmail(email) ? 'valid' : 'invalid';
   };
 
   const handleBlur = (memberId: number, email: string) => {
     setFocusedIndex(null);
-    if (email.trim()) {
-      setValidatedEmails(prev => new Set(prev).add(memberId));
-    }
+    if (email.trim()) setValidatedEmails(prev => new Set(prev).add(memberId));
   };
 
   const languages = [
-    { key: 'en', label: 'English', flag: '🇺🇸' },
-    { key: 'es', label: 'Español', flag: '🇪🇸' },
-    { key: 'pt', label: 'Português', flag: '🇵🇹' },
-    { key: 'de', label: 'Deutsch', flag: '🇩🇪' },
-    { key: 'alb', label: 'Shqip', flag: '🇦🇱' },
-    { key: 'zh', label: '简体中文', flag: '🇨🇳' }
+    { key: 'en', label: t('languages.en'), flag: '🇺🇸' },
+    { key: 'es', label: t('languages.es'), flag: '🇪🇸' },
+    { key: 'pt', label: t('languages.pt'), flag: '🇵🇹' },
+    { key: 'de', label: t('languages.de'), flag: '🇩🇪' },
+    { key: 'alb', label: t('languages.alb'), flag: '🇦🇱' },
+    { key: 'zh', label: t('languages.zh'), flag: '🇨🇳' }
   ];
 
   const handleLanguageChange = (languageKey: string) => {
@@ -148,18 +118,8 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
     i18n.changeLanguage(languageKey);
   };
 
-  const languageMenuItems: MenuProps['items'] = languages.map(lang => ({
-    key: lang.key,
-    label: (
-      <div className="flex items-center space-x-2">
-        <span>{lang.flag}</span>
-        <span>{lang.label}</span>
-      </div>
-    ),
-    onClick: () => handleLanguageChange(lang.key)
-  }));
-
   const currentLanguage = languages.find(lang => lang.key === language) || languages[0];
+  const languageMenuItems: MenuProps['items'] = languages.map(lang => ({ key: lang.key, label: <div className="flex items-center space-x-2"><span>{lang.flag}</span><span>{lang.label}</span></div>, onClick: () => handleLanguageChange(lang.key) }));
 
   return (
     <div className="w-full members-step">
@@ -283,26 +243,6 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
             borderColor: token?.colorInfoBorder
           }}
         />
-      </div>
-
-      {/* Language Switcher */}
-      <div className="flex justify-center mt-8">
-        <Dropdown
-          menu={{ items: languageMenuItems }}
-          placement="topCenter"
-          trigger={['click']}
-        >
-          <Button
-            type="text"
-            size="small"
-            icon={<GlobalOutlined />}
-            className="flex items-center space-x-2"
-            style={{ color: token?.colorTextTertiary }}
-          >
-            <span>{currentLanguage.flag}</span>
-            <span>{currentLanguage.label}</span>
-          </Button>
-        </Dropdown>
       </div>
     </div>
   );

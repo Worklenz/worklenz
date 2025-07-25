@@ -52,10 +52,10 @@
   "maxTasks": " (Você pode criar até 5 tarefas)",
 
   "membersStepTitle": "Convide sua equipe",
-  "membersStepDescription": "Adicione membros da equipe ao \"{organizationName}\" e comece a colaborar",
-  "memberPlaceholder": "Membro da equipe {index} - Digite o endereço de email",
+  "membersStepDescription": "Adicione membros da equipe ao \"{{organizationName}}\" e comece a colaborar",
+  "memberPlaceholder": "Membro da equipe {{index}} - Digite o endereço de email",
   "validEmailAddress": "Endereço de email válido",
-  "addAnotherTeamMember": "Adicionar outro membro da equipe ({current}/{max})",
+  "addAnotherTeamMember": "Adicionar outro membro da equipe ({{current}}/{{max}})",
   "canInviteLater": "Você sempre pode convidar membros da equipe mais tarde",
   "skipStepDescription": "Não tem endereços de email prontos? Sem problema! Você pode pular esta etapa e convidar membros da equipe do seu painel de projeto mais tarde.",
 
@@ -120,9 +120,9 @@
   "templateStartupDesc": "Desenvolvimento MVP, financiamento, crescimento",
 
   "tasksStepTitle": "Adicione suas primeiras tarefas",
-  "tasksStepDescription": "Divida \"{projectName}\" em tarefas acionáveis para começar",
-  "taskPlaceholder": "Tarefa {index} - ex., O que precisa ser feito?",
-  "addAnotherTask": "Adicionar outra tarefa ({current}/{max})",
+  "tasksStepDescription": "Divida \"{{projectName}}\" em tarefas acionáveis para começar",
+  "taskPlaceholder": "Tarefa {{index}} - ex., O que precisa ser feito?",
+  "addAnotherTask": "Adicionar outra tarefa ({{current}}/{{max}})",
 
   "surveyStepTitle": "Conte-nos sobre você",
   "surveyStepLabel": "Ajude-nos a personalizar sua experiência no Worklenz respondendo algumas perguntas.",
@@ -160,5 +160,53 @@
   "howHeardAboutLinkedin": "LinkedIn",
   "howHeardAboutFriendColleague": "Um amigo ou colega",
   "howHeardAboutBlogArticle": "Um blog ou artigo",
-  "howHeardAboutOther": "Outro"
+  "howHeardAboutOther": "Outro",
+  
+  "aboutYouStepTitle": "Conte-nos sobre você",
+  "aboutYouStepDescription": "Ajude-nos a personalizar sua experiência",
+  "yourNeedsStepTitle": "Quais são suas principais necessidades?",
+  "yourNeedsStepDescription": "Selecione todas que se aplicam para nos ajudar a configurar seu espaço de trabalho",
+  "selected": "selecionado",
+  "previousToolsLabel": "Que ferramentas você usou antes? (Opcional)",
+  
+  "roleSuggestions": {
+    "designer": "UI/UX, Gráficos, Criativo",
+    "developer": "Frontend, Backend, Full-stack", 
+    "projectManager": "Planejamento, Coordenação",
+    "marketing": "Conteúdo, Mídias Sociais, Crescimento",
+    "sales": "Desenvolvimento de Negócios, Relacionamento com Clientes",
+    "operations": "Administração, RH, Finanças"
+  },
+  
+  "languages": {
+    "en": "English",
+    "es": "Español", 
+    "pt": "Português",
+    "de": "Deutsch",
+    "alb": "Shqip",
+    "zh": "简体中文"
+  },
+  
+  "orgSuggestions": {
+    "tech": ["TechCorp", "DevStudio", "CodeCraft", "PixelForge"],
+    "creative": ["Creative Hub", "Design Studio", "Brand Works", "Visual Arts"],
+    "consulting": ["Strategy Group", "Business Solutions", "Expert Advisors", "Growth Partners"],
+    "startup": ["Innovation Labs", "Future Works", "Venture Co", "Next Gen"]
+  },
+  
+  "projectSuggestions": {
+    "freelancer": ["Projeto Cliente", "Atualização Portfolio", "Marca Pessoal"],
+    "startup": ["Desenvolvimento MVP", "Lançamento Produto", "Pesquisa Mercado"],
+    "agency": ["Campanha Cliente", "Estratégia Marca", "Redesign Website"],
+    "enterprise": ["Migração Sistema", "Otimização Processos", "Treinamento Equipe"]
+  },
+  
+  "useCaseDescriptions": {
+    "taskManagement": "Organizar e rastrear tarefas",
+    "teamCollaboration": "Trabalhar juntos perfeitamente",
+    "resourcePlanning": "Gerenciar tempo e recursos", 
+    "clientCommunication": "Manter-se conectado com clientes",
+    "timeTracking": "Monitorar horas do projeto",
+    "other": "Algo mais"
+  }
 }

@@ -6,7 +6,8 @@
       "Bash(npm run type-check:*)",
       "Bash(npm run:*)",
       "Bash(move:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
