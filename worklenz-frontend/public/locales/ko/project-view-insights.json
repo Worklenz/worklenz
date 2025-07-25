@@ -1,0 +1,41 @@
+{
+  "overview": {
+    "title": "개요",
+    "statusOverview": "상태 개요",
+    "priorityOverview": "우선 순위 개요",
+    "lastUpdatedTasks": "마지막으로 업데이트 된 작업"
+  },
+  "members": {
+    "title": "회원",
+    "tooltip": "회원",
+    "tasksByMembers": "회원의 작업",
+    "tasksByMembersTooltip": "회원의 작업",
+    "name": "이름",
+    "taskCount": "작업 카운트",
+    "contribution": "기부금",
+    "completed": "완전한",
+    "incomplete": "불완전한",
+    "overdue": "기한이 지난",
+    "progress": "진전"
+  },
+  "tasks": {
+    "overdueTasks": "기한이 지난 작업",
+    "overLoggedTasks": "로그인 한 작업",
+    "tasksCompletedEarly": "작업이 일찍 완료되었습니다",
+    "tasksCompletedLate": "작업이 늦게 완료되었습니다",
+    "overLoggedTasksTooltip": "시간이 지남에 따라 예상 시간을 기록한 작업",
+    "overdueTasksTooltip": "마감일을 지나는 작업"
+  },
+  "common": {
+    "seeAll": "모두보기",
+    "totalLoggedHours": "총 기록 된 시간",
+    "totalEstimation": "총 추정",
+    "completedTasks": "완료된 작업",
+    "incompleteTasks": "불완전한 작업",
+    "overdueTasks": "기한이 지난 작업",
+    "overdueTasksTooltip": "마감일을 지나는 작업",
+    "totalLoggedHoursTooltip": "작업 추정 및 작업에 대한 기록 시간.",
+    "includeArchivedTasks": "보관 된 작업을 포함하십시오",
+    "export": "내보내다"
+  }
+}

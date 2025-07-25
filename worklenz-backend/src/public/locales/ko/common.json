@@ -1,0 +1,9 @@
+{
+  "login-success": "성공적으로 로그인!",
+  "login-failed": "로그인이 실패했습니다. 자격 증명을 확인하고 다시 시도하십시오.",
+  "signup-success": "가입 성공! 오신 것을 환영합니다.",
+  "signup-failed": "가입 실패. 필요한 모든 필드가 채워져 다시 시도하십시오.",
+  "reconnecting": "서버에서 분리되었습니다.",
+  "connection-lost": "서버에 연결하지 못했습니다. 인터넷 연결을 확인하십시오.",
+  "connection-restored": "서버에 성공적으로 연결되었습니다"
+}

@@ -1,0 +1,20 @@
+{
+  "nameColumn": "이름",
+  "deleteConfirmationTitle": "확실합니까?",
+  "deleteConfirmationOk": "예",
+  "deleteConfirmationCancel": "취소",
+  "searchPlaceholder": "이름으로 검색하십시오",
+  "createJobTitleButton": "작업 제목을 만듭니다",
+  "pinTooltip": "이것을 메인 메뉴에 고정하려면 클릭하십시오",
+  "createJobTitleDrawerTitle": "작업 제목을 만듭니다",
+  "updateJobTitleDrawerTitle": "작업 제목 업데이트",
+  "nameLabel": "이름",
+  "namePlaceholder": "이름",
+  "nameRequiredError": "이름을 입력하십시오",
+  "createButton": "만들다",
+  "updateButton": "업데이트",
+  "createJobTitleSuccessMessage": "직업 타이틀 성공을 창출하십시오!",
+  "createJobTitleErrorMessage": "일자리 제목을 만들었습니다!",
+  "updateJobTitleSuccessMessage": "작업 제목 성공을 업데이트하십시오!",
+  "updateJobTitleErrorMessage": "작업 제목 업데이트 실패!"
+}
