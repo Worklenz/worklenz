@@ -25,6 +25,13 @@ CREATE TABLE IF NOT EXISTS pg_sessions (
     expire TIMESTAMP(6) NOT NULL
 );
 
+-- Create pgmigrations table for node-pg-migrate
+CREATE TABLE IF NOT EXISTS pgmigrations (
+    id      SERIAL                              PRIMARY KEY,
+    name    VARCHAR(255)                        NOT NULL,
+    run_on  TIMESTAMP WITH TIME ZONE            NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS project_access_levels (
     id   UUID DEFAULT uuid_generate_v4() NOT NULL,
     name TEXT                            NOT NULL,

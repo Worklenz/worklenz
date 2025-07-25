@@ -32,6 +32,8 @@ COPY --from=builder /usr/src/app/build ./build
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/release ./release
 COPY --from=builder /usr/src/app/worklenz-email-templates ./worklenz-email-templates
+COPY --from=builder /usr/src/app/database/pg-migrations ./pg-migrations
+COPY --from=builder /usr/src/app/database/pg-migrations ./migrations
 
 
 EXPOSE 3000
