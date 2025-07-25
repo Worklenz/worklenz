@@ -220,3 +220,204 @@
 * {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
+
+/* Survey step transitions */
+.survey-page-transition {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Survey option hover effects */
+.survey-option-card {
+  transition: all 0.2s ease;
+}
+
+.survey-option-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress bar animation */
+.ant-progress-line {
+  transition: all 0.5s ease-out;
+}
+
+/* Survey button animations */
+.survey-nav-button {
+  transition: all 0.2s ease;
+}
+
+.survey-nav-button:active {
+  transform: scale(0.98);
+}
+
+/* Project step enhancements */
+.project-suggestion-button {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.project-suggestion-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.project-suggestion-button:active {
+  transform: translateY(0);
+}
+
+.template-preview-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.template-preview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.template-preview-card.selected {
+  box-shadow: 0 4px 20px rgba(24, 144, 255, 0.2);
+}
+
+/* Enhanced form styling for project step */
+.project-step .ant-input-affix-wrapper {
+  transition: all 0.3s ease;
+}
+
+.project-step .ant-input-affix-wrapper:focus-within {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.project-step .ant-card {
+  transition: all 0.3s ease;
+}
+
+.project-step .ant-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Organization step enhancements */
+.organization-step .ant-input-affix-wrapper {
+  transition: all 0.3s ease;
+}
+
+.organization-step .ant-input-affix-wrapper:focus-within {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  border-color: #1890ff;
+}
+
+.organization-step .ant-card {
+  transition: all 0.3s ease;
+}
+
+.organization-step .ant-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.organization-suggestion-button {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.organization-suggestion-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.organization-suggestion-button:active {
+  transform: translateY(0);
+}
+
+/* Character counter styling */
+.organization-step .character-counter {
+  font-size: 12px;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.organization-step .character-counter.active {
+  opacity: 1;
+}
+
+/* Naming tips hover effect */
+.organization-step .naming-tip {
+  transition: all 0.2s ease;
+  padding: 8px;
+}
+
+.organization-step .naming-tip:hover {
+  background-color: rgba(24, 144, 255, 0.05);
+}
+
+/* Tasks step enhancements */
+.tasks-step .task-item-card {
+  transition: all 0.3s ease;
+}
+
+.tasks-step .task-item-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.tasks-step .task-input {
+  font-size: 16px;
+}
+
+.tasks-step .task-input:focus {
+  box-shadow: none !important;
+}
+
+.task-suggestion-button {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.task-suggestion-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.task-suggestion-button:active {
+  transform: translateY(0);
+}
+
+/* Members step enhancements */
+.members-step .member-item-card {
+  transition: all 0.3s ease;
+}
+
+.members-step .member-item-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.members-step .member-input {
+  font-size: 16px;
+}
+
+.members-step .member-input:focus {
+  box-shadow: none !important;
+}
+
+.email-suggestion-button {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.email-suggestion-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.email-suggestion-button:active {
+  transform: translateY(0);
+}

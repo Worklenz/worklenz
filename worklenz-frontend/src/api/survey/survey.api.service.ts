@@ -2,7 +2,7 @@ import { IServerResponse } from '@/types/common.types';
 import { ISurvey, ISurveySubmissionRequest, ISurveyResponse } from '@/types/account-setup/survey.types';
 import apiClient from '../api-client';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = '/api/v1';
 
 export const surveyApiService = {
   async getAccountSetupSurvey(): Promise<IServerResponse<ISurvey>> {

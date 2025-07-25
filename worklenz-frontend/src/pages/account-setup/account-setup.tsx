@@ -2,10 +2,11 @@ import React, { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Space, Steps, Button, Typography, theme } from '@/shared/antd-imports';
+import { Space, Steps, Button, Typography, theme, Dropdown, MenuProps } from '@/shared/antd-imports';
+import { GlobalOutlined } from '@/shared/antd-imports';
 
 import logger from '@/utils/errorLogger';
-import { setCurrentStep } from '@/features/account-setup/account-setup.slice';
+import { setCurrentStep, setSurveySubStep } from '@/features/account-setup/account-setup.slice';
 import { OrganizationStep } from '@/components/account-setup/organization-step';
 import { ProjectStep } from '@/components/account-setup/project-step';
 import { TasksStep } from '@/components/account-setup/tasks-step';
@@ -34,6 +35,7 @@ import { IAccountSetupRequest } from '@/types/project-templates/project-template
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import { surveyApiService } from '@/api/survey/survey.api.service';
 import { ISurveySubmissionRequest, ISurveyAnswer } from '@/types/account-setup/survey.types';
+import { setLanguage } from '@/features/i18n/localesSlice';
 
 const { Title } = Typography;
 
@@ -62,14 +64,15 @@ const getAccountSetupStyles = (token: any) => ({
 
 const AccountSetup: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation('account-setup');
+  const { t, i18n } = useTranslation('account-setup');
   useDocumentTitle(t('setupYourAccount', 'Account Setup'));
   const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { token } = theme.useToken();
 
-  const { currentStep, organizationName, projectName, templateId, tasks, teamMembers, surveyData } =
+  const { currentStep, organizationName, projectName, templateId, tasks, teamMembers, surveyData, surveySubStep } =
     useSelector((state: RootState) => state.accountSetupReducer);
+  const { language } = useSelector((state: RootState) => state.localesReducer);
   const userDetails = getUserSession();
   const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
   
@@ -266,9 +269,17 @@ const AccountSetup: React.FC = () => {
       case 0:
         return !organizationName?.trim();
       case 1:
-        // Survey step - no required fields, can always continue
+        // Survey step - check current sub-step requirements
+        if (surveySubStep === 0) {
+          return !(surveyData.organization_type && surveyData.user_role);
+        } else if (surveySubStep === 1) {
+          return !(surveyData.main_use_cases && surveyData.main_use_cases.length > 0);
+        } else if (surveySubStep === 2) {
+          return !surveyData.how_heard_about;
+        }
         return false;
       case 2:
+        // Project step - either project name OR template must be provided
         return !projectName?.trim() && !templateId;
       case 3:
         return tasks.length === 0 || tasks.every(task => !task.value?.trim());
@@ -368,11 +379,17 @@ const AccountSetup: React.FC = () => {
 
   const nextStep = async () => {
     if (currentStep === 1) {
-      // Save survey data when moving from survey step
-      await saveSurveyData();
-    }
-    
-    if (currentStep === 4) {
+      // Handle survey sub-step navigation
+      if (surveySubStep < 2) {
+        // Move to next survey sub-step
+        dispatch(setSurveySubStep(surveySubStep + 1));
+      } else {
+        // Survey completed, save data and move to next main step
+        await saveSurveyData();
+        dispatch(setCurrentStep(currentStep + 1));
+        dispatch(setSurveySubStep(0)); // Reset for next time
+      }
+    } else if (currentStep === 4) {
       // Complete setup after members step
       completeAccountSetup();
     } else {
@@ -380,11 +397,59 @@ const AccountSetup: React.FC = () => {
     }
   };
 
+  // Language switcher functionality
+  const languages = [
+    { key: 'en', label: 'English', flag: '🇺🇸' },
+    { key: 'es', label: 'Español', flag: '🇪🇸' },
+    { key: 'pt', label: 'Português', flag: '🇵🇹' },
+    { key: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { key: 'alb', label: 'Shqip', flag: '🇦🇱' },
+    { key: 'zh', label: '简体中文', flag: '🇨🇳' }
+  ];
+
+  const handleLanguageChange = (languageKey: string) => {
+    dispatch(setLanguage(languageKey));
+    i18n.changeLanguage(languageKey);
+  };
+
+  const languageMenuItems: MenuProps['items'] = languages.map(lang => ({
+    key: lang.key,
+    label: (
+      <div className="flex items-center space-x-2">
+        <span>{lang.flag}</span>
+        <span>{lang.label}</span>
+      </div>
+    ),
+    onClick: () => handleLanguageChange(lang.key)
+  }));
+
+  const currentLanguage = languages.find(lang => lang.key === language) || languages[0];
+
   return (
     <div 
-      className="min-h-screen w-full flex flex-col items-center py-8 px-4"
+      className="min-h-screen w-full flex flex-col items-center py-8 px-4 relative"
       style={{ backgroundColor: token.colorBgLayout }}
     >
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-6 right-6">
+        <Dropdown
+          menu={{ items: languageMenuItems }}
+          placement="bottomRight"
+          trigger={['click']}
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={<GlobalOutlined />}
+            className="flex items-center space-x-2"
+            style={{ color: token?.colorTextTertiary }}
+          >
+            <span>{currentLanguage.flag}</span>
+            <span>{currentLanguage.label}</span>
+          </Button>
+        </Dropdown>
+      </div>
+
       {/* Logo */}
       <div className="mb-4">
         <img src={isDarkMode ? logoDark : logo} alt="Logo" width={235} height={50} />
@@ -437,7 +502,19 @@ const AccountSetup: React.FC = () => {
                     type="link"
                     className="p-0 font-medium"
                     style={{ color: token.colorTextSecondary }}
-                    onClick={() => dispatch(setCurrentStep(currentStep - 1))}
+                    onClick={() => {
+                      if (currentStep === 1 && surveySubStep > 0) {
+                        // Go back within survey sub-steps
+                        dispatch(setSurveySubStep(surveySubStep - 1));
+                      } else {
+                        // Go back to previous main step
+                        dispatch(setCurrentStep(currentStep - 1));
+                        if (currentStep === 2) {
+                          // When going back to survey from next step, go to last sub-step
+                          dispatch(setSurveySubStep(2));
+                        }
+                      }
+                    }}
                   >
                     {t('goBack')}
                   </Button>
