@@ -10,6 +10,17 @@
   "deleteConfirmationOk": "Sí",
   "deleteConfirmationCancel": "Cancelar",
 
+  "deleteTaskTitle": "Eliminar tarea",
+  "deleteTaskContent": "¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer.",
+  "deleteTaskConfirm": "Eliminar",
+  "deleteTaskCancel": "Cancelar",
+
+  "deleteStatusTitle": "Eliminar estado",
+  "deleteStatusContent": "¿Estás seguro de que deseas eliminar este estado? Esta acción no se puede deshacer.",
+
+  "deletePhaseTitle": "Eliminar fase",
+  "deletePhaseContent": "¿Estás seguro de que deseas eliminar esta fase? Esta acción no se puede deshacer.",
+
   "dueDate": "Fecha de vencimiento",
   "cancel": "Cancelar",
 
@@ -26,5 +37,17 @@
   "noDueDate": "Sin fecha de vencimiento",
   "save": "Guardar",
   "clear": "Limpiar",
-  "nextWeek": "Próxima semana"
+  "nextWeek": "Próxima semana",
+  "noSubtasks": "Sin subtareas",
+  "showSubtasks": "Mostrar subtareas",
+  "hideSubtasks": "Ocultar subtareas",
+  
+  "errorLoadingTasks": "Error al cargar tareas",
+  "noTasksFound": "No se encontraron tareas",
+  "loadingFilters": "Cargando filtros...",
+  "failedToUpdateColumnOrder": "Error al actualizar el orden de las columnas",
+  "failedToUpdatePhaseOrder": "Error al actualizar el orden de las fases",
+  "pleaseTryAgain": "Por favor, inténtalo de nuevo",
+  "taskNotCompleted": "La tarea no está completada",
+  "completeTaskDependencies": "Por favor, completa las dependencias de la tarea antes de continuar"
 }

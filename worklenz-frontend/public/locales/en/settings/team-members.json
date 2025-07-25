@@ -19,7 +19,7 @@
   "cancelText": "No, cancel",
   "deactivatedText": "(Currently deactivated)",
   "pendingInvitationText": "(Invitation pending)",
-  "addMemberDrawerTitle": "Add New Team Member",
+  "addMemberDrawerTitle": "Invite Team Members",
   "updateMemberDrawerTitle": "Update Team Member",
   "addMemberEmailHint": "Members will be added to the team regardless of invitation acceptance status",
   "memberEmailLabel": "Email(s)",
@@ -28,7 +28,7 @@
   "jobTitleLabel": "Job Title",
   "jobTitlePlaceholder": "Select or search job title (Optional)",
   "memberAccessLabel": "Access Level",
-  "addToTeamButton": "Add Member to Team",
+  "addToTeamButton": "Send Invitation",
   "updateButton": "Save Changes",
   "resendInvitationButton": "Resend Invitation Email",
   "invitationSentSuccessMessage": "Team invitation sent successfully!",
@@ -43,5 +43,6 @@
   "updatedText": "Updated",
   "noResultFound": "Type an email address and hit enter...",
   "jobTitlesFetchError": "Failed to fetch job titles",
-  "invitationResent": "Invitation resent successfully!"
+  "invitationResent": "Invitation resent successfully!",
+  "copyTeamLink": "Copy team link"
 }

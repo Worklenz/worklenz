@@ -10,6 +10,17 @@
   "deleteConfirmationOk": "Ja",
   "deleteConfirmationCancel": "Abbrechen",
 
+  "deleteTaskTitle": "Aufgabe löschen",
+  "deleteTaskContent": "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "deleteTaskConfirm": "Löschen",
+  "deleteTaskCancel": "Abbrechen",
+
+  "deleteStatusTitle": "Status löschen",
+  "deleteStatusContent": "Sind Sie sicher, dass Sie diesen Status löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+
+  "deletePhaseTitle": "Phase löschen",
+  "deletePhaseContent": "Sind Sie sicher, dass Sie diese Phase löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+
   "dueDate": "Fälligkeitsdatum",
   "cancel": "Abbrechen",
 
@@ -26,5 +37,17 @@
   "noDueDate": "Kein Fälligkeitsdatum",
   "save": "Speichern",
   "clear": "Löschen",
-  "nextWeek": "Nächste Woche"
+  "nextWeek": "Nächste Woche",
+  "noSubtasks": "Keine Unteraufgaben",
+  "showSubtasks": "Unteraufgaben anzeigen",
+  "hideSubtasks": "Unteraufgaben ausblenden",
+  
+  "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
+  "noTasksFound": "Keine Aufgaben gefunden",
+  "loadingFilters": "Filter werden geladen...",
+  "failedToUpdateColumnOrder": "Fehler beim Aktualisieren der Spaltenreihenfolge",
+  "failedToUpdatePhaseOrder": "Fehler beim Aktualisieren der Phasenreihenfolge",
+  "pleaseTryAgain": "Bitte versuchen Sie es erneut",
+  "taskNotCompleted": "Aufgabe ist nicht abgeschlossen",
+  "completeTaskDependencies": "Bitte schließen Sie die Aufgabenabhängigkeiten ab, bevor Sie fortfahren"
 }
