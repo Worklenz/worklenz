@@ -5,6 +5,8 @@
       "Bash(npm run build:*)",
       "Bash(npm run type-check:*)",
       "Bash(npm run:*)",
+      "Bash(move:*)",
+      "Bash(mv:*)",
       "Bash(grep:*)",
       "Bash(rm:*)"
     ],
