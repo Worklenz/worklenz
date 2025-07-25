@@ -28,7 +28,7 @@
   "jobTitleLabel": "Jobtitel",
   "jobTitlePlaceholder": "Jobtitel auswählen oder suchen (optional)",
   "memberAccessLabel": "Zugriffslevel",
-  "addToTeamButton": "Mitglied zum Team hinzufügen",
+  "addToTeamButton": "Einladung senden",
   "updateButton": "Änderungen speichern",
   "resendInvitationButton": "Einladungs-E-Mail erneut senden",
   "invitationSentSuccessMessage": "Team-Einladung erfolgreich versendet!",
@@ -43,5 +43,6 @@
   "updatedText": "Aktualisiert",
   "noResultFound": "Geben Sie eine E-Mail-Adresse ein und drücken Sie Enter...",
   "jobTitlesFetchError": "Fehler beim Abrufen der Jobtitel",
-  "invitationResent": "Einladung erfolgreich erneut gesendet!"
+  "invitationResent": "Einladung erfolgreich erneut gesendet!",
+  "copyTeamLink": "Team-Link kopieren"
 }

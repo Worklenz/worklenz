@@ -13,5 +13,6 @@
   "deleteButtonTooltip": "Hiq nga projekti",
   "memberCount": "Anëtar",
   "membersCountPlural": "Anëtarë",
-  "emptyText": "Nuk ka bashkëngjitje në projekt."
+  "emptyText": "Nuk ka bashkëngjitje në projekt.",
+  "searchPlaceholder": "Kërko anëtarë"
 }

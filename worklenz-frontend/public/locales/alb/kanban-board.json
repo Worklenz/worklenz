@@ -10,6 +10,17 @@
   "deleteConfirmationOk": "Po",
   "deleteConfirmationCancel": "Anulo",
 
+  "deleteTaskTitle": "Fshi Detyrën",
+  "deleteTaskContent": "Jeni i sigurt që doni të fshini këtë detyrë? Kjo veprim nuk mund të zhbëhet.",
+  "deleteTaskConfirm": "Fshi",
+  "deleteTaskCancel": "Anulo",
+
+  "deleteStatusTitle": "Fshi Statusin",
+  "deleteStatusContent": "Jeni i sigurt që doni të fshini këtë status? Kjo veprim nuk mund të zhbëhet.",
+
+  "deletePhaseTitle": "Fshi Fazen",
+  "deletePhaseContent": "Jeni i sigurt që doni të fshini këtë fazë? Kjo veprim nuk mund të zhbëhet.",
+
   "dueDate": "Data e përfundimit",
   "cancel": "Anulo",
 
@@ -26,5 +37,17 @@
   "noDueDate": "Pa datë përfundimi",
   "save": "Ruaj",
   "clear": "Pastro",
-  "nextWeek": "Javën e ardhshme"
+  "nextWeek": "Javën e ardhshme",
+  "noSubtasks": "Pa nëndetyra",
+  "showSubtasks": "Shfaq nëndetyrat",
+  "hideSubtasks": "Fshih nëndetyrat",
+  
+  "errorLoadingTasks": "Gabim gjatë ngarkimit të detyrave",
+  "noTasksFound": "Nuk u gjetën detyra",
+  "loadingFilters": "Duke ngarkuar filtra...",
+  "failedToUpdateColumnOrder": "Dështoi përditësimi i rendit të kolonave",
+  "failedToUpdatePhaseOrder": "Dështoi përditësimi i rendit të fazave",
+  "pleaseTryAgain": "Ju lutemi provoni përsëri",
+  "taskNotCompleted": "Detyra nuk është përfunduar",
+  "completeTaskDependencies": "Ju lutemi përfundoni varësitë e detyrës para se të vazhdoni"
 }

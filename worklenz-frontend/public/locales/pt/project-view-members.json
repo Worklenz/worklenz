@@ -13,5 +13,6 @@
   "deleteButtonTooltip": "Remover do projeto",
   "memberCount": "Membro",
   "membersCountPlural": "Membros",
-  "emptyText": "Não há anexos no projeto."
+  "emptyText": "Não há anexos no projeto.",
+  "searchPlaceholder": "Pesquisar membros"
 }

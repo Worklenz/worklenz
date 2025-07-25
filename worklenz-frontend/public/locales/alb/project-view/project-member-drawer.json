@@ -3,5 +3,9 @@
   "searchLabel": "Shtoni anëtarë duke shkruar emrin ose email-in e tyre",
   "searchPlaceholder": "Shkruani emrin ose email-in",
   "inviteAsAMember": "Fto si anëtar",
-  "inviteNewMemberByEmail": "Fto anëtar të ri me email"
+  "inviteNewMemberByEmail": "Fto anëtar të ri me email",
+  "members": "Anëtarë",
+  "copyProjectLink": "Kopjo lidhjen e projektit",
+  "inviteMember": "Fto anëtar",
+  "alsoInviteToProject": "Fto edhe në projekt"
 }
