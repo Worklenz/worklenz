@@ -61,6 +61,7 @@ import customColumnsApiRouter from "./custom-columns-api-router";
 import projectFinanceApiRouter from "./project-finance-api-router";
 import projectRatecardApiRouter from "./project-ratecard-api-router";
 import ratecardApiRouter from "./ratecard-api-router";
+import holidayApiRouter from "./holiday-api-router";
 
 const api = express.Router();
 
@@ -126,5 +127,7 @@ api.use("/project-finance", projectFinanceApiRouter);
 api.use("/project-ratecard", projectRatecardApiRouter);
 
 api.use("/ratecard", ratecardApiRouter);
+
+api.use("/holidays", holidayApiRouter);
 
 export default api;

@@ -61,6 +61,7 @@
     "crypto-js": "^4.1.1",
     "csrf-sync": "^4.2.1",
     "csurf": "^1.11.0",
+    "date-holidays": "^3.24.4",
     "debug": "^4.3.4",
     "dotenv": "^16.3.1",
     "exceljs": "^4.3.0",

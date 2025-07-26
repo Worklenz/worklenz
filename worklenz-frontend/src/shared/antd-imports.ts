@@ -186,7 +186,8 @@ export {
   ArrowDownOutlined,
   CalculatorOutlined,
   DollarOutlined,
-  DollarCircleOutlined
+  DollarCircleOutlined,
+  DatabaseOutlined
 } from '@ant-design/icons';
 
 // Re-export all components with React
