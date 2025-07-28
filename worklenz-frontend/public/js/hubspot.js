@@ -105,11 +105,20 @@ class HubSpotManager {
         filter: invert(1) hue-rotate(180deg) !important;
       }
       
-      /* Additional targeting for widget launcher and chat bubble */
-      div[class*="shadow-2xl"],
-      div[class*="widget-align"],
-      div[style*="position: fixed"] {
+      /* More specific targeting for HubSpot widget elements only - avoid affecting app UI */
+      div[class*="shadow-2xl"][class*="widget-align"]:not([class*="ant-"]),
+      div[style*="position: fixed"][id*="hubspot"]:not([class*="ant-"]),
+      div[style*="position: fixed"][class*="widget"]:not([class*="ant-"]) {
         filter: invert(1) hue-rotate(180deg) !important;
+      }
+      
+      /* Ensure Worklenz app elements are not affected by HubSpot styles */
+      .ant-menu,
+      .ant-menu *,
+      [class*="settings"],
+      [class*="sidebar"],
+      .worklenz-app *:not([id*="hubspot"]):not([class*="widget"]) {
+        filter: none !important;
       }
     `;
     document.head.appendChild(style);
