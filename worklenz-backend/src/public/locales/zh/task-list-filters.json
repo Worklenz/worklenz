@@ -75,5 +75,12 @@
   "delete": "删除",
   "enterStatusName": "输入状态名称",
   "selectCategory": "选择类别",
-  "close": "关闭"
+  "close": "关闭",
+  "clearSort": "清除排序",
+  "sortAscending": "升序排列",
+  "sortDescending": "降序排列",
+  "sortByField": "按{{field}}排序",
+  "ascendingOrder": "升序",
+  "descendingOrder": "降序",
+  "currentSort": "当前排序：{{field}} {{order}}"
 }

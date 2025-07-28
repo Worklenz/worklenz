@@ -364,7 +364,7 @@ interface ReporterColumnProps {
 export const ReporterColumn: React.FC<ReporterColumnProps> = memo(({ width, reporter }) => (
   <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
     {reporter ? (
-      <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{reporter}</span>
+      <span className="text-sm text-gray-500 dark:text-gray-400 truncate" title={reporter}>{reporter}</span>
     ) : (
       <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
     )}
