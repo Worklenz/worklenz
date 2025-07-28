@@ -20,6 +20,7 @@ interface Props {
   styles: any;
   isDarkMode: boolean;
   token?: any;
+  isModal?: boolean; // New prop to indicate if used in modal context
 }
 
 interface SurveyPageProps {
@@ -29,6 +30,7 @@ interface SurveyPageProps {
   surveyData: IAccountSetupSurveyData;
   handleSurveyDataChange: (field: keyof IAccountSetupSurveyData, value: any) => void;
   handleUseCaseToggle?: (value: UseCase) => void;
+  isModal?: boolean;
 }
 
 // Page 1: About You
@@ -235,7 +237,7 @@ const YourNeedsPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
 };
 
 // Page 3: Discovery
-const DiscoveryPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, handleSurveyDataChange }) => {
+const DiscoveryPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, handleSurveyDataChange, isModal }) => {
   const { t } = useTranslation('account-setup');
   
   const howHeardAboutOptions: { value: HowHeardAbout; label: string; icon: string }[] = [
@@ -291,14 +293,18 @@ const DiscoveryPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
 
       <div className="mt-12 p-1.5 rounded-lg text-center" style={{ backgroundColor: token?.colorSuccessBg, borderColor: token?.colorSuccessBorder, border: '1px solid' }}>
         <div className="text-4xl mb-3">🎉</div>
-        <Title level={4} style={{ color: token?.colorText, marginBottom: 8 }}>{t('allSetTitle')}</Title>
-        <Paragraph style={{ color: token?.colorTextSecondary, marginBottom: 0 }}>{t('allSetDescription')}</Paragraph>
+        <Title level={4} style={{ color: token?.colorText, marginBottom: 8 }}>
+          {isModal ? t('surveyCompleteTitle') : t('allSetTitle')}
+        </Title>
+        <Paragraph style={{ color: token?.colorTextSecondary, marginBottom: 0 }}>
+          {isModal ? t('surveyCompleteDescription') : t('allSetDescription')}
+        </Paragraph>
       </div>
     </div>
   );
 };
 
-export const SurveyStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token }) => {
+export const SurveyStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token, isModal = false }) => {
   const { t } = useTranslation('account-setup');
   const dispatch = useDispatch();
   const { surveyData, surveySubStep } = useSelector((state: RootState) => state.accountSetupReducer);
@@ -339,9 +345,9 @@ export const SurveyStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token
   };
 
   const surveyPages = [
-    <AboutYouPage key="about-you" styles={styles} isDarkMode={isDarkMode} token={token} surveyData={surveyData} handleSurveyDataChange={handleSurveyDataChange} />,
-    <YourNeedsPage key="your-needs" styles={styles} isDarkMode={isDarkMode} token={token} surveyData={surveyData} handleSurveyDataChange={handleSurveyDataChange} handleUseCaseToggle={handleUseCaseToggle} />,
-    <DiscoveryPage key="discovery" styles={styles} isDarkMode={isDarkMode} token={token} surveyData={surveyData} handleSurveyDataChange={handleSurveyDataChange} />
+    <AboutYouPage key="about-you" styles={styles} isDarkMode={isDarkMode} token={token} surveyData={surveyData} handleSurveyDataChange={handleSurveyDataChange} isModal={isModal} />,
+    <YourNeedsPage key="your-needs" styles={styles} isDarkMode={isDarkMode} token={token} surveyData={surveyData} handleSurveyDataChange={handleSurveyDataChange} handleUseCaseToggle={handleUseCaseToggle} isModal={isModal} />,
+    <DiscoveryPage key="discovery" styles={styles} isDarkMode={isDarkMode} token={token} surveyData={surveyData} handleSurveyDataChange={handleSurveyDataChange} isModal={isModal} />
   ];
 
   React.useEffect(() => {
