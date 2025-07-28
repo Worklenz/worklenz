@@ -1017,7 +1017,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                       <div className="task-indicators flex items-center gap-2">
                         {/* Comments indicator */}
                         {(task as any).comments_count > 0 && (
-                          <Tooltip title={t(`task-management:indicators.tooltips.comments${(task as any).comments_count === 1 ? '' : '_plural'}`, { count: (task as any).comments_count })}>
+                          <Tooltip
+                            title={t(
+                              `task-management:indicators.tooltips.comments${(task as any).comments_count === 1 ? '' : '_plural'}`,
+                              { count: (task as any).comments_count }
+                            )}
+                          >
                             <MessageOutlined
                               style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
                             />
@@ -1025,7 +1030,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                         )}
                         {/* Attachments indicator */}
                         {(task as any).attachments_count > 0 && (
-                          <Tooltip title={t(`task-management:indicators.tooltips.attachments${(task as any).attachments_count === 1 ? '' : '_plural'}`, { count: (task as any).attachments_count })}>
+                          <Tooltip
+                            title={t(
+                              `task-management:indicators.tooltips.attachments${(task as any).attachments_count === 1 ? '' : '_plural'}`,
+                              { count: (task as any).attachments_count }
+                            )}
+                          >
                             <PaperClipOutlined
                               style={{ fontSize: 14, color: isDarkMode ? '#b0b3b8' : '#888' }}
                             />
@@ -1336,8 +1346,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                         handleDateChange(null, 'startDate');
                       }}
                       className={`absolute right-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-4 h-4 flex items-center justify-center rounded-full text-xs ${
-                        isDarkMode 
-                          ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' 
+                        isDarkMode
+                          ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
                           : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                       }`}
                       title="Clear start date"
@@ -1375,8 +1385,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                         handleDateChange(null, 'dueDate');
                       }}
                       className={`absolute right-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-4 h-4 flex items-center justify-center rounded-full text-xs ${
-                        isDarkMode 
-                          ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' 
+                        isDarkMode
+                          ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
                           : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                       }`}
                       title="Clear due date"

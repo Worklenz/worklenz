@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Table, Progress, Alert, Space, Typography, Divider } from '@/shared/antd-imports';
+import {
+  Card,
+  Button,
+  Table,
+  Progress,
+  Alert,
+  Space,
+  Typography,
+  Divider,
+} from '@/shared/antd-imports';
 import { performanceMonitor } from '@/utils/performance-monitor';
 
 const { Title, Text } = Typography;

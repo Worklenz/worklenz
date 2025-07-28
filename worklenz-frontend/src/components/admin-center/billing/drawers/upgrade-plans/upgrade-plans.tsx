@@ -516,7 +516,9 @@ const UpgradePlans = () => {
           >
             {billingInfo?.status === SUBSCRIPTION_STATUS.ACTIVE
               ? t('changeToPlan', 'Change to {{plan}}', { plan: t('annualPlan', 'Annual Plan') })
-              : t('continueWith', 'Continue with {{plan}}', { plan: t('annualPlan', 'Annual Plan') })}
+              : t('continueWith', 'Continue with {{plan}}', {
+                  plan: t('annualPlan', 'Annual Plan'),
+                })}
           </Button>
         )}
         {selectedPlan === paddlePlans.MONTHLY && (
@@ -529,7 +531,9 @@ const UpgradePlans = () => {
           >
             {billingInfo?.status === SUBSCRIPTION_STATUS.ACTIVE
               ? t('changeToPlan', 'Change to {{plan}}', { plan: t('monthlyPlan', 'Monthly Plan') })
-              : t('continueWith', 'Continue with {{plan}}', { plan: t('monthlyPlan', 'Monthly Plan') })}
+              : t('continueWith', 'Continue with {{plan}}', {
+                  plan: t('monthlyPlan', 'Monthly Plan'),
+                })}
           </Button>
         )}
       </Row>

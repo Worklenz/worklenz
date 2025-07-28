@@ -20,21 +20,23 @@ import { Empty, Spin } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 
 // Lazy load the Bar chart component
-const LazyBarChart = lazy(() => 
+const LazyBarChart = lazy(() =>
   import('react-chartjs-2').then(module => ({ default: module.Bar }))
 );
 
 // Chart loading fallback
 const ChartLoadingFallback = () => (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    height: '400px',
-    background: '#fafafa',
-    borderRadius: '8px',
-    border: '1px solid #f0f0f0'
-  }}>
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '400px',
+      background: '#fafafa',
+      borderRadius: '8px',
+      border: '1px solid #f0f0f0',
+    }}
+  >
     <Spin size="large" />
   </div>
 );
@@ -43,7 +45,15 @@ const ChartLoadingFallback = () => (
 let isChartJSRegistered = false;
 const registerChartJS = () => {
   if (!isChartJSRegistered) {
-    ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
+    ChartJS.register(
+      CategoryScale,
+      LinearScale,
+      BarElement,
+      Title,
+      Tooltip,
+      Legend,
+      ChartDataLabels
+    );
     isChartJSRegistered = true;
   }
 };

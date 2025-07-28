@@ -58,9 +58,11 @@ const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProp
         onUpdated(commentData);
 
         // Dispatch event to notify that a comment was updated
-        document.dispatchEvent(new CustomEvent('task-comment-update', { 
-          detail: { taskId: commentData.task_id } 
-        }));
+        document.dispatchEvent(
+          new CustomEvent('task-comment-update', {
+            detail: { taskId: commentData.task_id },
+          })
+        );
       }
     } catch (e) {
       logger.error('Error updating comment', e);

@@ -12,10 +12,7 @@ import { deleteStatusToggleDrawer } from '@/features/projects/status/DeleteStatu
 import { Drawer, Alert, Card, Select, Button, Typography, Badge } from '@/shared/antd-imports';
 import { DownOutlined } from '@/shared/antd-imports';
 import { useSelector } from 'react-redux';
-import {
-    deleteSection,
-    IGroupBy,
-} from '@features/enhanced-kanban/enhanced-kanban.slice';
+import { deleteSection, IGroupBy } from '@features/enhanced-kanban/enhanced-kanban.slice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import logger from '@/utils/errorLogger';

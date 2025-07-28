@@ -39,17 +39,17 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
 
       // Use new bulk update approach - recalculate ALL task orders to prevent duplicates
       const taskUpdates: any[] = [];
-      
+
       // Create a copy of all groups and perform the move operation
       const updatedGroups = groups.map(group => ({
         ...group,
-        taskIds: [...group.taskIds]
+        taskIds: [...group.taskIds],
       }));
-      
+
       // Find the source and target groups in our copy
       const sourceGroupCopy = updatedGroups.find(g => g.id === sourceGroup.id)!;
       const targetGroupCopy = updatedGroups.find(g => g.id === targetGroup.id)!;
-      
+
       if (sourceGroup.id === targetGroup.id) {
         // Same group - reorder within the group
         const sourceIndex = sourceGroupCopy.taskIds.indexOf(taskId);
@@ -62,20 +62,20 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
         // Remove from source group
         const sourceIndex = sourceGroupCopy.taskIds.indexOf(taskId);
         sourceGroupCopy.taskIds.splice(sourceIndex, 1);
-        
+
         // Add to target group
         targetGroupCopy.taskIds.splice(insertIndex, 0, taskId);
       }
-      
+
       // Now assign sequential sort orders to ALL tasks across ALL groups
       let currentSortOrder = 0;
       updatedGroups.forEach(group => {
         group.taskIds.forEach(id => {
           const update: any = {
             task_id: id,
-            sort_order: currentSortOrder
+            sort_order: currentSortOrder,
           };
-          
+
           // Add group-specific fields for the moved task if it changed groups
           if (id === taskId && sourceGroup.id !== targetGroup.id) {
             if (currentGrouping === 'status') {
@@ -86,7 +86,7 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
               update.phase_id = targetGroup.id;
             }
           }
-          
+
           taskUpdates.push(update);
           currentSortOrder++;
         });
@@ -120,18 +120,24 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
           });
         } else if (currentGrouping === 'priority') {
           // Emit priority change event
-          socket.emit(SocketEvents.TASK_PRIORITY_CHANGE.toString(), JSON.stringify({
-            task_id: taskId,
-            priority_id: targetGroup.id,
-            team_id: teamId,
-          }));
+          socket.emit(
+            SocketEvents.TASK_PRIORITY_CHANGE.toString(),
+            JSON.stringify({
+              task_id: taskId,
+              priority_id: targetGroup.id,
+              team_id: teamId,
+            })
+          );
         } else if (currentGrouping === 'status') {
           // Emit status change event
-          socket.emit(SocketEvents.TASK_STATUS_CHANGE.toString(), JSON.stringify({
-            task_id: taskId,
-            status_id: targetGroup.id,
-            team_id: teamId,
-          }));
+          socket.emit(
+            SocketEvents.TASK_STATUS_CHANGE.toString(),
+            JSON.stringify({
+              task_id: taskId,
+              status_id: targetGroup.id,
+              team_id: teamId,
+            })
+          );
         }
       }
     },
@@ -208,7 +214,7 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       // Check if we're dropping on a task, group, or empty group
       const overTask = allTasks.find(task => task.id === overId);
       const overGroup = groups.find(group => group.id === overId);
-      
+
       // Check if dropping on empty group drop zone
       const isEmptyGroupDrop = typeof overId === 'string' && overId.startsWith('empty-group-');
       const emptyGroupId = isEmptyGroupDrop ? overId.replace('empty-group-', '') : null;
@@ -290,4 +296,4 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
     handleDragOver,
     handleDragEnd,
   };
-}; 
+};

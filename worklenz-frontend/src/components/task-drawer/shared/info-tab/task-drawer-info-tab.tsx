@@ -1,4 +1,12 @@
-import { Button, Collapse, CollapseProps, Flex, Skeleton, Tooltip, Typography } from '@/shared/antd-imports';
+import {
+  Button,
+  Collapse,
+  CollapseProps,
+  Flex,
+  Skeleton,
+  Tooltip,
+  Typography,
+} from '@/shared/antd-imports';
 import React, { useEffect, useState, useRef } from 'react';
 import { ReloadOutlined } from '@/shared/antd-imports';
 import DescriptionEditor from './description-editor';
@@ -150,7 +158,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       label: <Typography.Text strong>{t('taskInfoTab.dependencies.title')}</Typography.Text>,
       children: (
         <DependenciesTable
-          task={(taskFormViewModel?.task as ITaskViewModel) || {} as ITaskViewModel}
+          task={(taskFormViewModel?.task as ITaskViewModel) || ({} as ITaskViewModel)}
           t={t}
           taskDependencies={taskDependencies}
           loadingTaskDependencies={loadingTaskDependencies}
@@ -216,14 +224,16 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       const res = await taskDependenciesApiService.getTaskDependencies(selectedTaskId);
       if (res.done) {
         setTaskDependencies(res.body);
-        
+
         // Update Redux state with the current dependency status
-        dispatch(updateTaskCounts({
-          taskId: selectedTaskId,
-          counts: {
-            has_dependencies: res.body.length > 0
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: selectedTaskId,
+            counts: {
+              has_dependencies: res.body.length > 0,
+            },
+          })
+        );
       }
     } catch (error) {
       logger.error('Error fetching task dependencies:', error);
@@ -239,14 +249,16 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       const res = await taskAttachmentsApiService.getTaskAttachments(selectedTaskId);
       if (res.done) {
         setTaskAttachments(res.body);
-        
+
         // Update Redux state with the current attachment count
-        dispatch(updateTaskCounts({
-          taskId: selectedTaskId,
-          counts: {
-            attachments_count: res.body.length
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: selectedTaskId,
+            counts: {
+              attachments_count: res.body.length,
+            },
+          })
+        );
       }
     } catch (error) {
       logger.error('Error fetching task attachments:', error);

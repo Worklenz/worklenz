@@ -5,10 +5,10 @@ export const CSS_OPTIMIZATION = {
   // Performance thresholds
   THRESHOLDS: {
     CRITICAL_CSS_SIZE: 14000, // 14KB critical CSS limit
-    INLINE_CSS_LIMIT: 4000,   // 4KB inline CSS limit
-    UNUSED_CSS_THRESHOLD: 80,  // Remove CSS with <80% usage
+    INLINE_CSS_LIMIT: 4000, // 4KB inline CSS limit
+    UNUSED_CSS_THRESHOLD: 80, // Remove CSS with <80% usage
   },
-  
+
   // Layout shift prevention
   LAYOUT_PREVENTION: {
     // Common aspect ratios for media
@@ -19,7 +19,7 @@ export const CSS_OPTIMIZATION = {
       CARD: '4:3',
       WIDE: '21:9',
     },
-    
+
     // Standard sizes for common elements
     PLACEHOLDER_SIZES: {
       AVATAR: { width: 40, height: 40 },
@@ -29,7 +29,7 @@ export const CSS_OPTIMIZATION = {
       THUMBNAIL: { width: 64, height: 64 },
     },
   },
-  
+
   // CSS optimization strategies
   STRATEGIES: {
     CRITICAL_ABOVE_FOLD: ['layout', 'typography', 'colors', 'spacing'],
@@ -53,7 +53,7 @@ export class CSSPerformanceMonitor {
       return () => {};
     }
 
-    const observer = new PerformanceObserver((list) => {
+    const observer = new PerformanceObserver(list => {
       for (const entry of list.getEntries()) {
         if (entry.entryType === 'layout-shift' && !(entry as any).hadRecentInput) {
           this.metrics.layoutShifts += (entry as any).value;
@@ -69,7 +69,7 @@ export class CSSPerformanceMonitor {
   // Monitor render-blocking resources
   static monitorRenderBlocking(): void {
     if ('PerformanceObserver' in window) {
-      const observer = new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           if (entry.name.endsWith('.css') && (entry as any).renderBlockingStatus === 'blocking') {
             this.metrics.renderBlockingCSS++;
@@ -177,15 +177,15 @@ export class CriticalCSSManager {
   // Identify critical CSS selectors
   static identifyCriticalCSS(): string[] {
     const criticalSelectors: string[] = [];
-    
+
     // Get above-the-fold elements
     const viewportHeight = window.innerHeight;
     const aboveFoldElements = Array.from(document.querySelectorAll('*')).filter(
-      (el) => el.getBoundingClientRect().top < viewportHeight
+      el => el.getBoundingClientRect().top < viewportHeight
     );
 
     // Extract CSS rules for above-the-fold elements
-    aboveFoldElements.forEach((element) => {
+    aboveFoldElements.forEach(element => {
       const computedStyle = window.getComputedStyle(element);
       const tagName = element.tagName.toLowerCase();
       const className = element.className;
@@ -196,7 +196,7 @@ export class CriticalCSSManager {
 
       // Add class selectors
       if (className) {
-        className.split(' ').forEach((cls) => {
+        className.split(' ').forEach(cls => {
           criticalSelectors.push(`.${cls}`);
         });
       }
@@ -207,28 +207,28 @@ export class CriticalCSSManager {
       }
     });
 
-         return Array.from(new Set(criticalSelectors));
+    return Array.from(new Set(criticalSelectors));
   }
 
-     // Extract critical CSS
-   static async extractCriticalCSS(html: string, css: string): Promise<string> {
-     // This is a simplified version - in production, use tools like critical or penthouse
-     const criticalSelectors = this.identifyCriticalCSS();
-     const criticalRules: string[] = [];
+  // Extract critical CSS
+  static async extractCriticalCSS(html: string, css: string): Promise<string> {
+    // This is a simplified version - in production, use tools like critical or penthouse
+    const criticalSelectors = this.identifyCriticalCSS();
+    const criticalRules: string[] = [];
 
-     // Parse CSS and extract matching rules
-     const cssRules = css.split('}').map(rule => rule.trim() + '}');
-     
-     cssRules.forEach((rule) => {
-       for (const selector of criticalSelectors) {
-         if (rule.includes(selector)) {
-           criticalRules.push(rule);
-         }
-       }
-     });
+    // Parse CSS and extract matching rules
+    const cssRules = css.split('}').map(rule => rule.trim() + '}');
 
-     return criticalRules.join('\n');
-   }
+    cssRules.forEach(rule => {
+      for (const selector of criticalSelectors) {
+        if (rule.includes(selector)) {
+          criticalRules.push(rule);
+        }
+      }
+    });
+
+    return criticalRules.join('\n');
+  }
 
   // Inline critical CSS
   static inlineCriticalCSS(css: string): void {
@@ -257,17 +257,17 @@ export class CSSOptimizer {
   // Remove unused CSS selectors
   static removeUnusedCSS(css: string): string {
     const usedSelectors = new Set<string>();
-    
+
     // Get all elements and their classes/IDs
-    document.querySelectorAll('*').forEach((element) => {
+    document.querySelectorAll('*').forEach(element => {
       usedSelectors.add(element.tagName.toLowerCase());
-      
+
       if (element.className) {
-        element.className.split(' ').forEach((cls) => {
+        element.className.split(' ').forEach(cls => {
           usedSelectors.add(`.${cls}`);
         });
       }
-      
+
       if (element.id) {
         usedSelectors.add(`#${element.id}`);
       }
@@ -275,16 +275,14 @@ export class CSSOptimizer {
 
     // Filter CSS rules
     const cssRules = css.split('}');
-    const optimizedRules = cssRules.filter((rule) => {
-             const selectorPart = rule.split('{')[0];
-       if (!selectorPart) return false;
-       const selector = selectorPart.trim();
-       if (!selector) return false;
-      
-           // Check if selector is used
-     return Array.from(usedSelectors).some((used) => 
-       selector.includes(used)
-     );
+    const optimizedRules = cssRules.filter(rule => {
+      const selectorPart = rule.split('{')[0];
+      if (!selectorPart) return false;
+      const selector = selectorPart.trim();
+      if (!selector) return false;
+
+      // Check if selector is used
+      return Array.from(usedSelectors).some(used => selector.includes(used));
     });
 
     return optimizedRules.join('}');
@@ -292,28 +290,30 @@ export class CSSOptimizer {
 
   // Minify CSS
   static minifyCSS(css: string): string {
-    return css
-      // Remove comments
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      // Remove unnecessary whitespace
-      .replace(/\s+/g, ' ')
-      // Remove whitespace around selectors and properties
-      .replace(/\s*{\s*/g, '{')
-      .replace(/;\s*/g, ';')
-      .replace(/}\s*/g, '}')
-      // Remove trailing semicolons
-      .replace(/;}/g, '}')
-      .trim();
+    return (
+      css
+        // Remove comments
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        // Remove unnecessary whitespace
+        .replace(/\s+/g, ' ')
+        // Remove whitespace around selectors and properties
+        .replace(/\s*{\s*/g, '{')
+        .replace(/;\s*/g, ';')
+        .replace(/}\s*/g, '}')
+        // Remove trailing semicolons
+        .replace(/;}/g, '}')
+        .trim()
+    );
   }
 
   // Bundle CSS efficiently
   static bundleCSS(cssFiles: string[]): Promise<string> {
     return Promise.all(
-      cssFiles.map(async (file) => {
+      cssFiles.map(async file => {
         const response = await fetch(file);
         return response.text();
       })
-    ).then((styles) => {
+    ).then(styles => {
       const bundled = styles.join('\n');
       return this.minifyCSS(bundled);
     });
@@ -326,11 +326,14 @@ export class DynamicCSSLoader {
   private static loadingPromises = new Map<string, Promise<void>>();
 
   // Load CSS on demand
-  static async loadCSS(href: string, options: {
-    media?: string;
-    priority?: 'high' | 'low';
-    critical?: boolean;
-  } = {}): Promise<void> {
+  static async loadCSS(
+    href: string,
+    options: {
+      media?: string;
+      priority?: 'high' | 'low';
+      critical?: boolean;
+    } = {}
+  ): Promise<void> {
     const { media = 'all', priority = 'low', critical = false } = options;
 
     if (this.loadedStylesheets.has(href)) {
@@ -382,8 +385,8 @@ export class DynamicCSSLoader {
     const { rootMargin = '100px', threshold = 0.1 } = options;
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
+      entries => {
+        entries.forEach(entry => {
           if (entry.isIntersecting) {
             this.loadCSS(cssHref);
             observer.unobserve(element);
@@ -410,12 +413,12 @@ export class DynamicCSSLoader {
     };
 
     const cleanup = () => {
-      events.forEach((event) => {
+      events.forEach(event => {
         element.removeEventListener(event, loadCSS);
       });
     };
 
-    events.forEach((event) => {
+    events.forEach(event => {
       element.addEventListener(event, loadCSS, { once: true, passive: true });
     });
 
@@ -519,7 +522,7 @@ export const CSSUtils = {
     const idCount = (selector.match(/#/g) || []).length;
     const classCount = (selector.match(/\./g) || []).length;
     const elementCount = (selector.match(/[a-zA-Z]/g) || []).length;
-    
+
     return idCount * 100 + classCount * 10 + elementCount;
   },
 
@@ -542,18 +545,15 @@ export const CSSUtils = {
   // Optimize CSS custom properties
   optimizeCustomProperties: (css: string): string => {
     // Group related custom properties
-    const optimized = css.replace(
-      /:root\s*{([^}]*)}/g,
-      (match, properties) => {
-                 const sorted = properties
-           .split(';')
-           .filter((prop: string) => prop.trim())
-           .sort()
-           .join(';');
-        return `:root{${sorted}}`;
-      }
-    );
-    
+    const optimized = css.replace(/:root\s*{([^}]*)}/g, (match, properties) => {
+      const sorted = properties
+        .split(';')
+        .filter((prop: string) => prop.trim())
+        .sort()
+        .join(';');
+      return `:root{${sorted}}`;
+    });
+
     return optimized;
   },
 
@@ -563,36 +563,38 @@ export const CSSUtils = {
     properties: Record<string, string>,
     breakpoints: Record<string, string>
   ): string => {
-    let css = `${selector} { ${Object.entries(properties).map(([prop, value]) => `${prop}: ${value}`).join('; ')} }`;
-    
+    let css = `${selector} { ${Object.entries(properties)
+      .map(([prop, value]) => `${prop}: ${value}`)
+      .join('; ')} }`;
+
     Object.entries(breakpoints).forEach(([breakpoint, mediaQuery]) => {
       css += `\n@media ${mediaQuery} { ${selector} { /* responsive styles */ } }`;
     });
-    
+
     return css;
   },
 
   // Check for CSS performance issues
   checkPerformanceIssues: (css: string): string[] => {
     const issues: string[] = [];
-    
+
     // Check for expensive selectors
     if (css.includes('*')) {
       issues.push('Universal selector (*) detected - may impact performance');
     }
-    
+
     // Check for inefficient descendant selectors
     const deepSelectors = css.match(/(\w+\s+){4,}/g);
     if (deepSelectors) {
       issues.push('Deep descendant selectors detected - consider using more specific classes');
     }
-    
+
     // Check for !important overuse
     const importantCount = (css.match(/!important/g) || []).length;
     if (importantCount > 10) {
       issues.push('Excessive use of !important detected');
     }
-    
+
     return issues;
   },
-}; 
+};

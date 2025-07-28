@@ -349,7 +349,7 @@ export default class HolidayController extends WorklenzControllerBase {
           }
         }
       } catch (error: any) {
-        errors.push(`${country.name}: ${error.message}`);
+        errors.push(`${country.name}: ${error?.message || "Unknown error"}`);
       }
     }
 

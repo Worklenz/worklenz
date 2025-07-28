@@ -23,16 +23,14 @@ const MainLayout = memo(() => {
     if (layoutRef.current) {
       // Prevent layout shifts in main content area
       LayoutStabilizer.applyContainment(layoutRef.current, 'layout');
-      
+
       // Load non-critical CSS dynamically
       DynamicCSSLoader.loadCSS('/styles/non-critical.css', {
         priority: 'low',
-        media: 'all'
+        media: 'all',
       });
     }
   }, []);
-
-  
 
   // Memoize styles to prevent object recreation on every render
   const headerStyles = useMemo(
@@ -83,7 +81,11 @@ const MainLayout = memo(() => {
         </Layout.Header>
 
         <Layout.Content className="layout-contained">
-          <Col xxl={{ span: 18, offset: 3, flex: '100%' }} style={contentStyles} className="task-content-container">
+          <Col
+            xxl={{ span: 18, offset: 3, flex: '100%' }}
+            style={contentStyles}
+            className="task-content-container"
+          >
             <Outlet />
           </Col>
         </Layout.Content>

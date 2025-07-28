@@ -12,8 +12,6 @@ const AdminCenterLayout: React.FC = () => {
   const isMarginAvailable = useMediaQuery({ query: '(min-width: 1000px)' });
   const { t } = useTranslation('admin-center/sidebar');
 
-  
-
   return (
     <div
       style={{

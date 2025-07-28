@@ -101,14 +101,16 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
       socket?.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), body);
       socket?.once(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), (data: InlineMember[]) => {
         dispatch(setTaskSubscribers(data));
-        
+
         // Update Redux state with subscriber status
-        dispatch(updateTaskCounts({
-          taskId: task.id,
-          counts: {
-            has_subscribers: data && data.length > 0
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: task.id,
+            counts: {
+              has_subscribers: data && data.length > 0,
+            },
+          })
+        );
       });
     } catch (error) {
       logger.error('Error notifying member:', error);

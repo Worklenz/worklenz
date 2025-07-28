@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Avatar, Checkbox, DatePicker, Flex, Tag, Tooltip, Typography } from '@/shared/antd-imports';
+import {
+  Avatar,
+  Checkbox,
+  DatePicker,
+  Flex,
+  Tag,
+  Tooltip,
+  Typography,
+} from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { columnList } from '@/pages/projects/project-view-1/taskList/taskListTable/columns/columnList';

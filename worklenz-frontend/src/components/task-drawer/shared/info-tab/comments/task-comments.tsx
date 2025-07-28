@@ -121,14 +121,16 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
           });
 
           setComments(sortedComments);
-          
+
           // Update Redux state with the current comment count
-          dispatch(updateTaskCounts({
-            taskId,
-            counts: {
-              comments_count: sortedComments.length
-            }
-          }));
+          dispatch(
+            updateTaskCounts({
+              taskId,
+              counts: {
+                comments_count: sortedComments.length,
+              },
+            })
+          );
         }
 
         setLoading(false);
@@ -212,7 +214,7 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
       if (res.done) {
         // Refresh comments to get updated list
         await getComments(false);
-        
+
         // The comment count will be updated by getComments function
         // No need to dispatch here as getComments already handles it
       }
@@ -244,9 +246,11 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
         await getComments(false);
 
         // Dispatch event to notify that an attachment was deleted
-        document.dispatchEvent(new CustomEvent('task-comment-update', { 
-          detail: { taskId } 
-        }));
+        document.dispatchEvent(
+          new CustomEvent('task-comment-update', {
+            detail: { taskId },
+          })
+        );
       }
     } catch (e) {
       logger.error('Error deleting attachment', e);

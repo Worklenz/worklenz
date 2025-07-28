@@ -355,7 +355,9 @@ const SignupPage = () => {
       }}
       variant="outlined"
     >
-      <PageHeader description={t('headerDescription', {defaultValue: 'Sign up to get started'})} />
+      <PageHeader
+        description={t('headerDescription', { defaultValue: 'Sign up to get started' })}
+      />
       <Form
         form={form}
         name="signup"
@@ -369,19 +371,27 @@ const SignupPage = () => {
           name: urlParams.name,
         }}
       >
-        <Form.Item name="name" label={t('nameLabel', {defaultValue: 'Full Name'})} rules={formRules.name}>
+        <Form.Item
+          name="name"
+          label={t('nameLabel', { defaultValue: 'Full Name' })}
+          rules={formRules.name}
+        >
           <Input
             prefix={<UserOutlined />}
-            placeholder={t('namePlaceholder', {defaultValue: 'Enter your full name'})}
+            placeholder={t('namePlaceholder', { defaultValue: 'Enter your full name' })}
             size="large"
             style={{ borderRadius: 4 }}
           />
         </Form.Item>
 
-        <Form.Item name="email" label={t('emailLabel', {defaultValue: 'Email'})} rules={formRules.email as Rule[]}>
+        <Form.Item
+          name="email"
+          label={t('emailLabel', { defaultValue: 'Email' })}
+          rules={formRules.email as Rule[]}
+        >
           <Input
             prefix={<MailOutlined />}
-            placeholder={t('emailPlaceholder', {defaultValue: 'Enter your email'})}
+            placeholder={t('emailPlaceholder', { defaultValue: 'Enter your email' })}
             size="large"
             style={{ borderRadius: 4 }}
           />
@@ -389,14 +399,16 @@ const SignupPage = () => {
 
         <Form.Item
           name="password"
-          label={t('passwordLabel', {defaultValue: 'Password'})}
+          label={t('passwordLabel', { defaultValue: 'Password' })}
           rules={formRules.password}
           validateTrigger={['onBlur', 'onSubmit']}
         >
           <div>
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder={t('strongPasswordPlaceholder', {defaultValue: 'Enter a strong password'})}
+              placeholder={t('strongPasswordPlaceholder', {
+                defaultValue: 'Enter a strong password',
+              })}
               size="large"
               style={{ borderRadius: 4 }}
               value={passwordValue}
@@ -409,9 +421,13 @@ const SignupPage = () => {
                 if (!passwordValue) setPasswordActive(false);
               }}
             />
-            <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 0, display: 'block' }}>
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: 12, marginTop: 4, marginBottom: 0, display: 'block' }}
+            >
               {t('passwordGuideline', {
-                defaultValue: 'Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.'
+                defaultValue:
+                  'Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.',
               })}
             </Typography.Text>
             {passwordActive && (
@@ -420,14 +436,22 @@ const SignupPage = () => {
                   const passed = item.test(passwordValue);
                   // Only green if passed, otherwise neutral (never red)
                   let color = passed
-                    ? (themeMode === 'dark' ? '#52c41a' : '#389e0d')
-                    : (themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf');
+                    ? themeMode === 'dark'
+                      ? '#52c41a'
+                      : '#389e0d'
+                    : themeMode === 'dark'
+                      ? '#b0b3b8'
+                      : '#bfbfbf';
                   return (
                     <Flex key={item.key} align="center" gap={8} style={{ color, fontSize: 13 }}>
                       {passed ? (
-                        <CheckCircleTwoTone twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'} />
+                        <CheckCircleTwoTone
+                          twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'}
+                        />
                       ) : (
-                        <CloseCircleTwoTone twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'} />
+                        <CloseCircleTwoTone
+                          twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'}
+                        />
                       )}
                       <span>{item.label}</span>
                     </Flex>
@@ -491,7 +515,7 @@ const SignupPage = () => {
         <Form.Item>
           <Space>
             <Typography.Text style={{ fontSize: 14 }}>
-              {t('alreadyHaveAccountText', {defaultValue: 'Already have an account?'})}
+              {t('alreadyHaveAccountText', { defaultValue: 'Already have an account?' })}
             </Typography.Text>
 
             <Link

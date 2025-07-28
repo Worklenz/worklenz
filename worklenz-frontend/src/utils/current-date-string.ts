@@ -4,7 +4,7 @@ import { getLanguageFromLocalStorage } from './language-utils';
 export const currentDateString = (): string => {
   const date = dayjs();
   const localeString = getLanguageFromLocalStorage();
-  
+
   // Map language codes to dayjs locales
   let locale = 'en'; // Default to English
   switch (localeString) {

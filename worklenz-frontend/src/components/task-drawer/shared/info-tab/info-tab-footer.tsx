@@ -1,4 +1,13 @@
-import { Button, Flex, Form, Mentions, Space, Tooltip, Typography, message } from '@/shared/antd-imports';
+import {
+  Button,
+  Flex,
+  Form,
+  Mentions,
+  Space,
+  Tooltip,
+  Typography,
+  message,
+} from '@/shared/antd-imports';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@/shared/antd-imports';
@@ -6,9 +15,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { colors } from '@/styles/colors';
 import { themeWiseColor } from '@/utils/themeWiseColor';
-import {
-  IMentionMemberSelectOption,
-} from '@/types/project/projectComments.types';
+import { IMentionMemberSelectOption } from '@/types/project/projectComments.types';
 import { ITaskCommentsCreateRequest } from '@/types/tasks/task-comments.types';
 import { ITaskAttachment } from '@/types/tasks/task-attachment-view-model';
 import logger from '@/utils/errorLogger';
@@ -71,7 +78,7 @@ const InfoTabFooter = () => {
   const createdFromNow = useMemo(() => {
     const createdAt = taskFormViewModel?.task?.created_at;
     if (!createdAt) return 'N/A';
-    
+
     try {
       return fromNow(createdAt);
     } catch (error) {
@@ -79,11 +86,11 @@ const InfoTabFooter = () => {
       return 'N/A';
     }
   }, [taskFormViewModel?.task?.created_at]);
-  
+
   const updatedFromNow = useMemo(() => {
     const updatedAt = taskFormViewModel?.task?.updated_at;
     if (!updatedAt) return 'N/A';
-    
+
     try {
       return fromNow(updatedAt);
     } catch (error) {
@@ -183,12 +190,14 @@ const InfoTabFooter = () => {
         setIsCommentBoxExpand(false);
         setCommentValue('');
         setSelectedMembers([]);
-        
+
         // Dispatch event to notify that a comment was created
         // This will trigger the task comments component to refresh and update Redux
-        document.dispatchEvent(new CustomEvent('task-comment-create', { 
-          detail: { taskId: selectedTaskId } 
-        }));
+        document.dispatchEvent(
+          new CustomEvent('task-comment-create', {
+            detail: { taskId: selectedTaskId },
+          })
+        );
       }
     } catch (error) {
       logger.error('Failed to create comment:', error);
@@ -335,7 +344,7 @@ const InfoTabFooter = () => {
           {selectedFiles.length > 0 && (
             <Flex vertical gap={8} style={{ marginTop: 12 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>
-{t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT })}
+                {t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT })}
               </Typography.Title>
               <Flex
                 vertical
@@ -478,30 +487,18 @@ const InfoTabFooter = () => {
       )}
 
       <Flex align="center" justify="space-between" style={{ width: '100%', marginTop: 8 }}>
-        <Tooltip
-          title={
-            createdFromNow !== 'N/A'
-              ? `Created ${createdFromNow}`
-              : 'N/A'
-          }
-        >
+        <Tooltip title={createdFromNow !== 'N/A' ? `Created ${createdFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('taskInfoTab.comments.createdBy', { 
+            {t('taskInfoTab.comments.createdBy', {
               time: createdFromNow,
-              user: taskFormViewModel?.task?.reporter || ''
+              user: taskFormViewModel?.task?.reporter || '',
             })}
           </Typography.Text>
         </Tooltip>
-        <Tooltip
-          title={
-            updatedFromNow !== 'N/A'
-              ? `Updated ${updatedFromNow}`
-              : 'N/A'
-          }
-        >
+        <Tooltip title={updatedFromNow !== 'N/A' ? `Updated ${updatedFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('taskInfoTab.comments.updatedTime', { 
-              time: updatedFromNow
+            {t('taskInfoTab.comments.updatedTime', {
+              time: updatedFromNow,
             })}
           </Typography.Text>
         </Tooltip>

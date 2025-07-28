@@ -1,6 +1,14 @@
 import { useCallback, useState } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
-import { Col, Flex, Typography, List, Dropdown, MenuProps, Popconfirm } from '@/shared/antd-imports';
+import {
+  Col,
+  Flex,
+  Typography,
+  List,
+  Dropdown,
+  MenuProps,
+  Popconfirm,
+} from '@/shared/antd-imports';
 import {
   UserAddOutlined,
   DeleteOutlined,

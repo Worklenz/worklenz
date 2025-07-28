@@ -1,4 +1,13 @@
-import { Button, Flex, Input, Popconfirm, Progress, Table, Tag, Tooltip } from '@/shared/antd-imports';
+import {
+  Button,
+  Flex,
+  Input,
+  Popconfirm,
+  Progress,
+  Table,
+  Tag,
+  Tooltip,
+} from '@/shared/antd-imports';
 import { useState, useMemo, useEffect } from 'react';
 import { DeleteOutlined, EditOutlined, ExclamationCircleFilled } from '@/shared/antd-imports';
 import { nanoid } from '@reduxjs/toolkit';
@@ -126,7 +135,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
           mode: 'delete',
         })
       );
-      
+
       refreshSubTasks();
     } catch (error) {
       logger.error('Error deleting subtask:', error);

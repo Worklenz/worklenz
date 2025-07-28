@@ -15,7 +15,7 @@ interface OrganizationCalculationMethodProps {
 
 const OrganizationCalculationMethod: React.FC<OrganizationCalculationMethodProps> = ({
   organization,
-  refetch
+  refetch,
 }) => {
   const { t } = useTranslation('admin-center/overview');
   const [updating, setUpdating] = useState(false);
@@ -42,7 +42,7 @@ const OrganizationCalculationMethod: React.FC<OrganizationCalculationMethodProps
       await adminCenterApiService.updateOrganizationCalculationMethod(currentMethod);
 
       message.success(t('calculationMethodUpdated'));
-      
+
       setHasChanges(false);
       refetch();
     } catch (error) {
@@ -65,7 +65,7 @@ const OrganizationCalculationMethod: React.FC<OrganizationCalculationMethodProps
             <InfoCircleOutlined style={{ color: '#666' }} />
           </Tooltip>
         </Space>
-        
+
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
           <Space align="center" wrap>
             <Text strong>{t('calculationMethod')}:</Text>
@@ -117,4 +117,4 @@ const OrganizationCalculationMethod: React.FC<OrganizationCalculationMethodProps
   );
 };
 
-export default OrganizationCalculationMethod; 
+export default OrganizationCalculationMethod;

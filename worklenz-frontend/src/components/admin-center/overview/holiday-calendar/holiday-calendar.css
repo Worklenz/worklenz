@@ -17,6 +17,7 @@
   border: 1px solid #f0f0f0;
   border-radius: 6px;
   transition: all 0.3s;
+  cursor: pointer;
 }
 
 .holiday-calendar.dark .ant-picker-calendar-date {
@@ -62,6 +63,12 @@
   white-space: nowrap;
   border: none;
   font-weight: 500;
+  cursor: pointer;
+}
+
+.holiday-cell .ant-tag:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .holiday-calendar .ant-picker-calendar-date-today {
@@ -211,7 +218,10 @@
 /* Card styles */
 .holiday-calendar .ant-card {
   border-radius: 8px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 1px 2px 0 rgba(0, 0, 0, 0.03),
+    0 1px 6px -1px rgba(0, 0, 0, 0.02),
+    0 2px 4px 0 rgba(0, 0, 0, 0.02);
 }
 
 .holiday-calendar.dark .ant-card {
@@ -258,13 +268,13 @@
     height: 60px;
     padding: 2px 4px;
   }
-  
+
   .holiday-calendar .ant-picker-calendar-date-value {
     font-size: 11px;
   }
-  
+
   .holiday-cell .ant-tag {
     font-size: 9px;
     padding: 0 2px;
   }
-} 
+}

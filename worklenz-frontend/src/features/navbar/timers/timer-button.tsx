@@ -1,5 +1,15 @@
 import { ClockCircleOutlined, StopOutlined } from '@/shared/antd-imports';
-import { Badge, Button, Dropdown, List, Tooltip, Typography, Space, Divider, theme } from '@/shared/antd-imports';
+import {
+  Badge,
+  Button,
+  Dropdown,
+  List,
+  Tooltip,
+  Typography,
+  Space,
+  Divider,
+  theme,
+} from '@/shared/antd-imports';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { taskTimeLogsApiService, IRunningTimer } from '@/api/tasks/task-time-logs.api.service';

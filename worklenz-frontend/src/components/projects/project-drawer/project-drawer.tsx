@@ -137,7 +137,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     if (drawerVisible && projectId && project && !projectLoading) {
       console.log('Populating form with project data:', project);
       setEditMode(true);
-      
+
       try {
         form.setFieldsValue({
           ...project,
@@ -148,7 +148,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           use_weighted_progress: project.use_weighted_progress || false,
           use_time_progress: project.use_time_progress || false,
         });
-        
+
         setSelectedProjectManager(project.project_manager || null);
         setLoading(false);
         console.log('Form populated successfully with project data');
@@ -286,7 +286,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     (visible: boolean) => {
       console.log('Drawer visibility changed:', visible, 'Project ID:', projectId);
       setDrawerVisible(visible);
-      
+
       if (!visible) {
         resetForm();
       } else if (visible && !projectId) {

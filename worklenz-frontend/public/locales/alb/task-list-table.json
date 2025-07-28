@@ -87,7 +87,7 @@
     "peopleField": "Fusha e njerëzve",
     "noDate": "Asnjë datë",
     "unsupportedField": "Lloj fushe i pambështetur",
-    
+
     "modal": {
       "addFieldTitle": "Shto fushë",
       "editFieldTitle": "Redakto fushën",
@@ -108,7 +108,7 @@
       "createErrorMessage": "Dështoi në krijimin e kolonës së personalizuar",
       "updateErrorMessage": "Dështoi në përditësimin e kolonës së personalizuar"
     },
-    
+
     "fieldTypes": {
       "people": "Njerëz",
       "number": "Numër",

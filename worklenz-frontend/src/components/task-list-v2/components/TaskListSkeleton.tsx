@@ -27,7 +27,10 @@ const TaskListSkeleton: React.FC<TaskListSkeletonProps> = ({ visibleColumns }) =
 
   // Generate multiple skeleton rows
   const skeletonRows = Array.from({ length: 8 }, (_, index) => (
-    <div key={index} className="flex items-center min-w-max px-1 py-3 border-b border-gray-100 dark:border-gray-800">
+    <div
+      key={index}
+      className="flex items-center min-w-max px-1 py-3 border-b border-gray-100 dark:border-gray-800"
+    >
       {columns.map((column, colIndex) => {
         const columnStyle = {
           width: column.width,
@@ -61,7 +64,7 @@ const TaskListSkeleton: React.FC<TaskListSkeletonProps> = ({ visibleColumns }) =
   ));
 
   return (
-    <div>      
+    <div>
       <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
         {/* Table Container */}
         <div
@@ -73,106 +76,106 @@ const TaskListSkeleton: React.FC<TaskListSkeletonProps> = ({ visibleColumns }) =
             overflow: 'hidden',
           }}
         >
-        {/* Skeleton Content */}
-        <div
-          className="flex-1 bg-white dark:bg-gray-900 relative"
-          style={{
-            overflowX: 'auto',
-            overflowY: 'auto',
-            minHeight: 0,
-          }}
-        >
-          {/* Skeleton Column Headers */}
+          {/* Skeleton Content */}
           <div
-            className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
-            style={{ width: '100%', minWidth: 'max-content' }}
+            className="flex-1 bg-white dark:bg-gray-900 relative"
+            style={{
+              overflowX: 'auto',
+              overflowY: 'auto',
+              minHeight: 0,
+            }}
           >
+            {/* Skeleton Column Headers */}
             <div
-              className="flex items-center px-1 py-3 w-full"
-              style={{ minWidth: 'max-content', height: '44px' }}
+              className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+              style={{ width: '100%', minWidth: 'max-content' }}
             >
-              {columns.map((column, index) => {
-                const columnStyle = {
-                  width: column.width,
-                  flexShrink: 0,
-                };
-
-                return (
-                  <div
-                    key={`header-${column.id}`}
-                    className="border-r border-gray-200 dark:border-gray-700 flex items-center px-2"
-                    style={columnStyle}
-                  >
-                    {column.id === 'dragHandle' || column.id === 'checkbox' ? (
-                      <span></span>
-                    ) : (
-                      <Skeleton.Button size="small" active style={{ width: '60%' }} />
-                    )}
-                  </div>
-                );
-              })}
-              {/* Add Custom Column Button Skeleton */}
               <div
-                className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-                style={{ width: '50px', flexShrink: 0 }}
+                className="flex items-center px-1 py-3 w-full"
+                style={{ minWidth: 'max-content', height: '44px' }}
               >
-                <Skeleton.Button size="small" shape="circle" active />
+                {columns.map((column, index) => {
+                  const columnStyle = {
+                    width: column.width,
+                    flexShrink: 0,
+                  };
+
+                  return (
+                    <div
+                      key={`header-${column.id}`}
+                      className="border-r border-gray-200 dark:border-gray-700 flex items-center px-2"
+                      style={columnStyle}
+                    >
+                      {column.id === 'dragHandle' || column.id === 'checkbox' ? (
+                        <span></span>
+                      ) : (
+                        <Skeleton.Button size="small" active style={{ width: '60%' }} />
+                      )}
+                    </div>
+                  );
+                })}
+                {/* Add Custom Column Button Skeleton */}
+                <div
+                  className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+                  style={{ width: '50px', flexShrink: 0 }}
+                >
+                  <Skeleton.Button size="small" shape="circle" active />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Skeleton Group Headers and Rows */}
-          <div style={{ minWidth: 'max-content' }}>
-            {/* First Group */}
-            <div className="mt-2">
-              {/* Group Header Skeleton */}
-              <div className="flex items-center px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <Skeleton.Button size="small" shape="circle" active />
-                <div className="ml-3 flex-1">
-                  <Skeleton.Input size="small" active style={{ width: '150px' }} />
+            {/* Skeleton Group Headers and Rows */}
+            <div style={{ minWidth: 'max-content' }}>
+              {/* First Group */}
+              <div className="mt-2">
+                {/* Group Header Skeleton */}
+                <div className="flex items-center px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <Skeleton.Button size="small" shape="circle" active />
+                  <div className="ml-3 flex-1">
+                    <Skeleton.Input size="small" active style={{ width: '150px' }} />
+                  </div>
+                  <Skeleton.Button size="small" active style={{ width: '30px' }} />
                 </div>
-                <Skeleton.Button size="small" active style={{ width: '30px' }} />
-              </div>
-              
-              {/* Group Tasks Skeleton */}
-              {skeletonRows.slice(0, 3)}
-            </div>
 
-            {/* Second Group */}
-            <div className="mt-2">
-              {/* Group Header Skeleton */}
-              <div className="flex items-center px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <Skeleton.Button size="small" shape="circle" active />
-                <div className="ml-3 flex-1">
-                  <Skeleton.Input size="small" active style={{ width: '150px' }} />
-                </div>
-                <Skeleton.Button size="small" active style={{ width: '30px' }} />
+                {/* Group Tasks Skeleton */}
+                {skeletonRows.slice(0, 3)}
               </div>
-              
-              {/* Group Tasks Skeleton */}
-              {skeletonRows.slice(3, 6)}
-            </div>
 
-            {/* Third Group */}
-            <div className="mt-2">
-              {/* Group Header Skeleton */}
-              <div className="flex items-center px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <Skeleton.Button size="small" shape="circle" active />
-                <div className="ml-3 flex-1">
-                  <Skeleton.Input size="small" active style={{ width: '150px' }} />
+              {/* Second Group */}
+              <div className="mt-2">
+                {/* Group Header Skeleton */}
+                <div className="flex items-center px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <Skeleton.Button size="small" shape="circle" active />
+                  <div className="ml-3 flex-1">
+                    <Skeleton.Input size="small" active style={{ width: '150px' }} />
+                  </div>
+                  <Skeleton.Button size="small" active style={{ width: '30px' }} />
                 </div>
-                <Skeleton.Button size="small" active style={{ width: '30px' }} />
+
+                {/* Group Tasks Skeleton */}
+                {skeletonRows.slice(3, 6)}
               </div>
-              
-              {/* Group Tasks Skeleton */}
-              {skeletonRows.slice(6, 8)}
+
+              {/* Third Group */}
+              <div className="mt-2">
+                {/* Group Header Skeleton */}
+                <div className="flex items-center px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <Skeleton.Button size="small" shape="circle" active />
+                  <div className="ml-3 flex-1">
+                    <Skeleton.Input size="small" active style={{ width: '150px' }} />
+                  </div>
+                  <Skeleton.Button size="small" active style={{ width: '30px' }} />
+                </div>
+
+                {/* Group Tasks Skeleton */}
+                {skeletonRows.slice(6, 8)}
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    </div>
   );
 };
 
-export default TaskListSkeleton; 
+export default TaskListSkeleton;

@@ -74,10 +74,12 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
       if (res.done && res.body.id) {
         toggleTemplateSelector(false);
         trackMixpanelEvent(evt_account_setup_template_complete);
-        
+
         // Refresh user session to update setup_completed status
         try {
-          const authResponse = await dispatch(verifyAuthentication()).unwrap() as IAuthorizeResponse;
+          const authResponse = (await dispatch(
+            verifyAuthentication()
+          ).unwrap()) as IAuthorizeResponse;
           if (authResponse?.authenticated && authResponse?.user) {
             setSession(authResponse.user);
             dispatch(setUser(authResponse.user));
@@ -85,7 +87,7 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
         } catch (error) {
           logger.error('Failed to refresh user session after template setup completion', error);
         }
-        
+
         navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {

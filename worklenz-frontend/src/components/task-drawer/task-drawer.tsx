@@ -60,10 +60,12 @@ const TaskDrawer = () => {
     if (taskFormViewModel?.task?.parent_task_id && projectId) {
       // Navigate to parent task
       dispatch(setSelectedTaskId(taskFormViewModel.task.parent_task_id));
-      dispatch(fetchTask({ 
-        taskId: taskFormViewModel.task.parent_task_id, 
-        projectId 
-      }));
+      dispatch(
+        fetchTask({
+          taskId: taskFormViewModel.task.parent_task_id,
+          projectId,
+        })
+      );
     }
   };
 
@@ -217,7 +219,8 @@ const TaskDrawer = () => {
   };
 
   // Check if current task is a sub-task
-  const isSubTask = taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
+  const isSubTask =
+    taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
 
   // Custom close icon based on whether it's a sub-task
   const getCloseIcon = () => {

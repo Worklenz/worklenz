@@ -5,8 +5,8 @@ import React from 'react';
 
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
-  window.location.hostname === '[::1]' ||
-  window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
+    window.location.hostname === '[::1]' ||
+    window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
 );
 
 type Config = {
@@ -30,7 +30,7 @@ export function registerSW(config?: Config) {
       navigator.serviceWorker.ready.then(() => {
         console.log(
           'This web app is being served cache-first by a service ' +
-          'worker. To learn more, visit https://bit.ly/CRA-PWA'
+            'worker. To learn more, visit https://bit.ly/CRA-PWA'
         );
       });
     } else {
@@ -62,7 +62,7 @@ function registerValidSW(swUrl: string, config?: Config) {
               // content until all client tabs are closed.
               console.log(
                 'New content is available and will be used when all ' +
-                'tabs for this page are closed. See https://bit.ly/CRA-PWA.'
+                  'tabs for this page are closed. See https://bit.ly/CRA-PWA.'
               );
 
               // Execute callback
@@ -120,9 +120,7 @@ function checkValidServiceWorker(swUrl: string, config?: Config) {
       }
     })
     .catch(() => {
-      console.log(
-        'No internet connection found. App is running in offline mode.'
-      );
+      console.log('No internet connection found. App is running in offline mode.');
     });
 }
 
@@ -155,8 +153,8 @@ export class ServiceWorkerManager {
 
     return new Promise((resolve, reject) => {
       const messageChannel = new MessageChannel();
-      
-      messageChannel.port1.onmessage = (event) => {
+
+      messageChannel.port1.onmessage = event => {
         if (event.data.error) {
           reject(event.data.error);
         } else {
@@ -164,10 +162,7 @@ export class ServiceWorkerManager {
         }
       };
 
-      this.registration!.active!.postMessage(
-        { type, payload },
-        [messageChannel.port2]
-      );
+      this.registration!.active!.postMessage({ type, payload }, [messageChannel.port2]);
 
       // Timeout after 5 seconds
       setTimeout(() => {
@@ -244,17 +239,17 @@ export function useServiceWorker() {
 
     // Register service worker
     registerSW({
-      onSuccess: (registration) => {
+      onSuccess: registration => {
         setSWManager(new ServiceWorkerManager(registration));
       },
-      onUpdate: (registration) => {
+      onUpdate: registration => {
         // You could show a toast here asking user to refresh
         console.log('New version available');
         setSWManager(new ServiceWorkerManager(registration));
       },
       onOfflineReady: () => {
         console.log('App ready for offline use');
-      }
+      },
     });
 
     return () => {
@@ -270,4 +265,4 @@ export function useServiceWorker() {
     forceUpdate: () => swManager?.forceUpdate(),
     getVersion: () => swManager?.getVersion(),
   };
-} 
+}

@@ -187,7 +187,7 @@ export {
   CalculatorOutlined,
   DollarOutlined,
   DollarCircleOutlined,
-  DatabaseOutlined
+  DatabaseOutlined,
 } from '@ant-design/icons';
 
 // Re-export all components with React
@@ -269,7 +269,7 @@ export type {
   PaginationProps,
   CollapseProps,
   TablePaginationConfig,
-  CheckboxChangeEvent
+  CheckboxChangeEvent,
 } from 'antd/es';
 
 // Dayjs

@@ -1,4 +1,12 @@
-import { Badge, Collapse, Flex, Table, TableColumnsType, Tag, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  Collapse,
+  Flex,
+  Table,
+  TableColumnsType,
+  Tag,
+  Typography,
+} from '@/shared/antd-imports';
 import { useEffect } from 'react';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import { colors } from '@/styles/colors';

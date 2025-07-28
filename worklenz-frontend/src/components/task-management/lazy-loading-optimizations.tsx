@@ -100,8 +100,13 @@ export const LazyTaskRowWithSubtasks = createOptimizedLazy(
 );
 
 export const LazyCustomColumnModal = createOptimizedLazy(
-  () => import('@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal'),
-  <div className="p-4"><Skeleton active /></div>
+  () =>
+    import(
+      '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal'
+    ),
+  <div className="p-4">
+    <Skeleton active />
+  </div>
 );
 
 export const LazyLabelsSelector = createOptimizedLazy(
@@ -141,17 +146,13 @@ export const ProgressiveEnhancement: React.FC<ProgressiveEnhancementProps> = ({
   condition,
   children,
   fallback,
-  loadingComponent = <Skeleton active />
+  loadingComponent = <Skeleton active />,
 }) => {
   if (!condition) {
     return <>{fallback || loadingComponent}</>;
   }
 
-  return (
-    <Suspense fallback={loadingComponent}>
-      {children}
-    </Suspense>
-  );
+  return <Suspense fallback={loadingComponent}>{children}</Suspense>;
 };
 
 // Intersection observer based lazy loading for components
@@ -168,7 +169,7 @@ export const IntersectionLazyLoad: React.FC<IntersectionLazyLoadProps> = ({
   fallback = <Skeleton active />,
   rootMargin = '100px',
   threshold = 0.1,
-  once = true
+  once = true,
 }) => {
   const [isVisible, setIsVisible] = React.useState(false);
   const [hasBeenVisible, setHasBeenVisible] = React.useState(false);
@@ -204,13 +205,7 @@ export const IntersectionLazyLoad: React.FC<IntersectionLazyLoadProps> = ({
 
   return (
     <div ref={ref}>
-      {shouldRender ? (
-        <Suspense fallback={fallback}>
-          {children}
-        </Suspense>
-      ) : (
-        fallback
-      )}
+      {shouldRender ? <Suspense fallback={fallback}>{children}</Suspense> : fallback}
     </div>
   );
 };
@@ -221,7 +216,7 @@ export const createRouteComponent = <T extends ComponentType<any>>(
   pageTitle?: string
 ) => {
   const LazyComponent = createOptimizedLazy(importFunc);
-  
+
   return React.memo(() => {
     React.useEffect(() => {
       if (pageTitle) {
@@ -229,17 +224,17 @@ export const createRouteComponent = <T extends ComponentType<any>>(
       }
     }, []);
 
-         return (
-       <Suspense 
-         fallback={
-           <div className="min-h-screen flex items-center justify-center">
-             <Spin size="large" tip={`Loading ${pageTitle || 'page'}...`} />
-           </div>
-         }
-       >
-         <LazyComponent {...({} as any)} />
-       </Suspense>
-     );
+    return (
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <Spin size="large" tip={`Loading ${pageTitle || 'page'}...`} />
+          </div>
+        }
+      >
+        <LazyComponent {...({} as any)} />
+      </Suspense>
+    );
   });
 };
 
@@ -365,7 +360,7 @@ export const LazyLoadingExamples = {
   // Progressive enhancement
   ProgressiveExample: () => (
     <ProgressiveEnhancement condition={true}>
-      <LazyTaskRow 
+      <LazyTaskRow
         task={{ id: '1', status: 'todo', priority: 'medium', created_at: '', updated_at: '' }}
         projectId="123"
         groupId="group1"
@@ -388,7 +383,7 @@ export const LazyLoadingExamples = {
   ErrorBoundaryExample: () => (
     <LazyErrorBoundary>
       <Suspense fallback={<Skeleton active />}>
-        <LazyTaskRow 
+        <LazyTaskRow
           task={{ id: '1', status: 'todo', priority: 'medium', created_at: '', updated_at: '' }}
           projectId="123"
           groupId="group1"
@@ -400,4 +395,4 @@ export const LazyLoadingExamples = {
       </Suspense>
     </LazyErrorBoundary>
   ),
-}; 
+};

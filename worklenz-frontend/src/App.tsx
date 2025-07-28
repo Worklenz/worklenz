@@ -22,7 +22,11 @@ import logger from './utils/errorLogger';
 import { SuspenseFallback } from './components/suspense-fallback/suspense-fallback';
 
 // Performance optimizations
-import { CSSPerformanceMonitor, LayoutStabilizer, CriticalCSSManager } from './utils/css-optimizations';
+import {
+  CSSPerformanceMonitor,
+  LayoutStabilizer,
+  CriticalCSSManager,
+} from './utils/css-optimizations';
 
 // Service Worker
 import { registerSW } from './utils/serviceWorkerRegistration';
@@ -89,11 +93,11 @@ const App: React.FC = memo(() => {
       try {
         // Initialize CSRF token immediately as it's needed for API calls
         await initializeCsrfToken();
-        
+
         // Start CSS performance monitoring
         CSSPerformanceMonitor.monitorLayoutShifts();
         CSSPerformanceMonitor.monitorRenderBlocking();
-        
+
         // Preload critical fonts to prevent layout shifts
         LayoutStabilizer.preloadFonts([
           { family: 'Inter', weight: '400' },
@@ -119,7 +123,7 @@ const App: React.FC = memo(() => {
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const error = event.reason;
-      
+
       // Check if this is a module loading error
       if (
         error?.message?.includes('Failed to fetch dynamically imported module') ||
@@ -128,7 +132,7 @@ const App: React.FC = memo(() => {
       ) {
         console.error('Unhandled module loading error:', error);
         event.preventDefault(); // Prevent default browser error handling
-        
+
         // Clear caches and reload
         CacheCleanup.clearAllCaches()
           .then(() => CacheCleanup.forceReload('/auth/login'))
@@ -138,7 +142,7 @@ const App: React.FC = memo(() => {
 
     const handleError = (event: ErrorEvent) => {
       const error = event.error;
-      
+
       // Check if this is a module loading error
       if (
         error?.message?.includes('Failed to fetch dynamically imported module') ||
@@ -147,7 +151,7 @@ const App: React.FC = memo(() => {
       ) {
         console.error('Global module loading error:', error);
         event.preventDefault(); // Prevent default browser error handling
-        
+
         // Clear caches and reload
         CacheCleanup.clearAllCaches()
           .then(() => CacheCleanup.forceReload('/auth/login'))
@@ -168,19 +172,21 @@ const App: React.FC = memo(() => {
   // Register service worker
   useEffect(() => {
     registerSW({
-      onSuccess: (registration) => {
+      onSuccess: registration => {
         console.log('Service Worker registered successfully', registration);
       },
-      onUpdate: (registration) => {
-        console.log('New content is available and will be used when all tabs for this page are closed.');
+      onUpdate: registration => {
+        console.log(
+          'New content is available and will be used when all tabs for this page are closed.'
+        );
         // You could show a toast notification here for user to refresh
       },
       onOfflineReady: () => {
         console.log('This web app has been cached for offline use.');
       },
-      onError: (error) => {
+      onError: error => {
         logger.error('Service Worker registration failed:', error);
-      }
+      },
     });
   }, []);
 

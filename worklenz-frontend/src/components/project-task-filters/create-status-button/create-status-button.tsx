@@ -19,11 +19,7 @@ const CreateStatusButton = () => {
         className="borderless-icon-btn"
         style={{ backgroundColor: colors.transparent, boxShadow: 'none' }}
         onClick={() => dispatch(toggleDrawer())}
-        icon={
-          <SettingOutlined
-            style={{ color: themeMode === 'dark' ? colors.white : 'black' }}
-          />
-        }
+        icon={<SettingOutlined style={{ color: themeMode === 'dark' ? colors.white : 'black' }} />}
       />
     </Tooltip>
   );

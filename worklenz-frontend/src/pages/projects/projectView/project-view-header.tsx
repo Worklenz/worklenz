@@ -184,19 +184,19 @@ const ProjectViewHeader = memo(() => {
   const handleSettingsClick = useCallback(() => {
     if (selectedProject?.id) {
       console.log('Opening project drawer from project view for project:', selectedProject.id);
-      
+
       // Set project ID first
       dispatch(setProjectId(selectedProject.id));
-      
+
       // Then fetch project data
       dispatch(fetchProjectData(selectedProject.id))
         .unwrap()
-        .then((projectData) => {
+        .then(projectData => {
           console.log('Project data fetched successfully from project view:', projectData);
           // Open drawer after data is fetched
           dispatch(toggleProjectDrawer());
         })
-        .catch((error) => {
+        .catch(error => {
           console.error('Failed to fetch project data from project view:', error);
           // Still open drawer even if fetch fails, so user can see error state
           dispatch(toggleProjectDrawer());
@@ -270,7 +270,11 @@ const ProjectViewHeader = memo(() => {
       {
         key: 'import',
         label: (
-          <div style={{ width: '100%', margin: 0, padding: 0 }} onClick={handleImportTaskTemplate} title={t('importTaskTooltip')}>
+          <div
+            style={{ width: '100%', margin: 0, padding: 0 }}
+            onClick={handleImportTaskTemplate}
+            title={t('importTaskTooltip')}
+          >
             <ImportOutlined /> {t('importTask')}
           </div>
         ),
@@ -287,7 +291,10 @@ const ProjectViewHeader = memo(() => {
 
     if (selectedProject.category_id) {
       elements.push(
-        <Tooltip key="category-tooltip" title={`${t('projectCategoryTooltip')}: ${selectedProject.category_name}`}>
+        <Tooltip
+          key="category-tooltip"
+          title={`${t('projectCategoryTooltip')}: ${selectedProject.category_name}`}
+        >
           <Tag
             key="category"
             color={colors.vibrantOrange}
@@ -381,7 +388,10 @@ const ProjectViewHeader = memo(() => {
 
     // Subscribe button
     actions.push(
-      <Tooltip key="subscribe" title={selectedProject?.subscribed ? t('unsubscribeTooltip') : t('subscribeTooltip')}>
+      <Tooltip
+        key="subscribe"
+        title={selectedProject?.subscribed ? t('unsubscribeTooltip') : t('subscribeTooltip')}
+      >
         <Button
           shape="round"
           loading={subscriptionLoading}
@@ -464,7 +474,10 @@ const ProjectViewHeader = memo(() => {
     () => (
       <Flex gap={4} align="center">
         <Tooltip title={t('navigateBackTooltip')}>
-          <ArrowLeftOutlined style={{ fontSize: 16, cursor: 'pointer' }} onClick={handleNavigateToProjects} />
+          <ArrowLeftOutlined
+            style={{ fontSize: 16, cursor: 'pointer' }}
+            onClick={handleNavigateToProjects}
+          />
         </Tooltip>
         <Typography.Title level={4} style={{ marginBlockEnd: 0, marginInlineStart: 8 }}>
           {selectedProject?.name}

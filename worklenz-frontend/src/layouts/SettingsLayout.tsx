@@ -11,8 +11,6 @@ const SettingsLayout = () => {
   const currentSession = getCurrentSession();
   const navigate = useNavigate();
 
-  
-
   return (
     <div style={{ marginBlock: 96, minHeight: '90vh' }}>
       <Typography.Title level={4}>Settings</Typography.Title>

@@ -4,19 +4,19 @@
 export const PERFORMANCE_CONFIG = {
   // Measurement thresholds
   THRESHOLDS: {
-    FCP: 1800,        // First Contentful Paint (ms)
-    LCP: 2500,        // Largest Contentful Paint (ms)
-    FID: 100,         // First Input Delay (ms)
-    CLS: 0.1,         // Cumulative Layout Shift
-    TTFB: 600,        // Time to First Byte (ms)
-    INP: 200,         // Interaction to Next Paint (ms)
+    FCP: 1800, // First Contentful Paint (ms)
+    LCP: 2500, // Largest Contentful Paint (ms)
+    FID: 100, // First Input Delay (ms)
+    CLS: 0.1, // Cumulative Layout Shift
+    TTFB: 600, // Time to First Byte (ms)
+    INP: 200, // Interaction to Next Paint (ms)
   },
 
   // Monitoring intervals
   INTERVALS: {
-    METRICS_COLLECTION: 5000,     // 5 seconds
-    PERFORMANCE_REPORT: 30000,    // 30 seconds
-    CLEANUP_THRESHOLD: 300000,    // 5 minutes
+    METRICS_COLLECTION: 5000, // 5 seconds
+    PERFORMANCE_REPORT: 30000, // 30 seconds
+    CLEANUP_THRESHOLD: 300000, // 5 minutes
   },
 
   // Buffer sizes
@@ -41,7 +41,7 @@ export interface PerformanceMetrics {
   domContentLoaded?: number;
   windowLoad?: number;
   firstByte?: number;
-  
+
   // Application-specific metrics
   taskLoadTime?: number;
   projectSwitchTime?: number;
@@ -54,7 +54,7 @@ export interface PerformanceMetrics {
     totalJSHeapSize: number;
     jsHeapSizeLimit: number;
   };
-  
+
   // Timing information
   timestamp: number;
   url: string;
@@ -80,12 +80,12 @@ export class EnhancedPerformanceMonitor {
   // Start comprehensive performance monitoring
   startMonitoring(): void {
     if (this.isMonitoring) return;
-    
+
     this.isMonitoring = true;
     this.setupObservers();
     this.collectInitialMetrics();
     this.startPeriodicCollection();
-    
+
     console.log('🚀 Enhanced performance monitoring started');
   }
 
@@ -96,7 +96,7 @@ export class EnhancedPerformanceMonitor {
     this.isMonitoring = false;
     this.cleanupObservers();
     this.clearIntervals();
-    
+
     console.log('🛑 Enhanced performance monitoring stopped');
   }
 
@@ -106,25 +106,25 @@ export class EnhancedPerformanceMonitor {
 
     // Core Web Vitals observer
     try {
-      const vitalsObserver = new PerformanceObserver((list) => {
+      const vitalsObserver = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           this.processVitalMetric(entry);
         }
       });
-      
-      vitalsObserver.observe({ 
-        type: 'largest-contentful-paint', 
-        buffered: true 
+
+      vitalsObserver.observe({
+        type: 'largest-contentful-paint',
+        buffered: true,
       });
-      
-      vitalsObserver.observe({ 
-        type: 'first-input', 
-        buffered: true 
+
+      vitalsObserver.observe({
+        type: 'first-input',
+        buffered: true,
       });
-      
-      vitalsObserver.observe({ 
-        type: 'layout-shift', 
-        buffered: true 
+
+      vitalsObserver.observe({
+        type: 'layout-shift',
+        buffered: true,
       });
 
       this.observers.push(vitalsObserver);
@@ -134,15 +134,15 @@ export class EnhancedPerformanceMonitor {
 
     // Navigation timing observer
     try {
-      const navigationObserver = new PerformanceObserver((list) => {
+      const navigationObserver = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           this.processNavigationMetric(entry as PerformanceNavigationTiming);
         }
       });
-      
-      navigationObserver.observe({ 
-        type: 'navigation', 
-        buffered: true 
+
+      navigationObserver.observe({
+        type: 'navigation',
+        buffered: true,
       });
 
       this.observers.push(navigationObserver);
@@ -152,15 +152,15 @@ export class EnhancedPerformanceMonitor {
 
     // Resource timing observer
     try {
-      const resourceObserver = new PerformanceObserver((list) => {
+      const resourceObserver = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           this.processResourceMetric(entry as PerformanceResourceTiming);
         }
       });
-      
-      resourceObserver.observe({ 
-        type: 'resource', 
-        buffered: true 
+
+      resourceObserver.observe({
+        type: 'resource',
+        buffered: true,
       });
 
       this.observers.push(resourceObserver);
@@ -170,15 +170,15 @@ export class EnhancedPerformanceMonitor {
 
     // Measure observer
     try {
-      const measureObserver = new PerformanceObserver((list) => {
+      const measureObserver = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           this.processCustomMeasure(entry as PerformanceMeasure);
         }
       });
-      
-      measureObserver.observe({ 
-        type: 'measure', 
-        buffered: true 
+
+      measureObserver.observe({
+        type: 'measure',
+        buffered: true,
       });
 
       this.observers.push(measureObserver);
@@ -232,8 +232,9 @@ export class EnhancedPerformanceMonitor {
   private processResourceMetric(entry: PerformanceResourceTiming): void {
     // Track slow resources
     const duration = entry.responseEnd - entry.requestStart;
-    
-    if (duration > 1000) { // Resources taking more than 1 second
+
+    if (duration > 1000) {
+      // Resources taking more than 1 second
       console.warn(`Slow resource detected: ${entry.name} (${duration.toFixed(2)}ms)`);
     }
 
@@ -274,7 +275,8 @@ export class EnhancedPerformanceMonitor {
 
   // Get First Contentful Paint
   private getFCP(): number | undefined {
-    const fcpEntry = performance.getEntriesByType('paint')
+    const fcpEntry = performance
+      .getEntriesByType('paint')
       .find(entry => entry.name === 'first-contentful-paint');
     return fcpEntry?.startTime;
   }
@@ -356,7 +358,7 @@ export class EnhancedPerformanceMonitor {
 
     const recent = this.metrics.slice(-10); // Last 10 metrics
     const report = this.analyzeMetrics(recent);
-    
+
     console.log('📊 Performance Report:', report);
 
     // Check for performance issues
@@ -366,7 +368,7 @@ export class EnhancedPerformanceMonitor {
   // Analyze metrics and generate insights
   private analyzeMetrics(metrics: PerformanceMetrics[]): any {
     const validMetrics = metrics.filter(m => m);
-    
+
     if (validMetrics.length === 0) return {};
 
     const report: any = {
@@ -376,10 +378,8 @@ export class EnhancedPerformanceMonitor {
 
     // Analyze each metric
     ['fcp', 'lcp', 'fid', 'cls', 'ttfb', 'taskLoadTime', 'projectSwitchTime'].forEach(metric => {
-      const values = validMetrics
-        .map(m => (m as any)[metric])
-        .filter(v => v !== undefined);
-        
+      const values = validMetrics.map(m => (m as any)[metric]).filter(v => v !== undefined);
+
       if (values.length > 0) {
         report[metric] = {
           avg: values.reduce((a, b) => a + b, 0) / values.length,
@@ -391,10 +391,8 @@ export class EnhancedPerformanceMonitor {
     });
 
     // Memory analysis
-    const memoryMetrics = validMetrics
-      .map(m => m.memoryUsage)
-      .filter(m => m !== undefined);
-      
+    const memoryMetrics = validMetrics.map(m => m.memoryUsage).filter(m => m !== undefined);
+
     if (memoryMetrics.length > 0) {
       const latest = memoryMetrics[memoryMetrics.length - 1];
       report.memory = {
@@ -413,19 +411,27 @@ export class EnhancedPerformanceMonitor {
 
     // Check Core Web Vitals
     if (report.fcp?.latest > PERFORMANCE_CONFIG.THRESHOLDS.FCP) {
-      issues.push(`FCP is slow: ${report.fcp.latest.toFixed(2)}ms (threshold: ${PERFORMANCE_CONFIG.THRESHOLDS.FCP}ms)`);
+      issues.push(
+        `FCP is slow: ${report.fcp.latest.toFixed(2)}ms (threshold: ${PERFORMANCE_CONFIG.THRESHOLDS.FCP}ms)`
+      );
     }
 
     if (report.lcp?.latest > PERFORMANCE_CONFIG.THRESHOLDS.LCP) {
-      issues.push(`LCP is slow: ${report.lcp.latest.toFixed(2)}ms (threshold: ${PERFORMANCE_CONFIG.THRESHOLDS.LCP}ms)`);
+      issues.push(
+        `LCP is slow: ${report.lcp.latest.toFixed(2)}ms (threshold: ${PERFORMANCE_CONFIG.THRESHOLDS.LCP}ms)`
+      );
     }
 
     if (report.fid?.latest > PERFORMANCE_CONFIG.THRESHOLDS.FID) {
-      issues.push(`FID is high: ${report.fid.latest.toFixed(2)}ms (threshold: ${PERFORMANCE_CONFIG.THRESHOLDS.FID}ms)`);
+      issues.push(
+        `FID is high: ${report.fid.latest.toFixed(2)}ms (threshold: ${PERFORMANCE_CONFIG.THRESHOLDS.FID}ms)`
+      );
     }
 
     if (report.cls?.latest > PERFORMANCE_CONFIG.THRESHOLDS.CLS) {
-      issues.push(`CLS is high: ${report.cls.latest.toFixed(3)} (threshold: ${PERFORMANCE_CONFIG.THRESHOLDS.CLS})`);
+      issues.push(
+        `CLS is high: ${report.cls.latest.toFixed(3)} (threshold: ${PERFORMANCE_CONFIG.THRESHOLDS.CLS})`
+      );
     }
 
     // Check application-specific metrics
@@ -479,11 +485,15 @@ export class EnhancedPerformanceMonitor {
 
   // Export metrics for analysis
   exportMetrics(): string {
-    return JSON.stringify({
-      timestamp: Date.now(),
-      metrics: this.metrics,
-      summary: this.getPerformanceSummary(),
-    }, null, 2);
+    return JSON.stringify(
+      {
+        timestamp: Date.now(),
+        metrics: this.metrics,
+        summary: this.getPerformanceSummary(),
+      },
+      null,
+      2
+    );
   }
 }
 
@@ -503,10 +513,10 @@ export class CustomPerformanceMeasurer {
   static measure(name: string): number {
     const startTime = this.marks.get(name);
     const endTime = Date.now();
-    
+
     if (startTime) {
       const duration = endTime - startTime;
-      
+
       if ('performance' in window && 'measure' in performance) {
         try {
           performance.measure(name, `${name}-start`);
@@ -514,11 +524,11 @@ export class CustomPerformanceMeasurer {
           console.warn(`Failed to create performance measure for ${name}:`, error);
         }
       }
-      
+
       this.marks.delete(name);
       return duration;
     }
-    
+
     return 0;
   }
 
@@ -537,7 +547,7 @@ export class CustomPerformanceMeasurer {
 
   // Measure function execution
   static measureFunction<T extends any[], R>(
-    name: string, 
+    name: string,
     fn: (...args: T) => R
   ): (...args: T) => R {
     return (...args: T): R => {
@@ -560,7 +570,7 @@ export class PerformanceOptimizer {
   static analyzeAndRecommend(metrics: PerformanceMetrics[]): string[] {
     const recommendations: string[] = [];
     const latest = metrics[metrics.length - 1];
-    
+
     if (!latest) return recommendations;
 
     // FCP recommendations
@@ -579,8 +589,9 @@ export class PerformanceOptimizer {
 
     // Memory recommendations
     if (latest.memoryUsage) {
-      const usagePercent = (latest.memoryUsage.usedJSHeapSize / latest.memoryUsage.totalJSHeapSize) * 100;
-      
+      const usagePercent =
+        (latest.memoryUsage.usedJSHeapSize / latest.memoryUsage.totalJSHeapSize) * 100;
+
       if (usagePercent > 80) {
         recommendations.push(
           'High memory usage detected: implement cleanup routines, check for memory leaks, optimize data structures'
@@ -599,11 +610,17 @@ export class PerformanceOptimizer {
   }
 
   // Get optimization priority
-  static getOptimizationPriority(metrics: PerformanceMetrics[]): Array<{metric: string, priority: 'high' | 'medium' | 'low', value: number}> {
+  static getOptimizationPriority(
+    metrics: PerformanceMetrics[]
+  ): Array<{ metric: string; priority: 'high' | 'medium' | 'low'; value: number }> {
     const latest = metrics[metrics.length - 1];
     if (!latest) return [];
 
-    const priorities: Array<{metric: string, priority: 'high' | 'medium' | 'low', value: number}> = [];
+    const priorities: Array<{
+      metric: string;
+      priority: 'high' | 'medium' | 'low';
+      value: number;
+    }> = [];
 
     // Check each metric against thresholds
     if (latest.fcp) {
@@ -662,7 +679,7 @@ export const initializePerformanceMonitoring = (): void => {
   };
 
   window.addEventListener('beforeunload', cleanup);
-  
+
   // Also cleanup on page visibility change (tab switching)
   window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
@@ -677,4 +694,4 @@ export const performanceUtils = {
   measurer: CustomPerformanceMeasurer,
   optimizer: PerformanceOptimizer,
   initialize: initializePerformanceMonitoring,
-}; 
+};

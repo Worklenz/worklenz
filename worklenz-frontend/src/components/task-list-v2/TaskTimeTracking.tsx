@@ -26,4 +26,4 @@ const TaskTimeTracking: React.FC<TaskTimeTrackingProps> = React.memo(({ taskId, 
 
 TaskTimeTracking.displayName = 'TaskTimeTracking';
 
-export default TaskTimeTracking; 
+export default TaskTimeTracking;

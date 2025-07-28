@@ -11,22 +11,22 @@ i18n
     fallbackLng: 'en',
     defaultNS: 'common',
     ns: ['common', 'home'], // Preload home namespace
-    
+
     interpolation: {
       escapeValue: false,
     },
-    
+
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
     },
-    
+
     debug: process.env.NODE_ENV === 'development',
-    
+
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
     },
-    
+
     react: {
       useSuspense: false,
     },

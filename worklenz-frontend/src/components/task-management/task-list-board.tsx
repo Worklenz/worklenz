@@ -26,9 +26,7 @@ import {
   selectTaskGroupsV3,
   fetchSubTasks,
 } from '@/features/task-management/task-management.slice';
-import {
-  selectCurrentGrouping,
-} from '@/features/task-management/grouping.slice';
+import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import {
   selectSelectedTaskIds,
   clearSelection,
@@ -244,7 +242,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
       // Measure task loading performance
       CustomPerformanceMeasurer.mark('task-load-time');
-      
+
       // Fetch real tasks from V3 API (minimal processing needed)
       dispatch(fetchTasksV3(projectId)).finally(() => {
         CustomPerformanceMeasurer.measure('task-load-time');
@@ -270,7 +268,9 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const taskId = active.id as string;
 
       // Find the task and its group
-      const activeTask = Array.isArray(tasks) ? tasks.find((t: Task) => t.id === taskId) || null : null;
+      const activeTask = Array.isArray(tasks)
+        ? tasks.find((t: Task) => t.id === taskId) || null
+        : null;
       let activeGroupId: string | null = null;
 
       if (activeTask) {
@@ -302,7 +302,9 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const overId = over.id as string;
 
       // Check if we're hovering over a task or a group container
-      const targetTask = Array.isArray(tasks) ? tasks.find((t: Task) => t.id === overId) : undefined;
+      const targetTask = Array.isArray(tasks)
+        ? tasks.find((t: Task) => t.id === overId)
+        : undefined;
       let targetGroupId = overId;
 
       if (targetTask) {
@@ -352,7 +354,9 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       let targetIndex = -1;
 
       // Check if dropping on a task or a group
-      const targetTask = Array.isArray(tasks) ? tasks.find((t: Task) => t.id === overId) : undefined;
+      const targetTask = Array.isArray(tasks)
+        ? tasks.find((t: Task) => t.id === overId)
+        : undefined;
       if (targetTask) {
         // Dropping on a task, find which group contains this task
         for (const group of taskGroups) {
@@ -435,40 +439,42 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
       const newSelectedIds = Array.from(currentSelectedIds);
 
       // Map selected tasks to the required format
-      const newSelectedTasks = Array.isArray(tasks) ? tasks
-        .filter((t: Task) => newSelectedIds.includes(t.id))
-        .map(
-          (task: Task): IProjectTask => ({
-            id: task.id,
-            name: task.title,
-            task_key: task.task_key,
-            status: task.status,
-            status_id: task.status,
-            priority: task.priority,
-            phase_id: task.phase,
-            phase_name: task.phase,
-            description: task.description,
-            start_date: task.startDate,
-            end_date: task.dueDate,
-            total_hours: task.timeTracking?.estimated || 0,
-            total_minutes: task.timeTracking?.logged || 0,
-            progress: task.progress,
-            sub_tasks_count: task.sub_tasks_count || 0,
-            assignees: task.assignees?.map((assigneeId: string) => ({
-              id: assigneeId,
-              name: '',
-              email: '',
-              avatar_url: '',
-              team_member_id: assigneeId,
-              project_member_id: assigneeId,
-            })),
-            labels: task.labels,
-            manual_progress: false,
-            created_at: (task as any).createdAt || (task as any).created_at,
-            updated_at: (task as any).updatedAt || (task as any).updated_at,
-            sort_order: task.order,
-          })
-        ) : [];
+      const newSelectedTasks = Array.isArray(tasks)
+        ? tasks
+            .filter((t: Task) => newSelectedIds.includes(t.id))
+            .map(
+              (task: Task): IProjectTask => ({
+                id: task.id,
+                name: task.title,
+                task_key: task.task_key,
+                status: task.status,
+                status_id: task.status,
+                priority: task.priority,
+                phase_id: task.phase,
+                phase_name: task.phase,
+                description: task.description,
+                start_date: task.startDate,
+                end_date: task.dueDate,
+                total_hours: task.timeTracking?.estimated || 0,
+                total_minutes: task.timeTracking?.logged || 0,
+                progress: task.progress,
+                sub_tasks_count: task.sub_tasks_count || 0,
+                assignees: task.assignees?.map((assigneeId: string) => ({
+                  id: assigneeId,
+                  name: '',
+                  email: '',
+                  avatar_url: '',
+                  team_member_id: assigneeId,
+                  project_member_id: assigneeId,
+                })),
+                labels: task.labels,
+                manual_progress: false,
+                created_at: (task as any).createdAt || (task as any).created_at,
+                updated_at: (task as any).updatedAt || (task as any).updated_at,
+                sort_order: task.order,
+              })
+            )
+        : [];
 
       // Dispatch both actions to update the Redux state
       dispatch(selectTasks(newSelectedTasks));

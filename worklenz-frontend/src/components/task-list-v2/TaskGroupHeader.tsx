@@ -511,7 +511,11 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
 
       {/* Progress Bar - sticky to the right edge during horizontal scroll */}
       {(currentGrouping === 'priority' || currentGrouping === 'phase') &&
-        !(groupProgressValues.todoProgress === 0 && groupProgressValues.doingProgress === 0 && groupProgressValues.doneProgress === 0) && (
+        !(
+          groupProgressValues.todoProgress === 0 &&
+          groupProgressValues.doingProgress === 0 &&
+          groupProgressValues.doneProgress === 0
+        ) && (
           <div
             className="flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm px-3 py-1.5 ml-auto"
             style={{

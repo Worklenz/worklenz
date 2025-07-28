@@ -85,7 +85,10 @@ const groupingSlice = createSlice({
       state.groupOrder.phase = action.payload;
     },
 
-    updateGroupOrder: (state, action: PayloadAction<{ groupType: keyof LocalGroupingState['groupOrder']; order: string[] }>) => {
+    updateGroupOrder: (
+      state,
+      action: PayloadAction<{ groupType: keyof LocalGroupingState['groupOrder']; order: string[] }>
+    ) => {
       const { groupType, order } = action.payload;
       state.groupOrder[groupType] = order;
     },
@@ -143,7 +146,7 @@ export const selectCollapsedGroupsArray = (state: RootState) => state.grouping.c
 // Memoized selector to prevent unnecessary re-renders
 export const selectCollapsedGroups = createSelector(
   [selectCollapsedGroupsArray],
-  (collapsedGroupsArray) => new Set(collapsedGroupsArray)
+  collapsedGroupsArray => new Set(collapsedGroupsArray)
 );
 
 export const selectIsGroupCollapsed = (state: RootState, groupId: string) =>
@@ -169,25 +172,27 @@ export const selectTaskGroups = createSelector(
     const groupValues =
       groupOrder.length > 0
         ? groupOrder
-        : Array.from(new Set(
-            tasks.map(task => {
-              if (currentGrouping === 'status') return task.status;
-              if (currentGrouping === 'priority') return task.priority;
-              if (currentGrouping === 'phase') {
-                // For phase grouping, use 'Unmapped' for tasks without a phase
-                if (!task.phase || task.phase.trim() === '') {
-                  return 'Unmapped';
-                } else {
-                  return task.phase;
+        : Array.from(
+            new Set(
+              tasks.map(task => {
+                if (currentGrouping === 'status') return task.status;
+                if (currentGrouping === 'priority') return task.priority;
+                if (currentGrouping === 'phase') {
+                  // For phase grouping, use 'Unmapped' for tasks without a phase
+                  if (!task.phase || task.phase.trim() === '') {
+                    return 'Unmapped';
+                  } else {
+                    return task.phase;
+                  }
                 }
-              }
-              return task.phase;
-            })
-          ));
+                return task.phase;
+              })
+            )
+          );
 
     groupValues.forEach(value => {
       if (!value) return; // Skip undefined values
-      
+
       const tasksInGroup = tasks
         .filter(task => {
           if (currentGrouping === 'status') return task.status === value;

@@ -124,24 +124,24 @@ const financeSlice = createSlice({
   name: 'financeReducer',
   initialState,
   reducers: {
-    toggleRatecardDrawer: (state) => {
+    toggleRatecardDrawer: state => {
       state.isRatecardDrawerOpen = !state.isRatecardDrawerOpen;
     },
-    toggleFinanceDrawer: (state) => {
+    toggleFinanceDrawer: state => {
       state.isFinanceDrawerOpen = !state.isFinanceDrawerOpen;
     },
     openFinanceDrawer: (state, action: PayloadAction<any>) => {
       state.isFinanceDrawerOpen = true;
       state.selectedTask = action.payload;
     },
-    closeFinanceDrawer: (state) => {
+    closeFinanceDrawer: state => {
       state.isFinanceDrawerOpen = false;
       state.selectedTask = null;
     },
     setSelectedTask: (state, action: PayloadAction<any>) => {
       state.selectedTask = action.payload;
     },
-    toggleImportRatecardsDrawer: (state) => {
+    toggleImportRatecardsDrawer: state => {
       state.isImportRatecardsDrawerOpen = !state.isImportRatecardsDrawerOpen;
     },
     changeCurrency: (state, action: PayloadAction<string>) => {
@@ -150,13 +150,13 @@ const financeSlice = createSlice({
     ratecardDrawerLoading: (state, action: PayloadAction<boolean>) => {
       state.isFinanceDrawerloading = action.payload;
     },
-    clearDrawerRatecard: (state) => {
+    clearDrawerRatecard: state => {
       state.drawerRatecard = null;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
-      .addCase(fetchRateCards.pending, (state) => {
+      .addCase(fetchRateCards.pending, state => {
         state.isRatecardsLoading = true;
       })
       .addCase(fetchRateCards.fulfilled, (state, action) => {
@@ -164,14 +164,14 @@ const financeSlice = createSlice({
         state.ratecardsList = Array.isArray(action.payload.data)
           ? action.payload.data
           : Array.isArray(action.payload)
-          ? action.payload
-          : [];
+            ? action.payload
+            : [];
       })
-      .addCase(fetchRateCards.rejected, (state) => {
+      .addCase(fetchRateCards.rejected, state => {
         state.isRatecardsLoading = false;
         state.ratecardsList = [];
       })
-      .addCase(fetchRateCardById.pending, (state) => {
+      .addCase(fetchRateCardById.pending, state => {
         state.isFinanceDrawerloading = true;
         state.drawerRatecard = null;
       })
@@ -179,12 +179,12 @@ const financeSlice = createSlice({
         state.isFinanceDrawerloading = false;
         state.drawerRatecard = action.payload;
       })
-      .addCase(fetchRateCardById.rejected, (state) => {
+      .addCase(fetchRateCardById.rejected, state => {
         state.isFinanceDrawerloading = false;
         state.drawerRatecard = null;
       })
       // Create rate card
-      .addCase(createRateCard.pending, (state) => {
+      .addCase(createRateCard.pending, state => {
         state.isFinanceDrawerloading = true;
       })
       .addCase(createRateCard.fulfilled, (state, action) => {
@@ -195,11 +195,11 @@ const financeSlice = createSlice({
           state.ratecardsList = [action.payload];
         }
       })
-      .addCase(createRateCard.rejected, (state) => {
+      .addCase(createRateCard.rejected, state => {
         state.isFinanceDrawerloading = false;
       })
       // Update rate card
-      .addCase(updateRateCard.pending, (state) => {
+      .addCase(updateRateCard.pending, state => {
         state.isFinanceDrawerloading = true;
       })
       .addCase(updateRateCard.fulfilled, (state, action) => {
@@ -214,11 +214,11 @@ const financeSlice = createSlice({
           }
         }
       })
-      .addCase(updateRateCard.rejected, (state) => {
+      .addCase(updateRateCard.rejected, state => {
         state.isFinanceDrawerloading = false;
       })
       // Delete rate card
-      .addCase(deleteRateCard.pending, (state) => {
+      .addCase(deleteRateCard.pending, state => {
         state.isFinanceDrawerloading = true;
       })
       .addCase(deleteRateCard.fulfilled, (state, action) => {
@@ -232,7 +232,7 @@ const financeSlice = createSlice({
           state.drawerRatecard = null;
         }
       })
-      .addCase(deleteRateCard.rejected, (state) => {
+      .addCase(deleteRateCard.rejected, state => {
         state.isFinanceDrawerloading = false;
       });
   },

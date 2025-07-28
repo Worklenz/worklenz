@@ -1,5 +1,13 @@
 import { UserOutlined } from '@/shared/antd-imports';
-import { Button, Card, Dropdown, Flex, MenuProps, Tooltip, Typography } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Dropdown,
+  Flex,
+  MenuProps,
+  Tooltip,
+  Typography,
+} from '@/shared/antd-imports';
 
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

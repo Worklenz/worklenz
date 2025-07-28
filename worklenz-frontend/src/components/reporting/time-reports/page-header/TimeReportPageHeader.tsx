@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Team from './Team';
@@ -28,7 +27,7 @@ const TimeReportPageHeader: React.FC = () => {
       await dispatch(fetchReportingTeams());
       await dispatch(fetchReportingCategories());
       await dispatch(fetchReportingProjects());
-      
+
       // Only fetch members and utilization data for members time sheet
       if (isMembersTimeSheet) {
         await dispatch(fetchReportingMembers());
@@ -45,7 +44,7 @@ const TimeReportPageHeader: React.FC = () => {
       <Categories />
       <Projects />
       <Billable />
-      {isMembersTimeSheet && <Members/>}
+      {isMembersTimeSheet && <Members />}
       {isMembersTimeSheet && <Utilization />}
     </div>
   );

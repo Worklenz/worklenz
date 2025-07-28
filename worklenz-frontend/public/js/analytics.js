@@ -66,7 +66,7 @@ class AnalyticsManager {
 
     // Add event listener to button
     const btn = notice.querySelector('#analytics-notice-btn');
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', e => {
       e.preventDefault();
       localStorage.setItem('privacyNoticeShown', 'true');
       notice.remove();
@@ -77,7 +77,7 @@ class AnalyticsManager {
    * Check if privacy notice should be shown
    */
   checkPrivacyNotice() {
-    const isProduction = 
+    const isProduction =
       window.location.hostname === 'worklenz.com' ||
       window.location.hostname === 'app.worklenz.com';
     const noticeShown = localStorage.getItem('privacyNoticeShown') === 'true';

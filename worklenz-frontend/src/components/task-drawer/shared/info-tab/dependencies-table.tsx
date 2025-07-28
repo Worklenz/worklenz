@@ -63,14 +63,16 @@ const DependenciesTable = ({
         setIsDependencyInputShow(false);
         setTaskList([]);
         setSearchTerm('');
-        
+
         // Update Redux state with dependency status
-        dispatch(updateTaskCounts({
-          taskId: task.id,
-          counts: {
-            has_dependencies: true
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: task.id,
+            counts: {
+              has_dependencies: true,
+            },
+          })
+        );
       }
     } catch (error) {
       console.error('Error adding dependency:', error);
@@ -100,16 +102,18 @@ const DependenciesTable = ({
       const res = await taskDependenciesApiService.deleteTaskDependency(dependencyId);
       if (res.done) {
         refreshTaskDependencies();
-        
+
         // Update Redux state with dependency status
         // Check if there are any remaining dependencies
         const remainingDependencies = taskDependencies.filter(dep => dep.id !== dependencyId);
-        dispatch(updateTaskCounts({
-          taskId: task.id,
-          counts: {
-            has_dependencies: remainingDependencies.length > 0
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: task.id,
+            counts: {
+              has_dependencies: remainingDependencies.length > 0,
+            },
+          })
+        );
       }
     } catch (error) {
       console.error('Error deleting dependency:', error);

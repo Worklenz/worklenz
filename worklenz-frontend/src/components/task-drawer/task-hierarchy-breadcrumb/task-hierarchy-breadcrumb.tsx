@@ -39,10 +39,10 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
   // Recursively fetch the complete hierarchy path
   const fetchHierarchyPath = async (currentTaskId: string): Promise<TaskHierarchyItem[]> => {
     if (!projectId) return [];
-    
+
     const path: TaskHierarchyItem[] = [];
     let taskId = currentTaskId;
-    
+
     // Traverse up the hierarchy until we reach the root
     while (taskId) {
       try {
@@ -52,9 +52,9 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
           path.unshift({
             id: taskData.id,
             name: taskData.name || '',
-            parent_task_id: taskData.parent_task_id || undefined
+            parent_task_id: taskData.parent_task_id || undefined,
           });
-          
+
           // Move to parent task
           taskId = taskData.parent_task_id || '';
         } else {
@@ -65,7 +65,7 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
         break;
       }
     }
-    
+
     return path;
   };
 
@@ -97,7 +97,7 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
       if (onBackClick) {
         onBackClick();
       }
-      
+
       // Navigate to the selected task
       dispatch(setSelectedTaskId(taskId));
       dispatch(fetchTask({ taskId, projectId }));
@@ -114,7 +114,7 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
     ...hierarchyPath.map((hierarchyTask, index) => {
       const truncatedName = truncateText(hierarchyTask.name, 25);
       const shouldShowTooltip = hierarchyTask.name.length > 25;
-      
+
       return {
         title: (
           <Tooltip title={shouldShowTooltip ? hierarchyTask.name : ''} trigger="hover">
@@ -149,7 +149,7 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
         const currentTaskName = task?.name || t('taskHeader.currentTask', 'Current Task');
         const truncatedCurrentName = truncateText(currentTaskName, 25);
         const shouldShowCurrentTooltip = currentTaskName.length > 25;
-        
+
         return (
           <Tooltip title={shouldShowCurrentTooltip ? currentTaskName : ''} trigger="hover">
             <Typography.Text
@@ -186,4 +186,4 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
   );
 };
 
-export default TaskHierarchyBreadcrumb; 
+export default TaskHierarchyBreadcrumb;
