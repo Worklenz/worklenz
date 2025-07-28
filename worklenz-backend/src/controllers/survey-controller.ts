@@ -164,4 +164,38 @@ export default class SurveyController extends WorklenzControllerBase {
 
     return res.status(200).send(new ServerResponse(true, response));
   }
+
+  @HandleExceptions()
+  public static async checkAccountSetupSurveyStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(200).send(new ServerResponse(false, null, "User not authenticated"));
+    }
+
+    const q = `
+      SELECT EXISTS(
+        SELECT 1 
+        FROM survey_responses sr
+        INNER JOIN surveys s ON sr.survey_id = s.id
+        WHERE sr.user_id = $1 
+        AND s.survey_type = 'account_setup'
+        AND sr.is_completed = true
+      ) as is_completed,
+      (
+        SELECT sr.completed_at
+        FROM survey_responses sr
+        INNER JOIN surveys s ON sr.survey_id = s.id
+        WHERE sr.user_id = $1 
+        AND s.survey_type = 'account_setup'
+        AND sr.is_completed = true
+        LIMIT 1
+      ) as completed_at;
+    `;
+
+    const result = await db.query(q, [userId]);
+    const status = result.rows[0] || { is_completed: false, completed_at: null };
+
+    return res.status(200).send(new ServerResponse(true, status));
+  }
 }

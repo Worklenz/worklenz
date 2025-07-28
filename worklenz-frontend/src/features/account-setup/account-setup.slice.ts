@@ -61,6 +61,10 @@ const accountSetupSlice = createSlice({
     setSurveySubStep: (state, action: PayloadAction<number>) => {
       state.surveySubStep = action.payload;
     },
+    resetSurveyData: (state) => {
+      state.surveyData = {};
+      state.surveySubStep = 0;
+    },
     resetAccountSetup: () => initialState,
   },
 });
@@ -74,6 +78,7 @@ export const {
   setCurrentStep,
   setSurveyData,
   setSurveySubStep,
+  resetSurveyData,
   resetAccountSetup,
 } = accountSetupSlice.actions;
 

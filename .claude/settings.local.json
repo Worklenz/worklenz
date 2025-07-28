@@ -8,6 +8,7 @@
       "Bash(move:*)",
       "Bash(mv:*)",
       "Bash(grep:*)",
+      "Bash(rm:*)",
       "Bash(rm:*)"
     ],
     "deny": []
