@@ -142,3 +142,25 @@ DROP FUNCTION sys_insert_license_types();
 INSERT INTO timezones (name, abbrev, utc_offset)
 SELECT name, abbrev, utc_offset
 FROM pg_timezone_names;
+
+-- Insert default account setup survey
+INSERT INTO surveys (name, description, survey_type, is_active) VALUES 
+('Account Setup Survey', 'Initial questionnaire during account setup to understand user needs', 'account_setup', true)
+ON CONFLICT DO NOTHING;
+
+-- Insert survey questions for account setup survey
+DO $$
+DECLARE
+    survey_uuid UUID;
+BEGIN
+    SELECT id INTO survey_uuid FROM surveys WHERE survey_type = 'account_setup' AND name = 'Account Setup Survey' LIMIT 1;
+    
+    -- Insert survey questions
+    INSERT INTO survey_questions (survey_id, question_key, question_type, is_required, sort_order, options) VALUES
+    (survey_uuid, 'organization_type', 'single_choice', true, 1, '["freelancer", "startup", "small_medium_business", "agency", "enterprise", "other"]'),
+    (survey_uuid, 'user_role', 'single_choice', true, 2, '["founder_ceo", "project_manager", "software_developer", "designer", "operations", "other"]'),
+    (survey_uuid, 'main_use_cases', 'multiple_choice', true, 3, '["task_management", "team_collaboration", "resource_planning", "client_communication", "time_tracking", "other"]'),
+    (survey_uuid, 'previous_tools', 'text', false, 4, null),
+    (survey_uuid, 'how_heard_about', 'single_choice', false, 5, '["google_search", "twitter", "linkedin", "friend_colleague", "blog_article", "other"]')
+    ON CONFLICT DO NOTHING;
+END $$;
