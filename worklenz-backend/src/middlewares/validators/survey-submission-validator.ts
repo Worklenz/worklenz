@@ -27,10 +27,7 @@ export default function surveySubmissionValidator(req: IWorkLenzRequest, res: IW
       return res.status(200).send(new ServerResponse(false, null, `Answer ${i + 1}: Question ID is required and must be a string`));
     }
 
-    // At least one of answer_text or answer_json should be provided
-    if (!answer.answer_text && !answer.answer_json) {
-      return res.status(200).send(new ServerResponse(false, null, `Answer ${i + 1}: Either answer_text or answer_json is required`));
-    }
+    // answer_text and answer_json are both optional - users can submit empty answers
 
     // Validate answer_text if provided
     if (answer.answer_text && typeof answer.answer_text !== 'string') {

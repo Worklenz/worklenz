@@ -96,31 +96,47 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
         return acc;
       }, {} as Record<string, string>);
 
-      // Prepare submission data with actual question IDs
+      // Prepare submission data with actual question IDs - only include answered questions
+      const answers: any[] = [];
+      
+      if (surveyData.organization_type && questionMap['organization_type']) {
+        answers.push({
+          question_id: questionMap['organization_type'],
+          answer_text: surveyData.organization_type
+        });
+      }
+      
+      if (surveyData.user_role && questionMap['user_role']) {
+        answers.push({
+          question_id: questionMap['user_role'],
+          answer_text: surveyData.user_role
+        });
+      }
+      
+      if (surveyData.main_use_cases && surveyData.main_use_cases.length > 0 && questionMap['main_use_cases']) {
+        answers.push({
+          question_id: questionMap['main_use_cases'],
+          answer_json: surveyData.main_use_cases
+        });
+      }
+      
+      if (surveyData.previous_tools && questionMap['previous_tools']) {
+        answers.push({
+          question_id: questionMap['previous_tools'],
+          answer_text: surveyData.previous_tools
+        });
+      }
+      
+      if (surveyData.how_heard_about && questionMap['how_heard_about']) {
+        answers.push({
+          question_id: questionMap['how_heard_about'],
+          answer_text: surveyData.how_heard_about
+        });
+      }
+
       const submissionData: ISurveySubmissionRequest = {
         survey_id: surveyInfo.id,
-        answers: [
-          {
-            question_id: questionMap['organization_type'],
-            answer_text: surveyData.organization_type || ''
-          },
-          {
-            question_id: questionMap['user_role'],
-            answer_text: surveyData.user_role || ''
-          },
-          {
-            question_id: questionMap['main_use_cases'],
-            answer_json: surveyData.main_use_cases || []
-          },
-          {
-            question_id: questionMap['previous_tools'],
-            answer_text: surveyData.previous_tools || ''
-          },
-          {
-            question_id: questionMap['how_heard_about'],
-            answer_text: surveyData.how_heard_about || ''
-          }
-        ].filter(answer => answer.question_id) // Filter out any missing question IDs
+        answers
       };
 
       const response = await surveyApiService.submitSurveyResponse(submissionData);
