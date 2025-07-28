@@ -1,0 +1,14 @@
+{
+  "modalTitle": "Ajude-nos a melhorar sua experiência",
+  "skip": "Pular por enquanto",
+  "previous": "Anterior",
+  "next": "Próximo",
+  "completeSurvey": "Concluir Pesquisa",
+  "submitting": "Enviando suas respostas...",
+  "submitSuccessTitle": "Obrigado!",
+  "submitSuccessSubtitle": "Seu feedback nos ajuda a melhorar o Worklenz para todos.",
+  "submitSuccessMessage": "Obrigado por completar a pesquisa!",
+  "submitErrorMessage": "Falha ao enviar a pesquisa. Por favor, tente novamente.",
+  "submitErrorLog": "Falha ao enviar a pesquisa",
+  "fetchErrorLog": "Falha ao buscar a pesquisa"
+} 
