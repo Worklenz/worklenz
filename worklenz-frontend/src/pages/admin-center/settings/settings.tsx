@@ -12,17 +12,14 @@ import {
   message,
   Select,
   Switch,
-  Divider,
 } from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
 import { useTranslation } from 'react-i18next';
-import { IOrganization, IOrganizationAdmin } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
 import { scheduleAPIService } from '@/api/schedule/schedule.api.service';
 import { Settings } from '@/types/schedule/schedule-v2.types';
 import OrganizationCalculationMethod from '@/components/admin-center/overview/organization-calculation-method/organization-calculation-method';
 import HolidayCalendar from '@/components/admin-center/overview/holiday-calendar/holiday-calendar';
-import { holidayApiService } from '@/api/holiday/holiday.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { RootState } from '@/app/store';
@@ -38,11 +35,7 @@ const SettingsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const {
     organization,
-    organizationAdmins,
-    loadingOrganization,
-    loadingOrganizationAdmins,
     holidaySettings,
-    loadingHolidaySettings,
     countriesWithStates,
     loadingCountries,
   } = useAppSelector((state: RootState) => state.adminCenterReducer);
@@ -241,7 +234,7 @@ const SettingsPage: React.FC = () => {
                     }}
                     showSearch
                     filterOption={(input, option) =>
-                      (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                      (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
                     }
                   >
                     {countriesWithStates.map(country => (
@@ -260,7 +253,7 @@ const SettingsPage: React.FC = () => {
                     disabled={!holidayForm.getFieldValue('country_code')}
                     showSearch
                     filterOption={(input, option) =>
-                      (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                      (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
                     }
                   >
                     {getSelectedCountryStates().map(state => (
@@ -287,7 +280,7 @@ const SettingsPage: React.FC = () => {
           </Form>
         </Card>
 
-        <HolidayCalendar themeMode={themeMode} />
+        <HolidayCalendar themeMode={themeMode} workingDays={workingDays} />
       </Space>
     </div>
   );

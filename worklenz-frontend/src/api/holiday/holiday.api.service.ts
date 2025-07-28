@@ -19,63 +19,51 @@ import {
 const rootUrl = `${API_BASE_URL}/holidays`;
 
 export const holidayApiService = {
-  // Holiday types - PLACEHOLDER with Sri Lankan specific types
+  // Holiday types
   getHolidayTypes: async (): Promise<IServerResponse<IHolidayType[]>> => {
-    // Return holiday types including Sri Lankan specific types
-    const holidayTypes = [
-      { id: '1', name: 'Public Holiday', color_code: '#DC143C' },
-      { id: '2', name: 'Religious Holiday', color_code: '#4ecdc4' },
-      { id: '3', name: 'National Holiday', color_code: '#45b7d1' },
-      { id: '4', name: 'Company Holiday', color_code: '#f9ca24' },
-      { id: '5', name: 'Personal Holiday', color_code: '#6c5ce7' },
-      { id: '6', name: 'Bank Holiday', color_code: '#4682B4' },
-      { id: '7', name: 'Mercantile Holiday', color_code: '#32CD32' },
-      { id: '8', name: 'Poya Day', color_code: '#8B4513' },
-    ];
-    
-    return {
-      done: true,
-      body: holidayTypes,
-    } as IServerResponse<IHolidayType[]>;
+    const response = await apiClient.get<IServerResponse<IHolidayType[]>>(
+      `${rootUrl}/types`
+    );
+    return response.data;
   },
 
-  // Organization holidays - PLACEHOLDER until backend implements
+  // Organization holidays
   getOrganizationHolidays: async (
     year?: number
   ): Promise<IServerResponse<IOrganizationHoliday[]>> => {
-    // Return empty array for now to prevent 404 errors
-    return {
-      done: true,
-      body: [],
-    } as IServerResponse<IOrganizationHoliday[]>;
+    const params = year ? { year } : {};
+    const response = await apiClient.get<IServerResponse<IOrganizationHoliday[]>>(
+      `${rootUrl}/organization`,
+      { params }
+    );
+    return response.data;
   },
 
-  // Holiday CRUD operations - PLACEHOLDER until backend implements
+  // Holiday CRUD operations
   createOrganizationHoliday: async (data: ICreateHolidayRequest): Promise<IServerResponse<any>> => {
-    // Return success for now to prevent UI errors
-    return {
-      done: true,
-      body: { id: Date.now().toString(), ...data },
-    } as IServerResponse<any>;
+    const response = await apiClient.post<IServerResponse<any>>(
+      `${rootUrl}/organization`,
+      data
+    );
+    return response.data;
   },
 
   updateOrganizationHoliday: async (
     id: string,
     data: IUpdateHolidayRequest
   ): Promise<IServerResponse<any>> => {
-    // Return success for now to prevent UI errors
-    return {
-      done: true,
-      body: { id, ...data },
-    } as IServerResponse<any>;
+    const response = await apiClient.put<IServerResponse<any>>(
+      `${rootUrl}/organization/${id}`,
+      data
+    );
+    return response.data;
   },
 
   deleteOrganizationHoliday: async (id: string): Promise<IServerResponse<any>> => {
-    // Return success for now to prevent UI errors
-    return {
-      done: true,
-      body: {},
-    } as IServerResponse<any>;
+    const response = await apiClient.delete<IServerResponse<any>>(
+      `${rootUrl}/organization/${id}`
+    );
+    return response.data;
   },
 
   // Country holidays - PLACEHOLDER with all date-holidays supported countries  
@@ -200,11 +188,15 @@ export const holidayApiService = {
     countryCode: string,
     year?: number
   ): Promise<IServerResponse<ICountryHoliday[]>> => {
-    // Return empty array for now
-    return {
-      done: true,
-      body: [],
-    } as IServerResponse<ICountryHoliday[]>;
+    const params: any = { country_code: countryCode };
+    if (year) {
+      params.year = year;
+    }
+    const response = await apiClient.get<IServerResponse<ICountryHoliday[]>>(
+      `${rootUrl}/countries/${countryCode}`,
+      { params }
+    );
+    return response.data;
   },
 
   importCountryHolidays: async (
@@ -229,35 +221,35 @@ export const holidayApiService = {
     } as IServerResponse<IHolidayCalendarEvent[]>;
   },
 
-  // Organization holiday settings - PLACEHOLDER until backend implements
+  // Organization holiday settings
   getOrganizationHolidaySettings: async (): Promise<
     IServerResponse<IOrganizationHolidaySettings>
   > => {
-    // Return default settings for now
-    return {
-      done: true,
-      body: {
-        country_code: undefined,
-        state_code: undefined,
-        auto_sync_holidays: false,
-      },
-    } as IServerResponse<IOrganizationHolidaySettings>;
+    const response = await apiClient.get<IServerResponse<IOrganizationHolidaySettings>>(
+      `${API_BASE_URL}/admin-center/organization/holiday-settings`
+    );
+    return response.data;
   },
 
   updateOrganizationHolidaySettings: async (
     data: IOrganizationHolidaySettings
   ): Promise<IServerResponse<any>> => {
-    // Just return success for now
-    return {
-      done: true,
-      body: {},
-    } as IServerResponse<any>;
+    const response = await apiClient.put<IServerResponse<any>>(
+      `${API_BASE_URL}/admin-center/organization/holiday-settings`,
+      data
+    );
+    return response.data;
   },
 
-  // Countries with states - PLACEHOLDER with date-holidays supported countries
+  // Countries with states
   getCountriesWithStates: async (): Promise<IServerResponse<ICountryWithStates[]>> => {
-    // Return comprehensive list of countries supported by date-holidays library
-    const supportedCountries = [
+    const response = await apiClient.get<IServerResponse<ICountryWithStates[]>>(
+      `${API_BASE_URL}/admin-center/countries-with-states`
+    );
+    return response.data;
+    
+    // Fallback to static data if API fails
+    /*const supportedCountries = [
       { code: 'AD', name: 'Andorra' },
       { code: 'AE', name: 'United Arab Emirates' },
       { code: 'AG', name: 'Antigua & Barbuda' },
@@ -696,41 +688,85 @@ export const holidayApiService = {
     return {
       done: true,
       body: supportedCountries,
-    } as IServerResponse<ICountryWithStates[]>;
+    } as IServerResponse<ICountryWithStates[]>;*/
   },
 
-  // Combined holidays (official + custom) - Database-driven approach for Sri Lanka
+  // Combined holidays (official + custom) - Database-driven approach
   getCombinedHolidays: async (
     params: ICombinedHolidaysRequest & { country_code?: string }
   ): Promise<IServerResponse<IHolidayCalendarEvent[]>> => {
     try {
+      console.log('🔍 getCombinedHolidays called with params:', params);
       const year = new Date(params.from_date).getFullYear();
       let allHolidays: IHolidayCalendarEvent[] = [];
 
-      // Handle Sri Lankan holidays from database
-      if (params.country_code === 'LK' && year === 2025) {
-        // Import Sri Lankan holiday data
-        const { sriLankanHolidays2025 } = await import('@/data/sri-lanka-holidays-2025');
+      // Get official holidays - handle Sri Lanka specially, others from API
+      if (params.country_code) {
+        console.log(`🌐 Fetching official holidays for country: ${params.country_code}, year: ${year}`);
         
-        const sriLankanHolidays = sriLankanHolidays2025
-          .filter(h => h.date >= params.from_date && h.date <= params.to_date)
-          .map(h => ({
-            id: `lk-${h.date}-${h.name.replace(/\s+/g, '-').toLowerCase()}`,
-            name: h.name,
-            description: h.description,
-            date: h.date,
-            is_recurring: h.is_recurring,
-            holiday_type_name: h.type,
-            color_code: h.color_code,
-            source: 'official' as const,
-            is_editable: false,
-          }));
-        
-        allHolidays.push(...sriLankanHolidays);
+        // Handle Sri Lankan holidays from static data
+        if (params.country_code === 'LK' && year === 2025) {
+          try {
+            console.log('🇱🇰 Loading Sri Lankan holidays from static data...');
+            const { sriLankanHolidays2025 } = await import('@/data/sri-lanka-holidays-2025');
+            
+            const sriLankanHolidays = sriLankanHolidays2025
+              .filter(h => h.date >= params.from_date && h.date <= params.to_date)
+              .map(h => ({
+                id: `lk-${h.date}-${h.name.replace(/\\s+/g, '-').toLowerCase()}`,
+                name: h.name,
+                description: h.description,
+                date: h.date,
+                is_recurring: h.is_recurring,
+                holiday_type_name: h.type,
+                color_code: h.color_code,
+                source: 'official' as const,
+                is_editable: false,
+              }));
+            
+            console.log(`✅ Found ${sriLankanHolidays.length} Sri Lankan holidays`);
+            allHolidays.push(...sriLankanHolidays);
+          } catch (error) {
+            console.error('❌ Error loading Sri Lankan holidays:', error);
+          }
+        } else {
+          // Handle other countries from API
+          try {
+            const countryHolidaysRes = await holidayApiService.getCountryHolidays(params.country_code, year);
+            console.log('📅 Country holidays response:', countryHolidaysRes);
+            
+            if (countryHolidaysRes.done && countryHolidaysRes.body) {
+              const officialHolidays = countryHolidaysRes.body
+                .filter((h: any) => h.date >= params.from_date && h.date <= params.to_date)
+                .map((h: any) => ({
+                  id: `${params.country_code}-${h.id}`,
+                  name: h.name,
+                  description: h.description,
+                  date: h.date,
+                  is_recurring: h.is_recurring,
+                  holiday_type_name: 'Official Holiday',
+                  color_code: h.color_code || '#1890ff',
+                  source: 'official' as const,
+                  is_editable: false,
+                }));
+              
+              console.log(`✅ Found ${officialHolidays.length} official holidays from API`);
+              allHolidays.push(...officialHolidays);
+            } else {
+              console.log('⚠️ No official holidays returned from API');
+            }
+          } catch (error) {
+            console.error('❌ Error fetching official holidays from API:', error);
+          }
+        }
+      } else {
+        console.log('⚠️ No country code provided, skipping official holidays');
       }
 
       // Get organization holidays from database (includes both custom and country-specific)
+      console.log(`🏢 Fetching organization holidays for year: ${year}`);
       const customRes = await holidayApiService.getOrganizationHolidays(year);
+      console.log('🏢 Organization holidays response:', customRes);
       
       if (customRes.done && customRes.body) {
         const customHolidays = customRes.body
@@ -747,13 +783,17 @@ export const holidayApiService = {
             is_editable: h.is_editable !== false, // Default to true unless explicitly false
           }));
 
-        // Filter out duplicates (in case Sri Lankan holidays are already in DB)
+        // Filter out duplicates (in case official holidays are already in DB)
         const existingDates = new Set(allHolidays.map(h => h.date));
         const uniqueCustomHolidays = customHolidays.filter((h: any) => !existingDates.has(h.date));
         
+        console.log(`✅ Found ${customHolidays.length} organization holidays (${uniqueCustomHolidays.length} unique)`);
         allHolidays.push(...uniqueCustomHolidays);
+      } else {
+        console.log('⚠️ No organization holidays returned from API');
       }
 
+      console.log(`🎉 Total holidays combined: ${allHolidays.length}`, allHolidays);
       return {
         done: true,
         body: allHolidays,
@@ -798,12 +838,9 @@ export const holidayApiService = {
     } as IServerResponse<{ working_days: number; total_days: number; holidays_count: number }>;
   },
 
-  // Populate holidays - PLACEHOLDER until backend implements (deprecated - keeping for backward compatibility)
+  // Populate holidays - Populate the database with official holidays for various countries
   populateCountryHolidays: async (): Promise<IServerResponse<any>> => {
-    // Return success for now
-    return {
-      done: true,
-      body: { message: 'Holidays populated successfully' },
-    } as IServerResponse<any>;
+    const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/populate`);
+    return response.data;
   },
 };

@@ -56,5 +56,17 @@
   "year": "Year",
   "import": "Import",
   "holidaysImported": "Successfully imported {{count}} holidays",
-  "errorImportingHolidays": "Error importing holidays"
+  "errorImportingHolidays": "Error importing holidays",
+  "addCustomHoliday": "Add Custom Holiday",
+  "officialHolidaysFrom": "Official holidays from",
+  "workingDay": "Working Day",
+  "holiday": "Holiday",
+  "today": "Today",
+  "cannotEditOfficialHoliday": "Cannot edit official holidays",
+  "customHoliday": "Custom Holiday",
+  "officialHoliday": "Official Holiday",
+  "delete": "Delete",
+  "deleteHolidayConfirm": "Are you sure you want to delete this holiday?",
+  "yes": "Yes",
+  "no": "No"
 }

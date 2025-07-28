@@ -1119,4 +1119,115 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
     return res.status(200).send(new ServerResponse(true, response));
   }
+
+  @HandleExceptions()
+  public static async getOrganizationHolidaySettings(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT ohs.id, ohs.organization_id, ohs.country_code, ohs.state_code, 
+                      ohs.auto_sync_holidays, ohs.created_at, ohs.updated_at
+               FROM organization_holiday_settings ohs
+               JOIN organizations o ON ohs.organization_id = o.id
+               WHERE o.user_id = $1;`;
+    
+    const result = await db.query(q, [req.user?.owner_id]);
+    
+    // If no settings exist, return default settings
+    if (result.rows.length === 0) {
+      return res.status(200).send(new ServerResponse(true, {
+        country_code: null,
+        state_code: null,
+        auto_sync_holidays: true
+      }));
+    }
+    
+    return res.status(200).send(new ServerResponse(true, result.rows[0]));
+  }
+
+  @HandleExceptions()
+  public static async updateOrganizationHolidaySettings(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { country_code, state_code, auto_sync_holidays } = req.body;
+
+    // First, get the organization ID
+    const orgQ = `SELECT id FROM organizations WHERE user_id = $1;`;
+    const orgResult = await db.query(orgQ, [req.user?.owner_id]);
+    
+    if (orgResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, "Organization not found"));
+    }
+    
+    const organizationId = orgResult.rows[0].id;
+
+    // Check if settings already exist
+    const checkQ = `SELECT id FROM organization_holiday_settings WHERE organization_id = $1;`;
+    const checkResult = await db.query(checkQ, [organizationId]);
+
+    let result;
+    if (checkResult.rows.length > 0) {
+      // Update existing settings
+      const updateQ = `UPDATE organization_holiday_settings 
+                       SET country_code = $2, 
+                           state_code = $3, 
+                           auto_sync_holidays = $4,
+                           updated_at = CURRENT_TIMESTAMP
+                       WHERE organization_id = $1
+                       RETURNING *;`;
+      result = await db.query(updateQ, [organizationId, country_code, state_code, auto_sync_holidays]);
+    } else {
+      // Insert new settings
+      const insertQ = `INSERT INTO organization_holiday_settings 
+                       (organization_id, country_code, state_code, auto_sync_holidays)
+                       VALUES ($1, $2, $3, $4)
+                       RETURNING *;`;
+      result = await db.query(insertQ, [organizationId, country_code, state_code, auto_sync_holidays]);
+    }
+
+    return res.status(200).send(new ServerResponse(true, result.rows[0]));
+  }
+
+  @HandleExceptions()
+  public static async getCountriesWithStates(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    // Get all countries
+    const countriesQ = `SELECT code, name FROM countries ORDER BY name;`;
+    const countriesResult = await db.query(countriesQ);
+    
+    // For now, we'll return a basic structure
+    // In a real implementation, you would have a states table
+    const countriesWithStates = countriesResult.rows.map(country => ({
+      code: country.code,
+      name: country.name,
+      states: [] as Array<{ code: string; name: string }> // Would be populated from a states table
+    }));
+
+    // Add some example states for US and Canada
+    const usIndex = countriesWithStates.findIndex(c => c.code === 'US');
+    if (usIndex !== -1) {
+      countriesWithStates[usIndex].states = [
+        { code: 'CA', name: 'California' },
+        { code: 'NY', name: 'New York' },
+        { code: 'TX', name: 'Texas' },
+        { code: 'FL', name: 'Florida' },
+        { code: 'WA', name: 'Washington' }
+      ];
+    }
+
+    const caIndex = countriesWithStates.findIndex(c => c.code === 'CA');
+    if (caIndex !== -1) {
+      countriesWithStates[caIndex].states = [
+        { code: 'ON', name: 'Ontario' },
+        { code: 'QC', name: 'Quebec' },
+        { code: 'BC', name: 'British Columbia' },
+        { code: 'AB', name: 'Alberta' }
+      ];
+    }
+
+    return res.status(200).send(new ServerResponse(true, countriesWithStates));
+  }
 }

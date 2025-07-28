@@ -13,5 +13,15 @@
   "sunday": "Sunday",
   "saveButton": "Save",
   "saved": "Settings saved successfully",
-  "errorSaving": "Error saving settings"
+  "errorSaving": "Error saving settings",
+  "holidaySettings": "Holiday Settings",
+  "country": "Country",
+  "countryRequired": "Please select a country",
+  "selectCountry": "Select country",
+  "state": "State/Province",
+  "selectState": "Select state/province (optional)",
+  "autoSyncHolidays": "Automatically sync official holidays",
+  "saveHolidaySettings": "Save Holiday Settings",
+  "holidaySettingsSaved": "Holiday settings saved successfully",
+  "errorSavingHolidaySettings": "Error saving holiday settings"
 }

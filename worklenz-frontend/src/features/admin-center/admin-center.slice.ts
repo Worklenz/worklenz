@@ -105,7 +105,6 @@ export const updateHolidaySettings = createAsyncThunk(
   async (settings: IOrganizationHolidaySettings) => {
     const { holidayApiService } = await import('@/api/holiday/holiday.api.service');
     await holidayApiService.updateOrganizationHolidaySettings(settings);
-    await adminCenterApiService.updateOrganizationHolidaySettings(settings);
     return settings;
   }
 );
@@ -163,6 +162,10 @@ const adminCenterSlice = createSlice({
       state.isUpgradeModalOpen
         ? (state.isUpgradeModalOpen = false)
         : (state.isUpgradeModalOpen = true);
+    },
+    clearHolidaysCache: state => {
+      state.holidays = [];
+      state.holidaysDateRange = null;
     },
   },
   extraReducers: builder => {
@@ -264,7 +267,7 @@ const adminCenterSlice = createSlice({
   },
 });
 
-export const { toggleRedeemCodeDrawer, toggleUpgradeModal } = adminCenterSlice.actions;
+export const { toggleRedeemCodeDrawer, toggleUpgradeModal, clearHolidaysCache } = adminCenterSlice.actions;
 
 // Selectors for optimized access
 export const selectHolidaysByDateRange = createSelector(

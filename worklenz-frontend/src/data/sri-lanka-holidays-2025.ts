@@ -21,16 +21,6 @@ export interface SriLankanHolidayData {
 export const sriLankanHolidays2025: SriLankanHolidayData[] = [
   // January
   {
-    name: "New Year's Day",
-    date: "2025-01-01",
-    type: "Public",
-    description: "Celebration of the first day of the Gregorian calendar year",
-    is_recurring: true,
-    is_poya: false,
-    country_code: "LK",
-    color_code: "#DC143C"
-  },
-  {
     name: "Duruthu Full Moon Poya Day",
     date: "2025-01-13",
     type: "Poya",

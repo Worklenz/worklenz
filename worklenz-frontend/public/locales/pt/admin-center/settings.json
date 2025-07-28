@@ -13,5 +13,21 @@
   "sunday": "Domingo",
   "saveButton": "Salvar",
   "saved": "Configurações salvas com sucesso",
-  "errorSaving": "Erro ao salvar configurações"
+  "errorSaving": "Erro ao salvar configurações",
+  "holidaySettings": "Configurações de feriados",
+  "country": "País",
+  "countryRequired": "Por favor, selecione um país",
+  "selectCountry": "Selecionar país",
+  "state": "Estado/Província",
+  "selectState": "Selecionar estado/província (opcional)",
+  "autoSyncHolidays": "Sincronizar automaticamente feriados oficiais",
+  "saveHolidaySettings": "Salvar configurações de feriados",
+  "holidaySettingsSaved": "Configurações de feriados salvas com sucesso",
+  "errorSavingHolidaySettings": "Erro ao salvar configurações de feriados",
+  "addCustomHoliday": "Adicionar Feriado Personalizado",
+  "officialHolidaysFrom": "Feriados oficiais de",
+  "workingDay": "Dia de Trabalho",
+  "holiday": "Feriado",
+  "today": "Hoje",
+  "cannotEditOfficialHoliday": "Não é possível editar feriados oficiais"
 }
