@@ -214,6 +214,11 @@ const AccountSetup: React.FC = () => {
     }
   };
 
+  const handleSkipMembers = async () => {
+    // Bypass all validation and complete setup without team members
+    await completeAccountSetup(true);
+  };
+
   const completeAccountSetupWithTemplate = async () => {
     try {
       await saveSurveyData(); // Save survey data first
@@ -592,7 +597,7 @@ const AccountSetup: React.FC = () => {
                       type="link"
                       className="p-0 font-medium"
                       style={{ color: token.colorTextTertiary }}
-                      onClick={() => completeAccountSetup(true)}
+                      onClick={handleSkipMembers}
                     >
                       {t('skipForNow')}
                     </Button>
