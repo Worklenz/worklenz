@@ -44,6 +44,7 @@
   "step3InputLabel": "通过电子邮件邀请",
   "addAnother": "添加另一个",
   "skipForNow": "暂时跳过",
+  "skipping": "跳过中...",
   "formTitle": "创建您的第一个任务。",
   "step3Title": "邀请您的团队一起工作",
   "maxMembers": "（您最多可以邀请 5 名成员）",
