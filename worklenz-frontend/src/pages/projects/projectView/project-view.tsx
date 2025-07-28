@@ -28,7 +28,7 @@ import { resetSelection } from '@/features/task-management/selection.slice';
 import { resetFields } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
-import { tabItems, updateTabLabels } from '@/lib/project/project-view-constants';
+import { tabItems, updateTabLabels, getFilteredTabItems } from '@/lib/project/project-view-constants';
 import {
   setSelectedTaskId,
   setShowTaskDrawer,
@@ -39,6 +39,7 @@ import { setProjectId as setInsightsProjectId } from '@/features/projects/insigh
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
+import { useAuthService } from '@/hooks/useAuth';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -73,14 +74,21 @@ const ProjectView = React.memo(() => {
   // Optimize document title updates
   useDocumentTitle(selectedProject?.name || t('projectView'));
 
+  // Get auth service and current session
+  const authService = useAuthService();
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(
-    () => ({
-      tab: searchParams.get('tab') || tabItems[0].key,
-      pinnedTab: searchParams.get('pinned_tab') || '',
-      taskId: searchParams.get('task') || '',
-    }),
-    [searchParams]
+    () => {
+      const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+      return {
+        tab: searchParams.get('tab') || filteredTabItems[0]?.key || 'tasks-list',
+        pinnedTab: searchParams.get('pinned_tab') || '',
+        taskId: searchParams.get('task') || '',
+      };
+    },
+    [searchParams, currentSession, selectedProject]
   );
 
   const [activeTab, setActiveTab] = useState<string>(urlParams.tab);
@@ -266,7 +274,8 @@ const ProjectView = React.memo(() => {
       return [];
     }
 
-    const menuItems = tabItems.map(item => ({
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+    const menuItems = filteredTabItems.map(item => ({
       key: item.key,
       label: (
         <Flex align="center" gap={6} style={{ color: 'inherit' }}>
@@ -320,7 +329,7 @@ const ProjectView = React.memo(() => {
     }));
 
     return menuItems;
-  }, [pinnedTab, pinToDefaultTab, t, translationsReady]);
+  }, [pinnedTab, pinToDefaultTab, t, translationsReady, currentSession, selectedProject]);
 
   // Optimized secondary components loading with better UX
   const [shouldLoadSecondaryComponents, setShouldLoadSecondaryComponents] = useState(false);

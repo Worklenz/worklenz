@@ -1,6 +1,9 @@
 import React, { ReactNode, Suspense } from 'react';
 import { InlineSuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import i18n from '@/i18n';
+import { hasFinanceViewPermission } from '@/utils/finance-permissions';
+import { ILocalSession } from '@/types/auth/local-session.types';
+import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
 // Import core components synchronously to avoid suspense in main tabs
 import ProjectViewEnhancedBoard from '@/pages/projects/projectView/enhancedBoard/project-view-enhanced-board';
@@ -163,4 +166,22 @@ export const updateTabLabels = () => {
   } catch (error) {
     console.error('Error updating tab labels:', error);
   }
+};
+
+// Function to get filtered tab items based on user permissions
+export const getFilteredTabItems = (
+  currentSession: ILocalSession | null,
+  currentProject?: IProjectViewModel | null
+): TabItems[] => {
+  const hasFinancePermission = hasFinanceViewPermission(currentSession, currentProject);
+  
+  return tabItems.filter(item => {
+    // Always show all tabs except finance
+    if (item.key !== 'finance') {
+      return true;
+    }
+    
+    // Only show finance tab if user has permission
+    return hasFinancePermission;
+  });
 };
