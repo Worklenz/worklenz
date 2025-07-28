@@ -81,5 +81,12 @@
   "delete": "Löschen",
   "enterStatusName": "Statusnamen eingeben",
   "selectCategory": "Kategorie auswählen",
-  "close": "Schließen"
+  "close": "Schließen",
+  "clearSort": "Sortierung löschen",
+  "sortAscending": "Aufsteigend sortieren",
+  "sortDescending": "Absteigend sortieren",
+  "sortByField": "Sortieren nach {{field}}",
+  "ascendingOrder": "Aufsteigend",
+  "descendingOrder": "Absteigend",
+  "currentSort": "Aktuelle Sortierung: {{field}} {{order}}"
 }
