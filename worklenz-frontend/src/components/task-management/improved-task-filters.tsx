@@ -14,6 +14,8 @@ import {
   EyeOutlined,
   InboxOutlined,
   CheckOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
 } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -30,6 +32,12 @@ import {
   setArchived as setTaskManagementArchived,
   toggleArchived as toggleTaskManagementArchived,
   selectArchived,
+  setSort,
+  setSortField,
+  setSortOrder,
+  selectSort,
+  selectSortField,
+  selectSortOrder,
 } from '@/features/task-management/task-management.slice';
 import {
   setCurrentGrouping,
@@ -44,11 +52,13 @@ import {
   setLabels,
   setSearch,
   setPriorities,
+  setFields,
 } from '@/features/tasks/tasks.slice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
+import { ITaskListSortableColumn } from '@/types/tasks/taskListFilters.types';
 // --- Enhanced Kanban imports ---
 import {
   setGroupBy as setKanbanGroupBy,
@@ -83,6 +93,12 @@ import useIsProjectManager from '@/hooks/useIsProjectManager';
 const FILTER_DEBOUNCE_DELAY = 300; // ms
 const SEARCH_DEBOUNCE_DELAY = 500; // ms
 const MAX_FILTER_OPTIONS = 100;
+
+// Sort order enum
+enum SORT_ORDER {
+  ASCEND = 'ascend',
+  DESCEND = 'descend',
+}
 
  // Limit options to prevent UI lag
 
@@ -740,6 +756,192 @@ const SearchFilter: React.FC<{
   );
 };
 
+// Sort Dropdown Component - Simplified version using task-management slice
+const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
+  themeClasses,
+  isDarkMode,
+}) => {
+  const { t } = useTranslation('task-list-filters');
+  const dispatch = useAppDispatch();
+  const { projectId } = useAppSelector(state => state.projectReducer);
+  
+  // Get current sort state from task-management slice
+  const currentSortField = useAppSelector(selectSortField);
+  const currentSortOrder = useAppSelector(selectSortOrder);
+
+  const [open, setOpen] = React.useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const sortFieldsList = [
+    { label: t('taskText'), key: 'name' },
+    { label: t('statusText'), key: 'status' },
+    { label: t('priorityText'), key: 'priority' },
+    { label: t('startDateText'), key: 'start_date' },
+    { label: t('endDateText'), key: 'end_date' },
+    { label: t('completedDateText'), key: 'completed_at' },
+    { label: t('createdDateText'), key: 'created_at' },
+    { label: t('lastUpdatedText'), key: 'updated_at' },
+  ];
+
+  const handleSortFieldChange = (fieldKey: string) => {
+    // If clicking the same field, toggle order, otherwise set new field with ASC
+    if (currentSortField === fieldKey) {
+      const newOrder = currentSortOrder === 'ASC' ? 'DESC' : 'ASC';
+      dispatch(setSort({ field: fieldKey, order: newOrder }));
+    } else {
+      dispatch(setSort({ field: fieldKey, order: 'ASC' }));
+    }
+    
+    // Fetch updated tasks
+    if (projectId) {
+      dispatch(fetchTasksV3(projectId));
+    }
+    
+    setOpen(false);
+  };
+
+  const clearSort = () => {
+    dispatch(setSort({ field: '', order: 'ASC' }));
+    if (projectId) {
+      dispatch(fetchTasksV3(projectId));
+    }
+  };
+
+  const isActive = currentSortField !== '';
+  const currentFieldLabel = sortFieldsList.find(f => f.key === currentSortField)?.label;
+  const orderText = currentSortOrder === 'ASC' ? t('ascendingOrder') : t('descendingOrder');
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Trigger Button - matching FilterDropdown style */}
+      <button
+        onClick={() => setOpen(!open)}
+        title={
+          isActive
+            ? t('currentSort', { field: currentFieldLabel, order: orderText })
+            : t('sortText')
+        }
+        className={`
+          inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
+          border transition-all duration-200 ease-in-out
+          ${
+            isActive
+              ? isDarkMode
+                ? 'bg-gray-600 text-white border-gray-500'
+                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          }
+          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
+          ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
+        `}
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        {currentSortOrder === 'ASC' ? (
+          <SortAscendingOutlined className="w-3.5 h-3.5" />
+        ) : (
+          <SortDescendingOutlined className="w-3.5 h-3.5" />
+        )}
+        <span className="hidden sm:inline">{t('sortText')}</span>
+        {isActive && currentFieldLabel && (
+          <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} max-w-16 truncate hidden md:inline`}>
+            {currentFieldLabel}
+          </span>
+        )}
+        <DownOutlined
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {/* Dropdown Panel - matching FilterDropdown style */}
+      {open && (
+        <div
+          className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+        >
+          {/* Clear Sort Option */}
+          {isActive && (
+            <div className={`p-2 border-b ${themeClasses.dividerBorder}`}>
+              <button
+                onClick={clearSort}
+                className={`w-full text-left px-2 py-1.5 text-xs rounded transition-colors duration-150 ${themeClasses.optionText} ${themeClasses.optionHover}`}
+              >
+                {t('clearSort')}
+              </button>
+            </div>
+          )}
+          
+          {/* Options List */}
+          <div className="max-h-48 overflow-y-auto">
+            <div className="p-0.5">
+              {sortFieldsList.map(sortField => {
+                const isSelected = currentSortField === sortField.key;
+
+                return (
+                  <button
+                    key={sortField.key}
+                    onClick={() => handleSortFieldChange(sortField.key)}
+                    className={`
+                      w-full flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded
+                      transition-colors duration-150 text-left
+                      ${
+                        isSelected
+                          ? isDarkMode
+                            ? 'bg-gray-600 text-white'
+                            : 'bg-gray-200 text-gray-800 font-semibold'
+                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                      }
+                    `}
+                    title={
+                      isSelected 
+                        ? t('currentSort', { 
+                            field: sortField.label, 
+                            order: orderText 
+                          }) + ` - ${t('sortDescending')}`
+                        : t('sortByField', { field: sortField.label }) + ` - ${t('sortAscending')}`
+                    }
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="truncate">{sortField.label}</span>
+                      {isSelected && (
+                        <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          ({orderText})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {isSelected ? (
+                        currentSortOrder === 'ASC' ? (
+                          <SortAscendingOutlined className="w-3.5 h-3.5" />
+                        ) : (
+                          <SortDescendingOutlined className="w-3.5 h-3.5" />
+                        )
+                      ) : (
+                        <SortAscendingOutlined className="w-3.5 h-3.5 opacity-50" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const LOCAL_STORAGE_KEY = 'worklenz.taskManagement.fields';
 
 const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
@@ -1050,14 +1252,20 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
     };
   }, [dispatch, projectView]);
 
+  // Get sort fields for active count calculation
+  const sortFields = useAppSelector(state => state.taskReducer.fields);
+  const taskManagementSortField = useAppSelector(selectSortField);
+
   // Calculate active filters count - memoized to prevent unnecessary recalculations
   const calculatedActiveFiltersCount = useMemo(() => {
     const count = filterSections.reduce(
       (acc, section) => (section.id === 'groupBy' ? acc : acc + section.selectedValues.length),
       0
     );
-    return count + (searchValue ? 1 : 0);
-  }, [filterSections, searchValue]);
+    const sortFieldsCount = position === 'list' ? sortFields.length : 0;
+    const taskManagementSortCount = position === 'list' && taskManagementSortField ? 1 : 0;
+    return count + (searchValue ? 1 : 0) + sortFieldsCount + taskManagementSortCount;
+  }, [filterSections, searchValue, sortFields, taskManagementSortField, position]);
 
   useEffect(() => {
     if (activeFiltersCount !== calculatedActiveFiltersCount) {
@@ -1231,6 +1439,12 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
         // Clear priority filters
         dispatch(setPriorities([]));
 
+        // Clear sort fields
+        dispatch(setFields([]));
+
+        // Clear sort from task-management slice
+        dispatch(setSort({ field: '', order: 'ASC' }));
+
         // Clear archived state based on position
         if (position === 'list') {
           dispatch(setTaskManagementArchived(false));
@@ -1276,9 +1490,9 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
     <div
       className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-1.5 shadow-sm ${className}`}
     >
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 min-h-[36px]">
         {/* Left Section - Main Filters */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
           {/* Search */}
           <SearchFilter
             value={searchValue}
@@ -1286,6 +1500,11 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
             placeholder="Search tasks by name or key..."
             themeClasses={themeClasses}
           />
+
+          {/* Sort Filter Button (for list view) - appears after search */}
+          {position === 'list' && (
+            <SortDropdown themeClasses={themeClasses} isDarkMode={isDarkMode} />
+          )}
 
           {/* Filter Dropdowns - Only render when data is loaded */}
           {isDataLoaded ? (
@@ -1316,7 +1535,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
         </div>
 
         {/* Right Section - Additional Controls */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex flex-wrap items-center gap-2 ml-auto min-w-0 shrink-0">
           {/* Active Filters Indicator */}
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-1.5">

@@ -84,5 +84,12 @@
   "close": "Schließen",
   "cannotMoveStatus": "Status kann nicht verschoben werden",
   "cannotMoveStatusMessage": "Dieser Status kann nicht verschoben werden, da die Kategorie '{{categoryName}}' leer bleiben würde. Jede Kategorie muss mindestens einen Status haben.",
-  "ok": "OK"
+  "ok": "OK",
+  "clearSort": "Sortierung löschen",
+  "sortAscending": "Aufsteigend sortieren",
+  "sortDescending": "Absteigend sortieren",
+  "sortByField": "Sortieren nach {{field}}",
+  "ascendingOrder": "Aufsteigend",
+  "descendingOrder": "Absteigend",
+  "currentSort": "Aktuelle Sortierung: {{field}} {{order}}"
 }
