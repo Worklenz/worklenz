@@ -18,5 +18,10 @@ export const surveyApiService = {
   async getUserSurveyResponse(surveyId: string): Promise<IServerResponse<ISurveyResponse>> {
     const response = await apiClient.get<IServerResponse<ISurveyResponse>>(`${API_BASE_URL}/surveys/responses/${surveyId}`);
     return response.data;
+  },
+
+  async checkAccountSetupSurveyStatus(): Promise<IServerResponse<{ is_completed: boolean; completed_at?: string }>> {
+    const response = await apiClient.get<IServerResponse<{ is_completed: boolean; completed_at?: string }>>(`${API_BASE_URL}/surveys/account-setup/status`);
+    return response.data;
   }
 };
