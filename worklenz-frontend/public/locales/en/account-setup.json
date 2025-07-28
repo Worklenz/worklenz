@@ -88,6 +88,8 @@
   "discoveryQuestion": "How did you hear about us?",
   "allSetTitle": "You're all set!",
   "allSetDescription": "Let's create your first project and get started with Worklenz",
+  "surveyCompleteTitle": "Thank you!",
+  "surveyCompleteDescription": "Your feedback helps us improve Worklenz for everyone",
   "aboutYouStepName": "About You",
   "yourNeedsStepName": "Your Needs", 
   "discoveryStepName": "Discovery",

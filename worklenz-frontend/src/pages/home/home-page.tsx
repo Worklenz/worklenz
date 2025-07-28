@@ -27,6 +27,7 @@ const SIDEBAR_MAX_WIDTH = 400;
 
 // Lazy load heavy components
 const TaskDrawer = React.lazy(() => import('@/components/task-drawer/task-drawer'));
+const SurveyPromptModal = React.lazy(() => import('@/components/survey/SurveyPromptModal').then(m => ({ default: m.SurveyPromptModal })));
 
 const HomePage = memo(() => {
   const dispatch = useAppDispatch();
@@ -142,6 +143,11 @@ const HomePage = memo(() => {
         document.body,
         'project-drawer'
       )}
+
+      {/* Survey Modal - only shown to users who haven't completed it */}
+      <Suspense fallback={null}>
+        <SurveyPromptModal />
+      </Suspense>
     </div>
   );
 });

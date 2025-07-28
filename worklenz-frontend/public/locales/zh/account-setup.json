@@ -89,6 +89,8 @@
   "discoveryQuestion": "您是如何听说我们的？",
   "allSetTitle": "一切就绪！",
   "allSetDescription": "让我们创建您的第一个项目并开始使用 Worklenz 吧",
+  "surveyCompleteTitle": "谢谢！",
+  "surveyCompleteDescription": "您的反馈有助于我们为所有人改进 Worklenz",
   "aboutYouStepName": "关于您",
   "yourNeedsStepName": "您的需求",
   "discoveryStepName": "发现",

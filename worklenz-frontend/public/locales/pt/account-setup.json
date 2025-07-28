@@ -91,6 +91,8 @@
   "discoveryQuestion": "Como você soube sobre nós?",
   "allSetTitle": "Você está pronto!",
   "allSetDescription": "Vamos criar seu primeiro projeto e começar com o Worklenz",
+  "surveyCompleteTitle": "Obrigado!",
+  "surveyCompleteDescription": "Seu feedback nos ajuda a melhorar o Worklenz para todos",
   "aboutYouStepName": "Sobre você",
   "yourNeedsStepName": "Suas necessidades", 
   "discoveryStepName": "Descoberta",
