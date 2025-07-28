@@ -22,7 +22,7 @@ import { RootState } from '@/app/store';
 import { fetchTaskGroups, reorderTasks } from '@/features/tasks/tasks.slice';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { AppDispatch } from '@/app/store';
-import { useAuthService } from '@/hooks/useAuth'; 
+import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import KanbanGroup from './kanbanGroup';
 import KanbanTaskCard from './kanbanTaskCard';

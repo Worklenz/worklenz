@@ -129,9 +129,7 @@ const TasksList: React.FC = React.memo(() => {
         render: (_, record) => (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Tooltip title={record.name}>
-              <Typography.Text style={{ flex: 1, marginRight: 8 }}>
-                {record.name}
-              </Typography.Text>
+              <Typography.Text style={{ flex: 1, marginRight: 8 }}>{record.name}</Typography.Text>
             </Tooltip>
             <div className="row-action-button">
               <Tooltip title={'Click open task form'}>
@@ -161,9 +159,7 @@ const TasksList: React.FC = React.memo(() => {
         render: (_, record) => {
           return (
             <Tooltip title={record.project_name}>
-              <Typography.Paragraph
-                style={{ margin: 0, paddingInlineEnd: 6 }}
-              >
+              <Typography.Paragraph style={{ margin: 0, paddingInlineEnd: 6 }}>
                 <Badge color={record.project_color || 'blue'} style={{ marginInlineEnd: 4 }} />
                 {record.project_name}
               </Typography.Paragraph>
@@ -211,7 +207,6 @@ const TasksList: React.FC = React.memo(() => {
       getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true })
     );
   }, [dispatch]);
-
 
   return (
     <Card

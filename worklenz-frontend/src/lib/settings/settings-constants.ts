@@ -13,7 +13,7 @@ import {
   UserOutlined,
   UserSwitchOutlined,
   BulbOutlined,
-  DollarCircleOutlined
+  DollarCircleOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));

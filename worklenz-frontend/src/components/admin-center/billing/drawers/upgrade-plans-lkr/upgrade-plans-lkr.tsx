@@ -1,4 +1,14 @@
-import { Button, Card, Col, Form, Input, notification, Row, Tag, Typography } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  notification,
+  Row,
+  Tag,
+  Typography,
+} from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import './upgrade-plans-lkr.css';
 import { CheckCircleFilled } from '@/shared/antd-imports';

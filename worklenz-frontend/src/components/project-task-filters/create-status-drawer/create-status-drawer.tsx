@@ -14,7 +14,11 @@ import { toggleDrawer } from '@/features/projects/status/StatusSlice';
 
 import './create-status-drawer.css';
 
-import { createStatus, fetchStatusesCategories, fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import {
+  createStatus,
+  fetchStatusesCategories,
+  fetchStatuses,
+} from '@/features/taskAttributes/taskStatusSlice';
 import { ITaskStatusCategory } from '@/types/status.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import useTabSearchParam from '@/hooks/useTabSearchParam';

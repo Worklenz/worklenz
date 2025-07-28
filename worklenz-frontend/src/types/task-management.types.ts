@@ -46,7 +46,8 @@ export interface Task {
   phase_sort_order?: number; // Sort order when grouped by phase
   member_sort_order?: number; // Sort order when grouped by members
   reporter?: string; // Reporter field
-  timeTracking?: { // Time tracking information
+  timeTracking?: {
+    // Time tracking information
     logged?: number;
     estimated?: number;
     activeTimer?: number; // Active timer start timestamp

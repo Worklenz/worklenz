@@ -1,4 +1,8 @@
-import { CaretDownFilled, SortAscendingOutlined, SortDescendingOutlined } from '@/shared/antd-imports';
+import {
+  CaretDownFilled,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+} from '@/shared/antd-imports';
 import { Badge, Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { colors } from '../../../../../styles/colors';

@@ -276,7 +276,9 @@
 
 /* Sortable item styling */
 .sortable-phase-item {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .sortable-phase-item.is-dragging {
@@ -311,15 +313,15 @@
     width: 95% !important;
     margin: 10px;
   }
-  
+
   .dark-modal .ant-modal-body {
     padding: 16px;
   }
-  
+
   .phase-item {
     padding: 12px;
   }
-  
+
   .phase-color-picker {
     width: 24px;
     height: 24px;
@@ -354,7 +356,9 @@
 .phase-item-enter-active {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .phase-item-exit {
@@ -365,7 +369,9 @@
 .phase-item-exit-active {
   opacity: 0;
   transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 /* Loading state styling */
@@ -380,4 +386,4 @@
 /* Divider styling for dark mode */
 .dark-modal .ant-divider-horizontal {
   border-color: #303030;
-} 
+}

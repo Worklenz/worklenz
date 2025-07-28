@@ -1,16 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { Calendar, Card, Typography, Button, Modal, Form, Input, Select, DatePicker, Switch, Space, Tag, Popconfirm, message } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, GlobalOutlined } from '@ant-design/icons';
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  Calendar,
+  Card,
+  Typography,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Switch,
+  Space,
+  Tag,
+  Popconfirm,
+  message,
+} from 'antd';
+import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs, { Dayjs } from 'dayjs';
 import { holidayApiService } from '@/api/holiday/holiday.api.service';
 import {
   IHolidayType,
-  IOrganizationHoliday,
-  IAvailableCountry,
   ICreateHolidayRequest,
   IUpdateHolidayRequest,
+  IHolidayCalendarEvent,
 } from '@/types/holiday/holiday.types';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { RootState } from '@/app/store';
+import { fetchHolidays } from '@/features/admin-center/admin-center.slice';
 import logger from '@/utils/errorLogger';
 import './holiday-calendar.css';
 
@@ -24,17 +42,17 @@ interface HolidayCalendarProps {
 
 const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
   const { t } = useTranslation('admin-center/overview');
+  const dispatch = useAppDispatch();
+  const { holidays, loadingHolidays, holidaySettings } = useAppSelector(
+    (state: RootState) => state.adminCenterReducer
+  );
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
 
   const [holidayTypes, setHolidayTypes] = useState<IHolidayType[]>([]);
-  const [organizationHolidays, setOrganizationHolidays] = useState<IOrganizationHoliday[]>([]);
-  const [availableCountries, setAvailableCountries] = useState<IAvailableCountry[]>([]);
-  const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [importModalVisible, setImportModalVisible] = useState(false);
-  const [selectedHoliday, setSelectedHoliday] = useState<IOrganizationHoliday | null>(null);
+  const [selectedHoliday, setSelectedHoliday] = useState<IHolidayCalendarEvent | null>(null);
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
 
   const fetchHolidayTypes = async () => {
@@ -48,36 +66,27 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
     }
   };
 
-  const fetchOrganizationHolidays = async () => {
-    setLoading(true);
-    try {
-      const res = await holidayApiService.getOrganizationHolidays(currentDate.year());
-      if (res.done) {
-        setOrganizationHolidays(res.body);
-      }
-    } catch (error) {
-      logger.error('Error fetching organization holidays', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchHolidaysForDateRange = () => {
+    const startOfYear = currentDate.startOf('year');
+    const endOfYear = currentDate.endOf('year');
 
-  const fetchAvailableCountries = async () => {
-    try {
-      const res = await holidayApiService.getAvailableCountries();
-      if (res.done) {
-        setAvailableCountries(res.body);
-      }
-    } catch (error) {
-      logger.error('Error fetching available countries', error);
-    }
+    dispatch(
+      fetchHolidays({
+        from_date: startOfYear.format('YYYY-MM-DD'),
+        to_date: endOfYear.format('YYYY-MM-DD'),
+        include_custom: true,
+      })
+    );
   };
 
   useEffect(() => {
     fetchHolidayTypes();
-    fetchOrganizationHolidays();
-    fetchAvailableCountries();
+    fetchHolidaysForDateRange();
   }, [currentDate.year()]);
+
+  const customHolidays = useMemo(() => {
+    return holidays.filter(holiday => holiday.source === 'custom');
+  }, [holidays]);
 
   const handleCreateHoliday = async (values: any) => {
     try {
@@ -94,7 +103,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
         message.success(t('holidayCreated'));
         setModalVisible(false);
         form.resetFields();
-        fetchOrganizationHolidays();
+        fetchHolidaysForDateRange();
       }
     } catch (error) {
       logger.error('Error creating holiday', error);
@@ -115,13 +124,16 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
         is_recurring: values.is_recurring,
       };
 
-      const res = await holidayApiService.updateOrganizationHoliday(selectedHoliday.id, holidayData);
+      const res = await holidayApiService.updateOrganizationHoliday(
+        selectedHoliday.id,
+        holidayData
+      );
       if (res.done) {
         message.success(t('holidayUpdated'));
         setEditModalVisible(false);
         editForm.resetFields();
         setSelectedHoliday(null);
-        fetchOrganizationHolidays();
+        fetchHolidaysForDateRange();
       }
     } catch (error) {
       logger.error('Error updating holiday', error);
@@ -134,7 +146,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
       const res = await holidayApiService.deleteOrganizationHoliday(holidayId);
       if (res.done) {
         message.success(t('holidayDeleted'));
-        fetchOrganizationHolidays();
+        fetchHolidaysForDateRange();
       }
     } catch (error) {
       logger.error('Error deleting holiday', error);
@@ -142,53 +154,47 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
     }
   };
 
-  const handleImportCountryHolidays = async (values: any) => {
-    try {
-      const res = await holidayApiService.importCountryHolidays({
-        country_code: values.country_code,
-        year: values.year || currentDate.year(),
-      });
-      if (res.done) {
-        message.success(t('holidaysImported', { count: res.body.imported_count }));
-        setImportModalVisible(false);
-        fetchOrganizationHolidays();
-      }
-    } catch (error) {
-      logger.error('Error importing country holidays', error);
-      message.error(t('errorImportingHolidays'));
+  const handleEditHoliday = (holiday: IHolidayCalendarEvent) => {
+    // Only allow editing custom holidays
+    if (holiday.source !== 'custom' || !holiday.is_editable) {
+      message.warning(t('cannotEditOfficialHoliday') || 'Cannot edit official holidays');
+      return;
     }
-  };
 
-  const handleEditHoliday = (holiday: IOrganizationHoliday) => {
     setSelectedHoliday(holiday);
     editForm.setFieldsValue({
       name: holiday.name,
       description: holiday.description,
       date: dayjs(holiday.date),
-      holiday_type_id: holiday.holiday_type_id,
+      holiday_type_id: holiday.holiday_type_name, // This might need adjustment based on backend
       is_recurring: holiday.is_recurring,
     });
     setEditModalVisible(true);
   };
 
   const getHolidayDateCellRender = (date: Dayjs) => {
-    const holiday = organizationHolidays.find(h => dayjs(h.date).isSame(date, 'day'));
-    
-    if (holiday) {
-      const holidayType = holidayTypes.find(ht => ht.id === holiday.holiday_type_id);
+    const dateHolidays = holidays.filter(h => dayjs(h.date).isSame(date, 'day'));
+
+    if (dateHolidays.length > 0) {
       return (
         <div className="holiday-cell">
-          <Tag 
-            color={holidayType?.color_code || '#f37070'}
-            style={{ 
-              fontSize: '10px', 
-              padding: '1px 4px',
-              margin: 0,
-              borderRadius: '2px'
-            }}
-          >
-            {holiday.name}
-          </Tag>
+          {dateHolidays.map((holiday, index) => (
+            <Tag
+              key={`${holiday.id}-${index}`}
+              color={holiday.color_code || (holiday.source === 'official' ? '#1890ff' : '#f37070')}
+              style={{
+                fontSize: '10px',
+                padding: '1px 4px',
+                margin: '1px 0',
+                borderRadius: '2px',
+                display: 'block',
+                opacity: holiday.source === 'official' ? 0.8 : 1,
+              }}
+              title={`${holiday.name}${holiday.source === 'official' ? ' (Official)' : ' (Custom)'}`}
+            >
+              {holiday.name}
+            </Tag>
+          ))}
         </div>
       );
     }
@@ -199,36 +205,61 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
     setCurrentDate(value);
   };
 
+  const onDateSelect = (date: Dayjs) => {
+    // Check if there's already a custom holiday on this date
+    const existingCustomHoliday = holidays.find(
+      h => dayjs(h.date).isSame(date, 'day') && h.source === 'custom' && h.is_editable
+    );
+
+    if (existingCustomHoliday) {
+      // If custom holiday exists, open edit modal
+      handleEditHoliday(existingCustomHoliday);
+    } else {
+      // If no custom holiday, open create modal with pre-filled date
+      form.setFieldValue('date', date);
+      setModalVisible(true);
+    }
+  };
+
   return (
     <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
         <Title level={5} style={{ margin: 0 }}>
           {t('holidayCalendar')}
         </Title>
         <Space>
-          <Button 
-            icon={<GlobalOutlined />} 
-            onClick={() => setImportModalVisible(true)}
-            size="small"
-          >
-            {t('importCountryHolidays')}
-          </Button>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={() => setModalVisible(true)}
             size="small"
           >
-            {t('addHoliday')}
+            {t('addCustomHoliday') || 'Add Custom Holiday'}
           </Button>
+          {holidaySettings?.country_code && (
+            <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+              {t('officialHolidaysFrom') || 'Official holidays from'}:{' '}
+              {holidaySettings.country_code}
+              {holidaySettings.state_code && ` (${holidaySettings.state_code})`}
+            </Typography.Text>
+          )}
         </Space>
       </div>
 
       <Calendar
         value={currentDate}
         onPanelChange={onPanelChange}
+        onSelect={onDateSelect}
         dateCellRender={getHolidayDateCellRender}
         className={`holiday-calendar ${themeMode}`}
+        loading={loadingHolidays}
       />
 
       {/* Create Holiday Modal */}
@@ -272,14 +303,14 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
               {holidayTypes.map(type => (
                 <Option key={type.id} value={type.id}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div 
-                      style={{ 
-                        width: 12, 
-                        height: 12, 
-                        borderRadius: '50%', 
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
                         backgroundColor: type.color_code,
-                        marginRight: 8
-                      }} 
+                        marginRight: 8,
+                      }}
                     />
                     {type.name}
                   </div>
@@ -297,10 +328,12 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
               <Button type="primary" htmlType="submit">
                 {t('save')}
               </Button>
-              <Button onClick={() => {
-                setModalVisible(false);
-                form.resetFields();
-              }}>
+              <Button
+                onClick={() => {
+                  setModalVisible(false);
+                  form.resetFields();
+                }}
+              >
                 {t('cancel')}
               </Button>
             </Space>
@@ -350,14 +383,14 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
               {holidayTypes.map(type => (
                 <Option key={type.id} value={type.id}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div 
-                      style={{ 
-                        width: 12, 
-                        height: 12, 
-                        borderRadius: '50%', 
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
                         backgroundColor: type.color_code,
-                        marginRight: 8
-                      }} 
+                        marginRight: 8,
+                      }}
                     />
                     {type.name}
                   </div>
@@ -375,51 +408,13 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
               <Button type="primary" htmlType="submit">
                 {t('update')}
               </Button>
-              <Button onClick={() => {
-                setEditModalVisible(false);
-                editForm.resetFields();
-                setSelectedHoliday(null);
-              }}>
-                {t('cancel')}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Import Country Holidays Modal */}
-      <Modal
-        title={t('importCountryHolidays')}
-        open={importModalVisible}
-        onCancel={() => setImportModalVisible(false)}
-        footer={null}
-        destroyOnClose
-      >
-        <Form layout="vertical" onFinish={handleImportCountryHolidays}>
-          <Form.Item
-            name="country_code"
-            label={t('country')}
-            rules={[{ required: true, message: t('countryRequired') }]}
-          >
-            <Select placeholder={t('selectCountry')}>
-              {availableCountries.map(country => (
-                <Option key={country.code} value={country.code}>
-                  {country.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item name="year" label={t('year')}>
-            <DatePicker picker="year" style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                {t('import')}
-              </Button>
-              <Button onClick={() => setImportModalVisible(false)}>
+              <Button
+                onClick={() => {
+                  setEditModalVisible(false);
+                  editForm.resetFields();
+                  setSelectedHoliday(null);
+                }}
+              >
                 {t('cancel')}
               </Button>
             </Space>
@@ -430,4 +425,4 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode }) => {
   );
 };
 
-export default HolidayCalendar; 
+export default HolidayCalendar;

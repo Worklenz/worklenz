@@ -8,7 +8,12 @@ import Dropdown from 'antd/es/dropdown';
 import Input from 'antd/es/input';
 import Typography from 'antd/es/typography';
 import { MenuProps } from 'antd/es/menu';
-import { EditOutlined, EllipsisOutlined, RetweetOutlined, RightOutlined } from '@/shared/antd-imports';
+import {
+  EditOutlined,
+  EllipsisOutlined,
+  RetweetOutlined,
+  RightOutlined,
+} from '@/shared/antd-imports';
 
 import { colors } from '@/styles/colors';
 import { useAppSelector } from '@/hooks/useAppSelector';

@@ -6,7 +6,7 @@ const CACHE_NAMES = {
   STATIC: `worklenz-static-${CACHE_VERSION}`,
   DYNAMIC: `worklenz-dynamic-${CACHE_VERSION}`,
   API: `worklenz-api-${CACHE_VERSION}`,
-  IMAGES: `worklenz-images-${CACHE_VERSION}`
+  IMAGES: `worklenz-images-${CACHE_VERSION}`,
 };
 
 // Resources to cache immediately on install
@@ -45,14 +45,14 @@ const NEVER_CACHE_PATTERNS = [
 // Install event - Cache static resources
 self.addEventListener('install', event => {
   console.log('Service Worker: Installing...');
-  
+
   event.waitUntil(
     (async () => {
       try {
         const cache = await caches.open(CACHE_NAMES.STATIC);
         await cache.addAll(STATIC_CACHE_URLS);
         console.log('Service Worker: Static resources cached');
-        
+
         // Skip waiting to activate immediately
         await self.skipWaiting();
       } catch (error) {
@@ -65,22 +65,20 @@ self.addEventListener('install', event => {
 // Activate event - Clean up old caches
 self.addEventListener('activate', event => {
   console.log('Service Worker: Activating...');
-  
+
   event.waitUntil(
     (async () => {
       try {
         // Clean up old caches
         const cacheNames = await caches.keys();
-        const oldCaches = cacheNames.filter(name => 
+        const oldCaches = cacheNames.filter(name =>
           Object.values(CACHE_NAMES).every(currentCache => currentCache !== name)
         );
-        
-        await Promise.all(
-          oldCaches.map(cacheName => caches.delete(cacheName))
-        );
-        
+
+        await Promise.all(oldCaches.map(cacheName => caches.delete(cacheName)));
+
         console.log('Service Worker: Old caches cleaned up');
-        
+
         // Take control of all pages
         await self.clients.claim();
       } catch (error) {
@@ -94,43 +92,42 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // Skip non-GET requests and browser extensions
   if (request.method !== 'GET' || NEVER_CACHE_PATTERNS.some(pattern => pattern.test(url.href))) {
     return;
   }
-  
+
   event.respondWith(handleFetchRequest(request));
 });
 
 // Main fetch handler with different strategies based on resource type
 async function handleFetchRequest(request) {
   const url = new URL(request.url);
-  
+
   try {
     // Static assets - Cache First strategy
     if (isStaticAsset(url)) {
       return await cacheFirstStrategy(request, CACHE_NAMES.STATIC);
     }
-    
+
     // Images - Cache First with long-term storage
     if (isImageRequest(url)) {
       return await cacheFirstStrategy(request, CACHE_NAMES.IMAGES);
     }
-    
+
     // API requests - Network First with fallback
     if (isAPIRequest(url)) {
       return await networkFirstStrategy(request, CACHE_NAMES.API);
     }
-    
+
     // HTML pages - Stale While Revalidate
     if (isHTMLRequest(request)) {
       return await staleWhileRevalidateStrategy(request, CACHE_NAMES.DYNAMIC);
     }
-    
+
     // Everything else - Network First
     return await networkFirstStrategy(request, CACHE_NAMES.DYNAMIC);
-    
   } catch (error) {
     console.error('Service Worker: Fetch failed', error);
     return createOfflineResponse(request);
@@ -141,11 +138,11 @@ async function handleFetchRequest(request) {
 async function cacheFirstStrategy(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cachedResponse = await cache.match(request);
-  
+
   if (cachedResponse) {
     return cachedResponse;
   }
-  
+
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.status === 200) {
@@ -163,25 +160,25 @@ async function cacheFirstStrategy(request, cacheName) {
 // Network First Strategy - Try network first, fallback to cache
 async function networkFirstStrategy(request, cacheName) {
   const cache = await caches.open(cacheName);
-  
+
   try {
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.status === 200) {
       // Cache successful responses
       const responseClone = networkResponse.clone();
       await cache.put(request, responseClone);
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.warn('Network First: Network failed, trying cache', error);
     const cachedResponse = await cache.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     throw error;
   }
 }
@@ -190,45 +187,52 @@ async function networkFirstStrategy(request, cacheName) {
 async function staleWhileRevalidateStrategy(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cachedResponse = await cache.match(request);
-  
+
   // Fetch from network in background
-  const networkResponsePromise = fetch(request).then(async networkResponse => {
-    if (networkResponse.status === 200) {
-      const responseClone = networkResponse.clone();
-      await cache.put(request, responseClone);
-    }
-    return networkResponse;
-  }).catch(error => {
-    console.warn('Stale While Revalidate: Background update failed', error);
-  });
-  
+  const networkResponsePromise = fetch(request)
+    .then(async networkResponse => {
+      if (networkResponse.status === 200) {
+        const responseClone = networkResponse.clone();
+        await cache.put(request, responseClone);
+      }
+      return networkResponse;
+    })
+    .catch(error => {
+      console.warn('Stale While Revalidate: Background update failed', error);
+    });
+
   // Return cached version immediately if available
   if (cachedResponse) {
     return cachedResponse;
   }
-  
+
   // If no cached version, wait for network
   return await networkResponsePromise;
 }
 
 // Helper functions to identify resource types
 function isStaticAsset(url) {
-  return /\.(js|css|woff2?|ttf|eot)$/.test(url.pathname) ||
-         url.pathname.includes('/assets/') ||
-         url.pathname === '/' ||
-         url.pathname === '/index.html' ||
-         url.pathname === '/favicon.ico' ||
-         url.pathname === '/env-config.js';
+  return (
+    /\.(js|css|woff2?|ttf|eot)$/.test(url.pathname) ||
+    url.pathname.includes('/assets/') ||
+    url.pathname === '/' ||
+    url.pathname === '/index.html' ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname === '/env-config.js'
+  );
 }
 
 function isImageRequest(url) {
-  return /\.(png|jpg|jpeg|gif|svg|webp|ico)$/.test(url.pathname) ||
-         url.pathname.includes('/file-types/');
+  return (
+    /\.(png|jpg|jpeg|gif|svg|webp|ico)$/.test(url.pathname) || url.pathname.includes('/file-types/')
+  );
 }
 
 function isAPIRequest(url) {
-  return url.pathname.startsWith('/api/') || 
-         CACHEABLE_API_PATTERNS.some(pattern => pattern.test(url.pathname));
+  return (
+    url.pathname.startsWith('/api/') ||
+    CACHEABLE_API_PATTERNS.some(pattern => pattern.test(url.pathname))
+  );
 }
 
 function isHTMLRequest(request) {
@@ -245,23 +249,26 @@ function createOfflineResponse(request) {
         Offline
       </text>
     </svg>`;
-    
+
     return new Response(svg, {
-      headers: { 'Content-Type': 'image/svg+xml' }
+      headers: { 'Content-Type': 'image/svg+xml' },
     });
   }
-  
+
   if (isAPIRequest(new URL(request.url))) {
     // Return empty array or error for API requests
-    return new Response(JSON.stringify({ 
-      error: 'Offline', 
-      message: 'This feature requires an internet connection' 
-    }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({
+        error: 'Offline',
+        message: 'This feature requires an internet connection',
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
-  
+
   // For HTML requests, try to return cached index.html
   return caches.match('/') || new Response('Offline', { status: 503 });
 }
@@ -269,7 +276,7 @@ function createOfflineResponse(request) {
 // Handle background sync events (for future implementation)
 self.addEventListener('sync', event => {
   console.log('Service Worker: Background sync', event.tag);
-  
+
   if (event.tag === 'background-sync') {
     event.waitUntil(handleBackgroundSync());
   }
@@ -278,7 +285,7 @@ self.addEventListener('sync', event => {
 async function handleBackgroundSync() {
   // This is where you would handle queued actions when coming back online
   console.log('Service Worker: Handling background sync');
-  
+
   // Example: Send queued task updates, sync offline changes, etc.
   // Implementation would depend on your app's specific needs
 }
@@ -286,7 +293,7 @@ async function handleBackgroundSync() {
 // Handle push notification events (for future implementation)
 self.addEventListener('push', event => {
   if (!event.data) return;
-  
+
   const options = {
     body: event.data.text(),
     icon: '/favicon.ico',
@@ -294,50 +301,46 @@ self.addEventListener('push', event => {
     vibrate: [200, 100, 200],
     data: {
       dateOfArrival: Date.now(),
-      primaryKey: 1
-    }
+      primaryKey: 1,
+    },
   };
-  
-  event.waitUntil(
-    self.registration.showNotification('Worklenz', options)
-  );
+
+  event.waitUntil(self.registration.showNotification('Worklenz', options));
 });
 
 // Handle notification click events
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  
-  event.waitUntil(
-    self.clients.openWindow('/')
-  );
+
+  event.waitUntil(self.clients.openWindow('/'));
 });
 
 // Message handling for communication with main thread
 self.addEventListener('message', event => {
   const { type, payload } = event.data;
-  
+
   switch (type) {
     case 'SKIP_WAITING':
       self.skipWaiting();
       break;
-      
+
     case 'GET_VERSION':
       event.ports[0].postMessage({ version: CACHE_VERSION });
       break;
-      
+
     case 'CLEAR_CACHE':
       clearAllCaches().then(() => {
         event.ports[0].postMessage({ success: true });
       });
       break;
-      
+
     case 'LOGOUT':
       // Special handler for logout - clear all caches and unregister
       handleLogout().then(() => {
         event.ports[0].postMessage({ success: true });
       });
       break;
-      
+
     default:
       console.log('Service Worker: Unknown message type', type);
   }
@@ -353,10 +356,10 @@ async function handleLogout() {
   try {
     // Clear all caches
     await clearAllCaches();
-    
+
     // Unregister the service worker to force fresh registration on next visit
     await self.registration.unregister();
-    
+
     console.log('Service Worker: Logout handled - caches cleared and unregistered');
   } catch (error) {
     console.error('Service Worker: Error during logout handling', error);
@@ -364,4 +367,4 @@ async function handleLogout() {
   }
 }
 
-console.log('Service Worker: Loaded successfully'); 
+console.log('Service Worker: Loaded successfully');

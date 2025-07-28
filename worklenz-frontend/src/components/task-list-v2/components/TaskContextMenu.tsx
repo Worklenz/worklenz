@@ -82,7 +82,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 
     try {
       setUpdatingAssignToMe(true);
-      
+
       // Immediate UI update - add current user to assignees
       const currentUser = {
         id: currentSession.team_member_id,
@@ -97,7 +97,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 
       // Check if current user is already assigned
       const isAlreadyAssigned = updatedAssignees.includes(currentSession.team_member_id);
-      
+
       if (!isAlreadyAssigned) {
         // Add current user to assignees for immediate UI feedback
         const newAssignees = [...updatedAssignees, currentSession.team_member_id];
@@ -136,7 +136,16 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       setUpdatingAssignToMe(false);
       onClose();
     }
-  }, [projectId, task.id, task.assignees, task.assignee_names, currentSession, dispatch, onClose, trackMixpanelEvent]);
+  }, [
+    projectId,
+    task.id,
+    task.assignees,
+    task.assignee_names,
+    currentSession,
+    dispatch,
+    onClose,
+    trackMixpanelEvent,
+  ]);
 
   const handleArchive = useCallback(async () => {
     if (!projectId || !task.id) return;
@@ -256,47 +265,53 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     let options: { key: string; label: React.ReactNode; onClick: () => void }[] = [];
 
     if (currentGrouping === IGroupBy.STATUS) {
-      options = statusList.filter(status => status.id).map(status => ({
-        key: status.id!,
-        label: (
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: status.color_code }}
-            ></span>
-            <span>{status.name}</span>
-          </div>
-        ),
-        onClick: () => handleStatusMoveTo(status.id!),
-      }));
+      options = statusList
+        .filter(status => status.id)
+        .map(status => ({
+          key: status.id!,
+          label: (
+            <div className="flex items-center gap-2">
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: status.color_code }}
+              ></span>
+              <span>{status.name}</span>
+            </div>
+          ),
+          onClick: () => handleStatusMoveTo(status.id!),
+        }));
     } else if (currentGrouping === IGroupBy.PRIORITY) {
-      options = priorityList.filter(priority => priority.id).map(priority => ({
-        key: priority.id!,
-        label: (
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: priority.color_code }}
-            ></span>
-            <span>{priority.name}</span>
-          </div>
-        ),
-        onClick: () => handlePriorityMoveTo(priority.id!),
-      }));
+      options = priorityList
+        .filter(priority => priority.id)
+        .map(priority => ({
+          key: priority.id!,
+          label: (
+            <div className="flex items-center gap-2">
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: priority.color_code }}
+              ></span>
+              <span>{priority.name}</span>
+            </div>
+          ),
+          onClick: () => handlePriorityMoveTo(priority.id!),
+        }));
     } else if (currentGrouping === IGroupBy.PHASE) {
-      options = phaseList.filter(phase => phase.id).map(phase => ({
-        key: phase.id!,
-        label: (
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: phase.color_code }}
-            ></span>
-            <span>{phase.name}</span>
-          </div>
-        ),
-        onClick: () => handlePhaseMoveTo(phase.id!),
-      }));
+      options = phaseList
+        .filter(phase => phase.id)
+        .map(phase => ({
+          key: phase.id!,
+          label: (
+            <div className="flex items-center gap-2">
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: phase.color_code }}
+              ></span>
+              <span>{phase.name}</span>
+            </div>
+          ),
+          onClick: () => handlePhaseMoveTo(phase.id!),
+        }));
     }
     return options;
   }, [
@@ -430,24 +445,25 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
                 total_minutes: task.timeTracking?.logged || 0,
                 progress: task.progress,
                 sub_tasks_count: task.sub_tasks_count || 0,
-                assignees: task.assignees?.map((assigneeId: string) => ({
-                  id: assigneeId,
-                  name: '',
-                  email: '',
-                  avatar_url: '',
-                  team_member_id: assigneeId,
-                  project_member_id: assigneeId,
-                })) || [],
+                assignees:
+                  task.assignees?.map((assigneeId: string) => ({
+                    id: assigneeId,
+                    name: '',
+                    email: '',
+                    avatar_url: '',
+                    team_member_id: assigneeId,
+                    project_member_id: assigneeId,
+                  })) || [],
                 labels: task.labels || [],
                 manual_progress: false,
                 created_at: task.createdAt,
                 updated_at: task.updatedAt,
                 sort_order: task.order,
               };
-              
+
               // Select the task in bulk action reducer
               dispatch(selectTasks([projectTask]));
-              
+
               // Open the drawer
               dispatch(setConvertToSubtaskDrawerOpen(true));
             }}
@@ -526,4 +542,4 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   );
 };
 
-export default TaskContextMenu; 
+export default TaskContextMenu;

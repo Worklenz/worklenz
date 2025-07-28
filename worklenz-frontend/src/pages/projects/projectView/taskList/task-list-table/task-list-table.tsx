@@ -944,8 +944,6 @@ const SelectionFieldCell: React.FC<{
   columnKey: string;
   updateValue: (taskId: string, columnKey: string, value: string) => void;
 }> = ({ selectionsList, value, task, columnKey, updateValue }) => {
-
-
   return (
     <CustomColumnSelectionCell
       selectionsList={selectionsList}

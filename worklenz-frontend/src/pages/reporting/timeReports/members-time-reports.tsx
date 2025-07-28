@@ -1,5 +1,7 @@
 import { Card, Flex } from 'antd';
-import MembersTimeSheet, { MembersTimeSheetRef } from '@/pages/reporting/time-reports/members-time-sheet/members-time-sheet';
+import MembersTimeSheet, {
+  MembersTimeSheetRef,
+} from '@/pages/reporting/time-reports/members-time-sheet/members-time-sheet';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useRef, useState } from 'react';
@@ -7,15 +9,17 @@ import { IRPTTimeTotals } from '@/types/reporting/reporting.types';
 import TimeReportingRightHeader from '@/components/reporting/time-reports/right-header/TimeReportingRightHeader';
 import TimeReportPageHeader from '@/components/reporting/time-reports/page-header/TimeReportPageHeader';
 import TotalTimeUtilization from '@/components/reporting/time-reports/total-time-utilization/total-time-utilization';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 const MembersTimeReports = () => {
   const { t } = useTranslation('time-report');
   const chartRef = useRef<MembersTimeSheetRef>(null);
   const [totals, setTotals] = useState<IRPTTimeTotals>({
-    total_time_logs: "0",
-    total_estimated_hours: "0",
-    total_utilization: "0",
+    total_time_logs: '0',
+    total_estimated_hours: '0',
+    total_utilization: '0',
   });
+  const { dateRange } = useAppSelector(state => state.reportingReducer);
   useDocumentTitle('Reporting - Allocation');
 
   const handleExport = (type: string) => {
@@ -35,7 +39,7 @@ const MembersTimeReports = () => {
         exportType={[{ key: 'png', label: 'PNG' }]}
         export={handleExport}
       />
-      <TotalTimeUtilization totals={totals} />
+      <TotalTimeUtilization totals={totals} dateRange={dateRange} />
       <Card
         style={{ borderRadius: '4px' }}
         title={

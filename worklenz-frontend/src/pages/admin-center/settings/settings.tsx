@@ -10,33 +10,65 @@ import {
   Form,
   Row,
   message,
+  Select,
+  Switch,
+  Divider,
 } from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
 import { useTranslation } from 'react-i18next';
-import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
-import { IOrganization } from '@/types/admin-center/admin-center.types';
+import { IOrganization, IOrganizationAdmin } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
 import { scheduleAPIService } from '@/api/schedule/schedule.api.service';
 import { Settings } from '@/types/schedule/schedule-v2.types';
 import OrganizationCalculationMethod from '@/components/admin-center/overview/organization-calculation-method/organization-calculation-method';
+import HolidayCalendar from '@/components/admin-center/overview/holiday-calendar/holiday-calendar';
+import { holidayApiService } from '@/api/holiday/holiday.api.service';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { RootState } from '@/app/store';
+import {
+  fetchOrganizationDetails,
+  fetchOrganizationAdmins,
+  fetchHolidaySettings,
+  updateHolidaySettings,
+  fetchCountriesWithStates,
+} from '@/features/admin-center/admin-center.slice';
 
 const SettingsPage: React.FC = () => {
-  const [organization, setOrganization] = useState<IOrganization | null>(null);
+  const dispatch = useAppDispatch();
+  const {
+    organization,
+    organizationAdmins,
+    loadingOrganization,
+    loadingOrganizationAdmins,
+    holidaySettings,
+    loadingHolidaySettings,
+    countriesWithStates,
+    loadingCountries,
+  } = useAppSelector((state: RootState) => state.adminCenterReducer);
+  const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
   const [workingDays, setWorkingDays] = useState<Settings['workingDays']>([]);
   const [workingHours, setWorkingHours] = useState<Settings['workingHours']>(8);
   const [saving, setSaving] = useState(false);
+  const [savingHolidays, setSavingHolidays] = useState(false);
   const [form] = Form.useForm();
+  const [holidayForm] = Form.useForm();
 
   const { t } = useTranslation('admin-center/settings');
 
   const getOrganizationDetails = async () => {
     try {
-      const res = await adminCenterApiService.getOrganizationDetails();
-      if (res.done) {
-        setOrganization(res.body);
-      }
+      await dispatch(fetchOrganizationDetails()).unwrap();
     } catch (error) {
       logger.error('Error getting organization details', error);
+    }
+  };
+
+  const getOrganizationAdmins = async () => {
+    try {
+      await dispatch(fetchOrganizationAdmins()).unwrap();
+    } catch (error) {
+      logger.error('Error getting organization admins', error);
     }
   };
 
@@ -87,8 +119,41 @@ const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     getOrganizationDetails();
+    getOrganizationAdmins();
     getOrgWorkingSettings();
+    dispatch(fetchHolidaySettings());
+    dispatch(fetchCountriesWithStates());
   }, []);
+
+  useEffect(() => {
+    if (holidaySettings) {
+      holidayForm.setFieldsValue({
+        country_code: holidaySettings.country_code,
+        state_code: holidaySettings.state_code,
+        auto_sync_holidays: holidaySettings.auto_sync_holidays ?? true,
+      });
+    }
+  }, [holidaySettings, holidayForm]);
+
+  const handleHolidaySettingsSave = async (values: any) => {
+    setSavingHolidays(true);
+    try {
+      await dispatch(updateHolidaySettings(values)).unwrap();
+      message.success(t('holidaySettingsSaved') || 'Holiday settings saved successfully');
+    } catch (error) {
+      logger.error('Error updating holiday settings', error);
+      message.error(t('errorSavingHolidaySettings') || 'Error saving holiday settings');
+    } finally {
+      setSavingHolidays(false);
+    }
+  };
+
+  const getSelectedCountryStates = () => {
+    const selectedCountry = countriesWithStates.find(
+      country => country.code === holidayForm.getFieldValue('country_code')
+    );
+    return selectedCountry?.states || [];
+  };
 
   return (
     <div style={{ width: '100%' }}>
@@ -148,6 +213,81 @@ const SettingsPage: React.FC = () => {
           organization={organization}
           refetch={getOrganizationDetails}
         />
+
+        <Card>
+          <Typography.Title level={5} style={{ margin: 0 }}>
+            {t('holidaySettings') || 'Holiday Settings'}
+          </Typography.Title>
+          <Form
+            layout="vertical"
+            form={holidayForm}
+            onFinish={handleHolidaySettingsSave}
+            style={{ marginTop: 16 }}
+          >
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={t('country') || 'Country'}
+                  name="country_code"
+                  rules={[
+                    { required: true, message: t('countryRequired') || 'Please select a country' },
+                  ]}
+                >
+                  <Select
+                    placeholder={t('selectCountry') || 'Select country'}
+                    loading={loadingCountries}
+                    onChange={() => {
+                      holidayForm.setFieldValue('state_code', undefined);
+                    }}
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                    }
+                  >
+                    {countriesWithStates.map(country => (
+                      <Select.Option key={country.code} value={country.code}>
+                        {country.name}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label={t('state') || 'State/Province'} name="state_code">
+                  <Select
+                    placeholder={t('selectState') || 'Select state/province (optional)'}
+                    allowClear
+                    disabled={!holidayForm.getFieldValue('country_code')}
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                    }
+                  >
+                    {getSelectedCountryStates().map(state => (
+                      <Select.Option key={state.code} value={state.code}>
+                        {state.name}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+            <Form.Item
+              label={t('autoSyncHolidays') || 'Automatically sync official holidays'}
+              name="auto_sync_holidays"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit" loading={savingHolidays}>
+                {t('saveHolidaySettings') || 'Save Holiday Settings'}
+              </Button>
+            </Form.Item>
+          </Form>
+        </Card>
+
+        <HolidayCalendar themeMode={themeMode} />
       </Space>
     </div>
   );

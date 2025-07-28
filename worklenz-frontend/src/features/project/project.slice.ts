@@ -219,7 +219,7 @@ export const {
   setProjectView,
   updatePhaseLabel,
   setRefreshTimestamp,
-  updateProjectCurrency
+  updateProjectCurrency,
 } = projectSlice.actions;
 
 export default projectSlice.reducer;

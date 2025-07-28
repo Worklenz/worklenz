@@ -124,19 +124,19 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     e.stopPropagation();
     console.log('Opening project drawer from project group for project:', projectId);
     trackMixpanelEvent(evt_projects_settings_click);
-    
+
     // Set project ID first
     dispatch(setProjectId(projectId));
-    
+
     // Then fetch project data
     dispatch(fetchProjectData(projectId))
       .unwrap()
-      .then((projectData) => {
+      .then(projectData => {
         console.log('Project data fetched successfully from project group:', projectData);
         // Open drawer after data is fetched
         dispatch(toggleProjectDrawer());
       })
-      .catch((error) => {
+      .catch(error => {
         console.error('Failed to fetch project data from project group:', error);
         // Still open drawer even if fetch fails, so user can see error state
         dispatch(toggleProjectDrawer());

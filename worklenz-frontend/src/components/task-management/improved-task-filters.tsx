@@ -20,7 +20,10 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
-import { toggleField, syncFieldWithDatabase } from '@/features/task-management/taskListFields.slice';
+import {
+  toggleField,
+  syncFieldWithDatabase,
+} from '@/features/task-management/taskListFields.slice';
 import { selectColumns } from '@/features/task-management/task-management.slice';
 
 // Import Redux actions
@@ -84,7 +87,7 @@ const FILTER_DEBOUNCE_DELAY = 300; // ms
 const SEARCH_DEBOUNCE_DELAY = 500; // ms
 const MAX_FILTER_OPTIONS = 100;
 
- // Limit options to prevent UI lag
+// Limit options to prevent UI lag
 
 // Optimized selectors with proper transformation logic
 const selectFilterData = createSelector(
@@ -452,7 +455,7 @@ const FilterDropdown: React.FC<{
       {/* Trigger Button */}
       <button
         onClick={onToggle}
-                  className={`
+        className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
           ${
@@ -689,19 +692,19 @@ const SearchFilter: React.FC<{
               value={localValue}
               onChange={e => setLocalValue(e.target.value)}
               placeholder={placeholder || t('searchTasks') || 'Search tasks by name or key...'}
-                                className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
-                    isDarkMode
-                      ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                      : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                  }`}
+              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
+                isDarkMode
+                  ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                  : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+              }`}
             />
             {localValue && (
               <button
                 type="button"
                 onClick={handleClear}
                 className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 transition-colors duration-150 ${
-                  isDarkMode 
-                    ? 'text-gray-400 hover:text-gray-200' 
+                  isDarkMode
+                    ? 'text-gray-400 hover:text-gray-200'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -716,9 +719,9 @@ const SearchFilter: React.FC<{
                 ? 'text-white bg-gray-600 hover:bg-gray-700'
                 : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
             }`}
-                      >
-              {t('search')}
-            </button>
+          >
+            {t('search')}
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -727,9 +730,7 @@ const SearchFilter: React.FC<{
               setIsExpanded(false);
             }}
             className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${
-              isDarkMode
-                ? 'text-gray-400 hover:text-gray-200'
-                : 'text-gray-600 hover:text-gray-800'
+              isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
             }`}
           >
             {t('cancel')}
@@ -751,30 +752,33 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   const dispatch = useAppDispatch();
 
   // Helper function to get translated field label using existing task-list-table translations
-  const getFieldLabel = useCallback((fieldKey: string) => {
-    const keyMappings: Record<string, string> = {
-      'KEY': 'keyColumn',
-      'DESCRIPTION': 'descriptionColumn', 
-      'PROGRESS': 'progressColumn',
-      'ASSIGNEES': 'assigneesColumn',
-      'LABELS': 'labelsColumn',
-      'PHASE': 'phaseColumn',
-      'STATUS': 'statusColumn',
-      'PRIORITY': 'priorityColumn',
-      'TIME_TRACKING': 'timeTrackingColumn',
-      'ESTIMATION': 'estimationColumn',
-      'START_DATE': 'startDateColumn',
-      'DUE_DATE': 'dueDateColumn',
-      'DUE_TIME': 'dueTimeColumn',
-      'COMPLETED_DATE': 'completedDateColumn',
-      'CREATED_DATE': 'createdDateColumn',
-      'LAST_UPDATED': 'lastUpdatedColumn',
-      'REPORTER': 'reporterColumn',
-    };
+  const getFieldLabel = useCallback(
+    (fieldKey: string) => {
+      const keyMappings: Record<string, string> = {
+        KEY: 'keyColumn',
+        DESCRIPTION: 'descriptionColumn',
+        PROGRESS: 'progressColumn',
+        ASSIGNEES: 'assigneesColumn',
+        LABELS: 'labelsColumn',
+        PHASE: 'phaseColumn',
+        STATUS: 'statusColumn',
+        PRIORITY: 'priorityColumn',
+        TIME_TRACKING: 'timeTrackingColumn',
+        ESTIMATION: 'estimationColumn',
+        START_DATE: 'startDateColumn',
+        DUE_DATE: 'dueDateColumn',
+        DUE_TIME: 'dueTimeColumn',
+        COMPLETED_DATE: 'completedDateColumn',
+        CREATED_DATE: 'createdDateColumn',
+        LAST_UPDATED: 'lastUpdatedColumn',
+        REPORTER: 'reporterColumn',
+      };
 
-    const translationKey = keyMappings[fieldKey];
-    return translationKey ? tTable(translationKey) : fieldKey;
-  }, [tTable]);
+      const translationKey = keyMappings[fieldKey];
+      return translationKey ? tTable(translationKey) : fieldKey;
+    },
+    [tTable]
+  );
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
   const columns = useSelector(selectColumns);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
@@ -859,9 +863,9 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
           {/* Options List */}
           <div className="max-h-48 overflow-y-auto">
             {sortedFields.length === 0 ? (
-                          <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
-              {t('noOptionsFound')}
-            </div>
+              <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
+                {t('noOptionsFound')}
+              </div>
             ) : (
               <div className="p-0.5">
                 {sortedFields.map(field => {
@@ -873,15 +877,17 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                       onClick={() => {
                         // Toggle field locally first
                         dispatch(toggleField(field.key));
-                        
+
                         // Sync with database if projectId is available
                         if (projectId) {
-                          dispatch(syncFieldWithDatabase({
-                            projectId,
-                            fieldKey: field.key,
-                            visible: !field.visible,
-                            columns
-                          }));
+                          dispatch(
+                            syncFieldWithDatabase({
+                              projectId,
+                              fieldKey: field.key,
+                              visible: !field.visible,
+                              columns,
+                            })
+                          );
                         }
                       }}
                       className={`
@@ -949,7 +955,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   // Get search value from Redux based on position
   const taskManagementSearch = useAppSelector(state => state.taskManagement?.search || '');
   const kanbanSearch = useAppSelector(state => state.enhancedKanbanReducer?.search || '');
-  
+
   const searchValue = position === 'board' ? kanbanSearch : taskManagementSearch;
 
   // Local state for filter sections
@@ -957,7 +963,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   const [clearingFilters, setClearingFilters] = useState(false);
-  
+
   // Modal state
   const [showManageStatusModal, setShowManageStatusModal] = useState(false);
   const [showManagePhaseModal, setShowManagePhaseModal] = useState(false);
@@ -1306,12 +1312,12 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
             ))
           ) : (
             // Loading state
-                          <div
-                className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}
-              >
-                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-500"></div>
-                <span>{t('loadingFilters')}</span>
-              </div>
+            <div
+              className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}
+            >
+              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-500"></div>
+              <span>{t('loadingFilters')}</span>
+            </div>
           )}
         </div>
 
@@ -1321,17 +1327,18 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-1.5">
               <span className={`text-xs ${themeClasses.secondaryText}`}>
-                {activeFiltersCount} {activeFiltersCount !== 1 ? t('filtersActive') : t('filterActive')}
+                {activeFiltersCount}{' '}
+                {activeFiltersCount !== 1 ? t('filtersActive') : t('filterActive')}
               </span>
               <button
                 onClick={clearAllFilters}
                 disabled={clearingFilters}
                 className={`text-xs font-medium transition-colors duration-150 ${
                   clearingFilters
-                    ?                   'text-gray-400 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'text-gray-400 hover:text-gray-300'
-                    : 'text-gray-600 hover:text-gray-700'
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'text-gray-400 hover:text-gray-300'
+                      : 'text-gray-600 hover:text-gray-700'
                 }`}
               >
                 {clearingFilters ? t('clearing') : t('clearAll')}
@@ -1362,7 +1369,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           )}
         </div>
       </div>
-      
+
       {/* Modals */}
       <ManageStatusModal
         open={showManageStatusModal}
@@ -1373,7 +1380,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
         }}
         projectId={projectId || undefined}
       />
-      
+
       <ManagePhaseModal
         open={showManagePhaseModal}
         onClose={() => {

@@ -18,7 +18,10 @@ import { deleteTask } from '@/features/tasks/tasks.slice';
 import { deleteTask as deleteTaskFromManagement } from '@/features/task-management/task-management.slice';
 import { deselectTask } from '@/features/task-management/selection.slice';
 import { deleteBoardTask } from '@/features/board/board-slice';
-import { deleteTask as deleteKanbanTask, updateEnhancedKanbanSubtask } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import {
+  deleteTask as deleteKanbanTask,
+  updateEnhancedKanbanSubtask,
+} from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskHierarchyBreadcrumb from '../task-hierarchy-breadcrumb/task-hierarchy-breadcrumb';
@@ -46,7 +49,8 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const currentSession = useAuthService().getCurrentSession();
 
   // Check if current task is a sub-task
-  const isSubTask = taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
+  const isSubTask =
+    taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
 
   useEffect(() => {
     setTaskName(taskFormViewModel?.task?.name ?? '');
@@ -75,11 +79,17 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
       dispatch(deleteTask({ taskId: selectedTaskId }));
       dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
       if (taskFormViewModel?.task?.is_sub_task) {
-        dispatch(updateEnhancedKanbanSubtask({
-          sectionId: '',
-          subtask: { id: selectedTaskId, parent_task_id: taskFormViewModel?.task?.parent_task_id || '', manual_progress: false },
-          mode: 'delete',
-        }));
+        dispatch(
+          updateEnhancedKanbanSubtask({
+            sectionId: '',
+            subtask: {
+              id: selectedTaskId,
+              parent_task_id: taskFormViewModel?.task?.parent_task_id || '',
+              manual_progress: false,
+            },
+            mode: 'delete',
+          })
+        );
       } else {
         dispatch(deleteKanbanTask(selectedTaskId)); // <-- Add this line
       }
@@ -144,7 +154,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     <div>
       {/* Show breadcrumb for sub-tasks */}
       {isSubTask && <TaskHierarchyBreadcrumb t={t} />}
-      
+
       <Flex gap={8} align="center" style={{ marginBlockEnd: 2 }}>
         <Flex style={{ position: 'relative', width: '100%', alignItems: 'center' }}>
           {isEditing ? (
@@ -166,10 +176,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
             />
           ) : (
             <Tooltip title={shouldShowTooltip ? displayTaskName : ''} trigger="hover">
-              <p
-                onClick={() => setIsEditing(true)}
-                className="task-name-display"
-              >
+              <p onClick={() => setIsEditing(true)} className="task-name-display">
                 {truncatedTaskName}
               </p>
             </Tooltip>
@@ -182,7 +189,10 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
           teamId={currentSession?.team_id ?? ''}
         />
 
-        <Dropdown overlayClassName={'delete-task-dropdown'} menu={{ items: deletTaskDropdownItems }}>
+        <Dropdown
+          overlayClassName={'delete-task-dropdown'}
+          menu={{ items: deletTaskDropdownItems }}
+        >
           <Button type="text" icon={<EllipsisOutlined />} />
         </Dropdown>
       </Flex>

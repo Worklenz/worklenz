@@ -59,6 +59,32 @@ export interface IImportCountryHolidaysRequest {
   year?: number;
 }
 
+export interface IOrganizationHolidaySettings {
+  country_code?: string;
+  state_code?: string;
+  auto_sync_holidays?: boolean;
+}
+
+export interface ICountryState {
+  code: string;
+  name: string;
+}
+
+export interface ICountryWithStates {
+  code: string;
+  name: string;
+  states?: ICountryState[];
+}
+
+export interface IHolidayDateRange {
+  from_date: string;
+  to_date: string;
+}
+
+export interface ICombinedHolidaysRequest extends IHolidayDateRange {
+  include_custom?: boolean;
+}
+
 export interface IHolidayCalendarEvent {
   id: string;
   name: string;
@@ -67,5 +93,6 @@ export interface IHolidayCalendarEvent {
   is_recurring: boolean;
   holiday_type_name: string;
   color_code: string;
-  source: 'organization' | 'country';
-} 
+  source: 'official' | 'custom';
+  is_editable: boolean;
+}

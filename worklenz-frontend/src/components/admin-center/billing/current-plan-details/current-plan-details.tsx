@@ -69,7 +69,7 @@ const CurrentPlanDetails = () => {
   );
 
   const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  
+
   const seatCountOptions: SeatOption[] = useMemo(() => {
     const options: SeatOption[] = [
       1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
@@ -78,30 +78,33 @@ const CurrentPlanDetails = () => {
     return options;
   }, []);
 
-  const handleSubscriptionAction = useCallback(async (action: SubscriptionAction) => {
-    const isResume = action === 'resume';
-    const setLoadingState = isResume ? setCancellingPlan : setPausingPlan;
-    const apiMethod = isResume
-      ? adminCenterApiService.resumeSubscription
-      : adminCenterApiService.pauseSubscription;
-    const eventType = isResume ? evt_billing_resume_plan : evt_billing_pause_plan;
+  const handleSubscriptionAction = useCallback(
+    async (action: SubscriptionAction) => {
+      const isResume = action === 'resume';
+      const setLoadingState = isResume ? setCancellingPlan : setPausingPlan;
+      const apiMethod = isResume
+        ? adminCenterApiService.resumeSubscription
+        : adminCenterApiService.pauseSubscription;
+      const eventType = isResume ? evt_billing_resume_plan : evt_billing_pause_plan;
 
-    try {
-      setLoadingState(true);
-      const res = await apiMethod();
-      if (res.done) {
-        setTimeout(() => {
-          setLoadingState(false);
-          dispatch(fetchBillingInfo());
-          trackMixpanelEvent(eventType);
-        }, BILLING_DELAY_MS);
-        return;
+      try {
+        setLoadingState(true);
+        const res = await apiMethod();
+        if (res.done) {
+          setTimeout(() => {
+            setLoadingState(false);
+            dispatch(fetchBillingInfo());
+            trackMixpanelEvent(eventType);
+          }, BILLING_DELAY_MS);
+          return;
+        }
+      } catch (error) {
+        logger.error(`Error ${action}ing subscription`, error);
+        setLoadingState(false);
       }
-    } catch (error) {
-      logger.error(`Error ${action}ing subscription`, error);
-      setLoadingState(false);
-    }
-  }, [dispatch, trackMixpanelEvent]);
+    },
+    [dispatch, trackMixpanelEvent]
+  );
 
   const handleAddMoreSeats = useCallback(() => {
     setIsMoreSeatsModalVisible(true);
@@ -137,17 +140,17 @@ const CurrentPlanDetails = () => {
   const getDefaultSeatCount = useMemo(() => {
     const currentUsed = billingInfo?.total_used || 0;
     const availableSeats = calculateRemainingSeats;
-    
+
     // If only 1 user and no available seats, suggest 1 additional seat
     if (currentUsed === 1 && availableSeats === 0) {
       return 1;
     }
-    
+
     // If they have some users but running low on seats, suggest enough for current users
     if (availableSeats < currentUsed && currentUsed > 0) {
       return Math.max(1, currentUsed - availableSeats);
     }
-    
+
     // Default fallback
     return Math.max(1, Math.min(5, currentUsed || 1));
   }, [billingInfo?.total_used, calculateRemainingSeats]);
@@ -157,10 +160,13 @@ const CurrentPlanDetails = () => {
     setSelectedSeatCount(getDefaultSeatCount);
   }, [getDefaultSeatCount]);
 
-  const checkSubscriptionStatus = useCallback((allowedStatuses: string[]) => {
-    if (!billingInfo?.status || billingInfo.is_ltd_user) return false;
-    return allowedStatuses.includes(billingInfo.status);
-  }, [billingInfo?.status, billingInfo?.is_ltd_user]);
+  const checkSubscriptionStatus = useCallback(
+    (allowedStatuses: string[]) => {
+      if (!billingInfo?.status || billingInfo.is_ltd_user) return false;
+      return allowedStatuses.includes(billingInfo.status);
+    },
+    [billingInfo?.status, billingInfo?.is_ltd_user]
+  );
 
   const shouldShowRedeemButton = useMemo(() => {
     if (billingInfo?.trial_in_progress) return true;
@@ -261,28 +267,31 @@ const CurrentPlanDetails = () => {
     return today > trialExpireDate;
   }, [billingInfo?.trial_expire_date]);
 
-  const getExpirationMessage = useCallback((expireDate: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const getExpirationMessage = useCallback(
+    (expireDate: string) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const expDate = new Date(expireDate);
-    expDate.setHours(0, 0, 0, 0);
+      const expDate = new Date(expireDate);
+      expDate.setHours(0, 0, 0, 0);
 
-    if (expDate.getTime() === today.getTime()) {
-      return t('expirestoday', 'today');
-    } else if (expDate.getTime() === tomorrow.getTime()) {
-      return t('expirestomorrow', 'tomorrow');
-    } else if (expDate < today) {
-      const diffTime = Math.abs(today.getTime() - expDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return t('expiredDaysAgo', '{{days}} days ago', { days: diffDays });
-    } else {
-      return calculateTimeGap(expireDate);
-    }
-  }, [t]);
+      if (expDate.getTime() === today.getTime()) {
+        return t('expirestoday', 'today');
+      } else if (expDate.getTime() === tomorrow.getTime()) {
+        return t('expirestomorrow', 'tomorrow');
+      } else if (expDate < today) {
+        const diffTime = Math.abs(today.getTime() - expDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return t('expiredDaysAgo', '{{days}} days ago', { days: diffDays });
+      } else {
+        return calculateTimeGap(expireDate);
+      }
+    },
+    [t]
+  );
 
   const renderTrialDetails = useCallback(() => {
     const isExpired = checkIfTrialExpired();
@@ -309,19 +318,22 @@ const CurrentPlanDetails = () => {
     );
   }, [billingInfo?.trial_expire_date, checkIfTrialExpired, getExpirationMessage, t]);
 
-  const renderFreePlan = useCallback(() => (
-    <Flex vertical>
-      <Typography.Text strong>{t('freePlan')}</Typography.Text>
-      <Typography.Text>
-        <br />-{' '}
-        {freePlanSettings?.team_member_limit === 0
-          ? t('unlimitedTeamMembers')
-          : `${freePlanSettings?.team_member_limit} ${t('teamMembers')}`}
-        <br />- {freePlanSettings?.projects_limit} {t('projects')}
-        <br />- {freePlanSettings?.free_tier_storage} MB {t('storage')}
-      </Typography.Text>
-    </Flex>
-  ), [freePlanSettings, t]);
+  const renderFreePlan = useCallback(
+    () => (
+      <Flex vertical>
+        <Typography.Text strong>{t('freePlan')}</Typography.Text>
+        <Typography.Text>
+          <br />-{' '}
+          {freePlanSettings?.team_member_limit === 0
+            ? t('unlimitedTeamMembers')
+            : `${freePlanSettings?.team_member_limit} ${t('teamMembers')}`}
+          <br />- {freePlanSettings?.projects_limit} {t('projects')}
+          <br />- {freePlanSettings?.free_tier_storage} MB {t('storage')}
+        </Typography.Text>
+      </Flex>
+    ),
+    [freePlanSettings, t]
+  );
 
   const renderPaddleSubscriptionInfo = useCallback(() => {
     return (
@@ -439,9 +451,7 @@ const CurrentPlanDetails = () => {
       extra={renderExtra()}
     >
       <Flex vertical>
-        <div style={{ marginBottom: '14px' }}>
-          {renderSubscriptionContent()}
-        </div>
+        <div style={{ marginBottom: '14px' }}>{renderSubscriptionContent()}</div>
 
         {shouldShowRedeemButton && (
           <>
@@ -478,10 +488,12 @@ const CurrentPlanDetails = () => {
             <Typography.Paragraph
               style={{ fontSize: '16px', margin: '0 0 16px 0', fontWeight: 500 }}
             >
-              {billingInfo?.total_used === 1 
-                ? t('purchaseSeatsTextSingle', "Add more seats to invite team members to your workspace.")
-                : t('purchaseSeatsText', "To continue, you'll need to purchase additional seats.")
-              }
+              {billingInfo?.total_used === 1
+                ? t(
+                    'purchaseSeatsTextSingle',
+                    'Add more seats to invite team members to your workspace.'
+                  )
+                : t('purchaseSeatsText', "To continue, you'll need to purchase additional seats.")}
             </Typography.Paragraph>
 
             <Typography.Paragraph style={{ margin: '0 0 16px 0' }}>
@@ -497,9 +509,11 @@ const CurrentPlanDetails = () => {
 
             <Typography.Paragraph style={{ margin: '0 0 24px 0' }}>
               {billingInfo?.total_used === 1
-                ? t('selectSeatsTextSingle', 'Select how many additional seats you need for new team members.')
-                : t('selectSeatsText', 'Please select the number of additional seats to purchase.')
-              }
+                ? t(
+                    'selectSeatsTextSingle',
+                    'Select how many additional seats you need for new team members.'
+                  )
+                : t('selectSeatsText', 'Please select the number of additional seats to purchase.')}
             </Typography.Paragraph>
 
             <div style={{ marginBottom: '24px' }}>
@@ -511,7 +525,6 @@ const CurrentPlanDetails = () => {
                 options={seatCountOptions}
                 style={{ width: '300px' }}
               />
-
             </div>
 
             <Flex justify="end">

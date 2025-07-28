@@ -80,7 +80,7 @@
     "peopleField": "人员字段",
     "noDate": "无日期",
     "unsupportedField": "不支持的字段类型",
-    
+
     "modal": {
       "addFieldTitle": "添加字段",
       "editFieldTitle": "编辑字段",
@@ -101,7 +101,7 @@
       "createErrorMessage": "创建自定义列失败",
       "updateErrorMessage": "更新自定义列失败"
     },
-    
+
     "fieldTypes": {
       "people": "人员",
       "number": "数字",

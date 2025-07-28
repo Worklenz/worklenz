@@ -23,22 +23,22 @@ export const fetchProjectData = createAsyncThunk(
       if (!projectId) {
         throw new Error('Project ID is required');
       }
-      
+
       console.log(`Fetching project data for ID: ${projectId}`);
       const response = await projectsApiService.getProject(projectId);
-      
+
       if (!response) {
         throw new Error('No response received from API');
       }
-      
+
       if (!response.done) {
         throw new Error(response.message || 'API request failed');
       }
-      
+
       if (!response.body) {
         throw new Error('No project data in response body');
       }
-      
+
       console.log(`Successfully fetched project data:`, response.body);
       return response.body;
     } catch (error) {

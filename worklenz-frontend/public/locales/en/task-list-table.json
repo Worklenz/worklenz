@@ -87,7 +87,7 @@
     "peopleField": "People field",
     "noDate": "No date",
     "unsupportedField": "Unsupported field type",
-    
+
     "modal": {
       "addFieldTitle": "Add field",
       "editFieldTitle": "Edit field",
@@ -108,7 +108,7 @@
       "createErrorMessage": "Failed to create custom column",
       "updateErrorMessage": "Failed to update custom column"
     },
-    
+
     "fieldTypes": {
       "people": "People",
       "number": "Number",

@@ -31,22 +31,26 @@ export const AddCustomColumnButton: React.FC = memo(() => {
         className={`
           group relative w-9 h-9 rounded-lg border-2 border-dashed transition-all duration-200
           flex items-center justify-center
-          ${isDarkMode 
-            ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400' 
-            : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-400 hover:text-blue-600'
+          ${
+            isDarkMode
+              ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400'
+              : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-400 hover:text-blue-600'
           }
         `}
       >
         <PlusOutlined className="text-sm transition-transform duration-200 group-hover:scale-110" />
-        
+
         {/* Subtle glow effect on hover */}
-        <div className={`
+        <div
+          className={`
           absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200
-          ${isDarkMode 
-            ? 'bg-blue-500/5 shadow-lg shadow-blue-500/20' 
-            : 'bg-blue-500/5 shadow-lg shadow-blue-500/10'
+          ${
+            isDarkMode
+              ? 'bg-blue-500/5 shadow-lg shadow-blue-500/20'
+              : 'bg-blue-500/5 shadow-lg shadow-blue-500/10'
           }
-        `} />
+        `}
+        />
       </button>
     </Tooltip>
   );
@@ -62,22 +66,25 @@ export const CustomColumnHeader: React.FC<{
   const { t } = useTranslation('task-list-table');
   const [isHovered, setIsHovered] = useState(false);
 
-  const displayName = column.name || 
-                     column.label || 
-                     column.custom_column_obj?.fieldTitle || 
-                     column.custom_column_obj?.field_title ||
-                     t('customColumns.customColumnHeader');
+  const displayName =
+    column.name ||
+    column.label ||
+    column.custom_column_obj?.fieldTitle ||
+    column.custom_column_obj?.field_title ||
+    t('customColumns.customColumnHeader');
 
   return (
-    <Flex 
-      align="center" 
-      justify="space-between" 
+    <Flex
+      align="center"
+      justify="space-between"
       className="w-full px-2 group cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onSettingsClick(column.key || column.id)}
     >
-      <span title={displayName} className="truncate flex-1 mr-2">{displayName}</span>
+      <span title={displayName} className="truncate flex-1 mr-2">
+        {displayName}
+      </span>
       <Tooltip title={t('customColumns.customColumnSettings')}>
         <SettingOutlined
           className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 flex-shrink-0 ${
@@ -145,7 +152,9 @@ export const CustomColumnCell: React.FC<{
         />
       );
     default:
-      return <span className="text-sm text-gray-400 px-2">{t('customColumns.unsupportedField')}</span>;
+      return (
+        <span className="text-sm text-gray-400 px-2">{t('customColumns.unsupportedField')}</span>
+      );
   }
 });
 
@@ -161,11 +170,11 @@ export const PeopleCustomColumnCell: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
   const [optimisticSelectedIds, setOptimisticSelectedIds] = useState<string[]>([]);
-  
+
   const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
-  
+
   // Parse selected member IDs from custom value
   const selectedMemberIds = useMemo(() => {
     try {
@@ -199,31 +208,34 @@ export const PeopleCustomColumnCell: React.FC<{
     return members.data.filter(member => displayedMemberIds.includes(member.id));
   }, [members, displayedMemberIds]);
 
-  const handleMemberToggle = useCallback((memberId: string, checked: boolean) => {
-    // Add to pending changes for visual feedback
-    setPendingChanges(prev => new Set(prev).add(memberId));
+  const handleMemberToggle = useCallback(
+    (memberId: string, checked: boolean) => {
+      // Add to pending changes for visual feedback
+      setPendingChanges(prev => new Set(prev).add(memberId));
 
-    const newSelectedIds = checked
-      ? [...selectedMemberIds, memberId]
-      : selectedMemberIds.filter((id: string) => id !== memberId);
+      const newSelectedIds = checked
+        ? [...selectedMemberIds, memberId]
+        : selectedMemberIds.filter((id: string) => id !== memberId);
 
-    // Update optimistic state immediately for instant UI feedback
-    setOptimisticSelectedIds(newSelectedIds);
+      // Update optimistic state immediately for instant UI feedback
+      setOptimisticSelectedIds(newSelectedIds);
 
-    if (task.id) {
-      updateTaskCustomColumnValue(task.id, columnKey, JSON.stringify(newSelectedIds));
-    }
+      if (task.id) {
+        updateTaskCustomColumnValue(task.id, columnKey, JSON.stringify(newSelectedIds));
+      }
 
-    // Remove from pending changes after socket update is processed
-    // Use a longer timeout to ensure the socket update has been received and processed
-    setTimeout(() => {
-      setPendingChanges(prev => {
-        const newSet = new Set<string>(Array.from(prev));
-        newSet.delete(memberId);
-        return newSet;
-      });
-    }, 1500); // Even longer delay to ensure socket update is fully processed
-  }, [selectedMemberIds, task.id, columnKey, updateTaskCustomColumnValue]);
+      // Remove from pending changes after socket update is processed
+      // Use a longer timeout to ensure the socket update has been received and processed
+      setTimeout(() => {
+        setPendingChanges(prev => {
+          const newSet = new Set<string>(Array.from(prev));
+          newSet.delete(memberId);
+          return newSet;
+        });
+      }, 1500); // Even longer delay to ensure socket update is fully processed
+    },
+    [selectedMemberIds, task.id, columnKey, updateTaskCustomColumnValue]
+  );
 
   const loadMembers = useCallback(async () => {
     if (members?.data?.length === 0) {
@@ -249,7 +261,7 @@ export const PeopleCustomColumnCell: React.FC<{
           isDarkMode={isDarkMode}
         />
       )}
-      
+
       <PeopleDropdown
         selectedMemberIds={displayedMemberIds}
         onMemberToggle={handleMemberToggle}
@@ -291,7 +303,7 @@ export const DateCustomColumnCell: React.FC<{
           onOpenChange={setIsOpen}
           value={dateValue}
           onChange={handleDateChange}
-          placeholder={dateValue ? "" : "Set date"}
+          placeholder={dateValue ? '' : 'Set date'}
           format="MMM DD, YYYY"
           suffixIcon={null}
           size="small"
@@ -302,7 +314,7 @@ export const DateCustomColumnCell: React.FC<{
           `}
           popupClassName={isDarkMode ? 'dark-date-picker' : 'light-date-picker'}
           inputReadOnly
-          getPopupContainer={(trigger) => trigger.parentElement || document.body}
+          getPopupContainer={trigger => trigger.parentElement || document.body}
           style={{
             backgroundColor: 'transparent',
             border: 'none',
@@ -328,7 +340,7 @@ export const NumberCustomColumnCell: React.FC<{
   const [inputValue, setInputValue] = useState(String(customValue || ''));
   const [isEditing, setIsEditing] = useState(false);
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
-  
+
   const numberType = columnObj?.numberType || 'formatted';
   const decimals = columnObj?.decimals || 0;
   const label = columnObj?.label || '';
@@ -378,21 +390,23 @@ export const NumberCustomColumnCell: React.FC<{
 
   const getDisplayValue = () => {
     if (isEditing) return inputValue;
-    
+
     // Safely convert inputValue to string to avoid .trim() errors
     const stringValue = String(inputValue || '');
     if (!stringValue || stringValue.trim() === '') return '';
-    
+
     const numValue = parseFloat(stringValue);
     if (isNaN(numValue)) return ''; // Return empty string instead of showing NaN
-    
+
     switch (numberType) {
       case 'formatted':
         return numValue.toFixed(decimals);
       case 'percentage':
         return `${numValue.toFixed(decimals)}%`;
       case 'withLabel':
-        return labelPosition === 'left' ? `${label} ${numValue.toFixed(decimals)}` : `${numValue.toFixed(decimals)} ${label}`;
+        return labelPosition === 'left'
+          ? `${label} ${numValue.toFixed(decimals)}`
+          : `${numValue.toFixed(decimals)} ${label}`;
       default:
         return numValue.toString();
     }
@@ -442,8 +456,10 @@ export const SelectionCustomColumnCell: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
   const selectionsList = columnObj?.selectionsList || [];
-  
-  const selectedOption = selectionsList.find((option: any) => option.selection_name === customValue);
+
+  const selectedOption = selectionsList.find(
+    (option: any) => option.selection_name === customValue
+  );
 
   const handleOptionSelect = async (option: any) => {
     if (!task.id) return;
@@ -454,7 +470,7 @@ export const SelectionCustomColumnCell: React.FC<{
     try {
       // Send the update to the server - Redux store will be updated immediately
       updateTaskCustomColumnValue(task.id, columnKey, option.selection_name);
-      
+
       // Short loading state for visual feedback
       setTimeout(() => {
         setIsLoading(false);
@@ -466,24 +482,26 @@ export const SelectionCustomColumnCell: React.FC<{
   };
 
   const dropdownContent = (
-    <div className={`
+    <div
+      className={`
       rounded-lg shadow-xl border min-w-[180px] max-h-64 overflow-y-auto custom-column-dropdown
-      ${isDarkMode 
-        ? 'bg-gray-800 border-gray-600' 
-        : 'bg-white border-gray-200'
-      }
-    `}>
+      ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'}
+    `}
+    >
       {/* Header */}
-      <div className={`
+      <div
+        className={`
         px-3 py-2 border-b text-xs font-medium
-        ${isDarkMode 
-          ? 'border-gray-600 text-gray-300 bg-gray-750' 
-          : 'border-gray-200 text-gray-600 bg-gray-50'
+        ${
+          isDarkMode
+            ? 'border-gray-600 text-gray-300 bg-gray-750'
+            : 'border-gray-200 text-gray-600 bg-gray-50'
         }
-      `}>
+      `}
+      >
         Select option
       </div>
-      
+
       {/* Options */}
       <div className="p-1">
         {selectionsList.map((option: any) => (
@@ -492,13 +510,14 @@ export const SelectionCustomColumnCell: React.FC<{
             onClick={() => handleOptionSelect(option)}
             className={`
               flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200
-              ${selectedOption?.selection_id === option.selection_id
-                ? isDarkMode
-                  ? 'bg-blue-900/50 text-blue-200'
-                  : 'bg-blue-50 text-blue-700'
-                : isDarkMode
-                  ? 'hover:bg-gray-700 text-gray-200'
-                  : 'hover:bg-gray-100 text-gray-900'
+              ${
+                selectedOption?.selection_id === option.selection_id
+                  ? isDarkMode
+                    ? 'bg-blue-900/50 text-blue-200'
+                    : 'bg-blue-50 text-blue-700'
+                  : isDarkMode
+                    ? 'hover:bg-gray-700 text-gray-200'
+                    : 'hover:bg-gray-100 text-gray-900'
               }
             `}
           >
@@ -508,23 +527,31 @@ export const SelectionCustomColumnCell: React.FC<{
             />
             <span className="text-sm font-medium flex-1">{option.selection_name}</span>
             {selectedOption?.selection_id === option.selection_id && (
-              <div className={`
+              <div
+                className={`
                 w-4 h-4 rounded-full flex items-center justify-center
                 ${isDarkMode ? 'bg-blue-600' : 'bg-blue-500'}
-              `}>
+              `}
+              >
                 <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
             )}
           </div>
         ))}
-        
+
         {selectionsList.length === 0 && (
-          <div className={`
+          <div
+            className={`
             text-center py-8 text-sm
             ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}
-          `}>
+          `}
+          >
             <div className="mb-2">📋</div>
             <div>No options available</div>
           </div>
@@ -534,7 +561,9 @@ export const SelectionCustomColumnCell: React.FC<{
   );
 
   return (
-    <div className={`px-2 relative custom-column-cell ${isDropdownOpen ? 'custom-column-focused' : ''}`}>
+    <div
+      className={`px-2 relative custom-column-cell ${isDropdownOpen ? 'custom-column-focused' : ''}`}
+    >
       <Dropdown
         open={isDropdownOpen}
         onOpenChange={setIsDropdownOpen}
@@ -542,25 +571,30 @@ export const SelectionCustomColumnCell: React.FC<{
         trigger={['click']}
         placement="bottomLeft"
         overlayClassName="custom-selection-dropdown"
-        getPopupContainer={(trigger) => trigger.parentElement || document.body}
+        getPopupContainer={trigger => trigger.parentElement || document.body}
       >
-        <div className={`
+        <div
+          className={`
           flex items-center gap-2 cursor-pointer rounded-md px-2 py-1 min-h-[28px] transition-all duration-200 relative
-          ${isDropdownOpen
-            ? isDarkMode
-              ? 'bg-gray-700 ring-1 ring-blue-500/50'
-              : 'bg-gray-100 ring-1 ring-blue-500/50'
-            : isDarkMode
-              ? 'hover:bg-gray-700/50'
-              : 'hover:bg-gray-100/50'
+          ${
+            isDropdownOpen
+              ? isDarkMode
+                ? 'bg-gray-700 ring-1 ring-blue-500/50'
+                : 'bg-gray-100 ring-1 ring-blue-500/50'
+              : isDarkMode
+                ? 'hover:bg-gray-700/50'
+                : 'hover:bg-gray-100/50'
           }
-        `}>
+        `}
+        >
           {isLoading ? (
             <div className="flex items-center gap-2">
-              <div className={`
+              <div
+                className={`
                 w-3 h-3 rounded-full animate-spin border-2 border-transparent
                 ${isDarkMode ? 'border-t-gray-400' : 'border-t-gray-600'}
-              `} />
+              `}
+              />
               <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 Updating...
               </span>
@@ -571,21 +605,45 @@ export const SelectionCustomColumnCell: React.FC<{
                 className="w-3 h-3 rounded-full border border-white/20 shadow-sm"
                 style={{ backgroundColor: selectedOption.selection_color || '#6b7280' }}
               />
-              <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+              <span
+                className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}
+              >
                 {selectedOption.selection_name}
               </span>
-              <svg className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg
+                className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </>
           ) : (
             <>
-              <div className={`w-3 h-3 rounded-full border-2 border-dashed ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`} />
+              <div
+                className={`w-3 h-3 rounded-full border-2 border-dashed ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}
+              />
               <span className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                 Select
               </span>
-              <svg className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg
+                className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </>
           )}
@@ -595,4 +653,4 @@ export const SelectionCustomColumnCell: React.FC<{
   );
 });
 
-SelectionCustomColumnCell.displayName = 'SelectionCustomColumnCell'; 
+SelectionCustomColumnCell.displayName = 'SelectionCustomColumnCell';

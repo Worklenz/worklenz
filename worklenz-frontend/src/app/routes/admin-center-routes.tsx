@@ -26,11 +26,7 @@ const adminCenterRoutes: RouteObject[] = [
     ),
     children: adminCenterItems.map(item => ({
       path: item.endpoint,
-      element: (
-        <Suspense fallback={<SuspenseFallback />}>
-          {item.element}
-        </Suspense>
-      ),
+      element: <Suspense fallback={<SuspenseFallback />}>{item.element}</Suspense>,
     })),
   },
 ];

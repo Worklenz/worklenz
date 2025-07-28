@@ -1,4 +1,4 @@
-import { ISUBSCRIPTION_TYPE } from "@/shared/constants";
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 export interface IOrganization {
   name?: string;
@@ -8,6 +8,9 @@ export interface IOrganization {
   contact_number_secondary?: string;
   calculation_method?: 'hourly' | 'man_days';
   hours_per_day?: number;
+  country_code?: string;
+  state_code?: string;
+  auto_sync_holidays?: boolean;
 }
 
 export interface IOrganizationAdmin {

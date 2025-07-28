@@ -1,6 +1,15 @@
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, Typography, Dropdown, Popconfirm, Tooltip, Space, Badge, Divider } from '@/shared/antd-imports';
+import {
+  Button,
+  Typography,
+  Dropdown,
+  Popconfirm,
+  Tooltip,
+  Space,
+  Badge,
+  Divider,
+} from '@/shared/antd-imports';
 import {
   DeleteOutlined,
   CloseOutlined,

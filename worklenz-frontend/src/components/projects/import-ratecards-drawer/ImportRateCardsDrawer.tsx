@@ -25,7 +25,8 @@ const ImportRateCardsDrawer: React.FC = () => {
   const fallbackCurrency = useAppSelector(state => state.financeReducer.currency);
   const currency = (projectCurrency || fallbackCurrency || 'USD').toUpperCase();
 
-  const rolesRedux = useAppSelector(state => state.projectFinanceRateCardReducer.rateCardRoles) || [];
+  const rolesRedux =
+    useAppSelector(state => state.projectFinanceRateCardReducer.rateCardRoles) || [];
 
   // Loading states
   const isRatecardsLoading = useAppSelector(state => state.financeReducer.isRatecardsLoading);

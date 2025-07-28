@@ -153,14 +153,22 @@ const VerifyResetEmailPage = () => {
                   {passwordChecklistItems.map(item => {
                     const passed = item.test(passwordValue);
                     let color = passed
-                      ? (themeMode === 'dark' ? '#52c41a' : '#389e0d')
-                      : (themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf');
+                      ? themeMode === 'dark'
+                        ? '#52c41a'
+                        : '#389e0d'
+                      : themeMode === 'dark'
+                        ? '#b0b3b8'
+                        : '#bfbfbf';
                     return (
                       <Flex key={item.key} align="center" gap={8} style={{ color, fontSize: 13 }}>
                         {passed ? (
-                          <CheckCircleTwoTone twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'} />
+                          <CheckCircleTwoTone
+                            twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'}
+                          />
                         ) : (
-                          <CloseCircleTwoTone twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'} />
+                          <CloseCircleTwoTone
+                            twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'}
+                          />
                         )}
                         <span>{item.label}</span>
                       </Flex>

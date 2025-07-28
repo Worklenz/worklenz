@@ -1,4 +1,12 @@
-import { Timeline, Typography, Flex, ConfigProvider, Tag, Tooltip, Skeleton } from '@/shared/antd-imports';
+import {
+  Timeline,
+  Typography,
+  Flex,
+  ConfigProvider,
+  Tag,
+  Tooltip,
+  Skeleton,
+} from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRightOutlined } from '@/shared/antd-imports';
@@ -73,7 +81,11 @@ const TaskDrawerActivityLog = () => {
             </Tag>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color={'default'}>{activity.log_type === 'create' ? t('taskActivityLogTab.add') : t('taskActivityLogTab.remove')}</Tag>
+            <Tag color={'default'}>
+              {activity.log_type === 'create'
+                ? t('taskActivityLogTab.add')
+                : t('taskActivityLogTab.remove')}
+            </Tag>
           </Flex>
         );
 
@@ -156,20 +168,28 @@ const TaskDrawerActivityLog = () => {
       case IActivityLogAttributeTypes.WEIGHT:
         return (
           <Flex gap={4} align="center">
-            <Tag color="purple">{t('taskActivityLogTab.weight')}: {activity.previous || '100'}</Tag>
+            <Tag color="purple">
+              {t('taskActivityLogTab.weight')}: {activity.previous || '100'}
+            </Tag>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color="purple">{t('taskActivityLogTab.weight')}: {activity.current || '100'}</Tag>
+            <Tag color="purple">
+              {t('taskActivityLogTab.weight')}: {activity.current || '100'}
+            </Tag>
           </Flex>
         );
 
       default:
         return (
           <Flex gap={4} align="center">
-            <Tag color={'default'}>{truncateText(activity.previous) || t('taskActivityLogTab.none')}</Tag>
+            <Tag color={'default'}>
+              {truncateText(activity.previous) || t('taskActivityLogTab.none')}
+            </Tag>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color={'default'}>{truncateText(activity.current) || t('taskActivityLogTab.none')}</Tag>
+            <Tag color={'default'}>
+              {truncateText(activity.current) || t('taskActivityLogTab.none')}
+            </Tag>
           </Flex>
         );
     }

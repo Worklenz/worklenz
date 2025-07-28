@@ -9,24 +9,74 @@ import {
   ArrowDownOutlined,
   CheckCircleOutlined,
 } from '@/shared/antd-imports';
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { IRPTTimeTotals } from '@/types/reporting/reporting.types';
+import { useReportingUtilization } from '@/hooks/useUtilizationCalculation';
+import dayjs from 'dayjs';
 
 interface TotalTimeUtilizationProps {
   totals: IRPTTimeTotals;
+  dateRange?: string[];
 }
 
-const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals }) => {
+const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dateRange }) => {
   const { t } = useTranslation('time-report');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
+  const [holidayInfo, setHolidayInfo] = useState<{ count: number; adjustedHours: number } | null>(
+    null
+  );
+
+  // Get current date range or default to this month
+  const currentDateRange = useMemo(() => {
+    if (dateRange && dateRange.length >= 2) {
+      return {
+        from: dayjs(dateRange[0]).format('YYYY-MM-DD'),
+        to: dayjs(dateRange[1]).format('YYYY-MM-DD'),
+      };
+    }
+    return {
+      from: dayjs().startOf('month').format('YYYY-MM-DD'),
+      to: dayjs().endOf('month').format('YYYY-MM-DD'),
+    };
+  }, [dateRange]);
+
+  // Temporarily disable holiday integration to prevent API spam
+  // TODO: Re-enable once backend endpoints are properly implemented
+  const holidayIntegrationEnabled = false;
+
+  useEffect(() => {
+    if (!holidayIntegrationEnabled) {
+      // For now, just show a placeholder holiday count
+      setHolidayInfo({
+        count: 0,
+        adjustedHours: parseFloat(totals.total_estimated_hours || '0'),
+      });
+      return;
+    }
+
+    // Holiday integration code will be re-enabled once backend is ready
+    // ... (previous holiday calculation code)
+  }, [
+    currentDateRange.from,
+    currentDateRange.to,
+    totals.total_estimated_hours,
+    holidayIntegrationEnabled,
+  ]);
 
   const utilizationData = useMemo(() => {
     const timeLogged = parseFloat(totals.total_time_logs || '0');
-    const estimatedHours = parseFloat(totals.total_estimated_hours || '0');
-    const utilizationPercent = parseFloat(totals.total_utilization || '0');
+    let estimatedHours = parseFloat(totals.total_estimated_hours || '0');
+
+    // Use holiday-adjusted hours if available
+    if (holidayInfo?.adjustedHours && holidayInfo.adjustedHours > 0) {
+      estimatedHours = holidayInfo.adjustedHours;
+    }
+
+    // Recalculate utilization with holiday adjustment
+    const utilizationPercent = estimatedHours > 0 ? (timeLogged / estimatedHours) * 100 : 0;
 
     // Determine utilization status and color
     let status: 'under' | 'optimal' | 'over' = 'optimal';
@@ -49,13 +99,13 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals }) =
     return {
       timeLogged,
       estimatedHours,
-      utilizationPercent,
+      utilizationPercent: Math.round(utilizationPercent * 100) / 100,
       status,
       statusColor,
       statusIcon,
       statusText,
     };
-  }, [totals, t]);
+  }, [totals, t, holidayInfo]);
 
   const getThemeColors = useMemo(
     () => ({
@@ -201,7 +251,7 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals }) =
                 lineHeight: 1,
               }}
             >
-              {totals.total_estimated_hours}h
+              {utilizationData.estimatedHours.toFixed(1)}h
             </div>
             <div
               style={{
@@ -210,7 +260,9 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals }) =
                 marginTop: '2px',
               }}
             >
-              {t('basedOnWorkingSchedule')}
+              {holidayInfo?.count
+                ? `${t('basedOnWorkingSchedule')} (${holidayInfo.count} ${t('holidaysExcluded')})`
+                : t('basedOnWorkingSchedule')}
             </div>
           </div>
         </Flex>
@@ -281,7 +333,7 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals }) =
                 marginBottom: '8px',
               }}
             >
-              {totals.total_utilization}%
+              {utilizationData.utilizationPercent}%
             </div>
             <Progress
               percent={Math.min(utilizationData.utilizationPercent, 150)} // Cap at 150% for display

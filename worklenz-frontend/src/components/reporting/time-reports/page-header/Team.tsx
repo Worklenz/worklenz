@@ -55,12 +55,10 @@ const Team: React.FC = () => {
     successColor: isDark ? '#52c41a' : '#52c41a',
     errorColor: isDark ? '#ff4d4f' : '#ff4d4f',
     buttonBorder: isDark ? '#303030' : '#d9d9d9',
-    buttonText: activeFiltersCount > 0 
-      ? (isDark ? 'white' : '#262626') 
-      : (isDark ? '#d9d9d9' : '#595959'),
-    buttonBg: activeFiltersCount > 0 
-      ? (isDark ? '#434343' : '#f5f5f5') 
-      : (isDark ? '#141414' : 'white'),
+    buttonText:
+      activeFiltersCount > 0 ? (isDark ? 'white' : '#262626') : isDark ? '#d9d9d9' : '#595959',
+    buttonBg:
+      activeFiltersCount > 0 ? (isDark ? '#434343' : '#f5f5f5') : isDark ? '#141414' : 'white',
     dropdownBg: isDark ? '#1f1f1f' : 'white',
     dropdownBorder: isDark ? '#303030' : '#d9d9d9',
   };

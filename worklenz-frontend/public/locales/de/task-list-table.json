@@ -87,7 +87,7 @@
     "peopleField": "Personenfeld",
     "noDate": "Kein Datum",
     "unsupportedField": "Nicht unterstützter Feldtyp",
-    
+
     "modal": {
       "addFieldTitle": "Feld hinzufügen",
       "editFieldTitle": "Feld bearbeiten",
@@ -108,7 +108,7 @@
       "createErrorMessage": "Fehler beim Erstellen der benutzerdefinierten Spalte",
       "updateErrorMessage": "Fehler beim Aktualisieren der benutzerdefinierten Spalte"
     },
-    
+
     "fieldTypes": {
       "people": "Personen",
       "number": "Zahl",

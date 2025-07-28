@@ -55,11 +55,7 @@ export const TaskLabelsCell: React.FC<TaskLabelsCellProps> = memo(({ labels, isD
             color={label.color}
           />
         ) : (
-          <CustomColordLabel
-            key={`${label.id}-${index}`}
-            label={label}
-            isDarkMode={isDarkMode}
-          />
+          <CustomColordLabel key={`${label.id}-${index}`} label={label} isDarkMode={isDarkMode} />
         );
       })}
     </div>
@@ -75,15 +71,17 @@ interface DragHandleColumnProps {
   listeners: any;
 }
 
-export const DragHandleColumn: React.FC<DragHandleColumnProps> = memo(({ width, isSubtask, attributes, listeners }) => (
-  <div
-    className="flex items-center justify-center"
-    style={{ width }}
-    {...(isSubtask ? {} : { ...attributes, ...listeners })}
-  >
-    {!isSubtask && <HolderOutlined className="text-gray-400 hover:text-gray-600" />}
-  </div>
-));
+export const DragHandleColumn: React.FC<DragHandleColumnProps> = memo(
+  ({ width, isSubtask, attributes, listeners }) => (
+    <div
+      className="flex items-center justify-center"
+      style={{ width }}
+      {...(isSubtask ? {} : { ...attributes, ...listeners })}
+    >
+      {!isSubtask && <HolderOutlined className="text-gray-400 hover:text-gray-600" />}
+    </div>
+  )
+);
 
 DragHandleColumn.displayName = 'DragHandleColumn';
 
@@ -93,15 +91,17 @@ interface CheckboxColumnProps {
   onCheckboxChange: (e: any) => void;
 }
 
-export const CheckboxColumn: React.FC<CheckboxColumnProps> = memo(({ width, isSelected, onCheckboxChange }) => (
-  <div className="flex items-center justify-center dark:border-gray-700" style={{ width }}>
-    <Checkbox
-      checked={isSelected}
-      onChange={onCheckboxChange}
-      onClick={(e) => e.stopPropagation()}
-    />
-  </div>
-));
+export const CheckboxColumn: React.FC<CheckboxColumnProps> = memo(
+  ({ width, isSelected, onCheckboxChange }) => (
+    <div className="flex items-center justify-center dark:border-gray-700" style={{ width }}>
+      <Checkbox
+        checked={isSelected}
+        onChange={onCheckboxChange}
+        onClick={e => e.stopPropagation()}
+      />
+    </div>
+  )
+);
 
 CheckboxColumn.displayName = 'CheckboxColumn';
 
@@ -111,7 +111,10 @@ interface TaskKeyColumnProps {
 }
 
 export const TaskKeyColumn: React.FC<TaskKeyColumnProps> = memo(({ width, taskKey }) => (
-  <div className="flex items-center pl-3 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
+  <div
+    className="flex items-center pl-3 border-r border-gray-200 dark:border-gray-700"
+    style={{ width }}
+  >
     <span className="text-xs font-medium px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 whitespace-nowrap border border-gray-200 dark:border-gray-600">
       {taskKey || 'N/A'}
     </span>
@@ -125,22 +128,27 @@ interface DescriptionColumnProps {
   description: string;
 }
 
-export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(({ width, description }) => (
-  <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
+export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
+  ({ width, description }) => (
     <div
-      className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
-      style={{
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        maxHeight: '24px',
-        lineHeight: '24px',
-      }}
-      title={description || ''}
-      dangerouslySetInnerHTML={{ __html: description || '' }}
-    />
-  </div>
-));
+      className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
+      <div
+        className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
+        style={{
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxHeight: '24px',
+          lineHeight: '24px',
+        }}
+        title={description || ''}
+        dangerouslySetInnerHTML={{ __html: description || '' }}
+      />
+    </div>
+  )
+);
 
 DescriptionColumn.displayName = 'DescriptionColumn';
 
@@ -151,15 +159,16 @@ interface StatusColumnProps {
   isDarkMode: boolean;
 }
 
-export const StatusColumn: React.FC<StatusColumnProps> = memo(({ width, task, projectId, isDarkMode }) => (
-  <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
-    <TaskStatusDropdown
-      task={task}
-      projectId={projectId}
-      isDarkMode={isDarkMode}
-    />
-  </div>
-));
+export const StatusColumn: React.FC<StatusColumnProps> = memo(
+  ({ width, task, projectId, isDarkMode }) => (
+    <div
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
+      <TaskStatusDropdown task={task} projectId={projectId} isDarkMode={isDarkMode} />
+    </div>
+  )
+);
 
 StatusColumn.displayName = 'StatusColumn';
 
@@ -170,21 +179,22 @@ interface AssigneesColumnProps {
   isDarkMode: boolean;
 }
 
-export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(({ width, task, convertedTask, isDarkMode }) => (
-  <div className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
-    <AvatarGroup
-      members={task.assignee_names || []}
-      maxCount={3}
-      isDarkMode={isDarkMode}
-      size={24}
-    />
-    <AssigneeSelector
-      task={convertedTask}
-      groupId={null}
-      isDarkMode={isDarkMode}
-    />
-  </div>
-));
+export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
+  ({ width, task, convertedTask, isDarkMode }) => (
+    <div
+      className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
+      <AvatarGroup
+        members={task.assignee_names || []}
+        maxCount={3}
+        isDarkMode={isDarkMode}
+        size={24}
+      />
+      <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+    </div>
+  )
+);
 
 AssigneesColumn.displayName = 'AssigneesColumn';
 
@@ -195,15 +205,16 @@ interface PriorityColumnProps {
   isDarkMode: boolean;
 }
 
-export const PriorityColumn: React.FC<PriorityColumnProps> = memo(({ width, task, projectId, isDarkMode }) => (
-  <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
-    <TaskPriorityDropdown
-      task={task}
-      projectId={projectId}
-      isDarkMode={isDarkMode}
-    />
-  </div>
-));
+export const PriorityColumn: React.FC<PriorityColumnProps> = memo(
+  ({ width, task, projectId, isDarkMode }) => (
+    <div
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
+      <TaskPriorityDropdown task={task} projectId={projectId} isDarkMode={isDarkMode} />
+    </div>
+  )
+);
 
 PriorityColumn.displayName = 'PriorityColumn';
 
@@ -213,7 +224,10 @@ interface ProgressColumnProps {
 }
 
 export const ProgressColumn: React.FC<ProgressColumnProps> = memo(({ width, task }) => (
-  <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
+  <div
+    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+    style={{ width }}
+  >
     {task.progress !== undefined &&
       task.progress >= 0 &&
       (task.progress === 100 ? (
@@ -227,10 +241,7 @@ export const ProgressColumn: React.FC<ProgressColumnProps> = memo(({ width, task
           />
         </div>
       ) : (
-        <TaskProgress
-          progress={task.progress}
-          numberOfSubTasks={task.sub_tasks?.length || 0}
-        />
+        <TaskProgress progress={task.progress} numberOfSubTasks={task.sub_tasks?.length || 0} />
       ))}
   </div>
 ));
@@ -245,19 +256,24 @@ interface LabelsColumnProps {
   visibleColumns: any[];
 }
 
-export const LabelsColumn: React.FC<LabelsColumnProps> = memo(({ width, task, labelsAdapter, isDarkMode, visibleColumns }) => {
-  const labelsStyle = {
-    width,
-    flexShrink: 0
-  };
+export const LabelsColumn: React.FC<LabelsColumnProps> = memo(
+  ({ width, task, labelsAdapter, isDarkMode, visibleColumns }) => {
+    const labelsStyle = {
+      width,
+      flexShrink: 0,
+    };
 
-  return (
-    <div className="flex items-center gap-0.5 flex-wrap min-w-0 px-2 border-r border-gray-200 dark:border-gray-700" style={labelsStyle}>
-      <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
-      <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
-    </div>
-  );
-});
+    return (
+      <div
+        className="flex items-center gap-0.5 flex-wrap min-w-0 px-2 border-r border-gray-200 dark:border-gray-700"
+        style={labelsStyle}
+      >
+        <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
+        <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
+      </div>
+    );
+  }
+);
 
 LabelsColumn.displayName = 'LabelsColumn';
 
@@ -268,15 +284,16 @@ interface PhaseColumnProps {
   isDarkMode: boolean;
 }
 
-export const PhaseColumn: React.FC<PhaseColumnProps> = memo(({ width, task, projectId, isDarkMode }) => (
-  <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
-    <TaskPhaseDropdown
-      task={task}
-      projectId={projectId}
-      isDarkMode={isDarkMode}
-    />
-  </div>
-));
+export const PhaseColumn: React.FC<PhaseColumnProps> = memo(
+  ({ width, task, projectId, isDarkMode }) => (
+    <div
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
+      <TaskPhaseDropdown task={task} projectId={projectId} isDarkMode={isDarkMode} />
+    </div>
+  )
+);
 
 PhaseColumn.displayName = 'PhaseColumn';
 
@@ -286,11 +303,16 @@ interface TimeTrackingColumnProps {
   isDarkMode: boolean;
 }
 
-export const TimeTrackingColumn: React.FC<TimeTrackingColumnProps> = memo(({ width, taskId, isDarkMode }) => (
-  <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
-    <TaskTimeTracking taskId={taskId} isDarkMode={isDarkMode} />
-  </div>
-));
+export const TimeTrackingColumn: React.FC<TimeTrackingColumnProps> = memo(
+  ({ width, taskId, isDarkMode }) => (
+    <div
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
+      <TaskTimeTracking taskId={taskId} isDarkMode={isDarkMode} />
+    </div>
+  )
+);
 
 TimeTrackingColumn.displayName = 'TimeTrackingColumn';
 
@@ -302,11 +324,11 @@ interface EstimationColumnProps {
 export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, task }) => {
   const estimationDisplay = (() => {
     const estimatedHours = task.timeTracking?.estimated;
-    
+
     if (estimatedHours && estimatedHours > 0) {
       const hours = Math.floor(estimatedHours);
       const minutes = Math.round((estimatedHours - hours) * 60);
-      
+
       if (hours > 0 && minutes > 0) {
         return `${hours}h ${minutes}m`;
       } else if (hours > 0) {
@@ -315,20 +337,19 @@ export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, 
         return `${minutes}m`;
       }
     }
-    
+
     return null;
   })();
 
   return (
-    <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
+    <div
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
       {estimationDisplay ? (
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {estimationDisplay}
-        </span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">{estimationDisplay}</span>
       ) : (
-        <span className="text-sm text-gray-400 dark:text-gray-500">
-          -
-        </span>
+        <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
       )}
     </div>
   );
@@ -342,17 +363,24 @@ interface DateColumnProps {
   placeholder?: string;
 }
 
-export const DateColumn: React.FC<DateColumnProps> = memo(({ width, formattedDate, placeholder = '-' }) => (
-  <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
-    {formattedDate ? (
-      <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-        {formattedDate}
-      </span>
-    ) : (
-      <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">{placeholder}</span>
-    )}
-  </div>
-));
+export const DateColumn: React.FC<DateColumnProps> = memo(
+  ({ width, formattedDate, placeholder = '-' }) => (
+    <div
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
+      {formattedDate ? (
+        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+          {formattedDate}
+        </span>
+      ) : (
+        <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">
+          {placeholder}
+        </span>
+      )}
+    </div>
+  )
+);
 
 DateColumn.displayName = 'DateColumn';
 
@@ -362,7 +390,10 @@ interface ReporterColumnProps {
 }
 
 export const ReporterColumn: React.FC<ReporterColumnProps> = memo(({ width, reporter }) => (
-  <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
+  <div
+    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+    style={{ width }}
+  >
     {reporter ? (
       <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{reporter}</span>
     ) : (
@@ -380,18 +411,23 @@ interface CustomColumnProps {
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
 }
 
-export const CustomColumn: React.FC<CustomColumnProps> = memo(({ width, column, task, updateTaskCustomColumnValue }) => {
-  if (!updateTaskCustomColumnValue) return null;
+export const CustomColumn: React.FC<CustomColumnProps> = memo(
+  ({ width, column, task, updateTaskCustomColumnValue }) => {
+    if (!updateTaskCustomColumnValue) return null;
 
-  return (
-    <div className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ width }}>
-      <CustomColumnCell
-        column={column}
-        task={task}
-        updateTaskCustomColumnValue={updateTaskCustomColumnValue}
-      />
-    </div>
-  );
-});
+    return (
+      <div
+        className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+        style={{ width }}
+      >
+        <CustomColumnCell
+          column={column}
+          task={task}
+          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+        />
+      </div>
+    );
+  }
+);
 
-CustomColumn.displayName = 'CustomColumn'; 
+CustomColumn.displayName = 'CustomColumn';

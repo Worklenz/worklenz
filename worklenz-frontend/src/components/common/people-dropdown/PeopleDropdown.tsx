@@ -64,11 +64,11 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const dropdownHeight = 280; // More accurate height: header(40) + max-height(192) + footer(40) + padding
-      
+
       // Check if dropdown would go below viewport
       const spaceBelow = viewportHeight - rect.bottom;
       const shouldShowAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
-      
+
       setDropdownPosition({
         top: shouldShowAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
         left: rect.left,
@@ -338,4 +338,4 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
   );
 };
 
-export default PeopleDropdown; 
+export default PeopleDropdown;

@@ -221,32 +221,40 @@ const TimeLogForm = ({
           <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
             <Form.Item
               name="date"
-                                label={t('taskTimeLogTab.timeLogForm.date')}
-                  rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectDateError') }]}
+              label={t('taskTimeLogTab.timeLogForm.date')}
+              rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectDateError') }]}
             >
               <DatePicker disabledDate={current => current && current.toDate() > new Date()} />
             </Form.Item>
 
             <Form.Item
               name="startTime"
-                                label={t('taskTimeLogTab.timeLogForm.startTime')}
-                  rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectStartTimeError') }]}
+              label={t('taskTimeLogTab.timeLogForm.startTime')}
+              rules={[
+                { required: true, message: t('taskTimeLogTab.timeLogForm.selectStartTimeError') },
+              ]}
             >
               <TimePicker format="HH:mm" />
             </Form.Item>
 
             <Form.Item
               name="endTime"
-                                label={t('taskTimeLogTab.timeLogForm.endTime')}
-                  rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectEndTimeError') }]}
+              label={t('taskTimeLogTab.timeLogForm.endTime')}
+              rules={[
+                { required: true, message: t('taskTimeLogTab.timeLogForm.selectEndTimeError') },
+              ]}
             >
               <TimePicker format="HH:mm" />
             </Form.Item>
           </Flex>
         </Form.Item>
 
-                    <Form.Item name="description" label={t('taskTimeLogTab.timeLogForm.workDescription')} style={{ marginBlockEnd: 12 }}>
-              <Input.TextArea placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder')} />
+        <Form.Item
+          name="description"
+          label={t('taskTimeLogTab.timeLogForm.workDescription')}
+          style={{ marginBlockEnd: 12 }}
+        >
+          <Input.TextArea placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder')} />
         </Form.Item>
 
         <Form.Item style={{ marginBlockEnd: 0 }}>
@@ -258,7 +266,9 @@ const TimeLogForm = ({
               disabled={!isFormValid()}
               htmlType="submit"
             >
-              {mode === 'edit' ? t('taskTimeLogTab.timeLogForm.updateTime') : t('taskTimeLogTab.timeLogForm.logTime')}
+              {mode === 'edit'
+                ? t('taskTimeLogTab.timeLogForm.updateTime')
+                : t('taskTimeLogTab.timeLogForm.logTime')}
             </Button>
           </Flex>
         </Form.Item>

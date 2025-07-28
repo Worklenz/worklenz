@@ -1,5 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Button, ConfigProvider, Flex, PaginationProps, Table, TableColumnsType } from '@/shared/antd-imports';
+import {
+  Button,
+  ConfigProvider,
+  Flex,
+  PaginationProps,
+  Table,
+  TableColumnsType,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { ExpandAltOutlined } from '@/shared/antd-imports';

@@ -19,6 +19,7 @@ import {
   IFreePlanSettings,
   IBillingAccountStorage,
 } from '@/types/admin-center/admin-center.types';
+import { IOrganizationHolidaySettings } from '@/types/holiday/holiday.types';
 import { IClient } from '@/types/client.types';
 import { toQueryString } from '@/utils/toQueryString';
 
@@ -289,6 +290,16 @@ export const adminCenterApiService = {
       {
         calculation_method: calculationMethod,
       }
+    );
+    return response.data;
+  },
+
+  async updateOrganizationHolidaySettings(
+    settings: IOrganizationHolidaySettings
+  ): Promise<IServerResponse<any>> {
+    const response = await apiClient.put<IServerResponse<any>>(
+      `${rootUrl}/organization/holiday-settings`,
+      settings
     );
     return response.data;
   },

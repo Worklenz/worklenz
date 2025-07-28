@@ -539,7 +539,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
         const updatedTasks = [...sourceGroup.tasks];
         updatedTasks.splice(fromIndex, 1);
         updatedTasks.splice(toIndex, 0, task);
-        
+
         updatedTasks.forEach((task, index) => {
           taskUpdates.push({
             task_id: task.id,
@@ -550,7 +550,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
         // Different groups - update both source and target
         const updatedSourceTasks = sourceGroup.tasks.filter((_, i) => i !== fromIndex);
         const updatedTargetTasks = [...targetGroup.tasks];
-        
+
         if (isTargetGroupEmpty) {
           updatedTargetTasks.push(task);
         } else if (toIndex >= 0 && toIndex <= updatedTargetTasks.length) {
@@ -573,7 +573,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
             task_id: task.id,
             sort_order: index + 1,
           };
-          
+
           // Add group-specific updates
           if (groupBy === IGroupBy.STATUS) {
             update.status_id = targetGroup.id;
@@ -582,7 +582,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
           } else if (groupBy === IGroupBy.PHASE) {
             update.phase_id = targetGroup.id;
           }
-          
+
           taskUpdates.push(update);
         });
       }

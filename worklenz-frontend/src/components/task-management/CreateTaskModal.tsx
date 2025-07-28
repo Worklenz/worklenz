@@ -1,5 +1,17 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Modal, Form, Input, Button, Tabs, Space, Divider, Typography, Flex, DatePicker, Select } from '@/shared/antd-imports';
+import {
+  Modal,
+  Form,
+  Input,
+  Button,
+  Tabs,
+  Space,
+  Divider,
+  Typography,
+  Flex,
+  DatePicker,
+  Select,
+} from '@/shared/antd-imports';
 import { PlusOutlined, DragOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -11,7 +23,11 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import TaskDetailsForm from '@/components/task-drawer/shared/info-tab/task-details-form';
 import AssigneeSelector from '@/components/AssigneeSelector';
 import LabelsSelector from '@/components/LabelsSelector';
-import { createStatus, fetchStatuses, fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
+import {
+  createStatus,
+  fetchStatuses,
+  fetchStatusesCategories,
+} from '@/features/taskAttributes/taskStatusSlice';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
 import { Modal as AntModal } from '@/shared/antd-imports';
@@ -49,14 +65,9 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
   const [editName, setEditName] = useState(status.name || '');
   const inputRef = useRef<any>(null);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -76,13 +87,16 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
     setIsEditing(false);
   }, [status.name]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSave();
-    } else if (e.key === 'Escape') {
-      handleCancel();
-    }
-  }, [handleSave, handleCancel]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        handleSave();
+      } else if (e.key === 'Escape') {
+        handleCancel();
+      }
+    },
+    [handleSave, handleCancel]
+  );
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -127,7 +141,7 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
           <Input
             ref={inputRef}
             value={editName}
-            onChange={(e) => setEditName(e.target.value)}
+            onChange={e => setEditName(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
             size="small"
@@ -151,7 +165,9 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
           type="text"
           size="small"
           onClick={() => setIsEditing(true)}
-          className={isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'}
+          className={
+            isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'
+          }
         >
           Rename
         </Button>
@@ -176,7 +192,7 @@ const StatusManagement: React.FC<{
 }> = ({ projectId, isDarkMode }) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
-  
+
   const { status: statuses } = useAppSelector(state => state.taskStatusReducer);
   const [localStatuses, setLocalStatuses] = useState(statuses);
   const [newStatusName, setNewStatusName] = useState('');
@@ -201,9 +217,9 @@ const StatusManagement: React.FC<{
       return;
     }
 
-    setLocalStatuses((items) => {
-      const oldIndex = items.findIndex((item) => item.id === active.id);
-      const newIndex = items.findIndex((item) => item.id === over.id);
+    setLocalStatuses(items => {
+      const oldIndex = items.findIndex(item => item.id === active.id);
+      const newIndex = items.findIndex(item => item.id === over.id);
 
       if (oldIndex === -1 || newIndex === -1) return items;
 
@@ -228,7 +244,7 @@ const StatusManagement: React.FC<{
     try {
       const statusCategories = await dispatch(fetchStatusesCategories()).unwrap();
       const defaultCategory = statusCategories[0]?.id;
-      
+
       if (!defaultCategory) {
         console.error('No status categories found');
         return;
@@ -250,35 +266,41 @@ const StatusManagement: React.FC<{
     }
   }, [newStatusName, projectId, dispatch]);
 
-  const handleRenameStatus = useCallback(async (id: string, name: string) => {
-    try {
-      const body: ITaskStatusUpdateModel = {
-        name: name.trim(),
-        project_id: projectId,
-      };
-      
-      await statusApiService.updateNameOfStatus(id, body, projectId);
-      dispatch(fetchStatuses(projectId));
-    } catch (error) {
-      console.error('Error renaming status:', error);
-    }
-  }, [projectId, dispatch]);
+  const handleRenameStatus = useCallback(
+    async (id: string, name: string) => {
+      try {
+        const body: ITaskStatusUpdateModel = {
+          name: name.trim(),
+          project_id: projectId,
+        };
 
-  const handleDeleteStatus = useCallback(async (id: string) => {
-    AntModal.confirm({
-      title: 'Delete Status',
-      content: 'Are you sure you want to delete this status? This action cannot be undone.',
-      onOk: async () => {
-        try {
-          const replacingStatusId = localStatuses.find(s => s.id !== id)?.id || '';
-          await statusApiService.deleteStatus(id, projectId, replacingStatusId);
-          dispatch(fetchStatuses(projectId));
-        } catch (error) {
-          console.error('Error deleting status:', error);
-        }
-      },
-    });
-  }, [localStatuses, projectId, dispatch]);
+        await statusApiService.updateNameOfStatus(id, body, projectId);
+        dispatch(fetchStatuses(projectId));
+      } catch (error) {
+        console.error('Error renaming status:', error);
+      }
+    },
+    [projectId, dispatch]
+  );
+
+  const handleDeleteStatus = useCallback(
+    async (id: string) => {
+      AntModal.confirm({
+        title: 'Delete Status',
+        content: 'Are you sure you want to delete this status? This action cannot be undone.',
+        onOk: async () => {
+          try {
+            const replacingStatusId = localStatuses.find(s => s.id !== id)?.id || '';
+            await statusApiService.deleteStatus(id, projectId, replacingStatusId);
+            dispatch(fetchStatuses(projectId));
+          } catch (error) {
+            console.error('Error deleting status:', error);
+          }
+        },
+      });
+    },
+    [localStatuses, projectId, dispatch]
+  );
 
   return (
     <div className="space-y-4">
@@ -296,7 +318,7 @@ const StatusManagement: React.FC<{
         <Input
           placeholder="Enter status name"
           value={newStatusName}
-          onChange={(e) => setNewStatusName(e.target.value)}
+          onChange={e => setNewStatusName(e.target.value)}
           onPressEnter={handleCreateStatus}
           className="flex-1"
         />
@@ -319,16 +341,18 @@ const StatusManagement: React.FC<{
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-2">
-            {localStatuses.filter(status => status.id).map((status) => (
-              <SortableStatusItem
-                key={status.id}
-                id={status.id!}
-                status={status}
-                onRename={handleRenameStatus}
-                onDelete={handleDeleteStatus}
-                isDarkMode={isDarkMode}
-              />
-            ))}
+            {localStatuses
+              .filter(status => status.id)
+              .map(status => (
+                <SortableStatusItem
+                  key={status.id}
+                  id={status.id!}
+                  status={status}
+                  onRename={handleRenameStatus}
+                  onDelete={handleDeleteStatus}
+                  isDarkMode={isDarkMode}
+                />
+              ))}
           </div>
         </SortableContext>
       </DndContext>
@@ -342,29 +366,25 @@ const StatusManagement: React.FC<{
   );
 };
 
-const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
-  open,
-  onClose,
-  projectId,
-}) => {
+const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ open, onClose, projectId }) => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState('task-info');
   const dispatch = useAppDispatch();
-  
+
   // Redux state
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const currentProjectId = useAppSelector(state => state.projectReducer.projectId);
   const user = useAppSelector(state => state.auth?.user);
-  
+
   const finalProjectId = projectId || currentProjectId;
 
   const handleSubmit = useCallback(async () => {
     try {
       const values = await form.validateFields();
-      
+
       const { socket } = useSocket();
-      
+
       if (!socket || !user || !finalProjectId) {
         console.error('Missing socket, user, or project ID');
         return;
@@ -383,15 +403,14 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
       // Create task via socket
       socket.emit(SocketEvents.QUICK_TASK.toString(), taskData);
-      
+
       // Refresh task list
       dispatch(fetchTasksV3(finalProjectId));
-      
+
       // Reset form and close modal
       form.resetFields();
       setActiveTab('task-info');
       onClose();
-      
     } catch (error) {
       console.error('Form validation failed:', error);
     }
@@ -423,9 +442,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         <Flex justify="space-between" align="center">
           <div></div>
           <Space>
-            <Button onClick={handleCancel}>
-              {t('cancel')}
-            </Button>
+            <Button onClick={handleCancel}>{t('cancel')}</Button>
             <Button type="primary" onClick={handleSubmit}>
               {t('createTask')}
             </Button>
@@ -465,65 +482,49 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     />
                   </Form.Item>
 
-                                     <Form.Item
-                     name="description"
-                     label={t('description')}
-                   >
-                     <Input.TextArea
-                       placeholder={t('descriptionPlaceholder')}
-                       rows={4}
-                       maxLength={1000}
-                       showCount
-                     />
-                   </Form.Item>
+                  <Form.Item name="description" label={t('description')}>
+                    <Input.TextArea
+                      placeholder={t('descriptionPlaceholder')}
+                      rows={4}
+                      maxLength={1000}
+                      showCount
+                    />
+                  </Form.Item>
 
-                   {/* Status Selection */}
-                   <Form.Item
-                     name="status"
-                     label={t('status')}
-                     rules={[{ required: true, message: 'Please select a status' }]}
-                   >
-                     <Select placeholder="Select status">
-                       {/* TODO: Populate with actual statuses */}
-                       <Select.Option value="todo">To Do</Select.Option>
-                       <Select.Option value="inprogress">In Progress</Select.Option>
-                       <Select.Option value="done">Done</Select.Option>
-                     </Select>
-                   </Form.Item>
+                  {/* Status Selection */}
+                  <Form.Item
+                    name="status"
+                    label={t('status')}
+                    rules={[{ required: true, message: 'Please select a status' }]}
+                  >
+                    <Select placeholder="Select status">
+                      {/* TODO: Populate with actual statuses */}
+                      <Select.Option value="todo">To Do</Select.Option>
+                      <Select.Option value="inprogress">In Progress</Select.Option>
+                      <Select.Option value="done">Done</Select.Option>
+                    </Select>
+                  </Form.Item>
 
-                   {/* Priority Selection */}
-                   <Form.Item
-                     name="priority"
-                     label={t('priority')}
-                   >
-                     <Select placeholder="Select priority">
-                       <Select.Option value="low">Low</Select.Option>
-                       <Select.Option value="medium">Medium</Select.Option>
-                       <Select.Option value="high">High</Select.Option>
-                     </Select>
-                   </Form.Item>
+                  {/* Priority Selection */}
+                  <Form.Item name="priority" label={t('priority')}>
+                    <Select placeholder="Select priority">
+                      <Select.Option value="low">Low</Select.Option>
+                      <Select.Option value="medium">Medium</Select.Option>
+                      <Select.Option value="high">High</Select.Option>
+                    </Select>
+                  </Form.Item>
 
-                   {/* Assignees */}
-                   <Form.Item
-                     name="assignees"
-                     label={t('assignees')}
-                   >
-                     <Select mode="multiple" placeholder="Select assignees">
-                       {/* TODO: Populate with team members */}
-                     </Select>
-                   </Form.Item>
+                  {/* Assignees */}
+                  <Form.Item name="assignees" label={t('assignees')}>
+                    <Select mode="multiple" placeholder="Select assignees">
+                      {/* TODO: Populate with team members */}
+                    </Select>
+                  </Form.Item>
 
-                   {/* Due Date */}
-                   <Form.Item
-                     name="dueDate"
-                     label={t('dueDate')}
-                   >
-                     <DatePicker 
-                       className="w-full"
-                       placeholder="Select due date"
-                     />
-                   </Form.Item>
-                  
+                  {/* Due Date */}
+                  <Form.Item name="dueDate" label={t('dueDate')}>
+                    <DatePicker className="w-full" placeholder="Select due date" />
+                  </Form.Item>
                 </Form>
               </div>
             ),
@@ -533,10 +534,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             label: t('manageStatuses'),
             children: finalProjectId ? (
               <div className="py-4">
-                <StatusManagement 
-                  projectId={finalProjectId} 
-                  isDarkMode={isDarkMode} 
-                />
+                <StatusManagement projectId={finalProjectId} isDarkMode={isDarkMode} />
               </div>
             ) : (
               <div className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -550,4 +548,4 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   );
 };
 
-export default CreateTaskModal; 
+export default CreateTaskModal;

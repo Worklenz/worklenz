@@ -102,12 +102,14 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
         );
 
         // Update Redux state with recurring task status
-        dispatch(updateTaskCounts({
-          taskId: task.id,
-          counts: {
-            schedule_id: schedule.id as string || null
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: task.id,
+            counts: {
+              schedule_id: (schedule.id as string) || null,
+            },
+          })
+        );
 
         setRecurring(checked);
         if (!checked) setShowConfig(false);

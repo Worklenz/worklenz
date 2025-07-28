@@ -348,8 +348,8 @@ export default class HolidayController extends WorklenzControllerBase {
             totalPopulated++;
           }
         }
-      } catch (error) {
-        errors.push(`${country.name}: ${error.message}`);
+      } catch (error: any) {
+        errors.push(`${country.name}: ${error?.message || "Unknown error"}`);
       }
     }
 

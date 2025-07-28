@@ -51,4 +51,4 @@ const TaskListFilters: React.FC<TaskListFiltersProps> = ({
   );
 };
 
-export default TaskListFilters; 
+export default TaskListFilters;

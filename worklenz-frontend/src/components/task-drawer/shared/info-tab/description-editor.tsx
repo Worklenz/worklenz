@@ -5,7 +5,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 
 // Lazy load TinyMCE editor to reduce initial bundle size
-const LazyTinyMCEEditor = lazy(() => 
+const LazyTinyMCEEditor = lazy(() =>
   import('@tinymce/tinymce-react').then(module => ({ default: module.Editor }))
 );
 
@@ -42,7 +42,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   // Load TinyMCE script only when editor is opened
   const loadTinyMCE = async () => {
     if (isTinyMCELoaded) return;
-    
+
     setIsEditorLoading(true);
     try {
       // Load TinyMCE script dynamically
@@ -51,7 +51,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
           resolve();
           return;
         }
-        
+
         const script = document.createElement('script');
         script.src = '/tinymce/tinymce.min.js';
         script.async = true;
@@ -59,7 +59,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
         script.onerror = () => reject(new Error('Failed to load TinyMCE'));
         document.head.appendChild(script);
       });
-      
+
       setIsTinyMCELoaded(true);
     } catch (error) {
       console.error('Failed to load TinyMCE:', error);
@@ -87,7 +87,9 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
       const isClickedInsideWrapper = wrapper && wrapper.contains(target);
       const isClickedInsideEditor = document.querySelector('.tox-tinymce')?.contains(target);
       const isClickedInsideToolbarPopup = document
-        .querySelector('.tox-menu, .tox-pop, .tox-collection, .tox-dialog, .tox-dialog-wrap, .tox-silver-sink')
+        .querySelector(
+          '.tox-menu, .tox-pop, .tox-collection, .tox-dialog, .tox-dialog-wrap, .tox-silver-sink'
+        )
         ?.contains(target);
 
       if (
@@ -133,7 +135,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
 
   const handleContentClick = (event: React.MouseEvent) => {
     const target = event.target as HTMLElement;
-    
+
     // Check if clicked element is a link
     if (target.tagName === 'A' || target.closest('a')) {
       event.preventDefault(); // Prevent default link behavior
@@ -148,7 +150,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
       }
       return;
     }
-    
+
     // If not a link, open the editor
     handleOpenEditor();
   };
@@ -269,8 +271,8 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
                 ? '#2a2a2a'
                 : '#fafafa'
               : themeMode === 'dark'
-              ? '#1e1e1e'
-              : '#ffffff',
+                ? '#1e1e1e'
+                : '#ffffff',
             color: themeMode === 'dark' ? '#ffffff' : '#000000',
             transition: 'all 0.2s ease',
           }}

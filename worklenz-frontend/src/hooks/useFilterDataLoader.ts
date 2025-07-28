@@ -58,7 +58,7 @@ export const useFilterDataLoader = () => {
         // They will update the UI when ready, but won't block initial render
         dispatch(fetchLabelsByProject(projectId));
         dispatch(fetchTaskAssignees(projectId));
-        
+
         // Load statuses if not already loaded
         if (!statuses.length) {
           dispatch(fetchStatuses(projectId));

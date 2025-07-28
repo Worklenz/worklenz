@@ -182,14 +182,24 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
                 isDarkMode={themeMode === 'dark'}
                 size={24}
               />
-              <LazyAssigneeSelectorWrapper task={task} groupId={sectionId} isDarkMode={themeMode === 'dark'} kanbanMode={true} />
+              <LazyAssigneeSelectorWrapper
+                task={task}
+                groupId={sectionId}
+                isDarkMode={themeMode === 'dark'}
+                kanbanMode={true}
+              />
             </Flex>
             <Flex gap={4} align="center">
               <CustomDueDatePicker task={task} onDateChange={setDueDate} />
 
               {/* Subtask Section - only show if count > 1 */}
               {task.sub_tasks_count != null && Number(task.sub_tasks_count) > 1 && (
-                <Tooltip title={t(`indicators.tooltips.subtasks${Number(task.sub_tasks_count) === 1 ? '' : '_plural'}`, { count: Number(task.sub_tasks_count) })}>
+                <Tooltip
+                  title={t(
+                    `indicators.tooltips.subtasks${Number(task.sub_tasks_count) === 1 ? '' : '_plural'}`,
+                    { count: Number(task.sub_tasks_count) }
+                  )}
+                >
                   <Button
                     onClick={handleSubtaskButtonClick}
                     size="small"

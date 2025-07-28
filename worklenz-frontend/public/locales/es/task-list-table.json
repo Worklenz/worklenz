@@ -87,7 +87,7 @@
     "peopleField": "Campo de personas",
     "noDate": "Sin fecha",
     "unsupportedField": "Tipo de campo no compatible",
-    
+
     "modal": {
       "addFieldTitle": "Agregar campo",
       "editFieldTitle": "Editar campo",
@@ -108,7 +108,7 @@
       "createErrorMessage": "Error al crear la columna personalizada",
       "updateErrorMessage": "Error al actualizar la columna personalizada"
     },
-    
+
     "fieldTypes": {
       "people": "Personas",
       "number": "Número",

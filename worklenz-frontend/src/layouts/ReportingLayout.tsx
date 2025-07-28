@@ -22,8 +22,6 @@ const ReportingLayout = () => {
   const currentSession = getCurrentSession();
   const navigate = useNavigate();
 
-  
-
   // function to handle collapse
   const handleCollapsedToggler = () => {
     setIsCollapsed(prev => !prev);

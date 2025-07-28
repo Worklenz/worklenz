@@ -1,6 +1,20 @@
-import { Badge, Button, Collapse, ConfigProvider, Dropdown, Flex, Input, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  Button,
+  Collapse,
+  ConfigProvider,
+  Dropdown,
+  Flex,
+  Input,
+  Typography,
+} from '@/shared/antd-imports';
 import { useState } from 'react';
-import { EditOutlined, EllipsisOutlined, RetweetOutlined, RightOutlined } from '@/shared/antd-imports';
+import {
+  EditOutlined,
+  EllipsisOutlined,
+  RetweetOutlined,
+  RightOutlined,
+} from '@/shared/antd-imports';
 import { colors } from '../../../../../styles/colors';
 import './taskListTableWrapper.css';
 import TaskListTable from './TaskListTable';

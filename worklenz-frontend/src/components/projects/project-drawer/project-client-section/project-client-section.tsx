@@ -3,7 +3,15 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { IClientsViewModel } from '@/types/client.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { QuestionCircleOutlined } from '@/shared/antd-imports';
-import { AutoComplete, Flex, Form, FormInstance, Spin, Tooltip, Typography } from '@/shared/antd-imports';
+import {
+  AutoComplete,
+  Flex,
+  Form,
+  FormInstance,
+  Spin,
+  Tooltip,
+  Typography,
+} from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { useState } from 'react';
 

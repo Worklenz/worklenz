@@ -132,13 +132,11 @@ const SubtaskLoadingSkeleton: React.FC<SubtaskLoadingSkeletonProps> = ({ visible
     <div className="bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-200 dark:border-blue-700">
       <div className="flex items-center min-w-max px-4 py-2 border-b border-gray-200 dark:border-gray-700">
         {visibleColumns.map((column, index) => (
-          <div key={column.id}>
-            {renderColumn(column.id, column.width)}
-          </div>
+          <div key={column.id}>{renderColumn(column.id, column.width)}</div>
         ))}
       </div>
     </div>
   );
 };
 
-export default SubtaskLoadingSkeleton; 
+export default SubtaskLoadingSkeleton;
