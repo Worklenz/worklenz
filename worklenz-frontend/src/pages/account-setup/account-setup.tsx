@@ -80,6 +80,7 @@ const AccountSetup: React.FC = () => {
   const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
   
   const [surveyId, setSurveyId] = React.useState<string | null>(null);
+  const [isSkipping, setIsSkipping] = React.useState(false);
 
   const isDarkMode = themeMode === 'dark';
   // Helper to extract organization name from email or fallback to user name
@@ -215,8 +216,15 @@ const AccountSetup: React.FC = () => {
   };
 
   const handleSkipMembers = async () => {
-    // Bypass all validation and complete setup without team members
-    await completeAccountSetup(true);
+    try {
+      setIsSkipping(true);
+      // Bypass all validation and complete setup without team members
+      await completeAccountSetup(true);
+    } catch (error) {
+      logger.error('Failed to skip members and complete setup', error);
+    } finally {
+      setIsSkipping(false);
+    }
   };
 
   const completeAccountSetupWithTemplate = async () => {
@@ -598,8 +606,10 @@ const AccountSetup: React.FC = () => {
                       className="p-0 font-medium"
                       style={{ color: token.colorTextTertiary }}
                       onClick={handleSkipMembers}
+                      loading={isSkipping}
+                      disabled={isSkipping}
                     >
-                      {t('skipForNow')}
+                      {isSkipping ? t('skipping') : t('skipForNow')}
                     </Button>
                   )}
                 </div>
