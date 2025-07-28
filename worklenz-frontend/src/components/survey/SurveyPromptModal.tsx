@@ -30,11 +30,21 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
   const isDarkMode = themeMode === 'dark';
 
   useEffect(() => {
+    // Check if survey was skipped recently (within 7 days)
+    const skippedAt = localStorage.getItem('survey_skipped_at');
+    if (!forceShow && skippedAt) {
+      const skippedDate = new Date(skippedAt);
+      const now = new Date();
+      const diffDays = (now.getTime() - skippedDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays < 3) {
+        return; // Don't show modal if skipped within 7 days
+      }
+    }
+
     if (forceShow) {
       setVisible(true);
       dispatch(resetSurveyData());
       dispatch(setSurveySubStep(0));
-      
       // Fetch survey info
       const fetchSurvey = async () => {
         try {
@@ -46,16 +56,13 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
             });
           }
         } catch (error) {
-          logger.error('Failed to fetch survey', error);
+          logger.error(t('survey:fetchErrorLog'), error);
         }
       };
-      
       fetchSurvey();
     } else if (!loading && hasCompletedSurvey === false) {
-      // Reset survey data when modal will be shown
       dispatch(resetSurveyData());
       dispatch(setSurveySubStep(0));
-      
       // Fetch survey info
       const fetchSurvey = async () => {
         try {
@@ -67,20 +74,17 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
             });
           }
         } catch (error) {
-          logger.error('Failed to fetch survey', error);
+          logger.error(t('survey:fetchErrorLog'), error);
         }
       };
-      
       fetchSurvey();
-      
       // Show modal after a 5 second delay to not interrupt user immediately
       const timer = setTimeout(() => {
         setVisible(true);
       }, 5000);
-
       return () => clearTimeout(timer);
     }
-  }, [loading, hasCompletedSurvey, dispatch, forceShow]);
+  }, [loading, hasCompletedSurvey, dispatch, forceShow, t]);
 
   const handleComplete = async () => {
     try {
@@ -143,7 +147,7 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
       
       if (response.done) {
         setSurveyCompleted(true);
-        appMessage.success('Thank you for completing the survey!');
+        appMessage.success(t('survey:submitSuccessMessage'));
         
         // Wait a moment before closing
         setTimeout(() => {
@@ -151,11 +155,11 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
           refetch(); // Update the survey status
         }, 2000);
       } else {
-        throw new Error(response.message || 'Failed to submit survey');
+        throw new Error(response.message || t('survey:submitErrorMessage'));
       }
     } catch (error) {
-      logger.error('Failed to submit survey', error);
-      appMessage.error('Failed to submit survey. Please try again.');
+      logger.error(t('survey:submitErrorLog'), error);
+      appMessage.error(t('survey:submitErrorMessage'));
     } finally {
       setSubmitting(false);
     }
@@ -202,20 +206,20 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
   return (
     <Modal
       open={visible}
-      title={surveyCompleted ? null : "Help Us Improve Your Experience"}
+      title={surveyCompleted ? null : t('survey:modalTitle')}
       onCancel={handleSkip}
       footer={
         surveyCompleted ? null : (
           <Flex justify="space-between" align="center">
             <div>
               <Button onClick={handleSkip}>
-                Skip for now
+                {t('survey:skip')}
               </Button>
             </div>
             <Flex gap={8}>
               {surveySubStep > 0 && (
                 <Button onClick={handlePrevious}>
-                  Previous
+                  {t('survey:previous')}
                 </Button>
               )}
               <Button 
@@ -224,7 +228,7 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
                 disabled={!isCurrentStepValid()}
                 loading={submitting && surveySubStep === 2}
               >
-                {surveySubStep === 2 ? 'Complete Survey' : 'Next'}
+                {surveySubStep === 2 ? t('survey:completeSurvey') : t('survey:next')}
               </Button>
             </Flex>
           </Flex>
@@ -237,13 +241,13 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
       {submitting ? (
         <div style={{ textAlign: 'center', padding: '40px' }}>
           <Spin size="large" />
-          <p style={{ marginTop: 16 }}>Submitting your responses...</p>
+          <p style={{ marginTop: 16 }}>{t('survey:submitting')}</p>
         </div>
       ) : surveyCompleted ? (
         <Result
           status="success"
-          title="Thank you!"
-          subTitle="Your feedback helps us improve Worklenz for everyone."
+          title={t('survey:submitSuccessTitle')}
+          subTitle={t('survey:submitSuccessSubtitle')}
         />
       ) : (
         <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
