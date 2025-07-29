@@ -25,9 +25,10 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
    * @param key - Date range key (e.g., YESTERDAY, LAST_WEEK)
    * @param dateRange - Array of date strings
    * @param userTimezone - User's timezone (e.g., 'America/New_York')
+   * @param tableAlias - Table alias to use (e.g., 'twl', 'task_work_log')
    * @returns SQL clause for date filtering
    */
-  protected static getDateRangeClauseWithTimezone(key: string, dateRange: string[], userTimezone: string) {
+  protected static getDateRangeClauseWithTimezone(key: string, dateRange: string[], userTimezone: string, tableAlias: string = 'task_work_log') {
     // For custom date ranges
     if (dateRange.length === 2) {
       // Convert dates to user's timezone start/end of day
@@ -40,10 +41,10 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
       
       if (start.isSame(end, 'day')) {
         // Single day selection
-        return `AND task_work_log.created_at >= '${startUtc}'::TIMESTAMP AND task_work_log.created_at <= '${endUtc}'::TIMESTAMP`;
+        return `AND ${tableAlias}.created_at >= '${startUtc}'::TIMESTAMP AND ${tableAlias}.created_at <= '${endUtc}'::TIMESTAMP`;
       }
       
-      return `AND task_work_log.created_at >= '${startUtc}'::TIMESTAMP AND task_work_log.created_at <= '${endUtc}'::TIMESTAMP`;
+      return `AND ${tableAlias}.created_at >= '${startUtc}'::TIMESTAMP AND ${tableAlias}.created_at <= '${endUtc}'::TIMESTAMP`;
     }
 
     // For predefined ranges, calculate based on user's timezone
@@ -74,7 +75,7 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
     if (startDate && endDate) {
       const startUtc = startDate.utc().format("YYYY-MM-DD HH:mm:ss");
       const endUtc = endDate.utc().format("YYYY-MM-DD HH:mm:ss");
-      return `AND task_work_log.created_at >= '${startUtc}'::TIMESTAMP AND task_work_log.created_at <= '${endUtc}'::TIMESTAMP`;
+      return `AND ${tableAlias}.created_at >= '${startUtc}'::TIMESTAMP AND ${tableAlias}.created_at <= '${endUtc}'::TIMESTAMP`;
     }
 
     return "";
