@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useEffect } from 'react';
-import { Card, Segmented, Skeleton, Empty, Typography, Alert } from 'antd';
-import { ClockCircleOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { Card, Segmented, Skeleton, Empty, Typography, Alert, Button, Tooltip } from '@/shared/antd-imports';
+import { ClockCircleOutlined, UnorderedListOutlined, SyncOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -54,11 +54,12 @@ const UserActivityFeed: React.FC = () => {
     }
     // If it's an object with a data property (common API pattern)
     if (recentTasksData && typeof recentTasksData === 'object' && 'data' in recentTasksData) {
-      return Array.isArray(recentTasksData.data) ? recentTasksData.data : [];
+      const data = (recentTasksData as any).data;
+      return Array.isArray(data) ? data : [];
     }
     // If it's a different object structure, try to extract tasks
     if (recentTasksData && typeof recentTasksData === 'object') {
-      const possibleArrays = Object.values(recentTasksData).filter(Array.isArray);
+      const possibleArrays = Object.values(recentTasksData as any).filter(Array.isArray);
       return possibleArrays.length > 0 ? possibleArrays[0] : [];
     }
     return [];
@@ -72,11 +73,12 @@ const UserActivityFeed: React.FC = () => {
     }
     // If it's an object with a data property (common API pattern)
     if (timeLoggedTasksData && typeof timeLoggedTasksData === 'object' && 'data' in timeLoggedTasksData) {
-      return Array.isArray(timeLoggedTasksData.data) ? timeLoggedTasksData.data : [];
+      const data = (timeLoggedTasksData as any).data;
+      return Array.isArray(data) ? data : [];
     }
     // If it's a different object structure, try to extract tasks
     if (timeLoggedTasksData && typeof timeLoggedTasksData === 'object') {
-      const possibleArrays = Object.values(timeLoggedTasksData).filter(Array.isArray);
+      const possibleArrays = Object.values(timeLoggedTasksData as any).filter(Array.isArray);
       return possibleArrays.length > 0 ? possibleArrays[0] : [];
     }
     return [];
@@ -85,21 +87,21 @@ const UserActivityFeed: React.FC = () => {
   const segmentOptions = useMemo(
     () => [
       {
-        value: ActivityFeedType.RECENT_TASKS,
+        value: ActivityFeedType.TIME_LOGGED_TASKS,
         label: (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <UnorderedListOutlined />
-            <span>{t('Recent Tasks')}</span>
-          </div>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <ClockCircleOutlined style={{ fontSize: 14 }} />
+            {t('tasks.timeLoggedSegment')}
+          </span>
         ),
       },
       {
-        value: ActivityFeedType.TIME_LOGGED_TASKS,
+        value: ActivityFeedType.RECENT_TASKS,
         label: (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <ClockCircleOutlined />
-            <span>{t('Time Logged Tasks')}</span>
-          </div>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <UnorderedListOutlined style={{ fontSize: 14 }} />
+            {t('tasks.recentTasksSegment')}
+          </span>
         ),
       },
     ],
@@ -122,41 +124,77 @@ const UserActivityFeed: React.FC = () => {
     }
   }, [activeTab, refetchRecentTasks, refetchTimeLoggedTasks]);
 
-  const renderContent = () => {
-    if (activeTab === ActivityFeedType.RECENT_TASKS) {
-      if (loadingRecentTasks) {
-        return <Skeleton active />;
-      }
-      if (recentTasksError) {
-        return <Alert message={t('Error Loading Recent Tasks')} type="error" showIcon />;
-      }
-      if (recentTasks.length === 0) {
-        return <Empty description={t('No Recent Tasks')} />;
-      }
-      return <TaskActivityList tasks={recentTasks} />;
+  const handleRefresh = useCallback(() => {
+    if (activeTab === ActivityFeedType.TIME_LOGGED_TASKS) {
+      refetchTimeLoggedTasks();
     } else {
+      refetchRecentTasks();
+    }
+  }, [activeTab, refetchRecentTasks, refetchTimeLoggedTasks]);
+
+  const isLoading = activeTab === ActivityFeedType.TIME_LOGGED_TASKS ? loadingTimeLoggedTasks : loadingRecentTasks;
+  const currentCount = activeTab === ActivityFeedType.TIME_LOGGED_TASKS ? timeLoggedTasks.length : recentTasks.length;
+
+  const renderContent = () => {
+    if (activeTab === ActivityFeedType.TIME_LOGGED_TASKS) {
       if (loadingTimeLoggedTasks) {
         return <Skeleton active />;
       }
       if (timeLoggedTasksError) {
-        return <Alert message={t('Error Loading Time Logged Tasks')} type="error" showIcon />;
+        return <Alert message={t('tasks.errorLoadingTimeLoggedTasks')} type="error" showIcon />;
       }
       if (timeLoggedTasks.length === 0) {
-        return <Empty description={t('No Time Logged Tasks')} />;
+        return <Empty description={t('tasks.noTimeLoggedTasks')} />;
       }
-      return <TimeLoggedTaskList tasks={timeLoggedTasks} />;
+      return (
+        <div style={{ maxHeight: 450, overflow: 'auto' }}>
+          <TimeLoggedTaskList tasks={timeLoggedTasks} />
+        </div>
+      );
+    } else if (activeTab === ActivityFeedType.RECENT_TASKS) {
+      if (loadingRecentTasks) {
+        return <Skeleton active />;
+      }
+      if (recentTasksError) {
+        return <Alert message={t('tasks.errorLoadingRecentTasks')} type="error" showIcon />;
+      }
+      if (recentTasks.length === 0) {
+        return <Empty description={t('tasks.noRecentTasks')} />;
+      }
+      return (
+        <div style={{ maxHeight: 450, overflow: 'auto' }}>
+          <TaskActivityList tasks={recentTasks} />
+        </div>
+      );
     }
+    return null;
   };
 
   return (
-    <Card title={t('Recent Activity')}>
-      <div style={{ marginBottom: 16 }}>
-        <Segmented
-          options={segmentOptions}
-          value={activeTab}
-          onChange={handleTabChange}
-        />
-      </div>
+    <Card 
+      title={
+        <Typography.Title level={5} style={{ marginBlockEnd: 0 }}>
+          {t('tasks.recentActivity')} ({currentCount})
+        </Typography.Title>
+      }
+      extra={
+        <Tooltip title={t('tasks.refresh')}>
+          <Button 
+            shape="circle" 
+            icon={<SyncOutlined spin={isLoading} />} 
+            onClick={handleRefresh}
+          />
+        </Tooltip>
+      }
+      style={{ width: '100%' }}
+    >
+      <Segmented
+        options={segmentOptions}
+        value={activeTab}
+        onChange={handleTabChange}
+        style={{ marginBottom: 16, width: '100%' }}
+        block
+      />
       {renderContent()}
     </Card>
   );

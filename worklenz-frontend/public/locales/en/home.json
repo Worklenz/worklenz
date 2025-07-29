@@ -44,7 +44,9 @@
     "refresh": "Refresh",
     "recentActivity": "Recent Activity",
     "recentTasks": "Recent Tasks",
-    "timeLoggedTasks": "Time Logged",
+    "recentTasksSegment": "Recent Tasks",
+    "timeLogged": "Time Logged",
+    "timeLoggedSegment": "Time Logged",
     "noRecentTasks": "No recent tasks",
     "noTimeLoggedTasks": "No time logged tasks",
     "activityTag": "Activity",
@@ -54,12 +56,7 @@
     "activityPlural": "activities",
     "recentTaskAriaLabel": "Recent task:",
     "timeLoggedTaskAriaLabel": "Time logged task:",
-    "Recent Activity": "Recent Activity",
-    "Recent Tasks": "Recent Tasks",
-    "Time Logged Tasks": "Time Logged Tasks",
-    "Error Loading Recent Tasks": "Error loading recent tasks",
-    "Error Loading Time Logged Tasks": "Error loading time logged tasks",
-    "No Recent Tasks": "No recent tasks",
-    "No Time Logged Tasks": "No time logged tasks"
+    "errorLoadingRecentTasks": "Error loading recent tasks",
+    "errorLoadingTimeLoggedTasks": "Error loading time logged tasks"
   }
 }
