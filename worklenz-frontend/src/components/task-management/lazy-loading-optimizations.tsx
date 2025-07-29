@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, ComponentType, ReactNode } from 'react';
-import { Skeleton, Spin } from 'antd';
+import { Skeleton, Spin } from '@/shared/antd-imports';
 
 // Enhanced lazy loading with error boundary and retry logic
 export function createOptimizedLazy<T extends ComponentType<any>>(

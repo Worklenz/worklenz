@@ -84,5 +84,12 @@
   "close": "Mbyll",
   "cannotMoveStatus": "Nuk mund të lëvizet statusi",
   "cannotMoveStatusMessage": "Nuk mund të lëvizet ky status sepse do të linte kategorinë '{{categoryName}}' bosh. Çdo kategori duhet të ketë të paktën një status.",
-  "ok": "OK"
+  "ok": "OK",
+  "clearSort": "Pastro Renditjen",
+  "sortAscending": "Rendit në Rritje",
+  "sortDescending": "Rendit në Zbritje",
+  "sortByField": "Rendit sipas {{field}}",
+  "ascendingOrder": "Rritës",
+  "descendingOrder": "Zbritës",
+  "currentSort": "Renditja aktuale: {{field}} {{order}}"
 }

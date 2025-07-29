@@ -1,5 +1,5 @@
-import { SettingOutlined } from '@ant-design/icons';
-import { Button, Flex, Tooltip, Typography } from 'antd';
+import { SettingOutlined } from '@/shared/antd-imports';
+import { Button, Flex, Tooltip, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import CustomColumnModal from '../custom-column-modal/custom-column-modal';

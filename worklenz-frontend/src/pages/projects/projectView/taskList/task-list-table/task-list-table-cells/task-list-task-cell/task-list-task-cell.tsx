@@ -1,5 +1,5 @@
-import { Flex, Typography, Button, Input, Tooltip } from 'antd';
-import type { InputRef } from 'antd';
+import { Flex, Typography, Button, Input, Tooltip } from '@/shared/antd-imports';
+import type { InputRef } from '@/shared/antd-imports';
 import {
   DoubleRightOutlined,
   DownOutlined,
@@ -10,7 +10,7 @@ import {
   PaperClipOutlined,
   MinusCircleOutlined,
   RetweetOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';

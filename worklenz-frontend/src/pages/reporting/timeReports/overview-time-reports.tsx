@@ -1,6 +1,6 @@
 import React from 'react';
 import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time-report-page-header';
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import TimeSheetTable from '@/pages/reporting/time-reports/time-sheet-table/time-sheet-table';
 import TimeReportingRightHeader from './timeReportingRightHeader/TimeReportingRightHeader';
 import { useTranslation } from 'react-i18next';

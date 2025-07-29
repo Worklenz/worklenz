@@ -1,10 +1,10 @@
-import { Flex, Typography } from 'antd';
+import { Flex, Typography } from '@/shared/antd-imports';
 import './priority-section.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useState, useEffect, useMemo } from 'react';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
-import { DoubleLeftOutlined, MinusOutlined, PauseOutlined } from '@ant-design/icons';
+import { DoubleLeftOutlined, MinusOutlined, PauseOutlined } from '@/shared/antd-imports';
 
 type PrioritySectionProps = {
   task: IProjectTask;

@@ -11,10 +11,11 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+  Input
+} from '@/shared/antd-imports';
 
 // Icons
-import { DeleteOutlined, ExclamationCircleFilled, SyncOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled, SyncOutlined } from '@/shared/antd-imports';
 
 // React & Router
 import { useEffect, useState } from 'react';
@@ -70,26 +71,29 @@ const ProjectViewMembers = () => {
     field: 'name',
     order: 'ascend',
     total: 0,
-    pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
+    pageSizeOptions: ['10', '20', '50', '100'],
     size: 'small',
   });
+  const [searchQuery, setSearchQuery] = useState(''); // <-- Add search state
 
   // API Functions
-  const getProjectMembers = async () => {
+  const getProjectMembers = async (search: string = searchQuery) => {
     if (!projectId) return;
 
     setIsLoading(true);
     try {
+      const offset = (pagination.current - 1) * pagination.pageSize;
       const res = await projectsApiService.getMembers(
         projectId,
-        pagination.current,
-        pagination.pageSize,
+        pagination.current, // index
+        pagination.pageSize, // size             // offset
         pagination.field,
         pagination.order,
-        null
+        search
       );
       if (res.done) {
         setMembers(res.body);
+        setPagination(p => ({ ...p, total: res.body.total ?? 0 })); // update total from backend, default to 0
       }
     } catch (error) {
       logger.error('Error fetching members:', error);
@@ -123,16 +127,14 @@ const ProjectViewMembers = () => {
     return Math.floor((completed / total) * 100);
   };
 
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
-    setPagination({
-      current: pagination.current,
-      pageSize: pagination.pageSize,
-      field: sorter.field || pagination.field,
-      order: sorter.order || pagination.order,
-      total: pagination.total,
-      pageSizeOptions: pagination.pageSizeOptions,
-      size: pagination.size,
-    });
+  const handleTableChange = (tablePagination: any, filters: any, sorter: any) => {
+    setPagination(prev => ({
+      ...prev,
+      current: tablePagination.current,
+      pageSize: tablePagination.pageSize,
+      field: sorter.field || prev.field,
+      order: sorter.order || prev.order,
+    }));
   };
 
   // Effects
@@ -145,6 +147,7 @@ const ProjectViewMembers = () => {
     pagination.pageSize,
     pagination.field,
     pagination.order,
+    // searchQuery, // <-- Do NOT include here, search is triggered manually
   ]);
 
   useEffect(() => {
@@ -269,18 +272,33 @@ const ProjectViewMembers = () => {
     <Card
       style={{ width: '100%' }}
       title={
-        <Flex justify="space-between">
+        <Flex justify="space-between" align="center">
           <Typography.Text style={{ fontSize: 16, fontWeight: 500 }}>
             {members?.total} {members?.total !== 1 ? t('membersCountPlural') : t('memberCount')}
           </Typography.Text>
 
-          <Tooltip title={t('refreshButtonTooltip')}>
-            <Button
-              shape="circle"
-              icon={<SyncOutlined />}
-              onClick={() => void getProjectMembers()}
+          <Flex gap={8} align="center">
+            <Input.Search
+              allowClear
+              placeholder={t('searchPlaceholder')}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onSearch={value => {
+                setPagination(p => ({ ...p, current: 1 })); // Reset to first page
+                void getProjectMembers(value);
+              }}
+              style={{ width: 220 }}
+              enterButton
+              size="middle"
             />
-          </Tooltip>
+            <Tooltip title={t('refreshButtonTooltip')}>
+              <Button
+                shape="circle"
+                icon={<SyncOutlined />}
+                onClick={() => void getProjectMembers()}
+              />
+            </Tooltip>
+          </Flex>
         </Flex>
       }
     >
@@ -299,8 +317,12 @@ const ProjectViewMembers = () => {
           columns={columns}
           rowKey={record => record.id}
           pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
-            defaultPageSize: 20,
+            pageSizeOptions: pagination.pageSizeOptions,
+            size: pagination.size,
           }}
           onChange={handleTableChange}
           onRow={record => ({

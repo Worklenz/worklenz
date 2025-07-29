@@ -1,9 +1,8 @@
 import { useSocket } from '@/socket/socketContext';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { Select } from 'antd';
+import { Select } from '@/shared/antd-imports';
 
-import { Form } from 'antd';
+import { Form } from '@/shared/antd-imports';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 
@@ -27,12 +26,6 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
       phase_id: value,
       parent_task: task.parent_task_id || null,
     });
-
-    // socket?.once(SocketEvents.TASK_PHASE_CHANGE.toString(), () => {
-    //   if(list.getCurrentGroup().value === this.list.GROUP_BY_PHASE_VALUE && this.list.isSubtasksIncluded) {
-    //     this.list.emitRefreshSubtasksIncluded();
-    //   }
-    // });
   };
 
   return (
@@ -41,8 +34,11 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
         allowClear
         placeholder="Select Phase"
         options={phaseMenuItems}
-        style={{ width: 'fit-content' }}
-        dropdownStyle={{ width: 'fit-content' }}
+        styles={{
+          root: {
+            width: 'fit-content',
+          },
+        }}
         onChange={handlePhaseChange}
       />
     </Form.Item>

@@ -17,18 +17,13 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { Card, Spin, Empty, Flex } from 'antd';
+import { Card, Spin, Empty } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
-import { IGroupBy, setGroup, fetchTaskGroups, reorderTasks } from '@/features/tasks/tasks.slice';
+import { fetchTaskGroups, reorderTasks } from '@/features/tasks/tasks.slice';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { AppDispatch } from '@/app/store';
-import BoardSectionCard from '@/pages/projects/projectView/board/board-section/board-section-card/board-section-card';
-import BoardCreateSectionCard from '@/pages/projects/projectView/board/board-section/board-section-card/board-create-section-card';
-import { useAuthService } from '@/hooks/useAuth';
+import { useAuthService } from '@/hooks/useAuth'; 
 import useIsProjectManager from '@/hooks/useIsProjectManager';
-import BoardViewTaskCard from '@/pages/projects/projectView/board/board-section/board-task-card/board-view-task-card';
-import TaskGroup from '../task-management/TaskGroup';
-import TaskRow from '../task-management/TaskRow';
 import KanbanGroup from './kanbanGroup';
 import KanbanTaskCard from './kanbanTaskCard';
 import SortableKanbanGroup from './SortableKanbanGroup';

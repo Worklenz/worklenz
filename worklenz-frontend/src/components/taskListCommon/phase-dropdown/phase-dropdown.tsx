@@ -1,4 +1,4 @@
-import { Badge, Flex, Select, Tooltip, Typography } from 'antd';
+import { Badge, Flex, Select, Tooltip, Typography } from '@/shared/antd-imports';
 
 import './phase-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';

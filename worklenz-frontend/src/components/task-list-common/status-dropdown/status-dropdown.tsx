@@ -1,4 +1,4 @@
-import { Flex, Select } from 'antd';
+import { Flex, Select } from '@/shared/antd-imports';
 import './status-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useMemo } from 'react';

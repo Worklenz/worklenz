@@ -1,5 +1,5 @@
-import { Button, Typography, Tag } from 'antd';
-import { BankOutlined } from '@ant-design/icons';
+import { Button, Typography, Tag } from '@/shared/antd-imports';
+import { BankOutlined } from '@/shared/antd-imports';
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

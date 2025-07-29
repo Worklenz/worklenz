@@ -28,7 +28,7 @@
   "jobTitleLabel": "Cargo",
   "jobTitlePlaceholder": "Seleccione o busque cargo (Opcional)",
   "memberAccessLabel": "Nivel de acceso",
-  "addToTeamButton": "Agregar miembro al equipo",
+  "addToTeamButton": "Enviar invitación",
   "updateButton": "Guardar cambios",
   "resendInvitationButton": "Reenviar correo de invitación",
   "invitationSentSuccessMessage": "¡Invitación al equipo enviada exitosamente!",
@@ -43,5 +43,6 @@
   "updatedText": "Actualizado",
   "noResultFound": "Escriba una dirección de correo electrónico y presione enter...",
   "jobTitlesFetchError": "Error al obtener los cargos",
-  "invitationResent": "¡Invitación reenviada exitosamente!"
+  "invitationResent": "¡Invitación reenviada exitosamente!",
+  "copyTeamLink": "Copiar enlace del equipo"
 }

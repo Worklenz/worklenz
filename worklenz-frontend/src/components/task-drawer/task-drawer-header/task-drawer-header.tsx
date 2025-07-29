@@ -1,6 +1,6 @@
-import { Button, Dropdown, Flex, Input, InputRef, MenuProps } from 'antd';
+import { Button, Dropdown, Flex, Input, InputRef, MenuProps, Tooltip } from '@/shared/antd-imports';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { EllipsisOutlined } from '@ant-design/icons';
+import { EllipsisOutlined } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
 import './task-drawer-header.css';
@@ -21,10 +21,17 @@ import { deleteBoardTask } from '@/features/board/board-slice';
 import { deleteTask as deleteKanbanTask, updateEnhancedKanbanSubtask } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { ITaskViewModel } from '@/types/tasks/task.types';
+import TaskHierarchyBreadcrumb from '../task-hierarchy-breadcrumb/task-hierarchy-breadcrumb';
 
 type TaskDrawerHeaderProps = {
   inputRef: React.RefObject<InputRef | null>;
   t: TFunction;
+};
+
+// Utility function to truncate text
+const truncateText = (text: string, maxLength: number = 50): string => {
+  if (!text || text.length <= maxLength) return text;
+  return `${text.substring(0, maxLength)}...`;
 };
 
 const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
@@ -37,6 +44,9 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const [taskName, setTaskName] = useState<string>(taskFormViewModel?.task?.name ?? '');
   const currentSession = useAuthService().getCurrentSession();
+
+  // Check if current task is a sub-task
+  const isSubTask = taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
 
   useEffect(() => {
     setTaskName(taskFormViewModel?.task?.name ?? '');
@@ -126,54 +136,57 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     // No need for local socket listeners that could interfere with global handlers
   };
 
+  const displayTaskName = taskName || t('taskHeader.taskNamePlaceholder');
+  const truncatedTaskName = truncateText(displayTaskName, 50);
+  const shouldShowTooltip = displayTaskName.length > 50;
+
   return (
-    <Flex gap={12} align="center" style={{ marginBlockEnd: 6 }}>
-      <Flex style={{ position: 'relative', width: '100%' }}>
-        {isEditing ? (
-          <Input
-            ref={inputRef}
-            size="large"
-            value={taskName}
-            onChange={e => onTaskNameChange(e)}
-            onBlur={handleInputBlur}
-            placeholder={t('taskHeader.taskNamePlaceholder')}
-            className="task-name-input"
-            style={{
-              width: '100%',
-              border: 'none',
-            }}
-            showCount={true}
-            maxLength={250}
-            autoFocus
-          />
-        ) : (
-          <p
-            onClick={() => setIsEditing(true)}
-            style={{
-              margin: 0,
-              padding: '4px 11px',
-              fontSize: '16px',
-              cursor: 'pointer',
-              wordWrap: 'break-word',
-              overflowWrap: 'break-word',
-              width: '100%',
-            }}
-          >
-            {taskName || t('taskHeader.taskNamePlaceholder')}
-          </p>
-        )}
+    <div>
+      {/* Show breadcrumb for sub-tasks */}
+      {isSubTask && <TaskHierarchyBreadcrumb t={t} />}
+      
+      <Flex gap={8} align="center" style={{ marginBlockEnd: 2 }}>
+        <Flex style={{ position: 'relative', width: '100%', alignItems: 'center' }}>
+          {isEditing ? (
+            <Input
+              ref={inputRef}
+              size="large"
+              value={taskName}
+              onChange={e => onTaskNameChange(e)}
+              onBlur={handleInputBlur}
+              placeholder={t('taskHeader.taskNamePlaceholder')}
+              className="task-name-input"
+              style={{
+                width: '100%',
+                border: 'none',
+              }}
+              showCount={true}
+              maxLength={250}
+              autoFocus
+            />
+          ) : (
+            <Tooltip title={shouldShowTooltip ? displayTaskName : ''} trigger="hover">
+              <p
+                onClick={() => setIsEditing(true)}
+                className="task-name-display"
+              >
+                {truncatedTaskName}
+              </p>
+            </Tooltip>
+          )}
+        </Flex>
+
+        <TaskDrawerStatusDropdown
+          statuses={taskFormViewModel?.statuses ?? []}
+          task={taskFormViewModel?.task ?? ({} as ITaskViewModel)}
+          teamId={currentSession?.team_id ?? ''}
+        />
+
+        <Dropdown overlayClassName={'delete-task-dropdown'} menu={{ items: deletTaskDropdownItems }}>
+          <Button type="text" icon={<EllipsisOutlined />} />
+        </Dropdown>
       </Flex>
-
-      <TaskDrawerStatusDropdown
-        statuses={taskFormViewModel?.statuses ?? []}
-        task={taskFormViewModel?.task ?? ({} as ITaskViewModel)}
-        teamId={currentSession?.team_id ?? ''}
-      />
-
-      <Dropdown overlayClassName={'delete-task-dropdown'} menu={{ items: deletTaskDropdownItems }}>
-        <Button type="text" icon={<EllipsisOutlined />} />
-      </Dropdown>
-    </Flex>
+    </div>
   );
 };
 

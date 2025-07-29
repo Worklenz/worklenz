@@ -21,8 +21,8 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
-import { DeleteOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons';
+} from '@/shared/antd-imports';
+import { DeleteOutlined, SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 

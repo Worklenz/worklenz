@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
-import { Card, Flex, Skeleton, Tooltip, Typography } from 'antd';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { Card, Flex, Skeleton, Tooltip, Typography } from '@/shared/antd-imports';
+import { ExclamationCircleOutlined } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 
 type InsightCardProps = {

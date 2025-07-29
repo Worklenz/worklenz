@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Form, Card, Input, Flex, Button, Typography, Result } from 'antd/es';
-import { LockOutlined } from '@ant-design/icons';
+import { LockOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
+import { CheckCircleTwoTone, CloseCircleTwoTone } from '@/shared/antd-imports';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 import PageHeader from '@components/AuthPageHeader';
 
@@ -36,6 +38,36 @@ const VerifyResetEmailPage = () => {
   const { t } = useTranslation('auth/verify-reset-email');
 
   const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const [passwordValue, setPasswordValue] = useState('');
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const passwordChecklistItems = [
+    {
+      key: 'minLength',
+      test: (v: string) => v.length >= 8,
+      label: t('passwordChecklist.minLength', { defaultValue: 'At least 8 characters' }),
+    },
+    {
+      key: 'uppercase',
+      test: (v: string) => /[A-Z]/.test(v),
+      label: t('passwordChecklist.uppercase', { defaultValue: 'One uppercase letter' }),
+    },
+    {
+      key: 'lowercase',
+      test: (v: string) => /[a-z]/.test(v),
+      label: t('passwordChecklist.lowercase', { defaultValue: 'One lowercase letter' }),
+    },
+    {
+      key: 'number',
+      test: (v: string) => /\d/.test(v),
+      label: t('passwordChecklist.number', { defaultValue: 'One number' }),
+    },
+    {
+      key: 'special',
+      test: (v: string) => /[@$!%*?&#]/.test(v),
+      label: t('passwordChecklist.special', { defaultValue: 'One special character' }),
+    },
+  ];
 
   useEffect(() => {
     trackMixpanelEvent(evt_verify_reset_email_page_visit);
@@ -104,12 +136,38 @@ const VerifyResetEmailPage = () => {
                 },
               ]}
             >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder={t('placeholder')}
-                size="large"
-                style={{ borderRadius: 4 }}
-              />
+              <div>
+                <Input.Password
+                  prefix={<LockOutlined />}
+                  placeholder={t('placeholder')}
+                  size="large"
+                  style={{ borderRadius: 4 }}
+                  value={passwordValue}
+                  onChange={e => {
+                    setPasswordValue(e.target.value);
+                    if (!passwordTouched) setPasswordTouched(true);
+                  }}
+                  onBlur={() => setPasswordTouched(true)}
+                />
+                <div style={{ marginTop: 8, marginBottom: 4 }}>
+                  {passwordChecklistItems.map(item => {
+                    const passed = item.test(passwordValue);
+                    let color = passed
+                      ? (themeMode === 'dark' ? '#52c41a' : '#389e0d')
+                      : (themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf');
+                    return (
+                      <Flex key={item.key} align="center" gap={8} style={{ color, fontSize: 13 }}>
+                        {passed ? (
+                          <CheckCircleTwoTone twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'} />
+                        ) : (
+                          <CloseCircleTwoTone twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'} />
+                        )}
+                        <span>{item.label}</span>
+                      </Flex>
+                    );
+                  })}
+                </div>
+              </div>
             </Form.Item>
             <Form.Item
               name="confirmPassword"
@@ -136,6 +194,8 @@ const VerifyResetEmailPage = () => {
                 placeholder={t('confirmPasswordPlaceholder')}
                 size="large"
                 style={{ borderRadius: 4 }}
+                value={form.getFieldValue('confirmPassword') || ''}
+                onChange={e => form.setFieldsValue({ confirmPassword: e.target.value })}
               />
             </Form.Item>
 

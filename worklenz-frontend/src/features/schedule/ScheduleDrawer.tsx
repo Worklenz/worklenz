@@ -1,4 +1,4 @@
-import { Avatar, Drawer, Tabs, TabsProps } from 'antd';
+import { Avatar, Drawer, Tabs, TabsProps } from '@/shared/antd-imports';
 import React from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

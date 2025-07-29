@@ -9,8 +9,8 @@ import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 
 import { deleteStatusToggleDrawer } from '@/features/projects/status/DeleteStatusSlice';
-import { Drawer, Alert, Card, Select, Button, Typography, Badge } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import { Drawer, Alert, Card, Select, Button, Typography, Badge } from '@/shared/antd-imports';
+import { DownOutlined } from '@/shared/antd-imports';
 import { useSelector } from 'react-redux';
 import {
     deleteSection,

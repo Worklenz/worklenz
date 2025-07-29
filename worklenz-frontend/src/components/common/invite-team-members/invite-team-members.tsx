@@ -1,4 +1,4 @@
-import { AutoComplete, Button, Drawer, Flex, Form, message, Select, Spin, Typography } from 'antd';
+import { AutoComplete, Button, Drawer, Flex, Form, message, Modal, Select, Spin, Typography } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -11,6 +11,7 @@ import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.se
 import { IJobTitle } from '@/types/job.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
+import { LinkOutlined } from '@ant-design/icons';
 
 interface FormValues {
   email: string[];
@@ -87,23 +88,33 @@ const InviteTeamMembers = () => {
   };
 
   return (
-    <Drawer
+    <Modal
       title={
         <Typography.Text strong style={{ fontSize: 16 }}>
           {t('addMemberDrawerTitle')}
         </Typography.Text>
       }
       open={isDrawerOpen}
-      onClose={handleClose}
+      onCancel={handleClose}
       destroyOnClose
       afterOpenChange={visible => visible && handleSearch('')}
       width={400}
       loading={loading}
       footer={
-        <Flex justify="end">
-          <Button type="primary" onClick={form.submit}>
-            {t('addToTeamButton')}
-          </Button>
+        <Flex justify="space-between">
+          {/* <Button
+            style={{ width: 140, fontSize: 12 }}
+            block
+            icon={<LinkOutlined />}
+            disabled
+          >
+            {t('copyTeamLink')}
+          </Button> */}
+          <Flex justify="end">
+            <Button onClick={form.submit} style={{ fontSize: 12 }}>
+              {t('addToTeamButton')}
+            </Button>
+          </Flex>
         </Flex>
       }
     >
@@ -176,7 +187,7 @@ const InviteTeamMembers = () => {
           />
         </Form.Item>
       </Form>
-    </Drawer>
+    </Modal>
   );
 };
 

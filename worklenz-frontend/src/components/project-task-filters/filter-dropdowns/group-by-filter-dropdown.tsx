@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CaretDownFilled } from '@ant-design/icons';
+import { CaretDownFilled } from '@/shared/antd-imports';
 import { ConfigProvider, Flex, Dropdown, Button } from 'antd/es';
 import { useSearchParams } from 'react-router-dom';
 

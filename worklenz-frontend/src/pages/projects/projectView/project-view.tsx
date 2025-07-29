@@ -10,7 +10,6 @@ import {
   Tabs,
   PushpinFilled,
   PushpinOutlined,
-  type TabsProps,
 } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -39,7 +38,7 @@ import { resetState as resetEnhancedKanbanState } from '@/features/enhanced-kanb
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import { useTranslation } from 'react-i18next';
-
+import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -88,6 +87,9 @@ const ProjectView = React.memo(() => {
   const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
   const [taskid, setTaskId] = useState<string>(urlParams.taskId);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize timer state from backend when project view loads
+  useTimerInitialization();
 
   // Update local state when URL params change
   useEffect(() => {

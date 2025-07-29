@@ -5,8 +5,8 @@ import {
   ProjectOutlined,
   QuestionCircleOutlined,
   ReadOutlined,
-} from '@ant-design/icons';
-import { Button, Card, Dropdown, Flex, MenuProps, Space, Typography } from 'antd';
+} from '@/shared/antd-imports';
+import { Button, Card, Dropdown, Flex, MenuProps, Space, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../styles/colors';

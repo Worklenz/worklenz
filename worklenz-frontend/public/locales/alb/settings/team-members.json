@@ -28,7 +28,7 @@
   "jobTitleLabel": "Titulli i Punës",
   "jobTitlePlaceholder": "Zgjidh ose kërko titull pune (Opsionale)",
   "memberAccessLabel": "Niveli i Qasjes",
-  "addToTeamButton": "Shto Anëtar në Ekip",
+  "addToTeamButton": "Dërgo ftesën",
   "updateButton": "Ruaj Ndryshimet",
   "resendInvitationButton": "Dërgo Përsëri Email-in e Ftesës",
   "invitationSentSuccessMessage": "Ftesa për ekip u dërgua me sukses!",
@@ -43,5 +43,6 @@
   "updatedText": "Përditësuar",
   "noResultFound": "Shkruani një adresë email dhe shtypni Enter...",
   "jobTitlesFetchError": "Dështoi marrja e titujve të punës",
-  "invitationResent": "Ftesa u dërgua sërish me sukses!"
+  "invitationResent": "Ftesa u dërgua sërish me sukses!",
+  "copyTeamLink": "Kopjo lidhjen e ekipit"
 }

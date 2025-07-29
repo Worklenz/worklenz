@@ -2,8 +2,8 @@
 // Shows offline status and provides cache management controls
 
 import React from 'react';
-import { Badge, Button, Space, Tooltip, message } from 'antd';
-import { WifiOutlined, DisconnectOutlined, ReloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Badge, Button, Space, Tooltip, message } from '@/shared/antd-imports';
+import { WifiOutlined, DisconnectOutlined, ReloadOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useServiceWorker } from '../../utils/serviceWorkerRegistration';
 
 interface ServiceWorkerStatusProps {

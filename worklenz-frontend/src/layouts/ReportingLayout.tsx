@@ -1,4 +1,4 @@
-import { Col, ConfigProvider, Layout } from 'antd';
+import { Col, ConfigProvider, Layout } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import Navbar from '../features/navbar/navbar';
 import { useAppSelector } from '../hooks/useAppSelector';

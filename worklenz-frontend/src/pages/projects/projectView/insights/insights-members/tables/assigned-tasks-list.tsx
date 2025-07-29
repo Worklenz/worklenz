@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Flex, Tooltip, Typography } from 'antd';
+import { Flex, Tooltip, Typography } from '@/shared/antd-imports';
 
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, Suspense } from 'react';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/shared/antd-imports';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
 // Lazy load the existing AssigneeSelector component only when needed (Asana-style)

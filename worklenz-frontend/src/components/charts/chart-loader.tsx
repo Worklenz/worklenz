@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Spin } from 'antd';
+import { Spin } from '@/shared/antd-imports';
 
 // Lazy load chart components to reduce initial bundle size
 const LazyBar = React.lazy(() =>

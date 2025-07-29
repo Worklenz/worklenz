@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Card, Spin, Empty } from 'antd';
+import { Card, Spin, Empty } from '@/shared/antd-imports';
 import {
   DndContext,
   DragOverlay,

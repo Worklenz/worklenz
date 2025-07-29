@@ -10,6 +10,17 @@
   "deleteConfirmationOk": "Sim",
   "deleteConfirmationCancel": "Cancelar",
 
+  "deleteTaskTitle": "Excluir Tarefa",
+  "deleteTaskContent": "Tem certeza de que deseja excluir esta tarefa? Esta ação não pode ser desfeita.",
+  "deleteTaskConfirm": "Excluir",
+  "deleteTaskCancel": "Cancelar",
+
+  "deleteStatusTitle": "Excluir Status",
+  "deleteStatusContent": "Tem certeza de que deseja excluir este status? Esta ação não pode ser desfeita.",
+
+  "deletePhaseTitle": "Excluir Fase",
+  "deletePhaseContent": "Tem certeza de que deseja excluir esta fase? Esta ação não pode ser desfeita.",
+
   "dueDate": "Data de vencimento",
   "cancel": "Cancelar",
 
@@ -26,5 +37,17 @@
   "noDueDate": "Sem data de vencimento",
   "save": "Salvar",
   "clear": "Limpar",
-  "nextWeek": "Próxima semana"
+  "nextWeek": "Próxima semana",
+  "noSubtasks": "Sem subtarefas",
+  "showSubtasks": "Mostrar subtarefas",
+  "hideSubtasks": "Ocultar subtarefas",
+  
+  "errorLoadingTasks": "Erro ao carregar tarefas",
+  "noTasksFound": "Nenhuma tarefa encontrada",
+  "loadingFilters": "Carregando filtros...",
+  "failedToUpdateColumnOrder": "Falha ao atualizar a ordem das colunas",
+  "failedToUpdatePhaseOrder": "Falha ao atualizar a ordem das fases",
+  "pleaseTryAgain": "Por favor, tente novamente",
+  "taskNotCompleted": "Tarefa não está concluída",
+  "completeTaskDependencies": "Por favor, complete as dependências da tarefa antes de prosseguir"
 }

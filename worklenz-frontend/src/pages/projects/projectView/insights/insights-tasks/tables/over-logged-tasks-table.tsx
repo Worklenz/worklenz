@@ -1,8 +1,8 @@
-import { Avatar, Button, Flex, Table, Typography } from 'antd';
+import { Avatar, Button, Flex, Table, Typography } from '@/shared/antd-imports';
 import { useState, useEffect } from 'react';
 import { colors } from '@/styles/colors';
 import { TableProps } from 'antd/lib';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/shared/antd-imports';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
 import logger from '@/utils/errorLogger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';

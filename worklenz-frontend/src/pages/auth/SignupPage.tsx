@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
-import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined, UserOutlined } from '@/shared/antd-imports';
 import { Form, Card, Input, Flex, Button, Typography, Space, message } from 'antd/es';
 import { Rule } from 'antd/es/form';
+import { CheckCircleTwoTone, CloseCircleTwoTone } from '@/shared/antd-imports';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 import googleIcon from '@/assets/images/google-icon.png';
 import PageHeader from '@components/AuthPageHeader';
@@ -298,11 +300,47 @@ const SignupPage = () => {
         message: t('passwordMinCharacterRequired'),
       },
       {
+        max: 32,
+        message: t('passwordMaxCharacterRequired'),
+      },
+      {
         pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])/,
         message: t('passwordPatternRequired'),
       },
     ],
   };
+
+  const passwordChecklistItems = [
+    {
+      key: 'minLength',
+      test: (v: string) => v.length >= 8,
+      label: t('passwordChecklist.minLength', { defaultValue: 'At least 8 characters' }),
+    },
+    {
+      key: 'uppercase',
+      test: (v: string) => /[A-Z]/.test(v),
+      label: t('passwordChecklist.uppercase', { defaultValue: 'One uppercase letter' }),
+    },
+    {
+      key: 'lowercase',
+      test: (v: string) => /[a-z]/.test(v),
+      label: t('passwordChecklist.lowercase', { defaultValue: 'One lowercase letter' }),
+    },
+    {
+      key: 'number',
+      test: (v: string) => /\d/.test(v),
+      label: t('passwordChecklist.number', { defaultValue: 'One number' }),
+    },
+    {
+      key: 'special',
+      test: (v: string) => /[@$!%*?&#]/.test(v),
+      label: t('passwordChecklist.special', { defaultValue: 'One special character' }),
+    },
+  ];
+
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const [passwordValue, setPasswordValue] = useState('');
+  const [passwordActive, setPasswordActive] = useState(false);
 
   return (
     <Card
@@ -317,7 +355,7 @@ const SignupPage = () => {
       }}
       variant="outlined"
     >
-      <PageHeader description={t('headerDescription')} />
+      <PageHeader description={t('headerDescription', {defaultValue: 'Sign up to get started'})} />
       <Form
         form={form}
         name="signup"
@@ -331,35 +369,72 @@ const SignupPage = () => {
           name: urlParams.name,
         }}
       >
-        <Form.Item name="name" label={t('nameLabel')} rules={formRules.name}>
+        <Form.Item name="name" label={t('nameLabel', {defaultValue: 'Full Name'})} rules={formRules.name}>
           <Input
             prefix={<UserOutlined />}
-            placeholder={t('namePlaceholder')}
+            placeholder={t('namePlaceholder', {defaultValue: 'Enter your full name'})}
             size="large"
             style={{ borderRadius: 4 }}
           />
         </Form.Item>
 
-        <Form.Item name="email" label={t('emailLabel')} rules={formRules.email as Rule[]}>
+        <Form.Item name="email" label={t('emailLabel', {defaultValue: 'Email'})} rules={formRules.email as Rule[]}>
           <Input
             prefix={<MailOutlined />}
-            placeholder={t('emailPlaceholder')}
+            placeholder={t('emailPlaceholder', {defaultValue: 'Enter your email'})}
             size="large"
             style={{ borderRadius: 4 }}
           />
         </Form.Item>
 
-        <Form.Item name="password" label={t('passwordLabel')} rules={formRules.password}>
+        <Form.Item
+          name="password"
+          label={t('passwordLabel', {defaultValue: 'Password'})}
+          rules={formRules.password}
+          validateTrigger={['onBlur', 'onSubmit']}
+        >
           <div>
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder={t('strongPasswordPlaceholder')}
+              placeholder={t('strongPasswordPlaceholder', {defaultValue: 'Enter a strong password'})}
               size="large"
               style={{ borderRadius: 4 }}
+              value={passwordValue}
+              onFocus={() => setPasswordActive(true)}
+              onChange={e => {
+                setPasswordValue(e.target.value);
+                setPasswordActive(true);
+              }}
+              onBlur={() => {
+                if (!passwordValue) setPasswordActive(false);
+              }}
             />
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {t('passwordValidationAltText')}
+            <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 0, display: 'block' }}>
+              {t('passwordGuideline', {
+                defaultValue: 'Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.'
+              })}
             </Typography.Text>
+            {passwordActive && (
+              <div style={{ marginTop: 8, marginBottom: 4 }}>
+                {passwordChecklistItems.map(item => {
+                  const passed = item.test(passwordValue);
+                  // Only green if passed, otherwise neutral (never red)
+                  let color = passed
+                    ? (themeMode === 'dark' ? '#52c41a' : '#389e0d')
+                    : (themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf');
+                  return (
+                    <Flex key={item.key} align="center" gap={8} style={{ color, fontSize: 13 }}>
+                      {passed ? (
+                        <CheckCircleTwoTone twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'} />
+                      ) : (
+                        <CloseCircleTwoTone twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'} />
+                      )}
+                      <span>{item.label}</span>
+                    </Flex>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </Form.Item>
 
@@ -416,7 +491,7 @@ const SignupPage = () => {
         <Form.Item>
           <Space>
             <Typography.Text style={{ fontSize: 14 }}>
-              {t('alreadyHaveAccountText')}
+              {t('alreadyHaveAccountText', {defaultValue: 'Already have an account?'})}
             </Typography.Text>
 
             <Link
