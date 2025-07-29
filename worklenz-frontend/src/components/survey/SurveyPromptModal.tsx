@@ -30,6 +30,11 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({ forceShow 
   const isDarkMode = themeMode === 'dark';
 
   useEffect(() => {
+    // Check if survey modal is disabled via environment variable
+    if (import.meta.env.VITE_ENABLE_SURVEY_MODAL !== 'true' && !forceShow) {
+      return; // Don't show modal if disabled in environment
+    }
+
     // Check if survey was skipped recently (within 7 days)
     const skippedAt = localStorage.getItem('survey_skipped_at');
     if (!forceShow && skippedAt) {
