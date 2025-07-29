@@ -1,4 +1,4 @@
-import { Button, Drawer, Form, Input, notification, Typography } from 'antd';
+import { Button, Drawer, Form, Input, notification, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';

@@ -1,4 +1,4 @@
-import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import { LoadingOutlined, PlusOutlined } from '@/shared/antd-imports';
 import React, { useRef, useState } from 'react';
 import { TFunction } from 'i18next';
 import './attachments-upload.css';

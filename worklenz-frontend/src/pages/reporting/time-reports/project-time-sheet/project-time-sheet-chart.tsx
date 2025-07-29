@@ -16,7 +16,7 @@ import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';
 import { IRPTTimeProject } from '@/types/reporting/reporting.types';
-import { Empty, Spin } from 'antd';
+import { Empty, Spin } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 
 // Lazy load the Bar chart component

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, DatePicker, Form, Input, TimePicker, Flex } from 'antd';
-import { ClockCircleOutlined } from '@ant-design/icons';
+import { Button, DatePicker, Form, Input, TimePicker, Flex } from '@/shared/antd-imports';
+import { ClockCircleOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 

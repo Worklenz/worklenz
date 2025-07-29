@@ -1,4 +1,4 @@
-import { Alert, DatePicker, Flex, Form, Input, InputRef, Select, Typography } from 'antd';
+import { Alert, DatePicker, Flex, Form, Input, InputRef, Select, Typography } from '@/shared/antd-imports';
 import { useEffect, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { TFunction } from 'i18next';

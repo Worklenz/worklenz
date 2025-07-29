@@ -3,8 +3,8 @@ import { setSelectedProjectManagers } from '@/features/reporting/projectReports/
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectManager } from '@/types/project/projectManager.types';
-import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Card, Checkbox, Dropdown, Empty, Flex, Input, InputRef, List } from 'antd';
+import { CaretDownFilled } from '@/shared/antd-imports';
+import { Button, Card, Checkbox, Dropdown, Empty, Flex, Input, InputRef, List } from '@/shared/antd-imports';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

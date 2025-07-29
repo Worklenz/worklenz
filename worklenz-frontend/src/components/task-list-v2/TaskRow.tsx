@@ -24,6 +24,7 @@ interface TaskRowProps {
   isSubtask?: boolean;
   isFirstInGroup?: boolean;
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
+  depth?: number;
 }
 
 const TaskRow: React.FC<TaskRowProps> = memo(({ 
@@ -32,7 +33,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(({
   visibleColumns, 
   isSubtask = false, 
   isFirstInGroup = false, 
-  updateTaskCustomColumnValue 
+  updateTaskCustomColumnValue,
+  depth = 0
 }) => {
   // Get task data and selection state from Redux
   const task = useAppSelector(state => selectTaskById(state, taskId));
@@ -107,13 +109,14 @@ const TaskRow: React.FC<TaskRowProps> = memo(({
     handleTaskNameEdit,
     attributes,
     listeners,
+    depth,
   });
 
   // Memoize style object to prevent unnecessary re-renders
   const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0 : 1, // Completely hide the original task while dragging
   }), [transform, transition, isDragging]);
 
   return (

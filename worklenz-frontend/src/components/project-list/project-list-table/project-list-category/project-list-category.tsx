@@ -1,5 +1,5 @@
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import { Tooltip, Tag } from 'antd';
+import { Tooltip, Tag } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setFilteredCategories, setRequestParams } from '@/features/projects/projectsSlice';

@@ -6,3 +6,81 @@
 .ant-table-row:hover .row-action-button {
   opacity: 1;
 }
+
+/* Responsive styles for task list */
+@media (max-width: 768px) {
+  .task-list-card .ant-card-head {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .task-list-card .ant-card-head-title {
+    flex: 1;
+    width: 100%;
+  }
+  
+  .task-list-card .ant-card-extra {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .task-list-mobile-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch !important;
+  }
+  
+  .task-list-mobile-controls {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch !important;
+  }
+  
+  .task-list-mobile-select {
+    width: 100% !important;
+  }
+  
+  .task-list-mobile-segmented {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .task-list-card .ant-table {
+    font-size: 12px;
+  }
+  
+  .task-list-card .ant-table-thead > tr > th {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  .task-list-card .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+  }
+  
+  .row-action-button {
+    opacity: 1; /* Always show on mobile */
+  }
+  
+  /* Hide project column on very small screens */
+  .task-list-card .ant-table-thead > tr > th:nth-child(2),
+  .task-list-card .ant-table-tbody > tr > td:nth-child(2) {
+    display: none;
+  }
+}
+
+/* Table responsive container */
+.task-list-card .ant-table-container {
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .task-list-card .ant-table-wrapper {
+    overflow-x: auto;
+  }
+  
+  .task-list-card .ant-table {
+    min-width: 600px;
+  }
+}

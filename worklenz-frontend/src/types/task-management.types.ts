@@ -41,6 +41,10 @@ export interface Task {
   has_subscribers?: boolean;
   schedule_id?: string | null;
   order?: number;
+  status_sort_order?: number; // Sort order when grouped by status
+  priority_sort_order?: number; // Sort order when grouped by priority
+  phase_sort_order?: number; // Sort order when grouped by phase
+  member_sort_order?: number; // Sort order when grouped by members
   reporter?: string; // Reporter field
   timeTracking?: { // Time tracking information
     logged?: number;
@@ -58,6 +62,7 @@ export interface TaskGroup {
   taskIds: string[];
   type?: 'status' | 'priority' | 'phase' | 'members';
   color?: string;
+  color_code_dark?: string;
   collapsed?: boolean;
   groupValue?: string;
   // Add any other group properties as needed
@@ -109,6 +114,9 @@ export interface TaskManagementState {
   loadingColumns: boolean;
   columns: ITaskListColumn[];
   customColumns: ITaskListColumn[];
+  // Add sort-related state
+  sortField: string;
+  sortOrder: 'ASC' | 'DESC';
 }
 
 export interface TaskGroupsState {
@@ -172,4 +180,22 @@ export interface BulkAction {
   type: 'status' | 'priority' | 'phase' | 'assignee' | 'label' | 'delete';
   value?: any;
   taskIds: string[];
+}
+
+// Helper function to get the appropriate sort order field based on grouping
+export function getSortOrderField(grouping: string | undefined): keyof Task {
+  switch (grouping) {
+    case 'status':
+      return 'status_sort_order';
+    case 'priority':
+      return 'priority_sort_order';
+    case 'phase':
+      return 'phase_sort_order';
+    case 'members':
+      return 'member_sort_order';
+    case 'general':
+      return 'order'; // explicit general sorting
+    default:
+      return 'status_sort_order'; // Default to status sorting to match backend
+  }
 }

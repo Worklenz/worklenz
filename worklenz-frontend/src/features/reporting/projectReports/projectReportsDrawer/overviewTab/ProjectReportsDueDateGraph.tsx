@@ -1,7 +1,7 @@
 import React from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart, ArcElement, Tooltip } from 'chart.js';
-import { Badge, Card, Flex, Typography } from 'antd';
+import { Badge, Card, Flex, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { IRPTOverviewProjectTasksByDue } from '@/types/reporting/reporting.types';
 

@@ -10,8 +10,8 @@ import {
   InputRef,
   Select,
   Typography,
-} from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+} from '@/shared/antd-imports';
+import { PlusOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {

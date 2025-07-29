@@ -1,4 +1,4 @@
-import { Flex, Tooltip, Typography } from 'antd';
+import { Flex, Tooltip, Typography } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 

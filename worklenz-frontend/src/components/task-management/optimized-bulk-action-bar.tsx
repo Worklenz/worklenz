@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, Typography, Dropdown, Popconfirm, Tooltip, Space, Badge, Divider } from 'antd';
+import { Button, Typography, Dropdown, Popconfirm, Tooltip, Space, Badge, Divider } from '@/shared/antd-imports';
 import {
   DeleteOutlined,
   CloseOutlined,
@@ -12,7 +12,7 @@ import {
   FlagOutlined,
   BulbOutlined,
   MoreOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';

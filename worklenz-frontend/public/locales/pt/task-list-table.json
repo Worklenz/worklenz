@@ -39,6 +39,7 @@
   "addTaskText": "Adicionar Tarefa",
   "addSubTaskText": "+ Adicionar Subtarefa",
   "noTasksInGroup": "Nenhuma tarefa neste grupo",
+  "dropTaskHere": "Soltar tarefa aqui",
   "addTaskInputPlaceholder": "Digite sua tarefa e pressione enter",
 
   "openButton": "Abrir",

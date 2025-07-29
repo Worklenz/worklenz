@@ -4,8 +4,8 @@ import {
   InboxOutlined,
   RetweetOutlined,
   UserAddOutlined,
-} from '@ant-design/icons';
-import { Badge, Dropdown, Flex, Typography } from 'antd';
+} from '@/shared/antd-imports';
+import { Badge, Dropdown, Flex, Typography } from '@/shared/antd-imports';
 import { MenuProps } from 'antd/lib';
 import React from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';

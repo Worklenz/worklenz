@@ -1,4 +1,4 @@
-import { Input, Button } from 'antd';
+import { Input, Button } from '@/shared/antd-imports';
 import React, { useRef, useEffect, useState } from 'react';
 import { useAppSelector } from '../../../../../../hooks/useAppSelector';
 import { colors } from '../../../../../../styles/colors';

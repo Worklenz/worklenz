@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
-import { PlusOutlined, UserAddOutlined } from '@ant-design/icons';
+import { PlusOutlined, UserAddOutlined } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
@@ -11,8 +11,10 @@ import { useAuthService } from '@/hooks/useAuth';
 import { Avatar, Button, Checkbox } from '@/components';
 import { sortTeamMembers } from '@/utils/sort-team-members';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
+import { setIsFromAssigner, toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { useAuthStatus } from '@/hooks/useAuthStatus';
 
 interface AssigneeSelectorProps {
   task: IProjectTask;
@@ -21,9 +23,9 @@ interface AssigneeSelectorProps {
   kanbanMode?: boolean;
 }
 
-const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({ 
-  task, 
-  groupId = null, 
+const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
+  task,
+  groupId = null,
   isDarkMode = false,
   kanbanMode = false
 }) => {
@@ -42,6 +44,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
   const dispatch = useAppDispatch();
+  const { isAdmin } = useAuthStatus();
+  const isProjectManager = useIsProjectManager();
 
   const filteredMembers = useMemo(() => {
     return teamMembers?.data?.filter(member =>
@@ -64,7 +68,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+        buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -74,10 +78,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         // Check if the button is still visible in the viewport
         if (buttonRef.current) {
           const rect = buttonRef.current.getBoundingClientRect();
-          const isVisible = rect.top >= 0 && rect.left >= 0 && 
-                           rect.bottom <= window.innerHeight && 
-                           rect.right <= window.innerWidth;
-          
+          const isVisible = rect.top >= 0 && rect.left >= 0 &&
+            rect.bottom <= window.innerHeight &&
+            rect.right <= window.innerWidth;
+
           if (isVisible) {
             updateDropdownPosition();
           } else {
@@ -98,7 +102,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       document.addEventListener('mousedown', handleClickOutside);
       window.addEventListener('scroll', handleScroll, true);
       window.addEventListener('resize', handleResize);
-      
+
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
         window.removeEventListener('scroll', handleScroll, true);
@@ -113,10 +117,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const handleDropdownToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isOpen) {
       updateDropdownPosition();
-      
+
       // Prepare team members data when opening
       const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
       const membersData = (members?.data || []).map(member => ({
@@ -125,7 +129,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       }));
       const sortedMembers = sortTeamMembers(membersData);
       setTeamMembers({ data: sortedMembers });
-      
+
       setIsOpen(true);
       // Focus search input after opening
       setTimeout(() => {
@@ -160,8 +164,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     // Update local team members state for dropdown UI
     setTeamMembers(prev => ({
       ...prev,
-      data: (prev.data || []).map(member => 
-        member.id === memberId 
+      data: (prev.data || []).map(member =>
+        member.id === memberId
           ? { ...member, selected: checked }
           : member
       )
@@ -198,14 +202,15 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const checkMemberSelected = (memberId: string) => {
     if (!memberId) return false;
     // Use optimistic assignees if available, otherwise fall back to task assignees
-    const assignees = optimisticAssignees.length > 0 
-      ? optimisticAssignees 
+    const assignees = optimisticAssignees.length > 0
+      ? optimisticAssignees
       : task?.assignees?.map(assignee => assignee.team_member_id) || [];
     return assignees.includes(memberId);
   };
 
   const handleInviteProjectMemberDrawer = () => {
     setIsOpen(false); // Close the assignee dropdown first
+    dispatch(setIsFromAssigner(true));
     dispatch(toggleProjectMemberDrawer()); // Then open the invite drawer
   };
 
@@ -217,12 +222,12 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         className={`
           w-5 h-5 rounded-full border border-dashed flex items-center justify-center
           transition-colors duration-200
-          ${isOpen 
-            ? isDarkMode 
-              ? 'border-blue-500 bg-blue-900/20 text-blue-400' 
+          ${isOpen
+            ? isDarkMode
+              ? 'border-blue-500 bg-blue-900/20 text-blue-400'
               : 'border-blue-500 bg-blue-50 text-blue-600'
-            : isDarkMode 
-              ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400' 
+            : isDarkMode
+              ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
               : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
           }
         `}
@@ -236,8 +241,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
           onClick={e => e.stopPropagation()}
           className={`
             fixed z-[99999] w-72 rounded-md shadow-lg border
-            ${isDarkMode 
-              ? 'bg-gray-800 border-gray-600' 
+            ${isDarkMode
+              ? 'bg-gray-800 border-gray-600'
               : 'bg-white border-gray-200'
             }
           `}
@@ -273,10 +278,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                   key={member.id}
                   className={`
                     flex items-center gap-2 p-2 cursor-pointer transition-colors
-                    ${member.pending_invitation 
-                      ? 'opacity-50 cursor-not-allowed' 
-                      : isDarkMode 
-                        ? 'hover:bg-gray-700' 
+                    ${member.pending_invitation
+                      ? 'opacity-50 cursor-not-allowed'
+                      : isDarkMode
+                        ? 'hover:bg-gray-700'
                         : 'hover:bg-gray-50'
                     }
                   `}
@@ -301,23 +306,21 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                       />
                     </span>
                     {pendingChanges.has(member.id || '') && (
-                      <div className={`absolute inset-0 flex items-center justify-center ${
-                        isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'
-                      }`}>
-                        <div className={`w-3 h-3 border border-t-transparent rounded-full animate-spin ${
-                          isDarkMode ? 'border-blue-400' : 'border-blue-600'
-                        }`} />
+                      <div className={`absolute inset-0 flex items-center justify-center ${isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'
+                        }`}>
+                        <div className={`w-3 h-3 border border-t-transparent rounded-full animate-spin ${isDarkMode ? 'border-blue-400' : 'border-blue-600'
+                          }`} />
                       </div>
                     )}
                   </div>
-                  
+
                   <Avatar
                     src={member.avatar_url}
                     name={member.name || ''}
                     size={24}
                     isDarkMode={isDarkMode}
                   />
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className={`text-xs font-medium truncate ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
                       {member.name}
@@ -339,22 +342,26 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
           </div>
 
           {/* Footer */}
-          <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-            <button
-              className={`
-                w-full flex items-center justify-center gap-1 px-2 py-1 text-xs rounded
-                transition-colors
-                ${isDarkMode
-                  ? 'text-blue-400 hover:bg-gray-700'
-                  : 'text-blue-600 hover:bg-blue-50'
-                }
-              `}
-              onClick={handleInviteProjectMemberDrawer}
-            >
-              <UserAddOutlined />
-              Invite member
-            </button>
-          </div>
+
+          {(isAdmin || isProjectManager) && (
+            <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+              <button
+                className={`
+                  w-full flex items-center justify-center gap-1 px-2 py-1 text-xs rounded
+                  transition-colors
+                  ${isDarkMode
+                    ? 'text-blue-400 hover:bg-gray-700'
+                    : 'text-blue-600 hover:bg-blue-50'
+                  }
+                `}
+                onClick={handleInviteProjectMemberDrawer}
+              >
+                <UserAddOutlined />
+                Invite member
+              </button>
+            </div>
+          )}
+
         </div>,
         document.body
       )}

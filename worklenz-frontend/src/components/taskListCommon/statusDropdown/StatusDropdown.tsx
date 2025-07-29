@@ -1,6 +1,6 @@
-import { Badge, Card, Dropdown, Flex, Menu, MenuProps, Typography } from 'antd';
+import { Badge, Card, Dropdown, Flex, Menu, MenuProps, Typography } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@/shared/antd-imports';
 import './statusDropdown.css';
 import { colors } from '../../../styles/colors';
 import { useAppSelector } from '@/hooks/useAppSelector';

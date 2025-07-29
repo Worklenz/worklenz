@@ -11,7 +11,7 @@ import {
   Spin,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
@@ -94,7 +94,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
 
     try {
       const body: ITeamMemberCreateRequest = {
-        job_title: selectedJobTitle,
+        job_title: form.getFieldValue('jobTitle'),
         emails: [teamMember.email],
         is_admin: values.access === 'admin',
       };

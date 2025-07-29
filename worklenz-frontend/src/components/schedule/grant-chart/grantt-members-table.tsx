@@ -1,4 +1,4 @@
-import { Badge, Button, Flex, Tooltip } from 'antd';
+import { Badge, Button, Flex, Tooltip } from '@/shared/antd-imports';
 import React, { useCallback } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import CustomAvatar from '../../CustomAvatar';
@@ -6,7 +6,7 @@ import {
   fetchMemberProjects,
   toggleScheduleDrawer,
 } from '../../../features/schedule/scheduleSlice';
-import { CaretDownOutlined, CaretRightFilled } from '@ant-design/icons';
+import { CaretDownOutlined, CaretRightFilled } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 

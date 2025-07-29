@@ -1,4 +1,4 @@
-import { Flex, Input, InputRef } from 'antd';
+import { Flex, Input, InputRef } from '@/shared/antd-imports';
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

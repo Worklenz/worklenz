@@ -1,0 +1,14 @@
+{
+  "modalTitle": "Ndihmoni të përmirësojmë përvojën tuaj",
+  "skip": "Kalo për tani",
+  "previous": "Prapa",
+  "next": "Tjetra",
+  "completeSurvey": "Përfundo Anketën",
+  "submitting": "Duke dërguar përgjigjet tuaja...",
+  "submitSuccessTitle": "Faleminderit!",
+  "submitSuccessSubtitle": "Feedback-u juaj na ndihmon të përmirësojmë Worklenz për të gjithë.",
+  "submitSuccessMessage": "Faleminderit që plotësuat anketën!",
+  "submitErrorMessage": "Dështoi dërgimi i anketës. Ju lutemi provoni përsëri.",
+  "submitErrorLog": "Dështoi dërgimi i anketës",
+  "fetchErrorLog": "Dështoi marrja e anketës"
+} 

@@ -1,4 +1,4 @@
-import type { MenuProps } from 'antd';
+import type { MenuProps } from '@/shared/antd-imports';
 import {
   Empty,
   List,
@@ -10,8 +10,8 @@ import {
   Image,
   Input,
   Flex,
-  Button,
-} from 'antd';
+  theme,
+} from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +23,7 @@ import {
   IWorklenzTemplate,
 } from '@/types/project-templates/project-templates.types';
 import './template-drawer.css';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 
 const { Title, Text } = Typography;
@@ -38,13 +38,12 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   showBothTabs = false,
   templateSelected = (templateId: string) => {
     if (!templateId) return;
-    templateId;
   },
   selectedTemplateType = (type: 'worklenz' | 'custom') => {
-    type;
   },
 }) => {
   const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
+  const { token } = theme.useToken();
   const { t } = useTranslation('template-drawer');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,7 +149,12 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                 <Tag
                   key={phase.name}
                   color={phase.color_code}
-                  style={{ color: 'black', marginBottom: '8px' }}
+                  style={{ 
+                    color: token.colorText, 
+                    marginBottom: '8px',
+                    backgroundColor: phase.color_code ? undefined : token.colorBgContainer,
+                    borderColor: phase.color_code ? undefined : token.colorBorder
+                  }}
                 >
                   {phase.name}
                 </Tag>
@@ -172,7 +176,12 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                 <Tag
                   key={status.name}
                   color={status.color_code}
-                  style={{ color: 'black', marginBottom: '8px' }}
+                  style={{ 
+                    color: token.colorText, 
+                    marginBottom: '8px',
+                    backgroundColor: status.color_code ? undefined : token.colorBgContainer,
+                    borderColor: status.color_code ? undefined : token.colorBorder
+                  }}
                 >
                   {status.name}
                 </Tag>
@@ -194,7 +203,12 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                 <Tag
                   key={priority.name}
                   color={priority.color_code}
-                  style={{ color: 'black', marginBottom: '8px' }}
+                  style={{ 
+                    color: token.colorText, 
+                    marginBottom: '8px',
+                    backgroundColor: priority.color_code ? undefined : token.colorBgContainer,
+                    borderColor: priority.color_code ? undefined : token.colorBorder
+                  }}
                 >
                   {priority.name}
                 </Tag>
@@ -216,7 +230,12 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                 <Tag
                   key={label.name}
                   color={label.color_code}
-                  style={{ color: 'black', marginBottom: '8px' }}
+                  style={{ 
+                    color: token.colorText, 
+                    marginBottom: '8px',
+                    backgroundColor: label.color_code ? undefined : token.colorBgContainer,
+                    borderColor: label.color_code ? undefined : token.colorBorder
+                  }}
                 >
                   {label.name}
                 </Tag>
@@ -252,14 +271,24 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   };
 
   const menuContent = (
-    <div style={{ display: 'flex' }}>
+    <div style={{ display: 'flex', backgroundColor: token.colorBgContainer }}>
       {/* Menu Area */}
-      <div style={{ minWidth: '250px', overflowY: 'auto', height: '100%' }}>
+      <div style={{ 
+        minWidth: '250px', 
+        overflowY: 'auto', 
+        height: '100%',
+        backgroundColor: token.colorBgContainer,
+        borderRight: `1px solid ${token.colorBorder}`
+      }}>
         <Skeleton loading={loadingTemplates} active>
           <Menu
             className="template-menu"
             onClick={({ key }) => handleMenuClick(key)}
-            style={{ width: 256 }}
+            style={{ 
+              width: 256,
+              backgroundColor: token.colorBgContainer,
+              borderColor: token.colorBorder
+            }}
             defaultSelectedKeys={[templates[0]?.id || '']}
             mode="inline"
             items={menuItems}
@@ -273,9 +302,11 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           flex: 1,
           maxHeight: 'calc(100vh - 200px)',
           padding: '16px',
+          backgroundColor: token.colorBgContainer,
+          color: token.colorText
         }}
       >
-        <Title level={4}>Details</Title>
+        <Title level={4} style={{ color: token.colorText }}>Details</Title>
         <Skeleton loading={loadingSelectedTemplate} active>
           {selectedTemplate?.image_url && (
             <Image preview={false} src={selectedTemplate.image_url} alt={selectedTemplate.name} />
@@ -298,12 +329,17 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   };
 
   const customTemplatesContent = (
-    <div>
+    <div style={{ backgroundColor: token.colorBgContainer, padding: '16px' }}>
       <Flex justify="space-between" align="center">
         <Input
           placeholder={t('searchTemplates')}
-          suffix={<SearchOutlined />}
-          style={{ maxWidth: '300px' }}
+          suffix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+          style={{ 
+            maxWidth: '300px',
+            backgroundColor: token.colorBgContainer,
+            borderColor: token.colorBorder,
+            color: token.colorText
+          }}
           onChange={e => setSearchQuery(e.target.value)}
         />
       </Flex>
@@ -313,10 +349,20 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
         bordered
         dataSource={filteredCustomTemplates}
         loading={loadingCustomTemplates}
+        style={{
+          backgroundColor: token.colorBgContainer,
+          borderColor: token.colorBorder
+        }}
         renderItem={item => (
           <List.Item
             key={item.id}
             onClick={() => handleCustomTemplateClick(item.id || '')}
+            style={{
+              backgroundColor: item.selected ? token.colorPrimaryBg : token.colorBgContainer,
+              borderColor: item.selected ? token.colorPrimary : token.colorBorder,
+              color: token.colorText,
+              cursor: 'pointer'
+            }}
             className={
               item.selected && themeMode === 'dark'
                 ? 'selected-custom-template-dark'
@@ -325,7 +371,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
                   : ''
             }
           >
-            {item.name}
+            <span style={{ color: token.colorText }}>{item.name}</span>
           </List.Item>
         )}
       />
@@ -356,18 +402,31 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   };
 
   return (
-    <div style={{ height: '100vh', overflow: 'hidden' }}>
+    <div style={{ 
+      height: '100vh', 
+      overflow: 'hidden',
+      backgroundColor: token.colorBgLayout 
+    }}>
       <div
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          backgroundColor: themeMode === 'dark' ? '' : '#fff',
+          backgroundColor: token.colorBgContainer,
           overflow: 'hidden',
+          borderBottom: `1px solid ${token.colorBorder}`
         }}
       >
         {showBothTabs ? (
-          <Tabs type="card" items={tabs} onChange={handleTabChange} destroyInactiveTabPane />
+          <Tabs 
+            type="card" 
+            items={tabs} 
+            onChange={handleTabChange} 
+            destroyInactiveTabPane
+            style={{
+              backgroundColor: token.colorBgContainer
+            }}
+          />
         ) : (
           menuContent
         )}

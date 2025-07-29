@@ -1,0 +1,14 @@
+{
+  "modalTitle": "Help Us Improve Your Experience",
+  "skip": "Skip for now",
+  "previous": "Previous",
+  "next": "Next",
+  "completeSurvey": "Complete Survey",
+  "submitting": "Submitting your responses...",
+  "submitSuccessTitle": "Thank you!",
+  "submitSuccessSubtitle": "Your feedback helps us improve Worklenz for everyone.",
+  "submitSuccessMessage": "Thank you for completing the survey!",
+  "submitErrorMessage": "Failed to submit survey. Please try again.",
+  "submitErrorLog": "Failed to submit survey",
+  "fetchErrorLog": "Failed to fetch survey"
+} 

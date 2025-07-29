@@ -1,6 +1,6 @@
-import { SearchOutlined, SyncOutlined } from '@ant-design/icons';
+import { SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
-import { Button, Card, Flex, Input, Table, TableProps, Tooltip, Typography } from 'antd';
+import { Button, Card, Flex, Input, Table, TableProps, Tooltip, Typography } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';

@@ -11,7 +11,7 @@ import {
   DownOutlined,
   RightOutlined,
   FilterOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import {
   Button,
   Checkbox,
@@ -26,7 +26,7 @@ import {
   Space,
   Tooltip,
   Empty,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';

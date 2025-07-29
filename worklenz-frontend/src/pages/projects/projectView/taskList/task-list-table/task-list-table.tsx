@@ -11,7 +11,7 @@ import {
   SettingOutlined,
   UsergroupAddOutlined,
   PlusOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -33,7 +33,7 @@ import {
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import { DragOverEvent } from '@dnd-kit/core';
-import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from 'antd';
+import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 
 import { useAppSelector } from '@/hooks/useAppSelector';

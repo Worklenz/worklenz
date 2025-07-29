@@ -1,4 +1,4 @@
-import { Divider, Form, Input, message, Modal, Typography } from 'antd';
+import { Divider, Form, Input, message, Modal, Typography } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

@@ -1,24 +1,19 @@
-import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Checkbox, Divider, Dropdown, Input, theme } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { CaretDownFilled } from '@/shared/antd-imports';
+import { Button, Checkbox, Divider, Dropdown, Input, theme } from '@/shared/antd-imports';
+import React, { useState } from 'react';
 import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { useTranslation } from 'react-i18next';
-import { ISelectableTeam } from '@/types/reporting/reporting-filters.types';
-import { reportingApiService } from '@/api/reporting/reporting.api.service';
-import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   fetchReportingCategories,
   fetchReportingProjects,
-  fetchReportingTeams,
   setSelectOrDeselectAllTeams,
   setSelectOrDeselectTeam,
 } from '@/features/reporting/time-reports/time-reports-overview.slice';
 
 const Team: React.FC = () => {
   const dispatch = useAppDispatch();
-  const [checkedList, setCheckedList] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
   const [selectAll, setSelectAll] = useState(true);
   const { t } = useTranslation('time-report');

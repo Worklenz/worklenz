@@ -1,5 +1,5 @@
 import React from 'react';
-import { Skeleton } from 'antd';
+import { Skeleton } from '@/shared/antd-imports';
 import ImprovedTaskFilters from '@/components/task-management/improved-task-filters';
 
 interface TaskListSkeletonProps {

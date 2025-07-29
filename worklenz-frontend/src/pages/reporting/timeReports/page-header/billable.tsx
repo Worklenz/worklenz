@@ -1,8 +1,8 @@
 import { setSelectOrDeselectBillable } from '@/features/reporting/time-reports/time-reports-overview.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { CaretDownFilled } from '@ant-design/icons';
-import { Button, Checkbox, Dropdown, MenuProps } from 'antd';
+import { CaretDownFilled } from '@/shared/antd-imports';
+import { Button, Checkbox, Dropdown, MenuProps } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 

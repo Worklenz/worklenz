@@ -1,4 +1,4 @@
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import { useEffect, useMemo, useState } from 'react';
 import CustomSearchbar from '../../../../../components/CustomSearchbar';
 import ProjectReportsMembersTable from './ProjectReportsMembersTable';

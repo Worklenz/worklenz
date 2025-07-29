@@ -29,6 +29,7 @@ const SIDEBAR_MAX_WIDTH = 400;
 
 // Lazy load heavy components
 const TaskDrawer = React.lazy(() => import('@/components/task-drawer/task-drawer'));
+const SurveyPromptModal = React.lazy(() => import('@/components/survey/SurveyPromptModal').then(m => ({ default: m.SurveyPromptModal })));
 
 const HomePage = memo(() => {
   const dispatch = useAppDispatch();

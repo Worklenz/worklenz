@@ -1,9 +1,9 @@
 import React from 'react';
-import { Button, Divider, Flex, Popconfirm, Typography, Space } from 'antd';
+import { Button, Divider, Flex, Popconfirm, Typography, Space } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
+import { formatDateTimeWithUserTimezone } from '@/utils/format-date-time-with-user-timezone';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import './time-log-item.css';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
@@ -101,7 +101,7 @@ const TimeLogItem = ({ log, onDelete }: TimeLogItemProps) => {
                   {renderLoggedByTimer()} {calculateTimeGap(created_at || '')}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {formatDateTimeWithLocale(created_at || '')}
+                  {formatDateTimeWithUserTimezone(created_at || '', currentSession?.timezone_name)}
                 </Typography.Text>
               </Flex>
               {renderActionButtons()}

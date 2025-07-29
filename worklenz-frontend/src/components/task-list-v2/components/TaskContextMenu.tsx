@@ -32,7 +32,7 @@ import {
   RetweetOutlined,
   UserAddOutlined,
   LoadingOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 
 interface TaskContextMenuProps {
   task: Task;

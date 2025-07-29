@@ -1,4 +1,4 @@
-import { Button, Card, Checkbox, Flex, List, Typography } from 'antd';
+import { Button, Card, Checkbox, Flex, List, Typography } from '@/shared/antd-imports';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';

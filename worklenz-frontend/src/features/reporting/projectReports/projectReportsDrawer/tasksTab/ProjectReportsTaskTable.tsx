@@ -1,4 +1,4 @@
-import { Badge, Collapse, Flex, Table, TableColumnsType, Tag, Typography } from 'antd';
+import { Badge, Collapse, Flex, Table, TableColumnsType, Tag, Typography } from '@/shared/antd-imports';
 import { useEffect } from 'react';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import { colors } from '@/styles/colors';
@@ -9,7 +9,7 @@ import {
   fetchTask,
   setSelectedTaskId,
 } from '@/features/task-drawer/task-drawer.slice';
-import { DoubleRightOutlined } from '@ant-design/icons';
+import { DoubleRightOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
