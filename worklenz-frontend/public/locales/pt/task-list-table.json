@@ -57,6 +57,9 @@
 
   "contextMenu": {
     "assignToMe": "Atribuir a mim",
+    "copyLink": "Copiar link da tarefa",
+    "linkCopied": "Link copiado para a área de transferência",
+    "linkCopyFailed": "Falha ao copiar o link",
     "moveTo": "Mover para",
     "unarchive": "Desarquivar",
     "archive": "Arquivar",
