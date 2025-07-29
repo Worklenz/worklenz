@@ -17,7 +17,7 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
                JOIN timezones tz ON u.timezone_id = tz.id 
                WHERE u.id = $1`;
     const result = await db.query(q, [userId]);
-    return result.rows[0]?.timezone || 'UTC';
+    return result.rows[0]?.timezone || "UTC";
   }
 
   /**
@@ -30,20 +30,43 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
   protected static getDateRangeClauseWithTimezone(key: string, dateRange: string[], userTimezone: string) {
     // For custom date ranges
     if (dateRange.length === 2) {
-      // Convert dates to user's timezone start/end of day
-      const start = moment.tz(dateRange[0], userTimezone).startOf('day');
-      const end = moment.tz(dateRange[1], userTimezone).endOf('day');
-      
-      // Convert to UTC for database comparison
-      const startUtc = start.utc().format("YYYY-MM-DD HH:mm:ss");
-      const endUtc = end.utc().format("YYYY-MM-DD HH:mm:ss");
-      
-      if (start.isSame(end, 'day')) {
-        // Single day selection
-        return `AND task_work_log.created_at >= '${startUtc}'::TIMESTAMP AND task_work_log.created_at <= '${endUtc}'::TIMESTAMP`;
+      try {
+        // Handle different date formats that might come from frontend
+        let startDate, endDate;
+        
+        // Try to parse the date - it might be a full JS Date string or ISO string
+        if (dateRange[0].includes("GMT") || dateRange[0].includes("(")) {
+          // Parse JavaScript Date toString() format
+          startDate = moment(new Date(dateRange[0]));
+          endDate = moment(new Date(dateRange[1]));
+        } else {
+          // Parse ISO format or other formats
+          startDate = moment(dateRange[0]);
+          endDate = moment(dateRange[1]);
+        }
+        
+        // Convert to user's timezone and get start/end of day
+        const start = startDate.tz(userTimezone).startOf("day");
+        const end = endDate.tz(userTimezone).endOf("day");
+        
+        // Convert to UTC for database comparison
+        const startUtc = start.utc().format("YYYY-MM-DD HH:mm:ss");
+        const endUtc = end.utc().format("YYYY-MM-DD HH:mm:ss");
+        
+        if (start.isSame(end, "day")) {
+          // Single day selection
+          return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+        }
+        
+        return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+      } catch (error) {
+        console.error("Error parsing date range:", error, { dateRange, userTimezone });
+        // Fallback to current date if parsing fails
+        const now = moment.tz(userTimezone);
+        const startUtc = now.clone().startOf("day").utc().format("YYYY-MM-DD HH:mm:ss");
+        const endUtc = now.clone().endOf("day").utc().format("YYYY-MM-DD HH:mm:ss");
+        return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
       }
-      
-      return `AND task_work_log.created_at >= '${startUtc}'::TIMESTAMP AND task_work_log.created_at <= '${endUtc}'::TIMESTAMP`;
     }
 
     // For predefined ranges, calculate based on user's timezone
@@ -52,20 +75,20 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
 
     switch (key) {
       case DATE_RANGES.YESTERDAY:
-        startDate = now.clone().subtract(1, 'day').startOf('day');
-        endDate = now.clone().subtract(1, 'day').endOf('day');
+        startDate = now.clone().subtract(1, "day").startOf("day");
+        endDate = now.clone().subtract(1, "day").endOf("day");
         break;
       case DATE_RANGES.LAST_WEEK:
-        startDate = now.clone().subtract(1, 'week').startOf('week');
-        endDate = now.clone().subtract(1, 'week').endOf('week');
+        startDate = now.clone().subtract(1, "week").startOf("week");
+        endDate = now.clone().subtract(1, "week").endOf("week");
         break;
       case DATE_RANGES.LAST_MONTH:
-        startDate = now.clone().subtract(1, 'month').startOf('month');
-        endDate = now.clone().subtract(1, 'month').endOf('month');
+        startDate = now.clone().subtract(1, "month").startOf("month");
+        endDate = now.clone().subtract(1, "month").endOf("month");
         break;
       case DATE_RANGES.LAST_QUARTER:
-        startDate = now.clone().subtract(3, 'months').startOf('day');
-        endDate = now.clone().endOf('day');
+        startDate = now.clone().subtract(3, "months").startOf("day");
+        endDate = now.clone().endOf("day");
         break;
       default:
         return "";
@@ -74,7 +97,7 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
     if (startDate && endDate) {
       const startUtc = startDate.utc().format("YYYY-MM-DD HH:mm:ss");
       const endUtc = endDate.utc().format("YYYY-MM-DD HH:mm:ss");
-      return `AND task_work_log.created_at >= '${startUtc}'::TIMESTAMP AND task_work_log.created_at <= '${endUtc}'::TIMESTAMP`;
+      return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
     }
 
     return "";
@@ -87,7 +110,7 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
    * @param format - Moment format string
    * @returns Formatted date string
    */
-  protected static formatDateInTimezone(date: string | Date, userTimezone: string, format: string = "YYYY-MM-DD HH:mm:ss") {
+  protected static formatDateInTimezone(date: string | Date, userTimezone: string, format = "YYYY-MM-DD HH:mm:ss") {
     return moment.tz(date, userTimezone).format(format);
   }
 
@@ -104,12 +127,12 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
     let workingDays = 0;
     
     const current = start.clone();
-    while (current.isSameOrBefore(end, 'day')) {
+    while (current.isSameOrBefore(end, "day")) {
       // Monday = 1, Friday = 5
       if (current.isoWeekday() >= 1 && current.isoWeekday() <= 5) {
         workingDays++;
       }
-      current.add(1, 'day');
+      current.add(1, "day");
     }
     
     return workingDays;
