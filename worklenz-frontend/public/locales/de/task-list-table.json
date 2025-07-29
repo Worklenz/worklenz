@@ -57,6 +57,9 @@
 
   "contextMenu": {
     "assignToMe": "Mir zuweisen",
+    "copyLink": "Link zur Aufgabe kopieren",
+    "linkCopied": "Link in die Zwischenablage kopiert",
+    "linkCopyFailed": "Fehler beim Kopieren des Links",
     "moveTo": "Verschieben nach",
     "unarchive": "Dearchivieren",
     "archive": "Archivieren",

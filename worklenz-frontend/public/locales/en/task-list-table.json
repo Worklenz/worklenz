@@ -57,6 +57,9 @@
 
   "contextMenu": {
     "assignToMe": "Assign to me",
+    "copyLink": "Copy link to task",
+    "linkCopied": "Link copied to clipboard",
+    "linkCopyFailed": "Failed to copy link",
     "moveTo": "Move to",
     "unarchive": "Unarchive",
     "archive": "Archive",
