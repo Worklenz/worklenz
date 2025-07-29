@@ -1,0 +1,31 @@
+{
+  "logoAlt": "Worklenz 로고",
+  "home": "집",
+  "projects": "프로젝트",
+  "schedule": "일정",
+  "reporting": "보고",
+  "clients": "클라이언트",
+  "teams": "팀",
+  "labels": "라벨",
+  "jobTitles": "직책",
+  "upgradePlan": "업그레이드 계획",
+  "upgradePlanTooltip": "업그레이드 계획",
+  "invite": "초대하다",
+  "inviteTooltip": "팀원을 초대하십시오",
+  "switchTeamTooltip": "스위치 팀",
+  "help": "돕다",
+  "notificationTooltip": "알림을 봅니다",
+  "profileTooltip": "프로필을 봅니다",
+  "adminCenter": "관리 센터",
+  "settings": "설정",
+  "logOut": "로그 아웃하십시오",
+  "notificationsDrawer": {
+    "read": "알림을 읽습니다",
+    "unread": "읽지 않은 알림",
+    "markAsRead": "읽은대로 표시하십시오",
+    "readAndJoin": "읽기 및 가입",
+    "accept": "수용하다",
+    "acceptAndJoin": "수락 및 가입",
+    "noNotifications": "알림이 없습니다"
+  }
+}

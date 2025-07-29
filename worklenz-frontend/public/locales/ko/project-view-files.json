@@ -1,0 +1,14 @@
+{
+  "nameColumn": "이름",
+  "attachedTaskColumn": "첨부 된 작업",
+  "sizeColumn": "크기",
+  "uploadedByColumn": "업로드",
+  "uploadedAtColumn": "업로드",
+  "fileIconAlt": "파일 아이콘",
+  "titleDescriptionText": "이 프로젝트의 작업에 대한 모든 첨부 파일이 여기에 나타납니다.",
+  "deleteConfirmationTitle": "확실합니까?",
+  "deleteConfirmationOk": "예",
+  "deleteConfirmationCancel": "취소",
+  "segmentedTooltip": "곧 올 것입니다! 목록보기와 썸네일보기 사이를 전환합니다.",
+  "emptyText": "프로젝트에는 첨부 파일이 없습니다."
+}

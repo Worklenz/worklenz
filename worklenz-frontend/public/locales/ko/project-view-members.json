@@ -1,0 +1,17 @@
+{
+  "nameColumn": "이름",
+  "jobTitleColumn": "직위",
+  "emailColumn": "이메일",
+  "tasksColumn": "작업",
+  "taskProgressColumn": "작업 진행",
+  "accessColumn": "입장",
+  "fileIconAlt": "파일 아이콘",
+  "deleteConfirmationTitle": "확실합니까?",
+  "deleteConfirmationOk": "예",
+  "deleteConfirmationCancel": "취소",
+  "refreshButtonTooltip": "회원을 새로 고치십시오",
+  "deleteButtonTooltip": "프로젝트에서 제거하십시오",
+  "memberCount": "회원",
+  "membersCountPlural": "회원",
+  "emptyText": "프로젝트에는 첨부 파일이 없습니다."
+}

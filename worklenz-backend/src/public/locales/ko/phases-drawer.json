@@ -1,0 +1,18 @@
+{
+  "configurePhases": "단계를 구성합니다",
+  "phaseLabel": "위상 레이블",
+  "enterPhaseName": "위상 이름을 입력하십시오",
+  "addOption": "옵션을 추가하십시오",
+  "phaseOptions": "위상 옵션 :",
+  "dragToReorderPhases": "단계를 드래그하여 재정렬하십시오. 각 단계마다 색상이 다를 수 있습니다.",
+  "enterNewPhaseName": "새 위상 이름을 입력하십시오 ...",
+  "addPhase": "단계를 추가하십시오",
+  "noPhasesFound": "위상이 발견되지 않았습니다. 위의 첫 단계를 만듭니다.",
+  "deletePhase": "삭제 단계",
+  "deletePhaseConfirm": "이 단계를 삭제 하시겠습니까? 이 조치는 취소 할 수 없습니다.",
+  "rename": "이름 바꾸기",
+  "delete": "삭제",
+  "selectColor": "색상을 선택하십시오",
+  "managePhases": "단계를 관리합니다",
+  "close": "닫다"
+}

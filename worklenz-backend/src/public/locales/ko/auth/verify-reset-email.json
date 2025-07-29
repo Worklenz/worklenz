@@ -1,0 +1,14 @@
+{
+  "title": "재설정 이메일을 확인하십시오",
+  "description": "새 비밀번호를 입력하십시오",
+  "placeholder": "새 비밀번호를 입력하십시오",
+  "confirmPasswordPlaceholder": "새 비밀번호를 확인하십시오",
+  "passwordHint": "상단과 소문자, 숫자 및 기호가있는 최소 8 자.",
+  "resetPasswordButton": "비밀번호를 재설정하십시오",
+  "orText": "또는",
+  "resendResetEmail": "재설정 이메일",
+  "passwordRequired": "새 비밀번호를 입력하십시오",
+  "returnToLoginButton": "로그인으로 돌아갑니다",
+  "confirmPasswordRequired": "새 비밀번호를 확인하십시오",
+  "passwordMismatch": "두 가지 암호가 일치하지 않습니다"
+}

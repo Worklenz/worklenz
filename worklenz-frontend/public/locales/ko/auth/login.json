@@ -1,0 +1,27 @@
+{
+  "headerDescription": "계정에 로그인하십시오",
+  "emailLabel": "이메일",
+  "emailPlaceholder": "이메일을 입력하십시오",
+  "emailRequired": "이메일을 입력하십시오!",
+  "passwordLabel": "비밀번호",
+  "passwordPlaceholder": "비밀번호를 입력하십시오",
+  "passwordRequired": "비밀번호를 입력하십시오!",
+  "rememberMe": "나를 기억하십시오",
+  "loginButton": "로그인하십시오",
+  "signupButton": "가입하십시오",
+  "forgotPasswordButton": "비밀번호를 잊으 셨나요?",
+  "signInWithGoogleButton": "Google에 로그인하십시오",
+  "dontHaveAccountText": "계정이 없습니까?",
+  "orText": "또는",
+  "successMessage": "당신은 성공적으로 로그인했습니다!",
+  "loginError": "로그인이 실패했습니다",
+  "googleLoginError": "Google 로그인이 실패했습니다",
+  "validationMessages": {
+    "email": "유효한 이메일 주소를 입력하십시오",
+    "password": "비밀번호의 길이는 8 자 이상이어야합니다"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "로그인이 실패했습니다",
+    "loginErrorMessage": "이메일과 비밀번호를 확인하고 다시 시도하십시오"
+  }
+}

@@ -134,14 +134,14 @@ export function getStorageUrl() {
   if (STORAGE_PROVIDER === "azure") {
     if (!AZURE_STORAGE_URL) {
       console.warn("AZURE_STORAGE_URL is not defined, falling back to S3_URL");
-      return S3_URL;
+      return S3_URL + "/" + BUCKET;
     }
-    
+
     // Return just the base Azure Blob Storage URL
     // AZURE_STORAGE_URL should be in the format: https://storageaccountname.blob.core.windows.net
     return `${AZURE_STORAGE_URL}/${AZURE_STORAGE_CONTAINER}`;
   }
-  return S3_URL;
+  return S3_URL + "/" + BUCKET;
 }
 
 export const TASK_STATUS_COLOR_ALPHA = "69";
