@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Upload, Button, Typography, Divider, Alert, Space, notification } from 'antd';
 import { UploadOutlined, DownloadOutlined, InboxOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -25,13 +25,20 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
   const { t } = useTranslation('csv-import');
   const [fileList, setFileList] = useState<UploadFile[]>([]); //Stores the uploaded file.
   const [uploading, setUploading] = useState(false); //Boolean to show a loading spinner.
-  const [uploadResult, setUploadResult] = useState<{     // Holds results of the import (e.g., how many tasks were added/skipped).
-    success: boolean;
-    processed: number;
-    skipped: number;
-    total: number;
-    errors: string[];
-  } | null>(null);
+
+  // Pre-fetch CSRF token when modal opens to prevent first-time errors
+  useEffect(() => {
+    if (visible) {
+      const ensureCSRFToken = async () => {
+        const token = getCsrfToken();
+        if (!token) {
+          console.log('Pre-fetching CSRF token...');
+          await refreshCsrfToken();
+        }
+      };
+      ensureCSRFToken();
+    }
+  }, [visible]);
 
   //Download Sample CSV Template
   const downloadTemplate = () => {
@@ -71,14 +78,14 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
     }
 
     setUploading(true);
-    setUploadResult(null);
 
     try {
       // Ensure we have a CSRF token before making the request
       let csrfToken = getCsrfToken();
       if (!csrfToken) {
         console.log('No CSRF token found, refreshing...');
-        csrfToken = await refreshCsrfToken();
+        await refreshCsrfToken();
+        csrfToken = getCsrfToken();
         if (!csrfToken) {
           throw new Error('Failed to obtain CSRF token');
         }
@@ -86,7 +93,7 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
 
       // Create FormData and append the CSV file
       const formData = new FormData();             //Prepares the uploaded file using FormData.
-      formData.append('csvFile', fileList[0] as File);
+      formData.append('csvFile', (fileList[0] as any).originFileObj || fileList[0]);
 
       const response = await apiClient.post(`/api/v1/tasks/import-csv/${projectId}`, formData, {  //Sends it to the backend endpoint (/import-csv/:projectId).
         headers: {
@@ -98,13 +105,6 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
 
       //On Successful Import
       if (result.done && result.body) {
-        setUploadResult({
-          success: true,
-          processed: result.body.processed,
-          skipped: result.body.skipped,
-          total: result.body.total,
-          errors: result.body.errors || [],
-        });
         notification.success({
           message: t("success.importComplete", "Import completed"),     //Shows success notification.
           description: `Successfully imported ${result.body.processed} tasks out of ${result.body.total} total.`,
@@ -134,6 +134,13 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
         errorMessage = error.response.data.message;
       } else if (error.message === 'Failed to obtain CSRF token') {
         errorMessage = "Security token error. Please refresh the page and try again.";
+        // Also show a more user-friendly notification
+        notification.warning({
+          message: "Security Token Required",
+          description: "Please refresh the page to initialize security tokens, then try uploading again.",
+          duration: 5,
+        });
+        return; // Don't show the generic error notification
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -141,14 +148,6 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
       notification.error({
         message: t("errors.importFailed", "Import failed"),
         description: errorMessage,
-      });
-      
-      setUploadResult({
-        success: false,
-        processed: 0,
-        skipped: 0,
-        total: 0,
-        errors: [errorMessage],
       });
     } finally {
       setUploading(false);   //Stops the loading spinner, no matter success or error.
@@ -228,43 +227,7 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
 
         <Divider />
 
-        {/* Import Results */}
-        {uploadResult && (
-          <div style={{ marginBottom: 16 }}>
-            <Alert
-              message={uploadResult.success ? t('success.importComplete', 'Import completed') : t('errors.importFailed', 'Import failed')}
-              description={
-                <div>
-                  {uploadResult.success ? (
-                    <div>
-                      <p>{t('success.processed', `Successfully processed ${uploadResult.processed} tasks out of ${uploadResult.total} total.`)}</p>
-                      {uploadResult.skipped > 0 && (
-                        <p>{t('success.skipped', `${uploadResult.skipped} rows were skipped (empty titles).`)}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <p>{t('errors.processingFailed', 'Failed to process the CSV file.')}</p>
-                      {uploadResult.errors.length > 0 && (
-                        <ul style={{ marginTop: 8, marginBottom: 0 }}>
-                          {uploadResult.errors.slice(0, 3).map((error, index) => (
-                            <li key={index}>{error}</li>
-                          ))}
-                          {uploadResult.errors.length > 3 && (
-                            <li>...and {uploadResult.errors.length - 3} more errors</li>
-                          )}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </div>
-              }
-              type={uploadResult.success ? 'success' : 'error'}
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-          </div>
-        )}
+        {/* Import Results - Removed duplicate error display since notifications handle this */}
 
         {/* File Upload */}
         <Dragger

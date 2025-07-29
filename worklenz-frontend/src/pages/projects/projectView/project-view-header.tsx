@@ -43,12 +43,12 @@ import logger from '@/utils/errorLogger';
 import { createPortal } from 'react-dom';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
-import CSVImportModal from '@/components/csv-import/csv-import-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import CSVImportModal from '@/components/csv-import/csv-import-modal';
 
 const ProjectViewHeader = () => {
   const navigate = useNavigate();
@@ -160,16 +160,12 @@ const ProjectViewHeader = () => {
     dispatch(setImportTaskTemplateDrawerOpen(true));
   };
 
-  const handleImportCSV = () => {
+  const handleCSVImport = () => {
     setCsvImportModalVisible(true);
   };
 
-  const handleCSVImportClose = () => {
-    setCsvImportModalVisible(false);
-  };
-
   const handleCSVImportComplete = () => {
-    // Refresh the task list after successful import
+    setCsvImportModalVisible(false);
     handleRefresh();
   };
 
@@ -183,10 +179,10 @@ const ProjectViewHeader = () => {
       ),
     },
     {
-      key: 'import-csv',
+      key: 'csv-import',
       label: (
-        <div style={{ width: '100%', margin: 0, padding: 0 }} onClick={handleImportCSV}>
-          <ImportOutlined /> {t('importFromCSV')}
+        <div style={{ width: '100%', margin: 0, padding: 0 }} onClick={handleCSVImport}>
+          <ImportOutlined /> Import from CSV
         </div>
       ),
     },
@@ -326,8 +322,8 @@ const ProjectViewHeader = () => {
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
       <CSVImportModal
         visible={csvImportModalVisible}
-        projectId={selectedProject?.id || ''}
-        onClose={handleCSVImportClose}
+        projectId={projectId || ''}
+        onClose={() => setCsvImportModalVisible(false)}
         onImportComplete={handleCSVImportComplete}
       />
     </>

@@ -1,4 +1,7 @@
 import moment from "moment";
+import multer from "multer";
+import fs from "fs";
+import csv from "csv-parser";
 
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
@@ -22,7 +25,24 @@ import { insertToActivityLogs } from "../services/activity-logs/activity-logs.se
 import { IActivityLog } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 
+// Configure multer for file uploads
+const upload = multer({
+  dest: "temp/",
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "text/csv" || file.originalname.toLowerCase().endsWith(".csv")) {
+      cb(null, true);
+    } else {
+      cb(null, false);
+    }
+  }
+});
+
 export default class TasksController extends TasksControllerBase {
+  // CSV upload middleware
+  public static csvUpload = upload.single("csvFile");
   private static notifyProjectUpdates(socketId: string, projectId: string) {
     IO.getSocketById(socketId)
       ?.to(projectId)
@@ -655,5 +675,195 @@ export default class TasksController extends TasksControllerBase {
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async importFromCSV(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { id: projectId } = req.params;
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    console.log("=== CSV Import Debug Info ===");
+    console.log("Project ID:", projectId);
+    console.log("User ID:", userId);
+    console.log("Team ID:", teamId);
+    console.log("File info:", {
+      filename: req.file?.filename,
+      originalname: req.file?.originalname,
+      size: req.file?.size,
+      path: req.file?.path
+    });
+
+    if (!req.file) {
+      return res.status(400).send(new ServerResponse(false, null, "No file uploaded"));
+    }
+
+    if (!projectId || !userId || !teamId) {
+      return res.status(400).send(new ServerResponse(false, null, "Missing required parameters"));
+    }
+
+    try {
+      const results: any[] = [];
+      const errors: string[] = [];
+      let processed = 0;
+      let skipped = 0;
+
+      console.log("Reading CSV file from:", req.file.path);
+
+      // Parse CSV file
+      await new Promise<void>((resolve, reject) => {
+        fs.createReadStream(req.file!.path)
+          .pipe(csv())
+          .on("data", (row) => {
+            console.log("Parsed CSV row:", row);
+            
+            // Handle different possible delimiters and BOM
+            const keys = Object.keys(row);
+            if (keys.length === 1 && keys[0].includes(";")) {
+              // Looks like semicolon-delimited data in a single column
+              const [singleColumn] = keys;
+              const singleValue = row[singleColumn];
+              
+              // Split by semicolon
+              const parts = singleValue.split(";");
+              const headerParts = singleColumn.split(";");
+              
+              if (headerParts.length >= 2 && parts.length >= 2) {
+                // Clean BOM and create proper row object
+                const cleanRow: Record<string, string> = {};
+                cleanRow[headerParts[0].replace(/^\uFEFF/, "").trim()] = parts[0].trim();
+                cleanRow[headerParts[1].trim()] = parts[1].trim();
+                console.log("Converted row:", cleanRow);
+                results.push(cleanRow);
+                return;
+              }
+            }
+            
+            // Clean BOM from column names
+            const cleanRow: Record<string, string> = {};
+            for (const [key, value] of Object.entries(row)) {
+              const cleanKey = key.replace(/^\uFEFF/, "").trim();
+              cleanRow[cleanKey] = value as string;
+            }
+            console.log("Cleaned row:", cleanRow);
+            results.push(cleanRow);
+          })
+          .on("end", () => {
+            console.log("CSV parsing complete. Total rows:", results.length);
+            resolve();
+          })
+          .on("error", (error) => {
+            console.error("CSV parsing error:", error);
+            reject(error);
+          });
+      });
+
+      console.log("Raw CSV results:", results);
+
+      // Get default task status for the project
+      const statusQuery = `
+        SELECT id FROM task_statuses 
+        WHERE project_id = $1 AND team_id = $2 
+        ORDER BY sort_order LIMIT 1
+      `;
+      console.log("Status query:", statusQuery, "with params:", [projectId, teamId]);
+      const statusResult = await db.query(statusQuery, [projectId, teamId]);
+      console.log("Status query result:", statusResult.rows);
+      const defaultStatusId = statusResult.rows[0]?.id;
+
+      if (!defaultStatusId) {
+        throw new Error("No task statuses found for this project");
+      }
+
+      console.log("Default status ID:", defaultStatusId);
+
+      // Process each row
+      for (const [index, row] of results.entries()) {
+        try {
+          console.log(`\n--- Processing row ${index + 2} ---`);
+          console.log("Row data:", row);
+          
+          // Map CSV column names to expected field names
+          const taskTitle = row["Task Title"] || row.name || "";
+          const description = row["Description"] || row.description || "";
+          
+          // Validate required fields
+          if (!taskTitle || taskTitle.trim() === "") {
+            console.log("Skipping row - no task title");
+            errors.push(`Row ${index + 2}: Task title is required`);
+            skipped++;
+            continue;
+          }
+
+          // Prepare task data
+          const taskData = {
+            name: taskTitle.trim(),
+            description: description || "",
+            project_id: projectId,
+            reporter_id: userId,
+            team_id: teamId,
+            status_id: defaultStatusId,
+            priority_id: null,
+            start: row.start || null,
+            end: row.end || null,
+            total_minutes: 0,
+            assignees: []
+          };
+
+          console.log("Task data to create:", JSON.stringify(taskData, null, 2));
+
+          // Create task using the database function
+          const createQuery = `SELECT create_task($1) AS task;`;
+          console.log("Creating task with query:", createQuery);
+          console.log("Task data being sent:", JSON.stringify(taskData));
+          
+          const result = await db.query(createQuery, [JSON.stringify(taskData)]);
+          console.log("Task creation result:", result.rows);
+          
+          if (result.rows && result.rows[0]?.task) {
+            processed++;
+            console.log(`Task created successfully with ID: ${result.rows[0].task.id}`);
+          } else {
+            console.log("Task creation failed - no task returned");
+            errors.push(`Row ${index + 2}: Failed to create task`);
+            skipped++;
+          }
+        } catch (error) {
+          console.error(`Error processing row ${index + 2}:`, error);
+          errors.push(`Row ${index + 2}: ${error instanceof Error ? error.message : "Unknown error"}`);
+          skipped++;
+        }
+      }
+
+      // Clean up uploaded file
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+        console.log("Cleaned up file:", req.file.path);
+      }
+
+      console.log("\n=== CSV Import Summary ===");
+      console.log("Processed:", processed);
+      console.log("Skipped:", skipped);
+      console.log("Total:", results.length);
+      console.log("Errors:", errors.length);
+
+      const responseData = {
+        processed,
+        skipped,
+        total: results.length,
+        errors: errors.slice(0, 10) // Limit errors to prevent response bloat
+      };
+
+      return res.status(200).send(new ServerResponse(true, responseData));
+    } catch (error) {
+      console.error("CSV import error:", error);
+      
+      // Clean up file on error
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+
+      return res.status(500).send(new ServerResponse(false, null, error instanceof Error ? error.message : "CSV import failed"));
+    }
   }
 }

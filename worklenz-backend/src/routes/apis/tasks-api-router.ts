@@ -66,6 +66,9 @@ tasksApiRouter.get("/dependency-status", safeControllerFunction(TasksControllerV
 
 tasksApiRouter.put("/labels/:id", idParamValidator, safeControllerFunction(TasksControllerV2.assignLabelsToTask));
 
+// CSV import route
+tasksApiRouter.post("/import-csv/:id", idParamValidator, TasksController.csvUpload, safeControllerFunction(TasksController.importFromCSV));
+
 // Add custom column value update route
 tasksApiRouter.put("/:taskId/custom-column", TasksControllerV2.updateCustomColumnValue);
 
