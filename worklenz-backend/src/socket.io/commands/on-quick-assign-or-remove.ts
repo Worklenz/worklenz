@@ -75,7 +75,7 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
       assign_type: type
     });
 
-    if (userId !== assignment.user_id) {
+    if (assignment && userId !== assignment.user_id) {
       NotificationsService.createTaskUpdate(
         type,
         userId as string,
@@ -108,6 +108,11 @@ export async function assignMemberIfNot(taskId: string, userId: string, teamId: 
 
     const result = await db.query(q, [taskId, userId, teamId]);
     const [data] = result.rows;
+
+    if (!data) {
+      log_error(new Error(`No team member found for userId: ${userId}, teamId: ${teamId}`));
+      return;
+    }
 
     const body = {
       team_member_id: data.team_member_id,

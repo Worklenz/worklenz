@@ -265,8 +265,8 @@ export default class ReportingMembersController extends ReportingControllerBase 
                     (SELECT color_code FROM project_phases WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_color,
 
                     (total_minutes * 60) AS total_minutes,
-                    (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id AND ta.team_member_id = $1) AS time_logged,
-                    ((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id AND ta.team_member_id = $1) - (total_minutes * 60)) AS overlogged_time`;
+                    (SELECT SUM(time_spent) FROM task_work_log twl WHERE twl.task_id = t.id AND twl.user_id = (SELECT user_id FROM team_members WHERE id = $1)) AS time_logged,
+                    ((SELECT SUM(time_spent) FROM task_work_log twl WHERE twl.task_id = t.id AND twl.user_id = (SELECT user_id FROM team_members WHERE id = $1)) - (total_minutes * 60)) AS overlogged_time`;
   }
 
   protected static getActivityLogsOverdue(key: string, dateRange: string[]) {
