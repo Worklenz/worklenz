@@ -29,7 +29,9 @@ const SIDEBAR_MAX_WIDTH = 400;
 
 // Lazy load heavy components
 const TaskDrawer = React.lazy(() => import('@/components/task-drawer/task-drawer'));
-const SurveyPromptModal = React.lazy(() => import('@/components/survey/SurveyPromptModal').then(m => ({ default: m.SurveyPromptModal })));
+const SurveyPromptModal = React.lazy(() =>
+  import('@/components/survey/SurveyPromptModal').then(m => ({ default: m.SurveyPromptModal }))
+);
 
 const HomePage = memo(() => {
   const dispatch = useAppDispatch();
@@ -109,18 +111,18 @@ const HomePage = memo(() => {
 
       <Row gutter={[24, 24]} className="mt-12">
         <Col xs={24} lg={16}>
-          <TasksList />
+          <Flex vertical gap={24}>
+            <TasksList />
+
+            <TodoList />
+          </Flex>
         </Col>
 
         <Col xs={24} lg={8}>
           <Flex vertical gap={24}>
             <UserActivityFeed />
 
-            <TodoList />
-
-            <Card title="Recent & Favorite Projects">
-              <RecentAndFavouriteProjectList />
-            </Card>
+            <RecentAndFavouriteProjectList />
           </Flex>
         </Col>
       </Row>

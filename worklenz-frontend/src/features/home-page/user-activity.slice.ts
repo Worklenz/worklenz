@@ -16,7 +16,7 @@ interface UserActivityState {
 }
 
 const initialState: UserActivityState = {
-    activeTab: ActivityFeedType.RECENT_TASKS,
+    activeTab: ActivityFeedType.TIME_LOGGED_TASKS,
     activities: [],
     loading: false,
     error: null,

@@ -43,7 +43,9 @@
     "refresh": "Atualizar",
     "recentActivity": "Atividade Recente",
     "recentTasks": "Tarefas Recentes",
-    "timeLoggedTasks": "Tempo Registrado",
+    "recentTasksSegment": "Tarefas Recentes",
+    "timeLogged": "Tempo Registrado",
+    "timeLoggedSegment": "Tempo Registrado",
     "noRecentTasks": "Nenhuma tarefa recente",
     "noTimeLoggedTasks": "Nenhuma tarefa com tempo registrado",
     "activityTag": "Atividade",
@@ -52,6 +54,8 @@
     "activitySingular": "atividade",
     "activityPlural": "atividades",
     "recentTaskAriaLabel": "Tarefa recente:",
-    "timeLoggedTaskAriaLabel": "Tarefa com tempo registrado:"
+    "timeLoggedTaskAriaLabel": "Tarefa com tempo registrado:",
+    "errorLoadingRecentTasks": "Erro ao carregar tarefas recentes",
+    "errorLoadingTimeLoggedTasks": "Erro ao carregar tarefas com tempo registrado"
   }
 }

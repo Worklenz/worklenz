@@ -44,7 +44,9 @@
     "refresh": "Rifresko",
     "recentActivity": "Aktiviteti i Fundit",
     "recentTasks": "Detyrat e Fundit",
-    "timeLoggedTasks": "Koha e Regjistruar",
+    "recentTasksSegment": "Detyrat e Fundit",
+    "timeLogged": "Koha e Regjistruar",
+    "timeLoggedSegment": "Koha e Regjistruar",
     "noRecentTasks": "Asnjë detyrë e fundit",
     "noTimeLoggedTasks": "Asnjë detyrë me kohë të regjistruar",
     "activityTag": "Aktiviteti",
@@ -53,6 +55,8 @@
     "activitySingular": "aktivitet",
     "activityPlural": "aktivitete",
     "recentTaskAriaLabel": "Detyrë e fundit:",
-    "timeLoggedTaskAriaLabel": "Detyrë me kohë të regjistruar:"
+    "timeLoggedTaskAriaLabel": "Detyrë me kohë të regjistruar:",
+    "errorLoadingRecentTasks": "Gabim në ngarkimin e detyrave të fundit",
+    "errorLoadingTimeLoggedTasks": "Gabim në ngarkimin e detyrave me kohë të regjistruar"
   }
 }
