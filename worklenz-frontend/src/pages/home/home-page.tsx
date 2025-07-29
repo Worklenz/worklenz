@@ -1,14 +1,16 @@
-import { useEffect, memo, useMemo, useCallback } from 'react';
+import React, { useEffect, memo, useMemo, useCallback } from 'react';
 import { useMediaQuery } from 'react-responsive';
 import Col from 'antd/es/col';
 import Flex from 'antd/es/flex';
+import Row from 'antd/es/row';
+import Card from 'antd/es/card';
 
 import GreetingWithTime from './greeting-with-time';
 import TasksList from '@/pages/home/task-list/tasks-list';
-import TodoList from '@/pages/home/todo-list/todo-list';
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
 import RecentAndFavouriteProjectList from '@/pages/home/recent-and-favourite-project-list/recent-and-favourite-project-list';
+import TodoList from './todo-list/todo-list';
 
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -19,7 +21,7 @@ import { fetchProjectCategories } from '@/features/projects/lookups/projectCateg
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
 import { fetchProjects } from '@/features/home-page/home-page.slice';
 import { createPortal } from 'react-dom';
-import React, { Suspense } from 'react';
+import UserActivityFeed from './user-activity-feed/user-activity-feed';
 
 const DESKTOP_MIN_WIDTH = 1024;
 const TASK_LIST_MIN_WIDTH = 500;
@@ -45,7 +47,7 @@ const HomePage = memo(() => {
         console.warn('Failed to preload TaskDrawer:', error);
       }
     };
-    
+
     preloadTaskDrawer();
   }, []);
 
@@ -98,26 +100,6 @@ const HomePage = memo(() => {
     );
   }, [isDesktop, isOwnerOrAdmin]);
 
-  const MainContent = useMemo(() => {
-    return isDesktop ? (
-      <Flex gap={24} align="flex-start" className="w-full mt-12">
-        <Flex style={desktopFlexStyle}>
-          <TasksList />
-        </Flex>
-        <Flex vertical gap={24} style={sidebarFlexStyle}>
-          <TodoList />
-          <RecentAndFavouriteProjectList />
-        </Flex>
-      </Flex>
-    ) : (
-      <Flex vertical gap={24} className="mt-6">
-        <TasksList />
-        <TodoList />
-        <RecentAndFavouriteProjectList />
-      </Flex>
-    );
-  }, [isDesktop, desktopFlexStyle, sidebarFlexStyle]);
-
   return (
     <div className="my-24 min-h-[90vh]">
       <Col className="flex flex-col gap-6">
@@ -125,29 +107,26 @@ const HomePage = memo(() => {
         {CreateProjectButtonComponent}
       </Col>
 
-      {MainContent}
+      <Row gutter={[24, 24]} className="mt-12">
+        <Col xs={24} lg={16}>
+          <TasksList />
+        </Col>
 
-      {/* Use Suspense for lazy-loaded components with error boundary */}
-      <Suspense fallback={<div>Loading...</div>}>
-        {createPortal(
-          <React.Suspense fallback={null}>
-            <TaskDrawer />
-          </React.Suspense>, 
-          document.body, 
-          'home-task-drawer'
-        )}
-      </Suspense>
+        <Col xs={24} lg={8}>
+          <Flex vertical gap={24}>
+            <UserActivityFeed />
 
-      {createPortal(
-        <ProjectDrawer onClose={handleProjectDrawerClose} />,
-        document.body,
-        'project-drawer'
-      )}
+            <TodoList />
 
-      {/* Survey Modal - only shown to users who haven't completed it */}
-      <Suspense fallback={null}>
-        <SurveyPromptModal />
-      </Suspense>
+            <Card title="Recent & Favorite Projects">
+              <RecentAndFavouriteProjectList />
+            </Card>
+          </Flex>
+        </Col>
+      </Row>
+
+      {createPortal(<TaskDrawer />, document.body, 'home-task-drawer')}
+      {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
     </div>
   );
 });

@@ -40,6 +40,18 @@
     "list": "Lista",
     "calendar": "Calendario",
     "tasks": "Tareas",
-    "refresh": "Actualizar"
+    "refresh": "Actualizar",
+    "recentActivity": "Actividad Reciente",
+    "recentTasks": "Tareas Recientes",
+    "timeLoggedTasks": "Tiempo Registrado",
+    "noRecentTasks": "No hay tareas recientes",
+    "noTimeLoggedTasks": "No hay tareas con tiempo registrado",
+    "activityTag": "Actividad",
+    "timeLogTag": "Registro de Tiempo",
+    "timerTag": "Temporizador",
+    "activitySingular": "actividad",
+    "activityPlural": "actividades",
+    "recentTaskAriaLabel": "Tarea reciente:",
+    "timeLoggedTaskAriaLabel": "Tarea con tiempo registrado:"
   }
 }
