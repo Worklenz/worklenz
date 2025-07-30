@@ -153,8 +153,8 @@ const Navbar = () => {
                   <Flex align="center">
                     <SwitchTeamButton />
                     <NotificationButton />
-                    {/* <TimerButton /> */}
-                    <HelpButton />
+                    <TimerButton />
+                    {/* <HelpButton /> */}
                     <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
                   </Flex>
                 </Flex>

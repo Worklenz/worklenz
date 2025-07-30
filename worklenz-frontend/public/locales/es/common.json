@@ -5,5 +5,6 @@
   "signup-failed": "Error al registrarse. Por favor asegúrate de llenar todos los campos requeridos e intenta nuevamente.",
   "reconnecting": "Reconectando al servidor...",
   "connection-lost": "Conexión perdida. Intentando reconectarse...",
-  "connection-restored": "Conexión restaurada. Reconectando al servidor..."
+  "connection-restored": "Conexión restaurada. Reconectando al servidor...",
+  "cancel": "Cancelar"
 }
