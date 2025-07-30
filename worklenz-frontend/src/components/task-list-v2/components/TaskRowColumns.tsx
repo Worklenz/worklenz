@@ -395,7 +395,7 @@ export const ReporterColumn: React.FC<ReporterColumnProps> = memo(({ width, repo
     style={{ width }}
   >
     {reporter ? (
-      <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{reporter}</span>
+      <span className="text-sm text-gray-500 dark:text-gray-400 truncate" title={reporter}>{reporter}</span>
     ) : (
       <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
     )}

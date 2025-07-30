@@ -288,23 +288,7 @@ export const useTaskSocketHandlers = () => {
             );
           }
 
-          console.log('🔄 Status change group movement debug:', {
-            taskId: response.id,
-            newStatusValue,
-            currentGroupId: currentGroup?.id,
-            currentGroupValue: currentGroup?.groupValue,
-            currentGroupTitle: currentGroup?.title,
-            targetGroupId: targetGroup?.id,
-            targetGroupValue: targetGroup?.groupValue,
-            targetGroupTitle: targetGroup?.title,
-            allGroups: groups.map(g => ({ id: g.id, title: g.title, groupValue: g.groupValue })),
-          });
-
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-            console.log('✅ Moving task between groups:', {
-              from: currentGroup.title,
-              to: targetGroup.title,
-            });
             // Use the action to move task between groups
             dispatch(
               moveTaskBetweenGroups({
@@ -452,12 +436,6 @@ export const useTaskSocketHandlers = () => {
           }
 
           if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-            console.log('🔄 Moving task between priority groups:', {
-              taskId: response.id,
-              from: currentGroup.title,
-              to: targetGroup.title,
-              newPriorityValue,
-            });
             dispatch(
               moveTaskBetweenGroups({
                 taskId: response.id,
@@ -610,12 +588,6 @@ export const useTaskSocketHandlers = () => {
             }
 
             if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-              console.log('🔄 Moving task between phase groups:', {
-                taskId,
-                from: currentGroup.title,
-                to: targetGroup.title,
-                newPhaseValue,
-              });
               dispatch(
                 moveTaskBetweenGroups({
                   taskId: taskId,
@@ -937,10 +909,6 @@ export const useTaskSocketHandlers = () => {
   // Handler for TASK_ASSIGNEES_CHANGE (fallback event with limited data)
   const handleTaskAssigneesChange = useCallback((data: { assigneeIds: string[] }) => {
     if (!data || !data.assigneeIds) return;
-
-    // This event only provides assignee IDs, so we update what we can
-    // The full assignee data will come from QUICK_ASSIGNEES_UPDATE
-    // console.log('🔄 Task assignees change (limited data):', data);
   }, []);
 
   // Handler for timer start events
@@ -956,60 +924,55 @@ export const useTaskSocketHandlers = () => {
             : parseInt(start_time)
           : Date.now();
 
-        // Update the task-management slice to include timer state
-        const currentTask = store.getState().taskManagement.entities[task_id];
-        if (currentTask) {
-          const updatedTask: Task = {
-            ...currentTask,
-            timeTracking: {
-              ...currentTask.timeTracking,
-              activeTimer: timerTimestamp,
-            },
-            updatedAt: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          dispatch(updateTask(updatedTask));
-        }
-
-        // Also update the tasks slice activeTimers to keep both slices in sync
-        dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: timerTimestamp }));
-      } catch (error) {
-        logger.error('Error handling timer start event:', error);
+      // Update the task-management slice to include timer state
+      const currentTask = store.getState().taskManagement.entities[task_id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          timeTracking: {
+            ...currentTask.timeTracking,
+            activeTimer: timerTimestamp,
+          },
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
       }
-    },
-    [dispatch]
-  );
 
-  // Handler for timer stop events
-  const handleTimerStop = useCallback(
-    (data: string) => {
-      try {
-        const { task_id } = typeof data === 'string' ? JSON.parse(data) : data;
-        if (!task_id) return;
+      // Also update the tasks slice activeTimers to keep both slices in sync
+      dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: timerTimestamp }));
+    } catch (error) {
+      logger.error('Error handling timer start event:', error);
+    }
+  }, [dispatch]);
 
-        // Update the task-management slice to remove timer state
-        const currentTask = store.getState().taskManagement.entities[task_id];
-        if (currentTask) {
-          const updatedTask: Task = {
-            ...currentTask,
-            timeTracking: {
-              ...currentTask.timeTracking,
-              activeTimer: undefined,
-            },
-            updatedAt: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          dispatch(updateTask(updatedTask));
-        }
+  // Handler for timer stop events  
+  const handleTimerStop = useCallback((data: string) => {
+    try {
+      const { task_id } = typeof data === 'string' ? JSON.parse(data) : data;
+      if (!task_id) return;
 
-        // Also update the tasks slice activeTimers to keep both slices in sync
-        dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: null }));
-      } catch (error) {
-        logger.error('Error handling timer stop event:', error);
+      // Update the task-management slice to remove timer state
+      const currentTask = store.getState().taskManagement.entities[task_id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          timeTracking: {
+            ...currentTask.timeTracking,
+            activeTimer: undefined,
+          },
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
       }
-    },
-    [dispatch]
-  );
+
+      // Also update the tasks slice activeTimers to keep both slices in sync
+      dispatch(updateTaskTimeTracking({ taskId: task_id, timeTracking: null }));
+    } catch (error) {
+      logger.error('Error handling timer stop event:', error);
+    }
+  }, [dispatch]);
 
   // Handler for task sort order change events
   const handleTaskSortOrderChange = useCallback(

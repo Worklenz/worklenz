@@ -51,6 +51,7 @@ import roadmapApiRouter from "./gannt-apis/roadmap-api-router";
 import scheduleApiRouter from "./gannt-apis/schedule-api-router";
 import scheduleApiV2Router from "./gannt-apis/schedule-api-v2-router";
 import projectManagerApiRouter from "./project-managers-api-router";
+import surveyApiRouter from "./survey-api-router";
 
 import billingApiRouter from "./billing-api-router";
 import taskDependenciesApiRouter from "./task-dependencies-api-router";
@@ -62,6 +63,7 @@ import projectFinanceApiRouter from "./project-finance-api-router";
 import projectRatecardApiRouter from "./project-ratecard-api-router";
 import ratecardApiRouter from "./ratecard-api-router";
 import holidayApiRouter from "./holiday-api-router";
+import userActivityLogsApiRouter from "./user-activity-logs-api-router";
 
 const api = express.Router();
 
@@ -108,6 +110,7 @@ api.use("/roadmap-gannt", roadmapApiRouter);
 api.use("/schedule-gannt", scheduleApiRouter);
 api.use("/schedule-gannt-v2", scheduleApiV2Router);
 api.use("/project-managers", projectManagerApiRouter);
+api.use("/surveys", surveyApiRouter);
 
 api.get("/overview/:id", safeControllerFunction(OverviewController.getById));
 api.get("/task-priorities", safeControllerFunction(TaskPrioritiesController.get));
@@ -130,4 +133,5 @@ api.use("/ratecard", ratecardApiRouter);
 
 api.use("/holidays", holidayApiRouter);
 
+api.use("/logs", userActivityLogsApiRouter);
 export default api;

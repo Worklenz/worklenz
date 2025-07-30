@@ -65,6 +65,7 @@ import {
   Timeline,
   Mentions,
   Radio,
+  Steps
 } from 'antd/es';
 
 // Icons - Import commonly used ones
@@ -188,6 +189,7 @@ export {
   DollarOutlined,
   DollarCircleOutlined,
   DatabaseOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 
 // Re-export all components with React
@@ -246,6 +248,7 @@ export {
   Timeline,
   Mentions,
   Radio,
+  Steps
 };
 
 // TypeScript Types - Import commonly used ones

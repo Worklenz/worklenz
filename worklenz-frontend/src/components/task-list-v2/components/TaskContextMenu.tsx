@@ -32,6 +32,8 @@ import {
   RetweetOutlined,
   UserAddOutlined,
   LoadingOutlined,
+  CopyOutlined,
+  message,
 } from '@/shared/antd-imports';
 
 interface TaskContextMenuProps {
@@ -340,6 +342,21 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     }
   }, [task?.id, projectId, dispatch, onClose]);
 
+  const handleCopyLink = useCallback(async () => {
+    if (!projectId || !task.id) return;
+
+    try {
+      const taskLink = `${window.location.origin}/worklenz/projects/${projectId}?tab=tasks-list&pinned_tab=tasks-list&task=${task.id}`;
+      await navigator.clipboard.writeText(taskLink);
+      message.success(t('contextMenu.linkCopied'));
+    } catch (error) {
+      logger.error('Error copying link:', error);
+      message.error(t('contextMenu.linkCopyFailed'));
+    } finally {
+      onClose();
+    }
+  }, [projectId, task.id, onClose, t]);
+
   const menuItems = useMemo(() => {
     const items = [
       {
@@ -356,6 +373,18 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
               <UserAddOutlined className="text-gray-500 dark:text-gray-400" />
             )}
             <span>{t('contextMenu.assignToMe')}</span>
+          </button>
+        ),
+      },
+      {
+        key: 'copyLink',
+        label: (
+          <button
+            onClick={handleCopyLink}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+          >
+            <CopyOutlined className="text-gray-500 dark:text-gray-400" />
+            <span>{t('contextMenu.copyLink')}</span>
           </button>
         ),
       },
@@ -516,6 +545,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     handleArchive,
     handleDelete,
     handleConvertToTask,
+    handleCopyLink,
     getMoveToOptions,
     dispatch,
     t,

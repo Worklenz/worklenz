@@ -68,5 +68,8 @@
   "delete": "Delete",
   "deleteHolidayConfirm": "Are you sure you want to delete this holiday?",
   "yes": "Yes",
-  "no": "No"
+  "no": "No",
+  "emailAddress": "Email Address",
+  "enterOrganizationName": "Enter organization name",
+  "ownerSuffix": " (Owner)"
 }

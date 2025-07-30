@@ -12,7 +12,7 @@ import TimeLogList from './time-log-list';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import TaskTimer from '@/components/taskListCommon/task-timer/task-timer';
-import { useTaskTimer } from '@/hooks/useTaskTimer';
+import { useTaskTimerWithConflictCheck } from '@/hooks/useTaskTimerWithConflictCheck';
 import logger from '@/utils/errorLogger';
 
 interface TaskDrawerTimeLogProps {
@@ -31,7 +31,7 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
     state => state.taskDrawerReducer
   );
 
-  const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimer(
+  const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimerWithConflictCheck(
     selectedTaskId || '',
     taskFormViewModel?.task?.timer_start_time || null
   );

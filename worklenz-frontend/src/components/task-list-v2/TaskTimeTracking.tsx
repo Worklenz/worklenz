@@ -1,6 +1,6 @@
 import React from 'react';
 import TaskTimer from '@/components/taskListCommon/task-timer/task-timer';
-import { useTaskTimer } from '@/hooks/useTaskTimer';
+import { useTaskTimerWithConflictCheck } from '@/hooks/useTaskTimerWithConflictCheck';
 
 interface TaskTimeTrackingProps {
   taskId: string;
@@ -8,7 +8,7 @@ interface TaskTimeTrackingProps {
 }
 
 const TaskTimeTracking: React.FC<TaskTimeTrackingProps> = React.memo(({ taskId, isDarkMode }) => {
-  const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimer(
+  const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimerWithConflictCheck(
     taskId,
     null // The hook will get the timer start time from Redux
   );

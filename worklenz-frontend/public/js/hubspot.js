@@ -76,40 +76,27 @@ class HubSpotManager {
     style.id = this.styleId;
     style.textContent = `
       /* HubSpot Chat Widget Dark Mode Override */
+      /*
+        Note: We can only style the container backgrounds, not the widget UI inside the iframe.
+        HubSpot does not currently support external dark mode theming for the chat UI itself.
+      */
       #hubspot-conversations-inline-parent,
-      #hubspot-conversations-iframe-container,
-      .shadow-2xl.widget-align-right.widget-align-bottom,
-      [data-test-id="chat-widget"],
-      [class*="VizExCollapsedChat"],
-      [class*="VizExExpandedChat"],
-      iframe[src*="hubspot"] {
-        filter: invert(1) hue-rotate(180deg) !important;
-        background: transparent !important;
+      #hubspot-conversations-iframe-container {
+        background: #141414 !important;
       }
-      
       /* Target HubSpot widget container backgrounds */
       #hubspot-conversations-inline-parent div,
       #hubspot-conversations-iframe-container div,
       [data-test-id="chat-widget"] div {
         background-color: transparent !important;
       }
-      
-      /* Prevent double inversion of images, avatars, and icons */
-      #hubspot-conversations-iframe-container img,
-      #hubspot-conversations-iframe-container [style*="background-image"],
-      #hubspot-conversations-iframe-container svg,
-      iframe[src*="hubspot"] img,
-      iframe[src*="hubspot"] svg,
-      [data-test-id="chat-widget"] img,
-      [data-test-id="chat-widget"] svg {
-        filter: invert(1) hue-rotate(180deg) !important;
-      }
-      
-      /* Additional targeting for widget launcher and chat bubble */
-      div[class*="shadow-2xl"],
-      div[class*="widget-align"],
-      div[style*="position: fixed"] {
-        filter: invert(1) hue-rotate(180deg) !important;
+      /* Ensure Worklenz app elements are not affected by HubSpot styles */
+      .ant-menu,
+      .ant-menu *,
+      [class*="settings"],
+      [class*="sidebar"],
+      .worklenz-app *:not([id*="hubspot"]):not([class*="widget"]) {
+        filter: none !important;
       }
     `;
     document.head.appendChild(style);
