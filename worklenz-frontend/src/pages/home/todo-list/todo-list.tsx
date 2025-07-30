@@ -1,9 +1,10 @@
-import { CheckCircleOutlined, SyncOutlined } from '@/shared/antd-imports';
+import { CheckCircleOutlined, SyncOutlined, DownOutlined, RightOutlined } from '@/shared/antd-imports';
 import { useRef, useState } from 'react';
 import Form from 'antd/es/form';
 import Input, { InputRef } from 'antd/es/input';
 import Flex from 'antd/es/flex';
 import Card from 'antd/es/card';
+import Collapse from 'antd/es/collapse';
 import ConfigProvider from 'antd/es/config-provider';
 import Table, { TableProps } from 'antd/es/table';
 import Tooltip from 'antd/es/tooltip';
@@ -23,6 +24,7 @@ import { useCreatePersonalTaskMutation } from '@/api/home-page/home-page.api.ser
 
 const TodoList = () => {
   const [isAlertShowing, setIsAlertShowing] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [form] = Form.useForm();
   const { t } = useTranslation('home');
 
@@ -97,73 +99,109 @@ const TodoList = () => {
   ];
 
   return (
-    <Card
-      title={
-        <Typography.Title level={5} style={{ marginBlockEnd: 0 }}>
-          {t('home:todoList.title')} ({data?.body.length})
-        </Typography.Title>
-      }
-      extra={
-        <Tooltip title={t('home:todoList.refreshTasks')}>
-          <Button shape="circle" icon={<SyncOutlined spin={isFetching} />} onClick={refetch} />
-        </Tooltip>
-      }
-      style={{ width: '100%' }}
-    >
-      <div>
-        <Form form={form} onFinish={handleTodoSubmit}>
-          <Form.Item name="name">
-            <Flex vertical>
-              <Input
-                ref={todoInputRef}
-                placeholder={t('home:todoList.addTask')}
-                onChange={e => {
-                  const inputValue = e.currentTarget.value;
+    <Card style={{ width: '100%' }} bodyStyle={{ padding: 0 }}>
+      <style>{`
+        .todo-collapse .ant-collapse-header {
+          display: flex !important;
+          align-items: center !important;
+          padding: 12px 16px !important;
+        }
+        .todo-collapse .ant-collapse-expand-icon {
+          margin-right: 8px !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+      `}</style>
+      <Collapse
+        defaultActiveKey={[]}
+        ghost
+        size="small"
+        className="todo-collapse"
+        expandIcon={({ isActive }) => 
+          isActive ? <DownOutlined /> : <RightOutlined />
+        }
+        onChange={(keys) => {
+          setIsCollapsed(keys.length === 0);
+        }}
+        items={[
+          {
+            key: '1',
+            label: (
+              <Flex style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <Typography.Title level={5} style={{ margin: 0 }}>
+                  {t('home:todoList.title')} ({data?.body.length})
+                </Typography.Title>
+                <Tooltip title={t('home:todoList.refreshTasks')}>
+                  <Button 
+                    shape="circle" 
+                    icon={<SyncOutlined spin={isFetching} />} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      refetch();
+                    }} 
+                  />
+                </Tooltip>
+              </Flex>
+            ),
+            children: (
+              <div style={{ padding: '0 16px 16px 16px' }}>
+                <Form form={form} onFinish={handleTodoSubmit}>
+                  <Form.Item name="name">
+                    <Flex vertical>
+                      <Input
+                        ref={todoInputRef}
+                        placeholder={t('home:todoList.addTask')}
+                        onChange={e => {
+                          const inputValue = e.currentTarget.value;
 
-                  if (inputValue.length >= 1) setIsAlertShowing(true);
-                  else if (inputValue === '') setIsAlertShowing(false);
-                }}
-              />
-              {isAlertShowing && (
-                <Alert
-                  message={
-                    <Typography.Text style={{ fontSize: 11 }}>
-                      {t('home:todoList.pressEnter')} <strong>Enter</strong>{' '}
-                      {t('home:todoList.toCreate')}
-                    </Typography.Text>
-                  }
-                  type="info"
-                  style={{
-                    width: 'fit-content',
-                    borderRadius: 2,
-                    padding: '0 6px',
-                  }}
-                />
-              )}
-            </Flex>
-          </Form.Item>
-        </Form>
+                          if (inputValue.length >= 1) setIsAlertShowing(true);
+                          else if (inputValue === '') setIsAlertShowing(false);
+                        }}
+                      />
+                      {isAlertShowing && (
+                        <Alert
+                          message={
+                            <Typography.Text style={{ fontSize: 11 }}>
+                              {t('home:todoList.pressEnter')} <strong>Enter</strong>{' '}
+                              {t('home:todoList.toCreate')}
+                            </Typography.Text>
+                          }
+                          type="info"
+                          style={{
+                            width: 'fit-content',
+                            borderRadius: 2,
+                            padding: '0 6px',
+                          }}
+                        />
+                      )}
+                    </Flex>
+                  </Form.Item>
+                </Form>
 
-        <div style={{ maxHeight: 300, overflow: 'auto' }}>
-          {data?.body.length === 0 ? (
-            <EmptyListPlaceholder
-              imageSrc="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
-              text={t('home:todoList.noTasks')}
-            />
-          ) : (
-            <Table
-              className="custom-two-colors-row-table"
-              rowKey={record => record.id || ''}
-              dataSource={data?.body}
-              columns={columns}
-              showHeader={false}
-              pagination={false}
-              size="small"
-              loading={isFetching}
-            />
-          )}
-        </div>
-      </div>
+                <div style={{ maxHeight: 300, overflow: 'auto' }}>
+                  {data?.body.length === 0 ? (
+                    <EmptyListPlaceholder
+                      imageSrc="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
+                      text={t('home:todoList.noTasks')}
+                    />
+                  ) : (
+                    <Table
+                      className="custom-two-colors-row-table"
+                      rowKey={record => record.id || ''}
+                      dataSource={data?.body}
+                      columns={columns}
+                      showHeader={false}
+                      pagination={false}
+                      size="small"
+                      loading={isFetching}
+                    />
+                  )}
+                </div>
+              </div>
+            ),
+          },
+        ]}
+      />
     </Card>
   );
 };

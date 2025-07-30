@@ -360,14 +360,14 @@ const ProjectView = React.memo(() => {
   // Show loading state while project is being fetched or translations are loading
   if (projectLoading || !isInitialized || !translationsReady) {
     return (
-      <div style={{ marginBlockStart: 70, marginBlockEnd: 12, minHeight: '80vh' }}>
+      <div style={{ marginBlockEnd: 12, minHeight: '80vh' }}>
         <SuspenseFallback />
       </div>
     );
   }
 
   return (
-    <div style={{ marginBlockStart: 70, marginBlockEnd: 12, minHeight: '80vh' }}>
+    <div style={{ marginBlockEnd: 12, minHeight: '80vh' }}>
       <ProjectViewHeader />
 
       <Tabs

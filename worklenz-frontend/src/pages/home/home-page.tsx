@@ -103,7 +103,7 @@ const HomePage = memo(() => {
   }, [isDesktop, isOwnerOrAdmin]);
 
   return (
-    <div className="my-24 min-h-[90vh]">
+    <div className="my-8 min-h-[90vh]">
       <Col className="flex flex-col gap-6">
         <GreetingWithTime />
         {CreateProjectButtonComponent}
@@ -113,13 +113,13 @@ const HomePage = memo(() => {
         <Col xs={24} lg={16}>
           <Flex vertical gap={24}>
             <TasksList />
-
-            <TodoList />
           </Flex>
         </Col>
 
         <Col xs={24} lg={8}>
           <Flex vertical gap={24}>
+            <TodoList />
+            
             <UserActivityFeed />
 
             <RecentAndFavouriteProjectList />
