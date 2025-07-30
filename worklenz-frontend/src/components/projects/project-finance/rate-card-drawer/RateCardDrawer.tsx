@@ -400,7 +400,7 @@ const RateCardDrawer = ({
             handleDeleteRole(index);
           }}
         >
-          <Tooltip title="Delete">
+          <Tooltip title={t('deleteTooltip') || 'Delete'}>
             <Button size="small" icon={<DeleteOutlined />} />
           </Tooltip>
         </Popconfirm>
@@ -504,10 +504,10 @@ const RateCardDrawer = ({
             action={
               <Space direction="horizontal">
                 <Button size="small" type="primary" onClick={handleConfirmSave}>
-                  Save
+                  {t('saveButton') || 'Save'}
                 </Button>
                 <Button size="small" danger onClick={handleConfirmDiscard}>
-                  Discard
+                  {t('discardButton') || 'Discard'}
                 </Button>
               </Space>
             }
@@ -568,8 +568,10 @@ const RateCardDrawer = ({
             <Alert
               message={
                 isManDaysMethod
-                  ? `Organization is using man days calculation (${organization.hours_per_day || 8}h/day). Rates above represent daily rates.`
-                  : 'Organization is using hourly calculation. Rates above represent hourly rates.'
+                  ? t('manDaysCalculationMessage', { 
+                      hours: organization.hours_per_day || 8 
+                    }) || `Organization is using man days calculation (${organization.hours_per_day || 8}h/day). Rates above represent daily rates.`
+                  : t('hourlyCalculationMessage') || 'Organization is using hourly calculation. Rates above represent hourly rates.'
               }
               type="info"
               showIcon

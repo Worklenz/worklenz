@@ -71,6 +71,27 @@ export default class AdminCenterController extends WorklenzControllerBase {
                       contact_number,
                       contact_number_secondary,
                       (SELECT email FROM users WHERE id = organizations.user_id),
+                      (SELECT name FROM users WHERE id = organizations.user_id) AS owner_name,
+                      calculation_method,
+                      hours_per_day
+                  FROM organizations
+                  WHERE user_id = $1;`;
+    const result = await db.query(q, [req.user?.owner_id]);
+    const [data] = result.rows;
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
+  public static async getAdminCenterSettings(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT organization_name                                      AS name,
+                      contact_number,
+                      contact_number_secondary,
+                      calculation_method,
+                      hours_per_day,
+                      (SELECT email FROM users WHERE id = organizations.user_id),
                       (SELECT name FROM users WHERE id = organizations.user_id) AS owner_name
                   FROM organizations
                   WHERE user_id = $1;`;

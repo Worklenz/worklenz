@@ -48,5 +48,8 @@
   "jobTitleCreatedSuccess": "Cargo criado com sucesso",
   "jobTitleCreateError": "Falha ao criar cargo",
   "createButton": "Criar",
-  "cancelButton": "Cancelar"
+  "cancelButton": "Cancelar",
+  "discardButton": "Descartar",
+  "manDaysCalculationMessage": "A organização está usando cálculo por dias-homem ({{hours}}h/dia). As taxas acima representam taxas diárias.",
+  "hourlyCalculationMessage": "A organização está usando cálculo por horas. As taxas acima representam taxas horárias."
 }

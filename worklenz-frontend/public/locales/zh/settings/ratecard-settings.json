@@ -48,5 +48,8 @@
   "jobTitleCreatedSuccess": "职位名称创建成功",
   "jobTitleCreateError": "职位名称创建失败",
   "createButton": "创建",
-  "cancelButton": "取消"
+  "cancelButton": "取消",
+  "discardButton": "放弃",
+  "manDaysCalculationMessage": "组织正在使用人日计算（{{hours}}小时/天）。上述费率代表日费率。",
+  "hourlyCalculationMessage": "组织正在使用小时计算。上述费率代表小时费率。"
 }

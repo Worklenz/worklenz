@@ -48,5 +48,8 @@
   "jobTitleCreatedSuccess": "Titulli i punës u krijua me sukses",
   "jobTitleCreateError": "Dështoi të krijohet titulli i punës",
   "createButton": "Krijo",
-  "cancelButton": "Anulo"
+  "cancelButton": "Anulo",
+  "discardButton": "Hidh poshtë",
+  "manDaysCalculationMessage": "Organizata po përdor llogaritjen e ditëve-njeri ({{hours}}h/ditë). Tarifat më sipër përfaqësojnë tarifa ditore.",
+  "hourlyCalculationMessage": "Organizata po përdor llogaritjen orore. Tarifat më sipër përfaqësojnë tarifa orore."
 }

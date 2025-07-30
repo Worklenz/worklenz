@@ -83,6 +83,14 @@ export const fetchOrganizationDetails = createAsyncThunk(
   }
 );
 
+export const fetchAdminCenterSettings = createAsyncThunk(
+  'adminCenter/fetchAdminCenterSettings',
+  async () => {
+    const res = await adminCenterApiService.getAdminCenterSettings();
+    return res.body;
+  }
+);
+
 export const fetchOrganizationAdmins = createAsyncThunk(
   'adminCenter/fetchOrganizationAdmins',
   async () => {
@@ -204,6 +212,17 @@ const adminCenterSlice = createSlice({
       state.loadingOrganization = false;
     });
     builder.addCase(fetchOrganizationDetails.rejected, (state, action) => {
+      state.loadingOrganization = false;
+    });
+
+    builder.addCase(fetchAdminCenterSettings.pending, (state, action) => {
+      state.loadingOrganization = true;
+    });
+    builder.addCase(fetchAdminCenterSettings.fulfilled, (state, action) => {
+      state.organization = action.payload;
+      state.loadingOrganization = false;
+    });
+    builder.addCase(fetchAdminCenterSettings.rejected, (state, action) => {
       state.loadingOrganization = false;
     });
 

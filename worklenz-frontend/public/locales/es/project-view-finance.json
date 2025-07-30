@@ -33,7 +33,7 @@
   "saveButton": "Save",
   "jobTitleColumn": "Job Title",
   "ratePerHourColumn": "Rate per hour",
-  "ratePerManDayColumn": "Rate per man day",
+  "ratePerManDayColumn": "Tarifa por día-hombre",
   "calculationMethodText": "Calculation Method",
   "hourlyRatesText": "Hourly Rates",
   "manDaysText": "Man Days",

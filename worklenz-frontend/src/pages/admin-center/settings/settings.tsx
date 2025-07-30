@@ -17,6 +17,7 @@ import { PageHeader } from '@ant-design/pro-components';
 import { useTranslation } from 'react-i18next';
 import logger from '@/utils/errorLogger';
 import { scheduleAPIService } from '@/api/schedule/schedule.api.service';
+import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { Settings } from '@/types/schedule/schedule-v2.types';
 import OrganizationCalculationMethod from '@/components/admin-center/overview/organization-calculation-method/organization-calculation-method';
 import HolidayCalendar from '@/components/admin-center/overview/holiday-calendar/holiday-calendar';
@@ -25,6 +26,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { RootState } from '@/app/store';
 import {
   fetchOrganizationDetails,
+  fetchAdminCenterSettings,
   fetchOrganizationAdmins,
   fetchHolidaySettings,
   updateHolidaySettings,
@@ -49,11 +51,11 @@ const SettingsPage: React.FC = () => {
 
   const { t } = useTranslation('admin-center/settings');
 
-  const getOrganizationDetails = async () => {
+  const getAdminCenterSettings = async () => {
     try {
-      await dispatch(fetchOrganizationDetails()).unwrap();
+      await dispatch(fetchAdminCenterSettings()).unwrap();
     } catch (error) {
-      logger.error('Error getting organization details', error);
+      logger.error('Error getting admin center settings', error);
     }
   };
 
@@ -111,7 +113,7 @@ const SettingsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    getOrganizationDetails();
+    getAdminCenterSettings();
     getOrganizationAdmins();
     getOrgWorkingSettings();
     dispatch(fetchHolidaySettings());
@@ -202,10 +204,12 @@ const SettingsPage: React.FC = () => {
           </Form>
         </Card>
 
-        <OrganizationCalculationMethod
-          organization={organization}
-          refetch={getOrganizationDetails}
-        />
+        {organization && (
+          <OrganizationCalculationMethod
+            organization={organization}
+            refetch={getAdminCenterSettings}
+          />
+        )}
 
         <Card>
           <Typography.Title level={5} style={{ margin: 0 }}>

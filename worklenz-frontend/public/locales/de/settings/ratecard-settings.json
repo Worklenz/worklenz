@@ -48,5 +48,8 @@
   "jobTitleCreatedSuccess": "Berufsbezeichnung erfolgreich erstellt",
   "jobTitleCreateError": "Berufsbezeichnung konnte nicht erstellt werden",
   "createButton": "Erstellen",
-  "cancelButton": "Abbrechen"
+  "cancelButton": "Abbrechen",
+  "discardButton": "Verwerfen",
+  "manDaysCalculationMessage": "Organisation verwendet Manntage-Berechnung ({{hours}}h/Tag). Die obigen Sätze stellen Tagessätze dar.",
+  "hourlyCalculationMessage": "Organisation verwendet Stunden-Berechnung. Die obigen Sätze stellen Stundensätze dar."
 }

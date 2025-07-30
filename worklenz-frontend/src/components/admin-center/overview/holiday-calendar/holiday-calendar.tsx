@@ -55,6 +55,8 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedHoliday, setSelectedHoliday] = useState<IHolidayCalendarEvent | null>(null);
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
+  const [isPopulatingHolidays, setIsPopulatingHolidays] = useState(false);
+  const [hasAttemptedPopulation, setHasAttemptedPopulation] = useState(false);
 
   const fetchHolidayTypes = async () => {
     try {
@@ -69,9 +71,18 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
 
   const populateHolidaysIfNeeded = async () => {
     // Check if we have holiday settings with a country code but no holidays
-    if (holidaySettings?.country_code && holidays.length === 0) {
+    // Also check if we haven't already attempted population and we're not currently populating
+    if (
+      holidaySettings?.country_code && 
+      holidays.length === 0 && 
+      !hasAttemptedPopulation && 
+      !isPopulatingHolidays
+    ) {
       try {
         console.log('🔄 No holidays found, attempting to populate official holidays...');
+        setIsPopulatingHolidays(true);
+        setHasAttemptedPopulation(true);
+        
         const populateRes = await holidayApiService.populateCountryHolidays();
         if (populateRes.done) {
           console.log('✅ Official holidays populated successfully');
@@ -80,6 +91,8 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         }
       } catch (error) {
         console.warn('⚠️ Could not populate official holidays:', error);
+      } finally {
+        setIsPopulatingHolidays(false);
       }
     }
   };
@@ -110,7 +123,12 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   // Check if we need to populate holidays when holiday settings are loaded
   useEffect(() => {
     populateHolidaysIfNeeded();
-  }, [holidaySettings, holidays.length]);
+  }, [holidaySettings]);
+
+  // Reset population attempt state when holiday settings change
+  useEffect(() => {
+    setHasAttemptedPopulation(false);
+  }, [holidaySettings?.country_code]);
 
   const customHolidays = useMemo(() => {
     return holidays.filter(holiday => holiday.source === 'custom');
@@ -300,6 +318,11 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
                 {holidaySettings.country_code}
                 {holidaySettings.state_code && ` (${holidaySettings.state_code})`}
               </span>
+              {isPopulatingHolidays && (
+                <span style={{ marginLeft: 8, color: '#faad14' }}>
+                  🔄 Populating official holidays...
+                </span>
+              )}
             </Typography.Text>
           )}
         </div>

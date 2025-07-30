@@ -303,4 +303,9 @@ export const adminCenterApiService = {
     );
     return response.data;
   },
+
+  async getAdminCenterSettings(): Promise<IServerResponse<IOrganization>> {
+    const response = await apiClient.get<IServerResponse<IOrganization>>(`${rootUrl}/settings`);
+    return response.data;
+  },
 };

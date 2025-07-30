@@ -264,6 +264,27 @@ export default class HolidayController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async populateCountryHolidays(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Check if this organization has recently populated holidays (within last hour)
+    const recentPopulationCheck = `
+      SELECT COUNT(*) as count
+      FROM organization_holidays 
+      WHERE organization_id = (SELECT id FROM organizations WHERE user_id = $1)
+      AND created_at > NOW() - INTERVAL '1 hour'
+    `;
+    
+    const recentResult = await db.query(recentPopulationCheck, [req.user?.owner_id]);
+    const recentCount = parseInt(recentResult.rows[0]?.count || '0');
+    
+    // If there are recent holidays added, skip population
+    if (recentCount > 10) {
+      return res.status(200).send(new ServerResponse(true, {
+        success: true,
+        message: "Holidays were recently populated, skipping to avoid duplicates",
+        total_populated: 0,
+        recently_populated: true
+      }));
+    }
+
     const Holidays = require("date-holidays");
 
     const countries = [

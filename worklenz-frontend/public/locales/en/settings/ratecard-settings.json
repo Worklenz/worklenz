@@ -48,5 +48,8 @@
   "jobTitleCreatedSuccess": "Job title created successfully",
   "jobTitleCreateError": "Failed to create job title",
   "createButton": "Create",
-  "cancelButton": "Cancel"
+  "cancelButton": "Cancel",
+  "discardButton": "Discard",
+  "manDaysCalculationMessage": "Organization is using man days calculation ({{hours}}h/day). Rates above represent daily rates.",
+  "hourlyCalculationMessage": "Organization is using hourly calculation. Rates above represent hourly rates."
 }
