@@ -54,7 +54,7 @@ const Schedule: React.FC = () => {
   };
 
   return (
-    <div style={{ marginBlockStart: 65, minHeight: '90vh' }}>
+    <div style={{ minHeight: '90vh' }}>
       <Flex align="center" justify="space-between">
         <Flex
           gap={16}

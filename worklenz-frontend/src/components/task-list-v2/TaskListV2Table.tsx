@@ -105,7 +105,7 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
           ...(column.isSticky && {
             position: 'sticky' as const,
             left: leftPosition,
-            zIndex: 5,
+            zIndex: 10,
             backgroundColor: 'inherit', // Inherit from parent spacer
           }),
         };
@@ -161,7 +161,7 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
           ...(column.isSticky && {
             position: 'sticky' as const,
             left: leftPosition,
-            zIndex: 5,
+            zIndex: 10,
             backgroundColor: 'inherit', // Inherit from parent container
           }),
         };
@@ -668,7 +668,7 @@ const TaskListV2Section: React.FC = () => {
               ...(column.isSticky && {
                 position: 'sticky' as const,
                 left: leftPosition,
-                zIndex: 10,
+                zIndex: 15,
                 backgroundColor: isDarkMode ? '#141414' : '#f9fafb', // custom dark header : bg-gray-50
               }),
             };
