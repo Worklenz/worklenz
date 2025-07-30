@@ -27,7 +27,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   task,
   groupId = null,
   isDarkMode = false,
-  kanbanMode = false,
+  kanbanMode = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,9 +182,12 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
     // Emit socket event - the socket handler will update Redux with proper types
     socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
-    socket?.once(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), (data: any) => {
-      dispatch(updateEnhancedKanbanTaskAssignees(data));
-    });
+    socket?.once(
+      SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
+      (data: any) => {
+        dispatch(updateEnhancedKanbanTaskAssignees(data));
+      }
+    );
 
     // Remove from pending changes after a short delay (optimistic)
     setTimeout(() => {
@@ -232,50 +235,48 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         <PlusOutlined className="text-xs" />
       </button>
 
-      {isOpen &&
-        createPortal(
-          <div
-            ref={dropdownRef}
-            onClick={e => e.stopPropagation()}
-            className={`
+      {isOpen && createPortal(
+        <div
+          ref={dropdownRef}
+          onClick={e => e.stopPropagation()}
+          className={`
             fixed z-[99999] w-72 rounded-md shadow-lg border
             ${isDarkMode
               ? 'bg-gray-800 border-gray-600'
               : 'bg-white border-gray-200'
             }
           `}
-            style={{
-              top: dropdownPosition.top,
-              left: dropdownPosition.left,
-            }}
-          >
-            {/* Header */}
-            <div className={`p-2 border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search members..."
-                className={`
+          style={{
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+          }}
+        >
+          {/* Header */}
+          <div className={`p-2 border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search members..."
+              className={`
                 w-full px-2 py-1 text-xs rounded border
-                ${
-                  isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                ${isDarkMode
+                  ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
                 }
                 focus:outline-none focus:ring-1 focus:ring-blue-500
               `}
-              />
-            </div>
+            />
+          </div>
 
-            {/* Members List */}
-            <div className="max-h-48 overflow-y-auto">
-              {filteredMembers && filteredMembers.length > 0 ? (
-                filteredMembers.map(member => (
-                  <div
-                    key={member.id}
-                    className={`
+          {/* Members List */}
+          <div className="max-h-48 overflow-y-auto">
+            {filteredMembers && filteredMembers.length > 0 ? (
+              filteredMembers.map((member) => (
+                <div
+                  key={member.id}
+                  className={`
                     flex items-center gap-2 p-2 cursor-pointer transition-colors
                     ${member.pending_invitation
                       ? 'opacity-50 cursor-not-allowed'
@@ -330,6 +331,15 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                         <span className="text-red-400 ml-1">(Pending)</span>
                       )}
                     </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className={`p-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <div className="text-xs">No members found</div>
+              </div>
+            )}
+          </div>
 
           {/* Footer */}
 
@@ -359,4 +369,4 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   );
 };
 
-export default AssigneeSelector;
+export default AssigneeSelector; 
