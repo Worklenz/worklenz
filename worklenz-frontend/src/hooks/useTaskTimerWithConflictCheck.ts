@@ -5,6 +5,10 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
 import { useTaskTimer } from './useTaskTimer';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTask } from '@/features/task-management/task-management.slice';
+import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
+import { store } from '@/app/store';
 
 interface ConflictingTimer {
   task_id: string;
@@ -13,6 +17,7 @@ interface ConflictingTimer {
 }
 
 export const useTaskTimerWithConflictCheck = (taskId: string, timerStartTime: string | null) => {
+  const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const { t: tTable } = useTranslation('task-list-table');
   const { t: tCommon } = useTranslation('common');
@@ -60,17 +65,35 @@ export const useTaskTimerWithConflictCheck = (taskId: string, timerStartTime: st
           okText: tTable('timer.stopAndStart'),
           cancelText: tCommon('cancel'),
           onOk: () => {
-            // Stop the conflicting timer
+            // Stop the conflicting timer and immediately update Redux state
             if (socket) {
               socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ 
                 task_id: conflictingTimer.task_id 
               }));
+              
+              // Immediately update Redux state for the stopped timer
+              const conflictingTask = store.getState().taskManagement.entities[conflictingTimer.task_id];
+              if (conflictingTask) {
+                const updatedTask = {
+                  ...conflictingTask,
+                  timeTracking: {
+                    ...conflictingTask.timeTracking,
+                    activeTimer: undefined,
+                  },
+                  updatedAt: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                };
+                dispatch(updateTask(updatedTask));
+              }
+              
+              // Also update the tasks slice activeTimers to keep both slices in sync
+              dispatch(updateTaskTimeTracking({ taskId: conflictingTimer.task_id, timeTracking: null }));
             }
             
-            // Start the new timer after a short delay
+            // Start the new timer immediately after updating state
             setTimeout(() => {
               originalHook.handleStartTimer();
-            }, 100);
+            }, 50);
           },
         });
       } else {
@@ -84,7 +107,7 @@ export const useTaskTimerWithConflictCheck = (taskId: string, timerStartTime: st
     } finally {
       setIsCheckingConflict(false);
     }
-  }, [isCheckingConflict, checkForConflictingTimers, tTable, tCommon, socket, originalHook]);
+  }, [isCheckingConflict, checkForConflictingTimers, tTable, tCommon, socket, originalHook, dispatch]);
 
   return {
     ...originalHook,
