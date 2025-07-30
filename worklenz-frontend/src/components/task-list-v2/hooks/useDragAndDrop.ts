@@ -19,10 +19,11 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
   const currentSession = useAuthService().getCurrentSession();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
 
-  // Helper function to emit socket event for persistence
+  // Helper function to emit socket event for persistence (within-group only)
   const emitTaskSortChange = useCallback(
-    (taskId: string, sourceGroup: TaskGroup, targetGroup: TaskGroup, insertIndex: number) => {
+    (taskId: string, group: TaskGroup, insertIndex: number) => {
       if (!socket || !connected || !projectId) {
         logger.warning('Socket not connected or missing project ID');
         return;
@@ -40,54 +41,30 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       // Use new bulk update approach - recalculate ALL task orders to prevent duplicates
       const taskUpdates: any[] = [];
       
-      // Create a copy of all groups and perform the move operation
-      const updatedGroups = groups.map(group => ({
-        ...group,
-        taskIds: [...group.taskIds]
+      // Create a copy of all groups
+      const updatedGroups = groups.map(g => ({
+        ...g,
+        taskIds: [...g.taskIds]
       }));
       
-      // Find the source and target groups in our copy
-      const sourceGroupCopy = updatedGroups.find(g => g.id === sourceGroup.id)!;
-      const targetGroupCopy = updatedGroups.find(g => g.id === targetGroup.id)!;
+      // Find the group in our copy
+      const groupCopy = updatedGroups.find(g => g.id === group.id)!;
       
-      if (sourceGroup.id === targetGroup.id) {
-        // Same group - reorder within the group
-        const sourceIndex = sourceGroupCopy.taskIds.indexOf(taskId);
-        // Remove task from old position
-        sourceGroupCopy.taskIds.splice(sourceIndex, 1);
-        // Insert at new position
-        sourceGroupCopy.taskIds.splice(insertIndex, 0, taskId);
-      } else {
-        // Different groups - move task between groups
-        // Remove from source group
-        const sourceIndex = sourceGroupCopy.taskIds.indexOf(taskId);
-        sourceGroupCopy.taskIds.splice(sourceIndex, 1);
-        
-        // Add to target group
-        targetGroupCopy.taskIds.splice(insertIndex, 0, taskId);
-      }
+      // Reorder within the group
+      const sourceIndex = groupCopy.taskIds.indexOf(taskId);
+      // Remove task from old position
+      groupCopy.taskIds.splice(sourceIndex, 1);
+      // Insert at new position
+      groupCopy.taskIds.splice(insertIndex, 0, taskId);
       
       // Now assign sequential sort orders to ALL tasks across ALL groups
       let currentSortOrder = 0;
-      updatedGroups.forEach(group => {
-        group.taskIds.forEach(id => {
-          const update: any = {
+      updatedGroups.forEach(grp => {
+        grp.taskIds.forEach(id => {
+          taskUpdates.push({
             task_id: id,
             sort_order: currentSortOrder
-          };
-          
-          // Add group-specific fields for the moved task if it changed groups
-          if (id === taskId && sourceGroup.id !== targetGroup.id) {
-            if (currentGrouping === 'status') {
-              update.status_id = targetGroup.id;
-            } else if (currentGrouping === 'priority') {
-              update.priority_id = targetGroup.id;
-            } else if (currentGrouping === 'phase') {
-              update.phase_id = targetGroup.id;
-            }
-          }
-          
-          taskUpdates.push(update);
+          });
           currentSortOrder++;
         });
       });
@@ -96,8 +73,8 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
         project_id: projectId,
         group_by: currentGrouping || 'status',
         task_updates: taskUpdates,
-        from_group: sourceGroup.id,
-        to_group: targetGroup.id,
+        from_group: group.id,
+        to_group: group.id,
         task: {
           id: task.id,
           project_id: projectId,
@@ -108,32 +85,6 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       };
 
       socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), socketData);
-
-      // Also emit the specific grouping field change event for the moved task
-      if (sourceGroup.id !== targetGroup.id) {
-        if (currentGrouping === 'phase') {
-          // Emit phase change event
-          socket.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
-            task_id: taskId,
-            phase_id: targetGroup.id,
-            parent_task: task.parent_task_id || null,
-          });
-        } else if (currentGrouping === 'priority') {
-          // Emit priority change event
-          socket.emit(SocketEvents.TASK_PRIORITY_CHANGE.toString(), JSON.stringify({
-            task_id: taskId,
-            priority_id: targetGroup.id,
-            team_id: teamId,
-          }));
-        } else if (currentGrouping === 'status') {
-          // Emit status change event
-          socket.emit(SocketEvents.TASK_STATUS_CHANGE.toString(), JSON.stringify({
-            task_id: taskId,
-            status_id: targetGroup.id,
-            team_id: teamId,
-          }));
-        }
-      }
     },
     [socket, connected, projectId, allTasks, groups, currentGrouping, currentSession]
   );
@@ -148,32 +99,38 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
 
       if (!over) {
         setOverId(null);
+        setDropPosition(null);
         return;
       }
 
-      const activeId = active.id;
-      const overId = over.id;
-
-      // Set the overId for drop indicators
-      setOverId(overId as string);
-
-      // Find the active task and the item being dragged over
-      const activeTask = allTasks.find(task => task.id === activeId);
-      if (!activeTask) return;
-
-      // Check if we're dragging over a task or a group
-      const overTask = allTasks.find(task => task.id === overId);
-      const overGroup = groups.find(group => group.id === overId);
-
-      // Find the groups
-      const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
-      let targetGroup = overGroup;
-
-      if (overTask) {
-        targetGroup = groups.find(group => group.taskIds.includes(overTask.id));
+      const activeTask = allTasks.find(task => task.id === active.id);
+      const overTask = allTasks.find(task => task.id === over.id);
+      
+      if (activeTask && overTask) {
+        const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
+        const overGroup = groups.find(group => group.taskIds.includes(overTask.id));
+        
+        // Only set overId if both tasks are in the same group
+        if (activeGroup && overGroup && activeGroup.id === overGroup.id) {
+          setOverId(over.id as string);
+          
+          // Calculate drop position based on task indices
+          const activeIndex = activeGroup.taskIds.indexOf(activeTask.id);
+          const overIndex = activeGroup.taskIds.indexOf(overTask.id);
+          
+          if (activeIndex < overIndex) {
+            setDropPosition('after');
+          } else {
+            setDropPosition('before');
+          }
+        } else {
+          setOverId(null);
+          setDropPosition(null);
+        }
+      } else {
+        setOverId(null);
+        setDropPosition(null);
       }
-
-      if (!activeGroup || !targetGroup) return;
     },
     [allTasks, groups]
   );
@@ -183,6 +140,7 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       const { active, over } = event;
       setActiveId(null);
       setOverId(null);
+      setDropPosition(null);
 
       if (!over || active.id === over.id) {
         return;
@@ -198,86 +156,50 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
         return;
       }
 
-      // Find the groups
+      // Find the active task's group
       const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
       if (!activeGroup) {
         logger.error('Could not find active group for task:', activeId);
         return;
       }
 
-      // Check if we're dropping on a task, group, or empty group
+      // Only allow dropping on tasks in the same group
       const overTask = allTasks.find(task => task.id === overId);
-      const overGroup = groups.find(group => group.id === overId);
-      
-      // Check if dropping on empty group drop zone
-      const isEmptyGroupDrop = typeof overId === 'string' && overId.startsWith('empty-group-');
-      const emptyGroupId = isEmptyGroupDrop ? overId.replace('empty-group-', '') : null;
-      const emptyGroup = emptyGroupId ? groups.find(group => group.id === emptyGroupId) : null;
-
-      let targetGroup = overGroup || emptyGroup;
-      let insertIndex = 0;
-
-      if (overTask) {
-        // Dropping on a task
-        targetGroup = groups.find(group => group.taskIds.includes(overTask.id));
-        if (targetGroup) {
-          insertIndex = targetGroup.taskIds.indexOf(overTask.id);
-        }
-      } else if (overGroup) {
-        // Dropping on a group (at the end)
-        targetGroup = overGroup;
-        insertIndex = targetGroup.taskIds.length;
-      } else if (emptyGroup) {
-        // Dropping on an empty group
-        targetGroup = emptyGroup;
-        insertIndex = 0; // First position in empty group
-      }
-
-      if (!targetGroup) {
-        logger.error('Could not find target group');
+      if (!overTask) {
         return;
       }
 
-      const isCrossGroup = activeGroup.id !== targetGroup.id;
+      const overGroup = groups.find(group => group.taskIds.includes(overTask.id));
+      if (!overGroup || overGroup.id !== activeGroup.id) {
+        return;
+      }
+
       const activeIndex = activeGroup.taskIds.indexOf(activeTask.id);
+      const overIndex = activeGroup.taskIds.indexOf(overTask.id);
 
-      if (isCrossGroup) {
-        // Moving task between groups
-        console.log('Moving task between groups:', {
-          task: activeTask.name || activeTask.title,
-          from: activeGroup.title,
-          to: targetGroup.title,
-          newPosition: insertIndex,
-        });
-
-        // reorderTasksInGroup handles both same-group and cross-group moves
-        // No need for separate moveTaskBetweenGroups call
+      if (activeIndex !== overIndex) {
+        // Reorder task within same group
         dispatch(
           reorderTasksInGroup({
             sourceTaskId: activeId as string,
-            destinationTaskId: over.id as string,
+            destinationTaskId: overId as string,
             sourceGroupId: activeGroup.id,
-            destinationGroupId: targetGroup.id,
+            destinationGroupId: activeGroup.id,
           })
         );
 
-        // Emit socket event for persistence
-        emitTaskSortChange(activeId as string, activeGroup, targetGroup, insertIndex);
-      } else {
-        if (activeIndex !== insertIndex) {
-          // Reorder task within same group at drop position
-          dispatch(
-            reorderTasksInGroup({
-              sourceTaskId: activeId as string,
-              destinationTaskId: over.id as string,
-              sourceGroupId: activeGroup.id,
-              destinationGroupId: activeGroup.id,
-            })
-          );
-
-          // Emit socket event for persistence
-          emitTaskSortChange(activeId as string, activeGroup, targetGroup, insertIndex);
+        // Calculate the final index after reordering for socket emission
+        let finalIndex = overIndex;
+        if (activeIndex < overIndex) {
+          // When dragging down, the task ends up just after the destination
+          finalIndex = overIndex;
+        } else {
+          // When dragging up, the task ends up at the destination position
+          finalIndex = overIndex;
         }
+
+        // Emit socket event for persistence
+        emitTaskSortChange(activeId as string, activeGroup, finalIndex);
       }
     },
     [allTasks, groups, dispatch, emitTaskSortChange]
@@ -286,6 +208,7 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
   return {
     activeId,
     overId,
+    dropPosition,
     handleDragStart,
     handleDragOver,
     handleDragEnd,

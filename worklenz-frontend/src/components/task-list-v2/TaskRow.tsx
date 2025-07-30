@@ -75,7 +75,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({
   });
 
   // Drag and drop functionality - only enable for parent tasks
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({
     id: task.id,
     data: {
       type: 'task',
@@ -116,17 +116,19 @@ const TaskRow: React.FC<TaskRowProps> = memo(({
   const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0 : 1, // Completely hide the original task while dragging
+    opacity: isDragging ? 0.3 : 1, // Make original task slightly transparent while dragging
   }), [transform, transition, isDragging]);
 
   return (
     <div
       ref={setNodeRef}
       style={{ ...style, height: '40px' }}
-      className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+      className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
         isFirstInGroup ? 'border-t border-gray-200 dark:border-gray-700' : ''
       } ${
-        isDragging ? 'shadow-lg border border-blue-300' : ''
+        isDragging ? 'opacity-50' : ''
+      } ${
+        isOver && !isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''
       }`}
     >
       {visibleColumns.map((column, index) => (
