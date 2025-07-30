@@ -69,7 +69,11 @@ import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-sub
 import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
 
 // Drop Spacer Component - creates space between tasks when dragging
-const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[] }> = ({ isVisible, visibleColumns }) => {
+const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMode?: boolean }> = ({ 
+  isVisible, 
+  visibleColumns, 
+  isDarkMode = false 
+}) => {
   if (!isVisible) return null;
   
   return (
@@ -83,17 +87,34 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[] }> = ({ i
         overflow: 'hidden',
       }}
     >
-      {visibleColumns.map((column) => {
+      {visibleColumns.map((column, index) => {
+        // Calculate left position for sticky columns
+        let leftPosition = 0;
+        if (column.isSticky) {
+          for (let i = 0; i < index; i++) {
+            const prevColumn = visibleColumns[i];
+            if (prevColumn.isSticky) {
+              leftPosition += parseInt(prevColumn.width.replace('px', ''));
+            }
+          }
+        }
+
         const columnStyle = {
           width: column.width,
           flexShrink: 0,
+          ...(column.isSticky && {
+            position: 'sticky' as const,
+            left: leftPosition,
+            zIndex: 5,
+            backgroundColor: 'inherit', // Inherit from parent spacer
+          }),
         };
         
         if (column.id === 'title') {
           return (
             <div
               key={`spacer-${column.id}`}
-              className="flex items-center pl-1"
+              className="flex items-center pl-1 border-r border-blue-300 dark:border-blue-600"
               style={columnStyle}
             >
               <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
@@ -116,13 +137,33 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[] }> = ({ i
 };
 
 // Empty Group Message Component
-const EmptyGroupMessage: React.FC<{ visibleColumns: any[] }> = ({ visibleColumns }) => {
+const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean }> = ({ 
+  visibleColumns, 
+  isDarkMode = false 
+}) => {
   return (
     <div className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700" style={{ height: '40px' }}>
-      {visibleColumns.map((column) => {
+      {visibleColumns.map((column, index) => {
+        // Calculate left position for sticky columns
+        let leftPosition = 0;
+        if (column.isSticky) {
+          for (let i = 0; i < index; i++) {
+            const prevColumn = visibleColumns[i];
+            if (prevColumn.isSticky) {
+              leftPosition += parseInt(prevColumn.width.replace('px', ''));
+            }
+          }
+        }
+
         const emptyColumnStyle = {
           width: column.width,
           flexShrink: 0,
+          ...(column.isSticky && {
+            position: 'sticky' as const,
+            left: leftPosition,
+            zIndex: 5,
+            backgroundColor: 'inherit', // Inherit from parent container
+          }),
         };
         
         // Show text in the title column
@@ -130,7 +171,7 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[] }> = ({ visibleColumns
           return (
             <div
               key={`empty-${column.id}`}
-              className="flex items-center pl-1"
+              className="flex items-center pl-1 border-r border-gray-200 dark:border-gray-700"
               style={emptyColumnStyle}
             >
               <span className="text-sm text-gray-500 dark:text-gray-400 italic">
@@ -550,7 +591,7 @@ const TaskListV2Section: React.FC = () => {
             projectId={urlProjectId || ''}
           />
           {isGroupEmpty && !isGroupCollapsed && (
-            <EmptyGroupMessage visibleColumns={visibleColumns} />
+            <EmptyGroupMessage visibleColumns={visibleColumns} isDarkMode={isDarkMode} />
           )}
         </div>
       );
@@ -596,19 +637,40 @@ const TaskListV2Section: React.FC = () => {
   const renderColumnHeaders = useCallback(
     () => (
       <div
-        className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
-        style={{ width: '100%', minWidth: 'max-content' }}
+        className="border-b border-gray-200 dark:border-gray-700"
+        style={{ 
+          width: '100%', 
+          minWidth: 'max-content',
+          backgroundColor: isDarkMode ? '#141414' : '#f9fafb' 
+        }}
       >
         <div
           className="flex items-center px-1 py-3 w-full"
           style={{ minWidth: 'max-content', height: '44px' }}
         >
           {visibleColumns.map((column, index) => {
+            // Calculate left position for sticky columns
+            let leftPosition = 0;
+            if (column.isSticky) {
+              for (let i = 0; i < index; i++) {
+                const prevColumn = visibleColumns[i];
+                if (prevColumn.isSticky) {
+                  leftPosition += parseInt(prevColumn.width.replace('px', ''));
+                }
+              }
+            }
+
             const columnStyle: ColumnStyle = {
               width: column.width,
               flexShrink: 0,
               ...((column as any).minWidth && { minWidth: (column as any).minWidth }),
               ...((column as any).maxWidth && { maxWidth: (column as any).maxWidth }),
+              ...(column.isSticky && {
+                position: 'sticky' as const,
+                left: leftPosition,
+                zIndex: 10,
+                backgroundColor: isDarkMode ? '#141414' : '#f9fafb', // custom dark header : bg-gray-50
+              }),
             };
 
             return (
@@ -773,14 +835,25 @@ const TaskListV2Section: React.FC = () => {
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-      modifiers={[restrictToVerticalAxis]}
-    >
+    <>
+      {/* CSS for sticky column hover effects */}
+      <style>
+        {`
+          .hover\\:bg-gray-50:hover .sticky-column-hover,
+          .dark .hover\\:bg-gray-800:hover .sticky-column-hover {
+            background-color: var(--hover-bg) !important;
+          }
+        `}
+      </style>
+      
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        modifiers={[restrictToVerticalAxis]}
+      >
       <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
         {/* Table Container */}
         <div
@@ -841,9 +914,9 @@ const TaskListV2Section: React.FC = () => {
 
                         return (
                           <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
-                            {showDropSpacerBefore && <DropSpacer isVisible={true} visibleColumns={visibleColumns} />}
+                            {showDropSpacerBefore && <DropSpacer isVisible={true} visibleColumns={visibleColumns} isDarkMode={isDarkMode} />}
                             {renderTask(globalTaskIndex, isFirstTaskInGroup)}
-                            {showDropSpacerAfter && <DropSpacer isVisible={true} visibleColumns={visibleColumns} />}
+                            {showDropSpacerAfter && <DropSpacer isVisible={true} visibleColumns={visibleColumns} isDarkMode={isDarkMode} />}
                           </div>
                         );
                       })
@@ -917,6 +990,7 @@ const TaskListV2Section: React.FC = () => {
         {createPortal(<ConvertToSubtaskDrawer />, document.body, 'convert-to-subtask-drawer')}
       </div>
     </DndContext>
+    </>
   );
 };
 

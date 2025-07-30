@@ -131,11 +131,26 @@ const TaskRow: React.FC<TaskRowProps> = memo(({
         isOver && !isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''
       }`}
     >
-      {visibleColumns.map((column, index) => (
-        <React.Fragment key={column.id}>
-          {renderColumn(column.id, column.width, column.isSticky, index)}
-        </React.Fragment>
-      ))}
+      {visibleColumns.map((column, index) => {
+        // Calculate background state for sticky columns - custom dark mode colors
+        const rowBackgrounds = {
+          normal: isDarkMode ? '#1e1e1e' : '#ffffff', // custom dark : bg-white
+          hover: isDarkMode ? '#1f2937' : '#f9fafb', // slightly lighter dark : bg-gray-50  
+          dragOver: isDarkMode ? '#1e3a8a33' : '#dbeafe', // bg-blue-900/20 : bg-blue-50
+        };
+        
+        let currentBg = rowBackgrounds.normal;
+        if (isOver && !isDragging) {
+          currentBg = rowBackgrounds.dragOver;
+        }
+        // Note: hover state is handled by CSS, so we'll use a CSS custom property
+        
+        return (
+          <React.Fragment key={column.id}>
+            {renderColumn(column.id, column.width, column.isSticky, index, currentBg, rowBackgrounds)}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 });
