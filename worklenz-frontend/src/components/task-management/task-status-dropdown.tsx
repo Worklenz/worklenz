@@ -8,6 +8,8 @@ import { Task } from '@/types/task-management.types';
 import {
   updateTask,
   selectCurrentGroupingV3,
+  selectGroups,
+  moveTaskBetweenGroups,
 } from '@/features/task-management/task-management.slice';
 
 interface TaskStatusDropdownProps {
@@ -30,6 +32,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
 
   const statusList = useAppSelector(state => state.taskStatusReducer.status);
   const currentGroupingV3 = useAppSelector(selectCurrentGroupingV3);
+  const groups = useAppSelector(selectGroups);
 
   // Find current status details
   const currentStatus = useMemo(() => {
@@ -44,21 +47,53 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
     (statusId: string, statusName: string) => {
       if (!task.id || !statusId || !connected) return;
 
-      console.log('🎯 Status change initiated:', { taskId: task.id, statusId, statusName });
+      // Optimistic update: immediately update the task status in Redux for instant feedback
+      const updatedTask = {
+        ...task,
+        status: statusId,
+        updatedAt: new Date().toISOString(),
+      };
+      dispatch(updateTask(updatedTask));
 
+      // Handle group movement if grouping by status
+      if (currentGroupingV3 === 'status' && groups && groups.length > 0) {
+        // Find current group containing the task
+        const currentGroup = groups.find(group => group.taskIds.includes(task.id));
+        
+        // Find target group based on the new status ID
+        let targetGroup = groups.find(group => group.id === statusId);
+        
+        // If not found by status ID, try matching with group value
+        if (!targetGroup) {
+          targetGroup = groups.find(group => group.groupValue === statusId);
+        }
+
+        if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+          // Move task between groups immediately for instant feedback
+          dispatch(
+            moveTaskBetweenGroups({
+              taskId: task.id,
+              sourceGroupId: currentGroup.id,
+              targetGroupId: targetGroup.id,
+            })
+          );
+        }
+      }
+
+      // Emit socket event for server-side update and real-time sync
       socket?.emit(
         SocketEvents.TASK_STATUS_CHANGE.toString(),
         JSON.stringify({
           task_id: task.id,
           status_id: statusId,
-          parent_task: null, // Assuming top-level tasks for now
-          team_id: projectId, // Using projectId as teamId
+          parent_task: task.parent_task_id || null,
+          team_id: projectId,
         })
       );
       socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
       setIsOpen(false);
     },
-    [task.id, connected, socket, projectId]
+    [task, connected, socket, projectId, dispatch, currentGroupingV3, groups]
   );
 
   // Calculate dropdown position and handle outside clicks
