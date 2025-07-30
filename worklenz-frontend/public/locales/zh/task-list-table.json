@@ -129,5 +129,11 @@
       "dependencies": "任务有依赖项",
       "recurring": "重复任务"
     }
+  },
+
+  "timer": {
+    "conflictTitle": "计时器已在运行",
+    "conflictMessage": "您在项目\"{{projectName}}\"中的\"{{taskName}}\"任务正在运行计时器。您是否要停止该计时器并为此任务启动新的计时器？",
+    "stopAndStart": "停止并启动新计时器"
   }
 }

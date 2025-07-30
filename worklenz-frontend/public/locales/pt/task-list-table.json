@@ -136,5 +136,11 @@
       "dependencies": "A tarefa tem dependências",
       "recurring": "Tarefa recorrente"
     }
+  },
+
+  "timer": {
+    "conflictTitle": "Temporizador Já Em Execução",
+    "conflictMessage": "Você tem um temporizador executando para \"{{taskName}}\" no projeto \"{{projectName}}\". Gostaria de parar esse temporizador e iniciar um novo para esta tarefa?",
+    "stopAndStart": "Parar e Iniciar Novo Temporizador"
   }
 }

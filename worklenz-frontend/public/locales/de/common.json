@@ -5,5 +5,6 @@
   "signup-failed": "Registrierung fehlgeschlagen. Bitte füllen Sie alle erforderlichen Felder aus und versuchen Sie es erneut.",
   "reconnecting": "Vom Server getrennt.",
   "connection-lost": "Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung.",
-  "connection-restored": "Erfolgreich mit dem Server verbunden"
+  "connection-restored": "Erfolgreich mit dem Server verbunden",
+  "cancel": "Abbrechen"
 }

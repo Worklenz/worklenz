@@ -5,5 +5,6 @@
   "signup-failed": "Falha no cadastro. Por favor, certifique-se de que todos os campos obrigatórios estão preenchidos e tente novamente.",
   "reconnecting": "Reconectando ao servidor...",
   "connection-lost": "Conexão perdida. Tentando reconectar...",
-  "connection-restored": "Conexão restaurada. Reconectando ao servidor..."
+  "connection-restored": "Conexão restaurada. Reconectando ao servidor...",
+  "cancel": "Cancelar"
 }
