@@ -1,0 +1,19 @@
+.status-dropdown .ant-dropdown-menu {
+  padding: 0 !important;
+  margin-top: 8px !important;
+  overflow: hidden;
+}
+
+.status-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+}
+
+.status-dropdown-card .ant-card-body {
+  padding: 0 !important;
+}
+
+.status-menu .ant-menu-item {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}

@@ -1,0 +1,27 @@
+{
+  "title": "Guardar como Plantilla",
+  "templateName": "Nombre de la Plantilla",
+  "includes": "¿Qué se debe incluir en la plantilla del proyecto?",
+  "includesOptions": {
+    "statuses": "Estados",
+    "phases": "Fases",
+    "labels": "Etiquetas"
+  },
+  "taskIncludes": "¿Qué se debe incluir en la plantilla de las tareas?",
+  "taskIncludesOptions": {
+    "statuses": "Estados",
+    "phases": "Fases",
+    "labels": "Etiquetas",
+    "name": "Nombre",
+    "priority": "Prioridad",
+    "status": "Estado",
+    "phase": "Fase",
+    "label": "Etiqueta",
+    "timeEstimate": "Estimación de Tiempo",
+    "description": "Descripción",
+    "subTasks": "Sub Tasks"
+  },
+  "cancel": "Cancel",
+  "save": "Save",
+  "templateNamePlaceholder": "Enter template name"
+}

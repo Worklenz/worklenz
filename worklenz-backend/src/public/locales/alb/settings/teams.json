@@ -1,0 +1,16 @@
+{
+  "title": "Ekipet",
+  "team": "Ekip",
+  "teams": "Ekipet",
+  "name": "Emri",
+  "created": "Krijuar",
+  "ownsBy": "I përket",
+  "edit": "Ndrysho",
+  "editTeam": "Ndrysho Ekipin",
+  "pinTooltip": "Kliko për ta fiksuar në menunë kryesore",
+  "editTeamName": "Ndrysho Emrin e Ekipit",
+  "updateName": "Përditëso Emrin",
+  "namePlaceholder": "Emri",
+  "nameRequired": "Ju lutem shkruani një Emër",
+  "updateFailed": "Ndryshimi i emrit të ekipit dështoi!"
+} 

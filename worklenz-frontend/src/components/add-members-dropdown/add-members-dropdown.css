@@ -1,0 +1,5 @@
+.custom-dropdown-menu .ant-dropdown-menu {
+  box-shadow: none !important;
+  border-top: 1px solid #dee2e6 !important;
+  border-bottom: 1px solid #dee2e6 !important;
+}

@@ -1,0 +1,31 @@
+{
+  "continue": "Vazhdo",
+
+  "setupYourAccount": "Konfiguro Llogarinë Tënde në Worklenz.",
+  "organizationStepTitle": "Emërtoni Organizatën Tuaj",
+  "organizationStepLabel": "Zgjidhni një emër për llogarinë tuaj në Worklenz.",
+
+  "projectStepTitle": "Krijoni projektin tuaj të parë",
+  "projectStepLabel": "Në cilin projekt po punoni aktualisht?",
+  "projectStepPlaceholder": "p.sh. Plani i Marketingut",
+
+  "tasksStepTitle": "Krijoni detyrat tuaja të para",
+  "tasksStepLabel": "Shkruani disa detyra që do të kryeni në",
+  "tasksStepAddAnother": "Shto një tjetër",
+
+  "emailPlaceholder": "Adresa email",
+  "invalidEmail": "Ju lutemi vendosni një adresë email të vlefshme",
+  "or": "ose",
+  "templateButton": "Importo nga shablloni",
+  "goBack": "Kthehu Mbrapa",
+  "cancel": "Anulo",
+  "create": "Krijo",
+  "templateDrawerTitle": "Zgjidh nga shabllonet",
+  "step3InputLabel": "Fto me email",
+  "addAnother": "Shto një tjetër",
+  "skipForNow": "Kalo tani për tani",
+  "formTitle": "Krijoni detyrën tuaj të parë.",
+  "step3Title": "Fto ekipin tënd të punojë me",
+  "maxMembers": " (Mund të ftoni deri në 5 anëtarë)",
+  "maxTasks": " (Mund të krijoni deri në 5 detyra)"
+}

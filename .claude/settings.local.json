@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(npm outdated)",
+      "Bash(npm update)",
+      "Bash(npm audit:*)",
+      "Bash(npm ls:*)",
+      "Bash(ls:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(/dev/null)",
+      "Bash(grep:*)"
+    ],
+    "deny": []
+  }
+}

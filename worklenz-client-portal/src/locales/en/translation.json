@@ -1,0 +1,80 @@
+{
+  "login": {
+    "title": "Client Portal",
+    "description": "Sign in to your client account",
+    "email": "Email",
+    "password": "Password",
+    "remember": "Remember me",
+    "forgot": "Forgot password?",
+    "signin": "Sign In",
+    "invite_only": "Access by invitation only. Contact your account manager for access."
+  },
+  "invite": {
+    "description": "Complete your account setup",
+    "welcome_message": "You've been invited to access the client portal. Please complete your account setup below.",
+    "validating": "Validating invitation...",
+    "validating_description": "Please wait while we verify your invitation.",
+    "invalid_title": "Invalid Invitation",
+    "invalid_description": "This invitation link is invalid or has expired. Please contact your account manager for a new invitation.",
+    "back_to_login": "Back to Login",
+    "name_required": "Please enter your full name",
+    "name_min": "Name must be at least 2 characters",
+    "name_placeholder": "Full Name",
+    "email_required": "Please enter your email",
+    "email_invalid": "Please enter a valid email",
+    "email_placeholder": "Email Address",
+    "password_required": "Please enter a password",
+    "password_min": "Password must be at least 8 characters",
+    "password_placeholder": "Create Password",
+    "confirm_password_required": "Please confirm your password",
+    "confirm_password_placeholder": "Confirm Password",
+    "password_mismatch": "Passwords do not match",
+    "accept_invite": "Accept Invitation",
+    "already_have_account": "Already have an account?",
+    "sign_in": "Sign In",
+    "success": "Account created successfully!",
+    "invalid_token": "Invalid invitation token",
+    "validation_error": "Failed to validate invitation",
+    "acceptance_error": "Failed to accept invitation"
+  },
+  "services": {
+    "title": "Services ({{items}})",
+    "noDescription": "No description available",
+    "price": "{{currency}} {{price}}",
+    "noServices": "No services available",
+    "errorLoadingServices": "Error loading services",
+    "errorLoadingServicesDescription": "Failed to load services. Please try again later.",
+    "errorLoadingService": "Error loading service",
+    "errorLoadingServiceDescription": "Failed to load service details. Please try again later.",
+    "requestButton": "Request Service",
+    "description": "Description",
+    "details": "Service Details",
+    "category": "Category",
+    "status": "Status"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "services": "Services",
+    "requests": "Requests",
+    "projects": "Projects",
+    "invoices": "Invoices",
+    "chats": "Chats",
+    "settings": "Settings"
+  },
+  "user": {
+    "profile": "Profile",
+    "logout": "Logout",
+    "defaultName": "Client User"
+  },
+  "theme": {
+    "dark": "Dark Mode",
+    "light": "Light Mode"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No new notifications"
+  },
+  "app": {
+    "title": "Client Portal"
+  }
+} 

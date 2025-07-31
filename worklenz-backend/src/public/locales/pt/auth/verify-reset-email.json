@@ -1,0 +1,14 @@
+{
+  "title": "Verificar E-mail de Redefinição",
+  "description": "Digite sua nova senha",
+  "placeholder": "Digite sua nova senha",
+  "confirmPasswordPlaceholder": "Confirme sua nova senha",
+  "passwordHint": "Mínimo de 8 caracteres, com maiúsculas e minúsculas, um número e um símbolo.",
+  "resetPasswordButton": "Redefinir senha",
+  "orText": "Ou",
+  "resendResetEmail": "Reenviar e-mail de redefinição",
+  "passwordRequired": "Por favor, digite sua nova senha",
+  "returnToLoginButton": "Voltar ao Login",
+  "confirmPasswordRequired": "Por favor, confirme sua nova senha",
+  "passwordMismatch": "As senhas não coincidem"
+}

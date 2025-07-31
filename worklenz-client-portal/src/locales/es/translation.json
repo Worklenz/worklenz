@@ -1,0 +1,13 @@
+{
+  "login": {
+    "title": "Portal del Cliente",
+    "description": "Inicia sesión en tu cuenta de cliente",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "remember": "Recuérdame",
+    "forgot": "¿Olvidaste tu contraseña?",
+    "signin": "Iniciar sesión",
+    "signup": "Regístrate",
+    "no_account": "¿No tienes una cuenta?"
+  }
+} 

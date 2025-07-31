@@ -1,0 +1,46 @@
+{
+  "todoList": {
+    "title": "Aufgabenliste",
+    "refreshTasks": "Aufgaben aktualisieren",
+    "addTask": "+ Aufgabe hinzufügen",
+    "noTasks": "Keine Aufgaben",
+    "pressEnter": "Drücken Sie",
+    "toCreate": "zum Erstellen.",
+    "markAsDone": "Als erledigt markieren"
+  },
+  "projects": {
+    "title": "Projekte",
+    "refreshProjects": "Projekte aktualisieren",
+    "noRecentProjects": "Sie sind aktuell keinem Projekt zugewiesen.",
+    "noFavouriteProjects": "Keine Projekte als Favoriten markiert.",
+    "recent": "Kürzlich",
+    "favourites": "Favoriten"
+  },
+  "tasks": {
+    "assignedToMe": "Mir zugewiesen",
+    "assignedByMe": "Von mir zugewiesen",
+    "all": "Alle",
+    "today": "Heute",
+    "upcoming": "Bevorstehend",
+    "overdue": "Überfällig",
+    "noDueDate": "Kein Fälligkeitsdatum",
+    "noTasks": "Keine Aufgaben zum Anzeigen.",
+    "addTask": "+ Aufgabe hinzufügen",
+    "name": "Name",
+    "project": "Projekt",
+    "status": "Status",
+    "dueDate": "Fälligkeitsdatum",
+    "dueDatePlaceholder": "Fälligkeitsdatum festlegen",
+    "tomorrow": "Morgen",
+    "nextWeek": "Nächste Woche",
+    "nextMonth": "Nächster Monat",
+    "projectRequired": "Bitte wählen Sie ein Projekt aus",
+    "pressTabToSelectDueDateAndProject": "Drücken Sie Tab, um ein Fälligkeitsdatum und ein Projekt auszuwählen",
+    "dueOn": "Fällige Aufgaben am",
+    "taskRequired": "Bitte fügen Sie eine Aufgabe hinzu",
+    "list": "Liste",
+    "calendar": "Kalender",
+    "tasks": "Aufgaben",
+    "refresh": "Aktualisieren"
+  }
+}

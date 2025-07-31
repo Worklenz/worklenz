@@ -1,0 +1,19 @@
+/* Subtask Table CSS */
+.subtask-table .action-buttons {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.subtask-table .ant-table-row:hover .action-buttons {
+  opacity: 1;
+}
+
+/* Add these styles for task dependency action buttons */
+.task-dependency-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.task-dependency:hover .task-dependency-actions {
+  opacity: 1;
+}

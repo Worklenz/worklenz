@@ -1,0 +1,182 @@
+/* table overrides 
+    used in homepage, settings
+*/
+
+/* this is for globaly hide tables scrollbar  */
+:where(.css-dev-only-do-not-override-17sis5b).ant-table-wrapper .ant-table,
+:where(.css-dev-only-do-not-override-bj289r).ant-table-wrapper .ant-table {
+  scrollbar-color: unset !important;
+}
+
+.custom-two-colors-row-table table tr:nth-child(even) {
+  background: #4e4e4e10 !important;
+}
+
+.custom-two-colors-row-table table tr {
+  border-radius: 4px !important;
+}
+
+.custom-two-colors-row-table table tr td,
+.custom-two-colors-row-table table th {
+  border-bottom: none !important;
+  padding: 6px 12px !important;
+}
+
+.custom-two-colors-row-table table th,
+.custom-project-view-task-list-table table th {
+  padding-bottom: 12px !important;
+  border: none !important;
+  font-weight: 400 !important;
+}
+
+.custom-two-colors-row-table table th::before {
+  display: none;
+}
+
+.ant-table-fixed-left .ant-table-cell td {
+  background-color: #4e4e4e10 !important;
+}
+
+/* custom table used in  */
+
+/* custom dropdown 
+    used in navbar, project view filters
+*/
+.custom-dropdown .ant-dropdown-menu {
+  padding: 0 !important;
+  margin-top: 2px !important;
+}
+
+.custom-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+}
+
+/* custom list 
+    used in project view filters
+*/
+.custom-list-item:hover {
+  background-color: #f8f7f9 !important;
+  color: #181818;
+}
+
+.custom-list-item.dark:hover {
+  background-color: #424242 !important;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* dropdown render card manual shadow 
+    used in project view filters
+*/
+.custom-card {
+  box-shadow:
+    0 3px 6px -4px #0000001f,
+    0 6px 16px #00000014,
+    0 9px 28px 8px #0000000d !important;
+}
+
+/* insights card hover  */
+.custom-insights-card:hover {
+  border: 1px solid #d3d3d3;
+}
+
+/* Enhanced overview stat card styles */
+.overview-stat-card {
+  border-radius: 0 !important;
+}
+
+.overview-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Light mode stat cards */
+.overview-stat-card.light-mode {
+  background-color: #ffffff !important;
+  border: 1px solid #f0f0f0 !important;
+}
+
+.overview-stat-card.light-mode:hover {
+  border-color: #1890ff !important;
+  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.15) !important;
+}
+
+.overview-stat-card.light-mode .ant-card {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.overview-stat-card.light-mode .ant-card-body {
+  background-color: transparent !important;
+}
+
+/* Dark mode stat cards */
+.overview-stat-card.dark-mode {
+  background-color: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+.overview-stat-card.dark-mode:hover {
+  border-color: #1890ff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.overview-stat-card.dark-mode .ant-card {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.overview-stat-card.dark-mode .ant-card-body {
+  background-color: transparent !important;
+}
+
+/* Force dark mode styles when body has dark class or data attribute */
+body.dark .overview-stat-card,
+[data-theme="dark"] .overview-stat-card,
+.ant-theme-dark .overview-stat-card {
+  background-color: #1f1f1f !important;
+  border: 1px solid #303030 !important;
+}
+
+body.dark .overview-stat-card .ant-card,
+[data-theme="dark"] .overview-stat-card .ant-card,
+.ant-theme-dark .overview-stat-card .ant-card {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+body.dark .overview-stat-card .ant-card-body,
+[data-theme="dark"] .overview-stat-card .ant-card-body,
+.ant-theme-dark .overview-stat-card .ant-card-body {
+  background-color: transparent !important;
+}
+
+/* Ensure no border radius on card components */
+.overview-stat-card .ant-card,
+.overview-stat-card .ant-card-body {
+  border-radius: 0 !important;
+}
+
+/* reporting sidebar  */
+.custom-reporting-sider .ant-menu-item-selected {
+  border-inline-end: 3px solid #1890ff !important;
+  border-radius: 0;
+}
+
+.custom-reporting-sider .ant-menu-item,
+.custom-reporting-sider .ant-menu-submenu-title {
+  margin-inline: 0 !important;
+  padding-inline: 16px !important;
+  width: 100%;
+}
+
+.custom-reporting-sider .ant-menu:nth-child(2) .ant-menu-item {
+  padding-inline-start: 32px !important;
+}
+
+.ql-snow .ql-picker {
+  color: #6c757d !important;
+}
+
+.ql-snow .ql-stroke {
+  stroke: #6c757d !important;
+}

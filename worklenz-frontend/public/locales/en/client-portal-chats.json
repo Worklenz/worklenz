@@ -1,0 +1,10 @@
+{
+  "title": "Messages",
+  "refresh": "Refresh",
+  "noChatsTitle": "No Messages Found",
+  "noChatsDescription": "You don't have any messages yet. Start a conversation to begin messaging.",
+  "errorLoadingChats": "Error Loading Messages",
+  "errorLoadingChatsDescription": "There was an error loading your messages. Please try again later.",
+  "selectChatMessage": "Select a chat to start messaging",
+  "startConversation": "Start Conversation"
+} 

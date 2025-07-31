@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+.scannerwork
+coverage
+.dockerignore
+.git
+*.md
+tests
+

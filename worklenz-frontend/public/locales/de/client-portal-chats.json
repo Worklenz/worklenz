@@ -1,0 +1,10 @@
+{
+  "title": "Nachrichten",
+  "refresh": "Aktualisieren",
+  "noChatsTitle": "Keine Nachrichten gefunden",
+  "noChatsDescription": "Sie haben noch keine Nachrichten. Starten Sie eine Konversation, um mit dem Messaging zu beginnen.",
+  "errorLoadingChats": "Fehler beim Laden der Nachrichten",
+  "errorLoadingChatsDescription": "Beim Laden Ihrer Nachrichten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
+  "selectChatMessage": "Wählen Sie einen Chat aus, um mit dem Messaging zu beginnen",
+  "startConversation": "Konversation starten"
+} 

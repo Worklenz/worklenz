@@ -1,0 +1,14 @@
+{
+  "nameColumn": "Name",
+  "attachedTaskColumn": "Attached Task",
+  "sizeColumn": "Size",
+  "uploadedByColumn": "Uploaded By",
+  "uploadedAtColumn": "Uploaded At",
+  "fileIconAlt": "File icon",
+  "titleDescriptionText": "All attachments to tasks in this project will appear here.",
+  "deleteConfirmationTitle": "Are you sure?",
+  "deleteConfirmationOk": "Yes",
+  "deleteConfirmationCancel": "Cancel",
+  "segmentedTooltip": "Coming soon! Switch between list view and thumbnail view.",
+  "emptyText": "There are no attachments in the project."
+}

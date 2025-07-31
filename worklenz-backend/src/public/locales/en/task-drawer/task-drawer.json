@@ -1,0 +1,123 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "Type your Task",
+    "deleteTask": "Delete Task"
+  },
+  "taskInfoTab": {
+    "title": "Info",
+    "details": {
+      "title": "Details",
+      "task-key": "Task Key",
+      "phase": "Phase",
+      "assignees": "Assignees",
+      "due-date": "Due Date",
+      "time-estimation": "Time Estimation",
+      "priority": "Priority",
+      "labels": "Labels",
+      "billable": "Billable",
+      "notify": "Notify",
+      "when-done-notify": "When done, notify",
+      "start-date": "Start Date",
+      "end-date": "End Date",
+      "hide-start-date": "Hide Start Date",
+      "show-start-date": "Show Start Date",
+      "hours": "Hours",
+      "minutes": "Minutes",
+      "progressValue": "Progress Value",
+      "progressValueTooltip": "Set the progress percentage (0-100%)",
+      "progressValueRequired": "Please enter a progress value",
+      "progressValueRange": "Progress must be between 0 and 100",
+      "taskWeight": "Task Weight",
+      "taskWeightTooltip": "Set the weight of this subtask (percentage)",
+      "taskWeightRequired": "Please enter a task weight",
+      "taskWeightRange": "Weight must be between 0 and 100",
+      "recurring": "Recurring"
+    },
+    "labels": {
+      "labelInputPlaceholder": "Search or create",
+      "labelsSelectorInputTip": "Hit Enter to create"
+    },
+    "description": {
+      "title": "Description",
+      "placeholder": "Add a more detailed description..."
+    },
+    "subTasks": {
+      "title": "Sub Tasks",
+      "addSubTask": "Add Sub Task",
+      "addSubTaskInputPlaceholder": "Type your task and hit enter",
+      "refreshSubTasks": "Refresh Sub Tasks",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDeleteSubTask": "Are you sure you want to delete this subtask?",
+      "deleteSubTask": "Delete Sub Task"
+    },
+    "dependencies": {
+      "title": "Dependencies",
+      "addDependency": "+ Add new dependency",
+      "blockedBy": "Blocked By",
+      "searchTask": "Type to search task",
+      "noTasksFound": "No tasks found",
+      "confirmDeleteDependency": "Are you sure you want to delete?"
+    },
+    "attachments": {
+      "title": "Attachments",
+      "chooseOrDropFileToUpload": "Choose or drop file to upload",
+      "uploading": "Uploading..."
+    },
+    "comments": {
+      "title": "Comments",
+      "addComment": "+ Add new comment",
+      "noComments": "No comments yet. Be the first to comment!",
+      "delete": "Delete",
+      "confirmDeleteComment": "Are you sure you want to delete this comment?",
+      "addCommentPlaceholder": "Add a comment...",
+      "cancel": "Cancel",
+      "commentButton": "Comment",
+      "attachFiles": "Attach files",
+      "addMoreFiles": "Add more files",
+      "selectedFiles": "Selected Files (Up to 25MB, Maximum of {count})",
+      "maxFilesError": "You can only upload a maximum of {count} files",
+      "processFilesError": "Failed to process files",
+      "addCommentError": "Please add a comment or attach files",
+      "createdBy": "Created {{time}} by {{user}}",
+      "updatedTime": "Updated {{time}}"
+    },
+    "searchInputPlaceholder": "Search by name",
+    "pendingInvitation": "Pending Invitation"
+  },
+  "taskTimeLogTab": {
+    "title": "Time Log",
+    "addTimeLog": "Add new time log",
+    "totalLogged": "Total Logged",
+    "exportToExcel": "Export to Excel",
+    "noTimeLogsFound": "No time logs found",
+    "timeLogForm": {
+      "date": "Date",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "workDescription": "Work Description",
+      "descriptionPlaceholder": "Add a description",
+      "logTime": "Log time",
+      "updateTime": "Update time",
+      "cancel": "Cancel",
+      "selectDateError": "Please select a date",
+      "selectStartTimeError": "Please select start time",
+      "selectEndTimeError": "Please select end time",
+      "endTimeAfterStartError": "End time must be after start time"
+    }
+  },
+  "taskActivityLogTab": {
+    "title": "Activity Log",
+    "add": "ADD",
+    "remove": "REMOVE",
+    "none": "None",
+    "weight": "Weight",
+    "createdTask": "created the task."
+  },
+  "taskProgress": {
+    "markAsDoneTitle": "Mark Task as Done?",
+    "confirmMarkAsDone": "Yes, mark as done",
+    "cancelMarkAsDone": "No, keep current status",
+    "markAsDoneDescription": "You've set the progress to 100%. Would you like to update the task status to \"Done\"?"
+  }
+}

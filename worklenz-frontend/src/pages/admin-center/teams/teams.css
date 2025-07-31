@@ -1,0 +1,7 @@
+.team-table-row .row-buttons {
+  visibility: hidden;
+}
+
+.team-table-row:hover .row-buttons {
+  visibility: visible;
+}

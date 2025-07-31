@@ -1,0 +1,52 @@
+{
+  "projectCount": "Projeto",
+  "projectCountPlural": "Projetos",
+  "includeArchivedButton": "Incluir Projetos Arquivados",
+  "exportButton": "Exportar",
+  "excelButton": "Excel",
+
+  "projectColumn": "Projeto",
+  "estimatedVsActualColumn": "Estimado Vs Real",
+  "tasksProgressColumn": "Progresso das Tarefas",
+  "lastActivityColumn": "Última Atividade",
+  "statusColumn": "Status",
+  "datesColumn": "Datas de Início/Fim",
+  "daysLeftColumn": "Dias Restantes/Atrasados",
+  "projectHealthColumn": "Saúde do Projeto",
+  "categoryColumn": "Categoria",
+  "projectUpdateColumn": "Atualização do Projeto",
+  "clientColumn": "Cliente",
+  "teamColumn": "Equipe",
+  "projectManagerColumn": "Gerente de Projeto",
+
+  "openButton": "Abrir",
+
+  "estimatedText": "Estimado",
+  "actualText": "Real",
+
+  "todoText": "A Fazer",
+  "doingText": "Fazendo",
+  "doneText": "Feito",
+
+  "cancelledText": "Cancelado",
+  "blockedText": "Bloqueado",
+  "onHoldText": "Em Espera",
+  "proposedText": "Proposto",
+  "inPlanningText": "Em Planejamento",
+  "inProgressText": "Em Andamento",
+  "completedText": "Concluído",
+  "continuousText": "Contínuo",
+
+  "daysLeftText": "dias restantes",
+  "dayLeftText": "dia restante",
+  "daysOverdueText": "dias atrasados",
+
+  "notSetText": "Não Definido",
+  "needsAttentionText": "Precisa de Atenção",
+  "atRiskText": "Em Risco",
+  "goodText": "Bom",
+
+  "setCategoryText": "Definir Categoria",
+  "searchByNameInputPlaceholder": "Pesquisar por nome",
+  "todayText": "Hoje"
+}

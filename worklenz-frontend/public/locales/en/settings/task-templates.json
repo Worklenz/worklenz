@@ -1,0 +1,9 @@
+{
+  "nameColumn": "Name",
+  "createdColumn": "Created",
+  "editToolTip": "Edit",
+  "deleteToolTip": "Delete",
+  "confirmText": "Are you sure?",
+  "okText": "Yes",
+  "cancelText": "Cancel"
+}

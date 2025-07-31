@@ -1,0 +1,9 @@
+/* Add these styles for dependency action buttons */
+.dependency-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.custom-two-colors-row-table .ant-table-row:hover .dependency-actions {
+  opacity: 1;
+}

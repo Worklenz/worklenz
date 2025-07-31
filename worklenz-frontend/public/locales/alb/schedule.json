@@ -1,0 +1,39 @@
+{
+  "today": "Sot",
+  "week": "Javë",
+  "month": "Muaj",
+
+  "settings": "Cilësimet",
+  "workingDays": "Ditët e punës",
+  "monday": "E hënë",
+  "tuesday": "E martë",
+  "wednesday": "E mërkurë",
+  "thursday": "E enjte",
+  "friday": "E premte",
+  "saturday": "E shtunë",
+  "sunday": "E diel",
+  "workingHours": "Orët e punës",
+  "hours": "Orë",
+  "saveButton": "Ruaj",
+
+  "totalAllocation": "Alokimi Total",
+  "timeLogged": "Koha e Regjistruar",
+  "remainingTime": "Koha e Mbetur",
+  "total": "Total",
+  "perDay": "Në Ditë",
+  "tasks": "detyra",
+  "startDate": "Data e Fillimit",
+  "endDate": "Data e Përfundimit",
+
+  "hoursPerDay": "Orë Në Ditë",
+  "totalHours": "Orë Totale",
+  "deleteButton": "Fshi",
+  "cancelButton": "Anulo",
+
+  "tabTitle": "Detyra pa Data Fillimi & Përfundimi",
+
+  "allocatedTime": "Koha e alokuar",
+  "totalLogged": "Total i Regjistruar",
+  "loggedBillable": "Regjistruar Fakturueshme",
+  "loggedNonBillable": "Regjistruar Jo Fakturueshme"
+}

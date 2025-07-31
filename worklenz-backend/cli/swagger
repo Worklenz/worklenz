@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-var-requires */
+
+const swaggerJsdoc = require("swagger-jsdoc");
+const fs = require("fs");
+const path = require("path");
+
+const options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Hello World",
+      version: "1.0.0",
+    },
+  },
+  apis: ["../build/routes/*.js"], // files containing annotations as above
+};
+
+const openapiSpecification = swaggerJsdoc(options);
+
+fs.writeFileSync(path.join(__dirname, "../build/swagger.json"), JSON.stringify(openapiSpecification), "utf8");

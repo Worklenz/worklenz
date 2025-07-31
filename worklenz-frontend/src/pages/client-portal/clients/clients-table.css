@@ -1,0 +1,15 @@
+/* Hover styles for action buttons */
+.ant-table-tbody > tr:hover .action-buttons-container {
+  opacity: 1 !important;
+}
+
+/* Ensure action buttons are visible on hover */
+.action-buttons-container {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Show action buttons when row is hovered */
+.ant-table-tbody > tr:hover .action-buttons-container {
+  opacity: 1;
+} 

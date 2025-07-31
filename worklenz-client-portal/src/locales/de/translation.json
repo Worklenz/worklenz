@@ -1,0 +1,13 @@
+{
+  "login": {
+    "title": "Kundenportal",
+    "description": "Melden Sie sich bei Ihrem Kundenkonto an",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "remember": "Angemeldet bleiben",
+    "forgot": "Passwort vergessen?",
+    "signin": "Anmelden",
+    "signup": "Registrieren",
+    "no_account": "Sie haben kein Konto?"
+  }
+} 

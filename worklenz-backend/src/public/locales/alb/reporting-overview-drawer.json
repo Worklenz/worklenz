@@ -1,0 +1,39 @@
+{
+  "exportButton": "Eksporto",
+  "projectsButton": "Projektet",
+  "membersButton": "Anëtarët",
+  "searchByNameInputPlaceholder": "Kërko sipas emrit",
+
+  "overviewTab": "Përmbledhje",
+  "projectsTab": "Projektet",
+  "membersTab": "Anëtarët",
+
+  "projectsByStatusText": "Projektet Sipas Statusit",
+  "projectsByCategoryText": "Projektet Sipas Kategorisë",
+  "projectsByHealthText": "Projektet Sipas Gjendjes",
+
+  "projectsText": "Projektet",
+  "allText": "Të Gjitha",
+
+  "cancelledText": "Anuluar",
+  "blockedText": "E Bllokuar",
+  "onHoldText": "Në Pritje",
+  "proposedText": "E Propozuar",
+  "inPlanningText": "Në Planifikim",
+  "inProgressText": "Në Progres",
+  "completedText": "E Përfunduar",
+  "continuousText": "E Vazhdueshme",
+
+  "notSetText": "Pa Caktuar",
+  "needsAttentionText": "Kërkon Vëmendje",
+  "atRiskText": "Në Rrezik",
+  "goodText": "Në Rregull",
+
+  "nameColumn": "Emri",
+  "emailColumn": "Email",
+  "projectsColumn": "Projektet",
+  "tasksColumn": "Detyrat",
+  "overdueTasksColumn": "Detyrat e Vonuara",
+  "completedTasksColumn": "Detyrat e Përfunduara",
+  "ongoingTasksColumn": "Detyrat në Vazhdim"
+}

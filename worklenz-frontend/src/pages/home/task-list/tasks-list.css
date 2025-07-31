@@ -1,0 +1,8 @@
+.row-action-button {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.ant-table-row:hover .row-action-button {
+  opacity: 1;
+}

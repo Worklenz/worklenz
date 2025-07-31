@@ -1,0 +1,22 @@
+{
+  "nameColumn": "Name",
+  "projectColumn": "Project",
+  "noProjectsAvailable": "No projects available",
+  "deleteConfirmationTitle": "Are you sure?",
+  "deleteConfirmationOk": "Yes",
+  "deleteConfirmationCancel": "Cancel",
+  "searchPlaceholder": "Search by name",
+  "createClient": "Create Client",
+  "pinTooltip": "Click to pin this into the main menu",
+  "createClientDrawerTitle": "Create Client",
+  "updateClientDrawerTitle": "Update Client",
+  "nameLabel": "Name",
+  "namePlaceholder": "Name",
+  "nameRequiredError": "Please enter a Name",
+  "createButton": "Create",
+  "updateButton": "Update",
+  "createClientSuccessMessage": "Create client success!",
+  "createClientErrorMessage": "Create client failed!",
+  "updateClientSuccessMessage": "Update client success!",
+  "updateClientErrorMessage": "Update client failed!"
+}

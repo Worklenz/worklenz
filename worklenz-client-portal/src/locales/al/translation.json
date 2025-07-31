@@ -1,0 +1,13 @@
+{
+  "login": {
+    "title": "Portali i Klientit",
+    "description": "Hyni në llogarinë tuaj të klientit",
+    "email": "Email",
+    "password": "Fjalëkalimi",
+    "remember": "Më mbaj mend",
+    "forgot": "Keni harruar fjalëkalimin?",
+    "signin": "Hyr",
+    "signup": "Regjistrohu",
+    "no_account": "Nuk keni llogari?"
+  }
+} 

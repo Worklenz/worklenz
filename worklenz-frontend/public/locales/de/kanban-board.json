@@ -1,0 +1,30 @@
+{
+  "rename": "Umbenennen",
+  "delete": "Löschen",
+  "addTask": "Aufgabe hinzufügen",
+  "addSectionButton": "Abschnitt hinzufügen",
+  "changeCategory": "Kategorie ändern",
+
+  "deleteTooltip": "Löschen",
+  "deleteConfirmationTitle": "Sind Sie sicher?",
+  "deleteConfirmationOk": "Ja",
+  "deleteConfirmationCancel": "Abbrechen",
+
+  "dueDate": "Fälligkeitsdatum",
+  "cancel": "Abbrechen",
+
+  "today": "Heute",
+  "tomorrow": "Morgen",
+  "assignToMe": "Mir zuweisen",
+  "archive": "Archivieren",
+
+  "newTaskNamePlaceholder": "Aufgabenname eingeben",
+  "newSubtaskNamePlaceholder": "Unteraufgabenname eingeben",
+  "untitledSection": "Unbenannter Abschnitt",
+  "unmapped": "Nicht zugeordnet",
+  "clickToChangeDate": "Klicken Sie, um das Datum zu ändern",
+  "noDueDate": "Kein Fälligkeitsdatum",
+  "save": "Speichern",
+  "clear": "Löschen",
+  "nextWeek": "Nächste Woche"
+}

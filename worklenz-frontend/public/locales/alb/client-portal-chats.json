@@ -1,0 +1,10 @@
+{
+  "title": "Mesazhet",
+  "refresh": "Rifresko",
+  "noChatsTitle": "Nuk u gjetën mesazhe",
+  "noChatsDescription": "Ju nuk keni ende asnjë mesazh. Filloni një bisedë për të filluar të dërgoni mesazhe.",
+  "errorLoadingChats": "Gabim gjatë ngarkimit të mesazheve",
+  "errorLoadingChatsDescription": "Pati një gabim gjatë ngarkimit të mesazheve tuaja. Ju lutemi provoni përsëri më vonë.",
+  "selectChatMessage": "Zgjidhni një chat për të filluar të dërgoni mesazhe",
+  "startConversation": "Filloni Bisedën"
+} 

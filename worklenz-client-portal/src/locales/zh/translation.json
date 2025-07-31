@@ -1,0 +1,13 @@
+{
+  "login": {
+    "title": "客户门户",
+    "description": "登录您的客户账户",
+    "email": "电子邮件",
+    "password": "密码",
+    "remember": "记住我",
+    "forgot": "忘记密码？",
+    "signin": "登录",
+    "signup": "注册",
+    "no_account": "没有账户？"
+  }
+} 

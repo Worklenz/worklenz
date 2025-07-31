@@ -1,0 +1,17 @@
+/* Update or add these styles */
+.sticky-column {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: var(--background-default);
+}
+
+/* Specific style for odd rows */
+.table-body-row:nth-child(odd) .sticky-column {
+  background-color: var(--background-alternate); /* or your specific odd row background color */
+}
+
+/* Maintain hover state */
+.table-body-row:hover .sticky-column {
+  background-color: var(--background-hover);
+}

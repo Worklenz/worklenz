@@ -1,0 +1,30 @@
+{
+  "details": {
+    "task-key": "Task Key",
+    "phase": "Phase",
+    "assignees": "Assignees",
+    "due-date": "Due Date",
+    "time-estimation": "Time Estimation",
+    "priority": "Priority",
+    "labels": "Labels",
+    "billable": "Billable",
+    "notify": "Notify",
+    "when-done-notify": "When done, notify",
+    "start-date": "Start Date",
+    "end-date": "End Date",
+    "hide-start-date": "Hide Start Date",
+    "show-start-date": "Show Start Date",
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "recurring": "Recurring"
+  },
+  "description": {
+    "title": "Description",
+    "placeholder": "Add a more detailed description..."
+  },
+  "subTasks": {
+    "title": "Sub Tasks",
+    "add-sub-task": "Add Sub Task",
+    "refresh-sub-tasks": "Refresh Sub Tasks"
+  }
+}

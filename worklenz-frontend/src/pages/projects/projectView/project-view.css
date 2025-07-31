@@ -1,0 +1,30 @@
+.profile-badge.ant-badge.ant-badge-status .ant-badge-status-success {
+  box-shadow: rgb(255, 255, 255) 0px 0px 0px 1px;
+  background-color: #52c41a;
+  height: 8px;
+  width: 8px;
+}
+
+/* Light mode - selected tab header bold */
+[data-theme="light"] .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 700;
+  color: #000000 !important;
+}
+
+/* Dark mode - selected tab header bold and white */
+[data-theme="dark"] .project-view-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 900;
+  color: #ffffff;
+}
+
+/* Light mode - selected tab underline black */
+[data-theme="light"] .project-view-tabs .ant-tabs-ink-bar {
+  background-color: #000000 !important;
+}
+
+/* Dark mode - selected tab underline white */
+[data-theme="dark"] .project-view-tabs .ant-tabs-ink-bar {
+  background-color: #ffffff;
+}
+
+

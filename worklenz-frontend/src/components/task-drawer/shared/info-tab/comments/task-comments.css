@@ -1,0 +1,288 @@
+.ant-skeleton {
+  margin-top: -16px;
+}
+
+.ant-comment-content p {
+  user-select: text;
+  margin-bottom: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Mentions styling with dark mode support */
+.mentions {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin: 0 1px;
+}
+
+.theme-light .mentions,
+.comment-content-light .mentions {
+  background: #f0f2f5;
+  color: #1890ff;
+  border: 1px solid #e6e6e6;
+}
+
+.theme-dark .mentions,
+.comment-content-dark .mentions {
+  background: #2a3a4a;
+  color: #40a9ff;
+  border: 1px solid #2a4a6d;
+}
+
+.ant-upload-list {
+  border: 1px dashed transparent;
+  transition: 0.15s all;
+  padding-left: 6px;
+}
+
+.focused {
+  border-color: #1890ff;
+  background-color: #fafafa;
+}
+
+/* Conversation-like styles */
+.task-view-comments {
+  padding: 4px 0;
+}
+
+/* Base comment styles */
+.theme-light .ant-comment,
+.theme-dark .ant-comment {
+  position: relative;
+  margin-bottom: 12px;
+  padding: 0;
+  box-shadow: none;
+  border: none;
+  background-color: transparent;
+}
+
+/* Comment content bubble styles */
+.theme-light .ant-comment-content-detail,
+.theme-dark .ant-comment-content-detail {
+  position: relative;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-top: 2px;
+  max-width: 85%;
+  width: fit-content;
+}
+
+.theme-light .ant-comment-content-detail {
+  background-color: #f0f2f5;
+  border: 1px solid #e6e6e6;
+}
+
+.theme-dark .ant-comment-content-detail {
+  background-color: #2a2a2a;
+  border: 1px solid #333;
+}
+
+/* Current user comment styles */
+.current-user-comment {
+  flex-direction: row-reverse;
+}
+
+.current-user-comment .ant-comment-inner {
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.current-user-comment .ant-comment-content {
+  margin-right: 8px;
+  margin-left: 0;
+}
+
+.current-user-comment .ant-comment-content-author {
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 6px;
+  padding-left: 0;
+}
+
+.current-user-comment .ant-comment-content-detail {
+  margin-left: auto;
+}
+
+.theme-light .current-user-comment .ant-comment-content-detail {
+  background-color: #e1f3ff;
+  border-color: #c2e4f9;
+}
+
+.theme-dark .current-user-comment .ant-comment-content-detail {
+  background-color: #1e3a5f;
+  border-color: #2a4a6d;
+}
+
+/* Mentions in current user comments */
+.theme-light .current-user-comment .mentions {
+  background: #d1e9ff;
+  border-color: #b3d8ff;
+}
+
+.theme-dark .current-user-comment .mentions {
+  background: #2a4a6d;
+  border-color: #3a5a7d;
+}
+
+.current-user-comment .ant-comment-actions {
+  margin-left: auto;
+  padding-right: 12px;
+  padding-left: 0;
+  text-align: right;
+}
+
+/* Comment author and timestamp */
+.ant-comment-content-author {
+  margin-bottom: 0;
+  padding-left: 6px;
+}
+
+/* Reduce the space between author and content */
+.ant-comment-inner {
+  padding: 10px 0;
+}
+
+/* Comment actions */
+.ant-comment-actions {
+  margin-top: 2px;
+  padding-left: 12px;
+}
+
+/* Comment content */
+.comment-content-light {
+  color: #333;
+  margin-bottom: 0;
+}
+
+.comment-content-dark {
+  color: #d1d0d3;
+  margin-bottom: 0;
+}
+
+/* Attachments in comments */
+.ant-comment-content-detail .ant-upload-list {
+  margin-top: 6px;
+}
+
+.theme-dark .ant-upload-list-item {
+  background-color: #2a2a2a;
+  border-color: #333;
+}
+
+.theme-dark .ant-upload-list-item-info {
+  background-color: #2a2a2a;
+}
+
+/* Comment actions styling */
+.theme-light .ant-comment-actions > li > span {
+  color: #707070;
+  transition: color 0.3s;
+  font-size: 12px;
+}
+
+.theme-dark .ant-comment-actions > li > span {
+  color: #d1d0d3;
+  transition: color 0.3s;
+  font-size: 12px;
+}
+
+.theme-light .ant-comment-actions > li > span:hover {
+  color: #1890ff;
+}
+
+.theme-dark .ant-comment-actions > li > span:hover {
+  color: #1890ff;
+}
+
+/* Comment edit styles */
+.comment-edit-light .ant-form-item,
+.comment-edit-dark .ant-form-item {
+  margin-bottom: 8px;
+}
+
+.comment-edit-light .ant-input-textarea,
+.comment-edit-dark .ant-input-textarea {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.comment-edit-dark .ant-input {
+  background-color: #2a2a2a;
+  color: #d1d0d3;
+  border-color: #333;
+}
+
+.comment-edit-dark .ant-input:hover,
+.comment-edit-dark .ant-input:focus {
+  border-color: #1890ff;
+}
+
+.comment-edit-dark .ant-btn {
+  border-color: #333;
+  background-color: #2a2a2a;
+  color: #d1d0d3;
+}
+
+.comment-edit-dark .ant-btn:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.comment-edit-dark .ant-btn-primary {
+  background-color: #1890ff;
+  color: #fff;
+  border-color: #1890ff;
+}
+
+.comment-edit-dark .ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+  color: #fff;
+}
+
+/* Time separator */
+.comment-time-separator {
+  text-align: center;
+  margin: 10px 0;
+  position: relative;
+}
+
+.comment-time-separator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background-color: #e6e6e6;
+  z-index: 0;
+}
+
+.theme-dark .comment-time-separator::before {
+  background-color: #333;
+}
+
+.comment-time-separator span {
+  position: relative;
+  padding: 0 10px;
+  font-size: 11px;
+  z-index: 1;
+}
+
+.theme-light .comment-time-separator span {
+  background-color: #fff;
+  color: #707070;
+}
+
+.theme-dark .comment-time-separator span {
+  background-color: #1e1e1e;
+  color: #d1d0d3;
+}
+
+/* Adjust avatar size for more compact look */
+.ant-comment-avatar img {
+  width: 28px;
+  height: 28px;
+}

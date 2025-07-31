@@ -1,0 +1,19 @@
+{
+  "configurePhases": "Configure Phases",
+  "phaseLabel": "Phase Label",
+  "enterPhaseName": "Enter a name for phase label",
+  "addOption": "Add Option",
+  "phaseOptions": "Phase Options:",
+  "dragToReorderPhases": "Drag phases to reorder them. Each phase can have a different color.",
+  "enterNewPhaseName": "Enter new phase name...",
+  "addPhase": "Add Phase",
+  "noPhasesFound": "No phases found. Create your first phase above.",
+  "deletePhase": "Delete Phase",
+  "deletePhaseConfirm": "Are you sure you want to delete this phase? This action cannot be undone.",
+  "rename": "Rename",
+  "delete": "Delete",
+  "enterPhaseName": "Enter phase name",
+  "selectColor": "Select color",
+  "managePhases": "Manage Phases",
+  "close": "Close"
+}

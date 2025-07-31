@@ -1,0 +1,10 @@
+{
+  "title": "消息",
+  "refresh": "刷新",
+  "noChatsTitle": "未找到消息",
+  "noChatsDescription": "您还没有任何消息。开始对话以开始发送消息。",
+  "errorLoadingChats": "加载消息时出错",
+  "errorLoadingChatsDescription": "加载您的消息时出现错误。请稍后再试。",
+  "selectChatMessage": "选择一个聊天开始发送消息",
+  "startConversation": "开始对话"
+} 

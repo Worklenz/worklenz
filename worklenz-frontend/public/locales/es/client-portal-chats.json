@@ -1,0 +1,10 @@
+{
+  "title": "Mensajes",
+  "refresh": "Actualizar",
+  "noChatsTitle": "No se encontraron mensajes",
+  "noChatsDescription": "Aún no tienes mensajes. Inicia una conversación para comenzar a enviar mensajes.",
+  "errorLoadingChats": "Error al cargar mensajes",
+  "errorLoadingChatsDescription": "Hubo un error al cargar tus mensajes. Por favor, inténtalo de nuevo más tarde.",
+  "selectChatMessage": "Selecciona un chat para comenzar a enviar mensajes",
+  "startConversation": "Iniciar Conversación"
+} 

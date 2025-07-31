@@ -1,0 +1,161 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1.0')
+    title You're Invited to Join #{clientName} on Worklenz
+    style.
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .header {
+        background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+        color: white;
+        padding: 40px 20px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .content {
+        padding: 40px 30px;
+        background: white;
+      }
+      .content p {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+      }
+      .content strong {
+        color: #1890ff;
+      }
+      .button {
+        display: inline-block;
+        background: #1890ff;
+        color: white;
+        padding: 14px 28px;
+        text-decoration: none;
+        border-radius: 6px;
+        margin: 24px 0;
+        font-weight: 500;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+      .button:hover {
+        background: #096dd9;
+      }
+      .features {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 6px;
+        margin: 24px 0;
+      }
+      .features h3 {
+        margin: 0 0 12px 0;
+        color: #1890ff;
+        font-size: 18px;
+      }
+      .features ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      .features li {
+        margin: 8px 0;
+        color: #666;
+      }
+      .footer {
+        padding: 30px;
+        text-align: center;
+        color: #666;
+        font-size: 14px;
+        background: #f8f9fa;
+        border-top: 1px solid #e8e8e8;
+      }
+      .footer p {
+        margin: 8px 0;
+      }
+      .expiry-notice {
+        background: #fff7e6;
+        border: 1px solid #ffd591;
+        border-radius: 6px;
+        padding: 16px;
+        margin: 24px 0;
+      }
+      .expiry-notice p {
+        margin: 0;
+        color: #d48806;
+      }
+      @media (max-width: 600px) {
+        .container {
+          margin: 0;
+          border-radius: 0;
+        }
+        .content {
+          padding: 20px;
+        }
+      }
+  body
+    .container
+      .header
+        h1 You're Invited to Join #{clientName}
+      
+      .content
+        p Hello #{inviteeName},
+        
+        p
+          strong #{inviterName}
+          |  has invited you to join 
+          strong #{clientName}
+          if companyName
+            |  (#{companyName})
+          |  on Worklenz as a 
+          strong #{role}
+          | .
+        
+        .features
+          h3 What you'll be able to do:
+          ul
+            li View project progress and milestones
+            li Submit requests and track their status
+            li Access invoices and billing information
+            li Communicate with your team in real-time
+            li Manage your profile and notification preferences
+        
+        p Click the button below to accept the invitation and set up your account:
+        
+        div(style='text-align: center;')
+          a.button(href=inviteLink) Accept Invitation
+        
+        .expiry-notice
+          p
+            strong ⏰ Important:
+            |  This invitation will expire on #{expiresAt}.
+        
+        p
+          | If you have any questions about this invitation or need assistance, please contact 
+          strong #{inviterName}
+          |  or reply to this email.
+        
+        p We're excited to have you join the team!
+      
+      .footer
+        p
+          strong Worklenz
+          |  - Project Management Made Simple
+        p © 2024 Worklenz. All rights reserved.
+        p(style='margin-top: 16px; color: #999;')
+          | If you didn't expect this invitation, you can safely ignore this email.

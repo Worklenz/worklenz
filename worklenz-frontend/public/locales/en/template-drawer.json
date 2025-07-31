@@ -1,0 +1,19 @@
+{
+  "title": "Edit Task Template",
+  "cancelText": "Cancel",
+  "saveText": "Save",
+  "templateNameText": "Template Name",
+  "selectedTasks": "Selected Tasks",
+  "removeTask": "Remove",
+  "description": "Description",
+  "phase": "Phase",
+  "statuses": "Statuses",
+  "priorities": "Priorities",
+  "labels": "Labels",
+  "tasks": "Tasks",
+  "noTemplateSelected": "No template selected",
+  "noDescription": "No description",
+  "worklenzTemplates": "Worklenz Templates",
+  "yourTemplatesLibrary": "Your Library",
+  "searchTemplates": "Search Templates"
+}

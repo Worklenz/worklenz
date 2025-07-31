@@ -1,0 +1,39 @@
+.ant-upload-list {
+  border: 1px dashed transparent;
+  transition: 0.15s all;
+}
+
+.ant-upload-list.focused {
+  border-color: #1890ff;
+  background-color: #fafafa;
+}
+
+.ant-upload-select-picture-card {
+  display: inline-block;
+}
+
+.ant-upload-select-picture-card .ant-upload {
+  width: 104px;
+  height: 104px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.ant-upload-select-picture-card .ant-upload:hover {
+  border-color: #1890ff;
+}
+
+.ant-upload-select-picture-card .ant-upload > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}

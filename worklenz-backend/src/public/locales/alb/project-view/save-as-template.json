@@ -1,0 +1,27 @@
+{
+  "title": "Ruaj si Shabllon",
+  "templateName": "Emri i Shabllonit",
+  "includes": "Çfarë duhet të përfshihet në shabllon nga projekti?",
+  "includesOptions": {
+    "statuses": "Statuset",
+    "phases": "Fazat",
+    "labels": "Etiketat"
+  },
+  "taskIncludes": "Çfarë duhet të përfshihet në shabllon nga detyrat?",
+  "taskIncludesOptions": {
+    "statuses": "Statuset",
+    "phases": "Fazat",
+    "labels": "Etiketat",
+    "name": "Emri",
+    "priority": "Prioriteti",
+    "status": "Statusi",
+    "phase": "Faza",
+    "label": "Etiketa",
+    "timeEstimate": "Vlerësimi i Kohës",
+    "description": "Përshkrimi",
+    "subTasks": "Nëndetyrat"
+  },
+  "cancel": "Anulo",
+  "save": "Ruaj",
+  "templateNamePlaceholder": "Shkruani emrin e shabllonit"
+}
