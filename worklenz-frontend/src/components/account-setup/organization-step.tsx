@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Form, Input, InputRef, Typography, Card, Tooltip } from '@/shared/antd-imports';
+import { Form, Input, InputRef, Typography, Card, Tooltip, Alert } from '@/shared/antd-imports';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { setOrganizationName } from '@/features/account-setup/account-setup.slice';
 import { RootState } from '@/app/store';
 import { sanitizeInput } from '@/utils/sanitizeInput';
+import { SpamDetector } from '@/utils/spamDetector';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -29,6 +30,7 @@ export const OrganizationStep: React.FC<Props> = ({
   const dispatch = useDispatch();
   const { organizationName } = useSelector((state: RootState) => state.accountSetupReducer);
   const inputRef = useRef<InputRef>(null);
+  const [spamWarning, setSpamWarning] = useState<string>('');
 
   // Autofill organization name if not already set
   useEffect(() => {
@@ -44,7 +46,19 @@ export const OrganizationStep: React.FC<Props> = ({
   };
 
   const handleOrgNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const sanitizedValue = sanitizeInput(e.target.value);
+    const rawValue = e.target.value;
+    const sanitizedValue = sanitizeInput(rawValue);
+    
+    // Check for spam patterns
+    const spamCheck = SpamDetector.detectSpam(rawValue);
+    if (spamCheck.isSpam) {
+      setSpamWarning(`Warning: ${spamCheck.reasons.join(', ')}`);
+    } else if (SpamDetector.isHighRiskContent(rawValue)) {
+      setSpamWarning('Warning: Content appears to contain suspicious links or patterns');
+    } else {
+      setSpamWarning('');
+    }
+    
     dispatch(setOrganizationName(sanitizedValue));
   };
 
@@ -60,12 +74,25 @@ export const OrganizationStep: React.FC<Props> = ({
         </Paragraph>
       </div>
 
+      {/* Spam Warning */}
+      {spamWarning && (
+        <div className="mb-4">
+          <Alert
+            message={spamWarning}
+            type="warning"
+            showIcon
+            closable
+            onClose={() => setSpamWarning('')}
+          />
+        </div>
+      )}
+
       {/* Main Form Card */}
       <div className="mb-6">
         <Card 
           className="border-2 hover:shadow-md transition-all duration-200"
           style={{ 
-            borderColor: token?.colorPrimary,
+            borderColor: spamWarning ? token?.colorWarning : token?.colorPrimary,
             backgroundColor: token?.colorBgContainer 
           }}
         >

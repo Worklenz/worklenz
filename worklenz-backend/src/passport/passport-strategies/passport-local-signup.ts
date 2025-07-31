@@ -8,6 +8,10 @@ import {log_error} from "../../shared/utils";
 import db from "../../config/db";
 import {Request} from "express";
 import {ERROR_KEY, SUCCESS_KEY} from "./passport-constants";
+import { SpamDetector } from "../../utils/spam-detector";
+import loggerModule from "../../utils/logger";
+
+const { logger } = loggerModule;
 
 async function isGoogleAccountFound(email: string) {
   const q = `
@@ -49,12 +53,111 @@ async function handleSignUp(req: Request, email: string, password: string, done:
 
   if (!team_name) return done(null, null, req.flash(ERROR_KEY, "Team name is required"));
 
+  // Check for spam in team name - Flag suspicious but allow signup
+  const teamNameSpamCheck = SpamDetector.detectSpam(team_name);
+  if (teamNameSpamCheck.score > 0 || teamNameSpamCheck.reasons.length > 0) {
+    logger.warn('⚠️ SUSPICIOUS SIGNUP - TEAM NAME', {
+      email,
+      team_name,
+      user_name: name,
+      spam_score: teamNameSpamCheck.score,
+      reasons: teamNameSpamCheck.reasons,
+      ip_address: req.ip,
+      timestamp: new Date().toISOString(),
+      alert_type: 'suspicious_signup_flagged'
+    });
+    // Continue with signup but flag for review
+  }
+
+  // Check for spam in user name - Flag suspicious but allow signup
+  const userNameSpamCheck = SpamDetector.detectSpam(name);
+  if (userNameSpamCheck.score > 0 || userNameSpamCheck.reasons.length > 0) {
+    logger.warn('⚠️ SUSPICIOUS SIGNUP - USER NAME', {
+      email,
+      team_name,
+      user_name: name,
+      spam_score: userNameSpamCheck.score,
+      reasons: userNameSpamCheck.reasons,
+      ip_address: req.ip,
+      timestamp: new Date().toISOString(),
+      alert_type: 'suspicious_signup_flagged'
+    });
+    // Continue with signup but flag for review
+  }
+
+  // Only block EXTREMELY high-risk content (known spam domains, obvious scams)
+  if (SpamDetector.isHighRiskContent(team_name) || SpamDetector.isHighRiskContent(name)) {
+    // Check if it's REALLY obvious spam (very high scores)
+    const isObviousSpam = teamNameSpamCheck.score > 80 || userNameSpamCheck.score > 80 || 
+                         /gclnk\.com|bit\.ly\/scam|win.*\$\d+.*crypto/i.test(team_name + ' ' + name);
+    
+    if (isObviousSpam) {
+      logger.error('🛑 SIGNUP BLOCKED - OBVIOUS SPAM', {
+        email,
+        team_name,
+        user_name: name,
+        team_spam_score: teamNameSpamCheck.score,
+        user_spam_score: userNameSpamCheck.score,
+        ip_address: req.ip,
+        timestamp: new Date().toISOString(),
+        alert_type: 'obvious_spam_blocked'
+      });
+      return done(null, null, req.flash(ERROR_KEY, "Registration temporarily unavailable. Please contact support if you need immediate access."));
+    } else {
+      // High-risk but not obviously spam - flag and allow
+      logger.error('🔥 HIGH RISK SIGNUP - FLAGGED', {
+        email,
+        team_name,
+        user_name: name,
+        team_spam_score: teamNameSpamCheck.score,
+        user_spam_score: userNameSpamCheck.score,
+        ip_address: req.ip,
+        timestamp: new Date().toISOString(),
+        alert_type: 'high_risk_signup_flagged'
+      });
+      // Continue with signup but flag for immediate review
+    }
+  }
+
   const googleAccountFound = await isGoogleAccountFound(email);
   if (googleAccountFound)
     return done(null, null, req.flash(ERROR_KEY, `${req.body.email} is already linked with a Google account.`));
 
   try {
     const user = await registerUser(password, team_id, name, team_name, email, timezone, team_member_id);
+    
+    // If signup was suspicious, flag the team for review after creation
+    const totalSuspicionScore = (teamNameSpamCheck.score || 0) + (userNameSpamCheck.score || 0);
+    if (totalSuspicionScore > 0) {
+      // Flag team for admin review (but don't block user)
+      const flagQuery = `
+        INSERT INTO spam_logs (team_id, user_id, content_type, original_content, spam_score, spam_reasons, action_taken, ip_address)
+        VALUES (
+          (SELECT team_id FROM users WHERE id = $1), 
+          $1, 
+          'signup_review', 
+          $2, 
+          $3, 
+          $4, 
+          'flagged_for_review',
+          $5
+        )
+      `;
+      
+      try {
+        await db.query(flagQuery, [
+          user.id,
+          `Team: ${team_name} | User: ${name}`,
+          totalSuspicionScore,
+          JSON.stringify([...teamNameSpamCheck.reasons, ...userNameSpamCheck.reasons]),
+          req.ip
+        ]);
+      } catch (flagError) {
+        // Don't fail signup if flagging fails
+        logger.warn('Failed to flag suspicious signup for review', { error: flagError, user_id: user.id });
+      }
+    }
+    
     sendWelcomeEmail(email, name);
     return done(null, user, req.flash(SUCCESS_KEY, "Registration successful. Please check your email for verification."));
   } catch (error: any) {

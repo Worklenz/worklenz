@@ -1,10 +1,11 @@
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
 import { EnterOutlined, EditOutlined } from '@/shared/antd-imports';
-import { Card, Button, Tooltip, Typography } from '@/shared/antd-imports';
+import { Card, Button, Tooltip, Typography, Alert } from '@/shared/antd-imports';
 import TextArea from 'antd/es/input/TextArea';
 import { TFunction } from 'i18next';
 import { useState, useEffect } from 'react';
+import { SpamDetector } from '@/utils/spamDetector';
 
 interface OrganizationNameProps {
   themeMode: string;
@@ -16,6 +17,7 @@ interface OrganizationNameProps {
 const OrganizationName = ({ themeMode, name, t, refetch }: OrganizationNameProps) => {
   const [isEditable, setIsEditable] = useState(false);
   const [newName, setNewName] = useState(name);
+  const [spamWarning, setSpamWarning] = useState<string>('');
 
   useEffect(() => {
     setNewName(name);
@@ -34,7 +36,18 @@ const OrganizationName = ({ themeMode, name, t, refetch }: OrganizationNameProps
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNewName(e.target.value);
+    const value = e.target.value;
+    setNewName(value);
+    
+    // Check for spam patterns
+    const spamCheck = SpamDetector.detectSpam(value);
+    if (spamCheck.isSpam) {
+      setSpamWarning(`Warning: ${spamCheck.reasons.join(', ')}`);
+    } else if (SpamDetector.isHighRiskContent(value)) {
+      setSpamWarning('Warning: Content appears to contain suspicious links or patterns');
+    } else {
+      setSpamWarning('');
+    }
   };
 
   const updateOrganizationName = async () => {
@@ -62,6 +75,16 @@ const OrganizationName = ({ themeMode, name, t, refetch }: OrganizationNameProps
       <Typography.Title level={5} style={{ margin: 0, marginBottom: '0.5rem' }}>
         {t('name')}
       </Typography.Title>
+      {spamWarning && (
+        <Alert
+          message={spamWarning}
+          type="warning"
+          showIcon
+          closable
+          onClose={() => setSpamWarning('')}
+          style={{ marginBottom: '8px' }}
+        />
+      )}
       <div style={{ paddingTop: '8px' }}>
         <div style={{ marginBottom: '8px' }}>
           {isEditable ? (

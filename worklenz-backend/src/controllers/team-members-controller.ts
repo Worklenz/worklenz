@@ -17,6 +17,10 @@ import { statusExclude, TEAM_MEMBER_TREE_MAP_COLOR_ALPHA, TRIAL_MEMBER_LIMIT } f
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { NotificationsService } from "../services/notifications/notifications.service";
+import { SpamDetector } from "../utils/spam-detector";
+import loggerModule from "../utils/logger";
+
+const { logger } = loggerModule;
 
 export default class TeamMembersController extends WorklenzControllerBase {
 
@@ -72,7 +76,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
   @HandleExceptions({
     raisedExceptions: {
-      "ERROR_EMAIL_INVITATION_EXISTS": `Team member with email "{0}" already exists.`
+      "ERROR_EMAIL_INVITATION_EXISTS": `Team member with email "{0}" already exists.`,
+      "ERROR_SPAM_DETECTED": `Invitation blocked: {0}`
     }
   })
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -81,6 +86,54 @@ export default class TeamMembersController extends WorklenzControllerBase {
     if (!req.user?.team_id) {
       return res.status(200).send(new ServerResponse(false, "Required fields are missing."));
     }
+
+    // Validate organization name for spam - Flag suspicious, block only obvious spam
+    const orgSpamCheck = SpamDetector.detectSpam(req.user?.team_name || '');
+    const ownerSpamCheck = SpamDetector.detectSpam(req.user?.name || '');
+    
+    // Only block extremely suspicious content for invitations (higher threshold)
+    const isObviousSpam = orgSpamCheck.score > 70 || ownerSpamCheck.score > 70 ||
+                         SpamDetector.isHighRiskContent(req.user?.team_name || '') ||
+                         SpamDetector.isHighRiskContent(req.user?.name || '');
+    
+    if (isObviousSpam) {
+      logger.error('🛑 INVITATION BLOCKED - OBVIOUS SPAM', {
+        user_id: req.user?.id,
+        user_email: req.user?.email,
+        team_id: req.user?.team_id,
+        team_name: req.user?.team_name,
+        owner_name: req.user?.name,
+        org_spam_score: orgSpamCheck.score,
+        owner_spam_score: ownerSpamCheck.score,
+        org_reasons: orgSpamCheck.reasons,
+        owner_reasons: ownerSpamCheck.reasons,
+        ip_address: req.ip,
+        timestamp: new Date().toISOString(),
+        alert_type: 'obvious_spam_invitation_blocked'
+      });
+      return res.status(200).send(new ServerResponse(false, null, `Invitations temporarily disabled. Please contact support for assistance.`));
+    }
+    
+    // Log suspicious but allow invitations
+    if (orgSpamCheck.score > 0 || ownerSpamCheck.score > 0) {
+      logger.warn('⚠️ SUSPICIOUS INVITATION ATTEMPT', {
+        user_id: req.user?.id,
+        user_email: req.user?.email,
+        team_id: req.user?.team_id,
+        team_name: req.user?.team_name,
+        owner_name: req.user?.name,
+        org_spam_score: orgSpamCheck.score,
+        owner_spam_score: ownerSpamCheck.score,
+        org_reasons: orgSpamCheck.reasons,
+        owner_reasons: ownerSpamCheck.reasons,
+        ip_address: req.ip,
+        timestamp: new Date().toISOString(),
+        alert_type: 'suspicious_invitation_flagged'
+      });
+      // Continue with invitation but flag for review
+    }
+
+    // High-risk content already checked above in isObviousSpam condition
 
     /**
    * Checks the subscription status of the team.

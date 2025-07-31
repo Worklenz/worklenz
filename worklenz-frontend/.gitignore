@@ -11,6 +11,7 @@
 # production
 /build
 /public/tinymce
+/docs
 
 # misc
 .DS_Store

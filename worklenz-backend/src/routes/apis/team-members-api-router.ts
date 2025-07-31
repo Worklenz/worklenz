@@ -6,6 +6,7 @@ import idParamValidator from "../../middlewares/validators/id-param-validator";
 import teamMembersBodyValidator from "../../middlewares/validators/team-members-body-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
+import { RateLimiter } from "../../middleware/rate-limiter";
 
 const teamMembersApiRouter = express.Router();
 
@@ -13,7 +14,7 @@ const teamMembersApiRouter = express.Router();
 teamMembersApiRouter.get("/export-all", safeControllerFunction(TeamMembersController.exportAllMembers));
 teamMembersApiRouter.get("/export/:id", idParamValidator, safeControllerFunction(TeamMembersController.exportByMember));
 
-teamMembersApiRouter.post("/", teamOwnerOrAdminValidator, teamMembersBodyValidator, safeControllerFunction(TeamMembersController.create));
+teamMembersApiRouter.post("/", teamOwnerOrAdminValidator, RateLimiter.inviteRateLimit(5, 15 * 60 * 1000), teamMembersBodyValidator, safeControllerFunction(TeamMembersController.create));
 teamMembersApiRouter.get("/", safeControllerFunction(TeamMembersController.get));
 teamMembersApiRouter.get("/list", safeControllerFunction(TeamMembersController.getTeamMemberList));
 teamMembersApiRouter.get("/tree-map", safeControllerFunction(TeamMembersController.getTeamMembersTreeMap));
@@ -30,6 +31,6 @@ teamMembersApiRouter.put("/:id", teamOwnerOrAdminValidator, idParamValidator, sa
 teamMembersApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.deleteById));
 teamMembersApiRouter.get("/deactivate/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.toggleMemberActiveStatus));
 
-teamMembersApiRouter.put("/add-member/:id", teamOwnerOrAdminValidator, teamMembersBodyValidator, safeControllerFunction(TeamMembersController.addTeamMember));
+teamMembersApiRouter.put("/add-member/:id", teamOwnerOrAdminValidator, RateLimiter.inviteRateLimit(3, 10 * 60 * 1000), teamMembersBodyValidator, safeControllerFunction(TeamMembersController.addTeamMember));
 
 export default teamMembersApiRouter; 

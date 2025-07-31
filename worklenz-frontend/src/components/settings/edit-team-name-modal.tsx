@@ -1,9 +1,10 @@
-import { Divider, Form, Input, message, Modal, Typography } from '@/shared/antd-imports';
+import { Divider, Form, Input, message, Modal, Typography, Alert } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { editTeamName, fetchTeams } from '@/features/teams/teamSlice';
 import { ITeamGetResponse } from '@/types/teams/team.type';
+import { SpamDetector } from '@/utils/spamDetector';
 
 interface EditTeamNameModalProps {
   team: ITeamGetResponse | null;
@@ -16,6 +17,7 @@ const EditTeamNameModal = ({ team, isModalOpen, onCancel }: EditTeamNameModalPro
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
   const [updating, setUpdating] = useState(false);
+  const [spamWarning, setSpamWarning] = useState<string>('');
 
   useEffect(() => {
     if (team) {
@@ -67,6 +69,16 @@ const EditTeamNameModal = ({ team, isModalOpen, onCancel }: EditTeamNameModalPro
       destroyOnClose={true}
     >
       <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
+        {spamWarning && (
+          <Alert
+            message={spamWarning}
+            type="warning"
+            showIcon
+            closable
+            onClose={() => setSpamWarning('')}
+            style={{ marginBottom: '16px' }}
+          />
+        )}
         <Form.Item
           name="name"
           label={t('name')}
@@ -77,7 +89,20 @@ const EditTeamNameModal = ({ team, isModalOpen, onCancel }: EditTeamNameModalPro
             },
           ]}
         >
-          <Input placeholder={t('namePlaceholder')} />
+          <Input 
+            placeholder={t('namePlaceholder')} 
+            onChange={(e) => {
+              const value = e.target.value;
+              const spamCheck = SpamDetector.detectSpam(value);
+              if (spamCheck.isSpam) {
+                setSpamWarning(`Warning: ${spamCheck.reasons.join(', ')}`);
+              } else if (SpamDetector.isHighRiskContent(value)) {
+                setSpamWarning('Warning: Content appears to contain suspicious links or patterns');
+              } else {
+                setSpamWarning('');
+              }
+            }}
+          />
         </Form.Item>
       </Form>
     </Modal>
