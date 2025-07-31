@@ -6,5 +6,12 @@
   "reconnecting": "Disconnected from server.",
   "connection-lost": "Failed to connect to server. Please check your internet connection.",
   "connection-restored": "Connected to server successfully",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "update-available": "Worklenz Updated!",
+  "update-description": "A new version of Worklenz is available with the latest features and improvements.",
+  "update-instruction": "To get the best experience, please reload the page to apply the new changes.",
+  "update-whats-new": "💡 <1>What's new:</1> Enhanced performance, bug fixes, and improved user experience",
+  "update-now": "Update Now",
+  "update-later": "Later",
+  "updating": "Updating..."
 }

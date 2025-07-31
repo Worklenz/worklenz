@@ -6,6 +6,7 @@ import i18next from 'i18next';
 // Components
 import ThemeWrapper from './features/theme/ThemeWrapper';
 import ModuleErrorBoundary from './components/ModuleErrorBoundary';
+import { UpdateNotificationProvider } from './components/update-notification';
 
 // Routes
 import router from './app/routes';
@@ -202,14 +203,16 @@ const App: React.FC = memo(() => {
   return (
     <Suspense fallback={<SuspenseFallback />}>
       <ThemeWrapper>
-        <ModuleErrorBoundary>
-          <RouterProvider
-            router={router}
-            future={{
-              v7_startTransition: true,
-            }}
-          />
-        </ModuleErrorBoundary>
+        <UpdateNotificationProvider>
+          <ModuleErrorBoundary>
+            <RouterProvider
+              router={router}
+              future={{
+                v7_startTransition: true,
+              }}
+            />
+          </ModuleErrorBoundary>
+        </UpdateNotificationProvider>
       </ThemeWrapper>
     </Suspense>
   );
