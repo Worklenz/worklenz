@@ -330,7 +330,8 @@ export default class HolidayController extends WorklenzControllerBase {
       { code: "AR", name: "Argentina" },
       { code: "MX", name: "Mexico" },
       { code: "ZA", name: "South Africa" },
-      { code: "NZ", name: "New Zealand" }
+      { code: "NZ", name: "New Zealand" },
+      { code: "LK", name: "Sri Lanka" }
     ];
 
     let totalPopulated = 0;
@@ -338,35 +339,64 @@ export default class HolidayController extends WorklenzControllerBase {
 
     for (const country of countries) {
       try {
-        const hd = new Holidays(country.code);
-        
-        for (let year = 2020; year <= 2030; year++) {
-          const holidays = hd.getHolidays(year);
+        // Special handling for Sri Lanka
+        if (country.code === 'LK') {
+          // Import the holiday data provider
+          const { HolidayDataProvider } = require("../services/holiday-data-provider");
           
-          for (const holiday of holidays) {
-            if (!holiday.date || typeof holiday.date !== "object") {
-              continue;
+          for (let year = 2020; year <= 2050; year++) {
+            const sriLankanHolidays = await HolidayDataProvider.getSriLankanHolidays(year);
+            
+            for (const holiday of sriLankanHolidays) {
+              const query = `
+                INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (country_code, name, date) DO NOTHING
+              `;
+              
+              await db.query(query, [
+                'LK',
+                holiday.name,
+                holiday.description,
+                holiday.date,
+                holiday.is_recurring
+              ]);
+              
+              totalPopulated++;
             }
+          }
+        } else {
+          // Use date-holidays for other countries
+          const hd = new Holidays(country.code);
+          
+          for (let year = 2020; year <= 2050; year++) {
+            const holidays = hd.getHolidays(year);
             
-            const dateStr = holiday.date.toISOString().split("T")[0];
-            const name = holiday.name || "Unknown Holiday";
-            const description = holiday.type || "Public Holiday";
-            
-            const query = `
-              INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
-              VALUES ($1, $2, $3, $4, $5)
-              ON CONFLICT (country_code, name, date) DO NOTHING
-            `;
-            
-            await db.query(query, [
-              country.code,
-              name,
-              description,
-              dateStr,
-              true
-            ]);
-            
-            totalPopulated++;
+            for (const holiday of holidays) {
+              if (!holiday.date || typeof holiday.date !== "object") {
+                continue;
+              }
+              
+              const dateStr = holiday.date.toISOString().split("T")[0];
+              const name = holiday.name || "Unknown Holiday";
+              const description = holiday.type || "Public Holiday";
+              
+              const query = `
+                INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (country_code, name, date) DO NOTHING
+              `;
+              
+              await db.query(query, [
+                country.code,
+                name,
+                description,
+                dateStr,
+                true
+              ]);
+              
+              totalPopulated++;
+            }
           }
         }
       } catch (error: any) {

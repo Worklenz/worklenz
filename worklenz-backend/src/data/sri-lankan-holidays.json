@@ -1,0 +1,219 @@
+{
+  "_metadata": {
+    "description": "Sri Lankan Public Holidays Data",
+    "last_updated": "2025-01-31",
+    "sources": {
+      "2025": "Based on official government sources and existing verified data",
+      "note": "All dates should be verified against official sources before use"
+    },
+    "official_sources": [
+      "Central Bank of Sri Lanka - Holiday Circulars",
+      "Department of Meteorology - Astrological calculations",
+      "Ministry of Public Administration - Official gazette",
+      "Buddhist and Pali University - Poya day calculations",
+      "All Ceylon Jamiyyatul Ulama - Islamic calendar",
+      "Hindu Cultural Centre - Hindu calendar"
+    ],
+    "verification_process": "Each year should be verified against current official publications before adding to production systems"
+  },
+  "2025": [
+    {
+      "name": "Duruthu Full Moon Poya Day",
+      "date": "2025-01-13",
+      "type": "Poya",
+      "description": "Commemorates the first visit of Buddha to Sri Lanka",
+      "is_recurring": false
+    },
+    {
+      "name": "Navam Full Moon Poya Day",
+      "date": "2025-02-12",
+      "type": "Poya",
+      "description": "Commemorates the appointment of Sariputta and Moggallana as Buddha's chief disciples",
+      "is_recurring": false
+    },
+    {
+      "name": "Independence Day",
+      "date": "2025-02-04",
+      "type": "Public",
+      "description": "Commemorates the independence of Sri Lanka from British rule in 1948",
+      "is_recurring": true
+    },
+    {
+      "name": "Medin Full Moon Poya Day",
+      "date": "2025-03-14",
+      "type": "Poya",
+      "description": "Commemorates Buddha's first visit to his father's palace after enlightenment",
+      "is_recurring": false
+    },
+    {
+      "name": "Eid al-Fitr",
+      "date": "2025-03-31",
+      "type": "Public",
+      "description": "Festival marking the end of Ramadan",
+      "is_recurring": false
+    },
+    {
+      "name": "Bak Full Moon Poya Day",
+      "date": "2025-04-12",
+      "type": "Poya",
+      "description": "Commemorates Buddha's second visit to Sri Lanka",
+      "is_recurring": false
+    },
+    {
+      "name": "Sinhala and Tamil New Year Day",
+      "date": "2025-04-13",
+      "type": "Public",
+      "description": "Traditional New Year celebrated by Sinhalese and Tamil communities",
+      "is_recurring": true
+    },
+    {
+      "name": "Day after Sinhala and Tamil New Year",
+      "date": "2025-04-14",
+      "type": "Public",
+      "description": "Second day of traditional New Year celebrations",
+      "is_recurring": true
+    },
+    {
+      "name": "Good Friday",
+      "date": "2025-04-18",
+      "type": "Public",
+      "description": "Christian commemoration of the crucifixion of Jesus Christ",
+      "is_recurring": false
+    },
+    {
+      "name": "May Day",
+      "date": "2025-05-01",
+      "type": "Public",
+      "description": "International Workers' Day",
+      "is_recurring": true
+    },
+    {
+      "name": "Vesak Full Moon Poya Day",
+      "date": "2025-05-12",
+      "type": "Poya",
+      "description": "Most sacred day for Buddhists - commemorates birth, enlightenment and passing of Buddha",
+      "is_recurring": false
+    },
+    {
+      "name": "Day after Vesak Full Moon Poya Day",
+      "date": "2025-05-13",
+      "type": "Public",
+      "description": "Additional day for Vesak celebrations",
+      "is_recurring": false
+    },
+    {
+      "name": "Eid al-Adha",
+      "date": "2025-06-07",
+      "type": "Public",
+      "description": "Islamic festival of sacrifice",
+      "is_recurring": false
+    },
+    {
+      "name": "Poson Full Moon Poya Day",
+      "date": "2025-06-11",
+      "type": "Poya",
+      "description": "Commemorates the introduction of Buddhism to Sri Lanka by Arahat Mahinda",
+      "is_recurring": false
+    },
+    {
+      "name": "Esala Full Moon Poya Day",
+      "date": "2025-07-10",
+      "type": "Poya",
+      "description": "Commemorates Buddha's first sermon and the arrival of the Sacred Tooth Relic",
+      "is_recurring": false
+    },
+    {
+      "name": "Nikini Full Moon Poya Day",
+      "date": "2025-08-09",
+      "type": "Poya",
+      "description": "Commemorates the first Buddhist council",
+      "is_recurring": false
+    },
+    {
+      "name": "Binara Full Moon Poya Day",
+      "date": "2025-09-07",
+      "type": "Poya",
+      "description": "Commemorates Buddha's visit to heaven to preach to his mother",
+      "is_recurring": false
+    },
+    {
+      "name": "Vap Full Moon Poya Day",
+      "date": "2025-10-07",
+      "type": "Poya",
+      "description": "Marks the end of Buddhist Lent and Buddha's return from heaven",
+      "is_recurring": false
+    },
+    {
+      "name": "Deepavali",
+      "date": "2025-10-20",
+      "type": "Public",
+      "description": "Hindu Festival of Lights",
+      "is_recurring": false
+    },
+    {
+      "name": "Il Full Moon Poya Day",
+      "date": "2025-11-05",
+      "type": "Poya",
+      "description": "Commemorates Buddha's ordination of sixty disciples",
+      "is_recurring": false
+    },
+    {
+      "name": "Unduvap Full Moon Poya Day",
+      "date": "2025-12-04",
+      "type": "Poya",
+      "description": "Commemorates the arrival of Sanghamitta Theri with the Sacred Bo sapling",
+      "is_recurring": false
+    },
+    {
+      "name": "Christmas Day",
+      "date": "2025-12-25",
+      "type": "Public",
+      "description": "Christian celebration of the birth of Jesus Christ",
+      "is_recurring": true
+    }
+  ],
+  "fixed_holidays": [
+    {
+      "name": "Independence Day",
+      "month": 2,
+      "day": 4,
+      "type": "Public",
+      "description": "Commemorates the independence of Sri Lanka from British rule in 1948"
+    },
+    {
+      "name": "May Day",
+      "month": 5,
+      "day": 1,
+      "type": "Public",
+      "description": "International Workers' Day"
+    },
+    {
+      "name": "Christmas Day",
+      "month": 12,
+      "day": 25,
+      "type": "Public",
+      "description": "Christian celebration of the birth of Jesus Christ"
+    }
+  ],
+  "variable_holidays_info": {
+    "sinhala_tamil_new_year": {
+      "description": "Sinhala and Tamil New Year dates vary based on astrological calculations. Common patterns:",
+      "common_dates": [
+        { "pattern": "April 12-13", "years": "Some years" },
+        { "pattern": "April 13-14", "years": "Most common" },
+        { "pattern": "April 14-15", "years": "Occasional" }
+      ],
+      "note": "These dates should be verified annually from official sources like the Department of Meteorology or astrological authorities"
+    },
+    "poya_days": {
+      "description": "Full moon Poya days follow the lunar calendar and change each year",
+      "note": "Dates should be obtained from Buddhist calendar or astronomical calculations"
+    },
+    "religious_holidays": {
+      "eid_fitr": "Based on Islamic lunar calendar - varies each year",
+      "eid_adha": "Based on Islamic lunar calendar - varies each year", 
+      "good_friday": "Based on Easter calculation - varies each year",
+      "deepavali": "Based on Hindu lunar calendar - varies each year"
+    }
+  }
+}

@@ -1207,6 +1207,43 @@ export default class AdminCenterController extends WorklenzControllerBase {
       result = await db.query(insertQ, [organizationId, country_code, state_code, auto_sync_holidays]);
     }
 
+    // If auto_sync_holidays is enabled and country is Sri Lanka, populate holidays
+    if (auto_sync_holidays && country_code === 'LK') {
+      try {
+        // Import the holiday data provider
+        const { HolidayDataProvider } = require("../services/holiday-data-provider");
+        
+        // Get current year and next year to ensure we have recent data
+        const currentYear = new Date().getFullYear();
+        const years = [currentYear, currentYear + 1];
+        
+        for (const year of years) {
+          const sriLankanHolidays = await HolidayDataProvider.getSriLankanHolidays(year);
+          
+          for (const holiday of sriLankanHolidays) {
+            const query = `
+              INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
+              VALUES ($1, $2, $3, $4, $5)
+              ON CONFLICT (country_code, name, date) DO NOTHING
+            `;
+            
+            await db.query(query, [
+              'LK',
+              holiday.name,
+              holiday.description,
+              holiday.date,
+              holiday.is_recurring
+            ]);
+          }
+        }
+        
+        console.log(`✅ Automatically populated Sri Lankan holidays for ${years.join(', ')}`);
+      } catch (error) {
+        // Log error but don't fail the settings update
+        console.error('Error populating Sri Lankan holidays:', error);
+      }
+    }
+
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
 

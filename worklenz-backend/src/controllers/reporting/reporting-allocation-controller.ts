@@ -523,19 +523,130 @@ export default class ReportingAllocationController extends ReportingControllerBa
       sunday: false
     };
 
-    // Count working days based on organization settings
+    // Get organization ID for holiday queries
+    const orgIdQuery = `SELECT t.organization_id FROM teams t WHERE t.id IN (${teamIds}) LIMIT 1`;
+    const orgIdResult = await db.query(orgIdQuery, []);
+    const organizationId = orgIdResult.rows[0]?.organization_id;
+
+    // Fetch organization holidays within the date range
+    const orgHolidaysQuery = `
+      SELECT date 
+      FROM organization_holidays
+      WHERE organization_id = $1
+        AND date >= $2::date
+        AND date <= $3::date
+    `;
+    const orgHolidaysResult = await db.query(orgHolidaysQuery, [
+      organizationId,
+      startDate.format('YYYY-MM-DD'),
+      endDate.format('YYYY-MM-DD')
+    ]);
+
+    // Fetch country/state holidays if auto-sync is enabled
+    let countryStateHolidays: any[] = [];
+    const holidaySettingsQuery = `
+      SELECT country_code, state_code, auto_sync_holidays
+      FROM organization_holiday_settings
+      WHERE organization_id = $1
+    `;
+    const holidaySettingsResult = await db.query(holidaySettingsQuery, [organizationId]);
+    const holidaySettings = holidaySettingsResult.rows[0];
+
+    if (holidaySettings?.auto_sync_holidays && holidaySettings.country_code) {
+      // Fetch country holidays
+      const countryHolidaysQuery = `
+        SELECT date 
+        FROM country_holidays
+        WHERE country_code = $1
+          AND (
+            (is_recurring = false AND date >= $2::date AND date <= $3::date) OR
+            (is_recurring = true AND 
+             EXTRACT(MONTH FROM date) || '-' || EXTRACT(DAY FROM date) IN (
+               SELECT EXTRACT(MONTH FROM d::date) || '-' || EXTRACT(DAY FROM d::date)
+               FROM generate_series($2::date, $3::date, '1 day'::interval) d
+             )
+            )
+          )
+      `;
+      const countryHolidaysResult = await db.query(countryHolidaysQuery, [
+        holidaySettings.country_code,
+        startDate.format('YYYY-MM-DD'),
+        endDate.format('YYYY-MM-DD')
+      ]);
+      countryStateHolidays = countryStateHolidays.concat(countryHolidaysResult.rows);
+
+      // Fetch state holidays if state_code is set
+      if (holidaySettings.state_code) {
+        const stateHolidaysQuery = `
+          SELECT date 
+          FROM state_holidays
+          WHERE country_code = $1 AND state_code = $2
+            AND (
+              (is_recurring = false AND date >= $3::date AND date <= $4::date) OR
+              (is_recurring = true AND 
+               EXTRACT(MONTH FROM date) || '-' || EXTRACT(DAY FROM date) IN (
+                 SELECT EXTRACT(MONTH FROM d::date) || '-' || EXTRACT(DAY FROM d::date)
+                 FROM generate_series($3::date, $4::date, '1 day'::interval) d
+               )
+              )
+            )
+        `;
+        const stateHolidaysResult = await db.query(stateHolidaysQuery, [
+          holidaySettings.country_code,
+          holidaySettings.state_code,
+          startDate.format('YYYY-MM-DD'),
+          endDate.format('YYYY-MM-DD')
+        ]);
+        countryStateHolidays = countryStateHolidays.concat(stateHolidaysResult.rows);
+      }
+    }
+
+    // Create a Set of holiday dates for efficient lookup
+    const holidayDates = new Set<string>();
+    
+    // Add organization holidays
+    orgHolidaysResult.rows.forEach(row => {
+      holidayDates.add(moment(row.date).format('YYYY-MM-DD'));
+    });
+
+    // Add country/state holidays (handling recurring holidays)
+    countryStateHolidays.forEach(row => {
+      const holidayDate = moment(row.date);
+      if (row.is_recurring) {
+        // For recurring holidays, check each year in the date range
+        let checkDate = startDate.clone().month(holidayDate.month()).date(holidayDate.date());
+        if (checkDate.isBefore(startDate)) {
+          checkDate.add(1, 'year');
+        }
+        while (checkDate.isSameOrBefore(endDate)) {
+          if (checkDate.isSameOrAfter(startDate)) {
+            holidayDates.add(checkDate.format('YYYY-MM-DD'));
+          }
+          checkDate.add(1, 'year');
+        }
+      } else {
+        holidayDates.add(holidayDate.format('YYYY-MM-DD'));
+      }
+    });
+
+    // Count working days based on organization settings, excluding holidays
     let workingDays = 0;
     let current = startDate.clone();
     while (current.isSameOrBefore(endDate, 'day')) {
       const day = current.isoWeekday();
+      const currentDateStr = current.format('YYYY-MM-DD');
+      
+      // Check if it's a working day AND not a holiday
       if (
-        (day === 1 && workingDaysConfig.monday) ||
-        (day === 2 && workingDaysConfig.tuesday) ||
-        (day === 3 && workingDaysConfig.wednesday) ||
-        (day === 4 && workingDaysConfig.thursday) ||
-        (day === 5 && workingDaysConfig.friday) ||
-        (day === 6 && workingDaysConfig.saturday) ||
-        (day === 7 && workingDaysConfig.sunday)
+        !holidayDates.has(currentDateStr) && (
+          (day === 1 && workingDaysConfig.monday) ||
+          (day === 2 && workingDaysConfig.tuesday) ||
+          (day === 3 && workingDaysConfig.wednesday) ||
+          (day === 4 && workingDaysConfig.thursday) ||
+          (day === 5 && workingDaysConfig.friday) ||
+          (day === 6 && workingDaysConfig.saturday) ||
+          (day === 7 && workingDaysConfig.sunday)
+        )
       ) {
         workingDays++;
       }
