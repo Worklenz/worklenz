@@ -820,7 +820,7 @@ const ProjectList: React.FC = () => {
   }, [loadingProjects, isFetchingProjects, viewMode, groupedProjects.loading, isLoading]);
 
   return (
-    <div style={{ marginBlock: 65, minHeight: '90vh' }}>
+    <div style={{ minHeight: '90vh' }}>
       <PageHeader
         className="site-page-header"
         title={`${projectCount} ${t('projects')}`}
