@@ -6,5 +6,12 @@
   "reconnecting": "Vom Server getrennt.",
   "connection-lost": "Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung.",
   "connection-restored": "Erfolgreich mit dem Server verbunden",
-  "cancel": "Abbrechen"
+  "cancel": "Abbrechen",
+  "update-available": "Worklenz aktualisiert!",
+  "update-description": "Eine neue Version von Worklenz ist verfügbar mit den neuesten Funktionen und Verbesserungen.",
+  "update-instruction": "Für die beste Erfahrung laden Sie bitte die Seite neu, um die neuen Änderungen zu übernehmen.",
+  "update-whats-new": "💡 <1>Was ist neu:</1> Verbesserte Leistung, Fehlerbehebungen und verbesserte Benutzererfahrung",
+  "update-now": "Jetzt aktualisieren",
+  "update-later": "Später",
+  "updating": "Wird aktualisiert..."
 }
