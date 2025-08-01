@@ -15,6 +15,8 @@ import {
   ICombinedHolidaysRequest,
   IHolidayDateRange,
 } from '@/types/holiday/holiday.types';
+import logger from '@/utils/errorLogger';
+import { error } from 'console';
 
 const rootUrl = `${API_BASE_URL}/holidays`;
 
@@ -764,9 +766,7 @@ export const holidayApiService = {
       }
 
       // Get organization holidays from database (includes both custom and country-specific)
-      console.log(`🏢 Fetching organization holidays for year: ${year}`);
       const customRes = await holidayApiService.getOrganizationHolidays(year);
-      console.log('🏢 Organization holidays response:', customRes);
       
       if (customRes.done && customRes.body) {
         const customHolidays = customRes.body
@@ -777,6 +777,7 @@ export const holidayApiService = {
             description: h.description,
             date: h.date,
             is_recurring: h.is_recurring,
+            holiday_type_id: h.holiday_type_id,
             holiday_type_name: h.holiday_type_name || 'Custom',
             color_code: h.color_code || '#f37070',
             source: h.source || 'custom' as const,
@@ -787,19 +788,14 @@ export const holidayApiService = {
         const existingDates = new Set(allHolidays.map(h => h.date));
         const uniqueCustomHolidays = customHolidays.filter((h: any) => !existingDates.has(h.date));
         
-        console.log(`✅ Found ${customHolidays.length} organization holidays (${uniqueCustomHolidays.length} unique)`);
         allHolidays.push(...uniqueCustomHolidays);
-      } else {
-        console.log('⚠️ No organization holidays returned from API');
       }
-
-      console.log(`🎉 Total holidays combined: ${allHolidays.length}`, allHolidays);
       return {
         done: true,
         body: allHolidays,
       } as IServerResponse<IHolidayCalendarEvent[]>;
     } catch (error) {
-      console.error('Error fetching combined holidays:', error);
+      logger.error('Error fetching combined holidays:', error);
       return {
         done: false,
         body: [],

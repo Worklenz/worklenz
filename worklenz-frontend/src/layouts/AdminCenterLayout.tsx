@@ -7,18 +7,14 @@ import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 const AdminCenterLayout: React.FC = () => {
-  const dispatch = useAppDispatch();
   const isTablet = useMediaQuery({ query: '(min-width:768px)' });
-  const isMarginAvailable = useMediaQuery({ query: '(min-width: 1000px)' });
   const { t } = useTranslation('admin-center/sidebar');
 
   return (
     <div
       style={{
-        marginBlock: 96,
+        marginBlock: 24,
         minHeight: '90vh',
-        marginLeft: `${isMarginAvailable ? '5%' : ''}`,
-        marginRight: `${isMarginAvailable ? '5%' : ''}`,
       }}
     >
       <Typography.Title level={4}>{t('adminCenter')}</Typography.Title>

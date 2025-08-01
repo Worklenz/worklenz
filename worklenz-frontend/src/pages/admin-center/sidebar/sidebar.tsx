@@ -4,7 +4,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '../../../styles/colors';
 import { useTranslation } from 'react-i18next';
-import { adminCenterItems } from '../admin-center-constants';
+import { adminCenterItems } from '../../../lib/admin-center-constants';
 import './sidebar.css';
 
 const AdminCenterSidebar: React.FC = () => {

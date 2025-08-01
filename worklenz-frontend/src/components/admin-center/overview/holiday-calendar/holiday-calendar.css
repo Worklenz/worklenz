@@ -493,11 +493,13 @@
   background: #fafafa;
   border-radius: 6px;
   border: 1px solid #d9d9d9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .holiday-calendar.dark .calendar-legend {
   background: #1f1f1f;
   border-color: #434343;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .legend-item {
@@ -505,11 +507,33 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 500;
 }
 
 .holiday-calendar.dark .legend-item {
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Legend item hover effects */
+.legend-item:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+.legend-item:hover .legend-badge {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.legend-item:hover .legend-tag {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+.legend-item:hover .legend-dot {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
 }
 
 .legend-dot {
@@ -531,6 +555,7 @@
 .legend-dot.today-dot {
   background: #1890ff;
   box-shadow: 0 0 0 1px rgba(24, 144, 255, 0.2);
+  animation: todayPulse 2s ease-in-out infinite;
 }
 
 .holiday-calendar.dark .legend-dot.working-day-dot {
@@ -546,6 +571,7 @@
 .holiday-calendar.dark .legend-dot.today-dot {
   background: #1890ff;
   box-shadow: 0 0 0 1px rgba(24, 144, 255, 0.3);
+  animation: todayPulse 2s ease-in-out infinite;
 }
 
 /* Legend badge and tag styles */
@@ -559,19 +585,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
 }
 
 .legend-badge.working-day-badge {
   background: #52c41a;
   border: 1px solid #d9f7be;
   color: #ffffff;
+  box-shadow: 0 1px 3px rgba(82, 196, 26, 0.2);
 }
 
 .holiday-calendar.dark .legend-badge.working-day-badge {
   background: #52c41a;
   border: 1px solid #237804;
   color: #ffffff;
+  box-shadow: 0 1px 3px rgba(82, 196, 26, 0.3);
 }
 
 .legend-tag {
@@ -583,35 +612,41 @@
   font-size: 9px;
   font-weight: 500;
   border: 1px solid;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .legend-tag-text {
   font-size: 8px;
   line-height: 1;
+  font-weight: 600;
 }
 
 .custom-holiday-legend {
   background: #f6ffed;
   border: 1px solid #b7eb8f;
   color: #52c41a;
+  box-shadow: 0 1px 2px rgba(82, 196, 26, 0.1);
 }
 
 .official-holiday-legend {
   background: #e6f7ff;
   border: 1px solid #91d5ff;
   color: #1890ff;
+  box-shadow: 0 1px 2px rgba(24, 144, 255, 0.1);
 }
 
 .holiday-calendar.dark .custom-holiday-legend {
   background: #162312;
   border: 1px solid #274916;
   color: #95de64;
+  box-shadow: 0 1px 2px rgba(149, 222, 100, 0.2);
 }
 
 .holiday-calendar.dark .official-holiday-legend {
   background: #111b26;
   border: 1px solid #13334c;
   color: #69c0ff;
+  box-shadow: 0 1px 2px rgba(105, 192, 255, 0.2);
 }
 
 .legend-tag .custom-holiday-icon,
@@ -644,6 +679,16 @@
     gap: 12px;
     align-items: flex-start;
     padding: 10px 12px;
+  }
+
+  .legend-item:hover {
+    transform: none;
+  }
+
+  .legend-item:hover .legend-badge,
+  .legend-item:hover .legend-tag,
+  .legend-item:hover .legend-dot {
+    transform: none;
   }
 
   .working-day-badge {

@@ -91,6 +91,7 @@ export interface IHolidayCalendarEvent {
   description?: string;
   date: string;
   is_recurring: boolean;
+  holiday_type_id?: string;
   holiday_type_name: string;
   color_code: string;
   source: 'official' | 'custom';

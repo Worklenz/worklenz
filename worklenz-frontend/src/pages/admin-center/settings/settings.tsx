@@ -20,7 +20,7 @@ import { scheduleAPIService } from '@/api/schedule/schedule.api.service';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { Settings } from '@/types/schedule/schedule-v2.types';
 import OrganizationCalculationMethod from '@/components/admin-center/overview/organization-calculation-method/organization-calculation-method';
-import HolidayCalendar from '@/components/admin-center/overview/holiday-calendar/holiday-calendar';
+import HolidayCalendar from '@/components/admin-center/overview/holiday-calendar/HolidayCalendar';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { RootState } from '@/app/store';

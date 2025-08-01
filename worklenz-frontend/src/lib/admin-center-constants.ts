@@ -7,12 +7,12 @@ import {
   SettingOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
-const Overview = lazy(() => import('./overview/overview'));
-const Users = lazy(() => import('./users/users'));
-const Teams = lazy(() => import('./teams/teams'));
-const Billing = lazy(() => import('./billing/billing'));
-const Projects = lazy(() => import('./projects/projects'));
-const Settings = lazy(() => import('./settings/settings'));
+const Overview = lazy(() => import('../pages/admin-center/overview/overview'));
+const Users = lazy(() => import('../pages/admin-center/users/users'));
+const Teams = lazy(() => import('../pages/admin-center/teams/teams'));
+const Billing = lazy(() => import('../pages/admin-center/billing/billing'));
+const Projects = lazy(() => import('../pages/admin-center/projects/projects'));
+const Settings = lazy(() => import('../pages/admin-center/settings/Settings'));
 
 // type of a menu item in admin center sidebar
 type AdminCenterMenuItems = {

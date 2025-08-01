@@ -44,7 +44,7 @@ interface HolidayCalendarProps {
 const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDays = [] }) => {
   const { t } = useTranslation('admin-center/overview');
   const dispatch = useAppDispatch();
-  const { holidays, loadingHolidays, holidaySettings } = useAppSelector(
+  const { holidays, holidaySettings } = useAppSelector(
     (state: RootState) => state.adminCenterReducer
   );
   const [form] = Form.useForm();
@@ -57,6 +57,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [isPopulatingHolidays, setIsPopulatingHolidays] = useState(false);
   const [hasAttemptedPopulation, setHasAttemptedPopulation] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const fetchHolidayTypes = async () => {
     try {
@@ -73,24 +74,22 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     // Check if we have holiday settings with a country code but no holidays
     // Also check if we haven't already attempted population and we're not currently populating
     if (
-      holidaySettings?.country_code && 
-      holidays.length === 0 && 
-      !hasAttemptedPopulation && 
+      holidaySettings?.country_code &&
+      holidays.length === 0 &&
+      !hasAttemptedPopulation &&
       !isPopulatingHolidays
     ) {
       try {
-        console.log('🔄 No holidays found, attempting to populate official holidays...');
         setIsPopulatingHolidays(true);
         setHasAttemptedPopulation(true);
-        
+
         const populateRes = await holidayApiService.populateCountryHolidays();
         if (populateRes.done) {
-          console.log('✅ Official holidays populated successfully');
           // Refresh holidays after population
           fetchHolidaysForDateRange(true);
         }
       } catch (error) {
-        console.warn('⚠️ Could not populate official holidays:', error);
+        logger.error('populateHolidaysIfNeeded', error);
       } finally {
         setIsPopulatingHolidays(false);
       }
@@ -217,7 +216,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
       name: holiday.name,
       description: holiday.description,
       date: dayjs(holiday.date),
-      holiday_type_id: holiday.holiday_type_name, // This might need adjustment based on backend
+      holiday_type_id: holiday.holiday_type_id,
       is_recurring: holiday.is_recurring,
     });
     setEditModalVisible(true);
@@ -227,12 +226,15 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     const dateHolidays = holidays.filter(h => dayjs(h.date).isSame(date, 'day'));
     const dayName = date.format('dddd');
     // Check if this day is in the working days array from API response
-    const isWorkingDay = workingDays && workingDays.length > 0 ? workingDays.includes(dayName) : false;
+    const isWorkingDay =
+      workingDays && workingDays.length > 0 ? workingDays.includes(dayName) : false;
     const isToday = date.isSame(dayjs(), 'day');
     const isCurrentMonth = date.isSame(currentDate, 'month');
 
     return (
-      <div className={`calendar-cell ${isWorkingDay ? 'working-day' : 'non-working-day'} ${isToday ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''}`}>
+      <div
+        className={`calendar-cell ${isWorkingDay ? 'working-day' : 'non-working-day'} ${isToday ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''}`}
+      >
         {dateHolidays.length > 0 && (
           <div className="holiday-cell">
             {dateHolidays.map((holiday, index) => {
@@ -250,16 +252,22 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
                     borderRadius: '4px',
                     display: 'block',
                     fontWeight: isCustom ? 600 : 500,
-                    border: isCustom ? '1px solid rgba(82, 196, 26, 0.6)' : '1px solid rgba(24, 144, 255, 0.4)',
+                    border: isCustom
+                      ? '1px solid rgba(82, 196, 26, 0.6)'
+                      : '1px solid rgba(24, 144, 255, 0.4)',
                     position: 'relative',
                   }}
                   title={`${holiday.name}${isOfficial ? ' (Official Holiday)' : ' (Custom Holiday)'}`}
                 >
                   {isCustom && (
-                    <span className="custom-holiday-icon" style={{ marginRight: '2px' }}>⭐</span>
+                    <span className="custom-holiday-icon" style={{ marginRight: '2px' }}>
+                      ⭐
+                    </span>
                   )}
                   {isOfficial && (
-                    <span className="official-holiday-icon" style={{ marginRight: '2px' }}>🏛️</span>
+                    <span className="official-holiday-icon" style={{ marginRight: '2px' }}>
+                      🏛️
+                    </span>
                   )}
                   {holiday.name}
                 </Tag>
@@ -277,10 +285,23 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   };
 
   const onPanelChange = (value: Dayjs) => {
+    setIsNavigating(true);
     setCurrentDate(value);
+    // Reset navigation flag after a short delay to allow the onSelect event to check it
+    setTimeout(() => setIsNavigating(false), 100);
   };
 
   const onDateSelect = (date: Dayjs) => {
+    // Prevent modal from opening during navigation (month/year changes)
+    if (isNavigating) {
+      return;
+    }
+
+    // Prevent modal from opening if the date is from a different month (navigation click)
+    if (!date.isSame(currentDate, 'month')) {
+      return;
+    }
+
     // Check if there's already a custom holiday on this date
     const existingCustomHoliday = holidays.find(
       h => dayjs(h.date).isSame(date, 'day') && h.source === 'custom' && h.is_editable
@@ -336,11 +357,11 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
             boxShadow: '0 2px 8px rgba(24, 144, 255, 0.2)',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
-          onMouseEnter={(e) => {
+          onMouseEnter={e => {
             e.currentTarget.style.transform = 'translateY(-1px)';
             e.currentTarget.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.3)';
           }}
-          onMouseLeave={(e) => {
+          onMouseLeave={e => {
             e.currentTarget.style.transform = 'translateY(0)';
             e.currentTarget.style.boxShadow = '0 2px 8px rgba(24, 144, 255, 0.2)';
           }}
@@ -349,7 +370,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         </Button>
       </div>
 
-      <div className="calendar-container">
+      <div className={`calendar-container holiday-calendar ${themeMode}`}>
         <Calendar
           value={currentDate}
           onPanelChange={onPanelChange}
@@ -357,7 +378,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
           dateCellRender={getHolidayDateCellRender}
           className={`holiday-calendar ${themeMode}`}
         />
-        
+
         {/* Calendar Legend */}
         <div className="calendar-legend">
           <div className="legend-item">
@@ -474,7 +495,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
           setSelectedHoliday(null);
         }}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={editForm} layout="vertical" onFinish={handleUpdateHoliday}>
           <Form.Item
@@ -540,18 +561,22 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
               >
                 {t('cancel')}
               </Button>
-              {selectedHoliday && selectedHoliday.source === 'custom' && selectedHoliday.is_editable && (
-                <Popconfirm
-                  title={t('deleteHolidayConfirm') || 'Are you sure you want to delete this holiday?'}
-                  onConfirm={() => handleDeleteHoliday(selectedHoliday.id)}
-                  okText={t('yes') || 'Yes'}
-                  cancelText={t('no') || 'No'}
-                >
-                  <Button type="primary" danger icon={<DeleteOutlined />}>
-                    {t('delete') || 'Delete'}
-                  </Button>
-                </Popconfirm>
-              )}
+              {selectedHoliday &&
+                selectedHoliday.source === 'custom' &&
+                selectedHoliday.is_editable && (
+                  <Popconfirm
+                    title={
+                      t('deleteHolidayConfirm') || 'Are you sure you want to delete this holiday?'
+                    }
+                    onConfirm={() => handleDeleteHoliday(selectedHoliday.id)}
+                    okText={t('yes') || 'Yes'}
+                    cancelText={t('no') || 'No'}
+                  >
+                    <Button type="primary" danger icon={<DeleteOutlined />}>
+                      {t('delete') || 'Delete'}
+                    </Button>
+                  </Popconfirm>
+                )}
             </Space>
           </Form.Item>
         </Form>

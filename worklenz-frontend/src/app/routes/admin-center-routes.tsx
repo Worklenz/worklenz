@@ -1,6 +1,6 @@
 import { RouteObject } from 'react-router-dom';
 import { Suspense } from 'react';
-import { adminCenterItems } from '@/pages/admin-center/admin-center-constants';
+import { adminCenterItems } from '@/lib/admin-center-constants';
 import { Navigate } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
