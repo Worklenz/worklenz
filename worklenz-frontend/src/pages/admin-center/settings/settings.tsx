@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Button,
   Card,
@@ -46,6 +46,7 @@ const SettingsPage: React.FC = () => {
   const [workingHours, setWorkingHours] = useState<Settings['workingHours']>(8);
   const [saving, setSaving] = useState(false);
   const [savingHolidays, setSavingHolidays] = useState(false);
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string | undefined>(undefined);
   const [form] = Form.useForm();
   const [holidayForm] = Form.useForm();
 
@@ -127,6 +128,7 @@ const SettingsPage: React.FC = () => {
         state_code: holidaySettings.state_code,
         auto_sync_holidays: holidaySettings.auto_sync_holidays ?? true,
       });
+      setSelectedCountryCode(holidaySettings.country_code);
     }
   }, [holidaySettings, holidayForm]);
 
@@ -143,12 +145,12 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const getSelectedCountryStates = () => {
+  const selectedCountryStates = useMemo(() => {
     const selectedCountry = countriesWithStates.find(
-      country => country.code === holidayForm.getFieldValue('country_code')
+      country => country.code === selectedCountryCode
     );
     return selectedCountry?.states || [];
-  };
+  }, [countriesWithStates, selectedCountryCode]);
 
   return (
     <div style={{ width: '100%' }}>
@@ -193,9 +195,13 @@ const SettingsPage: React.FC = () => {
                 </Row>
               </Checkbox.Group>
             </Form.Item>
-            <Form.Item label={t('workingHours')} name="workingHours">
-              <Input type="number" min={1} max={24} suffix={t('hours')} width={100} />
-            </Form.Item>
+            <Row>
+              <Col span={6}>
+                <Form.Item label={t('workingHours')} name="workingHours">
+                  <Input type="number" min={1} max={24} suffix={t('hours')} />
+                </Form.Item>
+              </Col>
+            </Row>
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={saving}>
                 {t('saveButton') || 'Save'}
@@ -233,8 +239,9 @@ const SettingsPage: React.FC = () => {
                   <Select
                     placeholder={t('selectCountry') || 'Select country'}
                     loading={loadingCountries}
-                    onChange={() => {
+                    onChange={(value) => {
                       holidayForm.setFieldValue('state_code', undefined);
+                      setSelectedCountryCode(value);
                     }}
                     showSearch
                     filterOption={(input, option) =>
@@ -249,25 +256,27 @@ const SettingsPage: React.FC = () => {
                   </Select>
                 </Form.Item>
               </Col>
-              <Col span={12}>
-                <Form.Item label={t('state') || 'State/Province'} name="state_code">
-                  <Select
-                    placeholder={t('selectState') || 'Select state/province (optional)'}
-                    allowClear
-                    disabled={!holidayForm.getFieldValue('country_code')}
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
-                    }
-                  >
-                    {getSelectedCountryStates().map(state => (
-                      <Select.Option key={state.code} value={state.code}>
-                        {state.name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
+              {selectedCountryStates.length > 0 && (
+                <Col span={12}>
+                  <Form.Item label={t('state') || 'State/Province'} name="state_code">
+                    <Select
+                      placeholder={t('selectState') || 'Select state/province (optional)'}
+                      allowClear
+                      disabled={!holidayForm.getFieldValue('country_code')}
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                      }
+                    >
+                      {selectedCountryStates.map(state => (
+                        <Select.Option key={state.code} value={state.code}>
+                          {state.name}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              )}
             </Row>
             <Form.Item
               label={t('autoSyncHolidays') || 'Automatically sync official holidays'}

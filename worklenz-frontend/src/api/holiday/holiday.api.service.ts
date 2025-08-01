@@ -245,13 +245,15 @@ export const holidayApiService = {
 
   // Countries with states
   getCountriesWithStates: async (): Promise<IServerResponse<ICountryWithStates[]>> => {
-    const response = await apiClient.get<IServerResponse<ICountryWithStates[]>>(
-      `${API_BASE_URL}/admin-center/countries-with-states`
-    );
-    return response.data;
-    
-    // Fallback to static data if API fails
-    /*const supportedCountries = [
+    try {
+      const response = await apiClient.get<IServerResponse<ICountryWithStates[]>>(
+        `${API_BASE_URL}/admin-center/countries-with-states`
+      );
+      return response.data;
+    } catch (error) {
+      logger.error('Error fetching countries with states from API, falling back to static data', error);
+      // Fallback to static data if API fails
+      const supportedCountries = [
       { code: 'AD', name: 'Andorra' },
       { code: 'AE', name: 'United Arab Emirates' },
       { code: 'AG', name: 'Antigua & Barbuda' },
@@ -687,10 +689,11 @@ export const holidayApiService = {
       { code: 'ZA', name: 'South Africa' }
     ];
 
-    return {
-      done: true,
-      body: supportedCountries,
-    } as IServerResponse<ICountryWithStates[]>;*/
+      return {
+        done: true,
+        body: supportedCountries,
+      } as IServerResponse<ICountryWithStates[]>;
+    }
   },
 
   // Combined holidays (official + custom) - Database-driven approach
