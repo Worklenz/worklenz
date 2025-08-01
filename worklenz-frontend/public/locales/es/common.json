@@ -6,5 +6,12 @@
   "reconnecting": "Reconectando al servidor...",
   "connection-lost": "Conexión perdida. Intentando reconectarse...",
   "connection-restored": "Conexión restaurada. Reconectando al servidor...",
-  "cancel": "Cancelar"
+  "cancel": "Cancelar",
+  "update-available": "¡Worklenz actualizado!",
+  "update-description": "Una nueva versión de Worklenz está disponible con las últimas funciones y mejoras.",
+  "update-instruction": "Para obtener la mejor experiencia, por favor recarga la página para aplicar los nuevos cambios.",
+  "update-whats-new": "💡 <1>Qué hay de nuevo:</1> Rendimiento mejorado, correcciones de errores y experiencia de usuario mejorada",
+  "update-now": "Actualizar ahora",
+  "update-later": "Más tarde",
+  "updating": "Actualizando..."
 }

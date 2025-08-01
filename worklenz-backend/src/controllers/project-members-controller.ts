@@ -9,7 +9,7 @@ import {getColor} from "../shared/utils";
 import TeamMembersController from "./team-members-controller";
 import {checkTeamSubscriptionStatus} from "../shared/paddle-utils";
 import {updateUsers} from "../shared/paddle-requests";
-import {statusExclude} from "../shared/constants";
+import {statusExclude, TRIAL_MEMBER_LIMIT} from "../shared/constants";
 import {NotificationsService} from "../services/notifications/notifications.service";
 
 export default class ProjectMembersController extends WorklenzControllerBase {
@@ -116,6 +116,17 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
     if (!userExists && subscriptionData.is_ltd && subscriptionData.current_count && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
       return res.status(200).send(new ServerResponse(false, null, "Maximum number of life time users reached."));
+    }
+
+    /**
+   * Checks trial user team member limit
+   */
+    if (subscriptionData.subscription_status === "trialing") {
+      const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
+      
+      if (currentTrialMembers + 1 > TRIAL_MEMBER_LIMIT) {
+        return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+      }
     }
 
     // if (subscriptionData.status === "trialing") break;
