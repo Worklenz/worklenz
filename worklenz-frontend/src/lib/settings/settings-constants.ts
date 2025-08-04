@@ -18,7 +18,7 @@ const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-
 const NotificationsSettings = lazy(() => import('../../pages/settings/notifications/notifications-settings'));
 const ClientsSettings = lazy(() => import('../../pages/settings/clients/clients-settings'));
 const JobTitlesSettings = lazy(() => import('@/pages/settings/job-titles/job-titles-settings'));
-const LabelsSettings = lazy(() => import('../../pages/settings/labels/labels-settings'));
+const LabelsSettings = lazy(() => import('../../pages/settings/labels/LabelsSettings'));
 const CategoriesSettings = lazy(() => import('../../pages/settings/categories/categories-settings'));
 const ProjectTemplatesSettings = lazy(() => import('@/pages/settings/project-templates/project-templates-settings'));
 const TaskTemplatesSettings = lazy(() => import('@/pages/settings/task-templates/task-templates-settings'));

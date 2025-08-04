@@ -7,5 +7,9 @@
   "searchPlaceholder": "按名称搜索",
   "emptyText": "标签可以在更新或创建任务时创建。",
   "pinTooltip": "点击将其固定到主菜单",
-  "colorChangeTooltip": "点击更改颜色"
+  "colorChangeTooltip": "点击更改颜色",
+  "pageTitle": "管理标签",
+  "deleteConfirmTitle": "您确定要删除这个吗？",
+  "deleteButton": "删除",
+  "cancelButton": "取消"
 }

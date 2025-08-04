@@ -27,9 +27,14 @@ export const labelsApiService = {
 
   updateColor: async (labelId: string, color: string): Promise<IServerResponse<ITaskLabel>> => {
     const response = await apiClient.put<IServerResponse<ITaskLabel>>(
-      `${rootUrl}/tasks/${labelId}/color`,
+      `${rootUrl}/tasks/${labelId}`,
       { color }
     );
+    return response.data;
+  },
+
+  updateLabel: async (labelId: string, data: { name?: string; color?: string }): Promise<IServerResponse<ITaskLabel>> => {
+    const response = await apiClient.put<IServerResponse<ITaskLabel>>(`${rootUrl}/team/${labelId}`, data);
     return response.data;
   },
 
