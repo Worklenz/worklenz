@@ -194,13 +194,19 @@ export default class AuthController extends WorklenzControllerBase {
       const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
       const profile = response.data;
 
-      // Validate token audience (client ID)
-      if (profile.aud !== process.env.GOOGLE_CLIENT_ID) {
+      // Validate token audience (client ID) - accept web, Android, and iOS client IDs
+      const allowedClientIds = [
+        process.env.GOOGLE_CLIENT_ID, // Web client ID
+        process.env.GOOGLE_ANDROID_CLIENT_ID, // Android client ID
+        process.env.GOOGLE_IOS_CLIENT_ID, // iOS client ID
+      ].filter(Boolean); // Remove undefined values
+      
+      if (!allowedClientIds.includes(profile.aud)) {
         return res.status(400).send(new ServerResponse(false, null, "Invalid token audience"));
       }
 
       // Validate token issuer
-      if (!['https://accounts.google.com', 'accounts.google.com'].includes(profile.iss)) {
+      if (!["https://accounts.google.com", "accounts.google.com"].includes(profile.iss)) {
         return res.status(400).send(new ServerResponse(false, null, "Invalid token issuer"));
       }
 
