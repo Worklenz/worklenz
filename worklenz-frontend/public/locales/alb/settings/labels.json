@@ -7,5 +7,9 @@
   "searchPlaceholder": "Kërko sipas emrit",
   "emptyText": "Etiketat mund të krijohen gjatë përditësimit ose krijimit të detyrave.",
   "pinTooltip": "Klikoni për ta fiksuar në menynë kryesore",
-  "colorChangeTooltip": "Klikoni për të ndryshuar ngjyrën"
+  "colorChangeTooltip": "Klikoni për të ndryshuar ngjyrën",
+  "pageTitle": "Menaxho Etiketat",
+  "deleteConfirmTitle": "Jeni i sigurt që dëshironi ta fshini këtë?",
+  "deleteButton": "Fshi",
+  "cancelButton": "Anulo"
 }

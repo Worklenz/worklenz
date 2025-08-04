@@ -11,9 +11,7 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 const HomePage = lazy(() => import('@/pages/home/home-page'));
 const ProjectList = lazy(() => import('@/pages/projects/project-list'));
 const Schedule = lazy(() => import('@/pages/schedule/schedule'));
-const ProjectTemplateEditView = lazy(
-  () => import('@/pages/settings/project-templates/projectTemplateEditView/ProjectTemplateEditView')
-);
+
 const LicenseExpired = lazy(() => import('@/pages/license-expired/license-expired'));
 const ProjectView = lazy(() => import('@/pages/projects/projectView/project-view'));
 const Unauthorized = lazy(() => import('@/pages/unauthorized/unauthorized'));
@@ -88,14 +86,6 @@ const mainRoutes: RouteObject[] = [
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <ProjectView />
-          </Suspense>
-        ),
-      },
-      {
-        path: `settings/project-templates/edit/:templateId/:templateName`,
-        element: (
-          <Suspense fallback={<SuspenseFallback />}>
-            <ProjectTemplateEditView />
           </Suspense>
         ),
       },

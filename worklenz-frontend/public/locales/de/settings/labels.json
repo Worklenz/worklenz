@@ -7,5 +7,9 @@
   "searchPlaceholder": "Nach Name suchen",
   "emptyText": "Labels können beim Aktualisieren oder Erstellen von Aufgaben erstellt werden.",
   "pinTooltip": "Zum Anheften an das Hauptmenü klicken",
-  "colorChangeTooltip": "Zum Ändern der Farbe klicken"
+  "colorChangeTooltip": "Zum Ändern der Farbe klicken",
+  "pageTitle": "Labels verwalten",
+  "deleteConfirmTitle": "Sind Sie sicher, dass Sie dies löschen möchten?",
+  "deleteButton": "Löschen",
+  "cancelButton": "Abbrechen"
 }
