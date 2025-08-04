@@ -1,35 +1,25 @@
 import { Flex, Typography } from '@/shared/antd-imports';
 import SettingsSidebar from '../pages/settings/sidebar/settings-sidebar';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
-import { useEffect } from 'react';
-import { useAuthService } from '@/hooks/useAuth';
 
 const SettingsLayout = () => {
   const isTablet = useMediaQuery({ query: '(min-width: 768px)' });
-  const { getCurrentSession } = useAuthService();
-  const currentSession = getCurrentSession();
-  const navigate = useNavigate();
-
-  
 
   return (
-    <div style={{ marginBlock: 96, minHeight: '90vh' }}>
+    <div className="my-6 min-h-[90vh]">
       <Typography.Title level={4}>Settings</Typography.Title>
 
       {isTablet ? (
         <Flex
           gap={24}
           align="flex-start"
-          style={{
-            width: '100%',
-            marginBlockStart: 24,
-          }}
+          className="w-full mt-6"
         >
-          <Flex style={{ width: '100%', maxWidth: 240 }}>
+          <Flex className="w-full max-w-60">
             <SettingsSidebar />
           </Flex>
-          <Flex style={{ width: '100%' }}>
+          <Flex className="w-full">
             <Outlet />
           </Flex>
         </Flex>
@@ -37,9 +27,7 @@ const SettingsLayout = () => {
         <Flex
           vertical
           gap={24}
-          style={{
-            marginBlockStart: 24,
-          }}
+          className="mt-6"
         >
           <SettingsSidebar />
           <Outlet />
