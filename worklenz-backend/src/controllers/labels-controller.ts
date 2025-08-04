@@ -5,7 +5,7 @@ import db from "../config/db";
 import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {TASK_PRIORITY_COLOR_ALPHA, WorklenzColorCodes} from "../shared/constants";
+import {TASK_PRIORITY_COLOR_ALPHA, WorklenzColorCodes, WorklenzColorShades} from "../shared/constants";
 
 export default class LabelsController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -73,7 +73,7 @@ export default class LabelsController extends WorklenzControllerBase {
                WHERE id = $1
                  AND team_id = $2;`;
 
-    if (!WorklenzColorCodes.includes(req.body.color))
+    if (!Object.values(WorklenzColorShades).flat().includes(req.body.color))
       return res.status(400).send(new ServerResponse(false, null));
 
     const result = await db.query(q, [req.params.id, req.user?.team_id, req.body.color]);
@@ -92,7 +92,7 @@ export default class LabelsController extends WorklenzControllerBase {
     }
 
     if (req.body.color) {
-      if (!WorklenzColorCodes.includes(req.body.color))
+      if (!Object.values(WorklenzColorShades).flat().includes(req.body.color))
         return res.status(400).send(new ServerResponse(false, null));
       updates.push(`color_code = $${paramIndex++}`);
       values.push(req.body.color);
