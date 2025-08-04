@@ -194,6 +194,21 @@ export default class AuthController extends WorklenzControllerBase {
       const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
       const profile = response.data;
 
+      // Validate token audience (client ID)
+      if (profile.aud !== process.env.GOOGLE_CLIENT_ID) {
+        return res.status(400).send(new ServerResponse(false, null, "Invalid token audience"));
+      }
+
+      // Validate token issuer
+      if (!['https://accounts.google.com', 'accounts.google.com'].includes(profile.iss)) {
+        return res.status(400).send(new ServerResponse(false, null, "Invalid token issuer"));
+      }
+
+      // Check token expiry
+      if (Date.now() >= profile.exp * 1000) {
+        return res.status(400).send(new ServerResponse(false, null, "Token expired"));
+      }
+
       if (!profile.email_verified) {
         return res.status(400).send(new ServerResponse(false, null, "Email not verified"));
       }
@@ -210,7 +225,7 @@ export default class AuthController extends WorklenzControllerBase {
         [profile.sub, profile.email]
       );
 
-      let user;
+      let user: any;
       if (userResult.rowCount) {
         // Existing user - login
         user = userResult.rows[0];
