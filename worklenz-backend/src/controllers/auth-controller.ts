@@ -181,4 +181,66 @@ export default class AuthController extends WorklenzControllerBase {
       res.status(500).send(new ServerResponse(false, null, DEFAULT_ERROR_MESSAGE));
     }
   }
+
+  @HandleExceptions({logWithError: "body"})
+  public static async googleMobileAuth(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    const {idToken} = req.body;
+    
+    if (!idToken) {
+      return res.status(400).send(new ServerResponse(false, null, "ID token is required"));
+    }
+
+    try {
+      const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+      const profile = response.data;
+
+      if (!profile.email_verified) {
+        return res.status(400).send(new ServerResponse(false, null, "Email not verified"));
+      }
+
+      // Check for existing local account
+      const localAccountResult = await db.query("SELECT 1 FROM users WHERE email = $1 AND password IS NOT NULL AND is_deleted IS FALSE;", [profile.email]);
+      if (localAccountResult.rowCount) {
+        return res.status(400).send(new ServerResponse(false, null, `No Google account exists for email ${profile.email}.`));
+      }
+
+      // Check if user exists
+      const userResult = await db.query(
+        "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR email = $2;",
+        [profile.sub, profile.email]
+      );
+
+      let user;
+      if (userResult.rowCount) {
+        // Existing user - login
+        user = userResult.rows[0];
+      } else {
+        // New user - register
+        const googleUserData = {
+          id: profile.sub,
+          displayName: profile.name,
+          email: profile.email,
+          picture: profile.picture
+        };
+
+        const registerResult = await db.query("SELECT register_google_user($1) AS user;", [JSON.stringify(googleUserData)]);
+        user = registerResult.rows[0].user;
+      }
+
+      // Create session
+      req.login(user, (err) => {
+        if (err) {
+          log_error(err);
+          return res.status(500).send(new ServerResponse(false, null, "Authentication failed"));
+        }
+        
+        user.build_v = FileConstants.getRelease();
+        return res.status(200).send(new AuthResponse("Login Successful!", true, user, null, "User successfully logged in"));
+      });
+
+    } catch (error) {
+      log_error(error);
+      return res.status(400).send(new ServerResponse(false, null, "Invalid ID token"));
+    }
+  }
 }
