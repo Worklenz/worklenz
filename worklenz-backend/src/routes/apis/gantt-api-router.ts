@@ -12,4 +12,9 @@ ganttApiRouter.get("/project-phases/:id", safeControllerFunction(GanttController
 
 ganttApiRouter.get("/project-workload", safeControllerFunction(GanttController.getWorkload));
 
+// New roadmap Gantt APIs
+ganttApiRouter.get("/roadmap-tasks", safeControllerFunction(GanttController.getRoadmapTasks));
+ganttApiRouter.get("/project-phases", safeControllerFunction(GanttController.getProjectPhases));
+ganttApiRouter.post("/update-task-dates", safeControllerFunction(GanttController.updateTaskDates));
+
 export default ganttApiRouter;

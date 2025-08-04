@@ -19,6 +19,9 @@ const ProjectViewMembers = React.lazy(
 const ProjectViewUpdates = React.lazy(
   () => import('@/pages/projects/project-view-1/updates/project-view-updates')
 );
+const ProjectViewGantt = React.lazy(
+  () => import('@/pages/projects/projectView/gantt/project-view-gantt')
+);
 
 // type of a tab items
 type TabItems = {
@@ -43,6 +46,7 @@ const getTabLabel = (key: string): string => {
         files: 'Files',
         members: 'Members',
         updates: 'Updates',
+        gantt: 'Gantt Chart',
       };
       return fallbacks[key] || key;
     }
@@ -117,6 +121,16 @@ export const tabItems: TabItems[] = [
       React.createElement(ProjectViewUpdates)
     ),
   },
+  {
+    index: 6,
+    key: 'gantt',
+    label: getTabLabel('gantt'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewGantt)
+    ),
+  },
 ];
 
 // Function to update tab labels when language changes
@@ -141,6 +155,9 @@ export const updateTabLabels = () => {
           break;
         case 'updates':
           item.label = getTabLabel('updates');
+          break;
+        case 'gantt':
+          item.label = getTabLabel('gantt');
           break;
       }
     });

@@ -1,0 +1,110 @@
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Gantt task list specific styles */
+.gantt-task-list-container {
+  /* Ensure the task list stays fixed and doesn't interfere with timeline scrolling */
+  position: relative;
+  box-sizing: border-box;
+}
+
+.gantt-timeline-container {
+  /* Ensure timeline scrolling doesn't affect task list positioning */
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Custom scrollbar for task list */
+.gantt-task-list-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-gutter: stable; /* Prevent layout shift */
+}
+
+/* Webkit scrollbar styling */
+.gantt-task-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gantt-task-list-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gantt-task-list-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 3px;
+}
+
+.gantt-task-list-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #a0aec0;
+}
+
+/* Firefox scrollbar color */
+.gantt-task-list-scroll {
+  scrollbar-color: #cbd5e0 transparent;
+}
+
+/* Dark mode scrollbar styles */
+.dark .gantt-task-list-scroll {
+  scrollbar-color: #4a5568 transparent;
+}
+
+.dark .gantt-task-list-scroll::-webkit-scrollbar-thumb {
+  background-color: #4a5568;
+}
+
+.dark .gantt-task-list-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #718096;
+}
+
+/* Gantt chart scrollbar - show vertical only */
+.gantt-chart-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 0;
+}
+
+/* Hide horizontal scrollbar specifically */
+.gantt-chart-scroll::-webkit-scrollbar:horizontal {
+  display: none;
+}
+
+.gantt-chart-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gantt-chart-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 4px;
+}
+
+.gantt-chart-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #a0aec0;
+}
+
+/* Firefox - hide horizontal scrollbar */
+.gantt-chart-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 transparent;
+}
+
+/* Dark mode chart scrollbar */
+.dark .gantt-chart-scroll::-webkit-scrollbar-thumb {
+  background-color: #4a5568;
+}
+
+.dark .gantt-chart-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #718096;
+}
+
+.dark .gantt-chart-scroll {
+  scrollbar-color: #4a5568 transparent;
+}

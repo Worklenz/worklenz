@@ -94,4 +94,133 @@ export default class GanttController extends WorklenzControllerBase {
     }
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
+
+  @HandleExceptions()
+  public static async getRoadmapTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const projectId = req.query.project_id;
+    
+    const q = `
+      SELECT 
+        t.id,
+        t.name,
+        t.start_date,
+        t.end_date,
+        t.done,
+        t.roadmap_sort_order,
+        t.parent_task_id,
+        CASE WHEN t.done THEN 100 ELSE 0 END as progress,
+        ts.name as status_name,
+        tsc.color_code as status_color,
+        tp.name as priority_name,
+        tp.value as priority_value,
+        tp.color_code as priority_color,
+        (
+          SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(assignee_info))), '[]'::JSON)
+          FROM (
+            SELECT 
+              tm.id as team_member_id,
+              u.name as assignee_name,
+              u.avatar_url
+            FROM tasks_assignees ta
+            JOIN team_members tm ON ta.team_member_id = tm.id
+            JOIN users u ON tm.user_id = u.id
+            WHERE ta.task_id = t.id
+          ) assignee_info
+        ) as assignees,
+        (
+          SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(phase_info))), '[]'::JSON)
+          FROM (
+            SELECT 
+              pp.id as phase_id,
+              pp.name as phase_name,
+              pp.color_code as phase_color
+            FROM task_phase tp
+            JOIN project_phases pp ON tp.phase_id = pp.id
+            WHERE tp.task_id = t.id
+          ) phase_info
+        ) as phases,
+        (
+          SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(dependency_info))), '[]'::JSON)
+          FROM (
+            SELECT 
+              td.related_task_id,
+              td.dependency_type,
+              rt.name as related_task_name
+            FROM task_dependencies td
+            JOIN tasks rt ON td.related_task_id = rt.id
+            WHERE td.task_id = t.id
+          ) dependency_info
+        ) as dependencies
+      FROM tasks t
+      LEFT JOIN task_statuses ts ON t.status_id = ts.id
+      LEFT JOIN sys_task_status_categories tsc ON ts.category_id = tsc.id
+      LEFT JOIN task_priorities tp ON t.priority_id = tp.id
+      WHERE t.project_id = $1 
+        AND t.archived = FALSE
+        AND t.parent_task_id IS NULL
+      ORDER BY t.roadmap_sort_order, t.created_at DESC;
+    `;
+    
+    const result = await db.query(q, [projectId]);
+    
+    // Get subtasks for each parent task
+    for (const task of result.rows) {
+      const subtasksQuery = `
+        SELECT 
+          id,
+          name,
+          start_date,
+          end_date,
+          done,
+          roadmap_sort_order,
+          parent_task_id,
+          CASE WHEN done THEN 100 ELSE 0 END as progress
+        FROM tasks 
+        WHERE parent_task_id = $1 
+          AND archived = FALSE
+        ORDER BY roadmap_sort_order, created_at DESC;
+      `;
+      
+      const subtasksResult = await db.query(subtasksQuery, [task.id]);
+      task.subtasks = subtasksResult.rows;
+    }
+    
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async getProjectPhases(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const projectId = req.query.project_id;
+    
+    const q = `
+      SELECT 
+        id,
+        name,
+        color_code,
+        start_date,
+        end_date,
+        sort_index
+      FROM project_phases
+      WHERE project_id = $1
+      ORDER BY sort_index, created_at;
+    `;
+    
+    const result = await db.query(q, [projectId]);
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async updateTaskDates(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { task_id, start_date, end_date } = req.body;
+    
+    const q = `
+      UPDATE tasks 
+      SET start_date = $2, end_date = $3, updated_at = NOW()
+      WHERE id = $1
+      RETURNING id, start_date, end_date;
+    `;
+    
+    const result = await db.query(q, [task_id, start_date, end_date]);
+    return res.status(200).send(new ServerResponse(true, result.rows[0]));
+  }
 }

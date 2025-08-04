@@ -84,6 +84,7 @@ import selectionReducer from '@/features/task-management/selection.slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { userActivityApiService } from '@/api/home-page/user-activity.api.service';
+import { ganttApi } from '@/pages/projects/projectView/gantt/services/gantt-api.service';
 
 import projectViewReducer from '@features/project/project-view-slice';
 import taskManagementFieldsReducer from '@features/task-management/taskListFields.slice';
@@ -92,7 +93,7 @@ export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: false,
-    }).concat(homePageApiService.middleware, projectsApi.middleware, userActivityApiService.middleware),
+    }).concat(homePageApiService.middleware, projectsApi.middleware, userActivityApiService.middleware, ganttApi.middleware),
   reducer: {
     // Auth & User
     auth: authReducer,
@@ -105,6 +106,7 @@ export const store = configureStore({
     homePageReducer: homePageReducer,
     [homePageApiService.reducerPath]: homePageApiService.reducer,
     [projectsApi.reducerPath]: projectsApi.reducer,
+    [ganttApi.reducerPath]: ganttApi.reducer,
     userActivityReducer: userActivityReducer,
     [userActivityApiService.reducerPath]: userActivityApiService.reducer,
 
