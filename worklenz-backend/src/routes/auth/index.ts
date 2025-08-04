@@ -55,6 +55,9 @@ authRouter.get("/google/verify", (req, res) => {
   })(req, res);
 });
 
+// Mobile Google Sign-In
+authRouter.post("/google/mobile", safeControllerFunction(AuthController.googleMobileAuth));
+
 // Passport logout
 authRouter.get("/logout", AuthController.logout);
 
