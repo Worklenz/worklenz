@@ -237,8 +237,8 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       size: att.size
     }));
 
-    // Transform the response to match the desired format
-    const commentResponse = {
+
+    const commentdata = {
       attachments: commentAttachments,
       avatar_url: avatarUrl,
       content: req.body.content,
@@ -253,7 +253,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       user_id: req.user?.id || ""
     };
 
-    return res.status(200).send(new ServerResponse(true, commentResponse));
+    return res.status(200).send(new ServerResponse(true, commentdata));
   }
 
   @HandleExceptions()
