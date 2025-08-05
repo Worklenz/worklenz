@@ -6,6 +6,7 @@ import GanttTaskList from './components/gantt-task-list/GanttTaskList';
 import GanttChart from './components/gantt-chart/GanttChart';
 import GanttToolbar from './components/gantt-toolbar/GanttToolbar';
 import ManagePhaseModal from '@components/task-management/ManagePhaseModal';
+import PhaseDetailsModal from './components/phase-details-modal/PhaseDetailsModal';
 import { GanttProvider } from './context/gantt-context';
 import { GanttViewMode } from './types/gantt-types';
 import {
@@ -31,7 +32,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const dispatch = useAppDispatch();
   const [viewMode, setViewMode] = useState<GanttViewMode>('month');
   const [showPhaseModal, setShowPhaseModal] = useState(false);
+  const [showPhaseDetailsModal, setShowPhaseDetailsModal] = useState(false);
+  const [selectedPhase, setSelectedPhase] = useState<any>(null);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [animatingTasks, setAnimatingTasks] = useState<Set<string>>(new Set());
+  const [prevExpandedTasks, setPrevExpandedTasks] = useState<Set<string>>(new Set());
   const timelineRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
@@ -108,6 +113,30 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     dispatch(fetchPriorities());
   }, [dispatch]);
 
+  // Track expansion changes for animations
+  useEffect(() => {
+    const currentExpanded = expandedTasks;
+    const previousExpanded = prevExpandedTasks;
+    
+    // Find newly expanded or collapsed phases
+    const newlyExpanded = new Set([...currentExpanded].filter(id => !previousExpanded.has(id)));
+    const newlyCollapsed = new Set([...previousExpanded].filter(id => !currentExpanded.has(id)));
+    
+    if (newlyExpanded.size > 0 || newlyCollapsed.size > 0) {
+      // Set animation state for newly changed phases
+      setAnimatingTasks(new Set([...newlyExpanded, ...newlyCollapsed]));
+      
+      // Clear animation state after animation completes
+      const timeout = setTimeout(() => {
+        setAnimatingTasks(new Set());
+      }, 400); // Match CSS animation duration
+      
+      setPrevExpandedTasks(new Set(currentExpanded));
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [expandedTasks, prevExpandedTasks]);
+
   const handleViewModeChange = useCallback((mode: GanttViewMode) => {
     setViewMode(mode);
   }, []);
@@ -181,6 +210,16 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     setShowPhaseModal(false);
   }, []);
 
+  const handlePhaseClick = useCallback((phase: any) => {
+    setSelectedPhase(phase);
+    setShowPhaseDetailsModal(true);
+  }, []);
+
+  const handleClosePhaseDetailsModal = useCallback(() => {
+    setShowPhaseDetailsModal(false);
+    setSelectedPhase(null);
+  }, []);
+
   const handlePhaseReorder = useCallback((oldIndex: number, newIndex: number) => {
     // TODO: Implement phase reordering API call
     console.log('Reorder phases:', { oldIndex, newIndex });
@@ -239,6 +278,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 projectId={projectId || ''}
                 viewMode={viewMode}
                 onTaskClick={handleTaskClick}
+                onPhaseClick={handlePhaseClick}
                 onCreateTask={handleCreateTask}
                 onCreateQuickTask={handleCreateQuickTask}
                 onPhaseReorder={handlePhaseReorder}
@@ -246,6 +286,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 onScroll={handleTaskListScroll}
                 expandedTasks={expandedTasks}
                 onExpandedTasksChange={setExpandedTasks}
+                animatingTasks={animatingTasks}
               />
             </div>
 
@@ -266,10 +307,12 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 viewMode={viewMode}
                 ref={chartRef}
                 onScroll={handleChartScroll}
+                onPhaseClick={handlePhaseClick}
                 containerRef={containerRef}
                 dateRange={dateRange}
                 phases={phases}
                 expandedTasks={expandedTasks}
+                animatingTasks={animatingTasks}
               />
             </div>
           </div>
@@ -281,6 +324,13 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         open={showPhaseModal}
         onClose={handleClosePhaseModal}
         projectId={projectId}
+      />
+
+      {/* Phase Details Modal */}
+      <PhaseDetailsModal
+        open={showPhaseDetailsModal}
+        onClose={handleClosePhaseDetailsModal}
+        phase={selectedPhase}
       />
     </GanttProvider>
   );

@@ -20,10 +20,12 @@ interface GanttChartProps {
   tasks: GanttTask[];
   viewMode: GanttViewMode;
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
+  onPhaseClick?: (phase: GanttTask) => void;
   containerRef: RefObject<HTMLDivElement | null>;
   dateRange?: { start: Date; end: Date };
   phases?: GanttPhase[];
   expandedTasks?: Set<string>;
+  animatingTasks?: Set<string>;
 }
 
 interface GridColumnProps {
@@ -48,10 +50,12 @@ interface TaskBarRowProps {
   columnWidth: number;
   columnsCount: number;
   dateRange?: { start: Date; end: Date };
+  animationClass?: string;
+  onPhaseClick?: (phase: GanttTask) => void;
 }
 
 const TaskBarRow: React.FC<TaskBarRowProps> = memo(
-  ({ task, viewMode, columnWidth, columnsCount, dateRange }) => {
+  ({ task, viewMode, columnWidth, columnsCount, dateRange, animationClass = '', onPhaseClick }) => {
     const renderMilestone = () => {
       if (!task.start_date || !dateRange) return null;
 
@@ -107,11 +111,18 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
 
     const isPhase = task.type === 'milestone' || task.is_milestone;
 
+    const handleClick = () => {
+      if (isPhase && onPhaseClick) {
+        onPhaseClick(task);
+      }
+    };
+
     return (
       <div
         className={`${isPhase ? 'min-h-[4.5rem]' : 'h-9'} relative border-b border-gray-100 dark:border-gray-700 transition-colors ${
-          !isPhase ? 'hover:bg-gray-50 dark:hover:bg-gray-750' : ''
-        }`}
+          !isPhase ? 'hover:bg-gray-50 dark:hover:bg-gray-750' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750'
+        } ${animationClass}`}
+        onClick={isPhase ? handleClick : undefined}
         style={
           isPhase && task.color
             ? {
@@ -129,7 +140,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
 TaskBarRow.displayName = 'TaskBarRow';
 
 const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
-  ({ tasks, viewMode, onScroll, containerRef, dateRange, phases, expandedTasks }, ref) => {
+  ({ tasks, viewMode, onScroll, onPhaseClick, containerRef, dateRange, phases, expandedTasks, animatingTasks }, ref) => {
     const columnsCount = useMemo(() => {
       if (!dateRange) {
         // Default counts if no date range
@@ -259,24 +270,52 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
             ))}
           </div>
           <div className="relative z-10">
-            {flattenedTasks.map(item => {
+            {flattenedTasks.map((item, index) => {
               if ('isEmptyRow' in item && item.isEmptyRow) {
+                // Determine if this add-task row should have animation classes
+                const addTaskPhaseId = item.id.replace('add-task-', '').replace('-timeline', '');
+                const shouldAnimate = animatingTasks ? animatingTasks.has(addTaskPhaseId) : false;
+                const staggerIndex = Math.min((index - 1) % 5, 4);
+                const animationClass = shouldAnimate 
+                  ? `gantt-task-slide-in gantt-task-stagger-${staggerIndex + 1}` 
+                  : '';
+                
                 // Render empty row without "Add Task" button
                 return (
                   <div
                     key={item.id}
-                    className="h-9 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                    className={`h-9 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 ${animationClass}`}
                   />
                 );
               }
+              
+              const task = item as GanttTask;
+              const isPhase = task.type === 'milestone' || task.is_milestone;
+              
+              // Determine if this task should have animation classes
+              let parentPhaseId = '';
+              if (isPhase) {
+                parentPhaseId = task.id === 'phase-unmapped' ? 'unmapped' : task.phase_id || task.id.replace('phase-', '');
+              } else {
+                parentPhaseId = task.phase_id || '';
+              }
+              
+              const shouldAnimate = !isPhase && animatingTasks ? animatingTasks.has(parentPhaseId) : false;
+              const staggerIndex = Math.min((index - 1) % 5, 4);
+              const animationClass = shouldAnimate 
+                ? `gantt-task-slide-in gantt-task-stagger-${staggerIndex + 1}` 
+                : '';
+              
               return (
                 <TaskBarRow
                   key={item.id}
-                  task={item as GanttTask}
+                  task={task}
                   viewMode={viewMode}
                   columnWidth={actualColumnWidth}
                   columnsCount={columnsCount}
                   dateRange={dateRange}
+                  animationClass={animationClass}
+                  onPhaseClick={onPhaseClick}
                 />
               );
             })}

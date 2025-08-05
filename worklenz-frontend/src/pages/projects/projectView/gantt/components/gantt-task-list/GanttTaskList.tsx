@@ -46,12 +46,14 @@ interface GanttTaskListProps {
   viewMode: GanttViewMode;
   onTaskToggle?: (taskId: string) => void;
   onTaskClick?: (taskId: string) => void;
+  onPhaseClick?: (phase: GanttTask) => void;
   onCreateTask?: (phaseId?: string) => void;
   onCreateQuickTask?: (taskName: string, phaseId?: string) => void;
   onPhaseReorder?: (oldIndex: number, newIndex: number) => void;
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
   expandedTasks?: Set<string>;
   onExpandedTasksChange?: (expanded: Set<string>) => void;
+  animatingTasks?: Set<string>;
 }
 
 interface TaskRowProps {
@@ -60,12 +62,14 @@ interface TaskRowProps {
   projectId: string;
   onToggle?: (taskId: string) => void;
   onTaskClick?: (taskId: string) => void;
+  onPhaseClick?: (phase: GanttTask) => void;
   expandedTasks: Set<string>;
   onCreateTask?: (phaseId?: string) => void;
   onCreateQuickTask?: (taskName: string, phaseId?: string) => void;
   isDraggable?: boolean;
   activeId?: string | null;
   overId?: string | null;
+  animationClass?: string;
 }
 
 interface SortableTaskRowProps extends TaskRowProps {
@@ -104,6 +108,7 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
     projectId,
     onToggle,
     onTaskClick,
+    onPhaseClick,
     expandedTasks,
     onCreateTask,
     onCreateQuickTask,
@@ -112,6 +117,7 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
     overId,
     dragAttributes,
     dragListeners,
+    animationClass = '',
   }) => {
     const [showInlineInput, setShowInlineInput] = useState(false);
     const [taskName, setTaskName] = useState('');
@@ -273,6 +279,12 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
       }
     }, [isPhase, onTaskClick, task.id]);
 
+    const handlePhaseClick = useCallback(() => {
+      if (isPhase && onPhaseClick) {
+        onPhaseClick(task);
+      }
+    }, [isPhase, onPhaseClick, task]);
+
     // Handle click outside to close date picker
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -298,7 +310,7 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
               : ''
           } ${isDraggable && !isPhase ? 'cursor-grab active:cursor-grabbing' : ''} ${
             activeId === task.id ? 'opacity-50' : ''
-          } ${overId === task.id && overId !== activeId ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+          } ${overId === task.id && overId !== activeId ? 'ring-2 ring-blue-500 ring-inset' : ''} ${animationClass}`}
           style={
             isPhase && task.color
               ? {
@@ -307,7 +319,7 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
                 }
               : {}
           }
-          onClick={!isPhase ? handleTaskClick : undefined}
+          onClick={!isPhase ? handleTaskClick : handlePhaseClick}
           {...(!isPhase && isDraggable ? dragAttributes : {})}
           {...(!isPhase && isDraggable ? dragListeners : {})}
         >
@@ -529,12 +541,14 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
       viewMode,
       onTaskToggle,
       onTaskClick,
+      onPhaseClick,
       onCreateTask,
       onCreateQuickTask,
       onPhaseReorder,
       onScroll,
       expandedTasks: expandedTasksProp,
       onExpandedTasksChange,
+      animatingTasks: animatingTasksProp,
     },
     ref
   ) => {
@@ -543,6 +557,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
     );
 
     const expandedTasks = expandedTasksProp || localExpandedTasks;
+    const animatingTasks = animatingTasksProp || new Set();
 
     // Drag and drop state
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -560,6 +575,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
         },
       })
     );
+
 
     const handleTaskToggle = useCallback(
       (taskId: string) => {
@@ -789,15 +805,33 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                 const isPhase = task.type === 'milestone' || task.is_milestone;
                 const isUnmappedPhase = task.id === 'phase-unmapped';
                 const isAddTaskButton = task.type === 'add-task-button';
+                
+                // Determine if this task should have animation classes
+                let parentPhaseId = '';
+                if (isPhase) {
+                  parentPhaseId = task.id === 'phase-unmapped' ? 'unmapped' : task.phase_id || task.id.replace('phase-', '');
+                } else if (isAddTaskButton) {
+                  parentPhaseId = task.parent_phase_id || '';
+                } else {
+                  parentPhaseId = task.phase_id || '';
+                }
+                
+                const shouldAnimate = !isPhase && animatingTasks.has(parentPhaseId);
+                const staggerIndex = Math.min((index - 1) % 5, 4); // Subtract 1 to account for phase row, limit stagger to 5 levels
 
                 if (isAddTaskButton) {
+                  const animationClass = shouldAnimate 
+                    ? `gantt-task-slide-in gantt-task-stagger-${staggerIndex + 1}` 
+                    : '';
+                  
                   return (
-                    <AddTaskRow
-                      key={task.id}
-                      task={task}
-                      projectId={projectId}
-                      onCreateQuickTask={onCreateQuickTask}
-                    />
+                    <div key={task.id} className={animationClass}>
+                      <AddTaskRow
+                        task={task}
+                        projectId={projectId}
+                        onCreateQuickTask={onCreateQuickTask}
+                      />
+                    </div>
                   );
                 } else if (isPhase && !isUnmappedPhase) {
                   return (
@@ -809,6 +843,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                       projectId={projectId}
                       onToggle={handleTaskToggle}
                       onTaskClick={onTaskClick}
+                      onPhaseClick={onPhaseClick}
                       expandedTasks={expandedTasks}
                       onCreateTask={onCreateTask}
                       onCreateQuickTask={onCreateQuickTask}
@@ -825,6 +860,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                       projectId={projectId}
                       onToggle={handleTaskToggle}
                       onTaskClick={onTaskClick}
+                      onPhaseClick={onPhaseClick}
                       expandedTasks={expandedTasks}
                       onCreateTask={onCreateTask}
                       onCreateQuickTask={onCreateQuickTask}
@@ -834,7 +870,11 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                     />
                   );
                 } else {
-                  // Regular tasks - make them draggable too
+                  // Regular tasks - make them draggable too with animation
+                  const animationClass = shouldAnimate 
+                    ? `gantt-task-slide-in gantt-task-stagger-${staggerIndex + 1}` 
+                    : '';
+                  
                   return (
                     <SortableTaskRow
                       key={task.id}
@@ -844,11 +884,13 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                       projectId={projectId}
                       onToggle={handleTaskToggle}
                       onTaskClick={onTaskClick}
+                      onPhaseClick={onPhaseClick}
                       expandedTasks={expandedTasks}
                       onCreateTask={onCreateTask}
                       onCreateQuickTask={onCreateQuickTask}
                       activeId={activeId}
                       overId={overId}
+                      animationClass={animationClass}
                     />
                   );
                 }

@@ -78,4 +78,7 @@ $RECYCLE.BIN/
 # TypeScript
 *.tsbuildinfo
 
+# Claude
+CLAUDE.md
+
 

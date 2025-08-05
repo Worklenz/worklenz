@@ -104,6 +104,13 @@
 /* Improve visual hierarchy for phase rows */
 .gantt-phase-row {
   position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.gantt-phase-row:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .gantt-phase-row::before {
@@ -115,6 +122,11 @@
   width: 4px;
   background-color: currentColor;
   opacity: 0.6;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.gantt-phase-row:hover::before {
+  opacity: 0.8;
 }
 
 /* Better hover states */
@@ -141,8 +153,8 @@
 .gantt-phase-children {
   overflow: hidden;
   transition:
-    max-height 0.3s ease-in-out,
-    opacity 0.2s ease-in-out;
+    max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease-in-out;
 }
 
 .gantt-phase-children.collapsed {
@@ -151,9 +163,22 @@
 }
 
 .gantt-phase-children.expanded {
-  max-height: 1000px; /* Adjust based on expected max children */
+  max-height: 2000px; /* Adjust based on expected max children */
   opacity: 1;
 }
+
+/* Individual task transitions */
+.gantt-task-row,
+.gantt-add-task-inline {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Staggered animation for multiple tasks */
+.gantt-task-stagger-1 { animation-delay: 0.05s; }
+.gantt-task-stagger-2 { animation-delay: 0.1s; }
+.gantt-task-stagger-3 { animation-delay: 0.15s; }
+.gantt-task-stagger-4 { animation-delay: 0.2s; }
+.gantt-task-stagger-5 { animation-delay: 0.25s; }
 
 /* Expand/collapse icon transitions */
 .gantt-expand-icon {
@@ -166,17 +191,36 @@
 
 /* Task row slide-in animation */
 .gantt-task-slide-in {
-  animation: slideIn 0.3s ease-out;
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.gantt-task-slide-out {
+  animation: slideOut 0.2s ease-in forwards;
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
     transform: translateY(-10px);
+    max-height: 0;
   }
   to {
     opacity: 1;
     transform: translateY(0);
+    max-height: 36px; /* Height of a task row */
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 36px;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
   }
 }
 
@@ -195,4 +239,32 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Timeline task bar transitions */
+.gantt-chart-scroll .gantt-task-slide-in {
+  animation: slideInTimeline 0.3s ease-out forwards;
+}
+
+@keyframes slideInTimeline {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    max-height: 36px;
+  }
+}
+
+/* Enhanced timeline task bar styling */
+.gantt-chart-scroll .relative {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Ensure timeline task bars have smooth hover transitions */
+.gantt-chart-scroll .hover\\:bg-gray-50:hover {
+  transition: background-color 0.15s ease-in-out;
 }
