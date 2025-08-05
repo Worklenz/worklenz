@@ -181,4 +181,94 @@ export default class AuthController extends WorklenzControllerBase {
       res.status(500).send(new ServerResponse(false, null, DEFAULT_ERROR_MESSAGE));
     }
   }
+
+  @HandleExceptions({logWithError: "body"})
+  public static async googleMobileAuth(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    const {idToken} = req.body;
+    
+    if (!idToken) {
+      return res.status(400).send(new ServerResponse(false, null, "ID token is required"));
+    }
+
+    try {
+      const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+      const profile = response.data;
+
+      // Validate token audience (client ID) - accept web, Android, and iOS client IDs
+      const allowedClientIds = [
+        process.env.GOOGLE_CLIENT_ID, // Web client ID
+        process.env.GOOGLE_ANDROID_CLIENT_ID, // Android client ID
+        process.env.GOOGLE_IOS_CLIENT_ID, // iOS client ID
+      ].filter(Boolean); // Remove undefined values
+      
+      console.log("Token audience (aud):", profile.aud);
+      console.log("Allowed client IDs:", allowedClientIds);
+      console.log("Environment variables check:");
+      console.log("- GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID ? "Set" : "Not set");
+      console.log("- GOOGLE_ANDROID_CLIENT_ID:", process.env.GOOGLE_ANDROID_CLIENT_ID ? "Set" : "Not set");
+      console.log("- GOOGLE_IOS_CLIENT_ID:", process.env.GOOGLE_IOS_CLIENT_ID ? "Set" : "Not set");
+      
+      if (!allowedClientIds.includes(profile.aud)) {
+        return res.status(400).send(new ServerResponse(false, null, "Invalid token audience"));
+      }
+
+      // Validate token issuer
+      if (!["https://accounts.google.com", "accounts.google.com"].includes(profile.iss)) {
+        return res.status(400).send(new ServerResponse(false, null, "Invalid token issuer"));
+      }
+
+      // Check token expiry
+      if (Date.now() >= profile.exp * 1000) {
+        return res.status(400).send(new ServerResponse(false, null, "Token expired"));
+      }
+
+      if (!profile.email_verified) {
+        return res.status(400).send(new ServerResponse(false, null, "Email not verified"));
+      }
+
+      // Check for existing local account
+      const localAccountResult = await db.query("SELECT 1 FROM users WHERE email = $1 AND password IS NOT NULL AND is_deleted IS FALSE;", [profile.email]);
+      if (localAccountResult.rowCount) {
+        return res.status(400).send(new ServerResponse(false, null, `No Google account exists for email ${profile.email}.`));
+      }
+
+      // Check if user exists
+      const userResult = await db.query(
+        "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR email = $2;",
+        [profile.sub, profile.email]
+      );
+
+      let user: any;
+      if (userResult.rowCount) {
+        // Existing user - login
+        user = userResult.rows[0];
+      } else {
+        // New user - register
+        const googleUserData = {
+          id: profile.sub,
+          displayName: profile.name,
+          email: profile.email,
+          picture: profile.picture
+        };
+
+        const registerResult = await db.query("SELECT register_google_user($1) AS user;", [JSON.stringify(googleUserData)]);
+        user = registerResult.rows[0].user;
+      }
+
+      // Create session
+      req.login(user, (err) => {
+        if (err) {
+          log_error(err);
+          return res.status(500).send(new ServerResponse(false, null, "Authentication failed"));
+        }
+        
+        user.build_v = FileConstants.getRelease();
+        return res.status(200).send(new AuthResponse("Login Successful!", true, user, null, "User successfully logged in"));
+      });
+
+    } catch (error) {
+      log_error(error);
+      return res.status(400).send(new ServerResponse(false, null, "Invalid ID token"));
+    }
+  }
 }
