@@ -23,15 +23,16 @@ export const useGanttDimensions = (
 
   const baseColumnWidth = getColumnWidth(viewMode);
   const minTotalWidth = columnsCount * baseColumnWidth;
-  
+
   // For day/week views with many columns, always use base width to enable scrolling
   // For month/quarter/year views, stretch to fill container if wider
   const shouldStretch = viewMode !== 'day' && viewMode !== 'week';
-  
-  const actualColumnWidth = shouldStretch && containerWidth > minTotalWidth
-    ? containerWidth / columnsCount
-    : baseColumnWidth;
-  
+
+  const actualColumnWidth =
+    shouldStretch && containerWidth > minTotalWidth
+      ? containerWidth / columnsCount
+      : baseColumnWidth;
+
   const totalWidth = columnsCount * actualColumnWidth;
 
   return {
@@ -39,6 +40,6 @@ export const useGanttDimensions = (
     actualColumnWidth,
     totalWidth,
     columnsCount,
-    shouldScroll: totalWidth > containerWidth
+    shouldScroll: totalWidth > containerWidth,
   };
 };

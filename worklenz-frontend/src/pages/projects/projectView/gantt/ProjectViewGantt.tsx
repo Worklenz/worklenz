@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Spin, message } from '@/shared/antd-imports';
 import { useParams } from 'react-router-dom';
 import GanttTimeline from './components/gantt-timeline/GanttTimeline';
@@ -20,7 +20,9 @@ import {
   setShowTaskDrawer,
   setSelectedTaskId,
   setTaskFormViewModel,
+  fetchTask,
 } from '@features/task-drawer/task-drawer.slice';
+import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import './gantt-styles.css';
 
@@ -55,25 +57,30 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     if (tasksResponse?.body && phasesResponse?.body) {
       const transformedTasks = transformToGanttTasks(tasksResponse.body, phasesResponse.body);
       const result: any[] = [];
-      
+
       transformedTasks.forEach(task => {
         // Always show phase milestones
         if (task.type === 'milestone' || task.is_milestone) {
           result.push(task);
-          
+
           // If this phase is expanded, show its children tasks
-          const phaseId = task.id === 'phase-unmapped' ? 'unmapped' : task.phase_id;
-          if (expandedTasks.has(phaseId) && task.children) {
+          const phaseId =
+            task.id === 'phase-unmapped'
+              ? 'unmapped'
+              : task.phase_id || task.id.replace('phase-', '');
+          const isExpanded = expandedTasks.has(phaseId);
+
+          if (isExpanded && task.children) {
             task.children.forEach((child: any) => {
               result.push({
                 ...child,
-                phase_id: task.phase_id // Ensure child has correct phase_id
+                phase_id: task.phase_id, // Ensure child has correct phase_id
               });
             });
           }
         }
       });
-      
+
       return result;
     }
     return [];
@@ -95,6 +102,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   }, [tasks, viewMode]);
 
   const loading = tasksLoading || phasesLoading;
+
+  // Load priorities for task drawer functionality
+  useEffect(() => {
+    dispatch(fetchPriorities());
+  }, [dispatch]);
 
   const handleViewModeChange = useCallback((mode: GanttViewMode) => {
     setViewMode(mode);
@@ -156,8 +168,13 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       dispatch(setSelectedTaskId(taskId));
       dispatch(setTaskFormViewModel(null)); // Clear form view model for existing task
       dispatch(setShowTaskDrawer(true));
+
+      // Fetch the complete task data including priorities
+      if (projectId) {
+        dispatch(fetchTask({ taskId, projectId }));
+      }
     },
-    [dispatch]
+    [dispatch, projectId]
   );
 
   const handleClosePhaseModal = useCallback(() => {
@@ -172,13 +189,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
 
   const handleCreateQuickTask = useCallback(
     (taskName: string, phaseId?: string) => {
-      // Refresh the Gantt data after task creation
+      // Refresh the Gantt data after task creation to show the new task
       refetchTasks();
-      message.success(`Task "${taskName}" created successfully!`);
     },
     [refetchTasks]
   );
-
 
   // Handle errors
   if (tasksError || phasesError) {

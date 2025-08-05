@@ -21,7 +21,11 @@ export interface RoadmapTasksResponse {
   priority_name: string;
   priority_value: number;
   priority_color: string;
-  phase_id: string | null;
+  phases: Array<{
+    phase_id: string;
+    phase_name: string;
+    phase_color: string;
+  }>;
   assignees: Array<{
     team_member_id: string;
     assignee_name: string;
@@ -41,7 +45,7 @@ export interface RoadmapTasksResponse {
     progress: number;
     roadmap_sort_order: number;
     parent_task_id: string;
-    phase_id: string | null;
+    phase_id?: string | null; // Keep this for subtasks compatibility
   }>;
 }
 
@@ -52,6 +56,10 @@ export interface ProjectPhaseResponse {
   start_date: string | null;
   end_date: string | null;
   sort_index: number;
+  todo_progress: number;
+  doing_progress: number;
+  done_progress: number;
+  total_tasks: number;
 }
 
 export interface UpdateTaskDatesRequest {
@@ -108,10 +116,7 @@ export const ganttApi = createApi({
   }),
   tagTypes: ['GanttTasks', 'GanttPhases'],
   endpoints: builder => ({
-    getRoadmapTasks: builder.query<
-      IServerResponse<RoadmapTasksResponse[]>,
-      { projectId: string }
-    >({
+    getRoadmapTasks: builder.query<IServerResponse<RoadmapTasksResponse[]>, { projectId: string }>({
       query: ({ projectId }) => {
         const params = new URLSearchParams({
           project_id: projectId,
@@ -124,40 +129,31 @@ export const ganttApi = createApi({
       ],
     }),
 
-    getProjectPhases: builder.query<
-      IServerResponse<ProjectPhaseResponse[]>,
-      { projectId: string }
-    >({
-      query: ({ projectId }) => {
-        const params = new URLSearchParams({
-          project_id: projectId,
-        });
-        return `${rootUrl}/project-phases?${params.toString()}`;
-      },
-      providesTags: (result, error, { projectId }) => [
-        { type: 'GanttPhases', id: projectId },
-        { type: 'GanttPhases', id: 'LIST' },
-      ],
-    }),
+    getProjectPhases: builder.query<IServerResponse<ProjectPhaseResponse[]>, { projectId: string }>(
+      {
+        query: ({ projectId }) => {
+          const params = new URLSearchParams({
+            project_id: projectId,
+          });
+          return `${rootUrl}/project-phases?${params.toString()}`;
+        },
+        providesTags: (result, error, { projectId }) => [
+          { type: 'GanttPhases', id: projectId },
+          { type: 'GanttPhases', id: 'LIST' },
+        ],
+      }
+    ),
 
-    updateTaskDates: builder.mutation<
-      IServerResponse<any>,
-      UpdateTaskDatesRequest
-    >({
+    updateTaskDates: builder.mutation<IServerResponse<any>, UpdateTaskDatesRequest>({
       query: body => ({
         url: `${rootUrl}/update-task-dates`,
         method: 'POST',
         body,
       }),
-      invalidatesTags: (result, error, { task_id }) => [
-        { type: 'GanttTasks', id: 'LIST' },
-      ],
+      invalidatesTags: (result, error, { task_id }) => [{ type: 'GanttTasks', id: 'LIST' }],
     }),
 
-    createPhase: builder.mutation<
-      IServerResponse<ProjectPhaseResponse>,
-      CreatePhaseRequest
-    >({
+    createPhase: builder.mutation<IServerResponse<ProjectPhaseResponse>, CreatePhaseRequest>({
       query: body => ({
         url: `${rootUrl}/create-phase`,
         method: 'POST',
@@ -171,10 +167,7 @@ export const ganttApi = createApi({
       ],
     }),
 
-    createTask: builder.mutation<
-      IServerResponse<RoadmapTasksResponse>,
-      CreateTaskRequest
-    >({
+    createTask: builder.mutation<IServerResponse<RoadmapTasksResponse>, CreateTaskRequest>({
       query: body => ({
         url: `${rootUrl}/create-task`,
         method: 'POST',
@@ -186,10 +179,7 @@ export const ganttApi = createApi({
       ],
     }),
 
-    updatePhase: builder.mutation<
-      IServerResponse<ProjectPhaseResponse>,
-      UpdatePhaseRequest
-    >({
+    updatePhase: builder.mutation<IServerResponse<ProjectPhaseResponse>, UpdatePhaseRequest>({
       query: body => ({
         url: `${rootUrl}/update-phase`,
         method: 'PUT',
@@ -217,17 +207,23 @@ export const {
 /**
  * Transform API response to Gantt task format with phases as milestones
  */
-export const transformToGanttTasks = (apiTasks: RoadmapTasksResponse[], apiPhases: ProjectPhaseResponse[]): GanttTask[] => {
+export const transformToGanttTasks = (
+  apiTasks: RoadmapTasksResponse[],
+  apiPhases: ProjectPhaseResponse[]
+): GanttTask[] => {
   // Group tasks by phase
   const tasksByPhase = new Map<string, RoadmapTasksResponse[]>();
   const unassignedTasks: RoadmapTasksResponse[] = [];
 
   apiTasks.forEach(task => {
-    if (task.phase_id) {
-      if (!tasksByPhase.has(task.phase_id)) {
-        tasksByPhase.set(task.phase_id, []);
+    // Tasks now have phases array instead of direct phase_id
+    const taskPhaseId = task.phases.length > 0 ? task.phases[0].phase_id : null;
+
+    if (taskPhaseId) {
+      if (!tasksByPhase.has(taskPhaseId)) {
+        tasksByPhase.set(taskPhaseId, []);
       }
-      tasksByPhase.get(task.phase_id)!.push(task);
+      tasksByPhase.get(taskPhaseId)!.push(task);
     } else {
       unassignedTasks.push(task);
     }
@@ -240,7 +236,7 @@ export const transformToGanttTasks = (apiTasks: RoadmapTasksResponse[], apiPhase
     .sort((a, b) => a.sort_index - b.sort_index)
     .forEach(phase => {
       const phaseTasks = tasksByPhase.get(phase.id) || [];
-      
+
       // Create phase milestone
       const phaseMilestone: GanttTask = {
         id: `phase-${phase.id}`,
@@ -254,7 +250,12 @@ export const transformToGanttTasks = (apiTasks: RoadmapTasksResponse[], apiPhase
         type: 'milestone',
         is_milestone: true,
         phase_id: phase.id,
-        children: phaseTasks.map(task => transformTask(task, 1))
+        // Pass through phase progress data from backend
+        todo_progress: phase.todo_progress,
+        doing_progress: phase.doing_progress,
+        done_progress: phase.done_progress,
+        total_tasks: phase.total_tasks,
+        children: phaseTasks.map(task => transformTask(task, 1)),
       };
 
       result.push(phaseMilestone);
@@ -273,7 +274,7 @@ export const transformToGanttTasks = (apiTasks: RoadmapTasksResponse[], apiPhase
     type: 'milestone',
     is_milestone: true,
     phase_id: null,
-    children: unassignedTasks.map(task => transformTask(task, 1))
+    children: unassignedTasks.map(task => transformTask(task, 1)),
   };
 
   result.push(unmappedPhase);
@@ -284,36 +285,40 @@ export const transformToGanttTasks = (apiTasks: RoadmapTasksResponse[], apiPhase
 /**
  * Helper function to transform individual task
  */
-const transformTask = (task: RoadmapTasksResponse, level: number = 0): GanttTask => ({
-  id: task.id,
-  name: task.name,
-  start_date: task.start_date ? new Date(task.start_date) : null,
-  end_date: task.end_date ? new Date(task.end_date) : null,
-  progress: task.progress,
-  dependencies: task.dependencies.map(dep => dep.related_task_id),
-  dependencyType: task.dependencies[0]?.dependency_type as any || 'blocked_by',
-  parent_id: task.parent_task_id,
-  children: task.subtasks.map(subtask => ({
-    id: subtask.id,
-    name: subtask.name,
-    start_date: subtask.start_date ? new Date(subtask.start_date) : null,
-    end_date: subtask.end_date ? new Date(subtask.end_date) : null,
-    progress: subtask.progress,
-    parent_id: subtask.parent_task_id,
-    level: level + 1,
+const transformTask = (task: RoadmapTasksResponse, level: number = 0): GanttTask => {
+  const taskPhaseId = task.phases.length > 0 ? task.phases[0].phase_id : null;
+
+  return {
+    id: task.id,
+    name: task.name,
+    start_date: task.start_date ? new Date(task.start_date) : null,
+    end_date: task.end_date ? new Date(task.end_date) : null,
+    progress: task.progress,
+    dependencies: task.dependencies.map(dep => dep.related_task_id),
+    dependencyType: (task.dependencies[0]?.dependency_type as any) || 'blocked_by',
+    parent_id: task.parent_task_id,
+    children: task.subtasks.map(subtask => ({
+      id: subtask.id,
+      name: subtask.name,
+      start_date: subtask.start_date ? new Date(subtask.start_date) : null,
+      end_date: subtask.end_date ? new Date(subtask.end_date) : null,
+      progress: subtask.progress,
+      parent_id: subtask.parent_task_id,
+      level: level + 1,
+      type: 'task',
+      phase_id: subtask.phase_id, // Subtasks might still use direct phase_id
+    })),
+    level,
+    expanded: true,
+    color: task.status_color || task.priority_color,
+    assignees: task.assignees.map(a => a.assignee_name),
+    priority: task.priority_name,
+    status: task.status_name,
+    phase_id: taskPhaseId,
+    is_milestone: false,
     type: 'task',
-    phase_id: subtask.phase_id
-  })),
-  level,
-  expanded: true,
-  color: task.status_color || task.priority_color,
-  assignees: task.assignees.map(a => a.assignee_name),
-  priority: task.priority_name,
-  status: task.status_name,
-  phase_id: task.phase_id,
-  is_milestone: false,
-  type: 'task'
-});
+  };
+};
 
 /**
  * Transform API response to Gantt phases format
@@ -325,6 +330,10 @@ export const transformToGanttPhases = (apiPhases: ProjectPhaseResponse[]): Gantt
     color_code: phase.color_code,
     start_date: phase.start_date ? new Date(phase.start_date) : null,
     end_date: phase.end_date ? new Date(phase.end_date) : null,
-    sort_index: phase.sort_index
+    sort_index: phase.sort_index,
+    todo_progress: phase.todo_progress,
+    doing_progress: phase.doing_progress,
+    done_progress: phase.done_progress,
+    total_tasks: phase.total_tasks,
   }));
 };

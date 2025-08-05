@@ -194,19 +194,80 @@ export default class GanttController extends WorklenzControllerBase {
     
     const q = `
       SELECT 
-        id,
-        name,
-        color_code,
-        start_date,
-        end_date,
-        sort_index
-      FROM project_phases
-      WHERE project_id = $1
-      ORDER BY sort_index, created_at;
+        pp.id,
+        pp.name,
+        pp.color_code,
+        pp.start_date,
+        pp.end_date,
+        pp.sort_index,
+        -- Calculate task counts by status category for progress
+        COALESCE(
+          (SELECT COUNT(*) 
+           FROM tasks t 
+           JOIN task_phase tp ON t.id = tp.task_id 
+           JOIN task_statuses ts ON t.status_id = ts.id
+           JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+           WHERE tp.phase_id = pp.id 
+             AND t.archived = FALSE 
+             AND stsc.is_todo = TRUE), 0
+        ) as todo_count,
+        COALESCE(
+          (SELECT COUNT(*) 
+           FROM tasks t 
+           JOIN task_phase tp ON t.id = tp.task_id 
+           JOIN task_statuses ts ON t.status_id = ts.id
+           JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+           WHERE tp.phase_id = pp.id 
+             AND t.archived = FALSE 
+             AND stsc.is_doing = TRUE), 0
+        ) as doing_count,
+        COALESCE(
+          (SELECT COUNT(*) 
+           FROM tasks t 
+           JOIN task_phase tp ON t.id = tp.task_id 
+           JOIN task_statuses ts ON t.status_id = ts.id
+           JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+           WHERE tp.phase_id = pp.id 
+             AND t.archived = FALSE 
+             AND stsc.is_done = TRUE), 0
+        ) as done_count,
+        COALESCE(
+          (SELECT COUNT(*) 
+           FROM tasks t 
+           JOIN task_phase tp ON t.id = tp.task_id 
+           WHERE tp.phase_id = pp.id 
+             AND t.archived = FALSE), 0
+        ) as total_count
+      FROM project_phases pp
+      WHERE pp.project_id = $1
+      ORDER BY pp.sort_index, pp.created_at;
     `;
     
     const result = await db.query(q, [projectId]);
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    
+    // Calculate progress percentages for each phase
+    const phasesWithProgress = result.rows.map(phase => {
+      const total = parseInt(phase.total_count) || 0;
+      const todoCount = parseInt(phase.todo_count) || 0;
+      const doingCount = parseInt(phase.doing_count) || 0;
+      const doneCount = parseInt(phase.done_count) || 0;
+      
+      return {
+        id: phase.id,
+        name: phase.name,
+        color_code: phase.color_code,
+        start_date: phase.start_date,
+        end_date: phase.end_date,
+        sort_index: phase.sort_index,
+        // Calculate progress percentages
+        todo_progress: total > 0 ? Math.round((todoCount / total) * 100) : 0,
+        doing_progress: total > 0 ? Math.round((doingCount / total) * 100) : 0,
+        done_progress: total > 0 ? Math.round((doneCount / total) * 100) : 0,
+        total_tasks: total
+      };
+    });
+    
+    return res.status(200).send(new ServerResponse(true, phasesWithProgress));
   }
 
   @HandleExceptions()

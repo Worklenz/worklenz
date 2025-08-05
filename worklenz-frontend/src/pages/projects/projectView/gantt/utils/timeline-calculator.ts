@@ -18,12 +18,7 @@ export class TimelineCalculator {
   private columnWidth: number;
   private timelineBounds: TimelineBounds;
 
-  constructor(
-    viewMode: GanttViewMode, 
-    columnWidth: number, 
-    startDate: Date, 
-    endDate: Date
-  ) {
+  constructor(viewMode: GanttViewMode, columnWidth: number, startDate: Date, endDate: Date) {
     this.viewMode = viewMode;
     this.columnWidth = columnWidth;
     this.timelineBounds = this.calculateTimelineBounds(startDate, endDate);
@@ -42,7 +37,7 @@ export class TimelineCalculator {
       startDate,
       endDate,
       totalDays,
-      pixelsPerDay
+      pixelsPerDay,
     };
   }
 
@@ -51,12 +46,18 @@ export class TimelineCalculator {
    */
   private getColumnsCount(): number {
     switch (this.viewMode) {
-      case 'day': return 30;
-      case 'week': return 12;
-      case 'month': return 12;
-      case 'quarter': return 8;
-      case 'year': return 5;
-      default: return 12;
+      case 'day':
+        return 30;
+      case 'week':
+        return 12;
+      case 'month':
+        return 12;
+      case 'quarter':
+        return 8;
+      case 'year':
+        return 5;
+      default:
+        return 12;
     }
   }
 
@@ -70,14 +71,20 @@ export class TimelineCalculator {
 
     const taskStart = new Date(task.start_date);
     const taskEnd = new Date(task.end_date);
-    
+
     // Ensure task dates are within timeline bounds
-    const clampedStart = new Date(Math.max(taskStart.getTime(), this.timelineBounds.startDate.getTime()));
+    const clampedStart = new Date(
+      Math.max(taskStart.getTime(), this.timelineBounds.startDate.getTime())
+    );
     const clampedEnd = new Date(Math.min(taskEnd.getTime(), this.timelineBounds.endDate.getTime()));
 
     // Calculate days from timeline start
-    const daysFromStart = Math.floor((clampedStart.getTime() - this.timelineBounds.startDate.getTime()) / (1000 * 60 * 60 * 24));
-    const taskDuration = Math.ceil((clampedEnd.getTime() - clampedStart.getTime()) / (1000 * 60 * 60 * 24));
+    const daysFromStart = Math.floor(
+      (clampedStart.getTime() - this.timelineBounds.startDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const taskDuration = Math.ceil(
+      (clampedEnd.getTime() - clampedStart.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     // Calculate pixel positions
     const left = daysFromStart * this.timelineBounds.pixelsPerDay;
@@ -86,7 +93,7 @@ export class TimelineCalculator {
     return {
       left: Math.max(0, left),
       width,
-      isValid: true
+      isValid: true,
     };
   }
 
@@ -99,18 +106,23 @@ export class TimelineCalculator {
     }
 
     const milestoneDate = new Date(date);
-    
+
     // Check if milestone is within timeline bounds
-    if (milestoneDate < this.timelineBounds.startDate || milestoneDate > this.timelineBounds.endDate) {
+    if (
+      milestoneDate < this.timelineBounds.startDate ||
+      milestoneDate > this.timelineBounds.endDate
+    ) {
       return { left: 0, isValid: false };
     }
 
-    const daysFromStart = Math.floor((milestoneDate.getTime() - this.timelineBounds.startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysFromStart = Math.floor(
+      (milestoneDate.getTime() - this.timelineBounds.startDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const left = daysFromStart * this.timelineBounds.pixelsPerDay;
 
     return {
       left: Math.max(0, left),
-      isValid: true
+      isValid: true,
     };
   }
 
@@ -118,8 +130,8 @@ export class TimelineCalculator {
    * Calculate dependency line coordinates
    */
   calculateDependencyLine(
-    fromTask: GanttTask, 
-    toTask: GanttTask, 
+    fromTask: GanttTask,
+    toTask: GanttTask,
     rowHeight: number = 36
   ): {
     x1: number;
@@ -144,7 +156,7 @@ export class TimelineCalculator {
       y1: fromY + rowHeight / 2,
       x2: toPosition.left, // Start of target task
       y2: toY + rowHeight / 2,
-      isValid: true
+      isValid: true,
     };
   }
 
@@ -164,10 +176,10 @@ export class TimelineCalculator {
   getTodayLinePosition(): { left: number; isVisible: boolean } {
     const today = new Date();
     const position = this.calculateMilestonePosition(today);
-    
+
     return {
       left: position.left,
-      isVisible: position.isValid
+      isVisible: position.isValid,
     };
   }
 
@@ -177,7 +189,7 @@ export class TimelineCalculator {
   getWeekendAreas(): Array<{ left: number; width: number }> {
     const weekendAreas: Array<{ left: number; width: number }> = [];
     const current = new Date(this.timelineBounds.startDate);
-    
+
     while (current <= this.timelineBounds.endDate) {
       // Saturday (6) and Sunday (0)
       if (current.getDay() === 0 || current.getDay() === 6) {
@@ -185,13 +197,13 @@ export class TimelineCalculator {
         if (position.isValid) {
           weekendAreas.push({
             left: position.left,
-            width: this.timelineBounds.pixelsPerDay
+            width: this.timelineBounds.pixelsPerDay,
           });
         }
       }
       current.setDate(current.getDate() + 1);
     }
-    
+
     return weekendAreas;
   }
 
@@ -205,7 +217,12 @@ export class TimelineCalculator {
   /**
    * Update calculator with new parameters
    */
-  updateParameters(viewMode: GanttViewMode, columnWidth: number, startDate: Date, endDate: Date): void {
+  updateParameters(
+    viewMode: GanttViewMode,
+    columnWidth: number,
+    startDate: Date,
+    endDate: Date
+  ): void {
     this.viewMode = viewMode;
     this.columnWidth = columnWidth;
     this.timelineBounds = this.calculateTimelineBounds(startDate, endDate);
@@ -244,7 +261,7 @@ export const TimelineUtils = {
           latestEnd = task.end_date;
         }
       }
-      
+
       // Check subtasks too
       if (task.children) {
         task.children.forEach(subtask => {
@@ -316,6 +333,6 @@ export const TimelineUtils = {
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  }
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  },
 };

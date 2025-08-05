@@ -5,8 +5,8 @@
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 /* Gantt task list specific styles */
@@ -34,7 +34,6 @@
 .gantt-task-list-scroll::-webkit-scrollbar {
   display: none;
 }
-
 
 /* Gantt chart scrollbar - show both vertical and horizontal */
 .gantt-chart-scroll::-webkit-scrollbar {
@@ -108,7 +107,7 @@
 }
 
 .gantt-phase-row::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -141,7 +140,9 @@
 /* Phase expansion transitions */
 .gantt-phase-children {
   overflow: hidden;
-  transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out;
+  transition:
+    max-height 0.3s ease-in-out,
+    opacity 0.2s ease-in-out;
 }
 
 .gantt-phase-children.collapsed {

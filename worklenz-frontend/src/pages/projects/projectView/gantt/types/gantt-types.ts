@@ -1,6 +1,11 @@
 export type GanttViewMode = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
-export type DependencyType = 'blocked_by' | 'finish_to_start' | 'start_to_start' | 'finish_to_finish' | 'start_to_finish';
+export type DependencyType =
+  | 'blocked_by'
+  | 'finish_to_start'
+  | 'start_to_start'
+  | 'finish_to_finish'
+  | 'start_to_finish';
 
 export interface GanttTask {
   id: string;
@@ -20,7 +25,9 @@ export interface GanttTask {
   status?: string;
   phase_id?: string;
   is_milestone?: boolean;
-  type?: 'task' | 'milestone' | 'phase';
+  type?: 'task' | 'milestone' | 'phase' | 'add-task-button';
+  // Add task row specific properties
+  parent_phase_id?: string;
 }
 
 export interface GanttPhase {
