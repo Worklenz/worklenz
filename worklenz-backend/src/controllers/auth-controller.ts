@@ -1,4 +1,6 @@
 import bcrypt from "bcrypt";
+import passport from "passport";
+import {NextFunction} from "express";
 
 import {sendResetEmail, sendResetSuccessEmail} from "../shared/email-templates";
 
@@ -180,6 +182,54 @@ export default class AuthController extends WorklenzControllerBase {
       log_error(error);
       res.status(500).send(new ServerResponse(false, null, DEFAULT_ERROR_MESSAGE));
     }
+  }
+
+  public static googleMobileAuthPassport(req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) {
+    
+    const mobileOptions = {
+      session: true,
+      failureFlash: true,
+      failWithError: false
+    };
+
+    passport.authenticate("google-mobile", mobileOptions, (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).send({
+          done: false,
+          message: "Authentication failed",
+          body: null
+        });
+      }
+      
+      if (!user) {
+        return res.status(400).send({
+          done: false,
+          message: info?.message || "Authentication failed",
+          body: null
+        });
+      }
+      
+      // Log the user in (create session)
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          return res.status(500).send({
+            done: false,
+            message: "Session creation failed",
+            body: null
+          });
+        }
+        
+        // Add build version
+        user.build_v = FileConstants.getRelease();
+        
+        return res.status(200).send({
+          done: true,
+          message: "Login successful",
+          user,
+          authenticated: true
+        });
+      });
+    })(req, res, next);
   }
 
   @HandleExceptions({logWithError: "body"})
