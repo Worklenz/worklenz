@@ -2,6 +2,20 @@ import React, { memo, useMemo, forwardRef, RefObject } from 'react';
 import { GanttTask, GanttViewMode, GanttPhase } from '../../types/gantt-types';
 import { useGanttDimensions } from '../../hooks/useGanttDimensions';
 
+// Utility function to add alpha channel to hex color
+const addAlphaToHex = (hex: string, alpha: number): string => {
+  // Remove # if present
+  const cleanHex = hex.replace('#', '');
+  
+  // Convert hex to RGB
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  
+  // Return rgba string
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 interface GanttChartProps {
   tasks: GanttTask[];
   viewMode: GanttViewMode;
@@ -47,7 +61,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(({ task, viewMode, columnWidt
     
     return (
       <div 
-        className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-3 h-3 rotate-45 z-10"
+        className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rotate-45 z-10 shadow-sm"
         style={{ 
           left: `${left}px`,
           backgroundColor: task.color || '#3b82f6'
@@ -89,15 +103,18 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(({ task, viewMode, columnWidt
     );
   };
 
+  const isPhase = task.type === 'milestone' || task.is_milestone;
+  
   return (
     <div 
-      className={`h-9 relative border-b border-gray-100 dark:border-gray-700 transition-colors ${
-        task.type === 'milestone' 
-          ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' 
-          : 'hover:bg-gray-50 dark:hover:bg-gray-750'
+      className={`${isPhase ? 'min-h-[4.5rem]' : 'h-9'} relative border-b border-gray-100 dark:border-gray-700 transition-colors ${
+        !isPhase ? 'hover:bg-gray-50 dark:hover:bg-gray-750' : ''
       }`}
+      style={isPhase && task.color ? {
+        backgroundColor: addAlphaToHex(task.color, 0.15),
+      } : {}}
     >
-      {task.type === 'milestone' || task.is_milestone ? renderMilestone() : renderTaskBar()}
+      {isPhase ? renderMilestone() : renderTaskBar()}
     </div>
   );
 });
@@ -213,7 +230,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(({ tasks, viewMod
         <div className="relative z-10">
           {flattenedTasks.map(item => {
             if ('isEmptyRow' in item && item.isEmptyRow) {
-              // Render empty row for "Add Task" placeholder
+              // Render empty row without "Add Task" button
               return (
                 <div 
                   key={item.id} 

@@ -20,7 +20,7 @@ const ProjectViewUpdates = React.lazy(
   () => import('@/pages/projects/project-view-1/updates/project-view-updates')
 );
 const ProjectViewGantt = React.lazy(
-  () => import('@/pages/projects/projectView/gantt/project-view-gantt')
+  () => import('@/pages/projects/projectView/gantt/ProjectViewGantt')
 );
 
 // type of a tab items

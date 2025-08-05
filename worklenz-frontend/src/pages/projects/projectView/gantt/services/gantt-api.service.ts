@@ -78,6 +78,15 @@ export interface CreateTaskRequest {
   status_id?: string;
 }
 
+export interface UpdatePhaseRequest {
+  phase_id: string;
+  project_id: string;
+  name?: string;
+  color_code?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
 export const ganttApi = createApi({
   reducerPath: 'ganttApi',
   baseQuery: fetchBaseQuery({
@@ -176,6 +185,23 @@ export const ganttApi = createApi({
         { type: 'GanttTasks', id: 'LIST' },
       ],
     }),
+
+    updatePhase: builder.mutation<
+      IServerResponse<ProjectPhaseResponse>,
+      UpdatePhaseRequest
+    >({
+      query: body => ({
+        url: `${rootUrl}/update-phase`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { project_id }) => [
+        { type: 'GanttPhases', id: project_id },
+        { type: 'GanttPhases', id: 'LIST' },
+        { type: 'GanttTasks', id: project_id },
+        { type: 'GanttTasks', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -185,6 +211,7 @@ export const {
   useUpdateTaskDatesMutation,
   useCreatePhaseMutation,
   useCreateTaskMutation,
+  useUpdatePhaseMutation,
 } = ganttApi;
 
 /**

@@ -1,18 +1,27 @@
-import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { Spin, message } from 'antd';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
+import { Spin, message } from '@/shared/antd-imports';
 import { useParams } from 'react-router-dom';
-import GanttTimeline from './components/gantt-timeline/gantt-timeline';
-import GanttTaskList from './components/gantt-task-list/gantt-task-list';
-import GanttChart from './components/gantt-chart/gantt-chart';
-import GanttToolbar from './components/gantt-toolbar/gantt-toolbar';
-import ManagePhaseModal from '../../../../components/task-management/ManagePhaseModal';
+import GanttTimeline from './components/gantt-timeline/GanttTimeline';
+import GanttTaskList from './components/gantt-task-list/GanttTaskList';
+import GanttChart from './components/gantt-chart/GanttChart';
+import GanttToolbar from './components/gantt-toolbar/GanttToolbar';
+import ManagePhaseModal from '@components/task-management/ManagePhaseModal';
 import { GanttProvider } from './context/gantt-context';
-import { GanttTask, GanttViewMode, GanttPhase } from './types/gantt-types';
-import { useGetRoadmapTasksQuery, useGetProjectPhasesQuery, transformToGanttTasks, transformToGanttPhases } from './services/gantt-api.service';
+import { GanttViewMode } from './types/gantt-types';
+import {
+  useGetRoadmapTasksQuery,
+  useGetProjectPhasesQuery,
+  transformToGanttTasks,
+  transformToGanttPhases,
+} from './services/gantt-api.service';
 import { TimelineUtils } from './utils/timeline-calculator';
-import { useAppDispatch } from '../../../../hooks/useAppDispatch';
-import { setShowTaskDrawer, setSelectedTaskId, setTaskFormViewModel } from '../../../../features/task-drawer/task-drawer.slice';
-import { DEFAULT_TASK_NAME } from '../../../../shared/constants';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import {
+  setShowTaskDrawer,
+  setSelectedTaskId,
+  setTaskFormViewModel,
+} from '@features/task-drawer/task-drawer.slice';
+import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import './gantt-styles.css';
 
 const ProjectViewGantt: React.FC = React.memo(() => {
@@ -31,38 +40,44 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     data: tasksResponse,
     error: tasksError,
     isLoading: tasksLoading,
-    refetch: refetchTasks
-  } = useGetRoadmapTasksQuery(
-    { projectId: projectId || '' },
-    { skip: !projectId }
-  );
+    refetch: refetchTasks,
+  } = useGetRoadmapTasksQuery({ projectId: projectId || '' }, { skip: !projectId });
 
   const {
     data: phasesResponse,
     error: phasesError,
     isLoading: phasesLoading,
-    refetch: refetchPhases
-  } = useGetProjectPhasesQuery(
-    { projectId: projectId || '' },
-    { skip: !projectId }
-  );
+    refetch: refetchPhases,
+  } = useGetProjectPhasesQuery({ projectId: projectId || '' }, { skip: !projectId });
 
   // Transform API data to component format
   const tasks = useMemo(() => {
     if (tasksResponse?.body && phasesResponse?.body) {
       const transformedTasks = transformToGanttTasks(tasksResponse.body, phasesResponse.body);
-      // Initialize expanded state for all phases
-      const expanded = new Set<string>();
+      const result: any[] = [];
+      
       transformedTasks.forEach(task => {
-        if ((task.type === 'milestone' || task.is_milestone) && task.expanded !== false) {
-          expanded.add(task.id);
+        // Always show phase milestones
+        if (task.type === 'milestone' || task.is_milestone) {
+          result.push(task);
+          
+          // If this phase is expanded, show its children tasks
+          const phaseId = task.id === 'phase-unmapped' ? 'unmapped' : task.phase_id;
+          if (expandedTasks.has(phaseId) && task.children) {
+            task.children.forEach((child: any) => {
+              result.push({
+                ...child,
+                phase_id: task.phase_id // Ensure child has correct phase_id
+              });
+            });
+          }
         }
       });
-      setExpandedTasks(expanded);
-      return transformedTasks;
+      
+      return result;
     }
     return [];
-  }, [tasksResponse, phasesResponse]);
+  }, [tasksResponse, phasesResponse, expandedTasks]);
 
   const phases = useMemo(() => {
     if (phasesResponse?.body) {
@@ -85,40 +100,28 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     setViewMode(mode);
   }, []);
 
-  const [isScrolling, setIsScrolling] = useState(false);
-
   const handleChartScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (isScrolling) return;
-    setIsScrolling(true);
-    
     const target = e.target as HTMLDivElement;
-    
+
     // Sync horizontal scroll with timeline
     if (timelineRef.current) {
       timelineRef.current.scrollLeft = target.scrollLeft;
     }
-    
+
     // Sync vertical scroll with task list
     if (taskListRef.current) {
       taskListRef.current.scrollTop = target.scrollTop;
     }
-    
-    setTimeout(() => setIsScrolling(false), 10);
-  }, [isScrolling]);
-  
+  }, []);
+
   const handleTaskListScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (isScrolling) return;
-    setIsScrolling(true);
-    
     const target = e.target as HTMLDivElement;
-    
+
     // Sync vertical scroll with chart
     if (chartRef.current) {
       chartRef.current.scrollTop = target.scrollTop;
     }
-    
-    setTimeout(() => setIsScrolling(false), 10);
-  }, [isScrolling]);
+  }, []);
 
   const handleRefresh = useCallback(() => {
     refetchTasks();
@@ -129,20 +132,33 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     setShowPhaseModal(true);
   }, []);
 
-  const handleCreateTask = useCallback((phaseId?: string) => {
-    // Create a new task using the task drawer
-    const newTaskViewModel = {
-      id: null,
-      name: DEFAULT_TASK_NAME,
-      project_id: projectId,
-      phase_id: phaseId || null,
-      // Add other default properties as needed
-    };
+  const handleCreateTask = useCallback(
+    (phaseId?: string) => {
+      // Create a new task using the task drawer
+      const newTaskViewModel = {
+        id: null,
+        name: DEFAULT_TASK_NAME,
+        project_id: projectId,
+        phase_id: phaseId || null,
+        // Add other default properties as needed
+      };
 
-    dispatch(setSelectedTaskId(null));
-    dispatch(setTaskFormViewModel(newTaskViewModel));
-    dispatch(setShowTaskDrawer(true));
-  }, [dispatch, projectId]);
+      dispatch(setSelectedTaskId(null));
+      dispatch(setTaskFormViewModel(newTaskViewModel));
+      dispatch(setShowTaskDrawer(true));
+    },
+    [dispatch, projectId]
+  );
+
+  const handleTaskClick = useCallback(
+    (taskId: string) => {
+      // Open existing task in the task drawer
+      dispatch(setSelectedTaskId(taskId));
+      dispatch(setTaskFormViewModel(null)); // Clear form view model for existing task
+      dispatch(setShowTaskDrawer(true));
+    },
+    [dispatch]
+  );
 
   const handleClosePhaseModal = useCallback(() => {
     setShowPhaseModal(false);
@@ -154,11 +170,15 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     message.info('Phase reordering will be implemented with the backend API');
   }, []);
 
-  const handleCreateQuickTask = useCallback((taskName: string, phaseId?: string) => {
-    // Refresh the Gantt data after task creation
-    refetchTasks();
-    message.success(`Task "${taskName}" created successfully!`);
-  }, [refetchTasks]);
+  const handleCreateQuickTask = useCallback(
+    (taskName: string, phaseId?: string) => {
+      // Refresh the Gantt data after task creation
+      refetchTasks();
+      message.success(`Task "${taskName}" created successfully!`);
+    },
+    [refetchTasks]
+  );
+
 
   // Handle errors
   if (tasksError || phasesError) {
@@ -174,17 +194,22 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   }
 
   return (
-    <GanttProvider value={{ 
-      tasks, 
-      phases, 
-      viewMode, 
-      projectId: projectId || '',
-      dateRange,
-      onRefresh: handleRefresh
-    }}>
-      <div className="flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900" style={{ height: 'calc(100vh - 64px)' }}>
-        <GanttToolbar 
-          viewMode={viewMode} 
+    <GanttProvider
+      value={{
+        tasks,
+        phases,
+        viewMode,
+        projectId: projectId || '',
+        dateRange,
+        onRefresh: handleRefresh,
+      }}
+    >
+      <div
+        className="flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900"
+        style={{ height: 'calc(100vh - 64px)' }}
+      >
+        <GanttToolbar
+          viewMode={viewMode}
           onViewModeChange={handleViewModeChange}
           dateRange={dateRange}
           onCreatePhase={handleCreatePhase}
@@ -194,9 +219,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
           <div className="relative flex w-full h-full">
             {/* Fixed Task List - positioned absolutely to avoid scrollbar interference */}
             <div className="absolute left-0 top-0 bottom-0 z-20 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-              <GanttTaskList 
-                tasks={tasks} 
+              <GanttTaskList
+                tasks={tasks}
                 projectId={projectId || ''}
+                viewMode={viewMode}
+                onTaskClick={handleTaskClick}
                 onCreateTask={handleCreateTask}
                 onCreateQuickTask={handleCreateQuickTask}
                 onPhaseReorder={handlePhaseReorder}
@@ -206,18 +233,22 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 onExpandedTasksChange={setExpandedTasks}
               />
             </div>
-            
+
             {/* Scrollable Timeline and Chart - with left margin for task list */}
-            <div className="flex-1 flex flex-col overflow-hidden gantt-timeline-container" style={{ marginLeft: '508px' }} ref={containerRef}>
-              <GanttTimeline 
-                viewMode={viewMode} 
-                ref={timelineRef} 
+            <div
+              className="flex-1 flex flex-col overflow-hidden gantt-timeline-container"
+              style={{ marginLeft: '444px' }}
+              ref={containerRef}
+            >
+              <GanttTimeline
+                viewMode={viewMode}
+                ref={timelineRef}
                 containerRef={containerRef}
                 dateRange={dateRange}
               />
-              <GanttChart 
-                tasks={tasks} 
-                viewMode={viewMode} 
+              <GanttChart
+                tasks={tasks}
+                viewMode={viewMode}
                 ref={chartRef}
                 onScroll={handleChartScroll}
                 containerRef={containerRef}

@@ -1,20 +1,38 @@
-import React, { memo, useCallback, useState, forwardRef } from 'react';
-import { RightOutlined, DownOutlined, StarOutlined, PlusOutlined, HolderOutlined } from '@ant-design/icons';
-import { Button, Tooltip, Input } from 'antd';
+import React, { memo, useCallback, useState, forwardRef, useRef, useEffect, useMemo } from 'react';
+import { RightOutlined, DownOutlined, PlusOutlined, HolderOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Button, Tooltip, Input, DatePicker, Space, message } from 'antd';
+import dayjs, { Dayjs } from 'dayjs';
 import { DndContext, DragEndEvent, DragOverEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GanttTask } from '../../types/gantt-types';
+import { GanttTask, GanttViewMode } from '../../types/gantt-types';
 import { useSocket } from '../../../../../../socket/socketContext';
 import { SocketEvents } from '../../../../../../shared/socket-events';
 import { useAppDispatch } from '../../../../../../hooks/useAppDispatch';
 import { addTask } from '../../../../../../features/task-management/task-management.slice';
 import { useAuthService } from '../../../../../../hooks/useAuth';
+import { useUpdatePhaseMutation } from '../../services/gantt-api.service';
+
+// Utility function to add alpha channel to hex color
+const addAlphaToHex = (hex: string, alpha: number): string => {
+  // Remove # if present
+  const cleanHex = hex.replace('#', '');
+  
+  // Convert hex to RGB
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  
+  // Return rgba string
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 interface GanttTaskListProps {
   tasks: GanttTask[];
   projectId: string;
+  viewMode: GanttViewMode;
   onTaskToggle?: (taskId: string) => void;
+  onTaskClick?: (taskId: string) => void;
   onCreateTask?: (phaseId?: string) => void;
   onCreateQuickTask?: (taskName: string, phaseId?: string) => void;
   onPhaseReorder?: (oldIndex: number, newIndex: number) => void;
@@ -28,6 +46,7 @@ interface TaskRowProps {
   index: number;
   projectId: string;
   onToggle?: (taskId: string) => void;
+  onTaskClick?: (taskId: string) => void;
   expandedTasks: Set<string>;
   onCreateTask?: (phaseId?: string) => void;
   onCreateQuickTask?: (taskName: string, phaseId?: string) => void;
@@ -75,17 +94,23 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
   task, 
   projectId,
   onToggle, 
+  onTaskClick,
   expandedTasks, 
   onCreateTask,
   onCreateQuickTask, 
   isDraggable = false,
+  activeId,
+  overId,
   dragAttributes,
   dragListeners 
 }) => {
   const [showInlineInput, setShowInlineInput] = useState(false);
   const [taskName, setTaskName] = useState('');
+  const [showDatePickers, setShowDatePickers] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   const { socket, connected } = useSocket();
   const dispatch = useAppDispatch();
+  const [updatePhase] = useUpdatePhaseMutation();
   const formatDateRange = useCallback(() => {
     if (!task.start_date || !task.end_date) {
       return <span className="text-gray-400 dark:text-gray-500">Not scheduled</span>;
@@ -96,36 +121,40 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
     return `${start} - ${end}`;
   }, [task.start_date, task.end_date]);
 
+  const isPhase = task.type === 'milestone' || task.is_milestone;
   const hasChildren = task.children && task.children.length > 0;
-  const isExpanded = expandedTasks.has(task.id);
+  // For phases, use phase_id for expansion state, for tasks use task.id
+  const phaseId = isPhase ? (task.id === 'phase-unmapped' ? 'unmapped' : task.phase_id || task.id.replace('phase-', '')) : task.id;
+  const isExpanded = expandedTasks.has(phaseId);
   const indentLevel = (task.level || 0) * 20;
 
   const handleToggle = useCallback(() => {
-    if (hasChildren && onToggle) {
+    // For phases, always allow toggle (regardless of having children)
+    // Use the standard onToggle handler which will call handleTaskToggle in GanttTaskList
+    if (isPhase && onToggle) {
+      onToggle(phaseId);
+    } else if (hasChildren && onToggle) {
       onToggle(task.id);
     }
-  }, [hasChildren, onToggle, task.id]);
+  }, [isPhase, hasChildren, onToggle, task.id, phaseId]);
 
   const getTaskIcon = () => {
-    if (task.type === 'milestone' || task.is_milestone) {
-      return <StarOutlined className="text-blue-500 text-xs" />;
-    }
+    // No icon for phases
     return null;
   };
 
   const getExpandIcon = () => {
-    // For empty phases, show expand icon to allow adding tasks
-    if (isEmpty || hasChildren) {
+    // All phases should be expandable (with or without children)
+    if (isPhase) {
       return (
         <button
           onClick={handleToggle}
-          className="w-4 h-4 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+          className={`w-4 h-4 flex items-center justify-center rounded gantt-expand-icon ${
+            isExpanded ? 'expanded' : ''
+          } hover:bg-black/10`}
+          style={task.color ? { color: task.color } : {}}
         >
-          {isExpanded ? (
-            <DownOutlined className="text-xs" />
-          ) : (
-            <RightOutlined className="text-xs" />
-          )}
+          <RightOutlined className="text-xs transition-transform duration-200" />
         </button>
       );
     }
@@ -185,33 +214,90 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
     setShowInlineInput(true);
   }, []);
 
-  const isPhase = task.type === 'milestone' || task.is_milestone;
+  const handlePhaseDateUpdate = useCallback(async (startDate: Date, endDate: Date) => {
+    if (!projectId || !task.phase_id) return;
+
+    try {
+      await updatePhase({
+        project_id: projectId,
+        phase_id: task.phase_id,
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+      }).unwrap();
+      
+      message.success('Phase dates updated successfully');
+      setShowDatePickers(false);
+    } catch (error) {
+      console.error('Failed to update phase dates:', error);
+      message.error('Failed to update phase dates');
+    }
+  }, [projectId, task.phase_id, updatePhase]);
+
   const isEmpty = isPhase && (!task.children || task.children.length === 0);
+
+  // Calculate phase completion percentage
+  const phaseCompletion = useMemo(() => {
+    if (!isPhase || !task.children || task.children.length === 0) {
+      return 0;
+    }
+    const totalTasks = task.children.length;
+    const completedTasks = task.children.filter(child => child.progress === 100).length;
+    return Math.round((completedTasks / totalTasks) * 100);
+  }, [isPhase, task.children]);
+
+  const handleTaskClick = useCallback(() => {
+    if (!isPhase && onTaskClick) {
+      onTaskClick(task.id);
+    }
+  }, [isPhase, onTaskClick, task.id]);
+
+  // Handle click outside to close date picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePickers(false);
+      }
+    };
+
+    if (showDatePickers) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showDatePickers]);
 
   return (
     <>
       <div 
-        className={`group flex h-9 border-b border-gray-100 dark:border-gray-700 transition-colors ${
-          task.type === 'milestone' 
-            ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' 
-            : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750'
+        className={`group flex ${isPhase ? 'min-h-[4.5rem] gantt-phase-row' : 'h-9 gantt-task-row'} border-b border-gray-100 dark:border-gray-700 transition-colors ${
+          !isPhase ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer' : ''
         } ${isDraggable && !isPhase ? 'cursor-grab active:cursor-grabbing' : ''} ${
           activeId === task.id ? 'opacity-50' : ''
         } ${overId === task.id && overId !== activeId ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+        style={isPhase && task.color ? {
+          backgroundColor: addAlphaToHex(task.color, 0.15),
+          color: task.color
+        } : {}}
+        onClick={!isPhase ? handleTaskClick : undefined}
         {...(!isPhase && isDraggable ? dragAttributes : {})}
         {...(!isPhase && isDraggable ? dragListeners : {})}
       >
         <div 
-          className="w-[420px] px-2 py-2 text-sm text-gray-800 dark:text-gray-200 flex items-center justify-between"
-          style={{ paddingLeft: `${8 + indentLevel}px` }}
+          className={`w-full px-2 py-2 text-sm ${isPhase ? '' : 'text-gray-800 dark:text-gray-200'} flex items-center justify-between`}
+          style={{ 
+            paddingLeft: `${8 + indentLevel + (isPhase && task.id === 'phase-unmapped' ? 28 : 0)}px`,
+            color: isPhase && task.color ? task.color : undefined
+          }}
         >
-          <div className="flex items-center gap-2 truncate">
+          <div className="flex items-center gap-2 truncate flex-1">
             {/* Drag handle for phases */}
             {isPhase && isDraggable && (
               <button
                 {...dragAttributes}
                 {...dragListeners}
-                className="opacity-50 hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-white/50"
+                className="opacity-50 hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-black/10"
+                style={{ color: task.color }}
                 title="Drag to reorder phase"
               >
                 <HolderOutlined className="text-xs" />
@@ -220,37 +306,82 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
             
             {getExpandIcon()}
             
-            <div className="flex items-center gap-2 ml-1 truncate">
+            <div className="flex items-center gap-2 ml-1 truncate flex-1">
               {getTaskIcon()}
-              <span className={`truncate ${task.type === 'milestone' ? 'font-semibold text-blue-700 dark:text-blue-300' : ''}`}>
-                {task.name}
-              </span>
+              <div className="flex flex-col flex-1">
+                <span 
+                  className={`truncate ${task.type === 'milestone' ? 'font-semibold' : ''}`}
+                >
+                  {task.name}
+                </span>
+                {isPhase && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs" style={{ color: task.color, opacity: 0.8 }}>
+                      {task.children?.length || 0} tasks
+                    </span>
+                    {!showDatePickers && (
+                      <button
+                        onClick={() => setShowDatePickers(true)}
+                        className="text-xs flex items-center gap-1 transition-colors"
+                        style={{ color: task.color, opacity: 0.7 }}
+                      >
+                        <CalendarOutlined className="text-[10px]" />
+                        {task.start_date && task.end_date ? (
+                          <>{dayjs(task.start_date).format('MMM D')} - {dayjs(task.end_date).format('MMM D, YYYY')}</>
+                        ) : (
+                          'Set dates'
+                        )}
+                      </button>
+                    )}
+                    {showDatePickers && isPhase && (
+                      <div ref={datePickerRef} className="flex items-center gap-1 mt-2 -ml-1">
+                        <DatePicker.RangePicker
+                          size="small"
+                          value={[
+                            task.start_date ? dayjs(task.start_date) : null,
+                            task.end_date ? dayjs(task.end_date) : null
+                          ]}
+                          onChange={(dates) => {
+                            if (dates && dates[0] && dates[1]) {
+                              handlePhaseDateUpdate(dates[0].toDate(), dates[1].toDate());
+                            }
+                          }}
+                          onOpenChange={(open) => {
+                            if (!open) {
+                              setShowDatePickers(false);
+                            }
+                          }}
+                          className="text-xs"
+                          style={{ width: 180 }}
+                          format="MMM D, YYYY"
+                          placeholder={['Start date', 'End date']}
+                          autoFocus
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-
-          {/* Add Task button for phases */}
-          {isPhase && onCreateTask && (
-            <Tooltip title="Add task to this phase">
-              <Button
-                type="text"
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={handleCreateTask}
-                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 flex items-center justify-center hover:bg-white/50 dark:hover:bg-gray-600"
-              />
-            </Tooltip>
+          
+          {/* Phase completion percentage on the right side */}
+          {isPhase && task.children && task.children.length > 0 && (
+            <div className="flex-shrink-0 mr-2">
+              <span className="text-xs font-medium" style={{ color: task.color, opacity: 0.9 }}>
+                {phaseCompletion}%
+              </span>
+            </div>
           )}
-        </div>
-        <div className="w-[64px] px-2 py-2 text-xs text-center text-gray-600 dark:text-gray-400 flex-shrink-0 border-l border-gray-100 dark:border-gray-700">
-          {formatDateRange()}
+
         </div>
       </div>
 
-      {/* Inline task creation for empty expanded phases */}
-      {isEmpty && isExpanded && (
-        <div className="flex h-9 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      {/* Inline task creation for all expanded phases */}
+      {isPhase && isExpanded && (
+        <div className="gantt-add-task-inline flex h-9 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div 
-            className="w-[420px] px-2 py-2 text-sm flex items-center"
+            className="w-full px-2 py-2 text-sm flex items-center"
             style={{ paddingLeft: `${8 + 40}px` }} // Extra indent for child
           >
             {showInlineInput ? (
@@ -274,14 +405,11 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
                 size="small"
                 icon={<PlusOutlined />}
                 onClick={handleShowInlineInput}
-                className="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 gantt-add-task-btn"
               >
                 Add Task
               </Button>
             )}
-          </div>
-          <div className="w-[64px] px-2 py-2 text-xs text-center text-gray-600 dark:text-gray-400 border-l border-gray-100 dark:border-gray-700">
-            {/* Empty duration column */}
           </div>
         </div>
       )}
@@ -294,7 +422,9 @@ TaskRow.displayName = 'TaskRow';
 const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(({ 
   tasks, 
   projectId, 
+  viewMode,
   onTaskToggle, 
+  onTaskClick,
   onCreateTask, 
   onCreateQuickTask, 
   onPhaseReorder, 
@@ -471,14 +601,15 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(({
   const allDraggableItems = [...phases.map(p => p.id), ...regularTasks.map(t => t.id)];
   const phasesSet = new Set(phases.map(p => p.id));
 
+  // Determine if the timeline has dual headers
+  const hasDualHeaders = ['month', 'week', 'day'].includes(viewMode);
+  const headerHeight = hasDualHeaders ? 'h-20' : 'h-10';
+
   return (
-    <div className="w-[508px] min-w-[508px] max-w-[508px] h-full flex flex-col bg-gray-50 dark:bg-gray-900 gantt-task-list-container">
-      <div className="flex h-10 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 font-medium text-sm flex-shrink-0">
-        <div className="w-[420px] px-4 py-2.5 text-gray-700 dark:text-gray-300">
+    <div className="w-[444px] min-w-[444px] max-w-[444px] h-full flex flex-col bg-gray-50 dark:bg-gray-900 gantt-task-list-container">
+      <div className={`flex ${headerHeight} border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 font-medium text-sm flex-shrink-0 items-center`}>
+        <div className="w-full px-4 text-gray-700 dark:text-gray-300">
           Task Name
-        </div>
-        <div className="w-[64px] px-2 py-2.5 text-center text-gray-700 dark:text-gray-300 text-xs border-l border-gray-200 dark:border-gray-700">
-          Duration
         </div>
       </div>
       <div className="flex-1 gantt-task-list-scroll relative" ref={ref} onScroll={onScroll}>
@@ -511,6 +642,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(({
                     index={index}
                     projectId={projectId}
                     onToggle={handleTaskToggle}
+                    onTaskClick={onTaskClick}
                     expandedTasks={expandedTasks}
                     onCreateTask={onCreateTask}
                     onCreateQuickTask={onCreateQuickTask}
@@ -526,6 +658,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(({
                     index={index}
                     projectId={projectId}
                     onToggle={handleTaskToggle}
+                    onTaskClick={onTaskClick}
                     expandedTasks={expandedTasks}
                     onCreateTask={onCreateTask}
                     onCreateQuickTask={onCreateQuickTask}
@@ -544,6 +677,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(({
                     index={index}
                     projectId={projectId}
                     onToggle={handleTaskToggle}
+                    onTaskClick={onTaskClick}
                     expandedTasks={expandedTasks}
                     onCreateTask={onCreateTask}
                     onCreateQuickTask={onCreateQuickTask}
