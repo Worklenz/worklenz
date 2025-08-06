@@ -51,8 +51,11 @@ export default (req: any, res: any, next: any) => {
   
   if (headerSessionId && headerSessionName) {
     console.log("Mobile app using header-based session:", headerSessionId);
-    // Create or override the cookie header with the session from header
+    
+    // The session store expects a signed cookie, but we need to construct it properly
+    // For now, let's try the exact format from the successful login session
     const sessionCookie = `${headerSessionName}=s%3A${headerSessionId}`;
+    
     if (req.headers.cookie) {
       // Replace existing session cookie while keeping other cookies
       req.headers.cookie = req.headers.cookie
@@ -65,7 +68,23 @@ export default (req: any, res: any, next: any) => {
       req.headers.cookie = sessionCookie;
     }
     console.log("Updated cookie header:", req.headers.cookie);
+    
+    // Also debug what the session middleware will see
+    console.log("Expected session lookup for ID:", headerSessionId);
   }
   
-  sessionMiddleware(req, res, next);
+  sessionMiddleware(req, res, (err: any) => {
+    if (err) {
+      console.log("Session middleware error:", err);
+    }
+    
+    // Debug what the session middleware produced
+    console.log("After session middleware:");
+    console.log("- Session ID:", (req as any).sessionID);
+    console.log("- Session data exists:", !!(req as any).session);
+    console.log("- Session passport data:", (req as any).session?.passport);
+    console.log("- Is authenticated:", !!(req as any).isAuthenticated && (req as any).isAuthenticated());
+    
+    next(err);
+  });
 };
