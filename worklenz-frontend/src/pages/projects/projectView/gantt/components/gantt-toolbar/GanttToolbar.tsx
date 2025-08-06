@@ -1,11 +1,9 @@
 import React, { memo } from 'react';
-import { Select, Button, Space, Divider } from 'antd';
+import { Select, Button, Space } from 'antd';
 import {
   ZoomInOutlined,
   ZoomOutOutlined,
   FullscreenOutlined,
-  PlusOutlined,
-  FlagOutlined,
 } from '@ant-design/icons';
 import { GanttViewMode } from '../../types/gantt-types';
 
@@ -15,31 +13,43 @@ interface GanttToolbarProps {
   viewMode: GanttViewMode;
   onViewModeChange: (mode: GanttViewMode) => void;
   dateRange?: { start: Date; end: Date };
-  onCreatePhase?: () => void;
-  onCreateTask?: () => void;
 }
 
 const GanttToolbar: React.FC<GanttToolbarProps> = memo(
-  ({ viewMode, onViewModeChange, dateRange, onCreatePhase, onCreateTask }) => {
+  ({ viewMode, onViewModeChange, dateRange }) => {
+    // Define zoom levels in order from most detailed to least detailed
+    const zoomLevels: GanttViewMode[] = ['day', 'week', 'month', 'quarter', 'year'];
+    const currentZoomIndex = zoomLevels.indexOf(viewMode);
+
+    const handleZoomIn = () => {
+      // Zoom in means more detail (lower index)
+      if (currentZoomIndex > 0) {
+        onViewModeChange(zoomLevels[currentZoomIndex - 1]);
+      }
+    };
+
+    const handleZoomOut = () => {
+      // Zoom out means less detail (higher index)
+      if (currentZoomIndex < zoomLevels.length - 1) {
+        onViewModeChange(zoomLevels[currentZoomIndex + 1]);
+      }
+    };
+
+    const handleFullscreen = () => {
+      // Toggle fullscreen mode
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.warn('Failed to enter fullscreen:', err);
+        });
+      } else {
+        document.exitFullscreen().catch(err => {
+          console.warn('Failed to exit fullscreen:', err);
+        });
+      }
+    };
     return (
       <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
         <Space>
-          <Button
-            type="primary"
-            icon={<FlagOutlined />}
-            onClick={onCreatePhase}
-            className="bg-blue-600 hover:bg-blue-700 border-blue-600"
-          >
-            Manage Phases
-          </Button>
-          <Button
-            icon={<PlusOutlined />}
-            onClick={onCreateTask}
-            className="hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-600"
-          >
-            Add Task
-          </Button>
-          <Divider type="vertical" className="bg-gray-300 dark:bg-gray-600" />
           <Select value={viewMode} onChange={onViewModeChange} className="w-32">
             <Option value="day">Day</Option>
             <Option value="week">Week</Option>
@@ -51,16 +61,21 @@ const GanttToolbar: React.FC<GanttToolbarProps> = memo(
           <Button
             icon={<ZoomInOutlined />}
             title="Zoom In"
-            className="hover:text-blue-600 dark:hover:text-blue-400"
+            onClick={handleZoomIn}
+            disabled={currentZoomIndex === 0}
+            className="hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <Button
             icon={<ZoomOutOutlined />}
             title="Zoom Out"
-            className="hover:text-blue-600 dark:hover:text-blue-400"
+            onClick={handleZoomOut}
+            disabled={currentZoomIndex === zoomLevels.length - 1}
+            className="hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <Button
             icon={<FullscreenOutlined />}
-            title="Fullscreen"
+            title="Toggle Fullscreen"
+            onClick={handleFullscreen}
             className="hover:text-blue-600 dark:hover:text-blue-400"
           />
         </Space>

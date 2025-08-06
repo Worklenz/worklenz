@@ -220,6 +220,15 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     setSelectedPhase(null);
   }, []);
 
+  const handlePhaseUpdate = useCallback(
+    (updatedPhase: any) => {
+      // Refresh the data after phase update
+      refetchTasks();
+      refetchPhases();
+    },
+    [refetchTasks, refetchPhases]
+  );
+
   const handlePhaseReorder = useCallback((oldIndex: number, newIndex: number) => {
     // TODO: Implement phase reordering API call
     console.log('Reorder phases:', { oldIndex, newIndex });
@@ -227,11 +236,20 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   }, []);
 
   const handleCreateQuickTask = useCallback(
-    (taskName: string, phaseId?: string) => {
-      // Refresh the Gantt data after task creation to show the new task
+    (taskName: string, phaseId?: string, startDate?: Date) => {
+      // For now, just refresh the Gantt data after task creation
+      // The actual task creation will happen through existing mechanisms
+      // and the refresh will show the new task
+      console.log('Task created:', { taskName, phaseId, startDate });
+      
+      // Show success message
+      message.success(`Task "${taskName}" created successfully`);
+      
+      // Refresh the Gantt data to show the new task
       refetchTasks();
+      refetchPhases();
     },
-    [refetchTasks]
+    [refetchTasks, refetchPhases]
   );
 
   // Handle errors
@@ -266,8 +284,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
           viewMode={viewMode}
           onViewModeChange={handleViewModeChange}
           dateRange={dateRange}
-          onCreatePhase={handleCreatePhase}
-          onCreateTask={handleCreateTask}
         />
         <div className="flex flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800">
           <div className="relative flex w-full h-full">
@@ -281,6 +297,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 onPhaseClick={handlePhaseClick}
                 onCreateTask={handleCreateTask}
                 onCreateQuickTask={handleCreateQuickTask}
+                onCreatePhase={handleCreatePhase}
                 onPhaseReorder={handlePhaseReorder}
                 ref={taskListRef}
                 onScroll={handleTaskListScroll}
@@ -313,6 +330,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 phases={phases}
                 expandedTasks={expandedTasks}
                 animatingTasks={animatingTasks}
+                onCreateQuickTask={handleCreateQuickTask}
+                projectId={projectId || ''}
               />
             </div>
           </div>
@@ -331,6 +350,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         open={showPhaseDetailsModal}
         onClose={handleClosePhaseDetailsModal}
         phase={selectedPhase}
+        onPhaseUpdate={handlePhaseUpdate}
       />
     </GanttProvider>
   );

@@ -49,6 +49,7 @@ interface GanttTaskListProps {
   onPhaseClick?: (phase: GanttTask) => void;
   onCreateTask?: (phaseId?: string) => void;
   onCreateQuickTask?: (taskName: string, phaseId?: string) => void;
+  onCreatePhase?: () => void;
   onPhaseReorder?: (oldIndex: number, newIndex: number) => void;
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
   expandedTasks?: Set<string>;
@@ -319,7 +320,7 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
                 }
               : {}
           }
-          onClick={!isPhase ? handleTaskClick : handlePhaseClick}
+          onClick={!isPhase ? handleTaskClick : undefined}
           {...(!isPhase && isDraggable ? dragAttributes : {})}
           {...(!isPhase && isDraggable ? dragListeners : {})}
         >
@@ -349,7 +350,10 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
               <div className="flex items-center gap-2 ml-1 truncate flex-1">
                 {getTaskIcon()}
                 <div className="flex flex-col flex-1">
-                  <span className={`truncate ${task.type === 'milestone' ? 'font-semibold' : ''}`}>
+                  <span 
+                    className={`truncate ${task.type === 'milestone' ? 'font-semibold cursor-pointer hover:opacity-80' : ''}`}
+                    onClick={isPhase ? handlePhaseClick : undefined}
+                  >
                     {task.name}
                   </span>
                   {isPhase && (
@@ -533,6 +537,40 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({ task, projectId, onCreateQ
 
 AddTaskRow.displayName = 'AddTaskRow';
 
+// Add Phase Row Component
+interface AddPhaseRowProps {
+  projectId: string;
+  onCreatePhase?: () => void;
+}
+
+const AddPhaseRow: React.FC<AddPhaseRowProps> = memo(({ projectId, onCreatePhase }) => {
+  return (
+    <div className="gantt-add-phase-row flex min-h-[4.5rem] border-b border-gray-100 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer">
+      <div
+        className="w-full px-2 py-2 text-sm flex items-center"
+        style={{ paddingLeft: `8px` }}
+        onClick={onCreatePhase}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-4 h-4 flex items-center justify-center rounded bg-blue-500 text-white">
+            <PlusOutlined className="text-xs" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-semibold text-blue-600 dark:text-blue-400">
+              Add New Phase
+            </span>
+            <span className="text-xs text-blue-500 dark:text-blue-300 opacity-80">
+              Click to create a new project phase
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+AddPhaseRow.displayName = 'AddPhaseRow';
+
 const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
   (
     {
@@ -544,6 +582,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
       onPhaseClick,
       onCreateTask,
       onCreateQuickTask,
+      onCreatePhase,
       onPhaseReorder,
       onScroll,
       expandedTasks: expandedTasksProp,
@@ -897,6 +936,12 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
               })}
             </SortableContext>
           </DndContext>
+
+          {/* Add Phase Row - always at the bottom */}
+          <AddPhaseRow
+            projectId={projectId}
+            onCreatePhase={onCreatePhase}
+          />
         </div>
       </div>
     );

@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, Typography, Divider, Space, Progress, Tag, Row, Col, Card, Statistic, theme, Tooltip, Input, DatePicker, Button, ColorPicker } from 'antd';
-import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, BgColorsOutlined, MinusOutlined, PauseOutlined, DoubleRightOutlined, UserOutlined, EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { Modal, Typography, Divider, Progress, Tag, Row, Col, Card, Statistic, theme, Tooltip, Input, DatePicker, ColorPicker, message } from 'antd';
+import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, BgColorsOutlined, MinusOutlined, PauseOutlined, DoubleRightOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
 import AvatarGroup from '@/components/AvatarGroup';
 import { GanttTask } from '../../types/gantt-types';
+import { useUpdatePhaseMutation } from '../../services/gantt-api.service';
 
 const { Title, Text } = Typography;
 
@@ -16,24 +18,16 @@ interface PhaseDetailsModalProps {
 }
 
 const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, phase, onPhaseUpdate }) => {
+  const { projectId } = useParams<{ projectId: string }>();
   const { t } = useTranslation('gantt/phase-details-modal');
   const { token } = theme.useToken();
 
-  // Editing state
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedPhase, setEditedPhase] = useState<Partial<GanttTask>>({});
+  // API mutation hook
+  const [updatePhase, { isLoading: isUpdating }] = useUpdatePhaseMutation();
 
-  // Initialize edited phase when phase changes or editing starts
-  React.useEffect(() => {
-    if (phase && isEditing) {
-      setEditedPhase({
-        name: phase.name,
-        start_date: phase.start_date,
-        end_date: phase.end_date,
-        color: phase.color,
-      });
-    }
-  }, [phase, isEditing]);
+  // Inline editing state
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editedValues, setEditedValues] = useState<Partial<GanttTask>>({});
 
   // Calculate phase statistics
   const phaseStats = useMemo(() => {
@@ -168,23 +162,72 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
     }));
   };
 
-  const handleSavePhase = () => {
-    if (phase && onPhaseUpdate && editedPhase) {
-      onPhaseUpdate({
-        id: phase.id,
-        ...editedPhase,
-      });
+  const handleFieldSave = async (field: string, value: any) => {
+    if (!phase || !projectId) {
+      message.error('Phase or project information is missing');
+      return;
     }
-    setIsEditing(false);
+
+    // Get the actual phase_id from the phase object
+    const phaseId = phase.phase_id || (phase.id.startsWith('phase-') ? phase.id.replace('phase-', '') : phase.id);
+    
+    if (!phaseId || phaseId === 'unmapped') {
+      message.error('Cannot edit unmapped phase');
+      return;
+    }
+
+    try {
+      // Prepare API request based on field
+      const updateData: any = {
+        phase_id: phaseId,
+        project_id: projectId,
+      };
+
+      // Map the field to API format
+      if (field === 'name') {
+        updateData.name = value;
+      } else if (field === 'color') {
+        updateData.color_code = value;
+      } else if (field === 'start_date') {
+        updateData.start_date = value ? new Date(value).toISOString() : null;
+      } else if (field === 'end_date') {
+        updateData.end_date = value ? new Date(value).toISOString() : null;
+      }
+
+      // Call the API
+      await updatePhase(updateData).unwrap();
+      
+      // Show success message
+      message.success(`Phase ${field.replace('_', ' ')} updated successfully`);
+
+      // Call the parent handler to refresh data
+      if (onPhaseUpdate) {
+        onPhaseUpdate({
+          id: phase.id,
+          [field]: value,
+        });
+      }
+
+      // Clear editing state
+      setEditingField(null);
+      setEditedValues({});
+      
+    } catch (error: any) {
+      console.error('Failed to update phase:', error);
+      message.error(error?.data?.message || `Failed to update phase ${field.replace('_', ' ')}`);
+      
+      // Don't clear editing state on error so user can try again
+    }
   };
 
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedPhase({});
+  const handleFieldCancel = () => {
+    setEditingField(null);
+    setEditedValues({});
   };
 
-  const handleStartEdit = () => {
-    setIsEditing(true);
+  const startEditing = (field: string, currentValue: any) => {
+    setEditingField(field);
+    setEditedValues({ [field]: currentValue });
   };
 
   if (!phase) return null;
@@ -192,66 +235,36 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
   return (
     <Modal
       title={
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {isEditing ? (
-              <ColorPicker
-                value={editedPhase.color || phase.color || token.colorPrimary}
-                onChange={(color) => setEditedPhase(prev => ({ ...prev, color: color.toHexString() }))}
-                size="small"
-                showText={false}
-              />
-            ) : (
-              <div
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: phase.color || token.colorPrimary }}
-              />
-            )}
-            {isEditing ? (
-              <Input
-                value={editedPhase.name || phase.name}
-                onChange={(e) => setEditedPhase(prev => ({ ...prev, name: e.target.value }))}
-                className="font-semibold text-lg"
-                style={{ border: 'none', padding: 0, background: 'transparent' }}
-                autoFocus
-              />
-            ) : (
-              <Title level={4} className="!mb-0" style={{ color: token.colorText }}>
-                {phase.name}
-              </Title>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {isEditing ? (
-              <>
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<SaveOutlined />}
-                  onClick={handleSavePhase}
-                >
-                  Save
-                </Button>
-                <Button
-                  size="small"
-                  icon={<CloseOutlined />}
-                  onClick={handleCancelEdit}
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={handleStartEdit}
-                style={{ color: token.colorTextSecondary }}
-              >
-                Edit
-              </Button>
-            )}
-          </div>
+        <div className="flex items-center gap-3">
+          <ColorPicker
+            value={phase.color || token.colorPrimary}
+            onChange={(color) => handleFieldSave('color', color.toHexString())}
+            size="small"
+            showText={false}
+            trigger="click"
+          />
+          {editingField === 'name' ? (
+            <Input
+              value={editedValues.name || phase.name}
+              onChange={(e) => setEditedValues(prev => ({ ...prev, name: e.target.value }))}
+              onPressEnter={() => handleFieldSave('name', editedValues.name)}
+              onBlur={() => handleFieldSave('name', editedValues.name)}
+              onKeyDown={(e) => e.key === 'Escape' && handleFieldCancel()}
+              className="font-semibold text-lg"
+              style={{ border: 'none', padding: 0, background: 'transparent' }}
+              autoFocus
+            />
+          ) : (
+            <Title 
+              level={4} 
+              className="!mb-0 cursor-pointer hover:opacity-70" 
+              style={{ color: token.colorText }}
+              onClick={() => startEditing('name', phase.name)}
+              title="Click to edit"
+            >
+              {phase.name}
+            </Title>
+          )}
         </div>
       }
       open={open}
@@ -260,6 +273,7 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
       width={1000}
       centered
       className="phase-details-modal"
+      confirmLoading={isUpdating}
     >
       <div className="flex gap-6">
         {/* Left Side - Phase Overview and Stats */}
@@ -317,31 +331,61 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
               <Col span={8}>
                 <Text type="secondary">{t('timeline.startDate')}</Text>
                 <br />
-                {isEditing ? (
+                {editingField === 'start_date' ? (
                   <DatePicker
-                    value={editedPhase.start_date ? dayjs(editedPhase.start_date) : (phase.start_date ? dayjs(phase.start_date) : null)}
-                    onChange={(date) => setEditedPhase(prev => ({ ...prev, start_date: date?.toDate() || null }))}
+                    value={editedValues.start_date ? dayjs(editedValues.start_date) : (phase.start_date ? dayjs(phase.start_date) : null)}
+                    onChange={(date) => {
+                      const newDate = date?.toDate() || null;
+                      setEditedValues(prev => ({ ...prev, start_date: newDate }));
+                      handleFieldSave('start_date', newDate);
+                    }}
                     size="small"
                     className="w-full"
                     placeholder="Select start date"
+                    autoFocus
+                    open={true}
+                    onOpenChange={(open) => !open && handleFieldCancel()}
                   />
                 ) : (
-                  <Text strong style={{ color: token.colorText }}>{formatDate(phase.start_date)}</Text>
+                  <Text 
+                    strong 
+                    className="cursor-pointer hover:opacity-70" 
+                    style={{ color: token.colorText }}
+                    onClick={() => startEditing('start_date', phase.start_date)}
+                    title="Click to edit"
+                  >
+                    {formatDate(phase.start_date)}
+                  </Text>
                 )}
               </Col>
               <Col span={8}>
                 <Text type="secondary">{t('timeline.endDate')}</Text>
                 <br />
-                {isEditing ? (
+                {editingField === 'end_date' ? (
                   <DatePicker
-                    value={editedPhase.end_date ? dayjs(editedPhase.end_date) : (phase.end_date ? dayjs(phase.end_date) : null)}
-                    onChange={(date) => setEditedPhase(prev => ({ ...prev, end_date: date?.toDate() || null }))}
+                    value={editedValues.end_date ? dayjs(editedValues.end_date) : (phase.end_date ? dayjs(phase.end_date) : null)}
+                    onChange={(date) => {
+                      const newDate = date?.toDate() || null;
+                      setEditedValues(prev => ({ ...prev, end_date: newDate }));
+                      handleFieldSave('end_date', newDate);
+                    }}
                     size="small"
                     className="w-full"
                     placeholder="Select end date"
+                    autoFocus
+                    open={true}
+                    onOpenChange={(open) => !open && handleFieldCancel()}
                   />
                 ) : (
-                  <Text strong style={{ color: token.colorText }}>{formatDate(phase.end_date)}</Text>
+                  <Text 
+                    strong 
+                    className="cursor-pointer hover:opacity-70" 
+                    style={{ color: token.colorText }}
+                    onClick={() => startEditing('end_date', phase.end_date)}
+                    title="Click to edit"
+                  >
+                    {formatDate(phase.end_date)}
+                  </Text>
                 )}
               </Col>
               <Col span={8}>
