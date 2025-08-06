@@ -249,16 +249,20 @@ export default class AuthController extends WorklenzControllerBase {
           });
         }
         
-        // Regenerate session to prevent session fixation
+        // Regenerate session for security (prevent session fixation attacks)
+        // Store the old session ID for debugging
         const oldSessionId = req.sessionID;
+        
         req.session.regenerate((regenErr) => {
           if (regenErr) {
             console.log("Session regeneration error:", regenErr);
+            // Fall back to using existing session if regeneration fails
+            console.log("Falling back to existing session");
+          } else {
+            console.log("Session regenerated from:", oldSessionId, "to:", req.sessionID);
           }
           
-          console.log("Session regenerated from:", oldSessionId, "to:", req.sessionID);
-          
-          // Re-establish the user in the new session
+          // Re-establish the user in the session (new or existing)
           (req.session as any).passport = { user: { id: user.id } };
           
           console.log("=== LOGIN SUCCESSFUL ===");
@@ -284,29 +288,30 @@ export default class AuthController extends WorklenzControllerBase {
               });
             }
             
-            // Force the session cookie to be sent
+            // Get session cookie details
             const sessionName = process.env.SESSION_NAME || 'connect.sid';
-            const sessionCookie = req.sessionID;
             
             console.log("Session saved successfully");
             console.log("Session name:", sessionName);
-            console.log("Session ID to be sent:", sessionCookie);
+            console.log("Session ID to be sent:", req.sessionID);
             
-            // The session middleware should automatically set the cookie
-            // But let's check if it's being set
+            // Check if Set-Cookie header is being sent
             console.log("Response headers after save:", res.getHeaders());
             console.log("Set-Cookie header:", res.getHeader('set-cookie'));
             
+            // Return response with explicit instruction for mobile app
             return res.status(200).send({
               done: true,
               message: "Login successful",
               user,
               authenticated: true,
-              sessionId: req.sessionID, // Include for debugging
-              sessionCookie: sessionName // Include cookie name for debugging
+              sessionId: req.sessionID, // Mobile app should use this session ID
+              sessionCookie: sessionName, // Cookie name for mobile app
+              // Important: Mobile app must update its session cookie!
+              updateSessionRequired: oldSessionId !== req.sessionID
             });
           });
-        }); // Close regenerate callback
+        });
       }); // Close login callback
     })(req, res, next);
   }
