@@ -30,6 +30,14 @@ export default class AuthController extends WorklenzControllerBase {
   }
 
   public static verify(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    console.log("=== VERIFY ENDPOINT DEBUG ===");
+    console.log("Session ID:", req.sessionID);
+    console.log("Session data:", req.session);
+    console.log("Is authenticated:", req.isAuthenticated());
+    console.log("User in session:", req.user);
+    console.log("Headers:", req.headers);
+    console.log("Cookies:", req.cookies);
+    
     // Flash messages sent from passport-local-signup.ts and passport-local-login.ts
     const errors = req.flash()["error"] || [];
     const messages = req.flash()["success"] || [];
@@ -52,6 +60,14 @@ export default class AuthController extends WorklenzControllerBase {
 
     if (req.user)
       req.user.build_v = FileConstants.getRelease();
+
+    console.log("=== VERIFY RESPONSE ===");
+    console.log("Title:", title);
+    console.log("Authenticated:", req.isAuthenticated());
+    console.log("User:", req.user || null);
+    console.log("Auth error:", auth_error);
+    console.log("Message:", message);
+    console.log("======================");
 
     return res.status(200).send(new AuthResponse(title, req.isAuthenticated(), req.user || null, auth_error, message));
   }
@@ -185,6 +201,11 @@ export default class AuthController extends WorklenzControllerBase {
   }
 
   public static googleMobileAuthPassport(req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) {
+    console.log("=== GOOGLE MOBILE AUTH START ===");
+    console.log("Session ID before auth:", req.sessionID);
+    console.log("Session data before auth:", req.session);
+    console.log("Headers:", req.headers);
+    console.log("Body:", req.body);
     
     const mobileOptions = {
       session: true,
@@ -193,7 +214,13 @@ export default class AuthController extends WorklenzControllerBase {
     };
 
     passport.authenticate("google-mobile", mobileOptions, (err: any, user: any, info: any) => {
+      console.log("=== PASSPORT AUTHENTICATE CALLBACK ===");
+      console.log("Error:", err);
+      console.log("User:", user);
+      console.log("Info:", info);
+      
       if (err) {
+        console.log("Authentication error:", err);
         return res.status(500).send({
           done: false,
           message: "Authentication failed",
@@ -202,6 +229,7 @@ export default class AuthController extends WorklenzControllerBase {
       }
       
       if (!user) {
+        console.log("No user found, info:", info);
         return res.status(400).send({
           done: false,
           message: info?.message || "Authentication failed",
@@ -209,9 +237,11 @@ export default class AuthController extends WorklenzControllerBase {
         });
       }
       
+      console.log("User found, attempting login...");
       // Log the user in (create session)
       req.login(user, (loginErr) => {
         if (loginErr) {
+          console.log("Login error:", loginErr);
           return res.status(500).send({
             done: false,
             message: "Session creation failed",
@@ -219,9 +249,16 @@ export default class AuthController extends WorklenzControllerBase {
           });
         }
         
+        console.log("=== LOGIN SUCCESSFUL ===");
+        console.log("Session ID after login:", req.sessionID);
+        console.log("Session data after login:", req.session);
+        console.log("Is authenticated:", req.isAuthenticated());
+        console.log("User in session:", req.user);
+        
         // Add build version
         user.build_v = FileConstants.getRelease();
         
+        console.log("Sending response...");
         return res.status(200).send({
           done: true,
           message: "Login successful",
