@@ -22,21 +22,6 @@ authRouter.post("/login", passport.authenticate("local-login", options("login"))
 authRouter.post("/signup", signUpValidator, passwordValidator, passport.authenticate("local-signup", options("signup")));
 authRouter.post("/signup/check", signUpValidator, passwordValidator, safeControllerFunction(AuthController.status_check));
 authRouter.get("/verify", AuthController.verify);
-authRouter.get("/debug", (req, res) => {
-  console.log("=== DEBUG ENDPOINT ===");
-  console.log("Session ID:", req.sessionID);
-  console.log("All cookies:", req.cookies);
-  console.log("Cookie header:", req.headers.cookie);
-  console.log("Session data:", req.session);
-  console.log("Is authenticated:", req.isAuthenticated());
-  res.json({
-    sessionId: req.sessionID,
-    cookies: req.cookies,
-    cookieHeader: req.headers.cookie,
-    authenticated: req.isAuthenticated(),
-    session: req.session
-  });
-});
 authRouter.get("/check-password", safeControllerFunction(AuthController.checkPasswordStrength));
 
 authRouter.post("/reset-password", resetEmailValidator, safeControllerFunction(AuthController.reset_password));
