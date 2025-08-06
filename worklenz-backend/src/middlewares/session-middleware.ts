@@ -2,6 +2,7 @@ import session from "express-session";
 import db from "../config/db";
 import { isProduction } from "../shared/utils";
 import * as cookieSignature from "cookie-signature";
+import { randomBytes } from "crypto";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pgSession = require("connect-pg-simple")(session);
@@ -28,7 +29,7 @@ const sessionConfig = {
   },
   // Custom session ID handling for mobile apps
   genid: () => {
-    return require('uid-safe').sync(24);
+    return randomBytes(24).toString("base64url");
   }
 };
 
@@ -42,8 +43,8 @@ const sessionMiddleware = session(sessionConfig);
 // Enhanced session middleware that supports both cookies and headers for mobile apps
 export default (req: any, res: any, next: any) => {
   // Check if mobile app is sending session ID via header (fallback for cookie issues)
-  const headerSessionId = req.headers['x-session-id'];
-  const headerSessionName = req.headers['x-session-name'];
+  const headerSessionId = req.headers["x-session-id"];
+  const headerSessionName = req.headers["x-session-name"];
   
   console.log("Session middleware debug:");
   console.log("- Cookie header:", req.headers.cookie);
@@ -58,7 +59,7 @@ export default (req: any, res: any, next: any) => {
     
     try {
       // Create a signed cookie using the session secret
-      const signedSessionId = 's:' + cookieSignature.sign(headerSessionId, secret);
+      const signedSessionId = `s:${  cookieSignature.sign(headerSessionId, secret)}`;
       const encodedSignedId = encodeURIComponent(signedSessionId);
       const sessionCookie = `${headerSessionName}=${encodedSignedId}`;
       
@@ -71,10 +72,10 @@ export default (req: any, res: any, next: any) => {
       if (req.headers.cookie) {
         // Replace existing session cookie while keeping other cookies
         req.headers.cookie = req.headers.cookie
-          .split(';')
+          .split(";")
           .filter((cookie: string) => !cookie.trim().startsWith(headerSessionName))
           .concat(sessionCookie)
-          .join(';');
+          .join(";");
       } else {
         // Set the session cookie from header
         req.headers.cookie = sessionCookie;
