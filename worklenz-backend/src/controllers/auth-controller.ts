@@ -249,34 +249,65 @@ export default class AuthController extends WorklenzControllerBase {
           });
         }
         
-        console.log("=== LOGIN SUCCESSFUL ===");
-        console.log("Session ID after login:", req.sessionID);
-        console.log("Session data after login:", req.session);
-        console.log("Is authenticated:", req.isAuthenticated());
-        console.log("User in session:", req.user);
-        
-        // Add build version
-        user.build_v = FileConstants.getRelease();
-        
-        console.log("Sending response...");
-        console.log("Response headers before send:", res.getHeaders());
-        
-        // Ensure session is saved before sending response
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.log("Session save error:", saveErr);
+        // Regenerate session to prevent session fixation
+        const oldSessionId = req.sessionID;
+        req.session.regenerate((regenErr) => {
+          if (regenErr) {
+            console.log("Session regeneration error:", regenErr);
           }
-          console.log("Session saved, cookie header:", res.getHeader('set-cookie'));
           
-          return res.status(200).send({
-            done: true,
-            message: "Login successful",
-            user,
-            authenticated: true,
-            sessionId: req.sessionID // Include for debugging
+          console.log("Session regenerated from:", oldSessionId, "to:", req.sessionID);
+          
+          // Re-establish the user in the new session
+          req.session.passport = { user: { id: user.id } };
+          
+          console.log("=== LOGIN SUCCESSFUL ===");
+          console.log("Session ID after login:", req.sessionID);
+          console.log("Session data after login:", req.session);
+          console.log("Is authenticated:", req.isAuthenticated());
+          console.log("User in session:", req.user);
+          
+          // Add build version
+          user.build_v = FileConstants.getRelease();
+          
+          console.log("Sending response...");
+          console.log("Response headers before send:", res.getHeaders());
+          
+          // Ensure session is saved and cookie is set
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.log("Session save error:", saveErr);
+              return res.status(500).send({
+                done: false,
+                message: "Session save failed",
+                body: null
+              });
+            }
+            
+            // Force the session cookie to be sent
+            const sessionName = process.env.SESSION_NAME || 'connect.sid';
+            const sessionCookie = req.sessionID;
+            
+            console.log("Session saved successfully");
+            console.log("Session name:", sessionName);
+            console.log("Session ID to be sent:", sessionCookie);
+            
+            // The session middleware should automatically set the cookie
+            // But let's check if it's being set
+            console.log("Response headers after save:", res.getHeaders());
+            console.log("Set-Cookie header:", res.getHeader('set-cookie'));
+            
+            return res.status(200).send({
+              done: true,
+              message: "Login successful",
+              user,
+              authenticated: true,
+              sessionId: req.sessionID, // Include for debugging
+              sessionCookie: sessionName // Include cookie name for debugging
+            });
           });
-        });
-      });
+        }); // Close regenerate callback
+      }); // Close login callback
     })(req, res, next);
   }
 
