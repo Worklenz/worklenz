@@ -1,6 +1,7 @@
 import session from "express-session";
 import db from "../config/db";
 import { isProduction } from "../shared/utils";
+import * as cookieSignature from "cookie-signature";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pgSession = require("connect-pg-simple")(session);
@@ -52,25 +53,39 @@ export default (req: any, res: any, next: any) => {
   if (headerSessionId && headerSessionName) {
     console.log("Mobile app using header-based session:", headerSessionId);
     
-    // The session store expects a signed cookie, but we need to construct it properly
-    // For now, let's try the exact format from the successful login session
-    const sessionCookie = `${headerSessionName}=s%3A${headerSessionId}`;
+    // The problem is cookie signature - we need to create a properly signed cookie
+    const secret = process.env.SESSION_SECRET || "development-secret-key";
     
-    if (req.headers.cookie) {
-      // Replace existing session cookie while keeping other cookies
-      req.headers.cookie = req.headers.cookie
-        .split(';')
-        .filter((cookie: string) => !cookie.trim().startsWith(headerSessionName))
-        .concat(sessionCookie)
-        .join(';');
-    } else {
-      // Set the session cookie from header
+    try {
+      // Create a signed cookie using the session secret
+      const signedSessionId = 's:' + cookieSignature.sign(headerSessionId, secret);
+      const encodedSignedId = encodeURIComponent(signedSessionId);
+      const sessionCookie = `${headerSessionName}=${encodedSignedId}`;
+      
+      console.log("Creating signed session cookie:");
+      console.log("- Raw session ID:", headerSessionId);
+      console.log("- Signed session ID:", signedSessionId);
+      console.log("- Encoded signed ID:", encodedSignedId);
+      console.log("- Final cookie:", sessionCookie);
+      
+      if (req.headers.cookie) {
+        // Replace existing session cookie while keeping other cookies
+        req.headers.cookie = req.headers.cookie
+          .split(';')
+          .filter((cookie: string) => !cookie.trim().startsWith(headerSessionName))
+          .concat(sessionCookie)
+          .join(';');
+      } else {
+        // Set the session cookie from header
+        req.headers.cookie = sessionCookie;
+      }
+      console.log("Updated cookie header:", req.headers.cookie);
+    } catch (error) {
+      console.log("Error creating signed cookie:", error);
+      // Fallback to the old method
+      const sessionCookie = `${headerSessionName}=s%3A${headerSessionId}`;
       req.headers.cookie = sessionCookie;
     }
-    console.log("Updated cookie header:", req.headers.cookie);
-    
-    // Also debug what the session middleware will see
-    console.log("Expected session lookup for ID:", headerSessionId);
   }
   
   sessionMiddleware(req, res, (err: any) => {
