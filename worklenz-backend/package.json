@@ -108,6 +108,7 @@
     "@types/compression": "^1.7.2",
     "@types/connect-flash": "^0.0.37",
     "@types/cookie-parser": "^1.4.3",
+    "@types/cookie-signature": "^1.1.2",
     "@types/cron": "^2.0.1",
     "@types/crypto-js": "^4.2.2",
     "@types/csurf": "^1.11.2",
