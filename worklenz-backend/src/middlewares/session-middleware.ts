@@ -42,8 +42,15 @@ export default (req: any, res: any, next: any) => {
   const headerSessionId = req.headers["x-session-id"];
   const headerSessionName = req.headers["x-session-name"];
   
+  console.log("DEBUG - Session middleware:");
+  console.log("- URL:", req.url);
+  console.log("- Method:", req.method);
+  console.log("- Has headers:", !!headerSessionId);
+  console.log("- Original cookie:", req.headers.cookie);
+  
   // Only process headers if they exist AND there's no existing valid session cookie
   if (headerSessionId && headerSessionName) {
+    console.log("Processing mobile headers");
     const secret = process.env.SESSION_SECRET || "development-secret-key";
     
     try {
@@ -63,13 +70,24 @@ export default (req: any, res: any, next: any) => {
         // Set the session cookie from header
         req.headers.cookie = sessionCookie;
       }
+      console.log("Updated cookie:", req.headers.cookie);
     } catch (error) {
+      console.log("Error processing headers:", error);
       // Fallback to the old method
       const sessionCookie = `${headerSessionName}=s%3A${headerSessionId}`;
       req.headers.cookie = sessionCookie;
     }
+  } else {
+    console.log("Using normal cookie processing");
   }
   
   // Always call the original session middleware (handles both cookie and header-converted cases)
-  sessionMiddleware(req, res, next);
+  sessionMiddleware(req, res, (err: any) => {
+    if (err) {
+      console.log("Session middleware error:", err);
+    }
+    console.log("After session middleware - Session ID:", (req as any).sessionID);
+    console.log("After session middleware - Authenticated:", !!(req as any).isAuthenticated && (req as any).isAuthenticated());
+    next(err);
+  });
 };
