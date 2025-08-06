@@ -5,7 +5,7 @@ import { isProduction } from "../shared/utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pgSession = require("connect-pg-simple")(session);
 
-export default session({
+const sessionConfig = {
   name: process.env.SESSION_NAME,
   secret: process.env.SESSION_SECRET || "development-secret-key",
   proxy: false,
@@ -18,10 +18,18 @@ export default session({
   }),
   cookie: {
     path: "/",
-    // secure: isProduction(),
-    // httpOnly: isProduction(),
-    // sameSite: "none",
-    // domain: isProduction() ? ".worklenz.com" : undefined,
+    httpOnly: true,
+    // For mobile app support, we might need these settings:
+    sameSite: isProduction() ? "none" as const : "lax" as const,
+    secure: isProduction(), // Required when sameSite is "none"
+    domain: isProduction() ? ".worklenz.com" : undefined,
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   }
+};
+
+console.log("Session configuration:", {
+  ...sessionConfig,
+  secret: "[REDACTED]"
 });
+
+export default session(sessionConfig);

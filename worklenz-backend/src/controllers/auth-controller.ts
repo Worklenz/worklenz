@@ -259,11 +259,22 @@ export default class AuthController extends WorklenzControllerBase {
         user.build_v = FileConstants.getRelease();
         
         console.log("Sending response...");
-        return res.status(200).send({
-          done: true,
-          message: "Login successful",
-          user,
-          authenticated: true
+        console.log("Response headers before send:", res.getHeaders());
+        
+        // Ensure session is saved before sending response
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.log("Session save error:", saveErr);
+          }
+          console.log("Session saved, cookie header:", res.getHeader('set-cookie'));
+          
+          return res.status(200).send({
+            done: true,
+            message: "Login successful",
+            user,
+            authenticated: true,
+            sessionId: req.sessionID // Include for debugging
+          });
         });
       });
     })(req, res, next);
