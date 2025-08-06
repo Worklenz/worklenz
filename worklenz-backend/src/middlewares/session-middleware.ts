@@ -21,9 +21,10 @@ const sessionConfig = {
   cookie: {
     path: "/",
     httpOnly: true,
-    // For mobile app support, we might need these settings:
+    // For mobile app support in production, use "none", for local development use "lax"
     sameSite: isProduction() ? "none" as const : "lax" as const,
-    secure: isProduction(), // Required when sameSite is "none"
+    // Secure only in production (HTTPS required for sameSite: "none")
+    secure: isProduction(),
     domain: isProduction() ? ".worklenz.com" : undefined,
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   },
@@ -33,11 +34,6 @@ const sessionConfig = {
   }
 };
 
-console.log("Session configuration:", {
-  ...sessionConfig,
-  secret: "[REDACTED]"
-});
-
 const sessionMiddleware = session(sessionConfig);
 
 // Enhanced session middleware that supports both cookies and headers for mobile apps
@@ -46,28 +42,15 @@ export default (req: any, res: any, next: any) => {
   const headerSessionId = req.headers["x-session-id"];
   const headerSessionName = req.headers["x-session-name"];
   
-  console.log("Session middleware debug:");
-  console.log("- Cookie header:", req.headers.cookie);
-  console.log("- X-Session-ID header:", headerSessionId);
-  console.log("- X-Session-Name header:", headerSessionName);
-  
+  // Only process headers if they exist AND there's no existing valid session cookie
   if (headerSessionId && headerSessionName) {
-    console.log("Mobile app using header-based session:", headerSessionId);
-    
-    // The problem is cookie signature - we need to create a properly signed cookie
     const secret = process.env.SESSION_SECRET || "development-secret-key";
     
     try {
       // Create a signed cookie using the session secret
-      const signedSessionId = `s:${  cookieSignature.sign(headerSessionId, secret)}`;
+      const signedSessionId = `s:${cookieSignature.sign(headerSessionId, secret)}`;
       const encodedSignedId = encodeURIComponent(signedSessionId);
       const sessionCookie = `${headerSessionName}=${encodedSignedId}`;
-      
-      console.log("Creating signed session cookie:");
-      console.log("- Raw session ID:", headerSessionId);
-      console.log("- Signed session ID:", signedSessionId);
-      console.log("- Encoded signed ID:", encodedSignedId);
-      console.log("- Final cookie:", sessionCookie);
       
       if (req.headers.cookie) {
         // Replace existing session cookie while keeping other cookies
@@ -80,27 +63,13 @@ export default (req: any, res: any, next: any) => {
         // Set the session cookie from header
         req.headers.cookie = sessionCookie;
       }
-      console.log("Updated cookie header:", req.headers.cookie);
     } catch (error) {
-      console.log("Error creating signed cookie:", error);
       // Fallback to the old method
       const sessionCookie = `${headerSessionName}=s%3A${headerSessionId}`;
       req.headers.cookie = sessionCookie;
     }
   }
   
-  sessionMiddleware(req, res, (err: any) => {
-    if (err) {
-      console.log("Session middleware error:", err);
-    }
-    
-    // Debug what the session middleware produced
-    console.log("After session middleware:");
-    console.log("- Session ID:", (req as any).sessionID);
-    console.log("- Session data exists:", !!(req as any).session);
-    console.log("- Session passport data:", (req as any).session?.passport);
-    console.log("- Is authenticated:", !!(req as any).isAuthenticated && (req as any).isAuthenticated());
-    
-    next(err);
-  });
+  // Always call the original session middleware (handles both cookie and header-converted cases)
+  sessionMiddleware(req, res, next);
 };
