@@ -259,7 +259,7 @@ export default class AuthController extends WorklenzControllerBase {
           console.log("Session regenerated from:", oldSessionId, "to:", req.sessionID);
           
           // Re-establish the user in the new session
-          req.session.passport = { user: { id: user.id } };
+          (req.session as any).passport = { user: { id: user.id } };
           
           console.log("=== LOGIN SUCCESSFUL ===");
           console.log("Session ID after login:", req.sessionID);
