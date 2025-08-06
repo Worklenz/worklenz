@@ -44,10 +44,27 @@ export default (req: any, res: any, next: any) => {
   const headerSessionId = req.headers['x-session-id'];
   const headerSessionName = req.headers['x-session-name'];
   
-  if (headerSessionId && headerSessionName && !req.headers.cookie) {
+  console.log("Session middleware debug:");
+  console.log("- Cookie header:", req.headers.cookie);
+  console.log("- X-Session-ID header:", headerSessionId);
+  console.log("- X-Session-Name header:", headerSessionName);
+  
+  if (headerSessionId && headerSessionName) {
     console.log("Mobile app using header-based session:", headerSessionId);
-    // Inject the session cookie from header for session middleware to process
-    req.headers.cookie = `${headerSessionName}=s%3A${headerSessionId}`;
+    // Create or override the cookie header with the session from header
+    const sessionCookie = `${headerSessionName}=s%3A${headerSessionId}`;
+    if (req.headers.cookie) {
+      // Replace existing session cookie while keeping other cookies
+      req.headers.cookie = req.headers.cookie
+        .split(';')
+        .filter((cookie: string) => !cookie.trim().startsWith(headerSessionName))
+        .concat(sessionCookie)
+        .join(';');
+    } else {
+      // Set the session cookie from header
+      req.headers.cookie = sessionCookie;
+    }
+    console.log("Updated cookie header:", req.headers.cookie);
   }
   
   sessionMiddleware(req, res, next);
