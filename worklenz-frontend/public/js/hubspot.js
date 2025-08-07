@@ -15,7 +15,7 @@ class HubSpotManager {
    * Load HubSpot script with dark mode support
    */
   init() {
-    // if (!this.isProduction) return;
+    if (!this.isProduction) return;
 
     const loadHubSpot = () => {
       const script = document.createElement('script');
