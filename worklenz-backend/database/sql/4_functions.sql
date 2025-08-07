@@ -1326,6 +1326,7 @@ BEGIN
                  is_admin(users.id, users.active_team) AS is_admin,
                  t.user_id AS owner_id,
                  ud.subscription_status,
+                 (SELECT key FROM sys_license_types WHERE id = ud.license_type_id) AS subscription_type,
                  (SELECT CASE
                              WHEN (ud.subscription_status) = 'trialing'
                                  THEN (trial_expire_date)::DATE
