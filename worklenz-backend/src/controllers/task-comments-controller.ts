@@ -248,7 +248,13 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       member_name: req.user?.name || "",
       mentions: mentions || [],
       rawContent: req.body.content,
-      reactions: { likes: {} },
+      reactions: {
+        likes: {
+          count: 0,
+          liked_members: [],
+          liked_member_ids: []
+        }
+      },
       team_member_id: req.user?.team_member_id || "",
       user_id: req.user?.id || ""
     };
