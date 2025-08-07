@@ -7,9 +7,9 @@ import { createPortal } from 'react-dom';
 import InviteTeamMembers from '../../components/common/invite-team-members/invite-team-members';
 import InviteButton from './invite/InviteButton';
 import MobileMenuButton from './mobileMenu/MobileMenuButton';
-import NavbarLogo from './navbar-logo';
+import NavbarLogo from './NavbarLogo';
 import NotificationButton from '../../components/navbar/notifications/notifications-drawer/notification/notification-button';
-import ProfileButton from './user-profile/profile-button';
+import ProfileButton from './user-profile/ProfileButton';
 import SwitchTeamButton from './switchTeam/SwitchTeamButton';
 import UpgradePlanButton from './upgradePlan/UpgradePlanButton';
 import NotificationDrawer from '../../components/navbar/notifications/notifications-drawer/notification/notfication-drawer';
@@ -21,7 +21,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
-import TimerButton from './timers/timer-button';
+import TimerButton from './timers/TimerButton';
 import HelpButton from './help/HelpButton';
 
 const Navbar = () => {
@@ -35,7 +35,12 @@ const Navbar = () => {
   const authService = useAuthService();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState<boolean>(authService.isOwnerOrAdmin());
-  const showUpgradeTypes = [ISUBSCRIPTION_TYPE.TRIAL];
+  const showUpgradeTypes = [
+    ISUBSCRIPTION_TYPE.TRIAL,
+    ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL,
+    ISUBSCRIPTION_TYPE.PADDLE,
+    ISUBSCRIPTION_TYPE.CUSTOM
+  ];
 
   useEffect(() => {
     authApiService
