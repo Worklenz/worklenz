@@ -62,11 +62,16 @@ AdminGuard.displayName = 'AdminGuard';
 
 export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   const { isLicenseExpired, location } = useAuthStatus();
+  const authService = useAuthService();
 
   const isAdminCenterRoute = location.pathname.includes('/worklenz/admin-center');
 
   // Show modal instead of redirecting, but not on admin center routes
   const showModal = isLicenseExpired && !isAdminCenterRoute;
+
+  // Get the user's subscription type
+  const currentSession = authService?.getCurrentSession();
+  const subscriptionType = currentSession?.subscription_type as ISUBSCRIPTION_TYPE;
 
   // If license is expired and not on admin center, block the content entirely
   if (showModal) {
@@ -81,7 +86,7 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
         }}>
           {children}
         </div>
-        <LicenseExpiredModal open={true} />
+        <LicenseExpiredModal open={true} subscriptionType={subscriptionType} />
       </div>
     );
   }
