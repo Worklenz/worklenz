@@ -36,9 +36,6 @@ const Navbar = () => {
   const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState<boolean>(authService.isOwnerOrAdmin());
   const showUpgradeTypes = [
     ISUBSCRIPTION_TYPE.TRIAL,
-    ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL,
-    ISUBSCRIPTION_TYPE.PADDLE,
-    ISUBSCRIPTION_TYPE.CUSTOM
   ];
 
   useEffect(() => {
