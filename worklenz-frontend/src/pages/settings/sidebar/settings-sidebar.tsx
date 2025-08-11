@@ -26,17 +26,24 @@ const SettingSidebar: React.FC = () => {
       if (currentSession?.is_google && item.key === 'change-password') {
         return null;
       }
+      const isDangerous = item.isDangerous;
       return {
         key: item.key,
         label: (
           <Flex gap={8} justify="space-between" align="center">
             <Flex gap={8} align="center">
               {item.icon}
-              <Link to={`/worklenz/settings/${item.endpoint}`}>{t(item.name)}</Link>
+              <Link 
+                to={`/worklenz/settings/${item.endpoint}`}
+                style={{ color: isDangerous ? '#ff4d4f' : undefined }}
+              >
+                {t(item.name)}
+              </Link>
             </Flex>
             <RightOutlined style={{ fontSize: 12 }} />
           </Flex>
         ),
+        style: undefined,
       };
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);

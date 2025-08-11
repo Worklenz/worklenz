@@ -65,9 +65,10 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   const authService = useAuthService();
 
   const isAdminCenterRoute = location.pathname.includes('/worklenz/admin-center');
+  const isAccountDeletionRoute = location.pathname.includes('/worklenz/settings/account-deletion');
 
-  // Show modal instead of redirecting, but not on admin center routes
-  const showModal = isLicenseExpired && !isAdminCenterRoute;
+  // Show modal instead of redirecting, but not on admin center routes or account deletion
+  const showModal = isLicenseExpired && !isAdminCenterRoute && !isAccountDeletionRoute;
 
   // Get the user's subscription type
   const currentSession = authService?.getCurrentSession();
