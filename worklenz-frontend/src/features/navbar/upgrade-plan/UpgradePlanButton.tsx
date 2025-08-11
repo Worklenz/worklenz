@@ -23,7 +23,6 @@ const UpgradePlanButton = () => {
     // Calculate days remaining for expirable subscription types
     const expirableTypes = [
       ISUBSCRIPTION_TYPE.TRIAL,
-      ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL,
       ISUBSCRIPTION_TYPE.PADDLE,
       ISUBSCRIPTION_TYPE.CUSTOM
     ];
