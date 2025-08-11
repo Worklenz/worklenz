@@ -8,6 +8,7 @@ import resetEmailValidator from "../../middlewares/validators/reset-email-valida
 import updatePasswordValidator from "../../middlewares/validators/update-password-validator";
 import passwordValidator from "../../middlewares/validators/password-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
+import FileConstants from "../../shared/file-constants";
 
 const authRouter = express.Router();
 
@@ -54,6 +55,9 @@ authRouter.get("/google/verify", (req, res) => {
     successRedirect: process.env.LOGIN_SUCCESS_REDIRECT
   })(req, res);
 });
+
+// Mobile Google Sign-In using Passport strategy
+authRouter.post("/google/mobile", AuthController.googleMobileAuthPassport);
 
 // Passport logout
 authRouter.get("/logout", AuthController.logout);
