@@ -43,8 +43,10 @@ export const TrialExpirationAlert = () => {
       const diffTime = expiryDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
-      // Only show alert if 3 days or less remaining (but not expired)
-      if (diffDays <= 3 && diffDays >= 0) {
+      // Show alert if:
+      // 1. 3 days or less remaining before expiry (diffDays <= 3 && diffDays >= 0)
+      // 2. Within 7 days grace period after expiry (diffDays < 0 && diffDays >= -7)
+      if ((diffDays <= 3 && diffDays >= 0) || (diffDays < 0 && diffDays >= -7)) {
         setDaysRemaining(diffDays);
         setVisible(true);
       } else {
@@ -70,12 +72,21 @@ export const TrialExpirationAlert = () => {
   }
 
   const getAlertType = () => {
+    if (daysRemaining !== null && daysRemaining < 0) return 'error'; // Already expired
     if (daysRemaining === 0) return 'error';
     if (daysRemaining === 1) return 'warning';
     return 'info';
   };
 
   const getMessage = () => {
+    if (daysRemaining !== null && daysRemaining < 0) {
+      const daysExpired = Math.abs(daysRemaining);
+      const remainingGraceDays = 7 - daysExpired;
+      return t('license-expired-grace-period', { 
+        days: remainingGraceDays, 
+        count: remainingGraceDays 
+      });
+    }
     if (daysRemaining === 0) {
       return t('license-expiring-today');
     }

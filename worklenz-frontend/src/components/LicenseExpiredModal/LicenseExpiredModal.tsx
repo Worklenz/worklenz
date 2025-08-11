@@ -154,10 +154,6 @@ export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYP
       keyboard={false}
       mask={false}
       style={{ 
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
         zIndex: 1000
       }}
       wrapClassName="license-expired-modal-wrap"

@@ -35,6 +35,8 @@
   "license-expiring-soon": "您的许可证还有 {{days}} 天到期",
   "license-expiring-soon_plural": "您的许可证还有 {{days}} 天到期",
   "license-expiring-today": "您的许可证今天到期！",
+  "license-expired-grace-period": "您的许可证已过期。剩余 {{days}} 天宽限期",
+  "license-expired-grace-period_plural": "您的许可证已过期。剩余 {{days}} 天宽限期",
   "license-expiring-upgrade": "立即续费以保留所有数据并继续使用",
   "license-badge-days": "剩余{{days}}天",
   "license-badge-today": "最后一天！",

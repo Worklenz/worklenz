@@ -46,8 +46,9 @@ export const useAuthStatus = () => {
           const diffTime = today.getTime() - expiryDate.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           
-          // Check if today >= valid_till_date + 3 days
-          return diffDays >= 3;
+          // License is considered fully expired after 7 days grace period
+          // This will trigger the LicenseExpiredModal
+          return diffDays > 7;
         }
 
         return false;

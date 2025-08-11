@@ -35,6 +35,8 @@
   "license-expiring-soon": "Licenca juaj skadon në {{days}} ditë",
   "license-expiring-soon_plural": "Licenca juaj skadon në {{days}} ditë",
   "license-expiring-today": "Licenca juaj skadon sot!",
+  "license-expired-grace-period": "Licenca juaj ka skaduar. {{days}} ditë periudhë tolerance e mbetur",
+  "license-expired-grace-period_plural": "Licenca juaj ka skaduar. {{days}} ditë periudhë tolerance të mbetura",
   "license-expiring-upgrade": "Rinovoni tani për të mbajtur të gjitha të dhënat tuaja dhe vazhdoni pa ndërprerje",
   "license-badge-days": "{{days}} ditë të mbetura",
   "license-badge-today": "Dita e fundit!",
