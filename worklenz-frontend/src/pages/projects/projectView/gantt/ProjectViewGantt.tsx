@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Spin, message } from '@/shared/antd-imports';
 import { useParams } from 'react-router-dom';
+import { useSocket } from '@/socket/socketContext';
 import GanttTimeline from './components/gantt-timeline/GanttTimeline';
 import GanttTaskList from './components/gantt-task-list/GanttTaskList';
 import GanttChart from './components/gantt-chart/GanttChart';
@@ -14,7 +15,7 @@ import {
   useGetProjectPhasesQuery,
   transformToGanttTasks,
   transformToGanttPhases,
-} from './services/gantt-api.service';
+} from './services/roadmap-api.service';
 import { TimelineUtils } from './utils/timeline-calculator';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -25,11 +26,13 @@ import {
 } from '@features/task-drawer/task-drawer.slice';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
+import { SocketEvents } from '@/shared/socket-events';
 import './gantt-styles.css';
 
 const ProjectViewGantt: React.FC = React.memo(() => {
   const { projectId } = useParams<{ projectId: string }>();
   const dispatch = useAppDispatch();
+  const { socket } = useSocket();
   const [viewMode, setViewMode] = useState<GanttViewMode>('month');
   const [showPhaseModal, setShowPhaseModal] = useState(false);
   const [showPhaseDetailsModal, setShowPhaseDetailsModal] = useState(false);
@@ -56,6 +59,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     isLoading: phasesLoading,
     refetch: refetchPhases,
   } = useGetProjectPhasesQuery({ projectId: projectId || '' }, { skip: !projectId });
+
 
   // Transform API data to component format
   const tasks = useMemo(() => {
@@ -112,6 +116,28 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   useEffect(() => {
     dispatch(fetchPriorities());
   }, [dispatch]);
+
+  // Socket listener for quick task creation response
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleQuickTaskResponse = (response: any) => {
+      if (response) {
+        message.success(`Task "${response.name}" created successfully`);
+        // Refresh the Gantt data to show the new task
+        refetchTasks();
+        refetchPhases();
+      } else {
+        message.error('Failed to create task');
+      }
+    };
+
+    socket.on(SocketEvents.QUICK_TASK.toString(), handleQuickTaskResponse);
+
+    return () => {
+      socket.off(SocketEvents.QUICK_TASK.toString(), handleQuickTaskResponse);
+    };
+  }, [socket, refetchTasks, refetchPhases]);
 
   // Track expansion changes for animations
   useEffect(() => {
@@ -237,19 +263,22 @@ const ProjectViewGantt: React.FC = React.memo(() => {
 
   const handleCreateQuickTask = useCallback(
     (taskName: string, phaseId?: string, startDate?: Date) => {
-      // For now, just refresh the Gantt data after task creation
-      // The actual task creation will happen through existing mechanisms
-      // and the refresh will show the new task
-      console.log('Task created:', { taskName, phaseId, startDate });
-      
-      // Show success message
-      message.success(`Task "${taskName}" created successfully`);
-      
-      // Refresh the Gantt data to show the new task
-      refetchTasks();
-      refetchPhases();
+      if (!socket || !projectId || !taskName.trim()) {
+        message.error('Socket connection or project ID missing, or task name is empty');
+        return;
+      }
+
+      const taskData = {
+        project_id: projectId,
+        name: taskName.trim(),
+        phase_id: phaseId || null,
+        start_date: startDate ? startDate.toISOString().split('T')[0] : null,
+      };
+
+      // Emit the task creation event through socket
+      socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(taskData));
     },
-    [refetchTasks, refetchPhases]
+    [socket, projectId]
   );
 
   // Handle errors

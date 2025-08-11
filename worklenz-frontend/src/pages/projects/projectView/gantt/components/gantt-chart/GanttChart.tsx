@@ -640,6 +640,15 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     const handleTimelineClick = useCallback((e: React.MouseEvent, rowIndex: number) => {
       if (!dateRange || !onCreateQuickTask) return;
 
+      // Get the task for this row
+      const task = flattenedTasks[rowIndex];
+      
+      // Check if this is a phase row - only show popover for phase rows
+      const isPhase = task && 'type' in task && (task.type === 'milestone' || task.is_milestone);
+      if (!isPhase) {
+        return; // Don't show popover for non-phase rows
+      }
+
       // Get the click position relative to the timeline
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -648,7 +657,6 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       const clickedDate = calculateDateFromPosition(x, actualColumnWidth);
       
       // Find which phase this row belongs to
-      const task = flattenedTasks[rowIndex];
       let phaseId: string | null = null;
       
       if (task && 'phase_id' in task) {
@@ -767,7 +775,11 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
               return (
                 <div
                   key={item.id}
-                  className={`relative cursor-pointer hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors ${animationClass}`}
+                  className={`relative transition-colors ${
+                    isPhase 
+                      ? 'cursor-pointer hover:bg-blue-50/30 dark:hover:bg-blue-900/10' 
+                      : 'hover:bg-gray-50/50 dark:hover:bg-gray-700/30'
+                  } ${animationClass}`}
                   onClick={(e) => {
                     handleTimelineClick(e, index);
                   }}

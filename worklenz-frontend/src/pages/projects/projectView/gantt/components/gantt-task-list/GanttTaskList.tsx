@@ -24,7 +24,7 @@ import { SocketEvents } from '../../../../../../shared/socket-events';
 import { useAppDispatch } from '../../../../../../hooks/useAppDispatch';
 import { addTask } from '../../../../../../features/task-management/task-management.slice';
 import { useAuthService } from '../../../../../../hooks/useAuth';
-import { useUpdatePhaseMutation } from '../../services/gantt-api.service';
+import { useUpdatePhaseMutation } from '../../services/roadmap-api.service';
 
 // Utility function to add alpha channel to hex color
 const addAlphaToHex = (hex: string, alpha: number): string => {

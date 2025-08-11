@@ -284,4 +284,115 @@ export default class GanttController extends WorklenzControllerBase {
     const result = await db.query(q, [task_id, start_date, end_date]);
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
+
+  @HandleExceptions()
+  public static async createTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { project_id, name, phase_id, start_date, end_date, priority_id, status_id } = req.body;
+    
+    if (!project_id || !name?.trim()) {
+      return res.status(400).send(new ServerResponse(false, null, "Project ID and task name are required"));
+    }
+
+    // Get default status if not provided
+    let defaultStatusId = status_id;
+    if (!defaultStatusId) {
+      const statusQuery = `
+        SELECT id FROM task_statuses 
+        WHERE project_id = $1 
+        ORDER BY sort_order ASC 
+        LIMIT 1;
+      `;
+      const statusResult = await db.query(statusQuery, [project_id]);
+      if (statusResult.rows.length > 0) {
+        defaultStatusId = statusResult.rows[0].id;
+      }
+    }
+
+    // Create the task
+    const createTaskQuery = `
+      INSERT INTO tasks (
+        name, 
+        project_id, 
+        status_id,
+        priority_id,
+        start_date, 
+        end_date, 
+        created_by,
+        updated_by,
+        created_at,
+        updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $7, NOW(), NOW())
+      RETURNING id, name, start_date, end_date, project_id;
+    `;
+    
+    const taskResult = await db.query(createTaskQuery, [
+      name.trim(),
+      project_id,
+      defaultStatusId,
+      priority_id,
+      start_date,
+      end_date,
+      req.user?.id
+    ]);
+
+    const createdTask = taskResult.rows[0];
+
+    // Link task to phase if phase_id provided
+    if (phase_id && createdTask.id) {
+      const linkPhaseQuery = `
+        INSERT INTO task_phase (task_id, phase_id) 
+        VALUES ($1, $2)
+        ON CONFLICT (task_id, phase_id) DO NOTHING;
+      `;
+      await db.query(linkPhaseQuery, [createdTask.id, phase_id]);
+    }
+
+    return res.status(200).send(new ServerResponse(true, createdTask));
+  }
+
+  @HandleExceptions()
+  public static async createPhase(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { project_id, name, color_code, start_date, end_date } = req.body;
+    
+    if (!project_id || !name?.trim()) {
+      return res.status(400).send(new ServerResponse(false, null, "Project ID and phase name are required"));
+    }
+
+    // Get next sort index
+    const sortQuery = `
+      SELECT COALESCE(MAX(sort_index), 0) + 1 as next_sort_index 
+      FROM project_phases 
+      WHERE project_id = $1;
+    `;
+    const sortResult = await db.query(sortQuery, [project_id]);
+    const nextSortIndex = sortResult.rows[0]?.next_sort_index || 1;
+
+    const createPhaseQuery = `
+      INSERT INTO project_phases (
+        name, 
+        project_id, 
+        color_code,
+        start_date, 
+        end_date,
+        sort_index,
+        created_by,
+        updated_by,
+        created_at,
+        updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $7, NOW(), NOW())
+      RETURNING id, name, color_code, start_date, end_date, sort_index, project_id;
+    `;
+    
+    const result = await db.query(createPhaseQuery, [
+      name.trim(),
+      project_id,
+      color_code || getColor(),
+      start_date,
+      end_date,
+      nextSortIndex,
+      req.user?.id
+    ]);
+
+    return res.status(200).send(new ServerResponse(true, result.rows[0]));
+  }
 }

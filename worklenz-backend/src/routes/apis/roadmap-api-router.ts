@@ -16,5 +16,7 @@ ganttApiRouter.get("/project-workload", safeControllerFunction(GanttController.g
 ganttApiRouter.get("/roadmap-tasks", safeControllerFunction(GanttController.getRoadmapTasks));
 ganttApiRouter.get("/project-phases", safeControllerFunction(GanttController.getProjectPhases));
 ganttApiRouter.post("/update-task-dates", safeControllerFunction(GanttController.updateTaskDates));
+ganttApiRouter.post("/create-task", safeControllerFunction(GanttController.createTask));
+ganttApiRouter.post("/create-phase", safeControllerFunction(GanttController.createPhase));
 
 export default ganttApiRouter;

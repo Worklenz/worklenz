@@ -5,7 +5,7 @@ import { getCsrfToken, refreshCsrfToken } from '@/api/api-client';
 import config from '@/config/env';
 import { GanttTask, GanttPhase } from '../types/gantt-types';
 
-const rootUrl = '/gantt';
+const rootUrl = '/roadmap';
 
 export interface RoadmapTasksResponse {
   id: string;
@@ -95,8 +95,8 @@ export interface UpdatePhaseRequest {
   end_date?: string;
 }
 
-export const ganttApi = createApi({
-  reducerPath: 'ganttApi',
+export const roadmapApi = createApi({
+  reducerPath: 'roadmapApi',
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}${API_BASE_URL}`,
     prepareHeaders: async headers => {
@@ -202,7 +202,7 @@ export const {
   useCreatePhaseMutation,
   useCreateTaskMutation,
   useUpdatePhaseMutation,
-} = ganttApi;
+} = roadmapApi;
 
 /**
  * Transform API response to Gantt task format with phases as milestones

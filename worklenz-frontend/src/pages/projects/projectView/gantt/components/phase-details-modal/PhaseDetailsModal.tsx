@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import AvatarGroup from '@/components/AvatarGroup';
 import { GanttTask } from '../../types/gantt-types';
-import { useUpdatePhaseMutation } from '../../services/gantt-api.service';
+import { useUpdatePhaseMutation } from '../../services/roadmap-api.service';
 
 const { Title, Text } = Typography;
 
@@ -19,7 +19,7 @@ interface PhaseDetailsModalProps {
 
 const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, phase, onPhaseUpdate }) => {
   const { projectId } = useParams<{ projectId: string }>();
-  const { t } = useTranslation('gantt/phase-details-modal');
+  const { t } = useTranslation('roadmap/phase-details-modal');
   const { token } = theme.useToken();
 
   // API mutation hook

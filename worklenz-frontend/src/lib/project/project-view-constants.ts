@@ -19,7 +19,7 @@ const ProjectViewMembers = React.lazy(
 const ProjectViewUpdates = React.lazy(
   () => import('@/pages/projects/project-view-1/updates/project-view-updates')
 );
-const ProjectViewGantt = React.lazy(
+const ProjectViewRoadmap = React.lazy(
   () => import('@/pages/projects/projectView/gantt/ProjectViewGantt')
 );
 
@@ -46,7 +46,7 @@ const getTabLabel = (key: string): string => {
         files: 'Files',
         members: 'Members',
         updates: 'Updates',
-        gantt: 'Gantt Chart',
+        roadmap: 'Roadmap',
       };
       return fallbacks[key] || key;
     }
@@ -123,12 +123,12 @@ export const tabItems: TabItems[] = [
   },
   {
     index: 6,
-    key: 'gantt',
-    label: getTabLabel('gantt'),
+    key: 'roadmap',
+    label: getTabLabel('roadmap'),
     element: React.createElement(
       Suspense,
       { fallback: React.createElement(InlineSuspenseFallback) },
-      React.createElement(ProjectViewGantt)
+      React.createElement(ProjectViewRoadmap)
     ),
   },
 ];
@@ -156,8 +156,8 @@ export const updateTabLabels = () => {
         case 'updates':
           item.label = getTabLabel('updates');
           break;
-        case 'gantt':
-          item.label = getTabLabel('gantt');
+        case 'roadmap':
+          item.label = getTabLabel('roadmap');
           break;
       }
     });
