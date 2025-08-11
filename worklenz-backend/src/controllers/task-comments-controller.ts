@@ -124,7 +124,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         const q = `
       INSERT INTO task_comment_attachments (name, type, size, task_id, comment_id, team_id, project_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, name, type, task_id, comment_id, created_at, 
+      RETURNING id, name, type, task_id, comment_id, created_at,
       CONCAT($8::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS url;
     `;
 
@@ -217,7 +217,49 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       }
     }
 
-    return res.status(200).send(new ServerResponse(true, data.comment));
+    // Get user avatar URL from database
+    const avatarQuery = `SELECT avatar_url FROM users WHERE id = $1`;
+    const avatarResult = await db.query(avatarQuery, [req.user?.id]);
+    const avatarUrl = avatarResult.rows[0]?.avatar_url || "";
+
+    // Get comment details including created_at
+    const commentQuery = `SELECT created_at FROM task_comments WHERE id = $1`;
+    const commentResult = await db.query(commentQuery, [response.id]);
+    const commentData = commentResult.rows[0];
+
+    // Get attachments if any
+    const attachmentsQuery = `SELECT id, name, type, size FROM task_comment_attachments WHERE comment_id = $1`;
+    const attachmentsResult = await db.query(attachmentsQuery, [response.id]);
+    const commentAttachments = attachmentsResult.rows.map(att => ({
+      id: att.id,
+      name: att.name,
+      type: att.type,
+      size: att.size
+    }));
+
+
+    const commentdata = {
+      attachments: commentAttachments,
+      avatar_url: avatarUrl,
+      content: req.body.content,
+      created_at: commentData?.created_at || new Date().toISOString(),
+      edit: false,
+      id: response.id,
+      member_name: req.user?.name || "",
+      mentions: mentions || [],
+      rawContent: req.body.content,
+      reactions: {
+        likes: {
+          count: 0,
+          liked_members: [],
+          liked_member_ids: []
+        }
+      },
+      team_member_id: req.user?.team_member_id || "",
+      user_id: req.user?.id || ""
+    };
+
+    return res.status(200).send(new ServerResponse(true, commentdata));
   }
 
   @HandleExceptions()
@@ -530,17 +572,17 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     for (const attachment of attachments) {
       if (req.user?.subscription_status === "free" && req.user?.owner_id) {
         const limits = await getFreePlanSettings();
-    
+
         const usedStorage = await getUsedStorage(req.user?.owner_id);
         if ((parseInt(usedStorage) + attachment.size) > megabytesToBytes(parseInt(limits.free_tier_storage))) {
           return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot exceed ${limits.free_tier_storage}MB of storage.`));
         }
       }
-      
+
       const q = `
         INSERT INTO task_comment_attachments (name, type, size, task_id, comment_id, team_id, project_id)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, name, type, task_id, comment_id, created_at, 
+        RETURNING id, name, type, task_id, comment_id, created_at,
         CONCAT($8::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS url;
       `;
 
