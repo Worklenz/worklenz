@@ -18,6 +18,7 @@
   "profileTooltip": "查看个人资料",
   "adminCenter": "管理中心",
   "settings": "设置",
+  "deleteAccount": "删除账户",
   "logOut": "登出",
   "notificationsDrawer": {
     "read": "已读通知",
