@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate, RouteObject, useLocation } from 'react-r
 import { lazy, Suspense, memo, useMemo } from 'react';
 import rootRoutes from './root-routes';
 import authRoutes from './auth-routes';
-import mainRoutes, { licenseExpiredRoute } from './main-routes';
+import mainRoutes from './main-routes';
 import notFoundRoute from './not-found-route';
 import accountSetupRoute from './account-setup-routes';
 import reportingRoutes from './reporting-routes';
@@ -11,6 +11,7 @@ import { AuthenticatedLayout } from '@/layouts/AuthenticatedLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+import { LicenseExpiredModal } from '@/components/LicenseExpiredModal/LicenseExpiredModal';
 
 // Lazy load the NotFoundPage component for better code splitting
 const NotFoundPage = lazy(() => import('@/pages/404-page/404-page'));
@@ -61,12 +62,34 @@ AdminGuard.displayName = 'AdminGuard';
 
 export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   const { isLicenseExpired, location } = useAuthStatus();
+  const authService = useAuthService();
 
   const isAdminCenterRoute = location.pathname.includes('/worklenz/admin-center');
-  const isLicenseExpiredRoute = location.pathname === '/worklenz/license-expired';
+  const isAccountDeletionRoute = location.pathname.includes('/worklenz/settings/account-deletion');
 
-  if (isLicenseExpired && !isAdminCenterRoute && !isLicenseExpiredRoute) {
-    return <Navigate to="/worklenz/license-expired" replace />;
+  // Show modal instead of redirecting, but not on admin center routes or account deletion
+  const showModal = isLicenseExpired && !isAdminCenterRoute && !isAccountDeletionRoute;
+
+  // Get the user's subscription type
+  const currentSession = authService?.getCurrentSession();
+  const subscriptionType = currentSession?.subscription_type as ISUBSCRIPTION_TYPE;
+
+  // If license is expired and not on admin center, block the content entirely
+  if (showModal) {
+    return (
+      <div style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
+        <div style={{ 
+          position: 'absolute', 
+          inset: 0, 
+          pointerEvents: 'none', 
+          opacity: 0.3,
+          filter: 'blur(2px)'
+        }}>
+          {children}
+        </div>
+        <LicenseExpiredModal open={true} subscriptionType={subscriptionType} />
+      </div>
+    );
   }
 
   return <>{children}</>;
@@ -194,7 +217,7 @@ const adminRoutes = wrapRoutes(reportingRoutes, AdminGuard);
 // Setup route should be accessible without setup completion, only requires authentication
 const setupRoutes = wrapRoutes([accountSetupRoute], AuthGuard);
 
-// License expiry check function
+// License expiry check function - only wrap top-level routes, not children
 const withLicenseExpiryCheck = (routes: RouteObject[]): RouteObject[] => {
   return routes.map(route => {
     const wrappedRoute = {
@@ -206,8 +229,9 @@ const withLicenseExpiryCheck = (routes: RouteObject[]): RouteObject[] => {
       ),
     };
 
+    // Don't wrap children - they'll inherit the guard from parent
     if (route.children) {
-      wrappedRoute.children = withLicenseExpiryCheck(route.children);
+      wrappedRoute.children = route.children;
     }
 
     return wrappedRoute;
@@ -215,6 +239,7 @@ const withLicenseExpiryCheck = (routes: RouteObject[]): RouteObject[] => {
 };
 
 const licenseCheckedMainRoutes = withLicenseExpiryCheck(protectedMainRoutes);
+const licenseCheckedAdminRoutes = withLicenseExpiryCheck(adminRoutes);
 
 // Create optimized router with future flags for better performance
 const router = createBrowserRouter(
@@ -232,7 +257,7 @@ const router = createBrowserRouter(
           </Suspense>
         </ErrorBoundary>
       ),
-      children: [...licenseCheckedMainRoutes, ...adminRoutes, ...setupRoutes, licenseExpiredRoute],
+      children: [...licenseCheckedMainRoutes, ...licenseCheckedAdminRoutes, ...setupRoutes],
     },
     ...publicRoutes,
   ],

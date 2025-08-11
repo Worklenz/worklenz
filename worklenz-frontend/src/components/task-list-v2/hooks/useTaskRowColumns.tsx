@@ -90,17 +90,39 @@ export const useTaskRowColumns = ({
   depth = 0,
 }: UseTaskRowColumnsProps) => {
   
-  const renderColumn = useCallback((columnId: string, width: string, isSticky?: boolean, index?: number) => {
-    switch (columnId) {
-      case 'dragHandle':
-        return (
-          <DragHandleColumn
-            width={width}
-            isSubtask={isSubtask}
-            attributes={attributes}
-            listeners={listeners}
-          />
-        );
+  const renderColumn = useCallback((columnId: string, width: string, isSticky?: boolean, index?: number, currentBg?: string, rowBackgrounds?: any) => {
+    // Calculate left position for sticky columns
+    let leftPosition = 0;
+    if (isSticky && typeof index === 'number') {
+      for (let i = 0; i < index; i++) {
+        const prevColumn = visibleColumns[i];
+        if (prevColumn.isSticky) {
+          leftPosition += parseInt(prevColumn.width.replace('px', ''));
+        }
+      }
+    }
+
+    // Create wrapper style for sticky positioning
+    const wrapperStyle = isSticky ? {
+      position: 'sticky' as const,
+      left: leftPosition,
+      zIndex: 5, // Lower than header but above regular content
+      backgroundColor: currentBg || (isDarkMode ? '#1e1e1e' : '#ffffff'), // Use dynamic background or fallback
+      overflow: 'hidden', // Prevent content from spilling over
+      width: width, // Ensure the wrapper respects column width
+    } : {};
+
+    const renderColumnContent = () => {
+      switch (columnId) {
+        case 'dragHandle':
+          return (
+            <DragHandleColumn
+              width={width}
+              isSubtask={isSubtask}
+              attributes={attributes}
+              listeners={listeners}
+            />
+          );
 
       case 'checkbox':
         return (
@@ -294,7 +316,27 @@ export const useTaskRowColumns = ({
           );
         }
         return null;
+      }
+    };
+
+    // Wrap content with sticky positioning if needed
+    const content = renderColumnContent();
+    if (isSticky) {
+      const hoverBg = rowBackgrounds?.hover || (isDarkMode ? '#2a2a2a' : '#f9fafb');
+      return (
+        <div 
+          style={{
+            ...wrapperStyle,
+            '--hover-bg': hoverBg,
+          } as React.CSSProperties}
+          className="border-r border-gray-200 dark:border-gray-700 overflow-hidden sticky-column-hover hover:bg-[var(--hover-bg)]"
+        >
+          {content}
+        </div>
+      );
     }
+    
+    return content;
   }, [
     task,
     projectId,
@@ -319,6 +361,7 @@ export const useTaskRowColumns = ({
     handleTaskNameEdit,
     attributes,
     listeners,
+    depth,
   ]);
 
   return { renderColumn };

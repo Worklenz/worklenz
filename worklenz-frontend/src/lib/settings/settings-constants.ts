@@ -12,13 +12,14 @@ import {
   UserOutlined,
   UserSwitchOutlined,
   BulbOutlined,
+  DeleteOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
 const NotificationsSettings = lazy(() => import('../../pages/settings/notifications/notifications-settings'));
 const ClientsSettings = lazy(() => import('../../pages/settings/clients/clients-settings'));
 const JobTitlesSettings = lazy(() => import('@/pages/settings/job-titles/job-titles-settings'));
-const LabelsSettings = lazy(() => import('../../pages/settings/labels/labels-settings'));
+const LabelsSettings = lazy(() => import('../../pages/settings/labels/LabelsSettings'));
 const CategoriesSettings = lazy(() => import('../../pages/settings/categories/categories-settings'));
 const ProjectTemplatesSettings = lazy(() => import('@/pages/settings/project-templates/project-templates-settings'));
 const TaskTemplatesSettings = lazy(() => import('@/pages/settings/task-templates/task-templates-settings'));
@@ -27,6 +28,7 @@ const TeamsSettings = lazy(() => import('../../pages/settings/teams/teams-settin
 const ChangePassword = lazy(() => import('@/pages/settings/change-password/change-password'));
 const LanguageAndRegionSettings = lazy(() => import('@/pages/settings/language-and-region/language-and-region-settings'));
 const AppearanceSettings = lazy(() => import('@/pages/settings/appearance/appearance-settings'));
+const AccountDeletion = lazy(() => import('@/pages/settings/account-deletion/AccountDeletion'));
 
 // type of menu item in settings sidebar
 type SettingMenuItems = {
@@ -36,6 +38,7 @@ type SettingMenuItems = {
   icon: ReactNode;
   element: ReactNode;
   adminOnly?: boolean;
+  isDangerous?: boolean;
 };
 // settings all element items use for sidebar and routes
 export const settingsItems: SettingMenuItems[] = [
@@ -139,6 +142,15 @@ export const settingsItems: SettingMenuItems[] = [
     icon: React.createElement(BankOutlined),
     element: React.createElement(TeamsSettings),
     adminOnly: true,
+  },
+  // Danger zone - always at the bottom
+  {
+    key: 'account-deletion',
+    name: 'account-deletion',
+    endpoint: 'account-deletion',
+    icon: React.createElement(DeleteOutlined),
+    element: React.createElement(AccountDeletion),
+    isDangerous: true,
   },
 ];
 

@@ -57,6 +57,9 @@
 
   "contextMenu": {
     "assignToMe": "Cakto mua",
+    "copyLink": "Kopjo lidhjen e detyrës",
+    "linkCopied": "Lidhja u kopjua në clipboard",
+    "linkCopyFailed": "Dështoi kopjimi i lidhjes",
     "moveTo": "Zhvendos në",
     "unarchive": "Ç'arkivizo",
     "archive": "Arkivizo",
@@ -133,5 +136,11 @@
       "dependencies": "Detyra ka varësi",
       "recurring": "Detyrë përsëritëse"
     }
+  },
+
+  "timer": {
+    "conflictTitle": "Kronómetr Tashë Në Ecuri",
+    "conflictMessage": "Ju keni një kronómetr në ecuri për \"{{taskName}}\" në projektin \"{{projectName}}\". Dëshironi ta ndaloni atë kronómetr dhe të filloni një të ri për këtë detyrë?",
+    "stopAndStart": "Ndalo & Fillo Kronómetr të Ri"
   }
 }

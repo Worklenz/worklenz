@@ -75,7 +75,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(({
   });
 
   // Drag and drop functionality - only enable for parent tasks
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({
     id: task.id,
     data: {
       type: 'task',
@@ -116,24 +116,41 @@ const TaskRow: React.FC<TaskRowProps> = memo(({
   const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0 : 1, // Completely hide the original task while dragging
+    opacity: isDragging ? 0.3 : 1, // Make original task slightly transparent while dragging
   }), [transform, transition, isDragging]);
 
   return (
     <div
       ref={setNodeRef}
       style={{ ...style, height: '40px' }}
-      className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+      className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
         isFirstInGroup ? 'border-t border-gray-200 dark:border-gray-700' : ''
       } ${
-        isDragging ? 'shadow-lg border border-blue-300' : ''
+        isDragging ? 'opacity-50' : ''
+      } ${
+        isOver && !isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''
       }`}
     >
-      {visibleColumns.map((column, index) => (
-        <React.Fragment key={column.id}>
-          {renderColumn(column.id, column.width, column.isSticky, index)}
-        </React.Fragment>
-      ))}
+      {visibleColumns.map((column, index) => {
+        // Calculate background state for sticky columns - custom dark mode colors
+        const rowBackgrounds = {
+          normal: isDarkMode ? '#1e1e1e' : '#ffffff', // custom dark : bg-white
+          hover: isDarkMode ? '#1f2937' : '#f9fafb', // slightly lighter dark : bg-gray-50  
+          dragOver: isDarkMode ? '#1e3a8a33' : '#dbeafe', // bg-blue-900/20 : bg-blue-50
+        };
+        
+        let currentBg = rowBackgrounds.normal;
+        if (isOver && !isDragging) {
+          currentBg = rowBackgrounds.dragOver;
+        }
+        // Note: hover state is handled by CSS, so we'll use a CSS custom property
+        
+        return (
+          <React.Fragment key={column.id}>
+            {renderColumn(column.id, column.width, column.isSticky, index, currentBg, rowBackgrounds)}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 });

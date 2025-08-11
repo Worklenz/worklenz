@@ -20,6 +20,17 @@ async function isGoogleAccountFound(email: string) {
   return !!result.rowCount;
 }
 
+async function isAccountDeactivated(email: string) {
+  const q = `
+    SELECT 1
+    FROM users
+    WHERE email = $1
+      AND is_deleted = TRUE;
+  `;
+  const result = await db.query(q, [email]);
+  return !!result.rowCount;
+}
+
 async function registerUser(password: string, team_id: string, name: string, team_name: string, email: string, timezone: string, team_member_id: string) {
   const salt = bcrypt.genSaltSync(10);
   const encryptedPassword = bcrypt.hashSync(password, salt);
@@ -53,6 +64,10 @@ async function handleSignUp(req: Request, email: string, password: string, done:
   if (googleAccountFound)
     return done(null, null, req.flash(ERROR_KEY, `${req.body.email} is already linked with a Google account.`));
 
+  const accountDeactivated = await isAccountDeactivated(email);
+  if (accountDeactivated)
+    return done(null, null, req.flash(ERROR_KEY, `Account for email ${email} has been deactivated. Please contact support to reactivate your account.`));
+
   try {
     const user = await registerUser(password, team_id, name, team_name, email, timezone, team_member_id);
     sendWelcomeEmail(email, name);
@@ -69,6 +84,7 @@ async function handleSignUp(req: Request, email: string, password: string, done:
       const [, value] = error.message.split(":");
       return done(null, null, req.flash(ERROR_KEY, `Worklenz account already exists for email ${value}.`));
     }
+
 
     if (message.includes("TEAM_NAME_EXISTS_ERROR")) {
       const [, value] = error.message.split(":");

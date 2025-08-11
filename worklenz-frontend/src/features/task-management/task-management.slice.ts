@@ -680,8 +680,23 @@ const taskManagementSlice = createSlice({
         const group = state.groups.find(g => g.id === sourceGroupId);
         if (group) {
           const newTasks = Array.from(group.taskIds);
-          const [removed] = newTasks.splice(newTasks.indexOf(sourceTaskId), 1);
-          newTasks.splice(newTasks.indexOf(destinationTaskId), 0, removed);
+          const sourceIndex = newTasks.indexOf(sourceTaskId);
+          const destinationIndex = newTasks.indexOf(destinationTaskId);
+          
+          // Remove the task from its current position
+          const [removed] = newTasks.splice(sourceIndex, 1);
+          
+          // Calculate the insertion index
+          let insertIndex = destinationIndex;
+          if (sourceIndex < destinationIndex) {
+            // When dragging down, we need to insert after the destination
+            insertIndex = destinationIndex;
+          } else {
+            // When dragging up, we insert before the destination
+            insertIndex = destinationIndex;
+          }
+          
+          newTasks.splice(insertIndex, 0, removed);
           group.taskIds = newTasks;
 
           // Update order for affected tasks using the appropriate sort field

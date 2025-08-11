@@ -28,9 +28,8 @@ const ProjectsReports = () => {
 
   // Memoize the Excel export handler to prevent recreation on every render
   const handleExcelExport = useCallback(() => {
-    if (currentSession?.team_name) {
-      reportingExportApiService.exportProjects(currentSession.team_name);
-    }
+    const teamName = currentSession?.team_name || 'Team';
+    reportingExportApiService.exportProjects(teamName);
   }, [currentSession?.team_name]);
 
   // Memoize the archived checkbox handler to prevent recreation on every render

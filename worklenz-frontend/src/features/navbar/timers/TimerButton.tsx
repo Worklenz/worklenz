@@ -7,7 +7,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
-import moment from 'moment';
+import { format, differenceInSeconds, isValid, parseISO } from 'date-fns';
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -60,17 +60,17 @@ const TimerButton = () => {
         try {
           if (!timer || !timer.task_id || !timer.start_time) return;
 
-          const startTime = moment(timer.start_time);
-          if (!startTime.isValid()) {
+          const startTime = parseISO(timer.start_time);
+          if (!isValid(startTime)) {
             logError(`Invalid start time for timer ${timer.task_id}: ${timer.start_time}`);
             return;
           }
 
-          const now = moment();
-          const duration = moment.duration(now.diff(startTime));
-          const hours = Math.floor(duration.asHours());
-          const minutes = duration.minutes();
-          const seconds = duration.seconds();
+          const now = new Date();
+          const totalSeconds = differenceInSeconds(now, startTime);
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
           newTimes[timer.task_id] =
             `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         } catch (error) {
@@ -86,12 +86,7 @@ const TimerButton = () => {
   useEffect(() => {
     fetchRunningTimers();
 
-    // Set up polling to refresh timers every 30 seconds
-    const pollInterval = setInterval(() => {
-      fetchRunningTimers();
-    }, 30000);
-
-    return () => clearInterval(pollInterval);
+    // Removed periodic polling - rely on socket events for real-time updates
   }, [fetchRunningTimers]);
 
   useEffect(() => {
@@ -273,7 +268,7 @@ const TimerButton = () => {
                               <Text type="secondary" style={{ fontSize: 11 }}>
                                 Started:{' '}
                                 {timer.start_time
-                                  ? moment(timer.start_time).format('HH:mm')
+                                  ? format(parseISO(timer.start_time), 'HH:mm')
                                   : '--:--'}
                               </Text>
                               <Text
