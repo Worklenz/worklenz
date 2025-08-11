@@ -1,6 +1,6 @@
 import { Col, ConfigProvider, Layout } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
-import Navbar from '../features/navbar/Navbar';
+import Navbar from '@features/navbar/Navbar';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { colors } from '../styles/colors';
 import { themeWiseColor } from '../utils/themeWiseColor';

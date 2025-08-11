@@ -2,7 +2,7 @@ import { ConfigProvider, Layout } from '@/shared/antd-imports';
 import { Outlet, useLocation } from 'react-router-dom';
 import { memo, useMemo } from 'react';
 
-import Navbar from '../features/navbar/Navbar';
+import Navbar from '@features/navbar/Navbar';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { colors } from '../styles/colors';
 import { TrialExpirationAlert } from '@/components/TrialExpirationAlert/TrialExpirationAlert';
