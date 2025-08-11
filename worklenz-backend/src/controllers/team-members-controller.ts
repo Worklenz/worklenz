@@ -13,7 +13,7 @@ import { SocketEvents } from "../socket.io/events";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { formatDuration, getColor } from "../shared/utils";
-import { statusExclude, TEAM_MEMBER_TREE_MAP_COLOR_ALPHA } from "../shared/constants";
+import { statusExclude, TEAM_MEMBER_TREE_MAP_COLOR_ALPHA, TRIAL_MEMBER_LIMIT } from "../shared/constants";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { NotificationsService } from "../services/notifications/notifications.service";
@@ -139,6 +139,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
       && subscriptionData.current_count
       && ((parseInt(subscriptionData.current_count) + incrementBy) > parseInt(subscriptionData.ltd_users))) {
       return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
+    }
+
+    /**
+   * Checks trial user team member limit
+   */
+    if (subscriptionData.subscription_status === "trialing") {
+      const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
+      
+      if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
+        return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+      }
     }
 
     /**
@@ -1079,6 +1090,18 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     if (statusExclude.includes(subscriptionData.subscription_status)) {
       return res.status(200).send(new ServerResponse(false, "Please check your subscription status."));
+    }
+
+    /**
+   * Checks trial user team member limit
+   */
+    if (subscriptionData.subscription_status === "trialing") {
+      const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
+      const emailsToAdd = req.body.emails?.length || 1;
+      
+      if (currentTrialMembers + emailsToAdd > TRIAL_MEMBER_LIMIT) {
+        return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+      }
     }
 
     // if (subscriptionData.status === "trialing") break;

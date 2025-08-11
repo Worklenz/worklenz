@@ -106,6 +106,7 @@
 
   "expirestoday": "today",
   "expirestomorrow": "tomorrow",
+  "expiredDayAgo": "{{days}} day ago",
   "expiredDaysAgo": "{{days}} days ago",
 
   "continueWith": "Continue with {{plan}}",
@@ -117,5 +118,26 @@
   "currentSeatsText": "You currently have {{seats}} seats available.",
   "selectSeatsText": "Please select the number of additional seats to purchase.",
   "purchase": "Purchase",
-  "contactSales": "Contact sales"
+  "contactSales": "Contact sales",
+  "submitSuccess": "Code redeemed successfully!",
+  "submitSuccessDescription": "Your account has been updated with the new credits.",
+  "percentUsed": "% Used",
+  "sizeUnits": {
+    "bytes": "Bytes",
+    "kb": "KB", 
+    "mb": "MB",
+    "gb": "GB",
+    "tb": "TB"
+  },
+  "seatPerMonth": "seat / month",
+  "totalPrice": "Total $",
+  "tryForFree": "Try for free",
+  "subscriptionUpdateSuccess": "Subscription updated successfully!",
+  "paymentProcessorError": "Failed to load payment processor",
+  "seatsLabel": "Seats:",
+  "requiredField": "*",
+  "purchaseSeatsTextSingle": "To continue, you'll need to purchase an additional seat.",
+  "singleUserNote": "You currently have 1 seat available.",
+  "selectSeatsTextSingle": "Please select the number of additional seats to purchase.",
+  "phoneNumberPattern": "07xxxxxxxx"
 }

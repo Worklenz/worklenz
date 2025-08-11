@@ -3,5 +3,9 @@
   "searchLabel": "Mitglieder hinzufügen durch Eingabe von Name oder E-Mail",
   "searchPlaceholder": "Name oder E-Mail eingeben",
   "inviteAsAMember": "Als Mitglied einladen",
-  "inviteNewMemberByEmail": "Neues Mitglied per E-Mail einladen"
+  "inviteNewMemberByEmail": "Neues Mitglied per E-Mail einladen",
+  "members": "Mitglieder",
+  "copyProjectLink": "Projektlink kopieren",
+  "inviteMember": "Mitglied einladen",
+  "alsoInviteToProject": "Auch zum Projekt einladen"
 }

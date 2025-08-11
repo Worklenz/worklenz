@@ -10,6 +10,17 @@
   "deleteConfirmationOk": "Yes",
   "deleteConfirmationCancel": "Cancel",
 
+  "deleteTaskTitle": "Delete Task",
+  "deleteTaskContent": "Are you sure you want to delete this task? This action cannot be undone.",
+  "deleteTaskConfirm": "Delete",
+  "deleteTaskCancel": "Cancel",
+
+  "deleteStatusTitle": "Delete Status",
+  "deleteStatusContent": "Are you sure you want to delete this status? This action cannot be undone.",
+
+  "deletePhaseTitle": "Delete Phase",
+  "deletePhaseContent": "Are you sure you want to delete this phase? This action cannot be undone.",
+
   "dueDate": "Due date",
   "cancel": "Cancel",
 
@@ -29,5 +40,14 @@
   "nextWeek": "Next week",
   "noSubtasks": "No subtasks",
   "showSubtasks": "Show subtasks",
-  "hideSubtasks": "Hide subtasks"
+  "hideSubtasks": "Hide subtasks",
+  
+  "errorLoadingTasks": "Error loading tasks",
+  "noTasksFound": "No tasks found",
+  "loadingFilters": "Loading filters...",
+  "failedToUpdateColumnOrder": "Failed to update column order",
+  "failedToUpdatePhaseOrder": "Failed to update phase order",
+  "pleaseTryAgain": "Please try again",
+  "taskNotCompleted": "Task is not completed",
+  "completeTaskDependencies": "Please complete the task dependencies before proceeding"
 }

@@ -1,5 +1,4 @@
 import React, { useMemo, useCallback, useState } from 'react';
-import { useDroppable } from '@dnd-kit/core';
 // @ts-ignore: Heroicons module types
 import {
   ChevronDownIcon,
@@ -382,24 +381,12 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     t,
   ]);
 
-  // Make the group header droppable
-  const { isOver, setNodeRef } = useDroppable({
-    id: group.id,
-    data: {
-      type: 'group',
-      group,
-    },
-  });
-
   return (
     <div className="relative flex items-center">
       <div
-        ref={setNodeRef}
-        className={`inline-flex w-max items-center px-1 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-t border-b border-gray-200 dark:border-gray-700 rounded-t-md pr-2 ${
-          isOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
-        }`}
+        className="inline-flex w-max items-center px-1 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-t border-b border-gray-200 dark:border-gray-700 rounded-t-md pr-2"
         style={{
-          backgroundColor: isOver ? `${headerBackgroundColor}dd` : headerBackgroundColor,
+          backgroundColor: headerBackgroundColor,
           color: headerTextColor,
           position: 'sticky',
           top: 0,

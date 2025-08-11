@@ -575,7 +575,6 @@ const enhancedKanbanSlice = createSlice({
       action: PayloadAction<ITaskListPriorityChangeResponse>
     ) => {
       const { id, priority_id, color_code, color_code_dark } = action.payload;
-
       // Find the task in any group
       const taskInfo = findTaskInAllGroups(state.taskGroups, id);
       if (!taskInfo || !priority_id) return;
@@ -603,7 +602,6 @@ const enhancedKanbanSlice = createSlice({
       // Update cache
       state.taskCache[id] = task;
     },
-
     // Enhanced Kanban assignee update (for use in task drawer dropdown)
     updateEnhancedKanbanTaskAssignees: (
       state,

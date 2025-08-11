@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { IAccountSetupSurveyData } from '@/types/account-setup/survey.types';
 
 interface Task {
   id: number;
@@ -17,6 +18,8 @@ interface AccountSetupState {
   tasks: Task[];
   teamMembers: Email[];
   currentStep: number;
+  surveyData: IAccountSetupSurveyData;
+  surveySubStep: number;
 }
 
 const initialState: AccountSetupState = {
@@ -26,6 +29,8 @@ const initialState: AccountSetupState = {
   tasks: [{ id: 0, value: '' }],
   teamMembers: [{ id: 0, value: '' }],
   currentStep: 0,
+  surveyData: {},
+  surveySubStep: 0,
 };
 
 const accountSetupSlice = createSlice({
@@ -50,6 +55,16 @@ const accountSetupSlice = createSlice({
     setCurrentStep: (state, action: PayloadAction<number>) => {
       state.currentStep = action.payload;
     },
+    setSurveyData: (state, action: PayloadAction<Partial<IAccountSetupSurveyData>>) => {
+      state.surveyData = { ...state.surveyData, ...action.payload };
+    },
+    setSurveySubStep: (state, action: PayloadAction<number>) => {
+      state.surveySubStep = action.payload;
+    },
+    resetSurveyData: (state) => {
+      state.surveyData = {};
+      state.surveySubStep = 0;
+    },
     resetAccountSetup: () => initialState,
   },
 });
@@ -61,6 +76,9 @@ export const {
   setTasks,
   setTeamMembers,
   setCurrentStep,
+  setSurveyData,
+  setSurveySubStep,
+  resetSurveyData,
   resetAccountSetup,
 } = accountSetupSlice.actions;
 

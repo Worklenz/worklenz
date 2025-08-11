@@ -13,5 +13,6 @@
   "deleteButtonTooltip": "Remove from project",
   "memberCount": "Member",
   "membersCountPlural": "Members",
-  "emptyText": "There are no attachments in the project."
+  "emptyText": "There are no attachments in the project.",
+  "searchPlaceholder": "Search members"
 }

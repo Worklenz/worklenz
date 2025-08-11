@@ -81,5 +81,12 @@
   "delete": "Fshi",
   "enterStatusName": "Shkruani emrin e statusit",
   "selectCategory": "Zgjidh kategorinë",
-  "close": "Mbyll"
+  "close": "Mbyll",
+  "clearSort": "Pastro Renditjen",
+  "sortAscending": "Rendit në Rritje",
+  "sortDescending": "Rendit në Zbritje",
+  "sortByField": "Rendit sipas {{field}}",
+  "ascendingOrder": "Rritës",
+  "descendingOrder": "Zbritës",
+  "currentSort": "Renditja aktuale: {{field}} {{order}}"
 }
