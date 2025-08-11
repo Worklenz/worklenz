@@ -28,7 +28,7 @@
   "jobTitleLabel": "Título do Emprego",
   "jobTitlePlaceholder": "Selecione ou pesquise o título do emprego (Opcional)",
   "memberAccessLabel": "Nível de Acesso",
-  "addToTeamButton": "Adicionar Membro à Equipe",
+  "addToTeamButton": "Enviar convite",
   "updateButton": "Salvar Alterações",
   "resendInvitationButton": "Redirecionar Email de Convite",
   "invitationSentSuccessMessage": "Convite para a equipe enviado com sucesso!",
@@ -43,5 +43,6 @@
   "updatedText": "Atualizado",
   "noResultFound": "Digite um endereço de email e pressione enter...",
   "jobTitlesFetchError": "Falha ao buscar cargos",
-  "invitationResent": "Convite reenviado com sucesso!"
+  "invitationResent": "Convite reenviado com sucesso!",
+  "copyTeamLink": "Copiar link da equipe"
 }

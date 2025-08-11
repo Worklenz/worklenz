@@ -52,6 +52,13 @@ export interface IAccountSetupRequest {
   tasks: string[];
   team_members: string[];
   template_id?: string | null;
+  survey_data?: {
+    organization_type?: string;
+    user_role?: string;
+    main_use_cases?: string[];
+    previous_tools?: string;
+    how_heard_about?: string;
+  };
 }
 
 export interface IAccountSetupResponse {

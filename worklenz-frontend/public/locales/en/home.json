@@ -41,6 +41,22 @@
     "list": "List",
     "calendar": "Calendar",
     "tasks": "Tasks",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "recentActivity": "Recent Activity",
+    "recentTasks": "Recent Tasks",
+    "recentTasksSegment": "Recent Tasks",
+    "timeLogged": "Time Logged",
+    "timeLoggedSegment": "Time Logged",
+    "noRecentTasks": "No recent tasks",
+    "noTimeLoggedTasks": "No time logged tasks",
+    "activityTag": "Activity",
+    "timeLogTag": "Time Log", 
+    "timerTag": "Timer",
+    "activitySingular": "activity",
+    "activityPlural": "activities",
+    "recentTaskAriaLabel": "Recent task:",
+    "timeLoggedTaskAriaLabel": "Time logged task:",
+    "errorLoadingRecentTasks": "Error loading recent tasks",
+    "errorLoadingTimeLoggedTasks": "Error loading time logged tasks"
   }
 }

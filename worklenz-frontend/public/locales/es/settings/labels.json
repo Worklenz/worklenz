@@ -7,5 +7,9 @@
   "searchPlaceholder": "Buscar por nombre",
   "emptyText": "Las etiquetas se pueden crear al actualizar o crear tareas.",
   "pinTooltip": "Haz clic para fijar esto en el menú principal",
-  "colorChangeTooltip": "Haz clic para cambiar el color"
+  "colorChangeTooltip": "Haz clic para cambiar el color",
+  "pageTitle": "Administrar Etiquetas",
+  "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar esto?",
+  "deleteButton": "Eliminar",
+  "cancelButton": "Cancelar"
 }

@@ -11,12 +11,10 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 const HomePage = lazy(() => import('@/pages/home/home-page'));
 const ProjectList = lazy(() => import('@/pages/projects/project-list'));
 const Schedule = lazy(() => import('@/pages/schedule/schedule'));
-const ProjectTemplateEditView = lazy(
-  () => import('@/pages/settings/project-templates/projectTemplateEditView/ProjectTemplateEditView')
-);
-const LicenseExpired = lazy(() => import('@/pages/license-expired/license-expired'));
+
 const ProjectView = lazy(() => import('@/pages/projects/projectView/project-view'));
 const Unauthorized = lazy(() => import('@/pages/unauthorized/unauthorized'));
+const GanttDemoPage = lazy(() => import('@/pages/GanttDemoPage'));
 
 // Define AdminGuard component with defensive programming
 const AdminGuard = ({ children }: { children: React.ReactNode }) => {
@@ -91,18 +89,18 @@ const mainRoutes: RouteObject[] = [
         ),
       },
       {
-        path: `settings/project-templates/edit/:templateId/:templateName`,
-        element: (
-          <Suspense fallback={<SuspenseFallback />}>
-            <ProjectTemplateEditView />
-          </Suspense>
-        ),
-      },
-      {
         path: 'unauthorized',
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <Unauthorized />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'gantt-demo',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <GanttDemoPage />
           </Suspense>
         ),
       },
@@ -111,21 +109,5 @@ const mainRoutes: RouteObject[] = [
     ],
   },
 ];
-
-// License expired route should be separate to avoid being wrapped in LicenseExpiryGuard
-export const licenseExpiredRoute: RouteObject = {
-  path: '/worklenz',
-  element: <MainLayout />,
-  children: [
-    {
-      path: 'license-expired',
-      element: (
-        <Suspense fallback={<SuspenseFallback />}>
-          <LicenseExpired />
-        </Suspense>
-      ),
-    },
-  ],
-};
 
 export default mainRoutes;

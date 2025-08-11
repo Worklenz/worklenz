@@ -41,6 +41,22 @@
     "list": "列表",
     "calendar": "日历",
     "tasks": "任务",
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "recentActivity": "最近活动",
+    "recentTasks": "最近任务",
+    "recentTasksSegment": "最近任务",
+    "timeLogged": "时间记录",
+    "timeLoggedSegment": "时间记录",
+    "noRecentTasks": "没有最近任务",
+    "noTimeLoggedTasks": "没有时间记录任务",
+    "activityTag": "活动",
+    "timeLogTag": "时间记录",
+    "timerTag": "计时器",
+    "activitySingular": "活动",
+    "activityPlural": "活动",
+    "recentTaskAriaLabel": "最近任务：",
+    "timeLoggedTaskAriaLabel": "时间记录任务：",
+    "errorLoadingRecentTasks": "加载最近任务时出错",
+    "errorLoadingTimeLoggedTasks": "加载时间记录任务时出错"
   }
 }

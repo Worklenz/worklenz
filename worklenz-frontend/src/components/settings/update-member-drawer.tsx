@@ -94,7 +94,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
 
     try {
       const body: ITeamMemberCreateRequest = {
-        job_title: selectedJobTitle,
+        job_title: form.getFieldValue('jobTitle'),
         emails: [teamMember.email],
         is_admin: values.access === 'admin',
       };

@@ -41,6 +41,22 @@
     "list": "Listë",
     "calendar": "Kalendar",
     "tasks": "Detyrat",
-    "refresh": "Rifresko"
+    "refresh": "Rifresko",
+    "recentActivity": "Aktiviteti i Fundit",
+    "recentTasks": "Detyrat e Fundit",
+    "recentTasksSegment": "Detyrat e Fundit",
+    "timeLogged": "Koha e Regjistruar",
+    "timeLoggedSegment": "Koha e Regjistruar",
+    "noRecentTasks": "Asnjë detyrë e fundit",
+    "noTimeLoggedTasks": "Asnjë detyrë me kohë të regjistruar",
+    "activityTag": "Aktiviteti",
+    "timeLogTag": "Regjistrim Kohe",
+    "timerTag": "Kohëmatës",
+    "activitySingular": "aktivitet",
+    "activityPlural": "aktivitete",
+    "recentTaskAriaLabel": "Detyrë e fundit:",
+    "timeLoggedTaskAriaLabel": "Detyrë me kohë të regjistruar:",
+    "errorLoadingRecentTasks": "Gabim në ngarkimin e detyrave të fundit",
+    "errorLoadingTimeLoggedTasks": "Gabim në ngarkimin e detyrave me kohë të regjistruar"
   }
 }

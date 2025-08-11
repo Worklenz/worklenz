@@ -6,10 +6,69 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, getColor, int } from "../../shared/utils";
-import ReportingControllerBase from "./reporting-controller-base";
+import ReportingControllerBaseWithTimezone from "./reporting-controller-base-with-timezone";
 import Excel from "exceljs";
 
-export default class ReportingMembersController extends ReportingControllerBase {
+export default class ReportingMembersController extends ReportingControllerBaseWithTimezone {
+
+  protected static getPercentage(n: number, total: number) {
+    return +(n ? (n / total) * 100 : 0).toFixed();
+  }
+
+  protected static getCurrentTeamId(req: IWorkLenzRequest): string | null {
+    return req.user?.team_id ?? null;
+  }
+
+  public static convertMinutesToHoursAndMinutes(totalMinutes: number) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
+  }
+
+  public static convertSecondsToHoursAndMinutes(seconds: number) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  }
+
+  protected static formatEndDate(endDate: string) {
+    const end = moment(endDate).format("YYYY-MM-DD");
+    const fEndDate = moment(end);
+    return fEndDate;
+  }
+
+  protected static formatCurrentDate() {
+    const current = moment().format("YYYY-MM-DD");
+    const fCurrentDate = moment(current);
+    return fCurrentDate;
+  }
+
+  protected static getDaysLeft(endDate: string): number | null {
+    if (!endDate) return null;
+
+    const fCurrentDate = this.formatCurrentDate();
+    const fEndDate = this.formatEndDate(endDate);
+
+    return fEndDate.diff(fCurrentDate, "days");
+  }
+
+  protected static isOverdue(endDate: string): boolean {
+    if (!endDate) return false;
+
+    const fCurrentDate = this.formatCurrentDate();
+    const fEndDate = this.formatEndDate(endDate);
+
+    return fEndDate.isBefore(fCurrentDate);
+  }
+
+  protected static isToday(endDate: string): boolean {
+    if (!endDate) return false;
+
+    const fCurrentDate = this.formatCurrentDate();
+    const fEndDate = this.formatEndDate(endDate);
+
+    return fEndDate.isSame(fCurrentDate);
+  }
 
   private static async getMembers(
     teamId: string, searchQuery = "",
@@ -265,8 +324,8 @@ export default class ReportingMembersController extends ReportingControllerBase 
                     (SELECT color_code FROM project_phases WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_color,
 
                     (total_minutes * 60) AS total_minutes,
-                    (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id AND ta.team_member_id = $1) AS time_logged,
-                    ((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id AND ta.team_member_id = $1) - (total_minutes * 60)) AS overlogged_time`;
+                    (SELECT SUM(time_spent) FROM task_work_log twl WHERE twl.task_id = t.id AND twl.user_id = (SELECT user_id FROM team_members WHERE id = $1)) AS time_logged,
+                    ((SELECT SUM(time_spent) FROM task_work_log twl WHERE twl.task_id = t.id AND twl.user_id = (SELECT user_id FROM team_members WHERE id = $1)) - (total_minutes * 60)) AS overlogged_time`;
   }
 
   protected static getActivityLogsOverdue(key: string, dateRange: string[]) {
@@ -487,7 +546,9 @@ export default class ReportingMembersController extends ReportingControllerBase 
       dateRange = date_range.split(",");
     }
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "twl");
+    // Get user timezone for proper date filtering
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
     const minMaxDateClause = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_work_log");
     const memberName = (req.query.member_name as string)?.trim() || null;
 
@@ -1038,7 +1099,9 @@ export default class ReportingMembersController extends ReportingControllerBase 
   public static async getMemberTimelogs(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, team_id, duration, date_range, archived, billable } = req.body;
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration || DATE_RANGES.LAST_WEEK, date_range, "twl");
+    // Get user timezone for proper date filtering
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
     const minMaxDateClause = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_work_log");
 
     const billableQuery = this.buildBillableQuery(billable);
@@ -1230,8 +1293,8 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
     row.actual_time = int(row.actual_time);
     row.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(row.estimated_time));
     row.actual_time_string = this.convertSecondsToHoursAndMinutes(int(row.actual_time));
-    row.days_left = ReportingControllerBase.getDaysLeft(row.end_date);
-    row.is_overdue = ReportingControllerBase.isOverdue(row.end_date);
+    row.days_left = this.getDaysLeft(row.end_date);
+    row.is_overdue = this.isOverdue(row.end_date);
     if (row.days_left && row.is_overdue) {
       row.days_left = row.days_left.toString().replace(/-/g, "");
     }
