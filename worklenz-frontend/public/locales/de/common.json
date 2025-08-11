@@ -45,6 +45,8 @@
   "license-expiring-soon": "Ihre Lizenz läuft in {{days}} Tag ab",
   "license-expiring-soon_plural": "Ihre Lizenz läuft in {{days}} Tagen ab",
   "license-expiring-today": "Ihre Lizenz läuft heute ab!",
+  "license-expired-grace-period": "Ihre Lizenz ist abgelaufen. {{days}} Tag Gnadenfrist verbleibend",
+  "license-expired-grace-period_plural": "Ihre Lizenz ist abgelaufen. {{days}} Tage Gnadenfrist verbleibend",
   "license-expiring-upgrade": "Erneuern Sie jetzt, um alle Ihre Daten zu behalten und ohne Unterbrechung fortzufahren",
   "license-badge-days": "{{days}}T übrig",
   "license-badge-today": "Letzter Tag!",
