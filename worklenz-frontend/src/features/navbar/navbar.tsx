@@ -1,17 +1,17 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Col, ConfigProvider, Flex, Menu, MenuProps, Alert } from '@/shared/antd-imports';
+import { Col, ConfigProvider, Flex, Menu } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
 
 import InviteTeamMembers from '../../components/common/invite-team-members/invite-team-members';
 import InviteButton from './invite/InviteButton';
-import MobileMenuButton from './mobileMenu/MobileMenuButton';
+import MobileMenuButton from './mobile-menu/MobileMenuButton';
 import NavbarLogo from './NavbarLogo';
 import NotificationButton from '../../components/navbar/notifications/notifications-drawer/notification/notification-button';
 import ProfileButton from './user-profile/ProfileButton';
-import SwitchTeamButton from './switchTeam/SwitchTeamButton';
-import UpgradePlanButton from './upgradePlan/UpgradePlanButton';
+import SwitchTeamButton from './switch-team/SwitchTeamButton';
+import UpgradePlanButton from './upgrade-plan/UpgradePlanButton';
 import NotificationDrawer from '../../components/navbar/notifications/notifications-drawer/notification/notfication-drawer';
 
 import { useResponsive } from '@/hooks/useResponsive';
@@ -22,7 +22,6 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
 import TimerButton from './timers/TimerButton';
-import HelpButton from './help/HelpButton';
 
 const Navbar = () => {
   const [current, setCurrent] = useState<string>('home');

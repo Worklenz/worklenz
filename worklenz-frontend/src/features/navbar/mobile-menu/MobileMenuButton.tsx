@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../styles/colors';
 import { NavLink } from 'react-router-dom';
 import InviteButton from '../invite/InviteButton';
-import SwitchTeamButton from '../switchTeam/SwitchTeamButton';
+import SwitchTeamButton from '../switch-team/SwitchTeamButton';
 // custom css
 import './mobileMenu.css';
 

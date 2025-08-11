@@ -30,11 +30,11 @@ const UpgradePlanButton = () => {
 
     if (
       expirableTypes.includes(currentSession?.subscription_type as ISUBSCRIPTION_TYPE) &&
-      (currentSession.valid_till_date || currentSession.trial_expire_date)
+      (currentSession?.valid_till_date || currentSession?.trial_expire_date)
     ) {
       const today = new Date();
       const expireDateStr = currentSession.valid_till_date || currentSession.trial_expire_date;
-      const expiryDate = new Date(expireDateStr);
+      const expiryDate = new Date(expireDateStr!);
       const diffTime = expiryDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
