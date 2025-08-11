@@ -2,9 +2,10 @@ import { ConfigProvider, Layout } from '@/shared/antd-imports';
 import { Outlet, useLocation } from 'react-router-dom';
 import { memo, useMemo } from 'react';
 
-import Navbar from '../features/navbar/navbar';
+import Navbar from '@/features/navbar/navbar';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { colors } from '../styles/colors';
+import { TrialExpirationAlert } from '@/components/TrialExpirationAlert/TrialExpirationAlert';
 
 const MainLayout = memo(() => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -28,6 +29,9 @@ const MainLayout = memo(() => {
   return (
     <ConfigProvider theme={themeConfig}>
       <Layout className="min-h-screen">
+        {/* Trial expiration alert banner */}
+        <TrialExpirationAlert />
+
         <Layout.Header 
           className={`sticky top-0 z-[999] flex items-center p-0 shadow-md ${
             themeMode === 'dark' ? 'border-b border-[#303030]' : 'shadow-[#18181811]'

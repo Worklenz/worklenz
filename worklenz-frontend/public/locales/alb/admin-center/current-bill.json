@@ -106,6 +106,7 @@
 
   "expirestoday": "sot",
   "expirestomorrow": "nesër",
+  "expiredDayAgo": "{{days}} ditë më parë",
   "expiredDaysAgo": "{{days}} ditë më parë",
 
   "continueWith": "Vazhdo me {{plan}}",

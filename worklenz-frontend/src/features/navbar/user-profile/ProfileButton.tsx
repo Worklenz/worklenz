@@ -13,6 +13,7 @@ import './profile-dropdown.css';
 import './profile-button.css';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { useAuthService } from '@/hooks/useAuth';
+import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { useEffect, useState } from 'react';
 
 interface ProfileButtonProps {
@@ -23,12 +24,17 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   const { t } = useTranslation('navbar');
   const authService = useAuthService();
   const currentSession = useAppSelector((state: RootState) => state.userReducer);
+  const { isLicenseExpired } = useAuthStatus();
 
   const role = getRole();
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
 
   const getLinkStyle = () => ({
     color: themeMode === 'dark' ? '#ffffffd9' : '#181818',
+  });
+
+  const getDangerLinkStyle = () => ({
+    color: '#ff4d4f',
   });
 
   const profile: MenuProps['items'] = [
@@ -80,14 +86,21 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
           variant="borderless"
           style={{ width: 230 }}
         >
-          {isOwnerOrAdmin && (
+          {isOwnerOrAdmin && !isLicenseExpired && (
             <Link to="/worklenz/admin-center/overview" style={getLinkStyle()}>
               {t('adminCenter')}
             </Link>
           )}
-          <Link to="/worklenz/settings/profile" style={getLinkStyle()}>
-            {t('settings')}
-          </Link>
+          {!isLicenseExpired && (
+            <Link to="/worklenz/settings/profile" style={getLinkStyle()}>
+              {t('settings')}
+            </Link>
+          )}
+          {isLicenseExpired && (
+            <Link to="/worklenz/settings/account-deletion" style={getDangerLinkStyle()}>
+              {t('deleteAccount')}
+            </Link>
+          )}
           <Link to="/auth/logging-out" style={getLinkStyle()}>
             {t('logOut')}
           </Link>

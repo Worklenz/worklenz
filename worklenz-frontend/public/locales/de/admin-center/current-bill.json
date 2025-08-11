@@ -106,6 +106,7 @@
 
   "expirestoday": "heute",
   "expirestomorrow": "morgen",
+  "expiredDayAgo": "vor {{days}} Tag",
   "expiredDaysAgo": "vor {{days}} Tagen",
 
   "continueWith": "Fortfahren mit {{plan}}",

@@ -101,6 +101,7 @@
 
   "expirestoday": "hoy",
   "expirestomorrow": "mañana",
+  "expiredDayAgo": "hace {{days}} día",
   "expiredDaysAgo": "hace {{days}} días",
   "creditPlan": "Plan de Crédito",
   "customPlan": "Plan Personalizado",
