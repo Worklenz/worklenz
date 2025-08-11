@@ -35,7 +35,12 @@
     "inline-queries": "node ./cli/inline-queries",
     "sonar": "sonar-scanner -Dproject.settings=sonar-project-dev.properties",
     "tsc": "tsc",
-    "test:watch": "jest --watch --setupFiles dotenv/config"
+    "test:watch": "jest --watch --setupFiles dotenv/config",
+    "migrate": "node-pg-migrate",
+    "migrate:up": "node-pg-migrate up --no-transaction --no-lock ",
+    "migrate:down": "npm run migrate down",
+    "migrate:create": "npm run migrate create",
+    "migrate:redo": "npm run migrate redo"
   },
   "jestSonar": {
     "reportPath": "coverage",
@@ -152,6 +157,7 @@
     "jest": "^28.1.3",
     "jest-sonar-reporter": "^2.0.0",
     "ncp": "^2.0.0",
+    "node-pg-migrate": "^8.0.3",
     "nodeman": "^1.1.2",
     "rimraf": "^6.0.1",
     "swagger-jsdoc": "^6.2.8",
