@@ -1,0 +1,14 @@
+{
+  "modalTitle": "Helfen Sie uns, Ihre Erfahrung zu verbessern",
+  "skip": "Für jetzt überspringen",
+  "previous": "Zurück",
+  "next": "Weiter",
+  "completeSurvey": "Umfrage abschließen",
+  "submitting": "Ihre Antworten werden übermittelt...",
+  "submitSuccessTitle": "Danke!",
+  "submitSuccessSubtitle": "Ihr Feedback hilft uns, Worklenz für alle zu verbessern.",
+  "submitSuccessMessage": "Danke, dass Sie die Umfrage abgeschlossen haben!",
+  "submitErrorMessage": "Umfrage konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.",
+  "submitErrorLog": "Umfrageübermittlung fehlgeschlagen",
+  "fetchErrorLog": "Umfrageabruf fehlgeschlagen"
+} 

@@ -1,5 +1,9 @@
+/* Account Setup Page Styles */
+
+/* Steps styling - using Ant Design theme tokens */
 .ant-steps-item-finish .ant-steps-item-icon {
-  border-color: #1890ff !important;
+  border-color: var(--ant-color-primary) !important;
+  background-color: var(--ant-color-primary) !important;
 }
 
 .ant-steps-item-icon {
@@ -9,37 +13,53 @@
   font-size: 16px !important;
   line-height: 32px !important;
   text-align: center !important;
-  border: 1px solid rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid var(--ant-color-border) !important;
   border-radius: 32px !important;
-  transition:
-    background-color 0.3s,
-    border-color 0.3s !important;
+  transition: all 0.3s !important;
+  background-color: var(--ant-color-bg-container) !important;
+  color: var(--ant-color-text) !important;
 }
 
 .ant-steps-item-wait .ant-steps-item-icon {
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.dark-mode .ant-steps-item-wait .ant-steps-item-icon {
-  cursor: not-allowed;
+.ant-steps-item-process .ant-steps-item-icon {
+  border-color: var(--ant-color-primary) !important;
+  background-color: var(--ant-color-primary) !important;
+  color: var(--ant-color-white) !important;
 }
 
 .progress-steps .ant-steps-item.ant-steps-item-process .ant-steps-item-title::after {
-  background-color: #1677ff !important;
+  background-color: var(--ant-color-primary) !important;
   width: 60px !important;
 }
 
+.ant-steps-item-title {
+  color: var(--ant-color-text) !important;
+}
+
+.ant-steps-item-description {
+  color: var(--ant-color-text-secondary) !important;
+}
+
+/* Responsive layout */
 @media (max-width: 1000px) {
-  .progress-steps {
-    width: 400px !important;
-  }
-
-  .step {
-    width: 400px !important;
-  }
-
+  .progress-steps,
+  .step,
   .step-content {
-    width: 400px !important;
+    width: 90% !important;
+    max-width: 500px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .progress-steps,
+  .step,
+  .step-content {
+    width: 95% !important;
+    max-width: 400px !important;
   }
 }
 
@@ -53,98 +73,93 @@
   }
 
   .step-content {
-    width: 200px !important;
+    width: 100% !important;
+    max-width: 300px !important;
+    padding: 0 1rem !important;
   }
 }
 
-@media (max-width: 1000px) {
-  .organization-name-form {
-    width: 400px !important;
+/* Tasks step specific styles */
+.tasks-step .task-item-card {
+  transition: all 0.3s ease;
+}
+
+.tasks-step .task-item-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.tasks-step .task-input {
+  font-size: 16px;
+}
+
+.tasks-step .task-input:focus {
+  box-shadow: none !important;
+}
+
+/* Project step specific styles */
+.project-step .ant-input-affix-wrapper {
+  transition: all 0.3s ease;
+}
+
+.project-step .ant-input-affix-wrapper:focus-within {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.project-suggestion-button {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.project-suggestion-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.project-suggestion-button:active {
+  transform: translateY(0);
+}
+
+/* Organization step specific styles */
+.organization-step .ant-input-affix-wrapper {
+  transition: all 0.3s ease;
+}
+
+.organization-step .ant-input-affix-wrapper:focus-within {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  border-color: #1890ff;
+}
+
+.organization-suggestion-button {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.organization-suggestion-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.organization-suggestion-button:active {
+  transform: translateY(0);
+}
+
+/* Survey step animations */
+.survey-page-transition {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (max-width: 500px) {
-  .organization-name-form {
-    width: 200px !important;
-  }
-}
-
-.vert-text {
-  max-width: 40px;
-  background-color: #fff;
-  position: relative;
-  z-index: 99;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: center;
-  justify-content: center;
-  margin-top: 2rem;
-}
-
-.vert-text-dark {
-  max-width: 40px;
-  background-color: #141414;
-  position: relative;
-  z-index: 99;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: center;
-  justify-content: center;
-  margin-top: 2rem;
-}
-
-.vert-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
-  content: "";
-  height: 2px;
-  background-color: #00000047;
-  bottom: 0;
-  top: 0;
-  margin-bottom: auto;
-  margin-top: auto;
-}
-
-.vert-line-dark {
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
-  content: "";
-  height: 2px;
-  background-color: white;
-  bottom: 0;
-  top: 0;
-  margin-bottom: auto;
-  margin-top: auto;
-}
-
-@media (max-width: 1000px) {
-  .first-project-form {
-    width: 400px !important;
-  }
-}
-
-@media (max-width: 500px) {
-  .first-project-form {
-    width: 200px !important;
-  }
-}
-
-.custom-close-button:hover {
-  background-color: transparent !important;
-}
-
-@media (max-width: 1000px) {
-  .create-first-task-form {
-    width: 400px !important;
-  }
-}
-
-@media (max-width: 500px) {
-  .create-first-task-form {
-    width: 200px !important;
-  }
+/* Theme transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }

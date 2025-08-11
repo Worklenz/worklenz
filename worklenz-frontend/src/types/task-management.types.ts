@@ -114,6 +114,9 @@ export interface TaskManagementState {
   loadingColumns: boolean;
   columns: ITaskListColumn[];
   customColumns: ITaskListColumn[];
+  // Add sort-related state
+  sortField: string;
+  sortOrder: 'ASC' | 'DESC';
 }
 
 export interface TaskGroupsState {

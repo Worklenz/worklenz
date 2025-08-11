@@ -325,6 +325,12 @@ self.addEventListener('message', event => {
       event.ports[0].postMessage({ version: CACHE_VERSION });
       break;
       
+    case 'CHECK_FOR_UPDATES':
+      checkForUpdates().then((hasUpdates) => {
+        event.ports[0].postMessage({ hasUpdates });
+      });
+      break;
+      
     case 'CLEAR_CACHE':
       clearAllCaches().then(() => {
         event.ports[0].postMessage({ success: true });
@@ -347,6 +353,44 @@ async function clearAllCaches() {
   const cacheNames = await caches.keys();
   await Promise.all(cacheNames.map(name => caches.delete(name)));
   console.log('Service Worker: All caches cleared');
+}
+
+async function checkForUpdates() {
+  try {
+    // Check if there's a new service worker available
+    const registration = await self.registration.update();
+    const hasNewWorker = registration.installing || registration.waiting;
+    
+    if (hasNewWorker) {
+      console.log('Service Worker: New version detected');
+      return true;
+    }
+    
+    // Also check if the main app files have been updated by trying to fetch index.html
+    // and comparing it with the cached version
+    try {
+      const cache = await caches.open(CACHE_NAMES.STATIC);
+      const cachedResponse = await cache.match('/');
+      const networkResponse = await fetch('/', { cache: 'no-cache' });
+      
+      if (cachedResponse && networkResponse.ok) {
+        const cachedContent = await cachedResponse.text();
+        const networkContent = await networkResponse.text();
+        
+        if (cachedContent !== networkContent) {
+          console.log('Service Worker: App content has changed');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.log('Service Worker: Could not check for content updates', error);
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Service Worker: Error checking for updates', error);
+    return false;
+  }
 }
 
 async function handleLogout() {

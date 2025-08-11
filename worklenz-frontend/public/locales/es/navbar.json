@@ -18,6 +18,7 @@
   "profileTooltip": "Ver perfil",
   "adminCenter": "Centro de administración",
   "settings": "Configuración",
+  "deleteAccount": "Eliminar Cuenta",
   "logOut": "Cerrar sesión",
   "notificationsDrawer": {
     "read": "Notificaciones leídas",

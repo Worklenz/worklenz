@@ -14,8 +14,11 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
 import { themeWiseColor } from '@/utils/themeWiseColor';
-import { toggleTaskExpansion, fetchBoardSubTasks } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { toggleTaskExpansion, fetchBoardSubTasks, deleteTask as deleteKanbanTask, updateEnhancedKanbanSubtask } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import TaskProgressCircle from './TaskProgressCircle';
+import { Button, Modal } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
+import { tasksApiService } from '@/api/tasks/tasks.api.service';
 
 // Simple Portal component
 const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -70,6 +73,9 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         const d = selectedDate || new Date();
         return new Date(d.getFullYear(), d.getMonth(), 1);
     });
+    const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number }>({ visible: false, x: 0, y: 0 });
+    const contextMenuRef = useRef<HTMLDivElement>(null);
+    const [selectedTask, setSelectedTask] = useState<IProjectTask | null>(null);
 
     useEffect(() => {
         setSelectedDate(task.end_date ? new Date(task.end_date) : null);
@@ -101,6 +107,21 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
             });
         }
     }, [showDatePicker]);
+
+    // Hide context menu on click elsewhere
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+                setContextMenu({ ...contextMenu, visible: false });
+            }
+        };
+        if (contextMenu.visible) {
+            document.addEventListener('mousedown', handleClick);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+        };
+    }, [contextMenu]);
 
     const handleCardClick = useCallback((e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -178,6 +199,48 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
         handleSubTaskExpand();
     }, [handleSubTaskExpand]);
 
+    // Delete logic (similar to task-drawer-header)
+    const handleDeleteTask = async (task: IProjectTask | null) => {
+        if (!task || !task.id) return;
+        Modal.confirm({
+            title: t('deleteTaskTitle'),
+            content: t('deleteTaskContent'),
+            okText: t('deleteTaskConfirm'),
+            okType: 'danger',
+            cancelText: t('deleteTaskCancel'),
+            centered: true,
+            onOk: async () => {
+                if (!task.id) return;
+                const res = await tasksApiService.deleteTask(task.id);
+                if (res.done) {
+                    dispatch(setSelectedTaskId(null));
+                    if (task.is_sub_task) {
+                        dispatch(updateEnhancedKanbanSubtask({
+                            sectionId: '',
+                            subtask: { id: task.id , parent_task_id: task.parent_task_id || '', manual_progress: false },
+                            mode: 'delete',
+                        }));
+                    } else {
+                        dispatch(deleteKanbanTask(task.id));
+                    }
+                    dispatch(setShowTaskDrawer(false));
+                    if (task.parent_task_id) {
+                        socket?.emit(
+                            SocketEvents.GET_TASK_PROGRESS.toString(),
+                            task.parent_task_id
+                        );
+                    }
+                }
+                setContextMenu({ visible: false, x: 0, y: 0 });
+                setSelectedTask(null);
+            },
+            onCancel: () => {
+                setContextMenu({ visible: false, x: 0, y: 0 });
+                setSelectedTask(null);
+            },
+        });
+    };
+
     // Calendar rendering helpers
     const year = calendarMonth.getFullYear();
     const month = calendarMonth.getMonth();
@@ -202,7 +265,37 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
 
     return (
         <>
-            <div className="enhanced-kanban-task-card" style={{ background, color, display: 'block', position: 'relative' }} >
+            {/* Context menu for delete */}
+            {contextMenu.visible && (
+                <div
+                    ref={contextMenuRef}
+                    style={{
+                        position: 'fixed',
+                        top: contextMenu.y,
+                        left: contextMenu.x,
+                        zIndex: 9999,
+                        background: themeMode === 'dark' ? '#23272f' : '#fff',
+                        borderRadius: 8,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                        padding: 0,
+                        minWidth: 120,
+                        transition: 'translateY(0)',
+                    }}
+                >
+                    <Button
+                        type="text"
+                        icon={<DeleteOutlined style={{ color: '#ef4444', fontSize: 16 }} />}
+                        style={{ color: '#ef4444', width: '100%', textAlign: 'left', padding: '8px 16px', fontWeight: 500 }}
+                        onClick={() => handleDeleteTask(selectedTask || null)}
+                    >
+                        {t('delete')}
+                    </Button>
+                </div>
+            )}
+            <div
+                className="enhanced-kanban-task-card"
+                style={{ background, color, display: 'block', position: 'relative' }}
+            >
                 {/* Progress circle at top right */}
                 <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 2 }}>
                     <TaskProgressCircle task={task} size={20} />
@@ -221,6 +314,11 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                     onDrop={e => onTaskDrop(e, groupId, idx)}
                     onDragEnd={onDragEnd} // <-- add this
                     onClick={e => handleCardClick(e, task.id!)}
+                    onContextMenu={e => {
+                        e.preventDefault();
+                        setContextMenu({ visible: true, x: e.clientX, y: e.clientY });
+                        setSelectedTask(task);
+                    }}
                 >
                     <div className="task-content">
                         <div className="task_labels" style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
@@ -447,7 +545,14 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
                         {!task.sub_tasks_loading && Array.isArray(task.sub_tasks) && task.sub_tasks.length > 0 && (
                             <ul className="space-y-1">
                                 {task.sub_tasks.map(sub => (
-                                    <li key={sub.id} onClick={e => handleCardClick(e, sub.id!)} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                                    <li key={sub.id} 
+                                    onClick={e => handleCardClick(e, sub.id!)} 
+                                    className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-800"
+                                    onContextMenu={e => {
+                                        e.preventDefault();
+                                        setContextMenu({ visible: true, x: e.clientX, y: e.clientY });
+                                        setSelectedTask(sub);
+                                    }}>
                                         {sub.priority_color || sub.priority_color_dark ? (
                                             <span
                                                 className="w-2 h-2 rounded-full inline-block"

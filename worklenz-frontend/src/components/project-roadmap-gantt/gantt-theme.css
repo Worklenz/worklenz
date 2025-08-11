@@ -1,0 +1,221 @@
+/* Custom Gantt Chart Theme Overrides */
+
+/* Light theme styles */
+.gantt-container {
+  font-family: inherit;
+}
+
+.gantt-container .gantt-header {
+  background-color: var(--gantt-background, #ffffff);
+  border-bottom: 1px solid var(--gantt-border, #e5e7eb);
+  color: var(--gantt-text, #111827);
+}
+
+.gantt-container .gantt-task-list-wrapper {
+  background-color: var(--gantt-background, #ffffff);
+  border-right: 1px solid var(--gantt-border, #e5e7eb);
+}
+
+.gantt-container .gantt-task-list-table {
+  background-color: var(--gantt-background, #ffffff);
+}
+
+.gantt-container .gantt-task-list-table-row {
+  color: var(--gantt-text, #111827);
+  border-bottom: 1px solid var(--gantt-grid, #f3f4f6);
+}
+
+.gantt-container .gantt-task-list-table-row:hover {
+  background-color: var(--gantt-grid, #f3f4f6);
+}
+
+.gantt-container .gantt-gantt {
+  background-color: var(--gantt-background, #ffffff);
+}
+
+.gantt-container .gantt-vertical-container {
+  background-color: var(--gantt-background, #ffffff);
+}
+
+.gantt-container .gantt-horizontal-container {
+  background-color: var(--gantt-background, #ffffff);
+}
+
+.gantt-container .gantt-calendar {
+  background-color: var(--gantt-background, #ffffff);
+  border-bottom: 1px solid var(--gantt-border, #e5e7eb);
+}
+
+.gantt-container .gantt-calendar-row {
+  color: var(--gantt-text, #111827);
+  background-color: var(--gantt-background, #ffffff);
+  border-bottom: 1px solid var(--gantt-grid, #f3f4f6);
+}
+
+.gantt-container .gantt-grid-body {
+  background-color: var(--gantt-background, #ffffff);
+}
+
+.gantt-container .gantt-grid-row {
+  border-bottom: 1px solid var(--gantt-grid, #f3f4f6);
+}
+
+.gantt-container .gantt-grid-row-line {
+  border-left: 1px solid var(--gantt-grid, #f3f4f6);
+}
+
+/* Dark theme overrides */
+html.dark .gantt-container .gantt-header {
+  background-color: #1f2937;
+  border-bottom-color: #4b5563;
+  color: #f9fafb;
+}
+
+html.dark .gantt-container .gantt-task-list-wrapper {
+  background-color: #1f2937;
+  border-right-color: #4b5563;
+}
+
+html.dark .gantt-container .gantt-task-list-table {
+  background-color: #1f2937;
+}
+
+html.dark .gantt-container .gantt-task-list-table-row {
+  color: #f9fafb;
+  border-bottom-color: #4b5563;
+}
+
+html.dark .gantt-container .gantt-task-list-table-row:hover {
+  background-color: #374151;
+}
+
+html.dark .gantt-container .gantt-gantt {
+  background-color: #1f2937;
+}
+
+html.dark .gantt-container .gantt-vertical-container {
+  background-color: #1f2937;
+}
+
+html.dark .gantt-container .gantt-horizontal-container {
+  background-color: #1f2937;
+}
+
+html.dark .gantt-container .gantt-calendar {
+  background-color: #1f2937;
+  border-bottom-color: #4b5563;
+}
+
+html.dark .gantt-container .gantt-calendar-row {
+  color: #f9fafb;
+  background-color: #1f2937;
+  border-bottom-color: #4b5563;
+}
+
+html.dark .gantt-container .gantt-grid-body {
+  background-color: #1f2937;
+}
+
+html.dark .gantt-container .gantt-grid-row {
+  border-bottom-color: #4b5563;
+}
+
+html.dark .gantt-container .gantt-grid-row-line {
+  border-left-color: #4b5563;
+}
+
+/* Tooltip theming */
+.gantt-container .gantt-tooltip {
+  background-color: var(--gantt-background, #ffffff);
+  border: 1px solid var(--gantt-border, #e5e7eb);
+  color: var(--gantt-text, #111827);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+html.dark .gantt-container .gantt-tooltip {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Task bar styling improvements */
+.gantt-container .gantt-task-progress {
+  border-radius: 2px;
+}
+
+.gantt-container .gantt-task-background {
+  border-radius: 4px;
+  border: 1px solid var(--gantt-border, #e5e7eb);
+}
+
+html.dark .gantt-container .gantt-task-background {
+  border-color: #4b5563;
+}
+
+/* Milestone styling */
+.gantt-container .gantt-milestone {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+html.dark .gantt-container .gantt-milestone {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* Selection and hover states */
+.gantt-container .gantt-task:hover .gantt-task-background {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+.gantt-container .gantt-task-selected .gantt-task-background {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+html.dark .gantt-container .gantt-task-selected .gantt-task-background {
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .gantt-container {
+    font-size: 14px;
+  }
+  
+  .gantt-container .gantt-task-list-wrapper {
+    min-width: 200px;
+  }
+}
+
+/* Scrollbar theming */
+.gantt-container ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.gantt-container ::-webkit-scrollbar-track {
+  background: var(--gantt-grid, #f3f4f6);
+  border-radius: 4px;
+}
+
+.gantt-container ::-webkit-scrollbar-thumb {
+  background: var(--gantt-border, #e5e7eb);
+  border-radius: 4px;
+}
+
+.gantt-container ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+html.dark .gantt-container ::-webkit-scrollbar-track {
+  background: #4b5563;
+}
+
+html.dark .gantt-container ::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+html.dark .gantt-container ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

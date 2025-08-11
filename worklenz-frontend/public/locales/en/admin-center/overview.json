@@ -4,5 +4,8 @@
   "owner": "Organization Owner",
   "admins": "Organization Admins",
   "contactNumber": "Add Contact Number",
-  "edit": "Edit"
+  "edit": "Edit",
+  "emailAddress": "Email Address",
+  "enterOrganizationName": "Enter organization name",
+  "ownerSuffix": " (Owner)"
 }

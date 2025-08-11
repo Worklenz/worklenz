@@ -78,5 +78,12 @@
   "delete": "Excluir",
   "enterStatusName": "Digite o nome do status",
   "selectCategory": "Selecionar categoria",
-  "close": "Fechar"
+  "close": "Fechar",
+  "clearSort": "Limpar Ordenação",
+  "sortAscending": "Ordenar Crescente",
+  "sortDescending": "Ordenar Decrescente",
+  "sortByField": "Ordenar por {{field}}",
+  "ascendingOrder": "Crescente",
+  "descendingOrder": "Decrescente",
+  "currentSort": "Ordenação atual: {{field}} {{order}}"
 }

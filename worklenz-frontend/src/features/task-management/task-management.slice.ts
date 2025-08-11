@@ -64,6 +64,9 @@ const initialState: TaskManagementState = {
   loadingColumns: false,
   columns: [],
   customColumns: [],
+  // Add sort-related state
+  sortField: '',
+  sortOrder: 'ASC',
 };
 
 // Async thunk to fetch tasks from API
@@ -233,12 +236,16 @@ export const fetchTasksV3 = createAsyncThunk(
       // Get archived state from task management slice
       const archivedState = state.taskManagement.archived;
 
+      // Get sort state from task management slice
+      const sortField = state.taskManagement.sortField;
+      const sortOrder = state.taskManagement.sortOrder;
+
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: archivedState,
         group: currentGrouping || '',
-        field: '',
-        order: '',
+        field: sortField,
+        order: sortOrder,
         search: searchValue,
         statuses: '',
         members: selectedAssignees,
@@ -673,8 +680,23 @@ const taskManagementSlice = createSlice({
         const group = state.groups.find(g => g.id === sourceGroupId);
         if (group) {
           const newTasks = Array.from(group.taskIds);
-          const [removed] = newTasks.splice(newTasks.indexOf(sourceTaskId), 1);
-          newTasks.splice(newTasks.indexOf(destinationTaskId), 0, removed);
+          const sourceIndex = newTasks.indexOf(sourceTaskId);
+          const destinationIndex = newTasks.indexOf(destinationTaskId);
+          
+          // Remove the task from its current position
+          const [removed] = newTasks.splice(sourceIndex, 1);
+          
+          // Calculate the insertion index
+          let insertIndex = destinationIndex;
+          if (sourceIndex < destinationIndex) {
+            // When dragging down, we need to insert after the destination
+            insertIndex = destinationIndex;
+          } else {
+            // When dragging up, we insert before the destination
+            insertIndex = destinationIndex;
+          }
+          
+          newTasks.splice(insertIndex, 0, removed);
           group.taskIds = newTasks;
 
           // Update order for affected tasks using the appropriate sort field
@@ -737,6 +759,16 @@ const taskManagementSlice = createSlice({
     toggleArchived: (state) => {
       state.archived = !state.archived;
     },
+    setSortField: (state, action: PayloadAction<string>) => {
+      state.sortField = action.payload;
+    },
+    setSortOrder: (state, action: PayloadAction<'ASC' | 'DESC'>) => {
+      state.sortOrder = action.payload;
+    },
+    setSort: (state, action: PayloadAction<{ field: string; order: 'ASC' | 'DESC' }>) => {
+      state.sortField = action.payload.field;
+      state.sortOrder = action.payload.order;
+    },
     resetTaskManagement: state => {
       state.loading = false;
       state.error = null;
@@ -745,6 +777,8 @@ const taskManagementSlice = createSlice({
       state.selectedPriorities = [];
       state.search = '';
       state.archived = false;
+      state.sortField = '';
+      state.sortOrder = 'ASC';
       state.ids = [];
       state.entities = {};
     },
@@ -1129,6 +1163,9 @@ export const {
   setSearch,
   setArchived,
   toggleArchived,
+  setSortField,
+  setSortOrder,
+  setSort,
   resetTaskManagement,
   toggleTaskExpansion,
   addSubtaskToParent,
@@ -1160,6 +1197,9 @@ export const selectLoading = (state: RootState) => state.taskManagement.loading;
 export const selectError = (state: RootState) => state.taskManagement.error;
 export const selectSelectedPriorities = (state: RootState) => state.taskManagement.selectedPriorities;
 export const selectSearch = (state: RootState) => state.taskManagement.search;
+export const selectSortField = (state: RootState) => state.taskManagement.sortField;
+export const selectSortOrder = (state: RootState) => state.taskManagement.sortOrder;
+export const selectSort = (state: RootState) => ({ field: state.taskManagement.sortField, order: state.taskManagement.sortOrder });
 export const selectSubtaskLoading = (state: RootState, taskId: string) => state.taskManagement.loadingSubtasks[taskId] || false;
 
 // Memoized selectors to prevent unnecessary re-renders

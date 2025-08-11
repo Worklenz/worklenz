@@ -71,7 +71,7 @@ export default class ProjectsController extends WorklenzControllerBase {
         return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot have more than ${projectsLimit} projects.`));
       }
     }
-    
+
     const q = `SELECT create_project($1) AS project`;
 
     req.body.team_id = req.user?.team_id || null;
@@ -317,65 +317,58 @@ export default class ProjectsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getMembersByProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
+    const search = (req.query.search || "").toString().trim();
+
+    let searchFilter = "";
+    const params = [req.params.id, req.user?.team_id ?? null, size, offset];
+    if (search) {
+      searchFilter = `
+        AND (
+          (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) ILIKE '%' || $5 || '%'
+          OR (SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) ILIKE '%' || $5 || '%'
+        )
+      `;
+      params.push(search);
+    }
 
     const q = `
-      SELECT ROW_TO_JSON(rec) AS members
-      FROM (SELECT COUNT(*) AS total,
-                   (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
-                    FROM (SELECT project_members.id,
-                                 team_member_id,
-                                 (SELECT name
-                                  FROM team_member_info_view
-                                  WHERE team_member_info_view.team_member_id = tm.id),
-                                 (SELECT email
-                                  FROM team_member_info_view
-                                  WHERE team_member_info_view.team_member_id = tm.id) AS email,
-                                 u.avatar_url,
-                                 (SELECT COUNT(*)
-                                  FROM tasks
-                                  WHERE archived IS FALSE
-                                    AND project_id = project_members.project_id
-                                    AND id IN (SELECT task_id
-                                               FROM tasks_assignees
-                                               WHERE tasks_assignees.project_member_id = project_members.id)) AS all_tasks_count,
-                                 (SELECT COUNT(*)
-                                  FROM tasks
-                                  WHERE archived IS FALSE
-                                    AND project_id = project_members.project_id
-                                    AND id IN (SELECT task_id
-                                               FROM tasks_assignees
-                                               WHERE tasks_assignees.project_member_id = project_members.id)
-                                    AND status_id IN (SELECT id
-                                                      FROM task_statuses
-                                                      WHERE category_id = (SELECT id
-                                                                           FROM sys_task_status_categories
-                                                                           WHERE is_done IS TRUE))) AS completed_tasks_count,
-                                 EXISTS(SELECT email
-                                        FROM email_invitations
-                                        WHERE team_member_id = project_members.team_member_id
-                                          AND email_invitations.team_id = $2) AS pending_invitation,
-                                 (SELECT project_access_levels.name
-                                  FROM project_access_levels
-                                  WHERE project_access_levels.id = project_members.project_access_level_id) AS access,
-                                 (SELECT name FROM job_titles WHERE id = tm.job_title_id) AS job_title
-                          FROM project_members
-                                 INNER JOIN team_members tm ON project_members.team_member_id = tm.id
-                                 LEFT JOIN users u ON tm.user_id = u.id
-                          WHERE project_id = $1
-                          ORDER BY ${sortField} ${sortOrder}
-                          LIMIT $3 OFFSET $4) t) AS data
-            FROM project_members
-            WHERE project_id = $1) rec;
+      WITH filtered_members AS (
+        SELECT project_members.id,
+               team_member_id,
+               (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) AS name,
+               (SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) AS email,
+               u.avatar_url,
+               (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id)) AS all_tasks_count,
+               (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id) AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE))) AS completed_tasks_count,
+               EXISTS(SELECT email FROM email_invitations WHERE team_member_id = project_members.team_member_id AND email_invitations.team_id = $2) AS pending_invitation,
+               (SELECT project_access_levels.name FROM project_access_levels WHERE project_access_levels.id = project_members.project_access_level_id) AS access,
+               (SELECT name FROM job_titles WHERE id = tm.job_title_id) AS job_title
+        FROM project_members
+        INNER JOIN team_members tm ON project_members.team_member_id = tm.id
+        LEFT JOIN users u ON tm.user_id = u.id
+        WHERE project_id = $1
+        ${search ? searchFilter : ""}
+      )
+      SELECT
+        (SELECT COUNT(*) FROM filtered_members) AS total,
+        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
+           FROM (
+             SELECT * FROM filtered_members
+             ORDER BY ${sortField} ${sortOrder}
+             LIMIT $3 OFFSET $4
+           ) t
+        ) AS data
     `;
-    const result = await db.query(q, [req.params.id, req.user?.team_id ?? null, size, offset]);
+
+    const result = await db.query(q, params);
     const [data] = result.rows;
 
-    for (const member of data?.members.data || []) {
+    for (const member of data?.data || []) {
       member.progress = member.all_tasks_count > 0
         ? ((member.completed_tasks_count / member.all_tasks_count) * 100).toFixed(0) : 0;
     }
 
-    return res.status(200).send(new ServerResponse(true, data?.members || this.paginatedDatasetDefaultStruct));
+    return res.status(200).send(new ServerResponse(true, data || this.paginatedDatasetDefaultStruct));
   }
 
   @HandleExceptions()
@@ -779,7 +772,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     let groupJoin = "";
     let groupByFields = "";
     let groupOrderBy = "";
-    
+
     switch (groupBy) {
       case "client":
         groupField = "COALESCE(projects.client_id::text, 'no-client')";
@@ -888,13 +881,13 @@ export default class ProjectsController extends WorklenzControllerBase {
                                              ELSE p2.updated_at END) AS updated_at
                             FROM projects p2
                             ${groupJoin.replace("projects.", "p2.")}
-                            WHERE p2.team_id = $1 
+                            WHERE p2.team_id = $1
                               AND ${groupField.replace("projects.", "p2.")} = ${groupField}
-                              ${categories.replace("projects.", "p2.")} 
-                              ${statuses.replace("projects.", "p2.")} 
-                              ${isArchived.replace("projects.", "p2.")} 
-                              ${isFavorites.replace("projects.", "p2.")} 
-                              ${filterByMember.replace("projects.", "p2.")} 
+                              ${categories.replace("projects.", "p2.")}
+                              ${statuses.replace("projects.", "p2.")}
+                              ${isArchived.replace("projects.", "p2.")}
+                              ${isFavorites.replace("projects.", "p2.")}
+                              ${filterByMember.replace("projects.", "p2.")}
                               ${searchQuery.replace("projects.", "p2.")}
                             ORDER BY ${innerSortField} ${sortOrder}
                           ) project_data
