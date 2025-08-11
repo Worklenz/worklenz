@@ -278,6 +278,9 @@ const CurrentPlanDetails = () => {
     } else if (expDate < today) {
       const diffTime = Math.abs(today.getTime() - expDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        return t('expiredDayAgo', '{{days}} day ago', { days: diffDays });
+      }
       return t('expiredDaysAgo', '{{days}} days ago', { days: diffDays });
     } else {
       return calculateTimeGap(expireDate);

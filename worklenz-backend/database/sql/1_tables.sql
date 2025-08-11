@@ -2297,3 +2297,60 @@ ALTER TABLE organization_working_days
 ALTER TABLE organization_working_days
     ADD CONSTRAINT org_organization_id_fk
         FOREIGN KEY (organization_id) REFERENCES organizations;
+
+-- Survey tables for account setup questionnaire
+CREATE TABLE IF NOT EXISTS surveys (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    survey_type VARCHAR(50) DEFAULT 'account_setup' NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMP DEFAULT now() NOT NULL,
+    updated_at TIMESTAMP DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS survey_questions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    survey_id UUID REFERENCES surveys(id) ON DELETE CASCADE NOT NULL,
+    question_key VARCHAR(100) NOT NULL,
+    question_type VARCHAR(50) NOT NULL,
+    is_required BOOLEAN DEFAULT FALSE NOT NULL,
+    sort_order INTEGER DEFAULT 0 NOT NULL,
+    options JSONB,
+    created_at TIMESTAMP DEFAULT now() NOT NULL,
+    updated_at TIMESTAMP DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS survey_responses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    survey_id UUID REFERENCES surveys(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    is_completed BOOLEAN DEFAULT FALSE NOT NULL,
+    started_at TIMESTAMP DEFAULT now() NOT NULL,
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT now() NOT NULL,
+    updated_at TIMESTAMP DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS survey_answers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    response_id UUID REFERENCES survey_responses(id) ON DELETE CASCADE NOT NULL,
+    question_id UUID REFERENCES survey_questions(id) ON DELETE CASCADE NOT NULL,
+    answer_text TEXT,
+    answer_json JSONB,
+    created_at TIMESTAMP DEFAULT now() NOT NULL,
+    updated_at TIMESTAMP DEFAULT now() NOT NULL
+);
+
+-- Survey table indexes
+CREATE INDEX IF NOT EXISTS idx_surveys_type_active ON surveys(survey_type, is_active);
+CREATE INDEX IF NOT EXISTS idx_survey_questions_survey_order ON survey_questions(survey_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_survey_responses_user_survey ON survey_responses(user_id, survey_id);
+CREATE INDEX IF NOT EXISTS idx_survey_responses_completed ON survey_responses(survey_id, is_completed);
+CREATE INDEX IF NOT EXISTS idx_survey_answers_response ON survey_answers(response_id);
+
+-- Survey table constraints
+ALTER TABLE survey_questions ADD CONSTRAINT survey_questions_sort_order_check CHECK (sort_order >= 0);
+ALTER TABLE survey_questions ADD CONSTRAINT survey_questions_type_check CHECK (question_type IN ('single_choice', 'multiple_choice', 'text'));
+ALTER TABLE survey_responses ADD CONSTRAINT unique_user_survey_response UNIQUE (user_id, survey_id);
+ALTER TABLE survey_answers ADD CONSTRAINT unique_response_question_answer UNIQUE (response_id, question_id);

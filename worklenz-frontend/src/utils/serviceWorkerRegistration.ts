@@ -198,6 +198,17 @@ export class ServiceWorkerManager {
     }
   }
 
+  // Check for updates
+  async checkForUpdates(): Promise<boolean> {
+    try {
+      const response = await this.sendMessage('CHECK_FOR_UPDATES');
+      return response.hasUpdates;
+    } catch (error) {
+      console.error('Failed to check for updates:', error);
+      return false;
+    }
+  }
+
   // Force update service worker
   async forceUpdate(): Promise<void> {
     if (!this.registration) return;
@@ -209,6 +220,27 @@ export class ServiceWorkerManager {
     } catch (error) {
       console.error('Failed to force update service worker:', error);
       throw error;
+    }
+  }
+
+  // Perform hard reload (clear cache and reload)
+  async hardReload(): Promise<void> {
+    try {
+      // Clear all caches first
+      await this.clearCache();
+      
+      // Force update the service worker
+      if (this.registration) {
+        await this.registration.update();
+        await this.sendMessage('SKIP_WAITING');
+      }
+      
+      // Perform hard reload by clearing browser cache
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to perform hard reload:', error);
+      // Fallback to regular reload
+      window.location.reload();
     }
   }
 
@@ -268,6 +300,8 @@ export function useServiceWorker() {
     swManager,
     clearCache: () => swManager?.clearCache(),
     forceUpdate: () => swManager?.forceUpdate(),
+    hardReload: () => swManager?.hardReload(),
+    checkForUpdates: () => swManager?.checkForUpdates(),
     getVersion: () => swManager?.getVersion(),
   };
 } 

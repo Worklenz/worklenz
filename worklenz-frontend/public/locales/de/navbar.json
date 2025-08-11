@@ -18,6 +18,7 @@
   "profileTooltip": "Profil anzeigen",
   "adminCenter": "Admin-Center",
   "settings": "Einstellungen",
+  "deleteAccount": "Account Löschen",
   "logOut": "Abmelden",
   "notificationsDrawer": {
     "read": "Gelesene Benachrichtigungen",

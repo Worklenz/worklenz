@@ -57,6 +57,9 @@
 
   "contextMenu": {
     "assignToMe": "Assign to me",
+    "copyLink": "Copy link to task",
+    "linkCopied": "Link copied to clipboard",
+    "linkCopyFailed": "Failed to copy link",
     "moveTo": "Move to",
     "unarchive": "Unarchive",
     "archive": "Archive",
@@ -133,5 +136,11 @@
       "dependencies": "Task has dependencies",
       "recurring": "Recurring task"
     }
+  },
+
+  "timer": {
+    "conflictTitle": "Timer Already Running",
+    "conflictMessage": "You have a timer running for \"{{taskName}}\" in project \"{{projectName}}\". Would you like to stop that timer and start a new one for this task?",
+    "stopAndStart": "Stop & Start New Timer"
   }
 }

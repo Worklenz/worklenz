@@ -7,5 +7,9 @@
   "searchPlaceholder": "Pesquisar por nome",
   "emptyText": "Os rótulos podem ser criados ao atualizar ou criar tarefas.",
   "pinTooltip": "Clique para fixar isso no menu principal",
-  "colorChangeTooltip": "Clique para mudar a cor"
+  "colorChangeTooltip": "Clique para mudar a cor",
+  "pageTitle": "Gerenciar Rótulos",
+  "deleteConfirmTitle": "Tem certeza de que deseja excluir isto?",
+  "deleteButton": "Excluir",
+  "cancelButton": "Cancelar"
 }

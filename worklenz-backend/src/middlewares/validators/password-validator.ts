@@ -8,7 +8,7 @@ import {PASSWORD_POLICY} from "../../shared/constants";
 function isStrongPassword(password: string) {
   if (!isProduction()) return true;
   const strength = PasswordStrengthChecker.validate(password);
-  return strength.value >= 2 && strength.length < 32;
+  return strength.value >= 2 && strength.length <= 32;
 }
 
 export default function (req: Request, res: Response, next: NextFunction) {

@@ -90,6 +90,7 @@
   "switchToFreePlan": "切换到免费计划",
   "expirestoday": "今天",
   "expirestomorrow": "明天",
+  "expiredDayAgo": "{{days}}天前",
   "expiredDaysAgo": "{{days}}天前",
   "continueWith": "继续使用{{plan}}",
   "changeToPlan": "更改为{{plan}}"

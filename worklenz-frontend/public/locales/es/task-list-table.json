@@ -57,6 +57,9 @@
 
   "contextMenu": {
     "assignToMe": "Asignar a mí",
+    "copyLink": "Copiar enlace a la tarea",
+    "linkCopied": "Enlace copiado al portapapeles",
+    "linkCopyFailed": "Error al copiar el enlace",
     "moveTo": "Mover a",
     "unarchive": "Desarchivar",
     "archive": "Archivar",
@@ -133,5 +136,11 @@
       "dependencies": "La tarea tiene dependencias",
       "recurring": "Tarea recurrente"
     }
+  },
+
+  "timer": {
+    "conflictTitle": "Temporizador Ya En Ejecución",
+    "conflictMessage": "Tiene un temporizador ejecutándose para \"{{taskName}}\" en el proyecto \"{{projectName}}\". ¿Le gustaría detener ese temporizador e iniciar uno nuevo para esta tarea?",
+    "stopAndStart": "Detener e Iniciar Nuevo Temporizador"
   }
 }
