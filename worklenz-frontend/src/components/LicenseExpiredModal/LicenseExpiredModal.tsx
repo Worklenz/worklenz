@@ -1,11 +1,20 @@
-import { Modal, Button, Typography, Space, Card, Tag } from '@/shared/antd-imports';
+import { Modal, Button, Typography, Space, Card, Tag, Dropdown, Flex, Divider } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { ClockCircleOutlined, CrownOutlined, CustomerServiceOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, CrownOutlined, CustomerServiceOutlined, BankOutlined, CaretDownFilled, CheckCircleFilled } from '@ant-design/icons';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { supportApiService } from '@/api/support/support.api.service';
 import { useAuthService } from '@/hooks/useAuth';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { fetchTeams, setActiveTeam } from '@/features/teams/teamSlice';
+import { verifyAuthentication } from '@/features/auth/authSlice';
+import { setUser } from '@/features/user/userSlice';
+import CustomAvatar from '@/components/CustomAvatar';
+import { colors } from '@/styles/colors';
+import { createAuthService } from '@/services/auth/auth.service';
+import './LicenseExpiredModal.css';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -16,43 +25,88 @@ interface LicenseExpiredModalProps {
 
 export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYPE.TRIAL }: LicenseExpiredModalProps) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { t } = useTranslation('common');
   const authService = useAuthService();
+  const authServiceInstance = createAuthService(navigate);
   const [visible, setVisible] = useState(open);
   const [isContactingSupport, setIsContactingSupport] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
+  
+  // Team switching state
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
+  const session = authService?.getCurrentSession();
 
   useEffect(() => {
     setVisible(open);
-    // Prevent scrolling when modal is open and add custom backdrop
+    // Fetch teams when modal opens
     if (open) {
+      dispatch(fetchTeams());
       document.body.style.overflow = 'hidden';
-      
-      // Create custom backdrop that excludes navbar
-      const backdrop = document.createElement('div');
-      backdrop.id = 'license-modal-backdrop';
-      backdrop.style.cssText = `
-        position: fixed;
-        top: 64px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.85);
-        backdrop-filter: blur(4px);
-        z-index: 999;
-        pointer-events: none;
-      `;
-      document.body.appendChild(backdrop);
     }
     
     return () => {
       document.body.style.overflow = 'unset';
-      const backdrop = document.getElementById('license-modal-backdrop');
-      if (backdrop) {
-        document.body.removeChild(backdrop);
-      }
     };
-  }, [open]);
+  }, [open, dispatch]);
+
+  const isActiveTeam = (teamId: string): boolean => {
+    if (!teamId || !session?.team_id) return false;
+    return teamId === session.team_id;
+  };
+
+  const handleVerifyAuth = async () => {
+    const result = await dispatch(verifyAuthentication()).unwrap();
+    if (result.authenticated) {
+      dispatch(setUser(result.user));
+      authServiceInstance.setCurrentSession(result.user);
+    }
+  };
+
+  const handleTeamSelect = async (id: string) => {
+    if (!id) return;
+
+    await dispatch(setActiveTeam(id));
+    await handleVerifyAuth();
+    window.location.reload();
+  };
+
+  const renderTeamCard = (team: any, index: number) => (
+    <Card
+      className="switch-team-card"
+      onClick={() => handleTeamSelect(team.id)}
+      bordered={false}
+      style={{ width: 230, cursor: 'pointer' }}
+    >
+      <Flex vertical>
+        <Flex gap={12} align="center" justify="space-between" style={{ padding: '4px 12px' }}>
+          <Flex gap={8} align="center">
+            <CustomAvatar avatarName={team.name || ''} />
+            <Flex vertical>
+              <Typography.Text style={{ fontSize: 11, fontWeight: 300 }}>
+                {t('owned-by')} {team.owns_by}
+              </Typography.Text>
+              <Typography.Text>{team.name}</Typography.Text>
+            </Flex>
+          </Flex>
+          <CheckCircleFilled
+            style={{
+              fontSize: 16,
+              color: isActiveTeam(team.id) ? colors.limeGreen : colors.lightGray,
+            }}
+          />
+        </Flex>
+        {index < teamsList.length - 1 && <Divider style={{ margin: 0 }} />}
+      </Flex>
+    </Card>
+  );
+
+  const dropdownItems =
+    teamsList?.map((team, index) => ({
+      key: team.id || '',
+      label: renderTeamCard(team, index),
+      type: 'item' as const,
+    })) || [];
 
   const handleUpgrade = async () => {
     if (subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM) {
@@ -149,17 +203,72 @@ export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYP
       closable={false}
       footer={null}
       centered
-      width={600}
+      width={650}
       maskClosable={false}
       keyboard={false}
-      mask={false}
+      mask={true}
+      maskStyle={{
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(4px)'
+      }}
       style={{ 
-        zIndex: 1000
+        zIndex: 1050
       }}
       wrapClassName="license-expired-modal-wrap"
     >
       <div style={{ padding: '20px 0' }}>
         <Space direction="vertical" size="large" style={{ width: '100%', textAlign: 'center' }}>
+          {/* Team Switcher - Show prominently if multiple teams exist */}
+          {teamsList && teamsList.length > 1 && (
+            <Card
+              style={{
+                backgroundColor: '#f0f8ff',
+                border: '2px solid #1890ff',
+                marginBottom: 20,
+                boxShadow: '0 2px 8px rgba(24, 144, 255, 0.15)'
+              }}
+              bodyStyle={{ padding: '16px' }}
+            >
+              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Text strong style={{ fontSize: 15, color: '#1890ff' }}>
+                  {t('switch-team-to-continue')}
+                </Text>
+                <Dropdown
+                  overlayClassName="switch-team-dropdown"
+                  menu={{ items: dropdownItems }}
+                  trigger={['click']}
+                  placement="bottom"
+                  overlayStyle={{ zIndex: 1060 }}
+                >
+                  <Button
+                    size="large"
+                    style={{
+                      width: '100%',
+                      height: 45,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0 16px',
+                      border: '1px solid #1890ff',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <Flex gap={12} align="center">
+                      <BankOutlined style={{ fontSize: 18, color: '#1890ff' }} />
+                      <Typography.Text strong style={{ fontSize: 14 }}>
+                        {t('current-team')}: {session?.team_name || t('select-team')}
+                      </Typography.Text>
+                    </Flex>
+                    <CaretDownFilled style={{ color: '#1890ff' }} />
+                  </Button>
+                </Dropdown>
+                <Text type="secondary" style={{ fontSize: 12, textAlign: 'center', display: 'block' }}>
+                  {t('switch-team-active-subscription')}
+                </Text>
+              </Space>
+            </Card>
+          )}
+
           {/* Icon and Title */}
           <div>
             <ClockCircleOutlined style={{ fontSize: 64, color: '#1890ff', marginBottom: 16 }} />
