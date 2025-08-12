@@ -22,13 +22,26 @@ export const useMixpanelTracking = () => {
       try {
         initMixpanel(token);
         logger.info('Mixpanel initialized successfully for production');
+        
+        // Set identity if user is already authenticated on page load/reload
+        const currentUser = auth.getCurrentSession();
+        if (currentUser?.id) {
+          mixpanel.identify(currentUser.id);
+          mixpanel.people.set({
+            $user_id: currentUser.id,
+            $name: currentUser.name,
+            $email: currentUser.email,
+            $avatar: currentUser.avatar_url,
+          });
+          logger.debug('Mixpanel identity set on initialization', currentUser.id);
+        }
       } catch (error) {
         logger.error('Failed to initialize Mixpanel:', error);
       }
     } else {
       logger.info('Mixpanel not initialized - not in production environment or missing token');
     }
-  }, [token, isProductionEnvironment]);
+  }, [token, isProductionEnvironment, auth]);
 
   const setIdentity = useCallback((user: any) => {
     if (!isProductionEnvironment) {
