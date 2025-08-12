@@ -13,10 +13,10 @@ async function isGoogleAccountFound(email: string) {
   const q = `
     SELECT 1
     FROM users
-    WHERE email = $1
+    WHERE LOWER(email) = $1
       AND google_id IS NOT NULL;
   `;
-  const result = await db.query(q, [email]);
+  const result = await db.query(q, [email.toLowerCase().trim()]);
   return !!result.rowCount;
 }
 
@@ -24,10 +24,10 @@ async function isAccountDeactivated(email: string) {
   const q = `
     SELECT 1
     FROM users
-    WHERE email = $1
+    WHERE LOWER(email) = $1
       AND is_deleted = TRUE;
   `;
-  const result = await db.query(q, [email]);
+  const result = await db.query(q, [email.toLowerCase().trim()]);
   return !!result.rowCount;
 }
 
@@ -41,7 +41,7 @@ async function registerUser(password: string, team_id: string, name: string, tea
   const body = {
     name,
     team_name,
-    email,
+    email: email.toLowerCase().trim(),
     password: encryptedPassword,
     timezone,
     invited_team_id: teamId,
