@@ -36,6 +36,7 @@ export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYP
   // Team switching state
   const teamsList = useAppSelector(state => state.teamReducer.teamsList);
   const session = authService?.getCurrentSession();
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   useEffect(() => {
     setVisible(open);
@@ -76,27 +77,43 @@ export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYP
       className="switch-team-card"
       onClick={() => handleTeamSelect(team.id)}
       bordered={false}
-      style={{ width: 230, cursor: 'pointer' }}
+      style={{ 
+        width: '100%', 
+        cursor: 'pointer',
+        backgroundColor: themeMode === 'dark' ? '#262626' : '#fff',
+        color: themeMode === 'dark' ? '#fff' : '#000'
+      }}
     >
       <Flex vertical>
         <Flex gap={12} align="center" justify="space-between" style={{ padding: '4px 12px' }}>
           <Flex gap={8} align="center">
             <CustomAvatar avatarName={team.name || ''} />
             <Flex vertical>
-              <Typography.Text style={{ fontSize: 11, fontWeight: 300 }}>
+              <Typography.Text style={{ 
+                fontSize: 11, 
+                fontWeight: 300,
+                color: themeMode === 'dark' ? '#8c8c8c' : '#8c8c8c'
+              }}>
                 {t('owned-by')} {team.owns_by}
               </Typography.Text>
-              <Typography.Text>{team.name}</Typography.Text>
+              <Typography.Text style={{
+                color: themeMode === 'dark' ? '#fff' : '#000'
+              }}>
+                {team.name}
+              </Typography.Text>
             </Flex>
           </Flex>
           <CheckCircleFilled
             style={{
               fontSize: 16,
-              color: isActiveTeam(team.id) ? colors.limeGreen : colors.lightGray,
+              color: isActiveTeam(team.id) ? colors.limeGreen : (themeMode === 'dark' ? '#434343' : colors.lightGray),
             }}
           />
         </Flex>
-        {index < teamsList.length - 1 && <Divider style={{ margin: 0 }} />}
+        {index < teamsList.length - 1 && <Divider style={{ 
+          margin: 0,
+          borderColor: themeMode === 'dark' ? '#303030' : '#f0f0f0'
+        }} />}
       </Flex>
     </Card>
   );
@@ -218,56 +235,6 @@ export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYP
     >
       <div style={{ padding: '20px 0' }}>
         <Space direction="vertical" size="large" style={{ width: '100%', textAlign: 'center' }}>
-          {/* Team Switcher - Show prominently if multiple teams exist */}
-          {teamsList && teamsList.length > 1 && (
-            <Card
-              style={{
-                backgroundColor: '#f0f8ff',
-                border: '2px solid #1890ff',
-                marginBottom: 20,
-                boxShadow: '0 2px 8px rgba(24, 144, 255, 0.15)'
-              }}
-              bodyStyle={{ padding: '16px' }}
-            >
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: 15, color: '#1890ff' }}>
-                  {t('switch-team-to-continue')}
-                </Text>
-                <Dropdown
-                  overlayClassName="switch-team-dropdown"
-                  menu={{ items: dropdownItems }}
-                  trigger={['click']}
-                  placement="bottom"
-                  overlayStyle={{ zIndex: 1060 }}
-                >
-                  <Button
-                    size="large"
-                    style={{
-                      width: '100%',
-                      height: 45,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0 16px',
-                      border: '1px solid #1890ff',
-                      backgroundColor: 'white'
-                    }}
-                  >
-                    <Flex gap={12} align="center">
-                      <BankOutlined style={{ fontSize: 18, color: '#1890ff' }} />
-                      <Typography.Text strong style={{ fontSize: 14 }}>
-                        {t('current-team')}: {session?.team_name || t('select-team')}
-                      </Typography.Text>
-                    </Flex>
-                    <CaretDownFilled style={{ color: '#1890ff' }} />
-                  </Button>
-                </Dropdown>
-                <Text type="secondary" style={{ fontSize: 12, textAlign: 'center', display: 'block' }}>
-                  {t('switch-team-active-subscription')}
-                </Text>
-              </Space>
-            </Card>
-          )}
 
           {/* Icon and Title */}
           <div>
@@ -333,6 +300,104 @@ export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYP
               : getUpgradeText()
             }
           </Button>
+
+          {/* Team Switcher - Show below upgrade button if multiple teams exist */}
+          {teamsList && teamsList.length > 1 && (
+            <>
+              <div style={{ 
+                margin: '24px 0 16px', 
+                textAlign: 'center',
+                position: 'relative'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: 0,
+                  right: 0,
+                  height: 1,
+                  backgroundColor: themeMode === 'dark' ? '#434343' : '#e8e8e8',
+                  transform: 'translateY(-50%)'
+                }} />
+                <Text 
+                  type="secondary" 
+                  style={{ 
+                    backgroundColor: themeMode === 'dark' ? '#141414' : '#fff',
+                    padding: '0 16px',
+                    fontSize: 14,
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  {t('or')}
+                </Text>
+              </div>
+              <Card
+                style={{
+                  backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#f8f9fa',
+                  border: `1px solid ${themeMode === 'dark' ? '#303030' : '#e9ecef'}`,
+                  borderRadius: 8
+                }}
+                bodyStyle={{ padding: '16px' }}
+              >
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Text strong style={{ 
+                    fontSize: 14, 
+                    color: themeMode === 'dark' ? '#fff' : '#1890ff',
+                    textAlign: 'center',
+                    display: 'block'
+                  }}>
+                    {t('switch-team-to-continue')}
+                  </Text>
+                  <Dropdown
+                    overlayClassName="switch-team-dropdown"
+                    menu={{ items: dropdownItems }}
+                    trigger={['click']}
+                    placement="bottom"
+                    overlayStyle={{ zIndex: 1060 }}
+                  >
+                    <Button
+                      size="middle"
+                      style={{
+                        width: '100%',
+                        height: 36,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0 16px',
+                        border: `1px solid ${themeMode === 'dark' ? '#434343' : '#d9d9d9'}`,
+                        backgroundColor: themeMode === 'dark' ? '#262626' : 'white',
+                        color: themeMode === 'dark' ? '#fff' : '#000'
+                      }}
+                    >
+                      <Flex gap={12} align="center">
+                        <BankOutlined style={{ 
+                          fontSize: 16, 
+                          color: themeMode === 'dark' ? '#1890ff' : '#1890ff' 
+                        }} />
+                        <Typography.Text strong style={{ 
+                          fontSize: 14,
+                          color: themeMode === 'dark' ? '#fff' : '#000'
+                        }}>
+                          {t('current-team')}: {session?.team_name || t('select-team')}
+                        </Typography.Text>
+                      </Flex>
+                      <CaretDownFilled style={{ 
+                        color: themeMode === 'dark' ? '#8c8c8c' : '#8c8c8c' 
+                      }} />
+                    </Button>
+                  </Dropdown>
+                  <Text type="secondary" style={{ 
+                    fontSize: 12, 
+                    textAlign: 'center', 
+                    display: 'block',
+                    color: themeMode === 'dark' ? '#8c8c8c' : '#8c8c8c'
+                  }}>
+                    {t('switch-team-active-subscription')}
+                  </Text>
+                </Space>
+              </Card>
+            </>
+          )}
 
           {/* Note */}
           <Text type="secondary" style={{ fontSize: 12, marginTop: 8 }}>

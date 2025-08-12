@@ -47,6 +47,7 @@
   "select-team": "Seleccionar equipo",
   "owned-by": "Propiedad de",
   "switch-team-active-subscription": "Cambie a un equipo con una suscripción activa para continuar trabajando",
+  "or": "o",
   "license-expiring-soon": "Su licencia expira en {{days}} día",
   "license-expiring-soon_plural": "Su licencia expira en {{days}} días",
   "license-expiring-today": "¡Su licencia expira hoy!",

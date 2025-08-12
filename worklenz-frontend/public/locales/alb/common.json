@@ -37,6 +37,7 @@
   "select-team": "Zgjidh skuadrën",
   "owned-by": "Në pronësi të",
   "switch-team-active-subscription": "Kaloni në një skuadër me një abonim aktiv për të vazhduar punën",
+  "or": "ose",
   "license-expiring-soon": "Licenca juaj skadon në {{days}} ditë",
   "license-expiring-soon_plural": "Licenca juaj skadon në {{days}} ditë",
   "license-expiring-today": "Licenca juaj skadon sot!",
