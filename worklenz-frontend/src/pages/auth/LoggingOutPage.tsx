@@ -6,16 +6,25 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useMediaQuery } from 'react-responsive';
 import { authApiService } from '@/api/auth/auth.api.service';
 import CacheCleanup from '@/utils/cache-cleanup';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_common_logout } from '@/shared/worklenz-analytics-events';
 
 const LoggingOutPage = () => {
   const navigate = useNavigate();
   const auth = useAuthService();
   const { t } = useTranslation('auth/auth-common');
   const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
+  const { reset, trackMixpanelEvent } = useMixpanelTracking();
 
   useEffect(() => {
     const logout = async () => {
       try {
+        // Track logout event
+        trackMixpanelEvent(evt_common_logout);
+        
+        // Reset Mixpanel identity
+        reset();
+        
         // Clear local session
         await auth.signOut();
         

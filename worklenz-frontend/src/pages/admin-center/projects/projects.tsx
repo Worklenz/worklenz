@@ -11,6 +11,8 @@ import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import logger from '@/utils/errorLogger';
 import { deleteProject } from '@features/projects/projectsSlice';
 import './projects.css';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_admin_center_projects_visit } from '@/shared/worklenz-analytics-events';
 import {
   Button,
   Card,
@@ -39,6 +41,7 @@ const Projects: React.FC = () => {
     order: 'desc',
     search: '',
   });
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const dispatch = useAppDispatch();
 
@@ -69,6 +72,10 @@ const Projects: React.FC = () => {
       fetchProjects();
     }
   };
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_admin_center_projects_visit);
+  }, [trackMixpanelEvent]);
 
   useEffect(() => {
     fetchProjects();
