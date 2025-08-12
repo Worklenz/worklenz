@@ -37,6 +37,7 @@
   "select-team": "选择团队",
   "owned-by": "拥有者",
   "switch-team-active-subscription": "切换到有有效订阅的团队以继续工作",
+  "or": "或",
   "license-expiring-soon": "您的许可证还有 {{days}} 天到期",
   "license-expiring-soon_plural": "您的许可证还有 {{days}} 天到期",
   "license-expiring-today": "您的许可证今天到期！",
