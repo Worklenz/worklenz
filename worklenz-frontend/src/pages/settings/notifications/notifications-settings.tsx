@@ -6,11 +6,14 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { INotificationSettings } from '@/types/settings/notifications.types';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import logger from '@/utils/errorLogger';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_notifications_visit } from '@/shared/worklenz-analytics-events';
 
 const NotificationsSettings = () => {
   const { t } = useTranslation('settings/notifications');
   const [form] = Form.useForm();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const [notificationsSettings, setNotificationsSettings] = useState<INotificationSettings>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -69,8 +72,9 @@ const NotificationsSettings = () => {
   };
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_notifications_visit);
     fetchNotificationsSettings();
-  }, []);
+  }, [trackMixpanelEvent]);
 
   return (
     <Card style={{ width: '100%' }}>

@@ -1,5 +1,7 @@
 import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from '@/shared/antd-imports';
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_schedule_page_visit } from '@/shared/worklenz-analytics-events';
 import { SettingOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { setDate, setType, toggleSettingsDrawer } from '@/features/schedule/scheduleSlice';
@@ -31,8 +33,13 @@ const Schedule: React.FC = () => {
   const dispatch = useDispatch();
   const granttChartRef = useRef<any>(null);
   const { date, type } = useAppSelector(state => state.scheduleReducer);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle('Schedule');
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_schedule_page_visit);
+  }, [trackMixpanelEvent]);
 
   const handleDateChange = (value: dayjs.Dayjs | null) => {
     if (!value) return;
