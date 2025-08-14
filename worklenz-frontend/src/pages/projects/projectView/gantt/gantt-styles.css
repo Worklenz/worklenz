@@ -276,14 +276,12 @@
 }
 
 .gantt-task-bar:hover {
-  transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .gantt-task-bar.dragging {
   opacity: 0.8;
   cursor: move !important;
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 50;
 }
@@ -291,7 +289,6 @@
 .gantt-task-bar.resizing {
   opacity: 0.8;
   cursor: ew-resize !important;
-  transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
