@@ -48,6 +48,7 @@ import {
   PROJECT_SORT_FIELD,
   PROJECT_SORT_ORDER,
 } from '@/shared/constants';
+
 import { IProjectFilter } from '@/types/project/project.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
@@ -76,6 +77,11 @@ import {
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import ProjectGroupList from '@/components/project-list/project-group/project-group-list';
+
+// Lazy load the survey modal
+const SurveyPromptModal = React.lazy(() =>
+  import('@/components/survey/SurveyPromptModal').then(m => ({ default: m.SurveyPromptModal }))
+);
 
 const createFilters = (items: { id: string; name: string }[]) =>
   items.map(item => ({ text: item.name, value: item.id })) as ColumnFilterItem[];
@@ -893,6 +899,7 @@ const ProjectList: React.FC = () => {
       </Card>
 
       {createPortal(<ProjectDrawer onClose={handleDrawerClose} />, document.body, 'project-drawer')}
+      {createPortal(<SurveyPromptModal />, document.body, 'project-survey-modal')}
     </div>
   );
 };
