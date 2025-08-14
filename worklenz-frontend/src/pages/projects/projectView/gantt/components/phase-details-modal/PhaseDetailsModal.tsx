@@ -564,7 +564,7 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
               style={{ backgroundColor: token.colorBgContainer, borderColor: token.colorBorder }}
               styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: '16px' } }}
             >
-              <div className="space-y-3 flex-1 overflow-y-auto">
+              <div className="space-y-3 flex-1 overflow-y-auto max-h-96">
                 {localPhase.children.map(task => {
                   const taskStatus = getTaskStatus(task);
                   const taskStatusColor = getTaskStatusColor(taskStatus);

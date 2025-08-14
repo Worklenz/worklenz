@@ -95,6 +95,14 @@ export interface UpdatePhaseRequest {
   end_date?: string;
 }
 
+export interface ReorderPhasesRequest {
+  project_id: string;
+  phase_orders: Array<{
+    phase_id: string;
+    sort_index: number;
+  }>;
+}
+
 export const roadmapApi = createApi({
   reducerPath: 'roadmapApi',
   baseQuery: fetchBaseQuery({
@@ -192,6 +200,20 @@ export const roadmapApi = createApi({
         { type: 'GanttTasks', id: 'LIST' },
       ],
     }),
+
+    reorderPhases: builder.mutation<IServerResponse<any>, ReorderPhasesRequest>({
+      query: body => ({
+        url: `${rootUrl}/reorder-phases`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (result, error, { project_id }) => [
+        { type: 'GanttPhases', id: project_id },
+        { type: 'GanttPhases', id: 'LIST' },
+        { type: 'GanttTasks', id: project_id },
+        { type: 'GanttTasks', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -202,6 +224,7 @@ export const {
   useCreatePhaseMutation,
   useCreateTaskMutation,
   useUpdatePhaseMutation,
+  useReorderPhasesMutation,
 } = roadmapApi;
 
 /**

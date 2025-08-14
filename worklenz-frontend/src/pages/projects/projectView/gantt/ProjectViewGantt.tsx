@@ -13,6 +13,7 @@ import { GanttViewMode } from './types/gantt-types';
 import {
   useGetRoadmapTasksQuery,
   useGetProjectPhasesQuery,
+  useReorderPhasesMutation,
   transformToGanttTasks,
   transformToGanttPhases,
 } from './services/roadmap-api.service';
@@ -59,6 +60,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     isLoading: phasesLoading,
     refetch: refetchPhases,
   } = useGetProjectPhasesQuery({ projectId: projectId || '' }, { skip: !projectId });
+
+  const [reorderPhases, { isLoading: isReordering }] = useReorderPhasesMutation();
 
 
   // Transform API data to component format
@@ -255,11 +258,42 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     [refetchTasks, refetchPhases]
   );
 
-  const handlePhaseReorder = useCallback((oldIndex: number, newIndex: number) => {
-    // TODO: Implement phase reordering API call
-    console.log('Reorder phases:', { oldIndex, newIndex });
-    message.info('Phase reordering will be implemented with the backend API');
-  }, []);
+  const handlePhaseReorder = useCallback(async (oldIndex: number, newIndex: number) => {
+    if (!projectId || !phasesResponse?.body) {
+      message.error('Unable to reorder phases: missing project data');
+      return;
+    }
+
+    // Get current phases sorted by sort_index
+    const currentPhases = [...phasesResponse.body].sort((a, b) => a.sort_index - b.sort_index);
+    
+    // Reorder phases array
+    const reorderedPhases = [...currentPhases];
+    const [moved] = reorderedPhases.splice(oldIndex, 1);
+    reorderedPhases.splice(newIndex, 0, moved);
+
+    // Create phase order data with new indices
+    const phase_orders = reorderedPhases.map((phase, index) => ({
+      phase_id: phase.id,
+      sort_index: index + 1, // Start from 1
+    }));
+
+    try {
+      await reorderPhases({
+        project_id: projectId,
+        phase_orders,
+      }).unwrap();
+
+      message.success('Phases reordered successfully');
+      
+      // Refresh data to reflect the changes
+      refetchPhases();
+      refetchTasks();
+    } catch (error: any) {
+      console.error('Failed to reorder phases:', error);
+      message.error(error?.data?.message || 'Failed to reorder phases');
+    }
+  }, [projectId, phasesResponse?.body, reorderPhases, refetchPhases, refetchTasks]);
 
   const handleCreateQuickTask = useCallback(
     (taskName: string, phaseId?: string, startDate?: Date) => {
