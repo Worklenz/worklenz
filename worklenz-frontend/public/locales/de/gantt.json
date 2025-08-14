@@ -1,0 +1,15 @@
+{
+  "task": {
+    "open": "Öffnen",
+    "clickViewPhaseDetails": "Klicken Sie, um Phasendetails anzuzeigen",
+    "clickNavigateTimeline": "Klicken Sie, um zur Aufgabe in der Zeitleiste zu navigieren",
+    "clickTimelineSetDates": "Klicken Sie auf die Zeitleiste, um Daten für diese Aufgabe festzulegen",
+    "clickTimelineAddDates": "Zeitleiste klicken, um Daten hinzuzufügen",
+    "resizeStartDate": "Startdatum ändern",
+    "resizeEndDate": "Enddatum ändern",
+    "dragToMove": "Ziehen, um Aufgabe zu verschieben",
+    "addTaskFor": "Aufgabe hinzufügen für {{date}}",
+    "enterTaskName": "Aufgabenname eingeben...",
+    "pressEnterToCreate": "Enter zum Erstellen • Esc zum Abbrechen"
+  }
+}
