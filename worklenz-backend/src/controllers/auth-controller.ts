@@ -114,8 +114,11 @@ export default class AuthController extends WorklenzControllerBase {
   public static async reset_password(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     const {email} = req.body;
 
-    const q = `SELECT id, email, google_id, password FROM users WHERE email = $1;`;
-    const result = await db.query(q, [email || null]);
+    // Normalize email to lowercase for case-insensitive comparison
+    const normalizedEmail = email ? email.toLowerCase().trim() : null;
+
+    const q = `SELECT id, email, google_id, password FROM users WHERE LOWER(email) = $1;`;
+    const result = await db.query(q, [normalizedEmail]);
 
     if (!result.rowCount)
       return res.status(200).send(new ServerResponse(false, null, "Account does not exists!"));
@@ -297,15 +300,16 @@ export default class AuthController extends WorklenzControllerBase {
       }
 
       // Check for existing local account
-      const localAccountResult = await db.query("SELECT 1 FROM users WHERE email = $1 AND password IS NOT NULL AND is_deleted IS FALSE;", [profile.email]);
+      const normalizedProfileEmail = profile.email.toLowerCase().trim();
+      const localAccountResult = await db.query("SELECT 1 FROM users WHERE LOWER(email) = $1 AND password IS NOT NULL AND is_deleted IS FALSE;", [normalizedProfileEmail]);
       if (localAccountResult.rowCount) {
         return res.status(400).send(new ServerResponse(false, null, `No Google account exists for email ${profile.email}.`));
       }
 
       // Check if user exists
       const userResult = await db.query(
-        "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR email = $2;",
-        [profile.sub, profile.email]
+        "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR LOWER(email) = $2;",
+        [profile.sub, normalizedProfileEmail]
       );
 
       let user: any;
@@ -317,7 +321,7 @@ export default class AuthController extends WorklenzControllerBase {
         const googleUserData = {
           id: profile.sub,
           displayName: profile.name,
-          email: profile.email,
+          email: normalizedProfileEmail,
           picture: profile.picture
         };
 

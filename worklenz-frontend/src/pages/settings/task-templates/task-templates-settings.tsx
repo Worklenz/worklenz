@@ -11,6 +11,8 @@ import { ITaskTemplatesGetResponse } from '@/types/settings/task-templates.types
 import logger from '@/utils/errorLogger';
 import { taskTemplatesApiService } from '@/api/task-templates/task-templates.api.service';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_task_templates_visit } from '@/shared/worklenz-analytics-events';
 
 const TaskTemplatesSettings = () => {
   const { t } = useTranslation('settings/task-templates');
@@ -20,6 +22,7 @@ const TaskTemplatesSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
+  const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle('Task Templates');
 
   const fetchTaskTemplates = async () => {
@@ -35,8 +38,9 @@ const TaskTemplatesSettings = () => {
   };
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_task_templates_visit);
     fetchTaskTemplates();
-  }, []);
+  }, [trackMixpanelEvent]);
 
   const handleDeleteTemplate = async (id: string) => {
     try {

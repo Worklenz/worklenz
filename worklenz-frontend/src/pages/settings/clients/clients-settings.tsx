@@ -31,11 +31,14 @@ import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import ClientDrawer from './client-drawer';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_clients_visit } from '@/shared/worklenz-analytics-events';
 
 const ClientsSettings: React.FC = () => {
   const { t } = useTranslation('settings/clients');
   const { clients } = useAppSelector(state => state.clientReducer);
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle('Manage Clients');
 
@@ -61,6 +64,10 @@ const ClientsSettings: React.FC = () => {
       dispatch(fetchClients(params));
     };
   }, [pagination, searchQuery, dispatch]);
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_settings_clients_visit);
+  }, [trackMixpanelEvent]);
 
   useEffect(() => {
     getClients();

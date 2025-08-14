@@ -19,6 +19,8 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_project_task_create } from '@/shared/worklenz-analytics-events';
 import './CreateTaskModal.css';
 
 const { Title, Text } = Typography;
@@ -351,6 +353,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState('task-info');
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
   
   // Redux state
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
@@ -381,6 +384,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         reporter_id: user.id,
       };
 
+      // Track analytics event
+      trackMixpanelEvent(evt_project_task_create);
+      
       // Create task via socket
       socket.emit(SocketEvents.QUICK_TASK.toString(), taskData);
       

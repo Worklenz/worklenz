@@ -1,11 +1,20 @@
-import { Modal, Button, Typography, Space, Card, Tag } from '@/shared/antd-imports';
+import { Modal, Button, Typography, Space, Card, Tag, Dropdown, Flex, Divider } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { ClockCircleOutlined, CrownOutlined, CustomerServiceOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, CrownOutlined, CustomerServiceOutlined, BankOutlined, CaretDownFilled, CheckCircleFilled } from '@ant-design/icons';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { supportApiService } from '@/api/support/support.api.service';
 import { useAuthService } from '@/hooks/useAuth';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { fetchTeams, setActiveTeam } from '@/features/teams/teamSlice';
+import { verifyAuthentication } from '@/features/auth/authSlice';
+import { setUser } from '@/features/user/userSlice';
+import CustomAvatar from '@/components/CustomAvatar';
+import { colors } from '@/styles/colors';
+import { createAuthService } from '@/services/auth/auth.service';
+import './LicenseExpiredModal.css';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -16,43 +25,105 @@ interface LicenseExpiredModalProps {
 
 export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYPE.TRIAL }: LicenseExpiredModalProps) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { t } = useTranslation('common');
   const authService = useAuthService();
+  const authServiceInstance = createAuthService(navigate);
   const [visible, setVisible] = useState(open);
   const [isContactingSupport, setIsContactingSupport] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
+  
+  // Team switching state
+  const teamsList = useAppSelector(state => state.teamReducer.teamsList);
+  const session = authService?.getCurrentSession();
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   useEffect(() => {
     setVisible(open);
-    // Prevent scrolling when modal is open and add custom backdrop
+    // Fetch teams when modal opens
     if (open) {
+      dispatch(fetchTeams());
       document.body.style.overflow = 'hidden';
-      
-      // Create custom backdrop that excludes navbar
-      const backdrop = document.createElement('div');
-      backdrop.id = 'license-modal-backdrop';
-      backdrop.style.cssText = `
-        position: fixed;
-        top: 64px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.85);
-        backdrop-filter: blur(4px);
-        z-index: 999;
-        pointer-events: none;
-      `;
-      document.body.appendChild(backdrop);
     }
     
     return () => {
       document.body.style.overflow = 'unset';
-      const backdrop = document.getElementById('license-modal-backdrop');
-      if (backdrop) {
-        document.body.removeChild(backdrop);
-      }
     };
-  }, [open]);
+  }, [open, dispatch]);
+
+  const isActiveTeam = (teamId: string): boolean => {
+    if (!teamId || !session?.team_id) return false;
+    return teamId === session.team_id;
+  };
+
+  const handleVerifyAuth = async () => {
+    const result = await dispatch(verifyAuthentication()).unwrap();
+    if (result.authenticated) {
+      dispatch(setUser(result.user));
+      authServiceInstance.setCurrentSession(result.user);
+    }
+  };
+
+  const handleTeamSelect = async (id: string) => {
+    if (!id) return;
+
+    await dispatch(setActiveTeam(id));
+    await handleVerifyAuth();
+    window.location.reload();
+  };
+
+  const renderTeamCard = (team: any, index: number) => (
+    <Card
+      className="switch-team-card"
+      onClick={() => handleTeamSelect(team.id)}
+      bordered={false}
+      style={{ 
+        width: '100%', 
+        cursor: 'pointer',
+        backgroundColor: themeMode === 'dark' ? '#262626' : '#fff',
+        color: themeMode === 'dark' ? '#fff' : '#000'
+      }}
+    >
+      <Flex vertical>
+        <Flex gap={12} align="center" justify="space-between" style={{ padding: '4px 12px' }}>
+          <Flex gap={8} align="center">
+            <CustomAvatar avatarName={team.name || ''} />
+            <Flex vertical>
+              <Typography.Text style={{ 
+                fontSize: 11, 
+                fontWeight: 300,
+                color: themeMode === 'dark' ? '#8c8c8c' : '#8c8c8c'
+              }}>
+                {t('owned-by')} {team.owns_by}
+              </Typography.Text>
+              <Typography.Text style={{
+                color: themeMode === 'dark' ? '#fff' : '#000'
+              }}>
+                {team.name}
+              </Typography.Text>
+            </Flex>
+          </Flex>
+          <CheckCircleFilled
+            style={{
+              fontSize: 16,
+              color: isActiveTeam(team.id) ? colors.limeGreen : (themeMode === 'dark' ? '#434343' : colors.lightGray),
+            }}
+          />
+        </Flex>
+        {index < teamsList.length - 1 && <Divider style={{ 
+          margin: 0,
+          borderColor: themeMode === 'dark' ? '#303030' : '#f0f0f0'
+        }} />}
+      </Flex>
+    </Card>
+  );
+
+  const dropdownItems =
+    teamsList?.map((team, index) => ({
+      key: team.id || '',
+      label: renderTeamCard(team, index),
+      type: 'item' as const,
+    })) || [];
 
   const handleUpgrade = async () => {
     if (subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM) {
@@ -149,17 +220,22 @@ export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYP
       closable={false}
       footer={null}
       centered
-      width={600}
+      width={650}
       maskClosable={false}
       keyboard={false}
-      mask={false}
+      mask={true}
+      maskStyle={{
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(4px)'
+      }}
       style={{ 
-        zIndex: 1000
+        zIndex: 1050
       }}
       wrapClassName="license-expired-modal-wrap"
     >
       <div style={{ padding: '20px 0' }}>
         <Space direction="vertical" size="large" style={{ width: '100%', textAlign: 'center' }}>
+
           {/* Icon and Title */}
           <div>
             <ClockCircleOutlined style={{ fontSize: 64, color: '#1890ff', marginBottom: 16 }} />
@@ -224,6 +300,104 @@ export const LicenseExpiredModal = ({ open, subscriptionType = ISUBSCRIPTION_TYP
               : getUpgradeText()
             }
           </Button>
+
+          {/* Team Switcher - Show below upgrade button if multiple teams exist */}
+          {teamsList && teamsList.length > 1 && (
+            <>
+              <div style={{ 
+                margin: '24px 0 16px', 
+                textAlign: 'center',
+                position: 'relative'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: 0,
+                  right: 0,
+                  height: 1,
+                  backgroundColor: themeMode === 'dark' ? '#434343' : '#e8e8e8',
+                  transform: 'translateY(-50%)'
+                }} />
+                <Text 
+                  type="secondary" 
+                  style={{ 
+                    backgroundColor: themeMode === 'dark' ? '#141414' : '#fff',
+                    padding: '0 16px',
+                    fontSize: 14,
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                >
+                  {t('or')}
+                </Text>
+              </div>
+              <Card
+                style={{
+                  backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#f8f9fa',
+                  border: `1px solid ${themeMode === 'dark' ? '#303030' : '#e9ecef'}`,
+                  borderRadius: 8
+                }}
+                bodyStyle={{ padding: '16px' }}
+              >
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Text strong style={{ 
+                    fontSize: 14, 
+                    color: themeMode === 'dark' ? '#fff' : '#1890ff',
+                    textAlign: 'center',
+                    display: 'block'
+                  }}>
+                    {t('switch-team-to-continue')}
+                  </Text>
+                  <Dropdown
+                    overlayClassName="switch-team-dropdown"
+                    menu={{ items: dropdownItems }}
+                    trigger={['click']}
+                    placement="bottom"
+                    overlayStyle={{ zIndex: 1060 }}
+                  >
+                    <Button
+                      size="middle"
+                      style={{
+                        width: '100%',
+                        height: 36,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0 16px',
+                        border: `1px solid ${themeMode === 'dark' ? '#434343' : '#d9d9d9'}`,
+                        backgroundColor: themeMode === 'dark' ? '#262626' : 'white',
+                        color: themeMode === 'dark' ? '#fff' : '#000'
+                      }}
+                    >
+                      <Flex gap={12} align="center">
+                        <BankOutlined style={{ 
+                          fontSize: 16, 
+                          color: themeMode === 'dark' ? '#1890ff' : '#1890ff' 
+                        }} />
+                        <Typography.Text strong style={{ 
+                          fontSize: 14,
+                          color: themeMode === 'dark' ? '#fff' : '#000'
+                        }}>
+                          {t('current-team')}: {session?.team_name || t('select-team')}
+                        </Typography.Text>
+                      </Flex>
+                      <CaretDownFilled style={{ 
+                        color: themeMode === 'dark' ? '#8c8c8c' : '#8c8c8c' 
+                      }} />
+                    </Button>
+                  </Dropdown>
+                  <Text type="secondary" style={{ 
+                    fontSize: 12, 
+                    textAlign: 'center', 
+                    display: 'block',
+                    color: themeMode === 'dark' ? '#8c8c8c' : '#8c8c8c'
+                  }}>
+                    {t('switch-team-active-subscription')}
+                  </Text>
+                </Space>
+              </Card>
+            </>
+          )}
 
           {/* Note */}
           <Text type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
