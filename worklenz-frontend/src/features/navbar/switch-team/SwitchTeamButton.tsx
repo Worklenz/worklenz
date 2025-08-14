@@ -18,6 +18,8 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_common_switch_team } from '@/shared/worklenz-analytics-events';
 
 // Components
 import CustomAvatar from '@/components/CustomAvatar';
@@ -34,6 +36,7 @@ const SwitchTeamButton = () => {
   const { getCurrentSession } = useAuthService();
   const session = getCurrentSession();
   const { t } = useTranslation('navbar');
+  const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
 
   // Selectors
   const teamsList = useAppSelector(state => state.teamReducer.teamsList);
@@ -53,12 +56,14 @@ const SwitchTeamButton = () => {
     if (result.authenticated) {
       dispatch(setUser(result.user));
       authService.setCurrentSession(result.user);
+      setIdentity(result.user);
     }
   };
 
   const handleTeamSelect = async (id: string) => {
     if (!id) return;
 
+    trackMixpanelEvent(evt_common_switch_team);
     await dispatch(setActiveTeam(id));
     await handleVerifyAuth();
     window.location.reload();

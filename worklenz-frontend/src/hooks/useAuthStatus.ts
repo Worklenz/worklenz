@@ -30,7 +30,6 @@ export const useAuthStatus = () => {
         // Check using valid_till_date for subscription types that can expire
         const expirableTypes = [
           ISUBSCRIPTION_TYPE.TRIAL,
-          ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL,
           ISUBSCRIPTION_TYPE.PADDLE,
           ISUBSCRIPTION_TYPE.CUSTOM
         ];
