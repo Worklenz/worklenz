@@ -214,42 +214,46 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
         </Flex>
       </Form.Item>
 
-      <Form.Item name="dueDate" style={{ width: '100%', maxWidth: 200 }}>
-        {isDueDateFieldShowing && !calendarView && (
-          <Select
-            suffixIcon={null}
-            options={dueDateOptions}
-            defaultOpen
-            onSelect={() => {
-              setIsProjectFieldShowing(true);
-            }}
-            onChange={() => {
-              setIsProjectFieldShowing(true);
-            }}
-          />
-        )}
-        {calendarView && (
-          <DatePicker
-            disabled
-            value={homeTasksConfig.selected_date || dayjs()}
-            onChange={() => {
-              setIsProjectFieldShowing(true);
-            }}
-          />
-        )}
-      </Form.Item>
+      {(isDueDateFieldShowing && !calendarView) || calendarView ? (
+        <Form.Item name="dueDate" style={{ width: '100%', maxWidth: 200 }}>
+          {isDueDateFieldShowing && !calendarView && (
+            <Select
+              suffixIcon={null}
+              options={dueDateOptions}
+              defaultOpen
+              onSelect={() => {
+                setIsProjectFieldShowing(true);
+              }}
+              onChange={() => {
+                setIsProjectFieldShowing(true);
+              }}
+            />
+          )}
+          {calendarView && (
+            <DatePicker
+              disabled
+              value={homeTasksConfig.selected_date || dayjs()}
+              onChange={() => {
+                setIsProjectFieldShowing(true);
+              }}
+            />
+          )}
+        </Form.Item>
+      ) : (
+        <Form.Item style={{ width: '100%', maxWidth: 200 }} />
+      )}
 
-      <Form.Item
-        name="project"
-        style={{ width: '100%', maxWidth: 200 }}
-        rules={[
-          {
-            required: true,
-            message: t('home:tasks.projectRequired'),
-          },
-        ]}
-      >
-        {isProjectFieldShowing && (
+      {isProjectFieldShowing ? (
+        <Form.Item
+          name="project"
+          style={{ width: '100%', maxWidth: 200 }}
+          rules={[
+            {
+              required: true,
+              message: t('home:tasks.projectRequired'),
+            },
+          ]}
+        >
           <Select
             suffixIcon={null}
             placeholder={'Project'}
@@ -272,8 +276,10 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
               }
             }}
           />
-        )}
-      </Form.Item>
+        </Form.Item>
+      ) : (
+        <Form.Item style={{ width: '100%', maxWidth: 200 }} />
+      )}
     </Form>
   );
 };

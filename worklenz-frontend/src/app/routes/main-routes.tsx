@@ -8,7 +8,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
 // Lazy load page components for better code splitting
-const HomePage = lazy(() => import('@/pages/home/home-page'));
+const HomePage = lazy(() => import('@/pages/home/HomePage'));
 const ProjectList = lazy(() => import('@/pages/projects/project-list'));
 const Schedule = lazy(() => import('@/pages/schedule/schedule'));
 

@@ -2,7 +2,7 @@ import HomeCalendar from '../../../components/calendars/homeCalendar/HomeCalenda
 import { Tag, Typography } from '@/shared/antd-imports';
 import { ClockCircleOutlined } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import AddTaskInlineForm from './add-task-inline-form';
+import AddTaskInlineForm from './AddTaskInlineForm';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import { setHomeTasksConfig } from '@/features/home-page/home-page.slice';

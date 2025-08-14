@@ -95,7 +95,11 @@ const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps)
           variant="borderless"
           value={task.status_id}
           onChange={handleStatusChange}
-          dropdownStyle={{ borderRadius: 8, minWidth: 150, maxWidth: 200 }}
+          styles={{
+            popup: {
+              root: { borderRadius: 8, minWidth: 150, maxWidth: 200 }
+            }
+          }}
           style={{
             backgroundColor: selectedStatus?.color_code + ALPHA_CHANNEL,
             borderRadius: 16,

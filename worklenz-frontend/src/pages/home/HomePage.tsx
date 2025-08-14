@@ -5,8 +5,8 @@ import Flex from 'antd/es/flex';
 import Row from 'antd/es/row';
 import Card from 'antd/es/card';
 
-import GreetingWithTime from './greeting-with-time';
-import TasksList from '@/pages/home/task-list/tasks-list';
+import GreetingWithTime from './GreetingWithTime';
+import TasksList from '@/pages/home/task-list/TasksList';
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
 import RecentAndFavouriteProjectList from '@/pages/home/recent-and-favourite-project-list/recent-and-favourite-project-list';
