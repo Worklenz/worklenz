@@ -19,10 +19,13 @@ import { categoriesApiService } from '@/api/settings/categories/categories.api.s
 import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_categories_visit } from '@/shared/worklenz-analytics-events';
 
 const CategoriesSettings = () => {
   // localization
   const { t } = useTranslation('settings/categories');
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle('Manage Categories');
 
@@ -54,6 +57,10 @@ const CategoriesSettings = () => {
       setLoading(false);
     };
   }, []);
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_settings_categories_visit);
+  }, [trackMixpanelEvent]);
 
   useEffect(() => {
     getCategories();

@@ -22,6 +22,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
 import TimerButton from './timers/TimerButton';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const Navbar = () => {
   const [current, setCurrent] = useState<string>('home');
@@ -32,6 +33,7 @@ const Navbar = () => {
   const { isDesktop, isMobile, isTablet } = useResponsive();
   const { t } = useTranslation('navbar');
   const authService = useAuthService();
+  const { setIdentity } = useMixpanelTracking();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState<boolean>(authService.isOwnerOrAdmin());
   const showUpgradeTypes = [
@@ -44,6 +46,7 @@ const Navbar = () => {
       .then(authorizeResponse => {
         if (authorizeResponse.authenticated) {
           authService.setCurrentSession(authorizeResponse.user);
+          setIdentity(authorizeResponse.user);
           setIsOwnerOrAdmin(!!(authorizeResponse.user.is_admin || authorizeResponse.user.owner));
         }
       })

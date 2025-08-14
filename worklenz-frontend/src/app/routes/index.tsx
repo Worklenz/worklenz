@@ -74,21 +74,15 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   const currentSession = authService?.getCurrentSession();
   const subscriptionType = currentSession?.subscription_type as ISUBSCRIPTION_TYPE;
 
-  // If license is expired and not on admin center, block the content entirely
+  // If license is expired and not on admin center, show modal overlay
   if (showModal) {
     return (
-      <div style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
-        <div style={{ 
-          position: 'absolute', 
-          inset: 0, 
-          pointerEvents: 'none', 
-          opacity: 0.3,
-          filter: 'blur(2px)'
-        }}>
-          {children}
-        </div>
+      <>
+        {/* Render children normally */}
+        {children}
+        {/* Show modal as an overlay */}
         <LicenseExpiredModal open={true} subscriptionType={subscriptionType} />
-      </div>
+      </>
     );
   }
 

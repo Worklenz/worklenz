@@ -1,0 +1,36 @@
+.license-expired-modal-wrap .ant-modal-wrap {
+  z-index: 1050 !important;
+}
+
+.license-expired-modal-wrap .ant-modal-mask {
+  z-index: 1049 !important;
+}
+
+/* Ensure dropdowns in the modal appear above the modal */
+.switch-team-dropdown {
+  z-index: 1060 !important;
+}
+
+/* Theme-aware dropdown styling */
+.switch-team-dropdown .ant-dropdown-menu {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .switch-team-dropdown .ant-dropdown-menu {
+  background-color: #262626;
+  border: 1px solid #434343;
+}
+
+[data-theme="dark"] .switch-team-dropdown .ant-dropdown-menu-item {
+  color: #fff;
+}
+
+[data-theme="dark"] .switch-team-dropdown .ant-dropdown-menu-item:hover {
+  background-color: #303030;
+}
+
+/* Ensure the modal content is properly styled */
+.license-expired-modal-wrap .ant-modal-content {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}

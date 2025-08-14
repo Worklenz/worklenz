@@ -215,7 +215,7 @@ const SignupPage = () => {
 
       const body = {
         name: values.name,
-        email: values.email,
+        email: values.email.toLowerCase().trim(),
         password: values.password,
       };
 

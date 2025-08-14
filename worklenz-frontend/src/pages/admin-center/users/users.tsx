@@ -11,9 +11,12 @@ import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_admin_center_users_visit } from '@/shared/worklenz-analytics-events';
 
 const Users: React.FC = () => {
   const { t } = useTranslation('admin-center/users');
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState<IOrganizationUser[]>([]);
@@ -72,6 +75,10 @@ const Users: React.FC = () => {
       render: text => <span>{formatDateTimeWithLocale(text) || '-'}</span>,
     },
   ];
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_admin_center_users_visit);
+  }, [trackMixpanelEvent]);
 
   useEffect(() => {
     fetchUsers();

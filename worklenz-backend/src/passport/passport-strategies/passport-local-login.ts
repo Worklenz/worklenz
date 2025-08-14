@@ -16,12 +16,15 @@ async function handleLogin(req: Request, email: string, password: string, done: 
   }
 
   try {
+    // Normalize email to lowercase for case-insensitive comparison
+    const normalizedEmail = email.toLowerCase().trim();
+    
     const q = `SELECT id, email, google_id, password
                FROM users
-               WHERE email = $1
+               WHERE LOWER(email) = $1
                  AND google_id IS NULL
                  AND is_deleted IS FALSE;`;
-    const result = await db.query(q, [email]);
+    const result = await db.query(q, [normalizedEmail]);
     
     const [data] = result.rows;
 
@@ -33,7 +36,7 @@ async function handleLogin(req: Request, email: string, password: string, done: 
 
     const passwordMatch = bcrypt.compareSync(password, data.password);
     
-    if (passwordMatch && email === data.email) {
+    if (passwordMatch) {
       delete data.password;
       const successMsg = "User successfully logged in";
       req.flash(SUCCESS_KEY, successMsg);

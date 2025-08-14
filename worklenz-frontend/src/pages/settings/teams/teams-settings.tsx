@@ -11,9 +11,12 @@ import { fetchTeams } from '@features/teams/teamSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { ITeamGetResponse } from '@/types/teams/team.type';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_teams_visit } from '@/shared/worklenz-analytics-events';
 
 const TeamsSettings = () => {
   const { t } = useTranslation('settings/teams');
+  const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('title'));
 
   const [selectedTeam, setSelectedTeam] = useState<ITeamGetResponse | null>(null);
@@ -22,8 +25,9 @@ const TeamsSettings = () => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_teams_visit);
     dispatch(fetchTeams());
-  }, [dispatch]);
+  }, [trackMixpanelEvent, dispatch]);
 
   const columns: TableProps['columns'] = [
     {
