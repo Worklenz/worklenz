@@ -5,6 +5,7 @@ import {
   PlusOutlined,
   HolderOutlined,
   CalendarOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons';
 import { Button, Tooltip, Input, DatePicker, Space, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
@@ -25,6 +26,7 @@ import { useAppDispatch } from '../../../../../../hooks/useAppDispatch';
 import { addTask } from '../../../../../../features/task-management/task-management.slice';
 import { useAuthService } from '../../../../../../hooks/useAuth';
 import { useUpdatePhaseMutation } from '../../services/roadmap-api.service';
+import { useTranslation } from 'react-i18next';
 
 // Utility function to add alpha channel to hex color
 const addAlphaToHex = (hex: string, alpha: number): string => {
@@ -55,6 +57,7 @@ interface GanttTaskListProps {
   expandedTasks?: Set<string>;
   onExpandedTasksChange?: (expanded: Set<string>) => void;
   animatingTasks?: Set<string>;
+  onTaskNameClick?: (task: GanttTask) => void;
 }
 
 interface TaskRowProps {
@@ -71,6 +74,7 @@ interface TaskRowProps {
   activeId?: string | null;
   overId?: string | null;
   animationClass?: string;
+  onTaskNameClick?: (task: GanttTask) => void;
 }
 
 interface SortableTaskRowProps extends TaskRowProps {
@@ -119,7 +123,9 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
     dragAttributes,
     dragListeners,
     animationClass = '',
+    onTaskNameClick,
   }) => {
+    const { t } = useTranslation('gantt');
     const [showInlineInput, setShowInlineInput] = useState(false);
     const [taskName, setTaskName] = useState('');
     const [showDatePickers, setShowDatePickers] = useState(false);
@@ -286,6 +292,20 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
       }
     }, [isPhase, onPhaseClick, task]);
 
+    const handleTaskNameClick = useCallback((e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!isPhase && onTaskNameClick) {
+        onTaskNameClick(task);
+      }
+    }, [isPhase, onTaskNameClick, task]);
+
+    const handleOpenButtonClick = useCallback((e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!isPhase && onTaskClick) {
+        onTaskClick(task.id);
+      }
+    }, [isPhase, onTaskClick, task.id]);
+
     // Handle click outside to close date picker
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -349,13 +369,33 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
 
               <div className="flex items-center gap-2 ml-1 truncate flex-1">
                 {getTaskIcon()}
+                
                 <div className="flex flex-col flex-1">
-                  <span 
-                    className={`truncate ${task.type === 'milestone' ? 'font-semibold cursor-pointer hover:opacity-80' : ''}`}
-                    onClick={isPhase ? handlePhaseClick : undefined}
-                  >
-                    {task.name}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className={`truncate flex-1 ${
+                        task.type === 'milestone' 
+                          ? 'font-semibold cursor-pointer hover:opacity-80' 
+                          : 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors'
+                      }`}
+                      onClick={isPhase ? handlePhaseClick : handleTaskNameClick}
+                      title={isPhase ? t('task.clickViewPhaseDetails', 'Click to view phase details') : t('task.clickNavigateTimeline', 'Click to navigate to task in timeline')}
+                    >
+                      {task.name}
+                    </span>
+                    
+                    {/* Open button - only visible on hover for tasks, positioned at the right */}
+                    {!isPhase && (
+                      <Button
+                        type="text"
+                        size="small"
+                        onClick={handleOpenButtonClick}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-xs px-2 py-0 h-auto text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      >
+                        {t('task.open', 'Open')}
+                      </Button>
+                    )}
+                  </div>
                   {isPhase && (
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs" style={{ color: task.color, opacity: 0.8 }}>
@@ -588,6 +628,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
       expandedTasks: expandedTasksProp,
       onExpandedTasksChange,
       animatingTasks: animatingTasksProp,
+      onTaskNameClick,
     },
     ref
   ) => {
@@ -888,6 +929,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                       onCreateQuickTask={onCreateQuickTask}
                       activeId={activeId}
                       overId={overId}
+                      onTaskNameClick={onTaskNameClick}
                     />
                   );
                 } else if (isUnmappedPhase) {
@@ -906,6 +948,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                       isDraggable={false}
                       activeId={activeId}
                       overId={overId}
+                      onTaskNameClick={onTaskNameClick}
                     />
                   );
                 } else {
@@ -930,6 +973,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
                       activeId={activeId}
                       overId={overId}
                       animationClass={animationClass}
+                      onTaskNameClick={onTaskNameClick}
                     />
                   );
                 }

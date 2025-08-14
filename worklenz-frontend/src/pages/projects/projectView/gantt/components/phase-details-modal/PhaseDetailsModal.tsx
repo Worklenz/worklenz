@@ -1,6 +1,29 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, Typography, Divider, Progress, Tag, Row, Col, Card, Statistic, theme, Tooltip, Input, DatePicker, ColorPicker, message } from 'antd';
-import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, BgColorsOutlined, MinusOutlined, PauseOutlined, DoubleRightOutlined, UserOutlined } from '@ant-design/icons';
+import {
+  Modal,
+  Typography,
+  Divider,
+  Progress,
+  Tag,
+  Row,
+  Col,
+  Card,
+  Statistic,
+  theme,
+  Tooltip,
+  Input,
+  DatePicker,
+  ColorPicker,
+  message,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  BgColorsOutlined,
+  MinusOutlined,
+  PauseOutlined,
+  DoubleRightOutlined,
+  UserOutlined,
+} from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
@@ -17,7 +40,12 @@ interface PhaseDetailsModalProps {
   onPhaseUpdate?: (phase: Partial<GanttTask>) => void;
 }
 
-const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, phase, onPhaseUpdate }) => {
+const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
+  open,
+  onClose,
+  phase,
+  onPhaseUpdate,
+}) => {
   const { projectId } = useParams<{ projectId: string }>();
   const { t } = useTranslation('roadmap/phase-details-modal');
   const { token } = theme.useToken();
@@ -28,10 +56,18 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
   // Inline editing state
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editedValues, setEditedValues] = useState<Partial<GanttTask>>({});
+  
+  // Local phase state for immediate UI updates
+  const [localPhase, setLocalPhase] = useState<GanttTask | null>(phase);
+
+  // Update local phase when prop changes
+  React.useEffect(() => {
+    setLocalPhase(phase);
+  }, [phase]);
 
   // Calculate phase statistics
   const phaseStats = useMemo(() => {
-    if (!phase || !phase.children) {
+    if (!localPhase || !localPhase.children) {
       return {
         totalTasks: 0,
         completedTasks: 0,
@@ -41,19 +77,18 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
       };
     }
 
-    const totalTasks = phase.children.length;
-    const completedTasks = phase.children.filter(task => task.progress === 100).length;
+    const totalTasks = localPhase.children.length;
+    const completedTasks = localPhase.children.filter(task => task.progress === 100).length;
     const pendingTasks = totalTasks - completedTasks;
-    
+
     // Calculate overdue tasks (tasks with end_date in the past and progress < 100)
     const now = new Date();
-    const overdueTasks = phase.children.filter(task => 
-      task.end_date && 
-      new Date(task.end_date) < now && 
-      task.progress < 100
+    const overdueTasks = localPhase.children.filter(
+      task => task.end_date && new Date(task.end_date) < now && task.progress < 100
     ).length;
 
-    const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const completionPercentage =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     return {
       totalTasks,
@@ -62,7 +97,7 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
       overdueTasks,
       completionPercentage,
     };
-  }, [phase]);
+  }, [localPhase]);
 
   const formatDate = (date: Date | null) => {
     if (!date) return t('timeline.notSet');
@@ -70,12 +105,12 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
   };
 
   const getDateStatus = () => {
-    if (!phase?.start_date || !phase?.end_date) return 'not-set';
-    
+    if (!localPhase?.start_date || !localPhase?.end_date) return 'not-set';
+
     const now = new Date();
-    const startDate = new Date(phase.start_date);
-    const endDate = new Date(phase.end_date);
-    
+    const startDate = new Date(localPhase.start_date);
+    const endDate = new Date(localPhase.end_date);
+
     if (now < startDate) return 'upcoming';
     if (now > endDate) return 'overdue';
     return 'active';
@@ -84,47 +119,66 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
   const getDateStatusColor = () => {
     const status = getDateStatus();
     switch (status) {
-      case 'upcoming': return '#1890ff';
-      case 'active': return '#52c41a';
-      case 'overdue': return '#ff4d4f';
-      default: return '#8c8c8c';
+      case 'upcoming':
+        return '#1890ff';
+      case 'active':
+        return '#52c41a';
+      case 'overdue':
+        return '#ff4d4f';
+      default:
+        return '#8c8c8c';
     }
   };
 
   const getDateStatusText = () => {
     const status = getDateStatus();
     switch (status) {
-      case 'upcoming': return t('timeline.statusLabels.upcoming');
-      case 'active': return t('timeline.statusLabels.active');
-      case 'overdue': return t('timeline.statusLabels.overdue');
-      default: return t('timeline.statusLabels.notScheduled');
+      case 'upcoming':
+        return t('timeline.statusLabels.upcoming');
+      case 'active':
+        return t('timeline.statusLabels.active');
+      case 'overdue':
+        return t('timeline.statusLabels.overdue');
+      default:
+        return t('timeline.statusLabels.notScheduled');
     }
   };
 
   const getTaskStatus = (task: GanttTask) => {
     if (task.progress === 100) return 'completed';
-    if (task.end_date && new Date(task.end_date) < new Date() && task.progress < 100) return 'overdue';
+    if (task.end_date && new Date(task.end_date) < new Date() && task.progress < 100)
+      return 'overdue';
     if (task.start_date && new Date(task.start_date) > new Date()) return 'upcoming';
     return 'in-progress';
   };
 
   const getTaskStatusText = (status: string) => {
     switch (status) {
-      case 'completed': return 'Completed';
-      case 'overdue': return 'Overdue';
-      case 'upcoming': return 'Upcoming';
-      case 'in-progress': return 'In Progress';
-      default: return 'Not Started';
+      case 'completed':
+        return 'Completed';
+      case 'overdue':
+        return 'Overdue';
+      case 'upcoming':
+        return 'Upcoming';
+      case 'in-progress':
+        return 'In Progress';
+      default:
+        return 'Not Started';
     }
   };
 
   const getTaskStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return token.colorSuccess;
-      case 'overdue': return token.colorError;
-      case 'upcoming': return token.colorPrimary;
-      case 'in-progress': return token.colorWarning;
-      default: return token.colorTextTertiary;
+      case 'completed':
+        return token.colorSuccess;
+      case 'overdue':
+        return token.colorError;
+      case 'upcoming':
+        return token.colorPrimary;
+      case 'in-progress':
+        return token.colorWarning;
+      default:
+        return token.colorTextTertiary;
     }
   };
 
@@ -145,16 +199,20 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
   const getPriorityColor = (priority: string) => {
     const priorityLower = priority?.toLowerCase();
     switch (priorityLower) {
-      case 'low': return '#52c41a';
-      case 'medium': return '#faad14';
-      case 'high': return '#ff4d4f';
-      default: return token.colorTextTertiary;
+      case 'low':
+        return '#52c41a';
+      case 'medium':
+        return '#faad14';
+      case 'high':
+        return '#ff4d4f';
+      default:
+        return token.colorTextTertiary;
     }
   };
 
   const convertAssigneesToMembers = (assignees: string[] | undefined) => {
     if (!assignees || assignees.length === 0) return [];
-    
+
     return assignees.map((assignee, index) => ({
       id: `assignee-${index}`,
       name: assignee,
@@ -163,18 +221,23 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
   };
 
   const handleFieldSave = async (field: string, value: any) => {
-    if (!phase || !projectId) {
+    if (!localPhase || !projectId) {
       message.error('Phase or project information is missing');
       return;
     }
 
-    // Get the actual phase_id from the phase object
-    const phaseId = phase.phase_id || (phase.id.startsWith('phase-') ? phase.id.replace('phase-', '') : phase.id);
-    
+    // Get the actual phase_id from the localPhase object
+    const phaseId =
+      localPhase.phase_id || (localPhase.id.startsWith('phase-') ? localPhase.id.replace('phase-', '') : localPhase.id);
+
     if (!phaseId || phaseId === 'unmapped') {
       message.error('Cannot edit unmapped phase');
       return;
     }
+
+    // Update local state immediately for better UX
+    const updatedPhase = { ...localPhase, [field]: value };
+    setLocalPhase(updatedPhase);
 
     try {
       // Prepare API request based on field
@@ -196,14 +259,14 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
 
       // Call the API
       await updatePhase(updateData).unwrap();
-      
+
       // Show success message
       message.success(`Phase ${field.replace('_', ' ')} updated successfully`);
 
-      // Call the parent handler to refresh data
+      // Call the parent handler to refresh data in Gantt chart
       if (onPhaseUpdate) {
         onPhaseUpdate({
-          id: phase.id,
+          id: localPhase.id,
           [field]: value,
         });
       }
@@ -211,11 +274,13 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
       // Clear editing state
       setEditingField(null);
       setEditedValues({});
-      
     } catch (error: any) {
       console.error('Failed to update phase:', error);
       message.error(error?.data?.message || `Failed to update phase ${field.replace('_', ' ')}`);
       
+      // Revert the local state on error
+      setLocalPhase(phase);
+
       // Don't clear editing state on error so user can try again
     }
   };
@@ -230,39 +295,39 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
     setEditedValues({ [field]: currentValue });
   };
 
-  if (!phase) return null;
+  if (!localPhase) return null;
 
   return (
     <Modal
       title={
         <div className="flex items-center gap-3">
           <ColorPicker
-            value={phase.color || token.colorPrimary}
-            onChange={(color) => handleFieldSave('color', color.toHexString())}
+            value={localPhase.color || token.colorPrimary}
+            onChangeComplete={color => handleFieldSave('color', color.toHexString())}
             size="small"
             showText={false}
             trigger="click"
           />
           {editingField === 'name' ? (
             <Input
-              value={editedValues.name || phase.name}
-              onChange={(e) => setEditedValues(prev => ({ ...prev, name: e.target.value }))}
+              value={editedValues.name || localPhase.name}
+              onChange={e => setEditedValues(prev => ({ ...prev, name: e.target.value }))}
               onPressEnter={() => handleFieldSave('name', editedValues.name)}
               onBlur={() => handleFieldSave('name', editedValues.name)}
-              onKeyDown={(e) => e.key === 'Escape' && handleFieldCancel()}
+              onKeyDown={e => e.key === 'Escape' && handleFieldCancel()}
               className="font-semibold text-lg"
               style={{ border: 'none', padding: 0, background: 'transparent' }}
               autoFocus
             />
           ) : (
-            <Title 
-              level={4} 
-              className="!mb-0 cursor-pointer hover:opacity-70" 
+            <Title
+              level={4}
+              className="!mb-0 cursor-pointer hover:opacity-70"
               style={{ color: token.colorText }}
-              onClick={() => startEditing('name', phase.name)}
+              onClick={() => startEditing('name', localPhase.name)}
               title="Click to edit"
             >
-              {phase.name}
+              {localPhase.name}
             </Title>
           )}
         </div>
@@ -279,8 +344,8 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
         {/* Left Side - Phase Overview and Stats */}
         <div className="flex-1 space-y-6">
           {/* Phase Overview */}
-          <Card 
-            size="small" 
+          <Card
+            size="small"
             className="shadow-sm"
             style={{ backgroundColor: token.colorBgContainer, borderColor: token.colorBorder }}
           >
@@ -307,8 +372,8 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
             <Progress
               percent={phaseStats.completionPercentage}
               strokeColor={{
-                '0%': phase.color || token.colorPrimary,
-                '100%': phase.color || token.colorPrimary,
+                '0%': localPhase.color || token.colorPrimary,
+                '100%': localPhase.color || token.colorPrimary,
               }}
               trailColor={token.colorBgLayout}
               className="mb-2"
@@ -316,12 +381,14 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
           </Card>
 
           {/* Date Information */}
-          <Card 
-            size="small" 
+          <Card
+            size="small"
             title={
               <div className="flex items-center gap-2">
                 <CalendarOutlined style={{ color: token.colorPrimary }} />
-                <Text strong style={{ color: token.colorText }}>{t('timeline.title')}</Text>
+                <Text strong style={{ color: token.colorText }}>
+                  {t('timeline.title')}
+                </Text>
               </div>
             }
             className="shadow-sm"
@@ -333,8 +400,14 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
                 <br />
                 {editingField === 'start_date' ? (
                   <DatePicker
-                    value={editedValues.start_date ? dayjs(editedValues.start_date) : (phase.start_date ? dayjs(phase.start_date) : null)}
-                    onChange={(date) => {
+                    value={
+                      editedValues.start_date
+                        ? dayjs(editedValues.start_date)
+                        : localPhase.start_date
+                          ? dayjs(localPhase.start_date)
+                          : null
+                    }
+                    onChange={date => {
                       const newDate = date?.toDate() || null;
                       setEditedValues(prev => ({ ...prev, start_date: newDate }));
                       handleFieldSave('start_date', newDate);
@@ -344,17 +417,17 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
                     placeholder="Select start date"
                     autoFocus
                     open={true}
-                    onOpenChange={(open) => !open && handleFieldCancel()}
+                    onOpenChange={open => !open && handleFieldCancel()}
                   />
                 ) : (
-                  <Text 
-                    strong 
-                    className="cursor-pointer hover:opacity-70" 
+                  <Text
+                    strong
+                    className="cursor-pointer hover:opacity-70"
                     style={{ color: token.colorText }}
-                    onClick={() => startEditing('start_date', phase.start_date)}
+                    onClick={() => startEditing('start_date', localPhase.start_date)}
                     title="Click to edit"
                   >
-                    {formatDate(phase.start_date)}
+                    {formatDate(localPhase.start_date)}
                   </Text>
                 )}
               </Col>
@@ -363,8 +436,14 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
                 <br />
                 {editingField === 'end_date' ? (
                   <DatePicker
-                    value={editedValues.end_date ? dayjs(editedValues.end_date) : (phase.end_date ? dayjs(phase.end_date) : null)}
-                    onChange={(date) => {
+                    value={
+                      editedValues.end_date
+                        ? dayjs(editedValues.end_date)
+                        : localPhase.end_date
+                          ? dayjs(localPhase.end_date)
+                          : null
+                    }
+                    onChange={date => {
                       const newDate = date?.toDate() || null;
                       setEditedValues(prev => ({ ...prev, end_date: newDate }));
                       handleFieldSave('end_date', newDate);
@@ -374,17 +453,17 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
                     placeholder="Select end date"
                     autoFocus
                     open={true}
-                    onOpenChange={(open) => !open && handleFieldCancel()}
+                    onOpenChange={open => !open && handleFieldCancel()}
                   />
                 ) : (
-                  <Text 
-                    strong 
-                    className="cursor-pointer hover:opacity-70" 
+                  <Text
+                    strong
+                    className="cursor-pointer hover:opacity-70"
                     style={{ color: token.colorText }}
-                    onClick={() => startEditing('end_date', phase.end_date)}
+                    onClick={() => startEditing('end_date', localPhase.end_date)}
                     title="Click to edit"
                   >
-                    {formatDate(phase.end_date)}
+                    {formatDate(localPhase.end_date)}
                   </Text>
                 )}
               </Col>
@@ -397,12 +476,14 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
           </Card>
 
           {/* Task Breakdown */}
-          <Card 
-            size="small" 
+          <Card
+            size="small"
             title={
               <div className="flex items-center gap-2">
                 <CheckCircleOutlined style={{ color: token.colorSuccess }} />
-                <Text strong style={{ color: token.colorText }}>{t('taskBreakdown.title')}</Text>
+                <Text strong style={{ color: token.colorText }}>
+                  {t('taskBreakdown.title')}
+                </Text>
               </div>
             }
             className="shadow-sm"
@@ -437,12 +518,14 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
           </Card>
 
           {/* Color Information */}
-          <Card 
-            size="small" 
+          <Card
+            size="small"
             title={
               <div className="flex items-center gap-2">
                 <BgColorsOutlined style={{ color: token.colorPrimary }} />
-                <Text strong style={{ color: token.colorText }}>{t('phaseColor.title')}</Text>
+                <Text strong style={{ color: token.colorText }}>
+                  {t('phaseColor.title')}
+                </Text>
               </div>
             }
             className="shadow-sm"
@@ -452,12 +535,14 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
               <div
                 className="w-10 h-10 rounded-lg border"
                 style={{
-                  backgroundColor: phase.color || token.colorPrimary,
+                  backgroundColor: localPhase.color || token.colorPrimary,
                   borderColor: token.colorBorder,
                 }}
               />
               <div>
-                <Text strong style={{ color: token.colorText }}>{phase.color || token.colorPrimary}</Text>
+                <Text strong style={{ color: token.colorText }}>
+                  {localPhase.color || token.colorPrimary}
+                </Text>
                 <br />
                 <Text type="secondary">{t('phaseColor.description')}</Text>
               </div>
@@ -467,38 +552,36 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
 
         {/* Right Side - Task List */}
         <div className="flex-1 flex flex-col">
-          {phase.children && phase.children.length > 0 ? (
-            <Card 
-              size="small" 
+          {localPhase.children && localPhase.children.length > 0 ? (
+            <Card
+              size="small"
               title={
-                <Text strong style={{ color: token.colorText }}>{t('tasksInPhase.title')}</Text>
+                <Text strong style={{ color: token.colorText }}>
+                  {t('tasksInPhase.title')}
+                </Text>
               }
               className="shadow-sm flex-1 flex flex-col"
               style={{ backgroundColor: token.colorBgContainer, borderColor: token.colorBorder }}
-              bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px' }}
+              styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: '16px' } }}
             >
               <div className="space-y-3 flex-1 overflow-y-auto">
-                {phase.children.map((task) => {
+                {localPhase.children.map(task => {
                   const taskStatus = getTaskStatus(task);
                   const taskStatusColor = getTaskStatusColor(taskStatus);
-                  
+
                   const assigneeMembers = convertAssigneesToMembers(task.assignees);
-                  
+
                   return (
-                    <div 
-                      key={task.id} 
+                    <div
+                      key={task.id}
                       className={`p-3 rounded-md border transition-colors hover:shadow-sm ${
-                        task.progress === 100 
-                          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                        task.progress === 100
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                           : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
-                      style={{ 
-                        backgroundColor: task.progress === 100 
-                          ? undefined 
-                          : token.colorBgContainer,
-                        borderColor: task.progress === 100 
-                          ? undefined 
-                          : token.colorBorder
+                      style={{
+                        backgroundColor: task.progress === 100 ? undefined : token.colorBgContainer,
+                        borderColor: task.progress === 100 ? undefined : token.colorBorder,
                       }}
                     >
                       {/* Main row with task info */}
@@ -506,39 +589,39 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
                         {/* Left side: Status icon, task name, and priority */}
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           {task.progress === 100 ? (
-                            <CheckCircleOutlined 
-                              className="flex-shrink-0" 
+                            <CheckCircleOutlined
+                              className="flex-shrink-0"
                               style={{ color: token.colorSuccess, fontSize: '14px' }}
                             />
                           ) : taskStatus === 'overdue' ? (
-                            <ClockCircleOutlined 
-                              className="flex-shrink-0" 
+                            <ClockCircleOutlined
+                              className="flex-shrink-0"
                               style={{ color: token.colorError, fontSize: '14px' }}
                             />
                           ) : (
-                            <ClockCircleOutlined 
-                              className="flex-shrink-0" 
+                            <ClockCircleOutlined
+                              className="flex-shrink-0"
                               style={{ color: token.colorWarning, fontSize: '14px' }}
                             />
                           )}
-                          
-                          <Text 
-                            strong 
+
+                          <Text
+                            strong
                             className="text-sm truncate flex-1"
                             style={{ color: token.colorText }}
                             title={task.name}
                           >
                             {task.name}
                           </Text>
-                          
+
                           {/* Priority Icon */}
                           {task.priority && (
                             <Tooltip title={`Priority: ${task.priority}`}>
-                              <div 
+                              <div
                                 className="flex items-center justify-center w-5 h-5 rounded flex-shrink-0"
-                                style={{ 
+                                style={{
                                   backgroundColor: getPriorityColor(task.priority),
-                                  color: 'white'
+                                  color: 'white',
                                 }}
                               >
                                 {getPriorityIcon(task.priority)}
@@ -546,16 +629,13 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
                             </Tooltip>
                           )}
                         </div>
-                        
+
                         {/* Right side: Status tag */}
-                        <Tag 
-                          color={taskStatusColor}
-                          className="text-xs font-medium flex-shrink-0"
-                        >
+                        <Tag color={taskStatusColor} className="text-xs font-medium flex-shrink-0">
                           {getTaskStatusText(taskStatus)}
                         </Tag>
                       </div>
-                      
+
                       {/* Bottom row with assignees, progress, and due date */}
                       <div className="flex items-center justify-between gap-3">
                         {/* Assignees */}
@@ -565,7 +645,7 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
                               members={assigneeMembers}
                               maxCount={3}
                               size={20}
-                              isDarkMode={token.mode === 'dark'}
+                              isDarkMode={false}
                             />
                           ) : (
                             <div className="flex items-center gap-1 text-gray-400">
@@ -576,19 +656,22 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
                             </div>
                           )}
                         </div>
-                        
+
                         {/* Due Date */}
                         <div className="flex items-center justify-end flex-1">
                           {task.end_date ? (
                             <div className="flex items-center gap-1">
-                              <CalendarOutlined 
+                              <CalendarOutlined
                                 className="text-xs"
-                                style={{ 
-                                  color: taskStatus === 'overdue' ? token.colorError : token.colorTextTertiary 
-                                }} 
+                                style={{
+                                  color:
+                                    taskStatus === 'overdue'
+                                      ? token.colorError
+                                      : token.colorTextTertiary,
+                                }}
                               />
-                              <Text 
-                                type="secondary" 
+                              <Text
+                                type="secondary"
                                 className={`text-xs ${taskStatus === 'overdue' ? 'text-red-500 dark:text-red-400' : ''}`}
                               >
                                 {dayjs(task.end_date).format('MMM DD')}
@@ -607,14 +690,24 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({ open, onClose, ph
               </div>
             </Card>
           ) : (
-            <Card 
+            <Card
               size="small"
               className="shadow-sm flex-1 flex items-center justify-center"
               style={{ backgroundColor: token.colorBgContainer, borderColor: token.colorBorder }}
-              bodyStyle={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              styles={{
+                body: {
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }
+              }}
             >
               <div className="text-center py-8">
-                <ClockCircleOutlined className="text-4xl mb-3" style={{ color: token.colorTextTertiary }} />
+                <ClockCircleOutlined
+                  className="text-4xl mb-3"
+                  style={{ color: token.colorTextTertiary }}
+                />
                 <Text type="secondary" className="text-lg">
                   {t('tasksInPhase.noTasks')}
                 </Text>

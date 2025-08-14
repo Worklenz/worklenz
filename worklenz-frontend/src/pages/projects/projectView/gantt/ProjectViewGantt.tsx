@@ -33,7 +33,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const { projectId } = useParams<{ projectId: string }>();
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
-  const [viewMode, setViewMode] = useState<GanttViewMode>('month');
+  const [viewMode, setViewMode] = useState<GanttViewMode>('day');
   const [showPhaseModal, setShowPhaseModal] = useState(false);
   const [showPhaseDetailsModal, setShowPhaseDetailsModal] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<any>(null);
@@ -281,6 +281,42 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     [socket, projectId]
   );
 
+  const handleTaskNameClick = useCallback(
+    (task: any) => {
+      // Scroll timeline to show the task bar
+      if (chartRef.current && task.start_date && dateRange) {
+        const totalTimeSpan = dateRange.end.getTime() - dateRange.start.getTime();
+        const timeFromStart = new Date(task.start_date).getTime() - dateRange.start.getTime();
+        
+        // Calculate the position based on the current viewport dimensions
+        const chartElement = chartRef.current;
+        const chartWidth = chartElement.scrollWidth;
+        const viewportWidth = chartElement.clientWidth;
+        
+        // Calculate the scroll position to center the task
+        const taskPosition = (timeFromStart / totalTimeSpan) * chartWidth;
+        const scrollPosition = Math.max(0, taskPosition - viewportWidth / 2);
+        
+        // Smooth scroll to the task position
+        chartElement.scrollTo({
+          left: scrollPosition,
+          behavior: 'smooth'
+        });
+        
+        // Also scroll timeline to match
+        if (timelineRef.current) {
+          timelineRef.current.scrollTo({
+            left: scrollPosition,
+            behavior: 'smooth'
+          });
+        }
+      } else if (!task.start_date) {
+        message.info(`Task "${task.name}" has no start date set`);
+      }
+    },
+    [dateRange]
+  );
+
   // Handle errors
   if (tasksError || phasesError) {
     message.error('Failed to load Gantt chart data');
@@ -333,6 +369,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 expandedTasks={expandedTasks}
                 onExpandedTasksChange={setExpandedTasks}
                 animatingTasks={animatingTasks}
+                onTaskNameClick={handleTaskNameClick}
               />
             </div>
 

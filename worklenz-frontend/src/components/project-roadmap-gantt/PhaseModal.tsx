@@ -16,8 +16,9 @@ import {
   Input,
   Form,
   DatePicker,
-  Select
-} from 'antd';
+  Select,
+  Typography
+} from '@/shared/antd-imports';
 import { 
   CalendarOutlined, 
   TeamOutlined, 
@@ -305,7 +306,7 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                     avatar={getTaskStatusIcon(task.status)}
                     title={
                       <div className="flex justify-between items-center">
-                        <Text strong>{task.name}</Text>
+                        <Typography.Text strong>{task.name}</Typography.Text>
                         <Space>
                           <Tag color={getPriorityColor(task.priority)}>
                             {task.priority}
@@ -320,18 +321,18 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                     }
                     description={
                       <div>
-                        <Text type="secondary">{task.description}</Text>
+                        <Typography.Text type="secondary">{task.description}</Typography.Text>
                         <div className="mt-2 flex justify-between items-center">
                           <Space>
                             <CalendarOutlined />
-                            <Text type="secondary">
+                            <Typography.Text type="secondary">
                               {task.startDate.toLocaleDateString()} - {task.endDate.toLocaleDateString()}
-                            </Text>
+                            </Typography.Text>
                           </Space>
                           {task.assigneeName && (
                             <Space>
                               <TeamOutlined />
-                              <Text type="secondary">{task.assigneeName}</Text>
+                              <Typography.Text type="secondary">{task.assigneeName}</Typography.Text>
                             </Space>
                           )}
                         </div>
@@ -353,13 +354,13 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <Text strong>{milestone.name}</Text>
+                      <Typography.Text strong>{milestone.name}</Typography.Text>
                       {milestone.criticalPath && (
                         <Tag color="red" className="ml-2">Critical Path</Tag>
                       )}
                       {milestone.description && (
                         <div className="mt-1">
-                          <Text type="secondary">{milestone.description}</Text>
+                          <Typography.Text type="secondary">{milestone.description}</Typography.Text>
                         </div>
                       )}
                     </div>
@@ -388,9 +389,9 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                     avatar={<Avatar>{member.charAt(0).toUpperCase()}</Avatar>}
                     title={member}
                     description={
-                      <Text type="secondary">
+                      <Typography.Text type="secondary">
                         {phase.tasks.filter(task => task.assigneeName === member).length} tasks assigned
-                      </Text>
+                      </Typography.Text>
                     }
                   />
                 </List.Item>
