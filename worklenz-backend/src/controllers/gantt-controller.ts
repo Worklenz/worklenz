@@ -375,11 +375,8 @@ export default class GanttController extends WorklenzControllerBase {
         start_date, 
         end_date,
         sort_index,
-        created_by,
-        updated_by,
-        created_at,
-        updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $7, NOW(), NOW())
+        created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
       RETURNING id, name, color_code, start_date, end_date, sort_index, project_id;
     `;
     
@@ -389,9 +386,61 @@ export default class GanttController extends WorklenzControllerBase {
       color_code || getColor(),
       start_date,
       end_date,
-      nextSortIndex,
-      req.user?.id
+      nextSortIndex
     ]);
+
+    return res.status(200).send(new ServerResponse(true, result.rows[0]));
+  }
+
+  @HandleExceptions()
+  public static async updatePhase(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { phase_id, project_id, name, color_code, start_date, end_date } = req.body;
+    
+    if (!phase_id || !project_id) {
+      return res.status(400).send(new ServerResponse(false, null, "Phase ID and Project ID are required"));
+    }
+
+    // Build dynamic update query based on provided fields
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramIndex++}`);
+      values.push(name.trim());
+    }
+
+    if (color_code !== undefined) {
+      updates.push(`color_code = $${paramIndex++}`);
+      values.push(color_code);
+    }
+
+    if (start_date !== undefined) {
+      updates.push(`start_date = $${paramIndex++}`);
+      values.push(start_date);
+    }
+
+    if (end_date !== undefined) {
+      updates.push(`end_date = $${paramIndex++}`);
+      values.push(end_date);
+    }
+
+    // Add phase_id and project_id at the end for WHERE clause
+    values.push(phase_id);
+    values.push(project_id);
+
+    const updateQuery = `
+      UPDATE project_phases 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramIndex} AND project_id = $${paramIndex + 1}
+      RETURNING id, name, color_code, start_date, end_date, sort_index;
+    `;
+    
+    const result = await db.query(updateQuery, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Phase not found"));
+    }
 
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
   }
