@@ -7,12 +7,13 @@ import {
   EditOutlined,
   ImportOutlined,
   SaveOutlined,
+  DownloadOutlined,
   SettingOutlined,
   SyncOutlined,
   UsergroupAddOutlined,
 } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-components';
-import { Button, Dropdown, Flex, Tag, Tooltip, Typography } from 'antd';
+import { Button, Dropdown, Flex, Tag, Tooltip, Typography, notification } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -69,6 +70,224 @@ const ProjectViewHeader = () => {
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [csvImportModalVisible, setCsvImportModalVisible] = useState(false);
+
+  // Common export function for different formats
+  const exportProject = async (format: 'csv' | 'excel') => {
+    if (!projectId) return;
+    
+    // Create a unique notification key for this export
+    const notificationKey = `export-${format}-${Date.now()}`;
+    
+    // Show initial loading notification
+    notification.info({
+      key: notificationKey,
+      message: t('exportProject', 'Export'),
+      description: t('exportStarted', 'Preparing export...'),
+      duration: 0 // Keep until explicitly closed
+    });
+    
+    try {
+      // Setup API call
+      const { getCsrfToken } = await import('@/api/api-client');
+      const csrfToken = getCsrfToken ? getCsrfToken() ?? '' : '';
+      const config = await import('@/config/env');
+      const apiUrl = config.default.apiUrl;
+      
+      // Determine endpoint based on format
+      const endpoint = format === 'csv' 
+        ? `${apiUrl}/api/v1/tasks/export-csv/${projectId}`
+        : `${apiUrl}/api/v1/tasks/export-excel/${projectId}`;
+      
+      // Create controller for timeouts
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      // Make the API request
+      let response;
+      try {
+        // Set the appropriate accept header based on the format
+        const acceptHeader = format === 'csv' 
+          ? 'text/csv' 
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          
+        response = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            'Accept': acceptHeader,
+            'X-CSRF-Token': csrfToken,
+          },
+          credentials: 'include',
+          signal: controller.signal
+        });
+        
+        // Clear timeout since request completed
+        clearTimeout(timeoutId);
+        
+        // Handle error responses
+        if (!response.ok) {
+          let errorMessage = `Status: ${response.status}`;
+          let errorDetails = '';
+          
+          try {
+            // Try to parse error details from response
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const errorJson = await response.json();
+              errorDetails = errorJson.message || JSON.stringify(errorJson);
+            } else {
+              const errorText = await response.text();
+              if (errorText && errorText.length < 100) { // Only use text if it's reasonably short
+                errorDetails = errorText;
+              }
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+          }
+          
+          // Show appropriate error based on status code
+          let errorDescription = t('exportFailed', 'Export failed. Please try again.');
+          if (response.status === 404) {
+            errorDescription = t('projectNotFound', 'Project not found or you don\'t have access.');
+          } else if (response.status === 400) {
+            errorDescription = t('invalidRequest', 'Invalid request. Please try again.');
+          } else if (response.status >= 500) {
+            errorDescription = t('serverError', 'Server error. Please try again later.');
+          }
+          
+          if (errorDetails) {
+            errorDescription += ` (${errorDetails})`;
+          }
+          
+          notification.error({
+            key: notificationKey,
+            message: t('exportProject', 'Export'),
+            description: errorDescription,
+          });
+          
+          throw new Error(`Failed to export CSV. ${errorMessage} - ${errorDetails}`);
+        }
+      } catch (fetchError) {
+        // Handle network errors or aborted requests
+        if (typeof fetchError === 'object' && fetchError !== null && 'name' in fetchError && (fetchError as { name?: string }).name === 'AbortError') {
+          notification.error({
+            key: notificationKey,
+            message: t('exportProject', 'Export'),
+            description: t('exportTimeout', 'Export timed out. The server might be busy or the dataset is too large.'),
+          });
+        } else {
+          notification.error({
+            key: notificationKey,
+            message: t('exportProject', 'Export'),
+            description: t('networkError', 'Network error. Please check your connection and try again.'),
+          });
+        }
+        throw fetchError;
+      }
+      
+      // Process successful response
+      try {
+        // First check content type to ensure we got CSV (accepting various valid MIME types)
+        const contentType = response.headers.get('content-type');
+        
+        // Define valid content types for both CSV and Excel
+        const validCsvTypes = ['text/csv', 'application/csv', 'text/plain', 'text/x-csv', 'application/x-csv'];
+        const validExcelTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+        
+        // Select appropriate valid types based on the format
+        const validTypes = format === 'csv' ? validCsvTypes : validExcelTypes;
+        
+        const isValidContentType = contentType && 
+          validTypes.some(type => contentType.toLowerCase().includes(type));
+          
+        if (!isValidContentType) {
+          console.error(`Unexpected content type: ${contentType}`);
+          notification.error({
+            key: notificationKey,
+            message: t('exportProject', 'Export'),
+            description: t('invalidResponseFormat', 'Received invalid data format from server.'),
+          });
+          throw new Error('Invalid content type received');
+        }
+        
+        // Get blob data with timeout and error handling
+        let blob;
+        const blobTimeoutId = setTimeout(() => {
+          notification.error({
+            key: notificationKey,
+            message: t('exportProject', 'Export'),
+            description: t('processingTimeout', 'Processing timed out. The file may be too large.'),
+          });
+        }, 10000); // 10 second timeout for blob processing
+        
+        try {
+          blob = await response.blob();
+          clearTimeout(blobTimeoutId);
+        } catch (blobError) {
+          clearTimeout(blobTimeoutId);
+          console.error('Error getting blob:', blobError);
+          notification.error({
+            key: notificationKey,
+            message: t('exportProject', 'Export'),
+            description: t('blobError', 'Error processing response data. Please try again.'),
+          });
+          throw new Error('Failed to process response data');
+        }
+        
+        // Check blob size
+        if (!blob || blob.size === 0) {
+          notification.warning({
+            key: notificationKey,
+            message: t('exportProject', 'Export'),
+            description: t('noData', 'No task data available for export.'),
+          });
+          throw new Error('Empty blob received');
+        }
+        
+        // Create filename
+        const safeProjectName = selectedProject?.name 
+          ? selectedProject.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()
+          : `project-${projectId}`;
+        
+        // Use appropriate file extension based on format
+        const extension = format === 'csv' ? 'csv' : 'xlsx';
+        const filename = `${safeProjectName}-tasks-${new Date().toISOString().split('T')[0]}.${extension}`;
+        
+        // Create and trigger download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Clean up
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        
+        // Show success notification
+        notification.success({
+          key: notificationKey,
+          message: t('exportProject', 'Export'),
+          description: t('exportCompleted', 'Export completed successfully!'),
+        });
+      } catch (blobError) {
+        console.error('Error processing blob:', blobError);
+        
+        // Only show error notification if it's not a timeout (which already has its own notification)
+        if (!(typeof blobError === 'object' && blobError !== null && 'name' in blobError && (blobError as { name?: string }).name === 'AbortError')) {
+          notification.error({
+            key: notificationKey,
+            message: t('exportProject', 'Export'),
+            description: t('processingError', 'Error processing the export data. Please try again.'),
+          });
+        }
+        throw blobError;
+      }
+    } catch (error) {
+      console.error(`${format.toUpperCase()} export error:`, error);
+      // Don't show duplicate error messages - we've already shown specific ones above
+    }
+  };
 
   const handleRefresh = () => {
     if (!projectId) return;
@@ -239,6 +458,31 @@ const ProjectViewHeader = () => {
           onClick={handleRefresh}
         />
       </Tooltip>
+
+      {/* Export Button Dropdown - after Refresh button */}
+      <Dropdown
+        menu={{
+          items: [
+            {
+              key: 'csv',
+              label: t('exportCSV', 'Export as CSV'),
+              onClick: () => exportProject('csv')
+            },
+            {
+              key: 'excel',
+              label: t('exportExcel', 'Export as Excel'),
+              onClick: () => exportProject('excel')
+            },
+          ],
+        }}
+        trigger={['click']}
+      >
+        <Tooltip title={t('exportProject', 'Export')}>
+          <Button shape="circle">
+            <DownloadOutlined />
+          </Button>
+        </Tooltip>
+      </Dropdown>
 
       {(isOwnerOrAdmin) && (
         <Tooltip title={t('saveAsTemplate')}>

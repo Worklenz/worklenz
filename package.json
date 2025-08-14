@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "json2csv": "^6.0.0-alpha.2"
+  },
+  "devDependencies": {
+    "@types/json2csv": "^5.0.7"
+  }
+}

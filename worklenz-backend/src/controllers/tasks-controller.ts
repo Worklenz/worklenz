@@ -2,6 +2,7 @@ import moment from "moment";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
+import ExcelJS from "exceljs";
 
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
@@ -40,9 +41,381 @@ const upload = multer({
   }
 });
 
+// The exportToCSV function has been moved to be a static method in the TasksController class
+
 export default class TasksController extends TasksControllerBase {
   // CSV upload middleware
   public static csvUpload = upload.single("csvFile");
+  
+  // CSV Export method
+  /**
+   * Export tasks to CSV format
+   * Completely rewritten for stability and reliability
+   * With improved error handling and content type management
+   */
+  @HandleExceptions()
+  public static async exportToCSV(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Track if response has been sent to avoid "headers already sent" errors
+    const responseTracker = { sent: false };
+    
+    try {
+      // Validate project ID
+      const { id } = req.params;
+      
+      if (!id) {
+        responseTracker.sent = true;
+        return res.status(400).send(new ServerResponse(false, null, "Project ID is required"));
+      }
+      
+      // First check if project exists
+      try {
+        const projectCheckQuery = "SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1::uuid) AS exists";
+        const projectCheckResult = await db.query(projectCheckQuery, [id]);
+        
+        if (!projectCheckResult.rows?.[0]?.exists) {
+          responseTracker.sent = true;
+          return res.status(404).send(new ServerResponse(false, null, "Project not found"));
+        }
+      } catch (dbError) {
+        log_error(`Database error checking project existence: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+        responseTracker.sent = true;
+        return res.status(500).send(new ServerResponse(false, null, "Database error checking project"));
+      }
+      
+      // Get project name for filename
+      let projectName = "project";
+      try {
+        const projectNameQuery = "SELECT name FROM projects WHERE id = $1::uuid";
+        const projectResult = await db.query(projectNameQuery, [id]);
+        if (projectResult.rows?.[0]?.name) {
+          projectName = projectResult.rows[0].name;
+        }
+      } catch (dbError) {
+        log_error(`Non-critical error getting project name: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+        // Continue with default name
+      }
+      
+      // Format project name to be filename-safe
+      const safeProjectName = projectName.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+      
+      // Get project metadata with proper typing
+      interface ProjectMetadata {
+        name?: string;
+        description?: string;
+        start_date?: string;
+        end_date?: string;
+        status?: string;
+        task_count?: number;
+      }
+      
+      // Initialize with empty values
+      const projectMetadata: ProjectMetadata = {};
+      
+      try {
+        const projectMetadataQuery = `
+          SELECT 
+            p.name,
+            p.description,
+            p.start_date,
+            p.end_date,
+            COALESCE(ps.name, 'Not Set') as status,
+            COUNT(t.id) as task_count
+          FROM projects p
+          LEFT JOIN project_statuses ps ON p.status_id = ps.id
+          LEFT JOIN tasks t ON p.id = t.project_id AND t.archived IS FALSE
+          WHERE p.id = $1::uuid
+          GROUP BY p.name, p.description, p.start_date, p.end_date, ps.name
+        `;
+        
+        const metadataResult = await db.query(projectMetadataQuery, [id]);
+        if (metadataResult.rows?.[0]) {
+          // Copy properties one by one for type safety
+          const row = metadataResult.rows[0];
+          projectMetadata.name = row.name;
+          projectMetadata.description = row.description;
+          projectMetadata.start_date = row.start_date;
+          projectMetadata.end_date = row.end_date;
+          projectMetadata.status = row.status;
+          projectMetadata.task_count = row.task_count;
+        }
+      } catch (dbError) {
+        log_error(`Non-critical error getting project metadata: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+        // Continue with empty metadata
+      }
+      
+      // Get task data
+      let tasks = [];
+      try {
+        const tasksQuery = `
+          SELECT
+            t.id::text AS id,
+            t.name AS name,
+            COALESCE(t.description, '') AS description,
+            to_char(t.start_date, 'YYYY-MM-DD') AS "startDate",
+            to_char(t.end_date, 'YYYY-MM-DD') AS "endDate",
+            COALESCE(ts.name, '') AS status,
+            COALESCE(tp.name, '') AS priority,
+            to_char(t.created_at, 'YYYY-MM-DD') AS "createdAt",
+            to_char(t.updated_at, 'YYYY-MM-DD') AS "updatedAt"
+          FROM tasks t
+          LEFT JOIN task_statuses ts ON t.status_id = ts.id
+          LEFT JOIN task_priorities tp ON t.priority_id = tp.id
+          WHERE t.project_id = $1::uuid 
+            AND t.archived IS FALSE
+          ORDER BY t.created_at DESC
+        `;
+        
+        const tasksResult = await db.query(tasksQuery, [id]);
+        if (tasksResult.rows) {
+          tasks = tasksResult.rows;
+        }
+      } catch (dbError) {
+        log_error(`Database error getting task data: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+        responseTracker.sent = true;
+        return res.status(500).send(new ServerResponse(false, null, "Error retrieving task data"));
+      }
+      
+      // Generate CSV content
+      try {
+        // No header info - removed project name and task count rows
+        
+        // Define column headers
+        const fields = [
+          "id",
+          "name", 
+          "description",
+          "startDate",
+          "endDate", 
+          "status",
+          "priority",
+          "createdAt",
+          "updatedAt"
+        ];
+        
+        // Generate CSV content with proper escaping
+        const csvRows = [];
+        csvRows.push(fields.join(","));
+        
+        // Process each task row
+        if (tasks.length > 0) {
+          tasks.forEach(row => {
+            // Properly escape values to handle commas, quotes, etc.
+            const escapedValues = fields.map(field => {
+              // Safely access field values with explicit checks to avoid issues with undefined/null
+              const rawValue = field in row ? row[field] : null;
+              const value = rawValue !== undefined && rawValue !== null ? String(rawValue) : "";
+              
+              // If value contains comma, newline or quotes, wrap in quotes and escape inner quotes
+              if (value.includes(",") || value.includes("\"") || value.includes("\n")) {
+                return `"${value.replace(/"/g, "\"\"")}"`;
+              }
+              return value;
+            });
+            
+            csvRows.push(escapedValues.join(","));
+          });
+        }
+        
+        // Use only the CSV rows without header info
+        const csvContent = csvRows.join("\n");
+        
+        // Set response headers for file download
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", `attachment; filename="${safeProjectName}-tasks.csv"`);
+        
+        try {
+          // Send CSV content and return
+          return res.status(200).send(csvContent);
+        } catch (sendError) {
+          log_error(`Error sending CSV response: ${sendError instanceof Error ? sendError.message : String(sendError)}`);
+          if (!res.headersSent) {
+            return res.status(500).send(new ServerResponse(false, null, "Error sending CSV response"));
+          }
+          return res;
+        }
+        
+      } catch (csvError) {
+        log_error(`Error generating CSV: ${csvError instanceof Error ? csvError.message : String(csvError)}`);
+        responseTracker.sent = true;
+        return res.status(500).send(new ServerResponse(false, null, "Error generating CSV file"));
+      }
+      
+    } catch (error) {
+      // Final fallback error handler
+      log_error(`Unexpected error in exportToCSV: ${error instanceof Error ? error.message : String(error)}`);
+      if (!res.headersSent && !responseTracker.sent) {
+        responseTracker.sent = true;
+        return res.status(500).send(new ServerResponse(false, null, "An unexpected error occurred"));
+      }
+      return res;
+    }
+  }
+
+  @HandleExceptions()
+  public static async exportToExcel(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Track if response has been sent to avoid "headers already sent" errors
+    const responseTracker = { sent: false };
+    
+    try {
+      // Validate project ID
+      const { id } = req.params;
+      
+      if (!id) {
+        responseTracker.sent = true;
+        return res.status(400).send(new ServerResponse(false, null, "Project ID is required"));
+      }
+      
+      // First check if project exists
+      try {
+        const projectCheckQuery = "SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1::uuid) AS exists";
+        const projectCheckResult = await db.query(projectCheckQuery, [id]);
+        
+        if (!projectCheckResult.rows?.[0]?.exists) {
+          responseTracker.sent = true;
+          return res.status(404).send(new ServerResponse(false, null, "Project not found"));
+        }
+      } catch (dbError) {
+        log_error(`Database error checking project existence: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+        responseTracker.sent = true;
+        return res.status(500).send(new ServerResponse(false, null, "Database error checking project"));
+      }
+      
+      // Get project name for filename
+      let projectName = "project";
+      try {
+        const projectNameQuery = "SELECT name FROM projects WHERE id = $1::uuid";
+        const projectResult = await db.query(projectNameQuery, [id]);
+        if (projectResult.rows?.[0]?.name) {
+          projectName = projectResult.rows[0].name;
+        }
+      } catch (dbError) {
+        log_error(`Non-critical error getting project name: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+        // Continue with default name
+      }
+      
+      // Format project name to be filename-safe
+      const safeProjectName = projectName.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+      
+      // Get task data
+      let tasks = [];
+      try {
+        const tasksQuery = `
+          SELECT
+            t.id::text AS id,
+            t.name AS name,
+            COALESCE(t.description, '') AS description,
+            to_char(t.start_date, 'YYYY-MM-DD') AS "startDate",
+            to_char(t.end_date, 'YYYY-MM-DD') AS "endDate",
+            COALESCE(ts.name, '') AS status,
+            COALESCE(tp.name, '') AS priority,
+            to_char(t.created_at, 'YYYY-MM-DD') AS "createdAt",
+            to_char(t.updated_at, 'YYYY-MM-DD') AS "updatedAt"
+          FROM tasks t
+          LEFT JOIN task_statuses ts ON t.status_id = ts.id
+          LEFT JOIN task_priorities tp ON t.priority_id = tp.id
+          WHERE t.project_id = $1::uuid 
+            AND t.archived IS FALSE
+          ORDER BY t.created_at DESC
+        `;
+        
+        const tasksResult = await db.query(tasksQuery, [id]);
+        if (tasksResult.rows) {
+          tasks = tasksResult.rows;
+        }
+      } catch (dbError) {
+        log_error(`Database error getting task data: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+        responseTracker.sent = true;
+        return res.status(500).send(new ServerResponse(false, null, "Error retrieving task data"));
+      }
+      
+      // Generate Excel content
+      try {
+        // Create a new Excel workbook
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = "WorkLenz";
+        workbook.lastModifiedBy = "WorkLenz";
+        workbook.created = new Date();
+        workbook.modified = new Date();
+
+        // Add a worksheet
+        const worksheet = workbook.addWorksheet("Tasks");
+        
+        // Define column definitions without headers (we'll add headers manually)
+        const columns = [
+          { key: "id", width: 36 },
+          { key: "name", width: 30 },
+          { key: "description", width: 40 },
+          { key: "startDate", width: 12 },
+          { key: "endDate", width: 12 },
+          { key: "status", width: 15 },
+          { key: "priority", width: 12 },
+          { key: "createdAt", width: 12 },
+          { key: "updatedAt", width: 12 }
+        ];
+        
+        // Set column definitions without headers
+        worksheet.columns = columns;
+        
+        // Define headers for later use
+        const headers = [
+          "ID", "Name", "Description", "Start Date", "End Date", "Status", "Priority", "Created At", "Updated At"
+        ];
+        
+        // Insert project name in first row and merge cells across all columns
+        const projectNameRow = worksheet.addRow([projectName]);
+        projectNameRow.font = { bold: true, size: 14 };
+        worksheet.mergeCells(`A1:${String.fromCharCode(64 + columns.length)}1`);
+        projectNameRow.alignment = { horizontal: "center" };
+        
+        // Add a header row in the second row
+        const headerRow = worksheet.addRow(headers);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFEEEEEE" }
+        };
+        
+        // Add task data to the worksheet (starting from row 3)
+        if (tasks.length > 0) {
+          tasks.forEach(task => {
+            // Extract values in the same order as columns
+            const rowValues = columns.map(col => task[col.key] || "");
+            worksheet.addRow(rowValues);
+          });
+        }
+        
+        // Auto-filter for all columns (applied to the header row which is now row 2)
+        worksheet.autoFilter = {
+          from: { row: 2, column: 1 },
+          to: { row: 2, column: columns.length }
+        };
+        
+        // Set response headers for file download
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", `attachment; filename="${safeProjectName}-tasks.xlsx"`);
+        
+        // Write workbook to response
+        await workbook.xlsx.write(res);
+        return res;
+        
+      } catch (excelError) {
+        log_error(`Error generating Excel: ${excelError instanceof Error ? excelError.message : String(excelError)}`);
+        responseTracker.sent = true;
+        return res.status(500).send(new ServerResponse(false, null, "Error generating Excel file"));
+      }
+      
+    } catch (error) {
+      // Final fallback error handler
+      log_error(`Unexpected error in exportToExcel: ${error instanceof Error ? error.message : String(error)}`);
+      if (!res.headersSent && !responseTracker.sent) {
+        responseTracker.sent = true;
+        return res.status(500).send(new ServerResponse(false, null, "An unexpected error occurred"));
+      }
+      return res;
+    }
+  }
+
   private static notifyProjectUpdates(socketId: string, projectId: string) {
     IO.getSocketById(socketId)
       ?.to(projectId)

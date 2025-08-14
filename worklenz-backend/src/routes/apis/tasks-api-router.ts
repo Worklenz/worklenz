@@ -69,6 +69,12 @@ tasksApiRouter.put("/labels/:id", idParamValidator, safeControllerFunction(Tasks
 // CSV import route
 tasksApiRouter.post("/import-csv/:id", idParamValidator, TasksController.csvUpload, safeControllerFunction(TasksController.importFromCSV));
 
+// CSV export route
+tasksApiRouter.get("/export-csv/:id", idParamValidator, safeControllerFunction(TasksController.exportToCSV));
+
+// Excel export route
+tasksApiRouter.get("/export-excel/:id", idParamValidator, safeControllerFunction(TasksController.exportToExcel));
+
 // Add custom column value update route
 tasksApiRouter.put("/:taskId/custom-column", TasksControllerV2.updateCustomColumnValue);
 
