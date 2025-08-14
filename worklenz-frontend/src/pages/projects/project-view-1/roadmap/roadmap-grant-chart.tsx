@@ -1,6 +1,8 @@
 import { Gantt, Task, ViewMode } from 'gantt-task-react';
 import React from 'react';
 import { colors } from '../../../../styles/colors';
+import { useMixpanelTracking } from '../../../../hooks/useMixpanelTracking';
+import { evt_roadmap_drag_change_date, evt_roadmap_drag_move } from '../../../../shared/worklenz-analytics-events';
 import {
   NewTaskType,
   updateTaskDate,
@@ -17,6 +19,7 @@ type RoadmapGrantChartProps = {
 const RoadmapGrantChart = ({ view }: RoadmapGrantChartProps) => {
   // get task list from roadmap slice
   const tasks = useAppSelector(state => state.roadmapReducer.tasksList);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const dispatch = useAppDispatch();
 
@@ -37,6 +40,7 @@ const RoadmapGrantChart = ({ view }: RoadmapGrantChartProps) => {
 
   //   function to handle date change
   const handleTaskDateChange = (task: Task) => {
+    trackMixpanelEvent(evt_roadmap_drag_change_date);
     dispatch(updateTaskDate({ taskId: task.id, start: task.start, end: task.end }));
   };
 

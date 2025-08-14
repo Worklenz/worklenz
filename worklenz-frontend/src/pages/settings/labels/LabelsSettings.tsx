@@ -23,9 +23,12 @@ import CustomColorLabel from '@components/task-list-common/labelsSelector/custom
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
 import LabelsDrawer from './labels-drawer';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_labels_visit } from '@/shared/worklenz-analytics-events';
 
 const LabelsSettings = () => {
   const { t } = useTranslation('settings/labels');
+  const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('pageTitle', 'Manage Labels'));
 
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
@@ -54,6 +57,10 @@ const LabelsSettings = () => {
       setLoading(false);
     };
   }, []);
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_settings_labels_visit);
+  }, [trackMixpanelEvent]);
 
   useEffect(() => {
     getLabels();
