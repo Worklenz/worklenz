@@ -106,7 +106,13 @@ const LoginPage: React.FC = () => {
         //   localStorage.setItem(WORKLENZ_REDIRECT_PROJ_KEY, teamId);
         // }
 
-        const result = await dispatch(login(values)).unwrap();
+        // Normalize email to lowercase for case-insensitive comparison
+        const normalizedValues = {
+          ...values,
+          email: values.email.toLowerCase().trim()
+        };
+
+        const result = await dispatch(login(normalizedValues)).unwrap();
         if (result.authenticated) {
           message.success(t('successMessage'));
           setSession(result.user);

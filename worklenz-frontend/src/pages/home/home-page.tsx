@@ -129,6 +129,7 @@ const HomePage = memo(() => {
 
       {createPortal(<TaskDrawer />, document.body, 'home-task-drawer')}
       {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
+      {createPortal(<SurveyPromptModal />, document.body, 'survey-modal')}
     </div>
   );
 });
