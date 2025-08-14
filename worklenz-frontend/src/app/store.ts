@@ -85,15 +85,23 @@ import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { userActivityApiService } from '@/api/home-page/user-activity.api.service';
 import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
+import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 
 import projectViewReducer from '@features/project/project-view-slice';
 import taskManagementFieldsReducer from '@features/task-management/taskListFields.slice';
+import projectWorkloadReducer from '@features/project-workload/projectWorkloadSlice';
 
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: false,
-    }).concat(homePageApiService.middleware, projectsApi.middleware, userActivityApiService.middleware, roadmapApi.middleware),
+    }).concat(
+      homePageApiService.middleware, 
+      projectsApi.middleware, 
+      userActivityApiService.middleware, 
+      roadmapApi.middleware,
+      projectWorkloadApi.middleware
+    ),
   reducer: {
     // Auth & User
     auth: authReducer,
@@ -107,6 +115,7 @@ export const store = configureStore({
     [homePageApiService.reducerPath]: homePageApiService.reducer,
     [projectsApi.reducerPath]: projectsApi.reducer,
     [roadmapApi.reducerPath]: roadmapApi.reducer,
+    [projectWorkloadApi.reducerPath]: projectWorkloadApi.reducer,
     userActivityReducer: userActivityReducer,
     [userActivityApiService.reducerPath]: userActivityApiService.reducer,
 
@@ -132,6 +141,7 @@ export const store = configureStore({
     projectDrawerReducer: projectDrawerReducer,
 
     projectViewReducer: projectViewReducer,
+    projectWorkload: projectWorkloadReducer,
 
     // Project Lookups
     projectCategoriesReducer: projectCategoriesReducer,

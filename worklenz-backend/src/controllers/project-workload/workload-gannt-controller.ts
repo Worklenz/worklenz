@@ -220,7 +220,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
   @HandleExceptions()
   public static async getMembers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
-    const expandedMembers: string[] = req.body.expanded_members;
+    const expandedMembers: string[] = req.body?.expanded_members || req.query?.expanded_members || [];
 
     const q = `SELECT pm.id AS project_member_id,
                       tmiv.team_member_id,
@@ -228,6 +228,14 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                       name AS name,
                       avatar_url,
                       TRUE AS project_member,
+                      
+                      -- Organization working settings
+                      (SELECT working_hours FROM organizations WHERE id = (SELECT organization_id FROM teams WHERE id = (SELECT team_id FROM team_members WHERE id = tmiv.team_member_id))) AS org_working_hours,
+                      (SELECT ROW_TO_JSON(wd) FROM (
+                        SELECT monday, tuesday, wednesday, thursday, friday, saturday, sunday
+                        FROM organization_working_days 
+                        WHERE organization_id = (SELECT organization_id FROM teams WHERE id = (SELECT team_id FROM team_members WHERE id = tmiv.team_member_id))
+                      ) wd) AS org_working_days,
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT MIN(LEAST(start_date, end_date)) AS min_date,
@@ -269,6 +277,18 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
     for (const member of result.rows) {
       member.color_code = getColor(member.TaskName);
+      
+      // Set default working settings if organization data is not available
+      member.org_working_hours = member.org_working_hours || 8;
+      member.org_working_days = member.org_working_days || {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false
+      };
 
       this.setMaxMinDate(member, req.query.timeZone as string);
 
