@@ -1,0 +1,7 @@
+{
+  "title": "프로젝트 회원",
+  "searchLabel": "이름이나 이메일을 추가하여 회원을 추가하십시오",
+  "searchPlaceholder": "이름 또는 이메일을 입력하십시오",
+  "inviteAsAMember": "회원으로 초대하십시오",
+  "inviteNewMemberByEmail": "이메일로 신입 회원을 초대하십시오"
+}

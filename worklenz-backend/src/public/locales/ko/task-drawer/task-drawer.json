@@ -1,0 +1,123 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "작업을 입력하십시오",
+    "deleteTask": "작업 삭제"
+  },
+  "taskInfoTab": {
+    "title": "정보",
+    "details": {
+      "title": "세부",
+      "task-key": "작업 키",
+      "phase": "단계",
+      "assignees": "양수인",
+      "due-date": "마감일",
+      "time-estimation": "시간 추정",
+      "priority": "우선 사항",
+      "labels": "라벨",
+      "billable": "청구 가능",
+      "notify": "알림",
+      "when-done-notify": "완료되면 알립니다",
+      "start-date": "시작 날짜",
+      "end-date": "종료 날짜",
+      "hide-start-date": "시작 날짜를 숨기십시오",
+      "show-start-date": "시작 날짜를 표시하십시오",
+      "hours": "시간",
+      "minutes": "분",
+      "progressValue": "진행 가치",
+      "progressValueTooltip": "진행률 백분율 설정 (0-100%)",
+      "progressValueRequired": "진행 값을 입력하십시오",
+      "progressValueRange": "진행 상황은 0에서 100 사이 여야합니다",
+      "taskWeight": "작업 가중치",
+      "taskWeightTooltip": "이 하위 작업의 무게를 설정하십시오 (백분율)",
+      "taskWeightRequired": "작업 가중치를 입력하십시오",
+      "taskWeightRange": "무게는 0에서 100 사이 여야합니다",
+      "recurring": "반복"
+    },
+    "labels": {
+      "labelInputPlaceholder": "검색 또는 생성",
+      "labelsSelectorInputTip": "Enter를 누르십시오"
+    },
+    "description": {
+      "title": "설명",
+      "placeholder": "더 자세한 설명 추가 ..."
+    },
+    "subTasks": {
+      "title": "하위 작업",
+      "addSubTask": "하위 작업을 추가하십시오",
+      "addSubTaskInputPlaceholder": "작업을 입력하고 Enter를 누르십시오",
+      "refreshSubTasks": "하위 작업을 새로 고치십시오",
+      "edit": "편집하다",
+      "delete": "삭제",
+      "confirmDeleteSubTask": "이 하위 작업을 삭제 하시겠습니까?",
+      "deleteSubTask": "하위 작업을 삭제합니다"
+    },
+    "dependencies": {
+      "title": "의존성",
+      "addDependency": "+ 새로운 종속성을 추가하십시오",
+      "blockedBy": "차단",
+      "searchTask": "검색 작업을 입력하십시오",
+      "noTasksFound": "발견 된 작업이 없습니다",
+      "confirmDeleteDependency": "삭제하고 싶습니까?"
+    },
+    "attachments": {
+      "title": "첨부 파일",
+      "chooseOrDropFileToUpload": "업로드 할 파일을 선택하거나 삭제하십시오",
+      "uploading": "업로드 ..."
+    },
+    "comments": {
+      "title": "의견",
+      "addComment": "+ 새로운 댓글을 추가하십시오",
+      "noComments": "아직 댓글이 없습니다. 첫 번째로 댓글을 달아라!",
+      "delete": "삭제",
+      "confirmDeleteComment": "이 의견을 삭제 하시겠습니까?",
+      "addCommentPlaceholder": "댓글 추가 ...",
+      "cancel": "취소",
+      "commentButton": "논평",
+      "attachFiles": "파일을 첨부하십시오",
+      "addMoreFiles": "더 많은 파일을 추가하십시오",
+      "selectedFiles": "선택된 파일 (최대 25MB, 최대 {count})",
+      "maxFilesError": "최대 {count} 파일 만 업로드 할 수 있습니다",
+      "processFilesError": "파일을 처리하지 못했습니다",
+      "addCommentError": "주석을 추가하거나 파일을 첨부하십시오",
+      "createdBy": "{{user}}의 생성 {{time}}",
+      "updatedTime": "업데이트 {{time}}"
+    },
+    "searchInputPlaceholder": "이름으로 검색하십시오",
+    "pendingInvitation": "보류중인 초대"
+  },
+  "taskTimeLogTab": {
+    "title": "시간 기록",
+    "addTimeLog": "새로운 시간 기록을 추가하십시오",
+    "totalLogged": "총 기록",
+    "exportToExcel": "Excel로 내보내기",
+    "noTimeLogsFound": "시간 기록이 없습니다",
+    "timeLogForm": {
+      "date": "날짜",
+      "startTime": "시작 시간",
+      "endTime": "종료 시간",
+      "workDescription": "작업 설명",
+      "descriptionPlaceholder": "설명을 추가하십시오",
+      "logTime": "로그 시간",
+      "updateTime": "업데이트 시간",
+      "cancel": "취소",
+      "selectDateError": "날짜를 선택하십시오",
+      "selectStartTimeError": "시작 시간을 선택하십시오",
+      "selectEndTimeError": "종료 시간을 선택하십시오",
+      "endTimeAfterStartError": "종료 시간은 시작 시간이 지나야합니다"
+    }
+  },
+  "taskActivityLogTab": {
+    "title": "활동 로그",
+    "add": "추가하다",
+    "remove": "제거하다",
+    "none": "없음",
+    "weight": "무게",
+    "createdTask": "작업을 만들었습니다."
+  },
+  "taskProgress": {
+    "markAsDoneTitle": "완료된대로 작업을 표시 하시겠습니까?",
+    "confirmMarkAsDone": "예, 한대로 마크",
+    "cancelMarkAsDone": "아니요, 현재 상태를 유지하십시오",
+    "markAsDoneDescription": "진행 상황을 100%로 설정했습니다. 작업 상태를 \"완료\"로 업데이트 하시겠습니까?"
+  }
+}

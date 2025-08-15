@@ -1,0 +1,27 @@
+{
+  "title": "템플릿으로 저장하십시오",
+  "templateName": "템플릿 이름",
+  "includes": "프로젝트의 템플릿에 무엇이 포함되어야합니까?",
+  "includesOptions": {
+    "statuses": "상태",
+    "phases": "단계",
+    "labels": "라벨"
+  },
+  "taskIncludes": "작업에서 템플릿에 포함되어야합니까?",
+  "taskIncludesOptions": {
+    "statuses": "상태",
+    "phases": "단계",
+    "labels": "라벨",
+    "name": "이름",
+    "priority": "우선 사항",
+    "status": "상태",
+    "phase": "단계",
+    "label": "상표",
+    "timeEstimate": "시간 추정",
+    "description": "설명",
+    "subTasks": "하위 작업"
+  },
+  "cancel": "취소",
+  "save": "구하다",
+  "templateNamePlaceholder": "템플릿 이름을 입력하십시오"
+}

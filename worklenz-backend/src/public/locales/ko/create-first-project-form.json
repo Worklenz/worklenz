@@ -1,0 +1,13 @@
+{
+  "formTitle": "첫 번째 프로젝트를 만듭니다",
+  "inputLabel": "지금 어떤 프로젝트를 진행하고 있습니까?",
+  "or": "또는",
+  "templateButton": "템플릿에서 가져옵니다",
+  "createFromTemplate": "템플릿에서 만듭니다",
+  "goBack": "돌아 가라",
+  "continue": "계속하다",
+  "cancel": "취소",
+  "create": "만들다",
+  "templateDrawerTitle": "템플릿에서 선택하십시오",
+  "createProject": "프로젝트를 만듭니다"
+}

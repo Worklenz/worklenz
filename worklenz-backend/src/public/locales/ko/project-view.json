@@ -1,0 +1,14 @@
+{
+  "taskList": "작업 목록",
+  "board": "판자",
+  "insights": "통찰력",
+  "files": "파일",
+  "members": "회원",
+  "updates": "업데이트",
+  "projectView": "프로젝트보기",
+  "loading": "로딩 프로젝트 ...",
+  "error": "오류로드 프로젝트",
+  "pinnedTab": "기본 탭으로 고정되었습니다",
+  "pinTab": "기본 탭으로 핀",
+  "unpinTab": "기본 탭을 핀"
+}
