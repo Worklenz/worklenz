@@ -122,6 +122,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
           description={taskFormViewModel?.task?.description || null}
           taskId={taskFormViewModel?.task?.id || ''}
           parentTaskId={taskFormViewModel?.task?.parent_task_id || ''}
+          projectId={projectId || ''}
         />
       ),
       style: panelStyle,
