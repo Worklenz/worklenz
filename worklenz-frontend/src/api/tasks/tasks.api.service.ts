@@ -198,4 +198,33 @@ export const tasksApiService = {
     });
     return response.data;
   },
+
+  // Move a task to another project
+  moveTaskToProject: async (params: {
+    taskId: string;
+    targetProjectId: string;
+  }): Promise<IServerResponse<{ message: string }>> => {
+    const response = await apiClient.post(`${rootUrl}/move`, {
+      task_id: params.taskId,
+      target_project_id: params.targetProjectId,
+    });
+    return response.data;
+  },
+};
+
+// Separate API root for sub-tasks
+const subTasksRootUrl = `${API_BASE_URL}/sub-tasks`;
+
+export const subTasksApiService = {
+  // Move a subtask to a new parent task
+  moveSubtaskToParent: async (params: {
+    subtaskId: string;
+    newParentTaskId: string;
+  }): Promise<IServerResponse<{ message: string }>> => {
+    const response = await apiClient.post(`${subTasksRootUrl}/move`, {
+      subtask_id: params.subtaskId,
+      new_parent_task_id: params.newParentTaskId,
+    });
+    return response.data;
+  },
 };

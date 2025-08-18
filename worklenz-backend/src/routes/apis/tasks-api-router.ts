@@ -41,6 +41,9 @@ tasksApiRouter.get("/kanban/:id", safeControllerFunction(TasksController.getProj
 tasksApiRouter.get("/list/columns/:id", idParamValidator, safeControllerFunction(TaskListColumnsController.getProjectTaskListColumns));
 tasksApiRouter.put("/list/columns/:id", idParamValidator, safeControllerFunction(TaskListColumnsController.toggleColumn));
 
+// Move task to another project
+tasksApiRouter.post("/move", safeControllerFunction(TasksController.moveToProject));
+
 tasksApiRouter.get("/list/v2/:id", idParamValidator, safeControllerFunction(getList));
 tasksApiRouter.get("/list/v3/:id", idParamValidator, safeControllerFunction(TasksControllerV2.getTasksV3));
 tasksApiRouter.post("/refresh-progress/:id", idParamValidator, safeControllerFunction(TasksControllerV2.refreshTaskProgress));
