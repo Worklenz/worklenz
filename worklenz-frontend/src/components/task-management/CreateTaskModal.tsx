@@ -254,9 +254,13 @@ const StatusManagement: React.FC<{
 
   const handleRenameStatus = useCallback(async (id: string, name: string) => {
     try {
+      // Find the current status to get its category_id (required by backend validator)
+      const currentStatus = localStatuses.find(s => s.id === id);
+      
       const body: ITaskStatusUpdateModel = {
         name: name.trim(),
         project_id: projectId,
+        category_id: currentStatus?.category_id || '', // Required by backend validator
       };
       
       await statusApiService.updateNameOfStatus(id, body, projectId);
@@ -264,7 +268,7 @@ const StatusManagement: React.FC<{
     } catch (error) {
       console.error('Error renaming status:', error);
     }
-  }, [projectId, dispatch]);
+  }, [projectId, dispatch, localStatuses]);
 
   const handleDeleteStatus = useCallback(async (id: string) => {
     AntModal.confirm({

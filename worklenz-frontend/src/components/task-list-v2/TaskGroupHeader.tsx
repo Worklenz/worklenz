@@ -228,9 +228,14 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
       if (currentGrouping === 'status') {
         // Extract status ID from group ID (format: "status-{statusId}")
         const statusId = group.id.replace('status-', '');
+        
+        // Find the current status to get its category_id (required by backend validator)
+        const currentStatus = statusList.find(s => s.id === statusId);
+        
         const body: ITaskStatusUpdateModel = {
           name: editingName.trim(),
           project_id: projectId,
+          category_id: currentStatus?.category_id || '', // Required by backend validator
         };
 
         await statusApiService.updateNameOfStatus(statusId, body, projectId);
@@ -264,6 +269,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     dispatch,
     trackMixpanelEvent,
     isRenaming,
+    statusList,
   ]);
 
   const handleNameClick = useCallback(
