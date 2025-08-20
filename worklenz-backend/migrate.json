@@ -1,0 +1,22 @@
+{
+  "migrations-dir": "database/pg-migrations",
+  "migrations-schema": "public",
+  "migrations-table": "pgmigrations",
+  "db": {
+    "user": {
+      "ENV": "DB_USER"
+    },
+    "password": {
+      "ENV": "DB_PASSWORD"
+    },
+    "host": {
+      "ENV": "DB_HOST"
+    },
+    "port": {
+      "ENV": "DB_PORT"
+    },
+    "database": {
+      "ENV": "DB_NAME"
+    }
+  }
+}
