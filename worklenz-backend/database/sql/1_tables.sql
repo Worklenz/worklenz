@@ -12,7 +12,7 @@ CREATE TYPE DEPENDENCY_TYPE AS ENUM ('blocked_by');
 
 CREATE TYPE SCHEDULE_TYPE AS ENUM ('daily', 'weekly', 'yearly', 'monthly', 'every_x_days', 'every_x_weeks', 'every_x_months');
 
-CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn');
+CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko');
 
 -- START: Users
 CREATE SEQUENCE IF NOT EXISTS users_user_no_seq START 1;
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS project_access_levels (
 ALTER TABLE project_access_levels
     ADD CONSTRAINT project_access_levels_pk
         PRIMARY KEY (id);
-        
+
 CREATE TABLE IF NOT EXISTS countries (
     id       UUID       DEFAULT uuid_generate_v4() NOT NULL,
     code     CHAR(2)                               NOT NULL,
