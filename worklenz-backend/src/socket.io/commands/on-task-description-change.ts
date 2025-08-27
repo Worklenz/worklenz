@@ -3,7 +3,7 @@ import db from "../../config/db";
 import { SocketEvents } from "../events";
 
 import { log_error, notifyProjectUpdates } from "../util";
-import sanitize from "sanitize-html";
+import sanitizeHtml from "sanitize-html";
 import {
   getTaskDetails,
   logDescriptionChange,
@@ -28,7 +28,19 @@ export async function on_task_description_change(
         .replace(/(^([ ]*<p><br><\/p>)*)|((<p><br><\/p>)*[ ]*$)/gi, "")
         .trim() || null;
 
-    await db.query(q, [body.task_id, sanitize(description)]);
+    const sanitized = description
+      ? sanitizeHtml(description, {
+          allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+          allowedAttributes: {
+            ...sanitizeHtml.defaults.allowedAttributes,
+            a: ["href", "name", "target", "rel"],
+            img: ["src", "alt", "title"],
+          },
+          allowedSchemes: ["http", "https", "data", "blob"],
+        })
+      : null;
+
+    await db.query(q, [body.task_id, sanitized]);
 
     socket.emit(SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), {
       id: body.task_id,

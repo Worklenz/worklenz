@@ -3,6 +3,10 @@ import DOMPurify from 'dompurify';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
+import { getBase64 } from '@/utils/file-utils';
+import { AssetUtils } from '@/utils/asset-optimizations';
+import { convertAttachmentLinksToImages } from '@/utils/richtext/description-images';
 
 // Lazy load TinyMCE editor to reduce initial bundle size
 const LazyTinyMCEEditor = lazy(() => 
@@ -13,9 +17,10 @@ interface DescriptionEditorProps {
   description: string | null;
   taskId: string;
   parentTaskId: string | null;
+  projectId: string;
 }
 
-const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEditorProps) => {
+const DescriptionEditor = ({ description, taskId, parentTaskId, projectId }: DescriptionEditorProps) => {
   const { socket } = useSocket();
   const [isHovered, setIsHovered] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
@@ -69,14 +74,21 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
 
   const handleDescriptionChange = () => {
     if (!taskId) return;
+
+    // Convert uploaded image links to inline <img> before saving
+    const postContent = convertAttachmentLinksToImages(content);
+
     socket?.emit(
       SocketEvents.TASK_DESCRIPTION_CHANGE.toString(),
       JSON.stringify({
         task_id: taskId,
-        description: content || null,
+        description: postContent || null,
         parent_task: parentTaskId,
       })
     );
+
+    // Update local content so the display shows inline images after save
+    setContent(postContent || '');
   };
 
   useEffect(() => {
@@ -121,6 +133,52 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   const handleInit = (evt: any, editor: any) => {
     editorRef.current = editor;
     editor.on('focus', () => setIsEditorOpen(true));
+
+    // Handle paste images: upload to storage and insert as hyperlink while editing
+    const doc = editor.getDoc && editor.getDoc();
+    if (doc) {
+      doc.addEventListener('paste', async (e: ClipboardEvent) => {
+        try {
+          const items = e.clipboardData?.items || [];
+          if (!items || items.length === 0) return;
+
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+              const file = item.getAsFile();
+              if (!file) continue;
+
+              // Convert to base64 and estimate size
+              const dataUrl = (await getBase64(file)) as string;
+              const size = AssetUtils.getDataUrlSize(dataUrl);
+              const ext = file.type.split('/')[1] || 'png';
+              const fileName = `pasted-image-${Date.now()}.${ext}`;
+
+              // Upload to backend (S3 via attachments endpoint)
+              if (!projectId) return;
+
+              const response = await taskAttachmentsApiService.createTaskAttachment({
+                file: dataUrl,
+                file_name: fileName,
+                project_id: projectId,
+                size,
+                task_id: taskId || null,
+              });
+
+              const url = response?.body?.url;
+              const name = response?.body?.name || fileName;
+              if (url) {
+                // Insert as hyperlink while editing
+                editor.insertContent(`<a href="${url}" target="_blank" rel="noopener noreferrer">${name}</a>`);
+              }
+            }
+          }
+        } catch (err) {
+          // no-op; avoid breaking paste
+        }
+      });
+    }
+
     const initialCount = editor.plugins.wordcount.getCount();
     setWordCount(initialCount);
     setIsEditorLoading(false);
@@ -222,12 +280,12 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
                     'media',
                     'table',
                     'code',
-                    'wordcount',
-                  ],
-                  toolbar:
-                    'blocks |' +
-                    'bold italic underline strikethrough | ' +
-                    'bullist numlist | link |  removeformat | help',
+                                      'wordcount',
+                ],
+                toolbar:
+                  'blocks |' +
+                  'bold italic underline strikethrough | ' +
+                  'bullist numlist | link |  removeformat | help',
                   content_style: `
                     body { 
                       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
