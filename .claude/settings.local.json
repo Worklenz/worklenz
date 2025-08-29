@@ -1,22 +1,27 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "WebSearch",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm test)",
       "Bash(npm run build:*)",
-      "Bash(npm run type-check:*)",
-      "Bash(npm run:*)",
-      "Bash(npm install:*)",
-      "Bash(npm outdated)",
-      "Bash(npm update)",
-      "Bash(npm audit:*)",
-      "Bash(npm ls:*)",
-      "Bash(ls:*)",
-      "Bash(npx eslint:*)",
-      "Bash(npm test:*)",
+      "Bash(grep:*)",
       "Bash(npx tsc:*)",
-      "Bash(/dev/null)",
-      "Bash(grep:*)"
+      "Bash(npm run dev:*)",
+      "Bash(node:*)",
+      "Bash(npm start)",
+      "Read(/C:\\Users\\chami\\Documents\\Worklenz\\Licensing/**)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:manyrequests.io)",
+      "WebFetch(domain:manyrequests.com)",
+      "Bash(rg:*)"
     ],
-    "deny": []
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\Users\\chami\\Documents\\Worklenz\\Licensing\\worklenz-license-manager-backend",
+      "C:\\mnt\\c\\Users\\chami\\Documents\\Worklenz\\worklenz-react-new\\worklenz-open-source-fork"
+    ]
   }
 }

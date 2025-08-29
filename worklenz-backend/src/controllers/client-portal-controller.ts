@@ -8,6 +8,7 @@ import { IEmailTemplateType } from "../interfaces/email-template-type";
 import { getBaseUrl, getClientPortalBaseUrl } from "../cron_jobs/helpers";
 import { uploadBase64, getClientPortalLogoKey } from "../shared/storage";
 import { log_error } from "../shared/utils";
+import { IO } from "../shared/io";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import crypto from "crypto";
@@ -459,6 +460,24 @@ class ClientPortalController {
 
       const updatedRequest = result.rows[0];
 
+      // Emit socket event for request update
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          io.emit(`client_portal:request_status_updated`, {
+            requestId: updatedRequest.id,
+            requestNumber: updatedRequest.req_no,
+            status: updatedRequest.status,
+            clientId: clientId,
+            organizationId: organizationId,
+            notes: updatedRequest.notes,
+            updatedAt: updatedRequest.updated_at
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting request update socket event:", socketError);
+      }
+
       return res.json(new ServerResponse(true, {
         id: updatedRequest.id,
         requestNumber: updatedRequest.req_no,
@@ -530,6 +549,303 @@ class ClientPortalController {
     } catch (error) {
       console.error("Error fetching request status options:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve request status options"));
+    }
+  }
+
+  // Organization Services Management (for organization users)
+  static async getOrganizationServices(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const {organizationId} = req;
+      const { page = 1, limit = 10, search, sortBy = 'name', sortOrder = 'asc' } = req.query;
+
+      let whereClause = 'WHERE s.organization_team_id = $1';
+      const queryParams = [organizationId];
+      let paramCount = 1;
+
+      // Add search filter
+      if (search) {
+        paramCount++;
+        whereClause += ` AND (LOWER(s.name) LIKE LOWER($${paramCount}) OR LOWER(s.description) LIKE LOWER($${paramCount}))`;
+        queryParams.push(`%${search}%`);
+      }
+
+      // Build main query
+      const query = `
+        SELECT 
+          s.id,
+          s.name,
+          s.description,
+          s.status,
+          s.service_data,
+          s.is_public,
+          s.created_at,
+          s.updated_at,
+          u.name as created_by_name,
+          COUNT(r.id) as requests_count
+        FROM client_portal_services s
+        LEFT JOIN users u ON s.created_by = u.id
+        LEFT JOIN client_portal_requests r ON s.id = r.service_id
+        ${whereClause}
+        GROUP BY s.id, u.name
+        ORDER BY ${sortBy} ${String(sortOrder).toUpperCase()}
+        LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
+      `;
+
+      queryParams.push(String(limit), String((Number(page) - 1) * Number(limit)));
+
+      const result = await db.query(query, queryParams);
+
+      // Get total count
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM client_portal_services s
+        ${whereClause}
+      `;
+      const countResult = await db.query(countQuery, queryParams.slice(0, paramCount));
+      const total = parseInt(countResult.rows[0].total);
+
+      const services = result.rows.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        status: row.status,
+        serviceData: row.service_data,
+        isPublic: row.is_public,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        createdByName: row.created_by_name,
+        requestsCount: parseInt(row.requests_count || 0)
+      }));
+
+      return res.json(new ServerResponse(true, {
+        services,
+        total,
+        page: Number(page),
+        limit: Number(limit)
+      }, "Organization services retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching organization services:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve organization services"));
+    }
+  }
+
+  static async getOrganizationServiceById(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const {organizationId} = req;
+
+      const query = `
+        SELECT 
+          s.id,
+          s.name,
+          s.description,
+          s.status,
+          s.service_data,
+          s.is_public,
+          s.allowed_client_ids,
+          s.created_at,
+          s.updated_at,
+          u.name as created_by_name
+        FROM client_portal_services s
+        LEFT JOIN users u ON s.created_by = u.id
+        WHERE s.id = $1 AND s.organization_team_id = $2
+      `;
+
+      const result = await db.query(query, [id, organizationId]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+      }
+
+      const service = result.rows[0];
+
+      return res.json(new ServerResponse(true, {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        status: service.status,
+        serviceData: service.service_data,
+        isPublic: service.is_public,
+        allowedClientIds: service.allowed_client_ids,
+        createdAt: service.created_at,
+        updatedAt: service.updated_at,
+        createdByName: service.created_by_name
+      }, "Service retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching service:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve service"));
+    }
+  }
+
+  static async createOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { name, description, service_data, is_public = false, allowed_client_ids = [] } = req.body;
+      const {organizationId, clientUserId} = req;
+
+      if (!name) {
+        return res.status(400).json(new ServerResponse(false, null, "Service name is required"));
+      }
+
+      const query = `
+        INSERT INTO client_portal_services (
+          name, description, service_data, is_public, allowed_client_ids,
+          team_id, organization_team_id, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *
+      `;
+
+      const result = await db.query(query, [
+        name,
+        description,
+        service_data,
+        is_public,
+        allowed_client_ids,
+        organizationId, // team_id
+        organizationId, // organization_team_id
+        clientUserId
+      ]);
+
+      const service = result.rows[0];
+
+      return res.status(201).json(new ServerResponse(true, {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        status: service.status,
+        serviceData: service.service_data,
+        isPublic: service.is_public,
+        allowedClientIds: service.allowed_client_ids,
+        createdAt: service.created_at,
+        updatedAt: service.updated_at
+      }, "Service created successfully"));
+    } catch (error) {
+      console.error("Error creating service:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to create service"));
+    }
+  }
+
+  static async updateOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const { name, description, service_data, is_public, allowed_client_ids, status } = req.body;
+      const {organizationId} = req;
+
+      // First check if service exists and belongs to organization
+      const checkQuery = `SELECT id FROM client_portal_services WHERE id = $1 AND organization_team_id = $2`;
+      const checkResult = await db.query(checkQuery, [id, organizationId]);
+      
+      if (checkResult.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+      }
+
+      const updateFields = [];
+      const queryParams = [];
+      let paramCount = 0;
+
+      if (name !== undefined) {
+        paramCount++;
+        updateFields.push(`name = $${paramCount}`);
+        queryParams.push(name);
+      }
+      if (description !== undefined) {
+        paramCount++;
+        updateFields.push(`description = $${paramCount}`);
+        queryParams.push(description);
+      }
+      if (service_data !== undefined) {
+        paramCount++;
+        updateFields.push(`service_data = $${paramCount}`);
+        queryParams.push(service_data);
+      }
+      if (is_public !== undefined) {
+        paramCount++;
+        updateFields.push(`is_public = $${paramCount}`);
+        queryParams.push(is_public);
+      }
+      if (allowed_client_ids !== undefined) {
+        paramCount++;
+        updateFields.push(`allowed_client_ids = $${paramCount}`);
+        queryParams.push(allowed_client_ids);
+      }
+      if (status !== undefined) {
+        paramCount++;
+        updateFields.push(`status = $${paramCount}`);
+        queryParams.push(status);
+      }
+
+      if (updateFields.length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "No fields to update"));
+      }
+
+      // Add updated_at
+      paramCount++;
+      updateFields.push(`updated_at = $${paramCount}`);
+      queryParams.push(new Date());
+
+      // Add WHERE conditions
+      paramCount++;
+      queryParams.push(id);
+      paramCount++;
+      queryParams.push(organizationId);
+
+      const updateQuery = `
+        UPDATE client_portal_services 
+        SET ${updateFields.join(', ')}
+        WHERE id = $${paramCount - 1} AND organization_team_id = $${paramCount}
+        RETURNING *
+      `;
+
+      const result = await db.query(updateQuery, queryParams);
+      const service = result.rows[0];
+
+      return res.json(new ServerResponse(true, {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        status: service.status,
+        serviceData: service.service_data,
+        isPublic: service.is_public,
+        allowedClientIds: service.allowed_client_ids,
+        createdAt: service.created_at,
+        updatedAt: service.updated_at
+      }, "Service updated successfully"));
+    } catch (error) {
+      console.error("Error updating service:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to update service"));
+    }
+  }
+
+  static async deleteOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const {organizationId} = req;
+
+      // Check if service has any requests
+      const requestsQuery = `SELECT COUNT(*) as count FROM client_portal_requests WHERE service_id = $1`;
+      const requestsResult = await db.query(requestsQuery, [id]);
+      const requestsCount = parseInt(requestsResult.rows[0].count);
+
+      if (requestsCount > 0) {
+        return res.status(400).json(new ServerResponse(false, null, `Cannot delete service with ${requestsCount} existing requests`));
+      }
+
+      // Delete the service
+      const deleteQuery = `
+        DELETE FROM client_portal_services 
+        WHERE id = $1 AND organization_team_id = $2
+        RETURNING id
+      `;
+
+      const result = await db.query(deleteQuery, [id, organizationId]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+      }
+
+      return res.json(new ServerResponse(true, null, "Service deleted successfully"));
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to delete service"));
     }
   }
 
@@ -1270,6 +1586,42 @@ class ClientPortalController {
       ]);
 
       const newMessage = result.rows[0];
+
+      // Emit socket events for real-time updates
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          // Emit to organization team members
+          io.emit(`client_portal:new_message`, {
+            id: newMessage.id,
+            clientId: clientId,
+            organizationId: organizationId,
+            senderName: clientEmail || 'Client',
+            senderType: 'client',
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            fileUrl: newMessage.file_url,
+            createdAt: newMessage.created_at
+          });
+
+          // Emit chat message event
+          io.emit('chat:message_received', {
+            id: newMessage.id,
+            chatId: `client_${clientId}`,
+            senderId: clientUserId,
+            senderName: clientEmail || 'Client',
+            senderType: 'client',
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            fileUrl: newMessage.file_url,
+            createdAt: newMessage.created_at,
+            isMe: false
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting socket events:", socketError);
+        // Don't fail the request if socket fails
+      }
 
       return res.json(new ServerResponse(true, {
         id: newMessage.id,

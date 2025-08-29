@@ -42,9 +42,19 @@ const wrap = (middleware: any) => (socket: any, next: any) => middleware(socket.
 io.use(wrap(sessionMiddleware));
 
 io.use((socket, next) => {
+  // Check for regular user authentication
   const userId = getLoggedInUserIdFromSocket(socket);
-  if (userId)
+  if (userId) {
     return next();
+  }
+  
+  // Check for client portal authentication via handshake auth
+  const auth = socket.handshake.auth;
+  if (auth && auth.token && auth.type === 'client') {
+    // Client portal authentication will be handled in on_client_connect
+    return next();
+  }
+  
   return next(new Error("401 unauthorized"));
 });
 

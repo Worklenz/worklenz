@@ -1,4 +1,6 @@
 import bcrypt from "bcrypt";
+import passport from "passport";
+import {NextFunction} from "express";
 
 import {sendResetEmail, sendResetSuccessEmail} from "../shared/email-templates";
 
@@ -112,8 +114,11 @@ export default class AuthController extends WorklenzControllerBase {
   public static async reset_password(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     const {email} = req.body;
 
-    const q = `SELECT id, email, google_id, password FROM users WHERE email = $1;`;
-    const result = await db.query(q, [email || null]);
+    // Normalize email to lowercase for case-insensitive comparison
+    const normalizedEmail = email ? email.toLowerCase().trim() : null;
+
+    const q = `SELECT id, email, google_id, password FROM users WHERE LOWER(email) = $1;`;
+    const result = await db.query(q, [normalizedEmail]);
 
     if (!result.rowCount)
       return res.status(200).send(new ServerResponse(false, null, "Account does not exists!"));
@@ -179,6 +184,165 @@ export default class AuthController extends WorklenzControllerBase {
     } catch (error) {
       log_error(error);
       res.status(500).send(new ServerResponse(false, null, DEFAULT_ERROR_MESSAGE));
+    }
+  }
+
+  public static googleMobileAuthPassport(req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) {
+    
+    const mobileOptions = {
+      session: true,
+      failureFlash: true,
+      failWithError: false
+    };
+
+    passport.authenticate("google-mobile", mobileOptions, (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).send({
+          done: false,
+          message: "Authentication failed",
+          body: null
+        });
+      }
+      
+      if (!user) {
+        return res.status(400).send({
+          done: false,
+          message: info?.message || "Authentication failed",
+          body: null
+        });
+      }
+      // Log the user in (create session)
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          return res.status(500).send({
+            done: false,
+            message: "Session creation failed",
+            body: null
+          });
+        }
+        
+        // Add build version
+        user.build_v = FileConstants.getRelease();
+        
+        // Ensure session is saved and cookie is set
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            return res.status(500).send({
+              done: false,
+              message: "Session save failed",
+              body: null
+            });
+          }
+          
+          // Get session cookie details
+          const sessionName = process.env.SESSION_NAME || 'connect.sid';
+          
+          // Return response with session info for mobile app to handle
+          res.setHeader('X-Session-ID', req.sessionID);
+          res.setHeader('X-Session-Name', sessionName);
+          
+          return res.status(200).send({
+            done: true,
+            message: "Login successful",
+            user,
+            authenticated: true,
+            sessionId: req.sessionID,
+            sessionName: sessionName,
+            newSessionId: req.sessionID
+          });
+        });
+      }); // Close login callback
+    })(req, res, next);
+  }
+
+  @HandleExceptions({logWithError: "body"})
+  public static async googleMobileAuth(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    const {idToken} = req.body;
+    
+    if (!idToken) {
+      return res.status(400).send(new ServerResponse(false, null, "ID token is required"));
+    }
+
+    try {
+      const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+      const profile = response.data;
+
+      // Validate token audience (client ID) - accept web, Android, and iOS client IDs
+      const allowedClientIds = [
+        process.env.GOOGLE_CLIENT_ID, // Web client ID
+        process.env.GOOGLE_ANDROID_CLIENT_ID, // Android client ID
+        process.env.GOOGLE_IOS_CLIENT_ID, // iOS client ID
+      ].filter(Boolean); // Remove undefined values
+      
+      console.log("Token audience (aud):", profile.aud);
+      console.log("Allowed client IDs:", allowedClientIds);
+      console.log("Environment variables check:");
+      console.log("- GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID ? "Set" : "Not set");
+      console.log("- GOOGLE_ANDROID_CLIENT_ID:", process.env.GOOGLE_ANDROID_CLIENT_ID ? "Set" : "Not set");
+      console.log("- GOOGLE_IOS_CLIENT_ID:", process.env.GOOGLE_IOS_CLIENT_ID ? "Set" : "Not set");
+      
+      if (!allowedClientIds.includes(profile.aud)) {
+        return res.status(400).send(new ServerResponse(false, null, "Invalid token audience"));
+      }
+
+      // Validate token issuer
+      if (!["https://accounts.google.com", "accounts.google.com"].includes(profile.iss)) {
+        return res.status(400).send(new ServerResponse(false, null, "Invalid token issuer"));
+      }
+
+      // Check token expiry
+      if (Date.now() >= profile.exp * 1000) {
+        return res.status(400).send(new ServerResponse(false, null, "Token expired"));
+      }
+
+      if (!profile.email_verified) {
+        return res.status(400).send(new ServerResponse(false, null, "Email not verified"));
+      }
+
+      // Check for existing local account
+      const normalizedProfileEmail = profile.email.toLowerCase().trim();
+      const localAccountResult = await db.query("SELECT 1 FROM users WHERE LOWER(email) = $1 AND password IS NOT NULL AND is_deleted IS FALSE;", [normalizedProfileEmail]);
+      if (localAccountResult.rowCount) {
+        return res.status(400).send(new ServerResponse(false, null, `No Google account exists for email ${profile.email}.`));
+      }
+
+      // Check if user exists
+      const userResult = await db.query(
+        "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR LOWER(email) = $2;",
+        [profile.sub, normalizedProfileEmail]
+      );
+
+      let user: any;
+      if (userResult.rowCount) {
+        // Existing user - login
+        user = userResult.rows[0];
+      } else {
+        // New user - register
+        const googleUserData = {
+          id: profile.sub,
+          displayName: profile.name,
+          email: normalizedProfileEmail,
+          picture: profile.picture
+        };
+
+        const registerResult = await db.query("SELECT register_google_user($1) AS user;", [JSON.stringify(googleUserData)]);
+        user = registerResult.rows[0].user;
+      }
+
+      // Create session
+      req.login(user, (err) => {
+        if (err) {
+          log_error(err);
+          return res.status(500).send(new ServerResponse(false, null, "Authentication failed"));
+        }
+        
+        user.build_v = FileConstants.getRelease();
+        return res.status(200).send(new AuthResponse("Login Successful!", true, user, null, "User successfully logged in"));
+      });
+
+    } catch (error) {
+      log_error(error);
+      return res.status(400).send(new ServerResponse(false, null, "Invalid ID token"));
     }
   }
 }

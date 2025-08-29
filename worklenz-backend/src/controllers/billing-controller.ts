@@ -285,4 +285,110 @@ VALUES ($1, $2, $3);`;
     return res.status(200).send(new ServerResponse(true, null, "Your contact information has been sent successfully."));
   }
 
+  @HandleExceptions()
+  public static async getPricingPlans(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Query plan tiers with their associated pricing plans
+    const q = `
+      SELECT 
+        lpt.id,
+        lpt.tier_name,
+        lpt.display_name,
+        lpt.tier_level,
+        lpt.pricing_model,
+        lpt.monthly_base_price,
+        lpt.annual_base_price,
+        lpt.monthly_per_user_price,
+        lpt.annual_per_user_price,
+        lpt.min_users,
+        lpt.max_users,
+        lpt.included_users,
+        lpt.max_projects,
+        lpt.max_storage_gb,
+        lpt.has_api_access,
+        lpt.has_advanced_analytics,
+        lpt.has_custom_fields,
+        lpt.has_gantt_charts,
+        lpt.has_time_tracking,
+        lpt.has_resource_management,
+        lpt.has_portfolio_view,
+        lpt.has_custom_branding,
+        lpt.has_sso,
+        lpt.has_audit_logs,
+        lpt.has_priority_support,
+        lpt.has_dedicated_account_manager,
+        lpt.is_popular,
+        lpt.sort_order,
+        -- Get paddle plan IDs from related pricing plans
+        monthly_plan.id as monthly_plan_id,
+        monthly_plan.paddle_id as monthly_paddle_id,
+        monthly_plan.active as monthly_active,
+        annual_plan.id as annual_plan_id,
+        annual_plan.paddle_id as annual_paddle_id,
+        annual_plan.active as annual_active
+      FROM licensing_plan_tiers lpt
+      LEFT JOIN licensing_pricing_plans monthly_plan ON lpt.id = monthly_plan.tier_id 
+        AND monthly_plan.billing_type = 'month' 
+        AND monthly_plan.active = true
+      LEFT JOIN licensing_pricing_plans annual_plan ON lpt.id = annual_plan.tier_id 
+        AND annual_plan.billing_type = 'year' 
+        AND annual_plan.active = true
+      WHERE lpt.is_active = true
+      ORDER BY lpt.sort_order, lpt.tier_level;
+    `;
+    
+    const result = await db.query(q);
+    
+    // Transform the data into a format that the frontend expects
+    const tiers = result.rows.map(row => ({
+      id: row.id,
+      tier_name: row.tier_name,
+      display_name: row.display_name,
+      tier_level: row.tier_level,
+      pricing_model: row.pricing_model,
+      
+      // Direct tier data
+      monthly_base_price: row.monthly_base_price,
+      annual_base_price: row.annual_base_price,
+      monthly_per_user_price: row.monthly_per_user_price,
+      annual_per_user_price: row.annual_per_user_price,
+      min_users: row.min_users,
+      max_users: row.max_users,
+      included_users: row.included_users,
+      
+      // Plan IDs for paddle integration
+      plans: {
+        monthly_plan_id: row.monthly_plan_id,
+        monthly_paddle_id: row.monthly_paddle_id,
+        annual_plan_id: row.annual_plan_id,
+        annual_paddle_id: row.annual_paddle_id
+      },
+      
+      // Features
+      features: {
+        max_projects: row.max_projects,
+        max_storage_gb: row.max_storage_gb,
+        has_api_access: row.has_api_access,
+        has_advanced_analytics: row.has_advanced_analytics,
+        has_custom_fields: row.has_custom_fields,
+        has_gantt_charts: row.has_gantt_charts,
+        has_time_tracking: row.has_time_tracking,
+        has_resource_management: row.has_resource_management,
+        has_portfolio_view: row.has_portfolio_view,
+        has_custom_branding: row.has_custom_branding,
+        has_sso: row.has_sso,
+        has_audit_logs: row.has_audit_logs,
+        has_priority_support: row.has_priority_support,
+        has_dedicated_account_manager: row.has_dedicated_account_manager
+      },
+      
+      // UI properties
+      is_popular: row.is_popular,
+      sort_order: row.sort_order
+    }));
+    
+    return res.status(200).send(new ServerResponse(true, {
+      tiers: tiers
+    }));
+  }
+
 }

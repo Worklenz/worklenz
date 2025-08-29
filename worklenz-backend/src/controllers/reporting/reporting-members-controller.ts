@@ -6,10 +6,69 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, getColor, int } from "../../shared/utils";
-import ReportingControllerBase from "./reporting-controller-base";
+import ReportingControllerBaseWithTimezone from "./reporting-controller-base-with-timezone";
 import Excel from "exceljs";
 
-export default class ReportingMembersController extends ReportingControllerBase {
+export default class ReportingMembersController extends ReportingControllerBaseWithTimezone {
+
+  protected static getPercentage(n: number, total: number) {
+    return +(n ? (n / total) * 100 : 0).toFixed();
+  }
+
+  protected static getCurrentTeamId(req: IWorkLenzRequest): string | null {
+    return req.user?.team_id ?? null;
+  }
+
+  public static convertMinutesToHoursAndMinutes(totalMinutes: number) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
+  }
+
+  public static convertSecondsToHoursAndMinutes(seconds: number) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  }
+
+  protected static formatEndDate(endDate: string) {
+    const end = moment(endDate).format("YYYY-MM-DD");
+    const fEndDate = moment(end);
+    return fEndDate;
+  }
+
+  protected static formatCurrentDate() {
+    const current = moment().format("YYYY-MM-DD");
+    const fCurrentDate = moment(current);
+    return fCurrentDate;
+  }
+
+  protected static getDaysLeft(endDate: string): number | null {
+    if (!endDate) return null;
+
+    const fCurrentDate = this.formatCurrentDate();
+    const fEndDate = this.formatEndDate(endDate);
+
+    return fEndDate.diff(fCurrentDate, "days");
+  }
+
+  protected static isOverdue(endDate: string): boolean {
+    if (!endDate) return false;
+
+    const fCurrentDate = this.formatCurrentDate();
+    const fEndDate = this.formatEndDate(endDate);
+
+    return fEndDate.isBefore(fCurrentDate);
+  }
+
+  protected static isToday(endDate: string): boolean {
+    if (!endDate) return false;
+
+    const fCurrentDate = this.formatCurrentDate();
+    const fEndDate = this.formatEndDate(endDate);
+
+    return fEndDate.isSame(fCurrentDate);
+  }
 
   private static async getMembers(
     teamId: string, searchQuery = "",
@@ -31,6 +90,7 @@ export default class ReportingMembersController extends ReportingControllerBase 
     const completedDurationClasue = this.completedDurationFilter(key, dateRange);
     const overdueActivityLogsClause = this.getActivityLogsOverdue(key, dateRange);
     const activityLogCreationFilter = this.getActivityLogsCreationClause(key, dateRange);
+    const timeLogDateRangeClause = this.getTimeLogDateRangeClause(key, dateRange);
 
     const q = `SELECT COUNT(DISTINCT email) AS total,
               (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
@@ -100,12 +160,27 @@ export default class ReportingMembersController extends ReportingControllerBase 
                                   FROM tasks t
                                           LEFT JOIN tasks_assignees ta ON t.id = ta.task_id
                                   WHERE team_member_id = tmiv.team_member_id
-                                      AND is_doing((SELECT new_value FROM task_activity_logs tl WHERE tl.task_id = t.id AND tl.attribute_type = 'status' ${activityLogCreationFilter} ORDER BY tl.created_at DESC LIMIT 1)::UUID, t.project_id) ${archivedClause}) AS ongoing_by_activity_logs
+                                      AND is_doing((SELECT new_value FROM task_activity_logs tl WHERE tl.task_id = t.id AND tl.attribute_type = 'status' ${activityLogCreationFilter} ORDER BY tl.created_at DESC LIMIT 1)::UUID, t.project_id) ${archivedClause}) AS ongoing_by_activity_logs,
+
+                              (SELECT COALESCE(SUM(twl.time_spent), 0)
+                                  FROM task_work_log twl
+                                  LEFT JOIN tasks t ON twl.task_id = t.id
+                                  WHERE twl.user_id = (SELECT user_id FROM team_members WHERE id = tmiv.team_member_id)
+                                      AND t.billable IS TRUE
+                                      AND t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                      ${timeLogDateRangeClause}
+                                      ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS billable_time,
+
+                              (SELECT COALESCE(SUM(twl.time_spent), 0)
+                                  FROM task_work_log twl
+                                  LEFT JOIN tasks t ON twl.task_id = t.id
+                                  WHERE twl.user_id = (SELECT user_id FROM team_members WHERE id = tmiv.team_member_id)
+                                      AND t.billable IS FALSE
+                                      AND t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                      ${timeLogDateRangeClause}
+                                      ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS non_billable_time
                       FROM team_member_info_view tmiv
                       WHERE tmiv.team_id = $1 ${teamsClause}
-                          AND tmiv.team_member_id IN (SELECT team_member_id
-                                                      FROM project_members
-                                                      WHERE project_id IN (SELECT id FROM projects WHERE projects.team_id = tmiv.team_id))
                           ${searchQuery}
                       GROUP BY email, name, avatar_url, team_member_id, tmiv.team_id
                       ORDER BY last_user_activity DESC NULLS LAST
@@ -113,9 +188,6 @@ export default class ReportingMembersController extends ReportingControllerBase 
                       ${pagingClause}) t) AS members
                   FROM team_member_info_view tmiv
                   WHERE tmiv.team_id = $1 ${teamsClause}
-                  AND tmiv.team_member_id IN (SELECT team_member_id
-                                              FROM project_members
-                                              WHERE project_id IN (SELECT id FROM projects WHERE projects.team_id = tmiv.team_id))
                   ${searchQuery}`;
     const result = await db.query(q, [teamId]);
     const [data] = result.rows;
@@ -265,8 +337,8 @@ export default class ReportingMembersController extends ReportingControllerBase 
                     (SELECT color_code FROM project_phases WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_color,
 
                     (total_minutes * 60) AS total_minutes,
-                    (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id AND ta.team_member_id = $1) AS time_logged,
-                    ((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id AND ta.team_member_id = $1) - (total_minutes * 60)) AS overlogged_time`;
+                    (SELECT SUM(time_spent) FROM task_work_log twl WHERE twl.task_id = t.id AND twl.user_id = (SELECT user_id FROM team_members WHERE id = $1)) AS time_logged,
+                    ((SELECT SUM(time_spent) FROM task_work_log twl WHERE twl.task_id = t.id AND twl.user_id = (SELECT user_id FROM team_members WHERE id = $1)) - (total_minutes * 60)) AS overlogged_time`;
   }
 
   protected static getActivityLogsOverdue(key: string, dateRange: string[]) {
@@ -307,6 +379,30 @@ export default class ReportingMembersController extends ReportingControllerBase 
       return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
     if (key === DATE_RANGES.LAST_QUARTER)
       return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+
+    return "";
+  }
+
+  protected static getTimeLogDateRangeClause(key: string, dateRange: string[]) {
+    if (dateRange.length === 2) {
+      const start = moment(dateRange[0]).format("YYYY-MM-DD");
+      const end = moment(dateRange[1]).format("YYYY-MM-DD");
+
+      if (start === end) {
+        return `AND twl.created_at::DATE = '${start}'::DATE`;
+      }
+
+      return `AND twl.created_at::DATE >= '${start}'::DATE AND twl.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+    }
+
+    if (key === DATE_RANGES.YESTERDAY)
+      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND twl.created_at < CURRENT_DATE::DATE`;
+    if (key === DATE_RANGES.LAST_WEEK)
+      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+    if (key === DATE_RANGES.LAST_MONTH)
+      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+    if (key === DATE_RANGES.LAST_QUARTER)
+      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
 
     return "";
   }
@@ -423,6 +519,8 @@ export default class ReportingMembersController extends ReportingControllerBase 
       { header: "Overdue Tasks", key: "overdue_tasks", width: 20 },
       { header: "Completed Tasks", key: "completed_tasks", width: 20 },
       { header: "Ongoing Tasks", key: "ongoing_tasks", width: 20 },
+      { header: "Billable Time (seconds)", key: "billable_time", width: 25 },
+      { header: "Non-Billable Time (seconds)", key: "non_billable_time", width: 25 },
       { header: "Done Tasks(%)", key: "done_tasks", width: 20 },
       { header: "Doing Tasks(%)", key: "doing_tasks", width: 20 },
       { header: "Todo Tasks(%)", key: "todo_tasks", width: 20 }
@@ -430,14 +528,14 @@ export default class ReportingMembersController extends ReportingControllerBase 
 
     // set title
     sheet.getCell("A1").value = `Members from ${teamName}`;
-    sheet.mergeCells("A1:K1");
+    sheet.mergeCells("A1:M1");
     sheet.getCell("A1").alignment = { horizontal: "center" };
     sheet.getCell("A1").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9D9D9" } };
     sheet.getCell("A1").font = { size: 16 };
 
     // set export date
     sheet.getCell("A2").value = `Exported on : ${exportDate}`;
-    sheet.mergeCells("A2:K2");
+    sheet.mergeCells("A2:M2");
     sheet.getCell("A2").alignment = { horizontal: "center" };
     sheet.getCell("A2").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F2F2F2" } };
     sheet.getCell("A2").font = { size: 12 };
@@ -447,7 +545,7 @@ export default class ReportingMembersController extends ReportingControllerBase 
     sheet.mergeCells("A3:D3");
 
     // set table headers
-    sheet.getRow(5).values = ["Member", "Email", "Tasks Assigned", "Overdue Tasks", "Completed Tasks", "Ongoing Tasks", "Done Tasks(%)", "Doing Tasks(%)", "Todo Tasks(%)"];
+    sheet.getRow(5).values = ["Member", "Email", "Tasks Assigned", "Overdue Tasks", "Completed Tasks", "Ongoing Tasks", "Billable Time (seconds)", "Non-Billable Time (seconds)", "Done Tasks(%)", "Doing Tasks(%)", "Todo Tasks(%)"];
     sheet.getRow(5).font = { bold: true };
 
     for (const member of result.members) {
@@ -458,6 +556,8 @@ export default class ReportingMembersController extends ReportingControllerBase 
         overdue_tasks: member.overdue,
         completed_tasks: member.completed,
         ongoing_tasks: member.ongoing,
+        billable_time: member.billable_time || 0,
+        non_billable_time: member.non_billable_time || 0,
         done_tasks: member.completed,
         doing_tasks: member.ongoing_by_activity_logs,
         todo_tasks: member.todo_by_activity_logs
@@ -487,7 +587,9 @@ export default class ReportingMembersController extends ReportingControllerBase 
       dateRange = date_range.split(",");
     }
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "twl");
+    // Get user timezone for proper date filtering
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
     const minMaxDateClause = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_work_log");
     const memberName = (req.query.member_name as string)?.trim() || null;
 
@@ -1038,7 +1140,9 @@ export default class ReportingMembersController extends ReportingControllerBase 
   public static async getMemberTimelogs(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, team_id, duration, date_range, archived, billable } = req.body;
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration || DATE_RANGES.LAST_WEEK, date_range, "twl");
+    // Get user timezone for proper date filtering
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
     const minMaxDateClause = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_work_log");
 
     const billableQuery = this.buildBillableQuery(billable);
@@ -1230,8 +1334,8 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
     row.actual_time = int(row.actual_time);
     row.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(row.estimated_time));
     row.actual_time_string = this.convertSecondsToHoursAndMinutes(int(row.actual_time));
-    row.days_left = ReportingControllerBase.getDaysLeft(row.end_date);
-    row.is_overdue = ReportingControllerBase.isOverdue(row.end_date);
+    row.days_left = this.getDaysLeft(row.end_date);
+    row.is_overdue = this.isOverdue(row.end_date);
     if (row.days_left && row.is_overdue) {
       row.days_left = row.days_left.toString().replace(/-/g, "");
     }
