@@ -57,6 +57,9 @@
 
   "contextMenu": {
     "assignToMe": "Atribuir a mim",
+    "copyLink": "Copiar link da tarefa",
+    "linkCopied": "Link copiado para a área de transferência",
+    "linkCopyFailed": "Falha ao copiar o link",
     "moveTo": "Mover para",
     "unarchive": "Desarquivar",
     "archive": "Arquivar",
@@ -87,7 +90,7 @@
     "peopleField": "Campo de pessoas",
     "noDate": "Sem data",
     "unsupportedField": "Tipo de campo não suportado",
-    
+
     "modal": {
       "addFieldTitle": "Adicionar campo",
       "editFieldTitle": "Editar campo",
@@ -108,7 +111,7 @@
       "createErrorMessage": "Falha ao criar a coluna personalizada",
       "updateErrorMessage": "Falha ao atualizar a coluna personalizada"
     },
-    
+
     "fieldTypes": {
       "people": "Pessoas",
       "number": "Número",
@@ -133,5 +136,11 @@
       "dependencies": "A tarefa tem dependências",
       "recurring": "Tarefa recorrente"
     }
+  },
+
+  "timer": {
+    "conflictTitle": "Temporizador Já Em Execução",
+    "conflictMessage": "Você tem um temporizador executando para \"{{taskName}}\" no projeto \"{{projectName}}\". Gostaria de parar esse temporizador e iniciar um novo para esta tarefa?",
+    "stopAndStart": "Parar e Iniciar Novo Temporizador"
   }
 }

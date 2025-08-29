@@ -1,0 +1,216 @@
+{
+  "title": "Wählen Sie den besten Plan für Ihr Team",
+  "subtitle": "Wählen Sie den perfekten Plan, um die Produktivität Ihres Teams zu steigern",
+  "billingCycle": {
+    "label": "Abrechnungszyklus",
+    "monthly": "Monatlich",
+    "yearly": "Jährlich",
+    "savePercent": "30% sparen"
+  },
+  "pricingModel": {
+    "label": "Preismodell",
+    "perUser": "Pro Benutzer",
+    "basePlan": "Basis-Plan",
+    "default": "Standard",
+    "explanation": {
+      "perUser": "Bezahlen Sie nur für aktive Benutzer. Perfekt für kleine Teams (1-5 Benutzer) mit flexibler Preisgestaltung, die mit Ihrem Team wächst.",
+      "basePlan": "Fester Grundpreis mit inbegriffenen Benutzern plus zusätzliche Benutzerkosten. Ideal für größere Teams (6+ Benutzer) mit vorhersagbarer Abrechnung."
+    }
+  },
+  "teamSize": {
+    "label": "Teamgröße",
+    "help": "Wählen Sie Ihre aktuelle oder erwartete Teamgröße",
+    "user": "Benutzer",
+    "users": "Benutzer",
+    "helpDescription": "Geben Sie die Anzahl der Benutzer in Ihrem Team ein (1-500)"
+  },
+  "plans": {
+    "free": {
+      "name": "Kostenlos",
+      "description": "Perfekt für den Einstieg",
+      "features": [
+        "3 Projekte",
+        "Grundlegende Aufgabenverwaltung",
+        "Team-Zusammenarbeit",
+        "Manuelle Verwaltung",
+        "Community-Support"
+      ],
+      "forever": "Für immer"
+    },
+    "proSmall": {
+      "name": "Pro Klein",
+      "description": "Ideal für kleine Teams",
+      "features": [
+        "Unbegrenzte Projekte",
+        "Erweiterte Aufgabenverwaltung",
+        "Gantt-Diagramme",
+        "Zeiterfassung",
+        "Benutzerdefinierte Felder",
+        "E-Mail-Support"
+      ]
+    },
+    "businessSmall": {
+      "name": "Business Klein",
+      "description": "Für wachsende Teams",
+      "features": [
+        "Alles in Pro Klein",
+        "Erweiterte Berichte",
+        "Benutzerdefinierte Workflows",
+        "API-Zugang",
+        "Priority-Support",
+        "Erweiterte Integrationen"
+      ]
+    },
+    "proLarge": {
+      "name": "Pro Groß",
+      "description": "Für größere Teams",
+      "features": [
+        "Alles in Pro Klein",
+        "Erweiterte Team-Verwaltung",
+        "Ressourcenzuteilung",
+        "Portfolio-Management",
+        "Priority-Support"
+      ]
+    },
+    "businessLarge": {
+      "name": "Business Groß",
+      "description": "Für Unternehmens-Teams",
+      "features": [
+        "Alles in Business Klein",
+        "Erweiterte Analytics",
+        "Benutzerdefiniertes Branding",
+        "SSO-Integration",
+        "Dedicated Support",
+        "SLA-Garantie"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Für große Organisationen",
+      "features": [
+        "Alles in Business Groß",
+        "Unbegrenzte Benutzer",
+        "Erweiterte Sicherheit",
+        "Benutzerdefinierte Integrationen",
+        "Dedicated Account Manager",
+        "On-Premises-Bereitstellung"
+      ]
+    }
+  },
+  "badges": {
+    "mostPopular": "Am beliebtesten",
+    "recommended": "Empfohlen",
+    "bestValue": "Bester Wert",
+    "currentPlan": "Aktueller Plan"
+  },
+  "pricing": {
+    "perMonth": "/Monat",
+    "perUser": "pro Benutzer",
+    "forUsers": "für {{count}} {{unit}}",
+    "basePrice": "{{price}} Basis + {{additionalCost}} zusätzliche Benutzer",
+    "upToUsers": "Bis zu {{count}} Benutzer",
+    "usersRange": "1-{{count}} Benutzer",
+    "savePerYear": "{{amount}}/Jahr sparen",
+    "originalPrice": "Originalpreis",
+    "discountPercent": "-{{percent}}%"
+  },
+  "buttons": {
+    "currentPlan": "Aktueller Plan",
+    "getStartedFree": "Kostenlos starten",
+    "contactSales": "Vertrieb kontaktieren",
+    "choosePlan": "Plan wählen",
+    "viewDetails": "Details anzeigen",
+    "chooseThisPlan": "Diesen Plan wählen",
+    "switchToMobile": "Zur mobilen Ansicht wechseln",
+    "toggleTheme": "Theme umschalten",
+    "switchToLight": "Zum hellen Theme wechseln",
+    "switchToDark": "Zum dunklen Theme wechseln",
+    "closeModal": "Preismodal schließen"
+  },
+  "userTypes": {
+    "trial": {
+      "title": "Test-Benutzer:",
+      "message": "{{days}} Tage verbleibend. Jetzt upgraden, um Ihre Daten und Funktionen zu behalten!"
+    },
+    "appsumo": {
+      "title": "AppSumo Spezial:",
+      "message": "50% Rabatt auf Business+ Pläne!",
+      "countdown": "Nur noch {{days}} Tage, um dieses exklusive Angebot zu nutzen.",
+      "standardPricing": "Standardpreise verfügbar"
+    },
+    "free": {
+      "title": "Aktueller Plan:",
+      "message": "Kostenlos. Bereit, mehr Funktionen freizuschalten?"
+    },
+    "custom": {
+      "title": "Von Custom Plan migrieren:",
+      "message": "Behalten Sie Ihre bestehenden Preise bei der Migration zu unseren neuen Standardplänen."
+    }
+  },
+  "recommendations": {
+    "switchModel": "{{amount}}/Monat sparen durch Wechsel zu {{model}} für {{count}} Benutzer",
+    "perUserPricing": "Pro-Benutzer-Preise",
+    "basePlanPricing": "Basis-Plan-Preise",
+    "switch": "Wechseln"
+  },
+  "planDetails": {
+    "title": "Plan-Details",
+    "features": "Funktionen",
+    "limits": "Limits",
+    "projects": "Projekte",
+    "users": "Benutzer",
+    "storage": "Speicher",
+    "unlimited": "Unbegrenzt"
+  },
+  "tips": {
+    "switchAnytime": "💡 Tipp: Sie können jederzeit zwischen Preismodellen in Ihren Abrechnungseinstellungen wechseln"
+  },
+  "errors": {
+    "loadingData": "Fehler beim Laden der Preisdaten",
+    "calculating": "Preise werden berechnet...",
+    "selectedPlan": "Ausgewählter Plan: {{plan}}"
+  },
+  "accessibility": {
+    "availablePlans": "Verfügbare Pläne",
+    "teamSizeHelp": "Teamgröße-Hilfe",
+    "pricingUpdates": "Preis-Updates"
+  },
+  "checkout": {
+    "title": "Bestätigen Sie Ihr Abonnement",
+    "subtitle": "Überprüfen Sie Ihre Plan-Details vor dem Fortfahren",
+    "summary": "Abonnement-Zusammenfassung",
+    "plan": "Plan",
+    "teamSize": "Teamgröße",
+    "discount": "Rabatt",
+    "total": "Gesamt",
+    "secureCheckout": "Sichere Kasse",
+    "secureDescription": "Ihre Zahlung wird sicher über Paddle verarbeitet. Sie können jederzeit kündigen oder Ihren Plan ändern.",
+    "appsumoSpecial": "AppSumo Spezialpreise",
+    "appsumoDescription": "Sie erhalten 50% Rabatt für die ersten 12 Monate. Dies ist ein zeitlich begrenztes Angebot!",
+    "proceedToPayment": "Zur Zahlung",
+    "cancel": "Abbrechen",
+    "processing": {
+      "title": "Ihr Abonnement wird verarbeitet",
+      "subtitle": "Bitte warten Sie, während wir Ihr Abonnement einrichten...",
+      "doNotClose": "Dieses Fenster nicht schließen",
+      "doNotCloseDescription": "Ihre Zahlung wird verarbeitet. Das Schließen dieses Fensters könnte den Vorgang unterbrechen."
+    },
+    "success": {
+      "title": "Abonnement erfolgreich erstellt!",
+      "subtitle": "Ihr Abonnement wurde aktiviert. Sie erhalten in Kürze eine Bestätigungs-E-Mail.",
+      "withId": "Ihre Abonnement-ID ist {{id}}. Sie erhalten in Kürze eine Bestätigungs-E-Mail.",
+      "goToDashboard": "Zum Dashboard",
+      "viewBilling": "Abrechnung anzeigen"
+    },
+    "error": {
+      "title": "Abonnement fehlgeschlagen",
+      "subtitle": "Etwas ist während des Abonnement-Prozesses schiefgegangen.",
+      "tryAgain": "Erneut versuchen"
+    },
+    "steps": {
+      "confirm": "Bestätigen",
+      "payment": "Zahlung",
+      "complete": "Abschließen"
+    }
+  }
+}

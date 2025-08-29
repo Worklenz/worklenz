@@ -1,8 +1,16 @@
-import { Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from 'antd';
+import {
+  Button,
+  Card,
+  Popconfirm,
+  Table,
+  TableProps,
+  Tooltip,
+  Typography,
+} from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './task-templates-settings.css';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -11,6 +19,8 @@ import { ITaskTemplatesGetResponse } from '@/types/settings/task-templates.types
 import logger from '@/utils/errorLogger';
 import { taskTemplatesApiService } from '@/api/task-templates/task-templates.api.service';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_task_templates_visit } from '@/shared/worklenz-analytics-events';
 
 const TaskTemplatesSettings = () => {
   const { t } = useTranslation('settings/task-templates');
@@ -20,6 +30,7 @@ const TaskTemplatesSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
+  const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle('Task Templates');
 
   const fetchTaskTemplates = async () => {
@@ -35,8 +46,9 @@ const TaskTemplatesSettings = () => {
   };
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_task_templates_visit);
     fetchTaskTemplates();
-  }, []);
+  }, [trackMixpanelEvent]);
 
   const handleDeleteTemplate = async (id: string) => {
     try {

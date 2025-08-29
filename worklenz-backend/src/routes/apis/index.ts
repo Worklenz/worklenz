@@ -38,7 +38,7 @@ import projectFoldersApiRouter from "./project-folders-api-router";
 import taskPhasesApiRouter from "./task-phases-api-router";
 import projectCategoriesApiRouter from "./project-categories-api-router";
 import homePageApiRouter from "./home-page-api-router";
-import ganttApiRouter from "./gantt-api-router";
+import projectRoadmapApiRouter from "./roadmap-api-router";
 import projectCommentsApiRouter from "./project-comments-api-router";
 import reportingExportApiRouter from "./reporting-export-api-router";
 import projectHealthsApiRouter from "./project-healths-api-router";
@@ -47,10 +47,11 @@ import projectTemplatesApiRouter from "./project-templates-api";
 import ptTaskPhasesApiRouter from "./pt_task-phases-api-router";
 import ptStatusesApiRouter from "./pt-statuses-api-router";
 import workloadApiRouter from "./gannt-apis/workload-api-router";
-import roadmapApiRouter from "./gannt-apis/roadmap-api-router";
+import roadmapGanttApiRouter from "./gannt-apis/roadmap-api-router";
 import scheduleApiRouter from "./gannt-apis/schedule-api-router";
 import scheduleApiV2Router from "./gannt-apis/schedule-api-v2-router";
 import projectManagerApiRouter from "./project-managers-api-router";
+import surveyApiRouter from "./survey-api-router";
 
 import billingApiRouter from "./billing-api-router";
 import taskDependenciesApiRouter from "./task-dependencies-api-router";
@@ -58,6 +59,18 @@ import taskDependenciesApiRouter from "./task-dependencies-api-router";
 import taskRecurringApiRouter from "./task-recurring-api-router";
 
 import customColumnsApiRouter from "./custom-columns-api-router";
+import projectFinanceApiRouter from "./project-finance-api-router";
+import projectRatecardApiRouter from "./project-ratecard-api-router";
+import ratecardApiRouter from "./ratecard-api-router";
+import holidayApiRouter from "./holiday-api-router";
+import userActivityLogsApiRouter from "./user-activity-logs-api-router";
+import supportApiRouter from "./support-api-router";
+import accountApiRouter from "./account-api-router";
+import planRecommendationApiRouter from "./plan-recommendation-api-router";
+import migrationApiRouter from "./migration-api-router";
+import subscriptionsApiRouter from "./subscriptions-api-router";
+import plansApiRouter from "./plans-api-router";
+import usersApiRouter from "./users-api-router";
 
 const api = express.Router();
 
@@ -91,7 +104,7 @@ api.use("/projects-folders", projectFoldersApiRouter);
 api.use("/task-phases", taskPhasesApiRouter);
 api.use("/project-categories", projectCategoriesApiRouter);
 api.use("/home", homePageApiRouter);
-api.use("/gantt", ganttApiRouter);
+api.use("/roadmap", projectRoadmapApiRouter);
 api.use("/project-comments", projectCommentsApiRouter);
 api.use("/reporting-export", reportingExportApiRouter);
 api.use("/project-healths", projectHealthsApiRouter);
@@ -100,10 +113,11 @@ api.use("/pt-tasks", ptTasksApiRouter);
 api.use("/pt-task-phases", ptTaskPhasesApiRouter);
 api.use("/pt-statuses", ptStatusesApiRouter);
 api.use("/workload-gannt", workloadApiRouter);
-api.use("/roadmap-gannt", roadmapApiRouter);
+api.use("/roadmap-gannt", roadmapGanttApiRouter);
 api.use("/schedule-gannt", scheduleApiRouter);
 api.use("/schedule-gannt-v2", scheduleApiV2Router);
 api.use("/project-managers", projectManagerApiRouter);
+api.use("/surveys", surveyApiRouter);
 
 api.get("/overview/:id", safeControllerFunction(OverviewController.getById));
 api.get("/task-priorities", safeControllerFunction(TaskPrioritiesController.get));
@@ -117,5 +131,25 @@ api.use("/task-dependencies", taskDependenciesApiRouter);
 api.use("/task-recurring", taskRecurringApiRouter);
 
 api.use("/custom-columns", customColumnsApiRouter);
+api.use("/support", supportApiRouter);
+api.use("/account", accountApiRouter);
+
+api.use("/project-finance", projectFinanceApiRouter);
+
+api.use("/project-ratecard", projectRatecardApiRouter);
+
+api.use("/ratecard", ratecardApiRouter);
+
+api.use("/holidays", holidayApiRouter);
+
+api.use("/logs", userActivityLogsApiRouter);
+
+api.use("/plan-recommendations", planRecommendationApiRouter);
+
+// Migration and subscription management APIs
+api.use("/migration", migrationApiRouter);
+api.use("/subscriptions", subscriptionsApiRouter);
+api.use("/plans", plansApiRouter);
+api.use("/users", usersApiRouter);
 
 export default api;

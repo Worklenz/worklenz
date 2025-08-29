@@ -65,4 +65,91 @@ export const scheduleAPIService = {
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/schedule`, schedule);
     return response.data;
   },
+
+  // Resource Management & Workload APIs
+  fetchMemberWorkload: async ({
+    memberId,
+    startDate,
+    endDate,
+  }: {
+    memberId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<IServerResponse<any>> => {
+    const params = new URLSearchParams();
+    if (memberId) params.append('memberId', memberId);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const response = await apiClient.get<IServerResponse<any>>(
+      `${rootUrl}/workload?${params.toString()}`
+    );
+    return response.data;
+  },
+
+  updateResourceAllocation: async ({
+    memberId,
+    projectId,
+    allocatedHours,
+    startDate,
+    endDate,
+  }: {
+    memberId: string;
+    projectId: string;
+    allocatedHours: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<IServerResponse<any>> => {
+    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/allocation`, {
+      memberId,
+      projectId,
+      allocatedHours,
+      startDate,
+      endDate,
+    });
+    return response.data;
+  },
+
+  rebalanceWorkload: async ({
+    memberIds,
+    strategy = 'even',
+    maxUtilization = 100,
+  }: {
+    memberIds?: string[];
+    strategy?: 'even' | 'skills' | 'priority';
+    maxUtilization?: number;
+  }): Promise<IServerResponse<any>> => {
+    const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/rebalance`, {
+      memberIds,
+      strategy,
+      maxUtilization,
+    });
+    return response.data;
+  },
+
+  fetchCapacityReport: async ({
+    startDate,
+    endDate,
+    teamId,
+  }: {
+    startDate: string;
+    endDate: string;
+    teamId?: string;
+  }): Promise<IServerResponse<any>> => {
+    const params = new URLSearchParams({
+      startDate,
+      endDate,
+    });
+    if (teamId) params.append('teamId', teamId);
+
+    const response = await apiClient.get<IServerResponse<any>>(
+      `${rootUrl}/capacity-report?${params.toString()}`
+    );
+    return response.data;
+  },
+
+  fetchResourceConflicts: async (): Promise<IServerResponse<any>> => {
+    const response = await apiClient.get<IServerResponse<any>>(`${rootUrl}/conflicts`);
+    return response.data;
+  },
 };

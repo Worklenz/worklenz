@@ -2,27 +2,27 @@
   "pageTitle": "Clientes",
   "pageDescription": "Gestiona tus clientes y su acceso al portal",
   "addClientButton": "Agregar Cliente",
-  
+
   "totalClientsLabel": "Total de Clientes",
   "activeClientsLabel": "Clientes Activos",
   "totalProjectsLabel": "Total de Proyectos",
   "totalTeamMembersLabel": "Miembros del Equipo",
-  
+
   "errorTitle": "Error",
   "loadingText": "Cargando...",
   "refreshButton": "Actualizar",
   "clearFiltersButton": "Limpiar Filtros",
-  
+
   "clientColumn": "Cliente",
   "statusColumn": "Estado",
   "assignedProjectsColumn": "Proyectos Asignados",
   "teamMembersColumn": "Miembros del Equipo",
   "actionBtnsColumn": "Acciones",
-  
+
   "statusActive": "Activo",
   "statusInactive": "Inactivo",
   "statusPending": "Pendiente",
-  
+
   "viewDetailsTooltip": "Ver Detalles",
   "editClientTooltip": "Editar Cliente",
   "manageProjectsTooltip": "Gestionar Proyectos",
@@ -30,45 +30,45 @@
   "settingsTooltip": "Configuración",
   "shareTooltip": "Compartir",
   "deleteTooltip": "Eliminar",
-  
+
   "deleteConfirmationTitle": "Eliminar Cliente",
   "deleteConfirmationDescription": "¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer.",
   "deleteConfirmationOk": "Eliminar",
   "deleteConfirmationCancel": "Cancelar",
-  
+
   "searchClientsPlaceholder": "Buscar clientes...",
   "statusFilterPlaceholder": "Filtrar por estado",
-  
+
   "paginationText": "Mostrando",
   "ofText": "de",
   "clientsText": "clientes",
-  
+
   "addClientTitle": "Agregar Nuevo Cliente",
   "createButton": "Crear Cliente",
   "cancelButton": "Cancelar",
-  
+
   "clientNameLabel": "Nombre del Cliente",
   "clientNamePlaceholder": "Ingresa el nombre del cliente",
   "clientNameRequired": "Por favor ingresa el nombre del cliente",
   "clientNameMinLength": "El nombre debe tener al menos 2 caracteres",
-  
+
   "emailLabel": "Dirección de Email",
   "emailPlaceholder": "Ingresa la dirección de email",
   "emailRequired": "Por favor ingresa la dirección de email",
   "emailInvalid": "Por favor ingresa una dirección de email válida",
-  
+
   "companyNameLabel": "Nombre de la Empresa",
   "companyNamePlaceholder": "Ingresa el nombre de la empresa (opcional)",
-  
+
   "phoneLabel": "Número de Teléfono",
   "phonePlaceholder": "Ingresa el número de teléfono (opcional)",
   "phoneInvalid": "Por favor ingresa un número de teléfono válido",
-  
+
   "addressLabel": "Dirección",
   "addressPlaceholder": "Ingresa la dirección (opcional)",
-  
+
   "statusLabel": "Estado",
-  
+
   "createClientSuccessMessage": "¡Cliente creado exitosamente! Comparte el enlace de invitación de la organización para darle acceso al portal.",
   "createClientSuccessMessageWithInvite": "¡Cliente creado exitosamente! Invitación enviada a {email}",
   "createClientErrorMessage": "Error al crear el cliente",
@@ -76,13 +76,13 @@
   "updateClientErrorMessage": "Error al actualizar el cliente",
   "deleteClientSuccessMessage": "Cliente eliminado exitosamente",
   "deleteClientErrorMessage": "Error al eliminar el cliente",
-  
+
   "clientPortalAccessTitle": "Acceso al Portal del Cliente",
   "clientPortalAccessDescription": "Comparte este enlace con tu cliente para darle acceso a su portal",
   "clientPortalAccessInfo": "Después de crear el cliente, usa el enlace de invitación de la organización desde la página de Clientes para darle acceso al portal.",
   "copyButton": "Copiar",
   "linkCopiedMessage": "Enlace copiado al portapapeles",
-  
+
   "organizationInviteLinkTitle": "Enlace de Invitación de la Organización",
   "organizationInviteLinkDescription": "Comparte este único enlace con cualquier cliente para permitirles unirse al portal de clientes de tu organización. El enlace expira después de 7 días por seguridad y se puede regenerar según sea necesario.",
   "generateLink": "Generar Enlace",
@@ -97,14 +97,14 @@
   "linkGenerating": "Generando enlace de invitación...",
   "linkExpired": "Este enlace de invitación ha expirado",
   "linkActive": "Activo",
-  
+
   "closeButton": "Cerrar",
   "deleteButton": "Eliminar Cliente",
-  
+
   "clientInformationTitle": "Información del Cliente",
   "createdAtLabel": "Creado",
   "updatedAtLabel": "Actualizado",
-  
+
   "statisticsTitle": "Estadísticas",
   "totalProjectsLabel": "Total de Proyectos",
   "activeProjectsLabel": "Proyectos Activos",
@@ -115,40 +115,40 @@
   "pendingRequestsLabel": "Solicitudes Pendientes",
   "totalInvoicesLabel": "Total de Facturas",
   "unpaidInvoicesLabel": "Facturas Impagas",
-  
+
   "teamMembersTitle": "Miembros del Equipo",
   "noTeamMembersText": "No se encontraron miembros del equipo",
-  
+
   "projectsTitle": "Proyectos",
   "noProjectsText": "No se encontraron proyectos",
   "viewProjectTooltip": "Ver Proyecto",
   "viewButton": "Ver",
   "tasksCompletedText": "tareas completadas",
-  
+
   "overviewTab": "Resumen",
   "teamTab": "Equipo",
   "projectsTab": "Proyectos",
-  
+
   "inviteMemberButton": "Invitar Miembro",
   "editButton": "Editar",
   "removeButton": "Eliminar",
-  
+
   "assignedProjectsTitle": "Proyectos Asignados",
   "assignProjectButton": "Asignar Proyecto",
   "noProjectsAssignedText": "No hay proyectos asignados",
   "tasksProgressText": "Tareas",
-  
+
   "nameLabel": "Nombre",
   "companyLabel": "Empresa",
   "phoneLabel": "Teléfono",
   "addressLabel": "Dirección",
-  
+
   "copyLinkLabel": "Copiar Enlace",
   "addTeamMembersLabel": "Agregar Miembros del Equipo",
   "teamMembersLabel": "Miembros del Equipo",
   "assignProjectLabel": "Asignar Proyecto",
   "searchProjectPlaceholder": "Buscar Proyecto",
-  
+
   "bulkActions": "Acciones Masivas",
   "selectedCount": "Seleccionados",
   "activateSelected": "Activar Seleccionados",
@@ -161,15 +161,15 @@
   "bulkDeleteErrorMessage": "Error al eliminar clientes seleccionados",
   "bulkUpdateSuccessMessage": "Clientes seleccionados actualizados exitosamente",
   "bulkUpdateErrorMessage": "Error al actualizar clientes seleccionados",
-  
+
   "editClientTitle": "Editar Cliente",
   "updateButton": "Actualizar Cliente",
   "saveButton": "Guardar Cambios",
-  
+
   "clientDetailsTitle": "Detalles del Cliente",
   "clientTeamsTitle": "Gestión del Equipo del Cliente",
   "clientSettingsTitle": "Configuración del Cliente",
-  
+
   "inviteTeamMemberTitle": "Invitar Miembro del Equipo",
   "inviteTeamMemberDescription": "Enviar una invitación para unirse al equipo de este cliente",
   "inviteEmailLabel": "Dirección de Email",
@@ -182,35 +182,35 @@
   "inviteButton": "Enviar Invitación",
   "inviteSuccessMessage": "Invitación enviada exitosamente",
   "inviteErrorMessage": "Error al enviar la invitación",
-  
+
   "resendInvitationButton": "Reenviar Invitación",
   "resendInvitationSuccessMessage": "Invitación reenviada exitosamente",
   "resendInvitationErrorMessage": "Error al reenviar la invitación",
-  
+
   "removeTeamMemberTitle": "Eliminar Miembro del Equipo",
   "removeTeamMemberDescription": "¿Estás seguro de que quieres eliminar este miembro del equipo?",
   "removeTeamMemberSuccessMessage": "Miembro del equipo eliminado exitosamente",
   "removeTeamMemberErrorMessage": "Error al eliminar el miembro del equipo",
-  
+
   "assignProjectTitle": "Asignar Proyecto",
   "assignProjectDescription": "Selecciona proyectos para asignar a este cliente",
   "assignProjectSuccessMessage": "Proyectos asignados exitosamente",
   "assignProjectErrorMessage": "Error al asignar proyectos",
-  
+
   "unassignProjectTitle": "Desasignar Proyecto",
   "unassignProjectDescription": "¿Estás seguro de que quieres desasignar este proyecto?",
   "unassignProjectSuccessMessage": "Proyecto desasignado exitosamente",
   "unassignProjectErrorMessage": "Error al desasignar el proyecto",
-  
+
   "noDataText": "No hay datos disponibles",
   "loadingDataText": "Cargando datos...",
   "errorLoadingDataText": "Error al cargar datos",
   "retryButton": "Reintentar",
-  
+
   "errorLoadingClient": "Error al cargar datos del cliente",
   "clientNameMinLength": "El nombre debe tener al menos 2 caracteres",
   "phoneInvalid": "Por favor ingrese un número de teléfono válido",
-  
+
   "teamManagementTitle": "Gestión de Equipo",
   "clientPortalLinkLabel": "Enlace del Portal del Cliente",
   "clientPortalLinkDescription": "Comparta este enlace con su cliente para darle acceso a su portal",
@@ -219,7 +219,7 @@
   "noClientsDescription": "Aún no ha agregado ningún cliente. Agregue su primer cliente para comenzar a gestionar el acceso a su portal.",
   "errorLoadingClients": "Error al cargar clientes",
   "errorLoadingClientsDescription": "Hubo un error al cargar sus clientes. Por favor, inténtelo de nuevo más tarde.",
-  
+
   "projectSettingsTitle": "Configuración de Proyectos",
   "assignProjectTitle": "Asignar Nuevo Proyecto",
   "selectProjectLabel": "Seleccionar Proyecto",
@@ -245,4 +245,3 @@
   "projectRemovedSuccessMessage": "Proyecto eliminado exitosamente",
   "projectRemovedErrorMessage": "Error al eliminar el proyecto"
 }
-  

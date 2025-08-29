@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Flex, Typography, Spin, Alert } from 'antd';
+import { Button, Flex, Typography, Spin, Alert } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftOutlined } from '@ant-design/icons';

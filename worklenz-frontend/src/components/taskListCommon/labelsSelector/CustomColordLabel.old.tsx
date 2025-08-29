@@ -1,4 +1,4 @@
-import { Tag, Tooltip } from 'antd';
+import { Tag, Tooltip } from '@/shared/antd-imports';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 
 interface ICustomColordLabelProps {

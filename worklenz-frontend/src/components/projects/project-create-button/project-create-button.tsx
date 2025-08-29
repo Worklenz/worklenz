@@ -1,7 +1,7 @@
-import { Button, Drawer, Dropdown } from 'antd';
+import { Button, Drawer, Dropdown } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { DownOutlined, EditOutlined, ImportOutlined } from '@ant-design/icons';
+import { DownOutlined, EditOutlined, ImportOutlined } from '@/shared/antd-imports';
 import TemplateDrawer from '@/components/common/template-drawer/template-drawer';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -12,7 +12,10 @@ import {
 } from '@/features/project/project-drawer.slice';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
-import { evt_projects_create_click } from '@/shared/worklenz-analytics-events';
+import {
+  evt_projects_create_click,
+  evt_project_import_from_template_click,
+} from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 interface CreateProjectButtonProps {
   className?: string;
@@ -36,6 +39,7 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
   }, [location]);
 
   const handleTemplateDrawerOpen = () => {
+    trackMixpanelEvent(evt_project_import_from_template_click);
     setIsTemplateDrawerOpen(true);
   };
 

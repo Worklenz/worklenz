@@ -5,7 +5,7 @@ import {
   SearchOutlined,
   SyncOutlined,
   UserSwitchOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import {
   Avatar,
   Badge,
@@ -18,13 +18,14 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import UpdateMemberDrawer from '@/components/settings/update-member-drawer';
@@ -37,11 +38,14 @@ import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { colors } from '@/styles/colors';
+import { getRoleColor } from '@/types/roles/role.types';
+import { canManageUserRole } from '@/utils/role-permissions.utils';
 
 const TeamMembersSettings = () => {
   const { t } = useTranslation('settings/team-members');
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
+  const auth = useAuthService();
   const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers); // Listen to refresh flag
 
   useDocumentTitle(t('title') || 'Team Members');
@@ -159,17 +163,16 @@ const TeamMembersSettings = () => {
   }, [getTeamMembers]);
 
   const getColor = useCallback((role: string | undefined) => {
-    switch (role?.toLowerCase()) {
-      case 'owner':
-        return colors.skyBlue;
-      case 'member':
-        return colors.lightGray;
-      case 'admin':
-        return colors.yellow;
-      default:
-        return colors.darkGray;
-    }
+    return getRoleColor(role || '');
   }, []);
+
+  const currentUser = auth.getCurrentSession();
+  const canManageUser = useCallback(
+    (targetRole: string | undefined) => {
+      return canManageUserRole(currentUser?.role_name, targetRole, currentUser?.owner);
+    },
+    [currentUser?.role_name, currentUser?.owner]
+  );
 
   const columns: TableProps['columns'] = [
     {
@@ -197,7 +200,7 @@ const TeamMembersSettings = () => {
           {record.name}
           {record.is_online && <Badge color={colors.limeGreen} />}
           {!record.active && (
-            <Typography.Text style={{ color: colors.yellow }}>
+            <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
               {t('deactivatedText')}
             </Typography.Text>
           )}
@@ -262,40 +265,45 @@ const TeamMembersSettings = () => {
     {
       key: 'actionBtns',
       width: 120,
-      render: (record: ITeamMemberViewModel) =>
-        record.role_name !== 'owner' && (
-          <Flex gap={8} style={{ padding: 0 }}>
-            <Tooltip title={t('editTooltip')}>
-              <Button
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => record.id && handleMemberClick(record.id)}
-              />
-            </Tooltip>
-            <Tooltip title={record.active ? t('deactivateTooltip') : t('activateTooltip')}>
-              <Popconfirm
-                title={t('confirmActivateTitle')}
-                icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-                okText={t('okText')}
-                cancelText={t('cancelText')}
-                onConfirm={() => handleStatusChange(record)}
-              >
-                <Button size="small" icon={<UserSwitchOutlined />} />
-              </Popconfirm>
-            </Tooltip>
-            <Tooltip title={t('deleteTooltip')}>
-              <Popconfirm
-                title={t('confirmDeleteTitle')}
-                icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-                okText={t('okText')}
-                cancelText={t('cancelText')}
-                onConfirm={() => record.id && handleDeleteMember(record)}
-              >
-                <Button size="small" icon={<DeleteOutlined />} />
-              </Popconfirm>
-            </Tooltip>
-          </Flex>
-        ),
+      render: (record: ITeamMemberViewModel) => {
+        const canManage = canManageUser(record.role_name);
+        return (
+          record.role_name !== 'owner' &&
+          canManage && (
+            <Flex gap={8} style={{ padding: 0 }}>
+              <Tooltip title={t('editTooltip')}>
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => record.id && handleMemberClick(record.id)}
+                />
+              </Tooltip>
+              <Tooltip title={record.active ? t('deactivateTooltip') : t('activateTooltip')}>
+                <Popconfirm
+                  title={t('confirmActivateTitle')}
+                  icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+                  okText={t('okText')}
+                  cancelText={t('cancelText')}
+                  onConfirm={() => handleStatusChange(record)}
+                >
+                  <Button size="small" icon={<UserSwitchOutlined />} />
+                </Popconfirm>
+              </Tooltip>
+              <Tooltip title={t('deleteTooltip')}>
+                <Popconfirm
+                  title={t('confirmDeleteTitle')}
+                  icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+                  okText={t('okText')}
+                  cancelText={t('cancelText')}
+                  onConfirm={() => record.id && handleDeleteMember(record)}
+                >
+                  <Button size="small" icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </Tooltip>
+            </Flex>
+          )
+        );
+      },
     },
   ];
 

@@ -1,23 +1,35 @@
-import { Card, Flex } from 'antd';
-import TimeReportPageHeader from '@/pages/reporting/timeReports/page-header/time-report-page-header';
+import { Card, Flex } from '@/shared/antd-imports';
 import MembersTimeSheet, {
   MembersTimeSheetRef,
-} from '@/pages/reporting/time-reports/members-time-sheet/members-time-sheet';
-import TimeReportingRightHeader from './timeReportingRightHeader/TimeReportingRightHeader';
+} from '@/components/reporting/time-reports/sheets/MembersTimeSheet';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { IRPTTimeTotals } from '@/types/reporting/reporting.types';
+import TimeReportingRightHeader from '@/components/reporting/time-reports/right-header/TimeReportingRightHeader';
+import TimeReportPageHeader from '@/components/reporting/time-reports/page-header/TimeReportPageHeader';
+import TotalTimeUtilization from '@/components/reporting/time-reports/total-time-utilization/total-time-utilization';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 const MembersTimeReports = () => {
   const { t } = useTranslation('time-report');
   const chartRef = useRef<MembersTimeSheetRef>(null);
-
+  const [totals, setTotals] = useState<IRPTTimeTotals>({
+    total_time_logs: '0',
+    total_estimated_hours: '0',
+    total_utilization: '0',
+  });
+  const { dateRange } = useAppSelector(state => state.reportingReducer);
   useDocumentTitle('Reporting - Allocation');
 
   const handleExport = (type: string) => {
     if (type === 'png') {
       chartRef.current?.exportChart();
     }
+  };
+
+  const handleTotalsUpdate = (newTotals: IRPTTimeTotals) => {
+    setTotals(newTotals);
   };
 
   return (
@@ -27,7 +39,7 @@ const MembersTimeReports = () => {
         exportType={[{ key: 'png', label: 'PNG' }]}
         export={handleExport}
       />
-
+      <TotalTimeUtilization totals={totals} dateRange={dateRange} />
       <Card
         style={{ borderRadius: '4px' }}
         title={
@@ -43,7 +55,7 @@ const MembersTimeReports = () => {
           },
         }}
       >
-        <MembersTimeSheet ref={chartRef} />
+        <MembersTimeSheet onTotalsUpdate={handleTotalsUpdate} ref={chartRef} />
       </Card>
     </Flex>
   );

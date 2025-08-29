@@ -1,12 +1,12 @@
-import { Button, Card, Flex, Steps, Typography } from 'antd';
+import { Button, Card, Flex, Steps, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { nanoid } from '@reduxjs/toolkit';
 import { useTranslation } from 'react-i18next';
 import { TempServicesType } from '../../../../types/client-portal/temp-client-portal.types';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useResponsive } from '../../../../hooks/useResponsive';  
-import ServiceDetailsStep from './modal-stepper/service-details-step';  
+import { useResponsive } from '../../../../hooks/useResponsive';
+import ServiceDetailsStep from './modal-stepper/service-details-step';
 import RequestFormStep from './modal-stepper/request-form-step';
 import PreviewAndSubmitStep from './modal-stepper/preview-and-submit-step';
 import './add-service-stepper.css';
@@ -117,15 +117,9 @@ const ClientPortalAddServices = () => {
               />
             )}
             {current === 1 && (
-              <RequestFormStep
-                setCurrent={setCurrent}
-                service={service}
-                setService={setService}
-              />
+              <RequestFormStep setCurrent={setCurrent} service={service} setService={setService} />
             )}
-            {current === 2 && (
-              <PreviewAndSubmitStep setCurrent={setCurrent} service={service} />
-            )}
+            {current === 2 && <PreviewAndSubmitStep setCurrent={setCurrent} service={service} />}
           </div>
         </div>
       </Card>

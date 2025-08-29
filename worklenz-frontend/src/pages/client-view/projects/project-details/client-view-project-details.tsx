@@ -1,4 +1,14 @@
-import { Card, Descriptions, Flex, Progress, Typography, Button, Row, Col, Tag } from 'antd';
+import {
+  Card,
+  Descriptions,
+  Flex,
+  Progress,
+  Typography,
+  Button,
+  Row,
+  Col,
+  Tag,
+} from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -12,7 +22,7 @@ const ClientViewProjectDetails = () => {
   const navigate = useNavigate();
 
   // Get project details from Redux (replace with API call)
-  const projectDetails = useAppSelector((state) => 
+  const projectDetails = useAppSelector(state =>
     state.clientViewReducer.projectsReducer.projectsList.find((project: any) => project.id === id)
   );
 
@@ -22,16 +32,15 @@ const ClientViewProjectDetails = () => {
         <Typography.Title level={4} style={{ marginBlock: 0 }}>
           {t('projectNotFound')}
         </Typography.Title>
-        <Button onClick={() => navigate('/client-portal/projects')}>
-          {t('backToProjects')}
-        </Button>
+        <Button onClick={() => navigate('/client-portal/projects')}>{t('backToProjects')}</Button>
       </Flex>
     );
   }
 
-  const progressPercent = projectDetails.totalTasks > 0 
-    ? (projectDetails.completedTasks / projectDetails.totalTasks) * 100 
-    : 0;
+  const progressPercent =
+    projectDetails.totalTasks > 0
+      ? (projectDetails.completedTasks / projectDetails.totalTasks) * 100
+      : 0;
 
   return (
     <Flex vertical gap={24} style={{ width: '100%' }}>
@@ -39,9 +48,7 @@ const ClientViewProjectDetails = () => {
         <Typography.Title level={4} style={{ marginBlock: 0 }}>
           {projectDetails.name}
         </Typography.Title>
-        <Button onClick={() => navigate('/client-portal/projects')}>
-          {t('backToProjects')}
-        </Button>
+        <Button onClick={() => navigate('/client-portal/projects')}>{t('backToProjects')}</Button>
       </Flex>
 
       <Row gutter={[16, 16]}>
@@ -74,9 +81,7 @@ const ClientViewProjectDetails = () => {
 
           <Card title={t('recentActivity')} style={{ marginTop: 16 }}>
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Typography.Text type="secondary">
-                {t('noRecentActivity')}
-              </Typography.Text>
+              <Typography.Text type="secondary">{t('noRecentActivity')}</Typography.Text>
             </div>
           </Card>
         </Col>
@@ -97,11 +102,15 @@ const ClientViewProjectDetails = () => {
             <Flex vertical gap={12}>
               <Flex align="center" gap={8}>
                 <CalendarOutlined />
-                <Typography.Text>{t('startDate')}: {t('notSet')}</Typography.Text>
+                <Typography.Text>
+                  {t('startDate')}: {t('notSet')}
+                </Typography.Text>
               </Flex>
               <Flex align="center" gap={8}>
                 <CalendarOutlined />
-                <Typography.Text>{t('endDate')}: {t('notSet')}</Typography.Text>
+                <Typography.Text>
+                  {t('endDate')}: {t('notSet')}
+                </Typography.Text>
               </Flex>
             </Flex>
           </Card>
@@ -110,9 +119,7 @@ const ClientViewProjectDetails = () => {
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
               <FileTextOutlined style={{ fontSize: 24, color: '#d9d9d9' }} />
               <br />
-              <Typography.Text type="secondary">
-                {t('noFiles')}
-              </Typography.Text>
+              <Typography.Text type="secondary">{t('noFiles')}</Typography.Text>
             </div>
           </Card>
         </Col>
@@ -121,4 +128,4 @@ const ClientViewProjectDetails = () => {
   );
 };
 
-export default ClientViewProjectDetails; 
+export default ClientViewProjectDetails;

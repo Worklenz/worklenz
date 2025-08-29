@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Exclusive AppSumo Offer — Business Plan</title>
+  <meta name="subject" content="Exclusive AppSumo Offer — Business Plan" />
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="width=device-width,initial-scale=1" name="viewport">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f6f8fa;
+      font-family: 'Mada', 'Segoe UI', Arial, sans-serif;
+      color: #222;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: inherit !important; }
+    #MessageViewBody a { color: inherit; text-decoration: none; }
+    p { line-height: 1.6; margin: 0 0 16px 0; }
+    p:last-child { margin-bottom: 0; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(24,144,255,0.08);
+      margin-bottom: 24px;
+      padding: 28px;
+    }
+
+    .card h3 { 
+      color: #1890ff; 
+      margin-top: 0; 
+      margin-bottom: 16px; 
+      font-size: 22px; 
+      line-height: 1.3;
+    }
+
+    .feature-list { 
+      padding-left: 18px; 
+      margin: 0 0 12px 0; 
+    }
+    .feature-list li { 
+      margin-bottom: 8px; 
+      font-size: 16px; 
+      line-height: 1.5;
+    }
+
+    .main-btn {
+      background: #1890ff;
+      border: 2px solid #1890ff;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 22px;
+      text-decoration: none;
+      display: inline-block;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(24,144,255,0.13);
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .price { 
+      font-size: 28px; 
+      font-weight:700; 
+      color: #1890ff; 
+      margin: 6px 0; 
+      display: inline-block;
+    }
+    .muted { 
+      color:#888; 
+      font-size:14px; 
+      margin:0; 
+      line-height: 1.4;
+    }
+
+    .notice { 
+      background: #dbeeff; 
+      border-left: 4px solid #0966c7; 
+      padding: 14px 16px; 
+      border-radius: 8px; 
+      color: #03263d; 
+      font-weight:600; 
+      margin: 16px 0;
+    }
+
+    .offer-highlight {
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 70%, #ff9f43 100%);
+      border: 3px solid #ff6b35;
+      border-radius: 16px;
+      padding: 0;
+      margin: 24px 0;
+      text-align: left;
+      box-shadow: 0 8px 32px rgba(255, 107, 53, 0.3), 0 2px 8px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .offer-highlight::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { left: -100%; }
+      50% { left: 100%; }
+      100% { left: 100%; }
+    }
+
+    .offer-highlight::before {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #d63031, #e84393);
+      color: white;
+      padding: 6px 24px;
+      border-radius: 0 0 12px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+      box-shadow: 0 3px 12px rgba(214, 48, 49, 0.5);
+      z-index: 1;
+    }
+
+    .offer-highlight h4 {
+      color: white;
+      margin: 0 0 12px 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .offer-highlight .discount-price {
+      font-size: 32px;
+      font-weight: 800;
+      color: white;
+      margin: 8px 0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .offer-highlight .original-price {
+      text-decoration: line-through;
+      color: rgba(255,255,255,0.8);
+      font-size: 18px;
+      margin-right: 8px;
+    }
+
+    .offer-highlight .offer-details {
+      color: white;
+      font-size: 14px;
+      margin: 8px 0 0 0;
+      opacity: 0.95;
+    }
+
+    .offer-highlight .time-limit {
+      background: rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-top: 12px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .comparison-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .comparison-table th, .comparison-table td { 
+      border: 1px solid #ddd; 
+      padding: 12px 10px; 
+      text-align: center; 
+      font-size: 14px;
+    }
+    .comparison-table th { 
+      background: #f8f9fa; 
+      font-weight: 700;
+      color: #1890ff;
+    }
+    .comparison-table td:first-child {
+      text-align: left;
+      font-weight: 600;
+      background: #fafbfc;
+    }
+
+    .logo-light { display:block; }
+    .logo-dark { display:none; }
+
+    .countdown-wrapper {
+      text-align: center;
+      padding: 16px 12px;
+      background-color: #fff5f5;
+      border: 1px solid #ffcccc;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .countdown-text {
+      font-size: 16px;
+      color: #c53030;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .countdown-icon {
+      font-size: 20px;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    .countdown-dates {
+      font-size: 14px;
+      color: #555;
+    }
+    .countdown-separator {
+      margin: 0 10px;
+      color: #ddd;
+    }
+
+    /* Footer (same design) */
+    .footer { 
+      padding: 25px; 
+      text-align:center; 
+      font-size:12px; 
+      color:#666666; 
+    }
+    .social-links { 
+      margin-bottom: 10px; 
+    }
+    .social-links a { 
+      margin: 0 10px; 
+      text-decoration: none; 
+      color: #666666;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width:600px) {
+      body {
+        font-size: 16px;
+      }
+      
+      .card { 
+        padding: 20px 16px; 
+        margin-bottom: 20px;
+        border-radius: 12px;
+      }
+      
+      .card h3 {
+        font-size: 20px;
+        margin-bottom: 12px;
+      }
+      
+      .feature-list li {
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+      
+      .main-btn { 
+        width: 100%; 
+        text-align:center; 
+        padding: 14px 20px;
+        font-size: 16px;
+        display: block;
+        margin: 16px 0;
+      }
+      
+      .price {
+        font-size: 24px;
+      }
+      
+      .muted {
+        font-size: 13px;
+      }
+      
+      .notice {
+        padding: 12px 14px;
+        font-size: 14px;
+        margin: 12px 0;
+      }
+      
+      .offer-highlight {
+        padding: 0;
+        margin: 20px 0;
+        border-radius: 12px;
+      }
+      
+      .offer-highlight table td {
+        padding: 16px 12px !important;
+        display: block;
+        width: 100% !important;
+        text-align: center !important;
+      }
+      
+      .offer-highlight table td:first-child {
+        border-bottom: 2px solid rgba(255,255,255,0.2);
+        padding-bottom: 20px !important;
+        margin-bottom: 20px;
+      }
+      
+      .offer-highlight .discount-price {
+        font-size: 28px !important;
+      }
+      
+      .offer-highlight .original-price {
+        font-size: 16px !important;
+      }
+      
+      .offer-highlight h4 {
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+      
+      .offer-highlight .discount-price {
+        font-size: 28px;
+      }
+      
+      .offer-highlight .original-price {
+        font-size: 16px;
+      }
+      
+      .offer-highlight .offer-details {
+        font-size: 13px;
+      }
+      
+      .offer-highlight .time-limit {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+      
+      .social-links a { 
+        margin: 0 8px; 
+        font-size: 11px;
+      }
+      
+      .footer {
+        padding: 20px 16px;
+        font-size: 11px;
+      }
+      
+      .footer p {
+        line-height: 1.4;
+      }
+
+      .countdown-text {
+        font-size: 15px;
+      }
+      .countdown-dates {
+        font-size: 13px;
+      }
+      
+      /* Hide entire comparison section on mobile */
+      .comparison-section { display: none; }
+    }
+
+    @media (max-width:480px) {
+      .card {
+        padding: 16px 12px;
+      }
+      
+      .card h3 {
+        font-size: 18px;
+      }
+      
+      .feature-list {
+        padding-left: 16px;
+      }
+      
+      .feature-list li {
+        font-size: 14px;
+      }
+      
+      .price {
+        font-size: 22px;
+      }
+      
+      .offer-highlight {
+        padding: 0;
+      }
+      
+      .offer-highlight table td {
+        padding: 14px 8px !important;
+      }
+      
+      .offer-highlight .discount-price {
+        font-size: 24px !important;
+      }
+      
+      .offer-highlight .original-price {
+        font-size: 14px !important;
+      }
+      
+      .offer-highlight h4 {
+        font-size: 16px;
+      }
+      
+      .offer-highlight .discount-price {
+        font-size: 24px;
+      }
+      
+      .offer-highlight .original-price {
+        font-size: 14px;
+      }
+      
+      .offer-highlight .offer-details {
+        font-size: 12px;
+      }
+      
+      .social-links a {
+        margin: 0 6px;
+        font-size: 10px;
+      }
+      
+      .footer {
+        padding: 16px 12px;
+        font-size: 10px;
+      }
+      
+
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #181a1b; color: #e6e6e6; }
+      .card { background: #23272a; box-shadow: 0 2px 12px rgba(24,144,255,0.13); }
+      .main-btn { background: #1890ff; color: #fff; border-color: #1890ff; }
+      .logo-light { display:none !important; }
+      .logo-dark { display:block !important; }
+      .notice { background: #1f2a36; color: #e6e6e6; border-left-color: #1890ff; }
+      .comparison-table th { background: #333; color: #fff; }
+      .comparison-table th, .comparison-table td { border-color: #555; }
+      .comparison-table td:first-child { background: #2a2a2a; }
+      .offer-highlight { 
+        background: linear-gradient(135deg, #ff6b35, #f7931e); 
+        border-color: #ff6b35;
+        box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+      }
+      .offer-highlight::before { background: #ff6b35; }
+    }
+  </style>
+</head>
+
+<body>
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#f6f8fa;" role="presentation">
+    <tr>
+      <td align="center">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; width:100%; margin:0 auto;" role="presentation">
+          <tr>
+            <td align="center" style="padding:32px 16px 18px 16px;">
+              <a href="https://worklenz.com" target="_blank" style="display:inline-block;">
+                <img class="logo-light" src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Light Logo" style="width:170px; max-width:100%; display:block;" />
+                <img class="logo-dark" src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-dark-mode.png" alt="Worklenz Dark Logo" style="width:170px; max-width:100%; display:none;" />
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 16px;">
+
+              <div class="card">
+                <h3>🎉 50% Off Our New Business Plan!</h3>
+                <p>As a valued AppSumo member, we're giving you an exclusive <strong>50% lifetime discount</strong> on our new <strong>Business Plan</strong>, launching August 21, 2025.</p>
+                
+                <div class="offer-highlight" role="group" aria-label="AppSumo exclusive offer">
+                  <table role="presentation" width="100%" style="border-collapse:collapse;">
+                    <tr>
+                      <td style="vertical-align:middle; padding:20px 16px; text-align:left;">
+                        <div style="font-size:20px; font-weight:900; color:#fff; line-height:1.1; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🎉 AppSumo Exclusive — 50% Lifetime Discount</div>
+                        <div style="margin-top:10px; color:rgba(255,255,255,0.95); font-size:16px; font-weight:600;">Business Plan</div>
+                        <div style="margin-top:16px;">
+                          <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+                            <span class="original-price" style="text-decoration:line-through; color:rgba(255,255,255,0.75); font-size:18px; font-weight:600;">$99/mo</span>
+                            <span class="discount-price" style="font-size:34px; font-weight:900; color:#fff; text-shadow: 0 3px 6px rgba(0,0,0,0.3);">$49.50/mo</span>
+                          </div>
+                          <div style="color:rgba(255,255,255,0.85); font-size:12px; font-weight:600;">✨ 50% OFF FOREVER</div>
+                        </div>
+                        <div style="margin-top:10px; color:rgba(255,255,255,0.95); font-size:14px; background:rgba(255,255,255,0.1); padding:8px 12px; border-radius:8px; display:inline-block;">Annual equivalent: <strong style="color:#fff;">$34.50/mo</strong> when billed yearly</div>
+                        <div style="margin-top:12px; color:rgba(255,255,255,0.9); font-size:14px; font-style:italic;">Limited-time 50% lifetime discount for AppSumo purchasers only.</div>
+                      </td>
+                      <td style="vertical-align:middle; padding:20px 16px; width:240px; text-align:center;">
+                        <div style="display:inline-block; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:#fff; padding:10px 16px; border-radius:10px; font-weight:800; margin-bottom:16px; backdrop-filter:blur(5px);">💰 SAVE 30% Annually</div>
+                        <div style="margin-bottom:16px;">
+                          <div style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:12px 18px; border-radius:10px; display:inline-block; font-weight:700; backdrop-filter:blur(5px);">🚀 Upgrades enabled on launch day</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.1); color:#fff; padding:10px 12px; border-radius:8px; font-weight:700; font-size:14px;">⏰ Aug 21–26, 2025</div>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div class="card comparison-section">
+                  <h3>📊 What's Included in Each Plan</h3>
+                  <p style="background: #f0f7ff; padding: 12px 16px; border-radius: 8px; margin: 0 0 16px 0; font-size: 14px; color: #1890ff; font-weight: 600;">
+                    ✨ <strong>Good news!</strong> You already have all Pro Plan features with your AppSumo lifetime deal
+                  </p>
+                  <table class="comparison-table">
+                    <thead>
+                      <tr>
+                        <th>Feature</th>
+                        <th>Starter</th>
+                        <th>Pro</th>
+                        <th>Business</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-label="Feature">Users Included</td>
+                        <td data-label="Starter">3</td>
+                        <td data-label="Pro">15</td>
+                        <td data-label="Business">25</td>
+                      </tr>
+                      <tr>
+                        <td data-label="Feature">Active Projects</td>
+                        <td data-label="Starter">Limit 3</td>
+                        <td data-label="Pro">Unlimited</td>
+                        <td data-label="Business">Unlimited</td>
+                      </tr>
+                      <tr>
+                        <td data-label="Feature">Custom Fields</td>
+                        <td data-label="Starter">❌</td>
+                        <td data-label="Pro">✔️</td>
+                        <td data-label="Business">✔️</td>
+                      </tr>
+                      <tr>
+                        <td data-label="Feature">Gantt Chart</td>
+                        <td data-label="Starter">❌</td>
+                        <td data-label="Pro">Read-only</td>
+                        <td data-label="Business">✔️ Full Access</td>
+                      </tr>
+                      <tr>
+                        <td data-label="Feature">Finance & Billing</td>
+                        <td data-label="Starter">❌</td>
+                        <td data-label="Pro">❌</td>
+                        <td data-label="Business">✔️</td>
+                      </tr>
+                      <tr>
+                        <td data-label="Feature">Client Portal</td>
+                        <td data-label="Starter">❌</td>
+                        <td data-label="Pro">❌</td>
+                        <td data-label="Business">✔️</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="card">
+                  <h3>Upgrade with Confidence</h3>
+                <p>Here’s what you need to know about the new plan and your existing benefits:</p>
+                <ul class="feature-list">
+                  <li><strong>No Change to Your Current Plan:</strong> Everything you have in your current AppSumo plan remains exactly the same.</li>
+                  <li><strong>More Powerful Features:</strong> The Business Plan includes everything in Pro, plus advanced features like a Client Portal, Finance & Billing tools, and full Gantt chart access.</li>
+                  <li><strong>Completely Optional:</strong> If you're happy with your current plan, no action is needed. You can upgrade whenever you choose, but this 50% discount is a one-time offer.</li>
+                </ul>
+              </div>
+
+              <div class="card">
+                <h3>Need help?</h3>
+                <p>If you have any questions about the Business Plan or your AppSumo benefits, reply to this email or contact our support team at <a href="mailto:support@worklenz.com" style="color:#1890ff; text-decoration:none;">support@worklenz.com</a>.</p>
+              </div>
+
+            </td>
+          </tr>
+          <tr>
+            <td class="footer">
+              <div class="social-links">
+                <a href="https://lk.linkedin.com/showcase/worklenz/">LinkedIn</a>
+                <a href="https://www.facebook.com/worklenz/">Facebook</a>
+                <a href="https://discord.gg/kGtPDmfc">Discord</a>
+                <a href="https://twitter.com/worklenzhq">Twitter</a>
+                <a href="https://github.com/Worklenz/worklenz">Github</a>
+              </div>
+              <p style="margin:0">
+                © 2025 Worklenz. All rights reserved. Questions? Reach out at
+                <a href="mailto:support@worklenz.com" style="color: #666666; text-decoration: none">support@worklenz.com</a>
+                <a href="<%asm_group_unsubscribe_raw_url%>" style="color:#1890ff; text-decoration:none; font-weight:700; margin-left:8px;">Unsubscribe</a>
+                <span style="color:#666666;"> from Worklenz newsletter</span>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>
+
+

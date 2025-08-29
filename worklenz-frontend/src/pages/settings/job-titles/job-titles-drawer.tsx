@@ -1,7 +1,9 @@
-import { Button, Drawer, Form, Input, message, Typography } from 'antd';
+import { Button, Drawer, Form, Input, message, Typography } from '@/shared/antd-imports';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_job_titles_create } from '@/shared/worklenz-analytics-events';
 
 type JobTitleDrawerProps = {
   drawerOpen: boolean;
@@ -16,6 +18,7 @@ const JobTitleDrawer = ({
 }: JobTitleDrawerProps) => {
   const { t } = useTranslation('settings/job-titles');
   const [form] = Form.useForm();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useEffect(() => {
     if (jobTitleId) {
@@ -46,6 +49,7 @@ const JobTitleDrawer = ({
           drawerClosed();
         }
       } else {
+        trackMixpanelEvent(evt_settings_job_titles_create);
         const response = await jobTitlesApiService.createJobTitle({ name: values.name });
         if (response.done) {
           drawerClosed();

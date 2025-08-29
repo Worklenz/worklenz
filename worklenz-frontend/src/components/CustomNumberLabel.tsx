@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tooltip } from 'antd';
+import { Tooltip } from '@/shared/antd-imports';
 import { NumbersColorMap } from '@/shared/constants';
 
 interface CustomNumberLabelProps {
@@ -12,11 +12,13 @@ interface CustomNumberLabelProps {
 const CustomNumberLabel = React.forwardRef<HTMLSpanElement, CustomNumberLabelProps>(
   ({ labelList, namesString, isDarkMode = false, color }, ref) => {
     // Use provided color, or fall back to NumbersColorMap based on first digit
-    const backgroundColor = color || (() => {
-      const firstDigit = namesString.match(/\d/)?.[0] || '0';
-      return NumbersColorMap[firstDigit] || NumbersColorMap['0'];
-    })();
-    
+    const backgroundColor =
+      color ||
+      (() => {
+        const firstDigit = namesString.match(/\d/)?.[0] || '0';
+        return NumbersColorMap[firstDigit] || NumbersColorMap['0'];
+      })();
+
     return (
       <Tooltip title={labelList.join(', ')}>
         <span

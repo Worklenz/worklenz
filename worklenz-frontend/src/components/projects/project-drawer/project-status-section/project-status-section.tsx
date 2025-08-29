@@ -1,4 +1,4 @@
-import { Form, FormInstance, Select, Typography } from 'antd';
+import { Form, FormInstance, Select, Typography } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
 import { IProjectStatus } from '@/types/project/projectStatus.types';

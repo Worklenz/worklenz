@@ -1,7 +1,9 @@
-import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from 'antd';
-import { useMemo, useCallback, memo } from 'react';
-import CustomPageHeader from '@/pages/reporting/page-header/custom-page-header';
-import { DownOutlined } from '@ant-design/icons';
+import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from '@/shared/antd-imports';
+import { useMemo, useCallback, memo, useEffect } from 'react';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_reporting_projects_overview } from '@/shared/worklenz-analytics-events';
+import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
+import { DownOutlined } from '@/shared/antd-imports';
 import ProjectReportsTable from './projects-reports-table/projects-reports-table';
 import ProjectsReportsFilters from './projects-reports-filters/project-reports-filters';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -16,10 +18,15 @@ const ProjectsReports = () => {
   const { t } = useTranslation('reporting-projects');
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle('Reporting - Projects');
 
   const { total, archived } = useAppSelector(state => state.projectReportsReducer);
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_reporting_projects_overview);
+  }, [trackMixpanelEvent]);
 
   // Memoize the title to prevent recalculation on every render
   const pageTitle = useMemo(() => {
@@ -28,9 +35,8 @@ const ProjectsReports = () => {
 
   // Memoize the Excel export handler to prevent recreation on every render
   const handleExcelExport = useCallback(() => {
-    if (currentSession?.team_name) {
-      reportingExportApiService.exportProjects(currentSession.team_name);
-    }
+    const teamName = currentSession?.team_name || 'Team';
+    reportingExportApiService.exportProjects(teamName);
   }, [currentSession?.team_name]);
 
   // Memoize the archived checkbox handler to prevent recreation on every render

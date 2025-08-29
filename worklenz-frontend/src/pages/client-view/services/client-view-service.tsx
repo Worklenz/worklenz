@@ -1,4 +1,4 @@
-import { Card, Flex, Typography } from 'antd';
+import { Card, Flex, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
@@ -11,9 +11,7 @@ const ClientViewServices = () => {
 
   const navigate = useNavigate();
 
-  const { services } = useAppSelector(
-    (state) => state.clientViewReducer.serviceReducer
-  );
+  const { services } = useAppSelector(state => state.clientViewReducer.serviceReducer);
 
   return (
     <Flex vertical gap={24} style={{ width: '100%' }}>
@@ -25,22 +23,13 @@ const ClientViewServices = () => {
 
       <Card style={{ height: 'calc(100vh - 248px)', overflowY: 'auto' }}>
         <Flex gap={24} wrap={'wrap'}>
-          {services.map((service) => (
+          {services.map(service => (
             <Card
-              cover={
-                <img
-                  src={coverImg}
-                  alt={service.name}
-                  style={{ height: 180 }}
-                />
-              }
+              cover={<img src={coverImg} alt={service.name} style={{ height: 180 }} />}
               style={{ cursor: 'pointer' }}
               onClick={() => navigate(`/client-portal/services/${service.id}`)}
             >
-              <Card.Meta
-                title={service.name}
-                description={service.service_data?.description}
-              />
+              <Card.Meta title={service.name} description={service.service_data?.description} />
             </Card>
           ))}
         </Flex>

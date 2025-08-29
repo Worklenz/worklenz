@@ -174,16 +174,16 @@ const RequestDetailsPage: React.FC = () => {
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Priority">
-                <Tag color={getPriorityColor(request.priority)}>
-                  {request.priority.charAt(0).toUpperCase() +
-                    request.priority.slice(1)}
+                <Tag color={getPriorityColor(request.priority || '')}>
+                  {request.priority ? request.priority.charAt(0).toUpperCase() +
+                    request.priority.slice(1) : 'N/A'}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Created Date">
-                {new Date(request.time).toLocaleDateString()}
+                {request.time ? new Date(request.time).toLocaleDateString() : 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Created Time">
-                {new Date(request.time).toLocaleTimeString()}
+                {request.time ? new Date(request.time).toLocaleTimeString() : 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Description" span={2}>
                 <Text style={{ whiteSpace: "pre-wrap" }}>
@@ -217,7 +217,7 @@ const RequestDetailsPage: React.FC = () => {
                         <Text strong>Request Created</Text>
                         <br />
                         <Text type="secondary">
-                          {new Date(request.time).toLocaleString()}
+                          {request.time ? new Date(request.time).toLocaleString() : 'N/A'}
                         </Text>
                       </>
                     ),

@@ -1,4 +1,4 @@
-import { Card, Divider, Flex, Typography, Spin, Empty, Button } from 'antd';
+import { Card, Divider, Flex, Typography, Spin, Empty, Button } from '@/shared/antd-imports';
 import React, { ReactNode, useState, useEffect } from 'react';
 import ChatList from '../chat-list';
 import ChatBox from './chat-box';
@@ -25,18 +25,23 @@ export type TempChatsType = {
 
 const ChatBoxWrapper = () => {
   const [openedChatId, setOpenedChatId] = useState<string | null>(null);
-  
+
   // localization
   const { t } = useTranslation('client-portal-chats');
-  
+
   // Fetch chats from API
-  const { data: apiChats, isLoading, error, refetch } = useGetChatsQuery(undefined, {
+  const {
+    data: apiChats,
+    isLoading,
+    error,
+    refetch,
+  } = useGetChatsQuery(undefined, {
     // Force skip cache and make fresh request
     refetchOnMountOrArgChange: true,
     // Skip the query if we don't have auth
-    skip: false
+    skip: false,
   });
-  
+
   // Debug logging
   React.useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -44,7 +49,7 @@ const ChatBoxWrapper = () => {
         isLoading,
         error,
         apiChats,
-        hasData: !!apiChats
+        hasData: !!apiChats,
       });
     }
   }, [isLoading, error, apiChats]);
@@ -57,9 +62,7 @@ const ChatBoxWrapper = () => {
   }, [refetch]);
 
   // get chat list from redux (fallback to local state)
-  const localChatList = useAppSelector(
-    (state) => state.clientsPortalReducer.chatsReducer.chatList
-  );
+  const localChatList = useAppSelector(state => state.clientsPortalReducer.chatsReducer.chatList);
 
   // Convert API chats to local format or use local data
   const chatList = React.useMemo(() => {
@@ -68,10 +71,10 @@ const ChatBoxWrapper = () => {
         console.log('API Chats Response:', apiChats);
         console.log('Is apiChats an array?', Array.isArray(apiChats));
       }
-      
+
       // Handle different response formats
       let chatsArray = apiChats;
-      
+
       // If the response is wrapped in an object (like { body: [...] })
       if (apiChats && typeof apiChats === 'object' && !Array.isArray(apiChats)) {
         const apiChatsObj = apiChats as any;
@@ -81,7 +84,7 @@ const ChatBoxWrapper = () => {
           chatsArray = apiChatsObj.data;
         }
       }
-      
+
       if (chatsArray && Array.isArray(chatsArray)) {
         return chatsArray.map(chat => ({
           id: chat.id || '',
@@ -91,7 +94,7 @@ const ChatBoxWrapper = () => {
           lastMessage: chat.lastMessage || '',
           lastMessageTime: chat.lastMessageTime || '',
           unreadCount: chat.unreadCount || 0,
-          participants: chat.participants || []
+          participants: chat.participants || [],
         }));
       }
       return localChatList || [];
@@ -102,7 +105,9 @@ const ChatBoxWrapper = () => {
   }, [apiChats, localChatList]);
 
   // get the opened chat
-  const openedChat = Array.isArray(chatList) ? chatList.find((chat) => chat.id === openedChatId) : null;
+  const openedChat = Array.isArray(chatList)
+    ? chatList.find(chat => chat.id === openedChatId)
+    : null;
 
   if (isLoading) {
     return (
@@ -132,9 +137,7 @@ const ChatBoxWrapper = () => {
             <Typography.Text type="secondary">
               {error && 'data' in error ? String(error.data) : 'Something went wrong'}
             </Typography.Text>
-            <button onClick={() => refetch()}>
-              Retry
-            </button>
+            <button onClick={() => refetch()}>Retry</button>
           </Flex>
         </Flex>
       </Card>
@@ -155,24 +158,18 @@ const ChatBoxWrapper = () => {
               <Typography.Title level={4} style={{ marginBottom: 8 }}>
                 {t('noChatsTitle')}
               </Typography.Title>
-              <Typography.Text type="secondary">
-                {t('noChatsDescription')}
-              </Typography.Text>
+              <Typography.Text type="secondary">{t('noChatsDescription')}</Typography.Text>
             </div>
           }
-          style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'center', 
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
             alignItems: 'center',
-            height: 'calc(100vh - 320px)'
+            height: 'calc(100vh - 320px)',
           }}
         >
-          <Button
-            type="primary"
-            icon={<MessageOutlined />}
-            onClick={() => setOpenedChatId(null)}
-          >
+          <Button type="primary" icon={<MessageOutlined />} onClick={() => setOpenedChatId(null)}>
             {t('startConversation')}
           </Button>
         </Empty>
@@ -189,10 +186,7 @@ const ChatBoxWrapper = () => {
         {/* chat list */}
         <ChatList chatList={chatList} setOpenedChatId={setOpenedChatId} />
 
-        <Divider
-          type="vertical"
-          style={{ height: 'calc(100vh - 300px)', marginInline: 0 }}
-        />
+        <Divider type="vertical" style={{ height: 'calc(100vh - 300px)', marginInline: 0 }} />
 
         {/* chat box */}
         {openedChat ? (
@@ -207,9 +201,7 @@ const ChatBoxWrapper = () => {
               marginBlock: 24,
             }}
           >
-            <Typography.Text type="secondary">
-              {t('selectChatMessage')}
-            </Typography.Text>
+            <Typography.Text type="secondary">{t('selectChatMessage')}</Typography.Text>
           </Flex>
         )}
       </Flex>

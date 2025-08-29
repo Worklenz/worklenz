@@ -1,8 +1,8 @@
-import { Button, Card, Flex, Table, TableProps, Tooltip, Typography } from 'antd';
+import { Button, Card, Flex, Table, TableProps, Tooltip, Typography } from '@/shared/antd-imports';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { durationDateFormat } from '@utils/durationDateFormat';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import EditTeamModal from '@/components/settings/edit-team-name-modal';
 import { useTranslation } from 'react-i18next';
@@ -11,9 +11,12 @@ import { fetchTeams } from '@features/teams/teamSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { ITeamGetResponse } from '@/types/teams/team.type';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_teams_visit } from '@/shared/worklenz-analytics-events';
 
 const TeamsSettings = () => {
   const { t } = useTranslation('settings/teams');
+  const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('title'));
 
   const [selectedTeam, setSelectedTeam] = useState<ITeamGetResponse | null>(null);
@@ -22,8 +25,9 @@ const TeamsSettings = () => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_teams_visit);
     dispatch(fetchTeams());
-  }, [dispatch]);
+  }, [trackMixpanelEvent, dispatch]);
 
   const columns: TableProps['columns'] = [
     {

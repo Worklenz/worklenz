@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useMixpanelTracking } from '../../../../hooks/useMixpanelTracking';
+import { evt_project_roadmap_visit } from '../../../../shared/worklenz-analytics-events';
 import { ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import './project-view-roadmap.css';
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { TimeFilter } from './time-filter';
 import RoadmapTable from './roadmap-table/roadmap-table';
@@ -10,9 +12,14 @@ import RoadmapGrantChart from './roadmap-grant-chart';
 
 const ProjectViewRoadmap = () => {
   const [view, setView] = useState<ViewMode>(ViewMode.Day);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // get theme details
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_project_roadmap_visit);
+  }, [trackMixpanelEvent]);
 
   return (
     <Flex vertical className={`${themeMode === 'dark' ? 'dark-theme' : ''}`}>

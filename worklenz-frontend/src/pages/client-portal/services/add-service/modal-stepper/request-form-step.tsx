@@ -1,5 +1,5 @@
 import { AppstoreOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { Button, Card, Flex, Form, Input, Select, Typography } from 'antd';
+import { Button, Card, Flex, Form, Input, Select, Typography } from '@/shared/antd-imports';
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,13 +14,8 @@ type RequestFormStepProps = {
   setService: (service: TempServicesType) => void;
 };
 
-const RequestFormStep = ({
-  setCurrent,
-  service,
-  setService,
-}: RequestFormStepProps) => {
-  const [isAddQuestionCardVisible, setIsAddQuestionCardVisible] =
-    useState(false);
+const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepProps) => {
+  const [isAddQuestionCardVisible, setIsAddQuestionCardVisible] = useState(false);
 
   const addQuestionCardRef = useRef<HTMLDivElement>(null);
 
@@ -30,20 +25,20 @@ const RequestFormStep = ({
 
   const sampleQuestions: TempRequestFromItemType[] = [
     {
-      question: "What is the project scope and timeline?",
-      type: "text",
-      answer: []
+      question: 'What is the project scope and timeline?',
+      type: 'text',
+      answer: [],
     },
     {
-      question: "What is your budget range?",
-      type: "multipleChoice", 
-      answer: ["$1,000 - $5,000", "$5,000 - $10,000", "$10,000 - $25,000", "$25,000+"]
+      question: 'What is your budget range?',
+      type: 'multipleChoice',
+      answer: ['$1,000 - $5,000', '$5,000 - $10,000', '$10,000 - $25,000', '$25,000+'],
     },
     {
-      question: "Please upload any relevant documents",
-      type: "attachment",
-      answer: []
-    }
+      question: 'Please upload any relevant documents',
+      type: 'attachment',
+      answer: [],
+    },
   ];
 
   const handleAddSampleQuestions = () => {
@@ -73,7 +68,7 @@ const RequestFormStep = ({
     };
 
     // Update the state with the new question
-    setRequestForm((prev) => [...prev, newQuestionData]);
+    setRequestForm(prev => [...prev, newQuestionData]);
 
     // Clear the new question form
     setNewQuestion({
@@ -109,7 +104,7 @@ const RequestFormStep = ({
     setNewQuestion({
       question: questionToEdit.question,
       type: questionToEdit.type,
-      options: questionToEdit.type === 'multipleChoice' ? questionToEdit.answer as string[] : []
+      options: questionToEdit.type === 'multipleChoice' ? (questionToEdit.answer as string[]) : [],
     });
     handleDeleteQuestion(index);
     setIsAddQuestionCardVisible(true);
@@ -127,7 +122,7 @@ const RequestFormStep = ({
               </Typography.Text>
             </Card>
           )}
-          
+
           {requestForm.map((item, index) => (
             <Card key={index}>
               <Flex vertical gap={8}>
@@ -145,27 +140,26 @@ const RequestFormStep = ({
                         item.answer.map((answer: any, index: any) => (
                           <Typography.Text key={index}>
                             {answer}
-                            {item.answer &&
-                              index < item.answer.length - 1 &&
-                              ', '}
+                            {item.answer && index < item.answer.length - 1 && ', '}
                           </Typography.Text>
                         ))}
                     </div>
                   )}
                 </Flex>
                 <Flex gap={4} style={{ alignSelf: 'flex-end' }}>
-                  <Button type="link" onClick={() => handleEditQuestion(index)}>{t('editButton')}</Button>
-                  <Button type="link" onClick={() => handleDeleteQuestion(index)}>{t('deleteButton')}</Button>
+                  <Button type="link" onClick={() => handleEditQuestion(index)}>
+                    {t('editButton')}
+                  </Button>
+                  <Button type="link" onClick={() => handleDeleteQuestion(index)}>
+                    {t('deleteButton')}
+                  </Button>
                 </Flex>
               </Flex>
             </Card>
           ))}
 
           {isAddQuestionCardVisible && (
-            <Card
-              style={{ borderColor: colors.skyBlue }}
-              ref={addQuestionCardRef}
-            >
+            <Card style={{ borderColor: colors.skyBlue }} ref={addQuestionCardRef}>
               <Form layout="vertical" onFinish={handleAddQuestion}>
                 <Form.Item label={t('questionLabel')}>
                   <Input.TextArea
@@ -173,7 +167,7 @@ const RequestFormStep = ({
                     required
                     placeholder={t('questionPlaceholder')}
                     value={newQuestion.question}
-                    onChange={(e) =>
+                    onChange={e =>
                       setNewQuestion({
                         ...newQuestion,
                         question: e.target.value,
@@ -185,9 +179,7 @@ const RequestFormStep = ({
                   <Select
                     style={{ maxWidth: 280 }}
                     value={newQuestion.type}
-                    onChange={(value) =>
-                      setNewQuestion({ ...newQuestion, type: value })
-                    }
+                    onChange={value => setNewQuestion({ ...newQuestion, type: value })}
                     options={[
                       {
                         label: t('textOption'),
@@ -215,7 +207,7 @@ const RequestFormStep = ({
                             <Input
                               style={{ maxWidth: 300 }}
                               value={option}
-                              onChange={(e) => {
+                              onChange={e => {
                                 const updatedOptions = [...newQuestion.options];
                                 updatedOptions[index] = e.target.value;
                                 setNewQuestion({
@@ -229,10 +221,9 @@ const RequestFormStep = ({
                                 type="link"
                                 icon={<CloseCircleOutlined />}
                                 onClick={() => {
-                                  const updatedOptions =
-                                    newQuestion.options.filter(
-                                      (_, i) => i !== index
-                                    );
+                                  const updatedOptions = newQuestion.options.filter(
+                                    (_, i) => i !== index
+                                  );
                                   setNewQuestion({
                                     ...newQuestion,
                                     options: updatedOptions,
@@ -262,10 +253,7 @@ const RequestFormStep = ({
 
                 <Form.Item>
                   <Flex gap={8} justify="flex-end">
-                    <Button
-                      type="default"
-                      onClick={() => setIsAddQuestionCardVisible(false)}
-                    >
+                    <Button type="default" onClick={() => setIsAddQuestionCardVisible(false)}>
                       {t('cancelButton')}
                     </Button>
 

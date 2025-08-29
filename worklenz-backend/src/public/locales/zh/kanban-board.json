@@ -15,5 +15,15 @@
   "assignToMe": "分配给我",
   "archive": "归档",
   "newTaskNamePlaceholder": "写一个任务名称",
-  "newSubtaskNamePlaceholder": "写一个子任务名称"
+  "newSubtaskNamePlaceholder": "写一个子任务名称",
+  "untitledSection": "无标题部分",
+  "unmapped": "未映射",
+  "clickToChangeDate": "点击更改日期",
+  "noDueDate": "无截止日期",
+  "save": "保存",
+  "clear": "清除",
+  "nextWeek": "下周",
+  "noSubtasks": "无子任务",
+  "showSubtasks": "显示子任务",
+  "hideSubtasks": "隐藏子任务"
 }

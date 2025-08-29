@@ -15,7 +15,7 @@ import {
   Empty,
   Tooltip,
   message,
-} from 'antd';
+} from '@/shared/antd-imports';
 import {
   UserOutlined,
   TeamOutlined,
@@ -32,8 +32,11 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
-import { toggleClientDetailsDrawer, toggleEditClientDrawer } from '../../features/clients-portal/clients/clients-slice';
-import { 
+import {
+  toggleClientDetailsDrawer,
+  toggleEditClientDrawer,
+} from '../../features/clients-portal/clients/clients-slice';
+import {
   useGetClientDetailsQuery,
   useDeleteClientMutation,
 } from '../../api/client-portal/client-portal-api';
@@ -43,21 +46,20 @@ const { Title, Text, Paragraph } = Typography;
 
 const ClientDetailsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
-  
+
   const dispatch = useAppDispatch();
-  
-  const {
-    isClientDetailsDrawerOpen,
-    selectedClientId,
-  } = useAppSelector((state) => state.clientsPortalReducer.clientsReducer);
+
+  const { isClientDetailsDrawerOpen, selectedClientId } = useAppSelector(
+    state => state.clientsPortalReducer.clientsReducer
+  );
 
   // RTK Query hook for comprehensive client details
-  const { 
-    data: clientDetails, 
-    isLoading: isLoadingClient, 
-    error: clientError 
-  } = useGetClientDetailsQuery(selectedClientId || '', { 
-    skip: !selectedClientId
+  const {
+    data: clientDetails,
+    isLoading: isLoadingClient,
+    error: clientError,
+  } = useGetClientDetailsQuery(selectedClientId || '', {
+    skip: !selectedClientId,
   });
 
   // Extract data from the comprehensive response - handle ServerResponse wrapper
@@ -84,13 +86,15 @@ const ClientDetailsDrawer = () => {
 
   const handleDeleteClient = async () => {
     if (!selectedClientId) return;
-    
+
     try {
       await deleteClient(selectedClientId).unwrap();
       message.success(t('deleteClientSuccessMessage') || 'Client deleted successfully');
       handleClose();
     } catch (error: any) {
-      message.error(error?.data?.message || t('deleteClientErrorMessage') || 'Failed to delete client');
+      message.error(
+        error?.data?.message || t('deleteClientErrorMessage') || 'Failed to delete client'
+      );
     }
   };
 
@@ -125,9 +129,7 @@ const ClientDetailsDrawer = () => {
             <Title level={2} style={{ margin: 0 }}>
               {client?.name || t('loadingText') || 'Loading...'}
             </Title>
-            <Text type="secondary">
-              {client?.email}
-            </Text>
+            <Text type="secondary">{client?.email}</Text>
           </div>
         </Flex>
       }
@@ -137,18 +139,12 @@ const ClientDetailsDrawer = () => {
       width={600}
       footer={
         <Flex gap={12} justify="flex-end">
-          <Button onClick={handleClose}>
-            {t('closeButton') || 'Close'}
-          </Button>
-          <Button 
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={handleEdit}
-          >
+          <Button onClick={handleClose}>{t('closeButton') || 'Close'}</Button>
+          <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
             {t('editButton') || 'Edit Client'}
           </Button>
-          <Button 
-            danger 
+          <Button
+            danger
             icon={<DeleteOutlined />}
             onClick={handleDeleteClient}
             loading={isDeleting}
@@ -162,7 +158,14 @@ const ClientDetailsDrawer = () => {
         {clientError && (
           <Alert
             message={t('errorTitle') || 'Error'}
-            description={'data' in clientError && typeof clientError.data === 'object' && clientError.data !== null && 'message' in clientError.data ? String(clientError.data.message) : 'Failed to fetch client details'}
+            description={
+              'data' in clientError &&
+              typeof clientError.data === 'object' &&
+              clientError.data !== null &&
+              'message' in clientError.data
+                ? String(clientError.data.message)
+                : 'Failed to fetch client details'
+            }
             type="error"
             showIcon
             style={{ marginBottom: 16 }}
@@ -172,12 +175,12 @@ const ClientDetailsDrawer = () => {
         {client && (
           <>
             {/* Client Information */}
-            <Card 
+            <Card
               title={
                 <Title level={4} style={{ margin: 0 }}>
                   {t('clientInformationTitle') || 'Client Information'}
                 </Title>
-              } 
+              }
               style={{ marginBottom: 16 }}
             >
               <Flex vertical gap={16}>
@@ -233,7 +236,10 @@ const ClientDetailsDrawer = () => {
                 </Flex>
 
                 <Flex gap={16} align="center">
-                  <Tag color={getStatusColor(client.status)} style={{ textTransform: 'capitalize' }}>
+                  <Tag
+                    color={getStatusColor(client.status)}
+                    style={{ textTransform: 'capitalize' }}
+                  >
                     {client.status}
                   </Tag>
                 </Flex>
@@ -241,12 +247,12 @@ const ClientDetailsDrawer = () => {
             </Card>
 
             {/* Statistics */}
-            <Card 
+            <Card
               title={
                 <Title level={4} style={{ margin: 0 }}>
                   {t('statisticsTitle') || 'Statistics'}
                 </Title>
-              } 
+              }
               style={{ marginBottom: 16 }}
             >
               <Spin spinning={isLoadingStats}>
@@ -277,7 +283,7 @@ const ClientDetailsDrawer = () => {
             </Card>
 
             {/* Team Members */}
-            <Card 
+            <Card
               title={
                 <Flex align="center" gap={8}>
                   <TeamOutlined />
@@ -285,14 +291,14 @@ const ClientDetailsDrawer = () => {
                     {t('teamMembersTitle') || 'Team Members'}
                   </Title>
                 </Flex>
-              } 
+              }
               style={{ marginBottom: 16 }}
             >
               <Spin spinning={isLoadingTeam}>
                 {clientTeam?.team_members && clientTeam.team_members.length > 0 ? (
                   <List
                     dataSource={clientTeam.team_members}
-                    renderItem={(member) => (
+                    renderItem={member => (
                       <List.Item>
                         <List.Item.Meta
                           avatar={<Avatar icon={<UserOutlined />} />}
@@ -300,9 +306,7 @@ const ClientDetailsDrawer = () => {
                           description={
                             <Flex vertical gap={4}>
                               <Text type="secondary">{member.email}</Text>
-                              {member.role && (
-                                <Tag color="blue">{member.role}</Tag>
-                              )}
+                              {member.role && <Tag color="blue">{member.role}</Tag>}
                               <Tag color={member.status === 'active' ? 'green' : 'red'}>
                                 {member.status}
                               </Tag>
@@ -313,16 +317,16 @@ const ClientDetailsDrawer = () => {
                     )}
                   />
                 ) : (
-                  <Empty 
-                    description={t('noTeamMembersText') || 'No team members found'} 
-                    image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                  <Empty
+                    description={t('noTeamMembersText') || 'No team members found'}
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
               </Spin>
             </Card>
 
             {/* Projects */}
-            <Card 
+            <Card
               title={
                 <Flex align="center" gap={8}>
                   <ProjectOutlined />
@@ -336,7 +340,7 @@ const ClientDetailsDrawer = () => {
                 {clientProjects?.projects && clientProjects.projects.length > 0 ? (
                   <List
                     dataSource={clientProjects.projects}
-                    renderItem={(project) => (
+                    renderItem={project => (
                       <List.Item
                         actions={[
                           <Tooltip title={t('viewProjectTooltip') || 'View Project'}>
@@ -356,7 +360,8 @@ const ClientDetailsDrawer = () => {
                                   {project.status}
                                 </Tag>
                                 <Text type="secondary">
-                                  {project.completedTasks}/{project.totalTasks} {t('tasksCompletedText') || 'tasks completed'}
+                                  {project.completedTasks}/{project.totalTasks}{' '}
+                                  {t('tasksCompletedText') || 'tasks completed'}
                                 </Text>
                               </Flex>
                             </Flex>
@@ -366,9 +371,9 @@ const ClientDetailsDrawer = () => {
                     )}
                   />
                 ) : (
-                  <Empty 
-                    description={t('noProjectsText') || 'No projects found'} 
-                    image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                  <Empty
+                    description={t('noProjectsText') || 'No projects found'}
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
               </Spin>
@@ -380,4 +385,4 @@ const ClientDetailsDrawer = () => {
   );
 };
 
-export default ClientDetailsDrawer; 
+export default ClientDetailsDrawer;

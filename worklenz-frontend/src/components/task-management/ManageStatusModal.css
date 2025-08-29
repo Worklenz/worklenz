@@ -292,7 +292,9 @@
 
 /* Sortable item styling */
 .sortable-status-item {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .sortable-status-item.is-dragging {
@@ -311,11 +313,11 @@
     width: 95% !important;
     margin: 10px;
   }
-  
+
   .dark-modal .ant-modal-body {
     padding: 16px;
   }
-  
+
   .status-item {
     padding: 12px;
   }
@@ -340,7 +342,9 @@
 .status-item-enter-active {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .status-item-exit {
@@ -351,5 +355,7 @@
 .status-item-exit-active {
   opacity: 0;
   transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-} 
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}

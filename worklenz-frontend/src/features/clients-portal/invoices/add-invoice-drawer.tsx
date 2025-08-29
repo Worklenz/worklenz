@@ -1,4 +1,4 @@
-import { Button, Drawer, Flex, Form, Input, message, Typography } from 'antd';
+import { Button, Drawer, Flex, Form, Input, message, Typography } from '@/shared/antd-imports';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
 import { nanoid } from '@reduxjs/toolkit';
@@ -11,7 +11,7 @@ const AddInvoiceDrawer = () => {
 
   // get drawer state from invoice reducer
   const isDrawerOpen = useAppSelector(
-    (state) => state.clientsPortalReducer.invoicesReducer.isAddInvoiceDrawerOpen
+    state => state.clientsPortalReducer.invoicesReducer.isAddInvoiceDrawerOpen
   );
   const dispatch = useAppDispatch();
 
@@ -41,9 +41,7 @@ const AddInvoiceDrawer = () => {
   return (
     <Drawer
       title={
-        <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
-          Create Invoice
-        </Typography.Text>
+        <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>Create Invoice</Typography.Text>
       }
       open={isDrawerOpen}
       onClose={() => dispatch(toggleAddInvoiceDrawer())}
@@ -64,9 +62,7 @@ const AddInvoiceDrawer = () => {
 
         <Form.Item>
           <Flex gap={8} justify="flex-end">
-            <Button onClick={() => dispatch(toggleAddInvoiceDrawer())}>
-              Cancel
-            </Button>
+            <Button onClick={() => dispatch(toggleAddInvoiceDrawer())}>Cancel</Button>
             <Button type="primary" htmlType="submit">
               Create Invoice
             </Button>
@@ -77,4 +73,4 @@ const AddInvoiceDrawer = () => {
   );
 };
 
-export default AddInvoiceDrawer; 
+export default AddInvoiceDrawer;

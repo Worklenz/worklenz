@@ -5,6 +5,7 @@
 
   "searchByName": "Kërko sipas emrit",
   "selectAll": "Zgjidh të Gjitha",
+  "clearAll": "Pastro të Gjitha",
   "teams": "Ekipet",
 
   "searchByProject": "Kërko sipas emrit të projektit",
@@ -15,6 +16,8 @@
 
   "billable": "Fakturueshme",
   "nonBillable": "Jo Fakturueshme",
+  "allBillableTypes": "Të Gjitha Llojet e Fakturueshme",
+  "filterByBillableStatus": "Filtro sipas statusit të fakturueshmërisë",
 
   "total": "Total",
 
@@ -28,6 +31,9 @@
 
   "membersTimeSheet": "Fletë Kohore e Anëtarëve",
   "member": "Anëtar",
+  "members": "Anëtarët",
+  "searchByMember": "Kërko sipas anëtarit",
+  "utilization": "Përdorimi",
 
   "estimatedVsActual": "Vlerësuar vs Aktual",
   "workingDays": "Ditë Pune",
@@ -40,5 +46,32 @@
   "noCategory": "Pa Kategori",
   "noProjects": "Nuk u gjetën projekte",
   "noTeams": "Nuk u gjetën ekipe",
-  "noData": "Nuk u gjetën të dhëna"
+  "noData": "Nuk u gjetën të dhëna",
+  "groupBy": "Gruppo sipas",
+  "groupByCategory": "Kategori",
+  "groupByTeam": "Ekip",
+  "groupByStatus": "Status",
+  "groupByNone": "Asnjë",
+  "clearSearch": "Pastro kërkimin",
+  "selectedProjects": "Projektet e Zgjedhura",
+  "projectsSelected": "projekte të zgjedhura",
+  "showSelected": "Shfaq Vetëm të Zgjedhurat",
+  "expandAll": "Zgjero të Gjitha",
+  "collapseAll": "Mbyll të Gjitha",
+  "ungrouped": "Pa Grupuar",
+
+  "totalTimeLogged": "Koha Totale e Regjistruar",
+  "acrossAllTeamMembers": "Në të gjithë anëtarët e ekipit",
+  "expectedCapacity": "Kapaciteti i Pritur",
+  "basedOnWorkingSchedule": "Bazuar në orarin e punës",
+  "teamUtilization": "Përdorimi i Ekipit",
+  "targetRange": "Gama e Objektivit",
+  "variance": "Varianca",
+  "overCapacity": "Mbi Kapacitetin",
+  "underCapacity": "Nën Kapacitetin",
+  "considerWorkloadRedistribution": "Konsidero rishpërndarjen e ngarkesës së punës",
+  "capacityAvailableForNewProjects": "Kapaciteti i disponueshëm për projekte të reja",
+  "optimal": "Optimal",
+  "underUtilized": "I Përdorur Pak",
+  "overUtilized": "I Përdorur Shumë"
 }

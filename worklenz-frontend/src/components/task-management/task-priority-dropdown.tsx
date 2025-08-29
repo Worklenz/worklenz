@@ -4,7 +4,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { Task } from '@/types/task-management.types';
-import { MinusOutlined, PauseOutlined, DoubleRightOutlined } from '@ant-design/icons';
+import { MinusOutlined, PauseOutlined, DoubleRightOutlined } from '@/shared/antd-imports';
 
 interface TaskPriorityDropdownProps {
   task: Task;
@@ -70,11 +70,11 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const dropdownHeight = 200; // Estimated dropdown height
-      
+
       // Check if dropdown would go below viewport
       const spaceBelow = viewportHeight - rect.bottom;
       const shouldShowAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
-      
+
       setDropdownPosition({
         top: shouldShowAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
         left: rect.left,

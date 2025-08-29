@@ -4,7 +4,7 @@ import Icon, {
   ClockCircleOutlined,
   CloseCircleOutlined,
   StopOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 
 const iconMap = {
   'clock-circle': ClockCircleOutlined,

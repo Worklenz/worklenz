@@ -46,7 +46,8 @@ export interface Task {
   phase_sort_order?: number; // Sort order when grouped by phase
   member_sort_order?: number; // Sort order when grouped by members
   reporter?: string; // Reporter field
-  timeTracking?: { // Time tracking information
+  timeTracking?: {
+    // Time tracking information
     logged?: number;
     estimated?: number;
     activeTimer?: number; // Active timer start timestamp
@@ -62,6 +63,7 @@ export interface TaskGroup {
   taskIds: string[];
   type?: 'status' | 'priority' | 'phase' | 'members';
   color?: string;
+  color_code_dark?: string;
   collapsed?: boolean;
   groupValue?: string;
   // Add any other group properties as needed
@@ -113,6 +115,9 @@ export interface TaskManagementState {
   loadingColumns: boolean;
   columns: ITaskListColumn[];
   customColumns: ITaskListColumn[];
+  // Add sort-related state
+  sortField: string;
+  sortOrder: 'ASC' | 'DESC';
 }
 
 export interface TaskGroupsState {

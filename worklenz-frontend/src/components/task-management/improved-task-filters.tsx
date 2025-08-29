@@ -14,13 +14,19 @@ import {
   EyeOutlined,
   InboxOutlined,
   CheckOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  SettingOutlined,
 } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { useFilterDataLoader } from '@/hooks/useFilterDataLoader';
-import { toggleField, syncFieldWithDatabase } from '@/features/task-management/taskListFields.slice';
+import {
+  toggleField,
+  syncFieldWithDatabase,
+} from '@/features/task-management/taskListFields.slice';
 import { selectColumns } from '@/features/task-management/task-management.slice';
 
 // Import Redux actions
@@ -30,6 +36,12 @@ import {
   setArchived as setTaskManagementArchived,
   toggleArchived as toggleTaskManagementArchived,
   selectArchived,
+  setSort,
+  setSortField,
+  setSortOrder,
+  selectSort,
+  selectSortField,
+  selectSortOrder,
 } from '@/features/task-management/task-management.slice';
 import {
   setCurrentGrouping,
@@ -44,11 +56,13 @@ import {
   setLabels,
   setSearch,
   setPriorities,
+  setFields,
 } from '@/features/tasks/tasks.slice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
+import { ITaskListSortableColumn } from '@/types/tasks/taskListFilters.types';
 // --- Enhanced Kanban imports ---
 import {
   setGroupBy as setKanbanGroupBy,
@@ -84,7 +98,11 @@ const FILTER_DEBOUNCE_DELAY = 300; // ms
 const SEARCH_DEBOUNCE_DELAY = 500; // ms
 const MAX_FILTER_OPTIONS = 100;
 
- // Limit options to prevent UI lag
+// Sort order enum
+enum SORT_ORDER {
+  ASCEND = 'ascend',
+  DESCEND = 'descend',
+}
 
 // Optimized selectors with proper transformation logic
 const selectFilterData = createSelector(
@@ -452,7 +470,7 @@ const FilterDropdown: React.FC<{
       {/* Trigger Button */}
       <button
         onClick={onToggle}
-                  className={`
+        className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
           ${
@@ -493,20 +511,26 @@ const FilterDropdown: React.FC<{
           {section.selectedValues[0] === 'phase' && (
             <button
               onClick={onManagePhase}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 ease-in-out hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
-                isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isDarkMode 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900' 
+                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
               }`}
             >
+              <SettingOutlined className="w-3.5 h-3.5" />
               {t('manage')} {projectPhaseLabel || t('phasesText')}
             </button>
           )}
           {section.selectedValues[0] === 'status' && (
             <button
               onClick={onManageStatus}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 ease-in-out hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
-                isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isDarkMode 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900' 
+                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
               }`}
             >
+              <SettingOutlined className="w-3.5 h-3.5" />
               {t('manageStatuses')}
             </button>
           )}
@@ -689,19 +713,19 @@ const SearchFilter: React.FC<{
               value={localValue}
               onChange={e => setLocalValue(e.target.value)}
               placeholder={placeholder || t('searchTasks') || 'Search tasks by name or key...'}
-                                className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
-                    isDarkMode
-                      ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                      : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                  }`}
+              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
+                isDarkMode
+                  ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                  : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+              }`}
             />
             {localValue && (
               <button
                 type="button"
                 onClick={handleClear}
                 className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 transition-colors duration-150 ${
-                  isDarkMode 
-                    ? 'text-gray-400 hover:text-gray-200' 
+                  isDarkMode
+                    ? 'text-gray-400 hover:text-gray-200'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -716,9 +740,9 @@ const SearchFilter: React.FC<{
                 ? 'text-white bg-gray-600 hover:bg-gray-700'
                 : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
             }`}
-                      >
-              {t('search')}
-            </button>
+          >
+            {t('search')}
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -727,14 +751,202 @@ const SearchFilter: React.FC<{
               setIsExpanded(false);
             }}
             className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${
-              isDarkMode
-                ? 'text-gray-400 hover:text-gray-200'
-                : 'text-gray-600 hover:text-gray-800'
+              isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
             }`}
           >
             {t('cancel')}
           </button>
         </form>
+      )}
+    </div>
+  );
+};
+
+// Sort Dropdown Component - Simplified version using task-management slice
+const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
+  themeClasses,
+  isDarkMode,
+}) => {
+  const { t } = useTranslation('task-list-filters');
+  const dispatch = useAppDispatch();
+  const { projectId } = useAppSelector(state => state.projectReducer);
+
+  // Get current sort state from task-management slice
+  const currentSortField = useAppSelector(selectSortField);
+  const currentSortOrder = useAppSelector(selectSortOrder);
+
+  const [open, setOpen] = React.useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const sortFieldsList = [
+    { label: t('taskText'), key: 'name' },
+    { label: t('statusText'), key: 'status' },
+    { label: t('priorityText'), key: 'priority' },
+    { label: t('startDateText'), key: 'start_date' },
+    { label: t('endDateText'), key: 'end_date' },
+    { label: t('completedDateText'), key: 'completed_at' },
+    { label: t('createdDateText'), key: 'created_at' },
+    { label: t('lastUpdatedText'), key: 'updated_at' },
+  ];
+
+  const handleSortFieldChange = (fieldKey: string) => {
+    // If clicking the same field, toggle order, otherwise set new field with ASC
+    if (currentSortField === fieldKey) {
+      const newOrder = currentSortOrder === 'ASC' ? 'DESC' : 'ASC';
+      dispatch(setSort({ field: fieldKey, order: newOrder }));
+    } else {
+      dispatch(setSort({ field: fieldKey, order: 'ASC' }));
+    }
+
+    // Fetch updated tasks
+    if (projectId) {
+      dispatch(fetchTasksV3(projectId));
+    }
+
+    setOpen(false);
+  };
+
+  const clearSort = () => {
+    dispatch(setSort({ field: '', order: 'ASC' }));
+    if (projectId) {
+      dispatch(fetchTasksV3(projectId));
+    }
+  };
+
+  const isActive = currentSortField !== '';
+  const currentFieldLabel = sortFieldsList.find(f => f.key === currentSortField)?.label;
+  const orderText = currentSortOrder === 'ASC' ? t('ascendingOrder') : t('descendingOrder');
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Trigger Button - matching FilterDropdown style */}
+      <button
+        onClick={() => setOpen(!open)}
+        title={
+          isActive
+            ? t('currentSort', { field: currentFieldLabel, order: orderText })
+            : t('sortText')
+        }
+        className={`
+          inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
+          border transition-all duration-200 ease-in-out
+          ${
+            isActive
+              ? isDarkMode
+                ? 'bg-gray-600 text-white border-gray-500'
+                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          }
+          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
+          ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
+        `}
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        {currentSortOrder === 'ASC' ? (
+          <SortAscendingOutlined className="w-3.5 h-3.5" />
+        ) : (
+          <SortDescendingOutlined className="w-3.5 h-3.5" />
+        )}
+        <span className="hidden sm:inline">{t('sortText')}</span>
+        {isActive && currentFieldLabel && (
+          <span
+            className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} max-w-16 truncate hidden md:inline`}
+          >
+            {currentFieldLabel}
+          </span>
+        )}
+        <DownOutlined
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {/* Dropdown Panel - matching FilterDropdown style */}
+      {open && (
+        <div
+          className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+        >
+          {/* Clear Sort Option */}
+          {isActive && (
+            <div className={`p-2 border-b ${themeClasses.dividerBorder}`}>
+              <button
+                onClick={clearSort}
+                className={`w-full text-left px-2 py-1.5 text-xs rounded transition-colors duration-150 ${themeClasses.optionText} ${themeClasses.optionHover}`}
+              >
+                {t('clearSort')}
+              </button>
+            </div>
+          )}
+
+          {/* Options List */}
+          <div className="max-h-48 overflow-y-auto">
+            <div className="p-0.5">
+              {sortFieldsList.map(sortField => {
+                const isSelected = currentSortField === sortField.key;
+
+                return (
+                  <button
+                    key={sortField.key}
+                    onClick={() => handleSortFieldChange(sortField.key)}
+                    className={`
+                      w-full flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded
+                      transition-colors duration-150 text-left
+                      ${
+                        isSelected
+                          ? isDarkMode
+                            ? 'bg-gray-600 text-white'
+                            : 'bg-gray-200 text-gray-800 font-semibold'
+                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                      }
+                    `}
+                    title={
+                      isSelected
+                        ? t('currentSort', {
+                            field: sortField.label,
+                            order: orderText,
+                          }) + ` - ${t('sortDescending')}`
+                        : t('sortByField', { field: sortField.label }) + ` - ${t('sortAscending')}`
+                    }
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="truncate">{sortField.label}</span>
+                      {isSelected && (
+                        <span
+                          className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}
+                        >
+                          ({orderText})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {isSelected ? (
+                        currentSortOrder === 'ASC' ? (
+                          <SortAscendingOutlined className="w-3.5 h-3.5" />
+                        ) : (
+                          <SortDescendingOutlined className="w-3.5 h-3.5" />
+                        )
+                      ) : (
+                        <SortAscendingOutlined className="w-3.5 h-3.5 opacity-50" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -751,30 +963,33 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   const dispatch = useAppDispatch();
 
   // Helper function to get translated field label using existing task-list-table translations
-  const getFieldLabel = useCallback((fieldKey: string) => {
-    const keyMappings: Record<string, string> = {
-      'KEY': 'keyColumn',
-      'DESCRIPTION': 'descriptionColumn', 
-      'PROGRESS': 'progressColumn',
-      'ASSIGNEES': 'assigneesColumn',
-      'LABELS': 'labelsColumn',
-      'PHASE': 'phaseColumn',
-      'STATUS': 'statusColumn',
-      'PRIORITY': 'priorityColumn',
-      'TIME_TRACKING': 'timeTrackingColumn',
-      'ESTIMATION': 'estimationColumn',
-      'START_DATE': 'startDateColumn',
-      'DUE_DATE': 'dueDateColumn',
-      'DUE_TIME': 'dueTimeColumn',
-      'COMPLETED_DATE': 'completedDateColumn',
-      'CREATED_DATE': 'createdDateColumn',
-      'LAST_UPDATED': 'lastUpdatedColumn',
-      'REPORTER': 'reporterColumn',
-    };
+  const getFieldLabel = useCallback(
+    (fieldKey: string) => {
+      const keyMappings: Record<string, string> = {
+        KEY: 'keyColumn',
+        DESCRIPTION: 'descriptionColumn',
+        PROGRESS: 'progressColumn',
+        ASSIGNEES: 'assigneesColumn',
+        LABELS: 'labelsColumn',
+        PHASE: 'phaseColumn',
+        STATUS: 'statusColumn',
+        PRIORITY: 'priorityColumn',
+        TIME_TRACKING: 'timeTrackingColumn',
+        ESTIMATION: 'estimationColumn',
+        START_DATE: 'startDateColumn',
+        DUE_DATE: 'dueDateColumn',
+        DUE_TIME: 'dueTimeColumn',
+        COMPLETED_DATE: 'completedDateColumn',
+        CREATED_DATE: 'createdDateColumn',
+        LAST_UPDATED: 'lastUpdatedColumn',
+        REPORTER: 'reporterColumn',
+      };
 
-    const translationKey = keyMappings[fieldKey];
-    return translationKey ? tTable(translationKey) : fieldKey;
-  }, [tTable]);
+      const translationKey = keyMappings[fieldKey];
+      return translationKey ? tTable(translationKey) : fieldKey;
+    },
+    [tTable]
+  );
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
   const columns = useSelector(selectColumns);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
@@ -859,9 +1074,9 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
           {/* Options List */}
           <div className="max-h-48 overflow-y-auto">
             {sortedFields.length === 0 ? (
-                          <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
-              {t('noOptionsFound')}
-            </div>
+              <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
+                {t('noOptionsFound')}
+              </div>
             ) : (
               <div className="p-0.5">
                 {sortedFields.map(field => {
@@ -873,15 +1088,17 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                       onClick={() => {
                         // Toggle field locally first
                         dispatch(toggleField(field.key));
-                        
+
                         // Sync with database if projectId is available
                         if (projectId) {
-                          dispatch(syncFieldWithDatabase({
-                            projectId,
-                            fieldKey: field.key,
-                            visible: !field.visible,
-                            columns
-                          }));
+                          dispatch(
+                            syncFieldWithDatabase({
+                              projectId,
+                              fieldKey: field.key,
+                              visible: !field.visible,
+                              columns,
+                            })
+                          );
                         }
                       }}
                       className={`
@@ -949,7 +1166,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   // Get search value from Redux based on position
   const taskManagementSearch = useAppSelector(state => state.taskManagement?.search || '');
   const kanbanSearch = useAppSelector(state => state.enhancedKanbanReducer?.search || '');
-  
+
   const searchValue = position === 'board' ? kanbanSearch : taskManagementSearch;
 
   // Local state for filter sections
@@ -957,7 +1174,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   const [clearingFilters, setClearingFilters] = useState(false);
-  
+
   // Modal state
   const [showManageStatusModal, setShowManageStatusModal] = useState(false);
   const [showManagePhaseModal, setShowManagePhaseModal] = useState(false);
@@ -1050,14 +1267,20 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
     };
   }, [dispatch, projectView]);
 
+  // Get sort fields for active count calculation
+  const sortFields = useAppSelector(state => state.taskReducer.fields);
+  const taskManagementSortField = useAppSelector(selectSortField);
+
   // Calculate active filters count - memoized to prevent unnecessary recalculations
   const calculatedActiveFiltersCount = useMemo(() => {
     const count = filterSections.reduce(
       (acc, section) => (section.id === 'groupBy' ? acc : acc + section.selectedValues.length),
       0
     );
-    return count + (searchValue ? 1 : 0);
-  }, [filterSections, searchValue]);
+    const sortFieldsCount = position === 'list' ? sortFields.length : 0;
+    const taskManagementSortCount = position === 'list' && taskManagementSortField ? 1 : 0;
+    return count + (searchValue ? 1 : 0) + sortFieldsCount + taskManagementSortCount;
+  }, [filterSections, searchValue, sortFields, taskManagementSortField, position]);
 
   useEffect(() => {
     if (activeFiltersCount !== calculatedActiveFiltersCount) {
@@ -1231,6 +1454,12 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
         // Clear priority filters
         dispatch(setPriorities([]));
 
+        // Clear sort fields
+        dispatch(setFields([]));
+
+        // Clear sort from task-management slice
+        dispatch(setSort({ field: '', order: 'ASC' }));
+
         // Clear archived state based on position
         if (position === 'list') {
           dispatch(setTaskManagementArchived(false));
@@ -1276,9 +1505,9 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
     <div
       className={`${themeClasses.containerBg} border ${themeClasses.containerBorder} rounded-md p-1.5 shadow-sm ${className}`}
     >
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 min-h-[36px]">
         {/* Left Section - Main Filters */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
           {/* Search */}
           <SearchFilter
             value={searchValue}
@@ -1286,6 +1515,11 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
             placeholder="Search tasks by name or key..."
             themeClasses={themeClasses}
           />
+
+          {/* Sort Filter Button (for list view) - appears after search */}
+          {position === 'list' && (
+            <SortDropdown themeClasses={themeClasses} isDarkMode={isDarkMode} />
+          )}
 
           {/* Filter Dropdowns - Only render when data is loaded */}
           {isDataLoaded ? (
@@ -1306,32 +1540,33 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
             ))
           ) : (
             // Loading state
-                          <div
-                className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}
-              >
-                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-500"></div>
-                <span>{t('loadingFilters')}</span>
-              </div>
+            <div
+              className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}
+            >
+              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-500"></div>
+              <span>{t('loadingFilters')}</span>
+            </div>
           )}
         </div>
 
         {/* Right Section - Additional Controls */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex flex-wrap items-center gap-2 ml-auto min-w-0 shrink-0">
           {/* Active Filters Indicator */}
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-1.5">
               <span className={`text-xs ${themeClasses.secondaryText}`}>
-                {activeFiltersCount} {activeFiltersCount !== 1 ? t('filtersActive') : t('filterActive')}
+                {activeFiltersCount}{' '}
+                {activeFiltersCount !== 1 ? t('filtersActive') : t('filterActive')}
               </span>
               <button
                 onClick={clearAllFilters}
                 disabled={clearingFilters}
                 className={`text-xs font-medium transition-colors duration-150 ${
                   clearingFilters
-                    ?                   'text-gray-400 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'text-gray-400 hover:text-gray-300'
-                    : 'text-gray-600 hover:text-gray-700'
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'text-gray-400 hover:text-gray-300'
+                      : 'text-gray-600 hover:text-gray-700'
                 }`}
               >
                 {clearingFilters ? t('clearing') : t('clearAll')}
@@ -1362,7 +1597,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           )}
         </div>
       </div>
-      
+
       {/* Modals */}
       <ManageStatusModal
         open={showManageStatusModal}
@@ -1373,7 +1608,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
         }}
         projectId={projectId || undefined}
       />
-      
+
       <ManagePhaseModal
         open={showManagePhaseModal}
         onClose={() => {

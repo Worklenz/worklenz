@@ -1,4 +1,4 @@
-import { Flex, Typography } from 'antd';
+import { Flex, Typography } from '@/shared/antd-imports';
 import Button from 'antd/lib/button';
 
 import { useTranslation } from 'react-i18next';

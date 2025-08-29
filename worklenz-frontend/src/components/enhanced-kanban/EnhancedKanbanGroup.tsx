@@ -12,7 +12,7 @@ import EnhancedKanbanTaskCard from './EnhancedKanbanTaskCard';
 import VirtualizedTaskList from './VirtualizedTaskList';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import './EnhancedKanbanGroup.css';
-import { Badge, Flex, InputRef, MenuProps, Popconfirm } from 'antd';
+import { Badge, Flex, InputRef, MenuProps, Popconfirm } from '@/shared/antd-imports';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { useAuthService } from '@/hooks/useAuth';
@@ -25,11 +25,11 @@ import {
   MoreOutlined,
 } from '@ant-design/icons/lib/icons';
 import { colors } from '@/styles/colors';
-import { Input } from 'antd';
-import { Tooltip } from 'antd';
-import { Typography } from 'antd';
-import { Dropdown } from 'antd';
-import { Button } from 'antd';
+import { Input } from '@/shared/antd-imports';
+import { Tooltip } from '@/shared/antd-imports';
+import { Typography } from '@/shared/antd-imports';
+import { Dropdown } from '@/shared/antd-imports';
+import { Button } from '@/shared/antd-imports';
 import { PlusOutlined } from '@ant-design/icons/lib/icons';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';

@@ -1,4 +1,4 @@
-import { DeleteOutlined, ExclamationCircleFilled, SearchOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled, SearchOutlined } from '@/shared/antd-imports';
 import {
   Button,
   Card,
@@ -9,21 +9,23 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';
-import { CategoryType } from '@/types/categories.types';
 import CustomColorsCategoryTag from '@features/settings/categories/CustomColorsCategoryTag';
 import { deleteCategory } from '@features/settings/categories/categoriesSlice';
 import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
 import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_categories_visit } from '@/shared/worklenz-analytics-events';
 
 const CategoriesSettings = () => {
   // localization
   const { t } = useTranslation('settings/categories');
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle('Manage Categories');
 
@@ -55,6 +57,10 @@ const CategoriesSettings = () => {
       setLoading(false);
     };
   }, []);
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_settings_categories_visit);
+  }, [trackMixpanelEvent]);
 
   useEffect(() => {
     getCategories();

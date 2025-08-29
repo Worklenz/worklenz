@@ -1,4 +1,4 @@
-import { Flex, Table, Typography } from 'antd';
+import { Flex, Table, Typography } from '@/shared/antd-imports';
 import { TableProps } from 'antd/lib';
 import { useEffect, useState } from 'react';
 

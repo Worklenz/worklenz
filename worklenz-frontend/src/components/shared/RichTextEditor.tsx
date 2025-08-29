@@ -20,23 +20,20 @@ export default function RichTextEditor({
   height = 200,
   readOnly = false,
 }: RichTextEditorProps) {
-  
-  const modules = useMemo(() => ({
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      ['link'],
-      ['clean']
-    ],
-  }), []);
+  const modules = useMemo(
+    () => ({
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link'],
+        ['clean'],
+      ],
+    }),
+    []
+  );
 
-  const formats = [
-    'header',
-    'bold', 'italic', 'underline',
-    'list', 'bullet',
-    'link'
-  ];
+  const formats = ['header', 'bold', 'italic', 'underline', 'list', 'bullet', 'link'];
 
   return (
     <div className={`rich-text-editor ${themeMode}`} style={{ height }}>

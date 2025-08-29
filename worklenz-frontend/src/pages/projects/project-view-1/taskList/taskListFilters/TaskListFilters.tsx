@@ -1,4 +1,4 @@
-import { Checkbox, Flex, Typography } from 'antd';
+import { Checkbox, Flex, Typography } from '@/shared/antd-imports';
 import SearchDropdown from './SearchDropdown';
 import SortFilterDropdown from './SortFilterDropdown';
 import LabelsFilterDropdown from './LabelsFilterDropdown';

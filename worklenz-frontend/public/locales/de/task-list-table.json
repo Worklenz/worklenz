@@ -57,6 +57,9 @@
 
   "contextMenu": {
     "assignToMe": "Mir zuweisen",
+    "copyLink": "Link zur Aufgabe kopieren",
+    "linkCopied": "Link in die Zwischenablage kopiert",
+    "linkCopyFailed": "Fehler beim Kopieren des Links",
     "moveTo": "Verschieben nach",
     "unarchive": "Dearchivieren",
     "archive": "Archivieren",
@@ -87,7 +90,7 @@
     "peopleField": "Personenfeld",
     "noDate": "Kein Datum",
     "unsupportedField": "Nicht unterstützter Feldtyp",
-    
+
     "modal": {
       "addFieldTitle": "Feld hinzufügen",
       "editFieldTitle": "Feld bearbeiten",
@@ -108,7 +111,7 @@
       "createErrorMessage": "Fehler beim Erstellen der benutzerdefinierten Spalte",
       "updateErrorMessage": "Fehler beim Aktualisieren der benutzerdefinierten Spalte"
     },
-    
+
     "fieldTypes": {
       "people": "Personen",
       "number": "Zahl",
@@ -133,5 +136,11 @@
       "dependencies": "Aufgabe hat Abhängigkeiten",
       "recurring": "Wiederkehrende Aufgabe"
     }
+  },
+
+  "timer": {
+    "conflictTitle": "Timer läuft bereits",
+    "conflictMessage": "Sie haben einen Timer für \"{{taskName}}\" im Projekt \"{{projectName}}\" laufen. Möchten Sie diesen Timer stoppen und einen neuen für diese Aufgabe starten?",
+    "stopAndStart": "Stoppen & Neuen Timer starten"
   }
 }

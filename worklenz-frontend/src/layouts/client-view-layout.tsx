@@ -1,4 +1,4 @@
-import { Col, ConfigProvider, Flex, Layout } from 'antd';
+import { Col, ConfigProvider, Flex, Layout } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
@@ -12,7 +12,7 @@ const ClientViewLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // theme details from theme slice
-  const themeMode = useAppSelector((state) => state.themeReducer.mode);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   // useMediaQuery hook to check if the screen is desktop or not
   const isDesktop = useMediaQuery({ query: '(min-width: 1024px)' });
@@ -22,8 +22,7 @@ const ClientViewLayout = () => {
       theme={{
         components: {
           Layout: {
-            colorBgLayout:
-              themeMode === 'dark' ? colors.darkGray : colors.white,
+            colorBgLayout: themeMode === 'dark' ? colors.darkGray : colors.white,
             headerBg: themeMode === 'dark' ? colors.darkGray : colors.white,
           },
         },
@@ -78,10 +77,7 @@ const ClientViewLayout = () => {
                   transition: 'all 0.3s',
                 }}
               >
-                <ClientViewSiderMenu
-                  isCollapsed={isCollapsed}
-                  setIsCollapsed={setIsCollapsed}
-                />
+                <ClientViewSiderMenu isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
               </Flex>
 
               <Flex style={{ width: '100%', marginBlockStart: 96 }}>

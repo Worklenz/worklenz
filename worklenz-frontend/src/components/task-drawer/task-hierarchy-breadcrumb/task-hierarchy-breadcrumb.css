@@ -17,7 +17,7 @@
 }
 
 /* Dark mode styles */
-[data-theme='dark'] .task-hierarchy-breadcrumb .ant-breadcrumb-separator {
+[data-theme="dark"] .task-hierarchy-breadcrumb .ant-breadcrumb-separator {
   color: #595959;
 }
 
@@ -43,7 +43,7 @@
   color: #40a9ff;
 }
 
-[data-theme='dark'] .task-hierarchy-breadcrumb .ant-btn-link:hover {
+[data-theme="dark"] .task-hierarchy-breadcrumb .ant-btn-link:hover {
   color: #40a9ff;
 }
 
@@ -60,7 +60,7 @@
   line-height: 1.3;
 }
 
-[data-theme='dark'] .task-hierarchy-breadcrumb .current-task-name {
+[data-theme="dark"] .task-hierarchy-breadcrumb .current-task-name {
   color: #ffffffd9;
 }
 
@@ -85,4 +85,4 @@
 .task-hierarchy-breadcrumb .ant-breadcrumb-item .ant-breadcrumb-link {
   display: flex;
   align-items: center;
-} 
+}

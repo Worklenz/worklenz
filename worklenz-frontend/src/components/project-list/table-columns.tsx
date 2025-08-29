@@ -10,12 +10,8 @@ import {
   Tag,
   Tooltip,
   Typography,
-} from 'antd';
-import {
-  CalendarOutlined,
-  InboxOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
+import { CalendarOutlined, InboxOutlined, SettingOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next'; // Assuming you're using i18next for translations
 import './TableColumns.css';
 import { useNavigate } from 'react-router-dom';
@@ -50,7 +46,7 @@ const TableColumns = (): ColumnsType<DataType> => {
       // dataIndex: 'name',
       key: 'name',
       sorter: (a, b) => a.name.length - b.name.length,
-      onCell: (record) => {
+      onCell: record => {
         return {
           style: {
             cursor: 'pointer',
@@ -91,9 +87,7 @@ const TableColumns = (): ColumnsType<DataType> => {
             >
               <Badge color="geekblue" style={{ marginRight: '0.5rem' }} />
               <>
-                <Typography.Text ellipsis={{ expanded: false }}>
-                  {record.name}
-                </Typography.Text>
+                <Typography.Text ellipsis={{ expanded: false }}>{record.name}</Typography.Text>
                 {(record.startDate || record.endDate) && (
                   <Tooltip
                     title={`Start date: ${formattedStartDate}\nEnd date: ${formattedEndDate}`}
@@ -119,16 +113,12 @@ const TableColumns = (): ColumnsType<DataType> => {
       title: t('category'),
       dataIndex: 'category',
       key: 'category',
-      render: (category) =>
+      render: category =>
         category === '-' ? (
           <>{category}</>
         ) : (
           <Tooltip title={`Click to filter by "${category}"`}>
-            <Tag
-              color="#ff9c3c"
-              style={{ borderRadius: '50rem' }}
-              className="table-tag"
-            >
+            <Tag color="#ff9c3c" style={{ borderRadius: '50rem' }} className="table-tag">
               {category}
             </Tag>
           </Tooltip>
@@ -195,8 +185,7 @@ const TableColumns = (): ColumnsType<DataType> => {
       dataIndex: 'tasksProgress',
       render: (text, record) => {
         const { totalTasks, completedTasks } = record;
-        const percent =
-          totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        const percent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
         return (
           <Tooltip title={`${completedTasks} / ${totalTasks} tasks completed.`}>
             <Progress percent={percent} className="project-progress" />
@@ -209,8 +198,7 @@ const TableColumns = (): ColumnsType<DataType> => {
       key: 'lastUpdated',
       dataIndex: 'lastUpdated',
       width: 160,
-      sorter: (a, b) =>
-        new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime(),
+      sorter: (a, b) => new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime(),
       showSorterTooltip: false,
       render: (date: Date) => {
         const now = new Date();
@@ -286,7 +274,7 @@ const TableColumns = (): ColumnsType<DataType> => {
       title: '',
       key: 'button',
       dataIndex: '',
-      render: (render) => (
+      render: render => (
         <div className="hover-button">
           <Tooltip title={t('setting')}>
             <Button

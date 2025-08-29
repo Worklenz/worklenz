@@ -12,19 +12,18 @@ import {
   message,
   Popconfirm,
   Tag,
-} from 'antd';
-import {
   ProjectOutlined,
   PlusOutlined,
   DeleteOutlined,
   EyeOutlined,
   ExclamationCircleFilled,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
+import {} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { toggleClientSettingsDrawer } from '../../features/clients-portal/clients/clients-slice';
-import { 
+import {
   useGetClientDetailsQuery,
   useGetClientProjectsQuery,
   useAssignProjectToClientMutation,
@@ -39,44 +38,44 @@ const { Option } = Select;
 const ClientSettingsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
 
-  const {
-    isClientSettingsDrawerOpen,
-    selectedClientId,
-  } = useAppSelector((state) => state.clientsPortalReducer.clientsReducer);
-  
+  const { isClientSettingsDrawerOpen, selectedClientId } = useAppSelector(
+    state => state.clientsPortalReducer.clientsReducer
+  );
+
   const dispatch = useAppDispatch();
 
   // Local state
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   // RTK Query hooks - only load data when drawer is open
-  const { 
-    data: clientDetails, 
-    isLoading: isLoadingClient 
-  } = useGetClientDetailsQuery(selectedClientId!, { 
-    skip: !selectedClientId
-  });
+  const { data: clientDetails, isLoading: isLoadingClient } = useGetClientDetailsQuery(
+    selectedClientId!,
+    {
+      skip: !selectedClientId,
+    }
+  );
 
   // Extract data from comprehensive response
   const client = clientDetails?.body;
   const clientProjects = client ? { projects: client.projects } : null;
 
-  const { 
-    refetch: refetchClientProjects
-  } = useGetClientProjectsQuery({ 
-    clientId: selectedClientId! 
-  }, { 
-    skip: !selectedClientId || !isClientSettingsDrawerOpen 
-  });
+  const { refetch: refetchClientProjects } = useGetClientProjectsQuery(
+    {
+      clientId: selectedClientId!,
+    },
+    {
+      skip: !selectedClientId || !isClientSettingsDrawerOpen,
+    }
+  );
 
   const isLoadingProjects = isLoadingClient;
 
-  const { 
-    data: availableProjects, 
-    isLoading: isLoadingAvailableProjects 
-  } = useGetProjectsQuery(undefined, {
-    skip: !isClientSettingsDrawerOpen
-  });
+  const { data: availableProjects, isLoading: isLoadingAvailableProjects } = useGetProjectsQuery(
+    undefined,
+    {
+      skip: !isClientSettingsDrawerOpen,
+    }
+  );
 
   const [assignProject, { isLoading: isAssigning }] = useAssignProjectToClientMutation();
   const [removeProject, { isLoading: isRemoving }] = useRemoveProjectFromClientMutation();
@@ -88,14 +87,16 @@ const ClientSettingsDrawer = () => {
     try {
       await assignProject({
         clientId: selectedClientId,
-        projectId: selectedProjectId
+        projectId: selectedProjectId,
       }).unwrap();
-      
+
       message.success(t('projectAssignedSuccessMessage') || 'Project assigned successfully');
       setSelectedProjectId(null);
       refetchClientProjects();
     } catch (error: any) {
-      message.error(error?.data?.message || t('projectAssignedErrorMessage') || 'Failed to assign project');
+      message.error(
+        error?.data?.message || t('projectAssignedErrorMessage') || 'Failed to assign project'
+      );
     }
   };
 
@@ -106,9 +107,9 @@ const ClientSettingsDrawer = () => {
     try {
       await removeProject({
         clientId: selectedClientId,
-        projectId
+        projectId,
       }).unwrap();
-      
+
       message.success(t('projectRemovedSuccessMessage') || 'Project removed successfully');
       refetchClientProjects();
     } catch (error: any) {
@@ -119,9 +120,11 @@ const ClientSettingsDrawer = () => {
   // Get available projects (excluding already assigned ones)
   const getAvailableProjects = () => {
     if (!availableProjects?.body?.projects || !clientProjects?.projects) return [];
-    
+
     const assignedProjectIds = clientProjects.projects.map(p => p.id);
-    return availableProjects.body.projects.filter(project => !assignedProjectIds.includes(project.id));
+    return availableProjects.body.projects.filter(
+      project => !assignedProjectIds.includes(project.id)
+    );
   };
 
   // Table columns for assigned projects
@@ -146,9 +149,7 @@ const ClientSettingsDrawer = () => {
       title: t('statusColumn') || 'Status',
       dataIndex: 'status',
       render: (status: string) => (
-        <Tag color={status === 'active' ? 'green' : 'default'}>
-          {status}
-        </Tag>
+        <Tag color={status === 'active' ? 'green' : 'default'}>{status}</Tag>
       ),
       width: 120,
     },
@@ -169,21 +170,18 @@ const ClientSettingsDrawer = () => {
       render: (_: any, record: any) => (
         <Flex gap={8} align="center">
           <Tooltip title={t('viewProjectTooltip') || 'View Project'}>
-            <Button
-              type="link"
-              icon={<EyeOutlined />}
-              size="small"
-            >
+            <Button type="link" icon={<EyeOutlined />} size="small">
               {t('viewButton') || 'View'}
             </Button>
           </Tooltip>
-          
+
           <Popconfirm
             title={t('removeProjectConfirmationTitle') || 'Remove Project'}
-            description={t('removeProjectConfirmationDescription') || 'Are you sure you want to remove this project from the client?'}
-            icon={
-              <ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />
+            description={
+              t('removeProjectConfirmationDescription') ||
+              'Are you sure you want to remove this project from the client?'
             }
+            icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
             okText={t('removeConfirmationOk') || 'Remove'}
             cancelText={t('removeConfirmationCancel') || 'Cancel'}
             onConfirm={() => handleRemoveProject(record.id)}
@@ -228,7 +226,7 @@ const ClientSettingsDrawer = () => {
       <Spin spinning={isLoadingClient || isLoadingProjects}>
         <Flex vertical gap={24}>
           {/* Assign New Project */}
-          <Card 
+          <Card
             title={
               <Typography.Title level={4} style={{ margin: 0 }}>
                 {t('assignProjectTitle') || 'Assign New Project'}
@@ -256,7 +254,7 @@ const ClientSettingsDrawer = () => {
                   }))}
                 />
               </div>
-              
+
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -270,7 +268,7 @@ const ClientSettingsDrawer = () => {
           </Card>
 
           {/* Assigned Projects */}
-          <Card 
+          <Card
             title={
               <Flex align="center" gap={8}>
                 <ProjectOutlined />
@@ -293,9 +291,9 @@ const ClientSettingsDrawer = () => {
                 scroll={{ x: 600 }}
               />
             ) : (
-              <Empty 
-                description={t('noAssignedProjectsText') || 'No projects assigned to this client'} 
-                image={Empty.PRESENTED_IMAGE_SIMPLE} 
+              <Empty
+                description={t('noAssignedProjectsText') || 'No projects assigned to this client'}
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
               />
             )}
           </Card>
@@ -305,4 +303,4 @@ const ClientSettingsDrawer = () => {
   );
 };
 
-export default ClientSettingsDrawer; 
+export default ClientSettingsDrawer;

@@ -1,13 +1,13 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Avatar, Tag, Progress, Typography, Button, Tooltip, Space } from 'antd';
+import { Avatar, Tag, Progress, Typography, Button, Tooltip, Space } from '@/shared/antd-imports';
 import {
   HolderOutlined,
   MessageOutlined,
   PaperClipOutlined,
   ClockCircleOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
 import { useTranslation } from 'react-i18next';
@@ -198,14 +198,24 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
               </span>
             )}
             {task.comments_count && task.comments_count > 1 && (
-              <Tooltip title={t(`indicators.tooltips.comments${task.comments_count === 1 ? '' : '_plural'}`, { count: task.comments_count })}>
+              <Tooltip
+                title={t(
+                  `indicators.tooltips.comments${task.comments_count === 1 ? '' : '_plural'}`,
+                  { count: task.comments_count }
+                )}
+              >
                 <span className="kanban-task-indicator">
                   <MessageOutlined /> {task.comments_count}
                 </span>
               </Tooltip>
             )}
             {task.attachments_count && task.attachments_count > 1 && (
-              <Tooltip title={t(`indicators.tooltips.attachments${task.attachments_count === 1 ? '' : '_plural'}`, { count: task.attachments_count })}>
+              <Tooltip
+                title={t(
+                  `indicators.tooltips.attachments${task.attachments_count === 1 ? '' : '_plural'}`,
+                  { count: task.attachments_count }
+                )}
+              >
                 <span className="kanban-task-indicator">
                   <PaperClipOutlined /> {task.attachments_count}
                 </span>

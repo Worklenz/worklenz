@@ -1,9 +1,9 @@
-import { TabsProps, Tabs, Button } from 'antd';
+import { TabsProps, Tabs, Button } from '@/shared/antd-imports';
 import Drawer from 'antd/es/drawer';
 import { InputRef } from 'antd/es/input';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from 'react';
-import { PlusOutlined, CloseOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { PlusOutlined, CloseOutlined, ArrowLeftOutlined } from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -25,7 +25,7 @@ import TimeLogForm from './shared/time-log/time-log-form';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import InfoTabFooter from './shared/info-tab/info-tab-footer';
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 
 const TaskDrawer = () => {
   const { t } = useTranslation('task-drawer/task-drawer');
@@ -60,10 +60,12 @@ const TaskDrawer = () => {
     if (taskFormViewModel?.task?.parent_task_id && projectId) {
       // Navigate to parent task
       dispatch(setSelectedTaskId(taskFormViewModel.task.parent_task_id));
-      dispatch(fetchTask({ 
-        taskId: taskFormViewModel.task.parent_task_id, 
-        projectId 
-      }));
+      dispatch(
+        fetchTask({
+          taskId: taskFormViewModel.task.parent_task_id,
+          projectId,
+        })
+      );
     }
   };
 
@@ -217,7 +219,8 @@ const TaskDrawer = () => {
   };
 
   // Check if current task is a sub-task
-  const isSubTask = taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
+  const isSubTask =
+    taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
 
   // Custom close icon based on whether it's a sub-task
   const getCloseIcon = () => {

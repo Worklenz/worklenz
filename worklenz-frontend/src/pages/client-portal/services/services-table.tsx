@@ -1,9 +1,24 @@
-import { Card, Table, Typography, Spin, Alert, Empty, Button, Space, Dropdown, message, Modal } from 'antd';
+import {
+  Card,
+  Table,
+  Typography,
+  Spin,
+  Alert,
+  Empty,
+  Button,
+  Space,
+  Dropdown,
+  message,
+  Modal,
+} from '@/shared/antd-imports';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { TableProps } from 'antd/lib';
 import { useTranslation } from 'react-i18next';
 import ClientPortalStatusTags from '@/components/client-portal/ClientPortalStatusTags';
-import { useGetOrganizationServicesQuery, useDeleteOrganizationServiceMutation } from '../../../api/client-portal/client-portal-api';
+import {
+  useGetOrganizationServicesQuery,
+  useDeleteOrganizationServiceMutation,
+} from '../../../api/client-portal/client-portal-api';
 import { PlusOutlined, MoreOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,7 +41,9 @@ const ServicesTable = () => {
   const handleDelete = async (serviceId: string, serviceName: string) => {
     try {
       await deleteService(serviceId).unwrap();
-      message.success(t('serviceDeletedSuccessfully') || `Service "${serviceName}" deleted successfully!`);
+      message.success(
+        t('serviceDeletedSuccessfully') || `Service "${serviceName}" deleted successfully!`
+      );
     } catch (error) {
       console.error('Failed to delete service:', error);
       message.error(t('serviceDeleteFailed') || 'Failed to delete service. Please try again.');
@@ -38,12 +55,12 @@ const ServicesTable = () => {
     {
       key: 'name',
       title: t('nameColumn'),
-      render: (record) => <Typography.Text>{record.name}</Typography.Text>,
+      render: record => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'createdBy',
       title: t('createdByColumn'),
-      render: (record) => (
+      render: record => (
         <Typography.Text style={{ textTransform: 'capitalize' }}>
           {record.created_by_name || 'Unknown'}
         </Typography.Text>
@@ -52,12 +69,12 @@ const ServicesTable = () => {
     {
       key: 'status',
       title: t('statusColumn'),
-      render: (record) => <ClientPortalStatusTags status={record.status} />,
+      render: record => <ClientPortalStatusTags status={record.status} />,
     },
     {
       key: 'noOfRequests',
       title: t('noOfRequestsColumn'),
-      render: (record) => (
+      render: record => (
         <Typography.Text style={{ textTransform: 'capitalize' }}>
           {record.requests_count || 0}
         </Typography.Text>
@@ -68,7 +85,7 @@ const ServicesTable = () => {
       title: t('actionsColumn') || 'Actions',
       width: 100,
       align: 'center',
-      render: (record) => {
+      render: record => {
         const menuItems = [
           {
             key: 'edit',
@@ -85,7 +102,9 @@ const ServicesTable = () => {
               Modal.confirm({
                 title: t('confirmDeleteTitle') || 'Confirm Delete',
                 icon: <ExclamationCircleOutlined />,
-                content: t('confirmDeleteMessage') || `Are you sure you want to delete "${record.name}"? This action cannot be undone.`,
+                content:
+                  t('confirmDeleteMessage') ||
+                  `Are you sure you want to delete "${record.name}"? This action cannot be undone.`,
                 okText: t('deleteButton'),
                 okType: 'danger',
                 cancelText: t('cancelButton'),
@@ -96,16 +115,8 @@ const ServicesTable = () => {
         ];
 
         return (
-          <Dropdown
-            menu={{ items: menuItems }}
-            trigger={['click']}
-            placement="bottomRight"
-          >
-            <Button
-              type="text"
-              icon={<MoreOutlined />}
-              style={{ border: 'none' }}
-            />
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" icon={<MoreOutlined />} style={{ border: 'none' }} />
           </Dropdown>
         );
       },
@@ -116,7 +127,14 @@ const ServicesTable = () => {
   if (isLoading) {
     return (
       <Card style={{ height: 'calc(100vh - 280px)' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '200px',
+          }}
+        >
           <Spin size="large" />
         </div>
       </Card>
@@ -129,13 +147,18 @@ const ServicesTable = () => {
     return (
       <Card style={{ height: 'calc(100vh - 280px)' }}>
         <Alert
-          message={isNotImplemented ? 'Feature Not Yet Available' : (t('errorLoadingServices') || 'Error Loading Services')}
-          description={
-            isNotImplemented 
-              ? 'The organization services management feature is currently under development. Please check back later.'
-              : (t('errorLoadingServicesDescription') || 'There was an error loading the services. Please try again later.')
+          message={
+            isNotImplemented
+              ? 'Feature Not Yet Available'
+              : t('errorLoadingServices') || 'Error Loading Services'
           }
-          type={isNotImplemented ? "info" : "error"}
+          description={
+            isNotImplemented
+              ? 'The organization services management feature is currently under development. Please check back later.'
+              : t('errorLoadingServicesDescription') ||
+                'There was an error loading the services. Please try again later.'
+          }
+          type={isNotImplemented ? 'info' : 'error'}
           showIcon
         />
       </Card>
@@ -143,9 +166,9 @@ const ServicesTable = () => {
   }
 
   // Extract services from API response
-  // The response structure from backend: { total: number, data: Service[] }
-  const servicesResponse = servicesData?.body || { total: 0, data: [] };
-  const services = servicesResponse.data || [];
+  // The response structure from backend: { body: { services: Service[], total: number } }
+  const servicesResponse = servicesData?.body || { total: 0, services: [] };
+  const services = servicesResponse.services || [];
 
   // Handle empty state
   if (!services || services.length === 0) {
@@ -158,17 +181,15 @@ const ServicesTable = () => {
               <Typography.Title level={4} style={{ marginBottom: 8 }}>
                 {t('noServicesTitle')}
               </Typography.Title>
-              <Typography.Text type="secondary">
-                {t('noServicesDescription')}
-              </Typography.Text>
+              <Typography.Text type="secondary">{t('noServicesDescription')}</Typography.Text>
             </div>
           }
-          style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'center', 
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
             alignItems: 'center',
-            height: 'calc(100vh - 320px)'
+            height: 'calc(100vh - 320px)',
           }}
         >
           <Button
@@ -197,7 +218,7 @@ const ServicesTable = () => {
         scroll={{
           x: 'max-content',
         }}
-        onRow={(record) => {
+        onRow={record => {
           return {
             style: { cursor: 'pointer' },
           };

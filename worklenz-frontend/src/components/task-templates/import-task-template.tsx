@@ -10,7 +10,7 @@ import {
   Select,
   Skeleton,
   Typography,
-} from 'antd/es';
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';

@@ -1,4 +1,4 @@
-import { Tag } from 'antd';
+import { Tag } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -6,9 +6,7 @@ interface ClientPortalStatusTagsProps {
   status: string;
 }
 
-const ClientPortalStatusTags: React.FC<ClientPortalStatusTagsProps> = ({ 
-  status 
-}) => {
+const ClientPortalStatusTags: React.FC<ClientPortalStatusTagsProps> = ({ status }) => {
   const { t } = useTranslation('client-portal-common');
 
   const getStatusConfig = (status: string) => {
@@ -68,11 +66,7 @@ const ClientPortalStatusTags: React.FC<ClientPortalStatusTagsProps> = ({
 
   const { color, text } = getStatusConfig(status);
 
-  return (
-    <Tag color={color}>
-      {text}
-    </Tag>
-  );
+  return <Tag color={color}>{text}</Tag>;
 };
 
 export default ClientPortalStatusTags;

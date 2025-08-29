@@ -21,7 +21,7 @@ interface RequestsState {
 const initialState: RequestsState = {
   requests: [],
   loading: false,
-  error: null
+  error: null,
 };
 
 const requestsSlice = createSlice({
@@ -48,9 +48,10 @@ const requestsSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
-    }
-  }
+    },
+  },
 });
 
-export const { setRequests, addRequest, updateRequest, removeRequest, setLoading, setError } = requestsSlice.actions;
-export default requestsSlice.reducer; 
+export const { setRequests, addRequest, updateRequest, removeRequest, setLoading, setError } =
+  requestsSlice.actions;
+export default requestsSlice.reducer;

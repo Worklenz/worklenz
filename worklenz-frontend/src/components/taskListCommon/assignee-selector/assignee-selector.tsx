@@ -15,7 +15,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '../../../features/projects/singleProject/members/projectMembersSlice';
 import { colors } from '../../../styles/colors';
-import { PlusOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import { PlusOutlined, UsergroupAddOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';

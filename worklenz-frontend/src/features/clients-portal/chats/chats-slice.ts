@@ -9,8 +9,7 @@ const chatList: TempChatsType[] = [
     chats_data: [
       {
         id: '1',
-        content:
-          'Hello can you tell me about this service. I want to know more about it',
+        content: 'Hello can you tell me about this service. I want to know more about it',
         time: new Date(),
         is_me: false,
       },
@@ -22,8 +21,7 @@ const chatList: TempChatsType[] = [
       },
       {
         id: '3',
-        content:
-          'Hello can you tell me about this service. I want to know more about it',
+        content: 'Hello can you tell me about this service. I want to know more about it',
         time: new Date(),
         is_me: false,
       },
@@ -35,8 +33,7 @@ const chatList: TempChatsType[] = [
       },
       {
         id: '5',
-        content:
-          'Hello can you tell me about this service. I want to know more about it',
+        content: 'Hello can you tell me about this service. I want to know more about it',
         time: new Date(),
         is_me: false,
       },
@@ -48,8 +45,7 @@ const chatList: TempChatsType[] = [
       },
       {
         id: '7',
-        content:
-          'Hello can you tell me about this service. I want to know more about it',
+        content: 'Hello can you tell me about this service. I want to know more about it',
         time: new Date(),
         is_me: false,
       },
@@ -64,7 +60,7 @@ const chatList: TempChatsType[] = [
     lastMessage: 'Sure, this is a service that does this and that',
     lastMessageTime: new Date().toISOString(),
     unreadCount: 0,
-    participants: ['alexander turner']
+    participants: ['alexander turner'],
   },
   {
     id: '2',
@@ -81,7 +77,7 @@ const chatList: TempChatsType[] = [
     lastMessage: 'Can you explain about this service ?',
     lastMessageTime: new Date().toISOString(),
     unreadCount: 1,
-    participants: ['emma cooper']
+    participants: ['emma cooper'],
   },
 ];
 
@@ -104,13 +100,8 @@ const chatsSlice = createSlice({
   initialState,
   reducers: {
     // Local state management
-    sendMessage: (
-      state,
-      action: PayloadAction<{ chatId: string; message: string }>
-    ) => {
-      const chat = state.chatList.find(
-        (chat) => chat.id === action.payload.chatId
-      );
+    sendMessage: (state, action: PayloadAction<{ chatId: string; message: string }>) => {
+      const chat = state.chatList.find(chat => chat.id === action.payload.chatId);
 
       if (chat) {
         const newMessage = {
@@ -119,55 +110,52 @@ const chatsSlice = createSlice({
           time: new Date(),
           is_me: true,
         };
-        
+
         chat.chats_data.push(newMessage);
         chat.lastMessage = action.payload.message;
         chat.lastMessageTime = new Date().toISOString();
       }
     },
-    
+
     // API data management
     setChats: (state, action: PayloadAction<ClientPortalChat[]>) => {
       state.chatList = action.payload.map(chat => ({
         id: chat.id,
         name: chat.title || chat.participants.join(', '),
         chats_data: [], // Will be loaded when chat is opened
-        status: chat.unreadCount > 0 ? 'unread' as const : 'read' as const,
+        status: chat.unreadCount > 0 ? ('unread' as const) : ('read' as const),
         lastMessage: chat.lastMessage,
         lastMessageTime: chat.lastMessageTime,
         unreadCount: chat.unreadCount,
-        participants: chat.participants
+        participants: chat.participants,
       }));
     },
-    
+
     setSelectedChat: (state, action: PayloadAction<string | null>) => {
       state.selectedChatId = action.payload;
     },
-    
+
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
-    
+
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    
+
     // Update chat messages for a specific chat
-    setChatMessages: (
-      state, 
-      action: PayloadAction<{ chatId: string; messages: any[] }>
-    ) => {
+    setChatMessages: (state, action: PayloadAction<{ chatId: string; messages: any[] }>) => {
       const chat = state.chatList.find(c => c.id === action.payload.chatId);
       if (chat) {
         chat.chats_data = action.payload.messages.map(msg => ({
           id: msg.id,
           content: msg.content,
           time: new Date(msg.created_at),
-          is_me: msg.sender_id === 'current_user' // This should be replaced with actual user ID comparison
+          is_me: msg.sender_id === 'current_user', // This should be replaced with actual user ID comparison
         }));
       }
     },
-    
+
     // Mark chat as read
     markChatAsRead: (state, action: PayloadAction<string>) => {
       const chat = state.chatList.find(c => c.id === action.payload);
@@ -176,25 +164,22 @@ const chatsSlice = createSlice({
         chat.unreadCount = 0;
       }
     },
-    
+
     // Add new message to specific chat
-    addMessage: (
-      state,
-      action: PayloadAction<{ chatId: string; message: any }>
-    ) => {
+    addMessage: (state, action: PayloadAction<{ chatId: string; message: any }>) => {
       const chat = state.chatList.find(c => c.id === action.payload.chatId);
       if (chat) {
         const newMessage = {
           id: action.payload.message.id,
           content: action.payload.message.content,
           time: new Date(action.payload.message.created_at),
-          is_me: action.payload.message.sender_id === 'current_user'
+          is_me: action.payload.message.sender_id === 'current_user',
         };
-        
+
         chat.chats_data.push(newMessage);
         chat.lastMessage = action.payload.message.content;
         chat.lastMessageTime = action.payload.message.created_at;
-        
+
         // If message is not from current user, increment unread count
         if (!newMessage.is_me) {
           chat.unreadCount = (chat.unreadCount || 0) + 1;
@@ -205,15 +190,15 @@ const chatsSlice = createSlice({
   },
 });
 
-export const { 
-  sendMessage, 
-  setChats, 
-  setSelectedChat, 
-  setLoading, 
+export const {
+  sendMessage,
+  setChats,
+  setSelectedChat,
+  setLoading,
   setError,
   setChatMessages,
   markChatAsRead,
-  addMessage
+  addMessage,
 } = chatsSlice.actions;
 
 export default chatsSlice.reducer;

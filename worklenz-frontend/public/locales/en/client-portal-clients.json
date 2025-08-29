@@ -2,27 +2,27 @@
   "pageTitle": "Clients",
   "pageDescription": "Manage your clients and their access to the portal",
   "addClientButton": "Add Client",
-  
+
   "totalClientsLabel": "Total Clients",
   "activeClientsLabel": "Active Clients",
   "totalProjectsLabel": "Total Projects",
   "totalTeamMembersLabel": "Team Members",
-  
+
   "errorTitle": "Error",
   "loadingText": "Loading...",
   "refreshButton": "Refresh",
   "clearFiltersButton": "Clear Filters",
-  
+
   "clientColumn": "Client",
   "statusColumn": "Status",
   "assignedProjectsColumn": "Assigned Projects",
   "teamMembersColumn": "Team Members",
   "actionBtnsColumn": "Actions",
-  
+
   "statusActive": "Active",
   "statusInactive": "Inactive",
   "statusPending": "Pending",
-  
+
   "viewDetailsTooltip": "View Details",
   "editClientTooltip": "Edit Client",
   "manageProjectsTooltip": "Manage Projects",
@@ -30,45 +30,45 @@
   "settingsTooltip": "Settings",
   "shareTooltip": "Share",
   "deleteTooltip": "Delete",
-  
+
   "deleteConfirmationTitle": "Delete Client",
   "deleteConfirmationDescription": "Are you sure you want to delete this client? This action cannot be undone.",
   "deleteConfirmationOk": "Delete",
   "deleteConfirmationCancel": "Cancel",
-  
+
   "searchClientsPlaceholder": "Search clients...",
   "statusFilterPlaceholder": "Filter by status",
-  
+
   "paginationText": "Showing",
   "ofText": "of",
   "clientsText": "clients",
-  
+
   "addClientTitle": "Add New Client",
   "createButton": "Create Client",
   "cancelButton": "Cancel",
-  
+
   "clientNameLabel": "Client Name",
   "clientNamePlaceholder": "Enter client name",
   "clientNameRequired": "Please enter client name",
   "clientNameMinLength": "Name must be at least 2 characters",
-  
+
   "emailLabel": "Email Address",
   "emailPlaceholder": "Enter email address",
   "emailRequired": "Please enter email address",
   "emailInvalid": "Please enter a valid email address",
-  
+
   "companyNameLabel": "Company Name",
   "companyNamePlaceholder": "Enter company name (optional)",
-  
+
   "phoneLabel": "Phone Number",
   "phonePlaceholder": "Enter phone number (optional)",
   "phoneInvalid": "Please enter a valid phone number",
-  
+
   "addressLabel": "Address",
   "addressPlaceholder": "Enter address (optional)",
-  
+
   "statusLabel": "Status",
-  
+
   "createClientSuccessMessage": "Client created successfully! Share the organization invite link to give them portal access.",
   "createClientSuccessMessageWithInvite": "Client created successfully! Invitation sent to {email}",
   "createClientErrorMessage": "Failed to create client",
@@ -76,13 +76,13 @@
   "updateClientErrorMessage": "Failed to update client",
   "deleteClientSuccessMessage": "Client deleted successfully",
   "deleteClientErrorMessage": "Failed to delete client",
-  
+
   "clientPortalAccessTitle": "Client Portal Access",
   "clientPortalAccessDescription": "Share this link with your client to give them access to their portal",
   "clientPortalAccessInfo": "After creating the client, use the organization invite link from the Clients page to give them portal access.",
   "copyButton": "Copy",
   "linkCopiedMessage": "Link copied to clipboard",
-  
+
   "organizationInviteLinkTitle": "Organization Invite Link",
   "organizationInviteLinkDescription": "Share this single link with any client to allow them to join your organization's client portal. The link expires after 7 days for security and can be regenerated as needed.",
   "generateLink": "Generate Link",
@@ -99,14 +99,14 @@
   "linkActive": "Active",
   "inviteButton": "Invite",
   "generatingLink": "Generating invite link...",
-  
+
   "closeButton": "Close",
   "deleteButton": "Delete Client",
-  
+
   "clientInformationTitle": "Client Information",
   "createdAtLabel": "Created",
   "updatedAtLabel": "Updated",
-  
+
   "statisticsTitle": "Statistics",
   "totalProjectsLabel": "Total Projects",
   "activeProjectsLabel": "Active Projects",
@@ -117,40 +117,40 @@
   "pendingRequestsLabel": "Pending Requests",
   "totalInvoicesLabel": "Total Invoices",
   "unpaidInvoicesLabel": "Unpaid Invoices",
-  
+
   "teamMembersTitle": "Team Members",
   "noTeamMembersText": "No team members found",
-  
+
   "projectsTitle": "Projects",
   "noProjectsText": "No projects found",
   "viewProjectTooltip": "View Project",
   "viewButton": "View",
   "tasksCompletedText": "tasks completed",
-  
+
   "overviewTab": "Overview",
   "teamTab": "Team",
   "projectsTab": "Projects",
-  
+
   "inviteMemberButton": "Invite Member",
   "editButton": "Edit",
   "removeButton": "Remove",
-  
+
   "assignedProjectsTitle": "Assigned Projects",
   "assignProjectButton": "Assign Project",
   "noProjectsAssignedText": "No projects assigned",
   "tasksProgressText": "Tasks",
-  
+
   "nameLabel": "Name",
   "companyLabel": "Company",
   "phoneLabel": "Phone",
   "addressLabel": "Address",
-  
+
   "copyLinkLabel": "Copy Link",
   "addTeamMembersLabel": "Add Team Members",
   "teamMembersLabel": "Team Members",
   "assignProjectLabel": "Assign Project",
   "searchProjectPlaceholder": "Search Project",
-  
+
   "bulkActions": "Bulk Actions",
   "selectedCount": "Selected",
   "activateSelected": "Activate Selected",
@@ -163,15 +163,15 @@
   "bulkDeleteErrorMessage": "Failed to delete selected clients",
   "bulkUpdateSuccessMessage": "Selected clients updated successfully",
   "bulkUpdateErrorMessage": "Failed to update selected clients",
-  
+
   "editClientTitle": "Edit Client",
   "updateButton": "Update Client",
   "saveButton": "Save Changes",
-  
+
   "clientDetailsTitle": "Client Details",
   "clientTeamsTitle": "Client Team Management",
   "clientSettingsTitle": "Client Settings",
-  
+
   "inviteTeamMemberTitle": "Invite Team Member",
   "inviteTeamMemberDescription": "Send an invitation to join this client's team",
   "inviteEmailLabel": "Email Address",
@@ -184,35 +184,35 @@
   "inviteButton": "Send Invitation",
   "inviteSuccessMessage": "Invitation sent successfully",
   "inviteErrorMessage": "Failed to send invitation",
-  
+
   "resendInvitationButton": "Resend Invitation",
   "resendInvitationSuccessMessage": "Invitation resent successfully",
   "resendInvitationErrorMessage": "Failed to resend invitation",
-  
+
   "removeTeamMemberTitle": "Remove Team Member",
   "removeTeamMemberDescription": "Are you sure you want to remove this team member?",
   "removeTeamMemberSuccessMessage": "Team member removed successfully",
   "removeTeamMemberErrorMessage": "Failed to remove team member",
-  
+
   "assignProjectTitle": "Assign Project",
   "assignProjectDescription": "Select projects to assign to this client",
   "assignProjectSuccessMessage": "Projects assigned successfully",
   "assignProjectErrorMessage": "Failed to assign projects",
-  
+
   "unassignProjectTitle": "Unassign Project",
   "unassignProjectDescription": "Are you sure you want to unassign this project?",
   "unassignProjectSuccessMessage": "Project unassigned successfully",
   "unassignProjectErrorMessage": "Failed to unassign project",
-  
+
   "noDataText": "No data available",
   "loadingDataText": "Loading data...",
   "errorLoadingDataText": "Error loading data",
   "retryButton": "Retry",
-  
+
   "errorLoadingClient": "Error loading client data",
   "clientNameMinLength": "Name must be at least 2 characters",
   "phoneInvalid": "Please enter a valid phone number",
-  
+
   "teamManagementTitle": "Team Management",
   "clientPortalLinkLabel": "Client Portal Link",
   "clientPortalLinkDescription": "Share this link with your client to give them access to their portal",
@@ -221,7 +221,7 @@
   "noClientsDescription": "You haven't added any clients yet. Add your first client to start managing their portal access.",
   "errorLoadingClients": "Error Loading Clients",
   "errorLoadingClientsDescription": "There was an error loading your clients. Please try again later.",
-  
+
   "projectSettingsTitle": "Project Settings",
   "assignProjectTitle": "Assign New Project",
   "selectProjectLabel": "Select Project",
@@ -247,4 +247,3 @@
   "projectRemovedSuccessMessage": "Project removed successfully",
   "projectRemovedErrorMessage": "Failed to remove project"
 }
-  

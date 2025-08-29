@@ -11,7 +11,7 @@ import {
   Spin,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
@@ -28,6 +28,8 @@ import logger from '@/utils/errorLogger';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
+import { ROLE_NAMES } from '@/types/roles/role.types';
+import { canManageUserRole, getAvailableRoleOptions } from '@/utils/role-permissions.utils';
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
@@ -52,6 +54,15 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
   const isOwnAccount = useMemo(() => {
     return auth.getCurrentSession()?.email === teamMember?.email;
   }, [auth, teamMember?.email]);
+
+  const currentUser = auth.getCurrentSession();
+  const canManageTarget = useMemo(() => {
+    return canManageUserRole(currentUser?.role_name, teamMember?.role_name, currentUser?.owner);
+  }, [currentUser?.role_name, currentUser?.owner, teamMember?.role_name]);
+
+  const availableRoles = useMemo(() => {
+    return getAvailableRoleOptions(currentUser?.role_name, currentUser?.owner);
+  }, [currentUser?.role_name, currentUser?.owner]);
 
   const isResendAvailable = useMemo(() => {
     return teamMember?.pending_invitation && selectedMemberId && !resentSuccess;
@@ -79,9 +90,18 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
       const res = await teamMembersApiService.getById(selectedMemberId);
       if (res.done) {
         setTeamMember(res.body);
+
+        // Determine access level based on role_name
+        let accessLevel = 'member';
+        if (res.body.role_name === 'Admin') {
+          accessLevel = 'admin';
+        } else if (res.body.role_name === 'Team Lead') {
+          accessLevel = 'team-lead';
+        }
+
         form.setFieldsValue({
           jobTitle: jobTitles.find(job => job.id === res.body?.job_title)?.id,
-          access: res.body.is_admin ? 'admin' : 'member',
+          access: accessLevel,
         });
       }
     } catch (error) {
@@ -94,9 +114,15 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
 
     try {
       const body: ITeamMemberCreateRequest = {
-        job_title: selectedJobTitle,
+        job_title: form.getFieldValue('jobTitle'),
         emails: [teamMember.email],
         is_admin: values.access === 'admin',
+        role_name:
+          values.access === 'team-lead'
+            ? ROLE_NAMES.TEAM_LEAD
+            : values.access === 'admin'
+              ? ROLE_NAMES.ADMIN
+              : ROLE_NAMES.MEMBER,
       };
 
       const res = await teamMembersApiService.update(selectedMemberId, body);
@@ -106,7 +132,12 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
         dispatch(toggleUpdateMemberDrawer());
 
         // Update role_name in parent component
-        const newRoleName = values.access === 'admin' ? 'admin' : 'member';
+        const newRoleName =
+          values.access === 'team-lead'
+            ? 'Team Lead'
+            : values.access === 'admin'
+              ? 'Admin'
+              : 'Member';
         onRoleUpdate?.(selectedMemberId, newRoleName);
 
         const authorizeResponse = await authApiService.verify();
@@ -216,17 +247,29 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
 
         <Form.Item label={t('memberAccessLabel')} name="access" rules={[{ required: true }]}>
           <Select
-            disabled={isOwnAccount}
-            options={[
-              { value: 'member', label: t('memberText') },
-              { value: 'admin', label: t('adminText') },
-            ]}
+            disabled={isOwnAccount || !canManageTarget}
+            options={availableRoles.map(role => ({
+              value:
+                role.value === 'Member'
+                  ? 'member'
+                  : role.value === 'Team Lead'
+                    ? 'team-lead'
+                    : role.value === 'Admin'
+                      ? 'admin'
+                      : role.value.toLowerCase(),
+              label: role.label,
+            }))}
           />
         </Form.Item>
 
         <Form.Item>
           <Flex vertical gap={8}>
-            <Button type="primary" style={{ width: '100%' }} htmlType="submit">
+            <Button
+              type="primary"
+              style={{ width: '100%' }}
+              htmlType="submit"
+              disabled={!canManageTarget}
+            >
               {t('updateButton')}
             </Button>
             <Button

@@ -25,11 +25,11 @@ const initialState: DashboardState = {
     activeProjects: 0,
     totalInvoices: 0,
     unpaidInvoices: 0,
-    unreadMessages: 0
+    unreadMessages: 0,
   },
   recentActivity: [],
   loading: false,
-  error: null
+  error: null,
 };
 
 const dashboardSlice = createSlice({
@@ -47,9 +47,10 @@ const dashboardSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
-    }
-  }
+    },
+  },
 });
 
-export const { setDashboardStats, setRecentActivity, setLoading, setError } = dashboardSlice.actions;
-export default dashboardSlice.reducer; 
+export const { setDashboardStats, setRecentActivity, setLoading, setError } =
+  dashboardSlice.actions;
+export default dashboardSlice.reducer;

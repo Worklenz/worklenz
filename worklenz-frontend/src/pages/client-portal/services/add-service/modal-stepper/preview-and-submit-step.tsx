@@ -1,4 +1,13 @@
-import { Button, Flex, Space, Typography, message, Card, Tag, Divider } from 'antd';
+import {
+  Button,
+  Flex,
+  Space,
+  Typography,
+  message,
+  Card,
+  Tag,
+  Divider,
+} from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TempServicesType } from '../../../../../types/client-portal/temp-client-portal.types';
@@ -10,10 +19,7 @@ type PreviewAndSubmitStepProps = {
   service: TempServicesType;
 };
 
-const PreviewAndSubmitStep = ({
-  setCurrent,
-  service,
-}: PreviewAndSubmitStepProps) => {
+const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps) => {
   // localization
   const { t } = useTranslation('client-portal-services');
 
@@ -27,7 +33,7 @@ const PreviewAndSubmitStep = ({
         name: service.name,
         description: service.service_data?.description,
         service_data: service.service_data,
-        is_public: false
+        is_public: false,
       }).unwrap();
       message.success(t('serviceCreatedSuccessfully') || 'Service created successfully!');
       navigate(-1); // Go back to services list
@@ -43,7 +49,7 @@ const PreviewAndSubmitStep = ({
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 16 }}>
         <Flex vertical gap={24}>
           {/* Service Overview Card */}
-          <Card 
+          <Card
             title={
               <Typography.Title level={3} style={{ margin: 0, color: '#1890ff' }}>
                 {service.name}
@@ -62,36 +68,39 @@ const PreviewAndSubmitStep = ({
                       maxHeight: 250,
                       objectFit: 'cover',
                       borderRadius: 8,
-                      border: '1px solid #f0f0f0'
+                      border: '1px solid #f0f0f0',
                     }}
                   />
                 </div>
               )}
 
               <div>
-                <Typography.Text strong style={{ display: 'block', marginBottom: 8, color: '#666' }}>
+                <Typography.Text
+                  strong
+                  style={{ display: 'block', marginBottom: 8, color: '#666' }}
+                >
                   {t('addService.serviceDetails.serviceDescription') || 'Description'}:
                 </Typography.Text>
                 {service?.service_data?.description ? (
-                  <div 
+                  <div
                     style={{
                       padding: 16,
                       backgroundColor: '#fafafa',
                       borderRadius: 6,
-                      border: '1px solid #f0f0f0'
+                      border: '1px solid #f0f0f0',
                     }}
-                    dangerouslySetInnerHTML={{ 
-                      __html: service.service_data.description
+                    dangerouslySetInnerHTML={{
+                      __html: service.service_data.description,
                     }}
                   />
                 ) : (
-                  <div 
+                  <div
                     style={{
                       padding: 16,
                       backgroundColor: '#f5f5f5',
                       borderRadius: 6,
                       border: '1px solid #d9d9d9',
-                      textAlign: 'center'
+                      textAlign: 'center',
                     }}
                   >
                     <Typography.Text type="secondary" style={{ fontStyle: 'italic' }}>
@@ -105,25 +114,27 @@ const PreviewAndSubmitStep = ({
 
           {/* Request Form Preview Card */}
           {service?.service_data?.request_form && service.service_data.request_form.length > 0 && (
-            <Card 
+            <Card
               title={
                 <Flex align="center" gap={8}>
                   <Typography.Title level={4} style={{ margin: 0 }}>
                     {t('requestFormPreview')}
                   </Typography.Title>
-                  <Tag color="blue">{service.service_data.request_form.length} {t('questionsCount') || 'questions'}</Tag>
+                  <Tag color="blue">
+                    {service.service_data.request_form.length} {t('questionsCount') || 'questions'}
+                  </Tag>
                 </Flex>
               }
               style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
             >
               <Flex vertical gap={12}>
                 {service.service_data.request_form.map((item, index) => (
-                  <Card 
-                    key={index} 
+                  <Card
+                    key={index}
                     size="small"
-                    style={{ 
+                    style={{
                       backgroundColor: '#f8f9fa',
-                      border: '1px solid #e9ecef'
+                      border: '1px solid #e9ecef',
                     }}
                   >
                     <Flex vertical gap={8}>
@@ -131,29 +142,38 @@ const PreviewAndSubmitStep = ({
                         <Typography.Text strong style={{ fontSize: 14 }}>
                           {index + 1}. {item.question}
                         </Typography.Text>
-                        <Tag color={
-                          item.type === 'text' ? 'green' : 
-                          item.type === 'multipleChoice' ? 'blue' : 
-                          'orange'
-                        }>
+                        <Tag
+                          color={
+                            item.type === 'text'
+                              ? 'green'
+                              : item.type === 'multipleChoice'
+                                ? 'blue'
+                                : 'orange'
+                          }
+                        >
                           {t(`${item.type}Option`)}
                         </Tag>
                       </Flex>
-                      
-                      {item.type === 'multipleChoice' && item.answer && Array.isArray(item.answer) && (
-                        <div>
-                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                            {t('optionsLabel')}:
-                          </Typography.Text>
-                          <Flex wrap gap={4}>
-                            {item.answer.map((option, optionIndex) => (
-                              <Tag key={optionIndex} style={{ margin: 0 }}>
-                                {option}
-                              </Tag>
-                            ))}
-                          </Flex>
-                        </div>
-                      )}
+
+                      {item.type === 'multipleChoice' &&
+                        item.answer &&
+                        Array.isArray(item.answer) && (
+                          <div>
+                            <Typography.Text
+                              type="secondary"
+                              style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
+                            >
+                              {t('optionsLabel')}:
+                            </Typography.Text>
+                            <Flex wrap gap={4}>
+                              {item.answer.map((option, optionIndex) => (
+                                <Tag key={optionIndex} style={{ margin: 0 }}>
+                                  {option}
+                                </Tag>
+                              ))}
+                            </Flex>
+                          </div>
+                        )}
                     </Flex>
                   </Card>
                 ))}

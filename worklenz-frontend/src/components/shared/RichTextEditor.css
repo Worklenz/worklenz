@@ -24,7 +24,8 @@
 .rich-text-editor.light .ql-editor {
   background-color: #ffffff;
   color: #000000;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   min-height: 120px;
@@ -55,7 +56,8 @@
 .rich-text-editor.dark .ql-editor {
   background-color: #1e1e1e;
   color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   min-height: 120px;
@@ -214,7 +216,7 @@
   .rich-text-editor .ql-toolbar {
     padding: 8px;
   }
-  
+
   .rich-text-editor .ql-editor {
     padding: 12px;
   }

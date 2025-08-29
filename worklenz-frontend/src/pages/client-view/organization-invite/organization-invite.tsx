@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, Spin, Result, Button, Typography, Space } from 'antd';
+import { Card, Spin, Result, Button, Typography, Space } from '@/shared/antd-imports';
 import { CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useHandleOrganizationInviteMutation } from '@/api/client-portal/client-portal-api';
 
@@ -10,10 +10,10 @@ const OrganizationInvitePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  
+
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'invalid'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   const [handleInvite, { isLoading }] = useHandleOrganizationInviteMutation();
 
   useEffect(() => {
@@ -28,7 +28,7 @@ const OrganizationInvitePage: React.FC = () => {
   const handleOrganizationInvite = async () => {
     try {
       const response = await handleInvite({ token: token! }).unwrap();
-      
+
       // If user is already authenticated and linked, redirect to client portal
       if (response.redirectTo === 'client-portal') {
         setStatus('success');
@@ -39,11 +39,11 @@ const OrganizationInvitePage: React.FC = () => {
         // User needs to authenticate/register
         setStatus('success');
         setTimeout(() => {
-          navigate('/auth/login', { 
-            state: { 
+          navigate('/auth/login', {
+            state: {
               organizationInviteToken: token,
-              message: 'Please login or create an account to accept the invitation.'
-            } 
+              message: 'Please login or create an account to accept the invitation.',
+            },
           });
         }, 2000);
       }
@@ -63,7 +63,7 @@ const OrganizationInvitePage: React.FC = () => {
             subTitle="Please wait while we verify your invitation..."
           />
         );
-      
+
       case 'success':
         return (
           <Result
@@ -72,7 +72,7 @@ const OrganizationInvitePage: React.FC = () => {
             subTitle="Redirecting you to the portal..."
           />
         );
-      
+
       case 'error':
         return (
           <Result
@@ -89,7 +89,7 @@ const OrganizationInvitePage: React.FC = () => {
             ]}
           />
         );
-      
+
       case 'invalid':
         return (
           <Result
@@ -103,26 +103,30 @@ const OrganizationInvitePage: React.FC = () => {
             }
           />
         );
-      
+
       default:
         return null;
     }
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      backgroundColor: '#f5f5f5',
-      padding: '20px'
-    }}>
-      <Card style={{ 
-        maxWidth: 600, 
-        width: '100%',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-      }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f5f5f5',
+        padding: '20px',
+      }}
+    >
+      <Card
+        style={{
+          maxWidth: 600,
+          width: '100%',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        }}
+      >
         {renderContent()}
       </Card>
     </div>

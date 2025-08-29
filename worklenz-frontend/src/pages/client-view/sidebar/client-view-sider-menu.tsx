@@ -1,11 +1,4 @@
-import {
-  Button,
-  ConfigProvider,
-  Flex,
-  Menu,
-  MenuProps,
-  Typography,
-} from 'antd';
+import { Button, ConfigProvider, Flex, Menu, MenuProps, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '../../../styles/colors';
@@ -25,16 +18,13 @@ type ClientViewSiderMenuProps = {
   setIsCollapsed: (value: boolean) => void;
 };
 
-const ClientViewSiderMenu = ({
-  isCollapsed,
-  setIsCollapsed,
-}: ClientViewSiderMenuProps) => {
+const ClientViewSiderMenu = ({ isCollapsed, setIsCollapsed }: ClientViewSiderMenuProps) => {
   const location = useLocation();
   // localization
   const { t } = useTranslation('client-view-common');
 
   // theme details from theme slice
-  const themeMode = useAppSelector((state) => state.themeReducer.mode);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   type MenuItem = Required<MenuProps>['items'][number];
   // import menu items from client view sidebar constants
@@ -61,7 +51,7 @@ const ClientViewSiderMenu = ({
 
   // menu items
   const items: MenuItem[] = [
-    ...menuItems.map((item) => ({
+    ...menuItems.map(item => ({
       disabled: item.disabled,
       key: item.key,
       label: (
@@ -109,11 +99,7 @@ const ClientViewSiderMenu = ({
             position: 'absolute',
             right: 0,
             top: -36,
-            background: themeWiseColor(
-              colors.white,
-              colors.darkGray,
-              themeMode
-            ),
+            background: themeWiseColor(colors.white, colors.darkGray, themeMode),
             boxShadow: 'none',
             padding: 0,
             zIndex: 120,

@@ -3,7 +3,7 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
   SearchOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import {
   Button,
   Card,
@@ -14,7 +14,7 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useMemo, useState } from 'react';
 import { colors } from '@/styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -31,11 +31,14 @@ import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import ClientDrawer from './client-drawer';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_clients_visit } from '@/shared/worklenz-analytics-events';
 
 const ClientsSettings: React.FC = () => {
   const { t } = useTranslation('settings/clients');
   const { clients } = useAppSelector(state => state.clientReducer);
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle('Manage Clients');
 
@@ -63,6 +66,10 @@ const ClientsSettings: React.FC = () => {
   }, [pagination, searchQuery, dispatch]);
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_clients_visit);
+  }, [trackMixpanelEvent]);
+
+  useEffect(() => {
     getClients();
   }, [searchQuery]);
 
@@ -80,7 +87,6 @@ const ClientsSettings: React.FC = () => {
       logger.error('Failed to delete client:', error);
     }
   };
-
 
   const columns: TableProps['columns'] = useMemo(
     () => [

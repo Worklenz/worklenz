@@ -129,7 +129,6 @@ const tempServices: TempServicesType[] = [
       ],
     },
   },
-  
 ];
 
 type ServicesState = {
@@ -146,7 +145,7 @@ const clientViewServices = createSlice({
   name: 'servicesReducer',
   initialState,
   reducers: {
-    toggleRequestFormModal: (state) => {
+    toggleRequestFormModal: state => {
       state.isRequestFormModalOpen = !state.isRequestFormModalOpen;
     },
   },

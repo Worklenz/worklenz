@@ -79,14 +79,13 @@ export const profileSettingsApiService = {
   },
 
   updateClientPortalSettings: async (body: any): Promise<IServerResponse<any>> => {
-    const response = await apiClient.put<IServerResponse<any>>(
-      `${rootUrl}/client-portal`,
-      body
-    );
+    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/client-portal`, body);
     return response.data;
   },
 
-  uploadClientPortalLogo: async (logoData: string): Promise<IServerResponse<{ logo_url: string }>> => {
+  uploadClientPortalLogo: async (
+    logoData: string
+  ): Promise<IServerResponse<{ logo_url: string }>> => {
     const response = await apiClient.post<IServerResponse<{ logo_url: string }>>(
       `${rootUrl}/client-portal/upload-logo`,
       { logoData }

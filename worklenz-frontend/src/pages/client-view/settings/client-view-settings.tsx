@@ -1,4 +1,14 @@
-import { Card, Form, Input, Button, Typography, Flex, Switch, Divider, message } from 'antd';
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Typography,
+  Flex,
+  Switch,
+  Divider,
+  message,
+} from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
@@ -11,8 +21,8 @@ const ClientViewSettings = () => {
   const [loading, setLoading] = useState(false);
 
   // Get client settings from Redux (replace with API call)
-  const clientSettings = useAppSelector((state) => 
-    state.clientViewReducer.settingsReducer?.settings || {}
+  const clientSettings = useAppSelector(
+    state => state.clientViewReducer.settingsReducer?.settings || {}
   );
 
   const onFinish = async (values: any) => {
@@ -20,10 +30,10 @@ const ClientViewSettings = () => {
     try {
       // TODO: Replace with actual API call
       console.log('Saving settings:', values);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       message.success(t('settingsSaved'));
     } catch (error) {
       message.error(t('settingsSaveError'));
@@ -39,12 +49,7 @@ const ClientViewSettings = () => {
       </Typography.Title>
 
       <Card title={t('profileSettings')}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          initialValues={clientSettings}
-        >
+        <Form form={form} layout="vertical" onFinish={onFinish} initialValues={clientSettings}>
           <Form.Item
             name="company_name"
             label={t('companyName')}
@@ -66,23 +71,17 @@ const ClientViewSettings = () => {
             label={t('email')}
             rules={[
               { required: true, message: t('emailRequired') },
-              { type: 'email', message: t('emailInvalid') }
+              { type: 'email', message: t('emailInvalid') },
             ]}
           >
             <Input placeholder={t('enterEmail')} />
           </Form.Item>
 
-          <Form.Item
-            name="phone"
-            label={t('phone')}
-          >
+          <Form.Item name="phone" label={t('phone')}>
             <Input placeholder={t('enterPhone')} />
           </Form.Item>
 
-          <Form.Item
-            name="address"
-            label={t('address')}
-          >
+          <Form.Item name="address" label={t('address')}>
             <TextArea rows={3} placeholder={t('enterAddress')} />
           </Form.Item>
 
@@ -104,11 +103,7 @@ const ClientViewSettings = () => {
             <Switch />
           </Form.Item>
 
-          <Form.Item
-            name="project_updates"
-            label={t('projectUpdates')}
-            valuePropName="checked"
-          >
+          <Form.Item name="project_updates" label={t('projectUpdates')} valuePropName="checked">
             <Switch />
           </Form.Item>
 
@@ -120,11 +115,7 @@ const ClientViewSettings = () => {
             <Switch />
           </Form.Item>
 
-          <Form.Item
-            name="request_updates"
-            label={t('requestUpdates')}
-            valuePropName="checked"
-          >
+          <Form.Item name="request_updates" label={t('requestUpdates')} valuePropName="checked">
             <Switch />
           </Form.Item>
         </Form>
@@ -132,18 +123,11 @@ const ClientViewSettings = () => {
 
       <Card title={t('securitySettings')}>
         <Form layout="vertical">
-          <Form.Item
-            name="two_factor_auth"
-            label={t('twoFactorAuth')}
-            valuePropName="checked"
-          >
+          <Form.Item name="two_factor_auth" label={t('twoFactorAuth')} valuePropName="checked">
             <Switch />
           </Form.Item>
 
-          <Form.Item
-            name="session_timeout"
-            label={t('sessionTimeout')}
-          >
+          <Form.Item name="session_timeout" label={t('sessionTimeout')}>
             <Input placeholder={t('enterSessionTimeout')} />
           </Form.Item>
         </Form>
@@ -152,4 +136,4 @@ const ClientViewSettings = () => {
   );
 };
 
-export default ClientViewSettings; 
+export default ClientViewSettings;

@@ -1,4 +1,4 @@
-import { Button, Flex, Form, Input, Typography, Spin, Alert } from 'antd';
+import { Button, Flex, Form, Input, Typography, Spin, Alert } from '@/shared/antd-imports';
 import React, { useEffect, useRef, useState } from 'react';
 import SendChatItem from './send-chat-item';
 import RecivedChatItem from './recived-chat-item';
@@ -9,7 +9,11 @@ import { useAppDispatch } from '../../../../../hooks/useAppDispatch';
 import { sendMessage } from '../../../../../features/clients-portal/chats/chats-slice';
 import { useAppSelector } from '../../../../../hooks/useAppSelector';
 import { themeWiseColor } from '../../../../../utils/themeWiseColor';
-import { useGetMessagesQuery, useSendMessageMutation, ClientPortalMessage } from '../../../../../api/client-portal/client-portal-api';
+import {
+  useGetMessagesQuery,
+  useSendMessageMutation,
+  ClientPortalMessage,
+} from '../../../../../api/client-portal/client-portal-api';
 
 type ChatBoxProps = {
   openedChat: TempChatsType;
@@ -23,7 +27,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
   const { t } = useTranslation('client-portal-chats');
 
   // get theme data from theme reducer
-  const themeMode = useAppSelector((state) => state.themeReducer.mode);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const [form] = Form.useForm();
   const dispatch = useAppDispatch();
@@ -40,7 +44,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
           id: msg.id || '',
           content: msg.content || '',
           time: new Date(msg.created_at || Date.now()),
-          is_me: msg.sender_id === 'current_user' // This should be replaced with actual user ID comparison
+          is_me: msg.sender_id === 'current_user', // This should be replaced with actual user ID comparison
         }));
       }
       return Array.isArray(openedChat.chats_data) ? openedChat.chats_data : [];
@@ -58,10 +62,10 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
           chatId: openedChat.id,
           messageData: {
             content: message.trim(),
-            attachments: []
-          }
+            attachments: [],
+          },
         }).unwrap();
-        
+
         setMessage('');
         form.resetFields();
         refetch(); // Refresh messages after sending
@@ -128,23 +132,21 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
               padding: '0 16px',
             }}
           >
-            {Array.isArray(chatData) && chatData.map((chatMessage, index) => (
-              <Flex
-                key={chatMessage.id || index}
-                justify={chatMessage.is_me ? 'flex-end' : 'flex-start'}
-                ref={index === chatData.length - 1 ? chatEndRef : null}
-                style={{ width: '100%' }}
-              >
-                {chatMessage.is_me ? (
-                  <SendChatItem chatData={chatMessage} />
-                ) : (
-                  <RecivedChatItem
-                    sendersName={openedChat.name}
-                    chatData={chatMessage}
-                  />
-                )}
-              </Flex>
-            ))}
+            {Array.isArray(chatData) &&
+              chatData.map((chatMessage, index) => (
+                <Flex
+                  key={chatMessage.id || index}
+                  justify={chatMessage.is_me ? 'flex-end' : 'flex-start'}
+                  ref={index === chatData.length - 1 ? chatEndRef : null}
+                  style={{ width: '100%' }}
+                >
+                  {chatMessage.is_me ? (
+                    <SendChatItem chatData={chatMessage} />
+                  ) : (
+                    <RecivedChatItem sendersName={openedChat.name} chatData={chatMessage} />
+                  )}
+                </Flex>
+              ))}
           </Flex>
         )}
       </Flex>
@@ -169,7 +171,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
             <Input
               placeholder={t('chatInputPlaceholder')}
               value={message}
-              onChange={(e) => setMessage(e.currentTarget.value)}
+              onChange={e => setMessage(e.currentTarget.value)}
               disabled={isSending}
             />
           </Form.Item>

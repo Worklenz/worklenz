@@ -1,4 +1,4 @@
-import { Card, Descriptions, Flex, Tag, Typography, Timeline, Button } from 'antd';
+import { Card, Descriptions, Flex, Tag, Typography, Timeline, Button } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -12,7 +12,7 @@ const ClientViewRequestDetails = () => {
   const navigate = useNavigate();
 
   // Get request details from Redux (replace with API call)
-  const requestDetails = useAppSelector((state) => 
+  const requestDetails = useAppSelector(state =>
     state.clientViewReducer.requestsReducer.requests.find((req: any) => req.id === id)
   );
 
@@ -22,21 +22,25 @@ const ClientViewRequestDetails = () => {
         <Typography.Title level={4} style={{ marginBlock: 0 }}>
           {t('requestNotFound')}
         </Typography.Title>
-        <Button onClick={() => navigate('/client-portal/requests')}>
-          {t('backToRequests')}
-        </Button>
+        <Button onClick={() => navigate('/client-portal/requests')}>{t('backToRequests')}</Button>
       </Flex>
     );
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'orange';
-      case 'accepted': return 'blue';
-      case 'in_progress': return 'processing';
-      case 'completed': return 'success';
-      case 'rejected': return 'error';
-      default: return 'default';
+      case 'pending':
+        return 'orange';
+      case 'accepted':
+        return 'blue';
+      case 'in_progress':
+        return 'processing';
+      case 'completed':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      default:
+        return 'default';
     }
   };
 
@@ -46,9 +50,7 @@ const ClientViewRequestDetails = () => {
         <Typography.Title level={4} style={{ marginBlock: 0 }}>
           {t('requestDetails')} - {requestDetails.req_no}
         </Typography.Title>
-        <Button onClick={() => navigate('/client-portal/requests')}>
-          {t('backToRequests')}
-        </Button>
+        <Button onClick={() => navigate('/client-portal/requests')}>{t('backToRequests')}</Button>
       </Flex>
 
       <Card>
@@ -92,9 +94,7 @@ const ClientViewRequestDetails = () => {
                 <div>
                   <Typography.Text strong>{t('requestUnderReview')}</Typography.Text>
                   <br />
-                  <Typography.Text type="secondary">
-                    {t('organizationReviewing')}
-                  </Typography.Text>
+                  <Typography.Text type="secondary">{t('organizationReviewing')}</Typography.Text>
                 </div>
               ),
             },
@@ -105,21 +105,17 @@ const ClientViewRequestDetails = () => {
 
       <Card title={t('attachments')}>
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <Typography.Text type="secondary">
-            {t('noAttachments')}
-          </Typography.Text>
+          <Typography.Text type="secondary">{t('noAttachments')}</Typography.Text>
         </div>
       </Card>
 
       <Card title={t('notes')}>
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <Typography.Text type="secondary">
-            {t('noNotes')}
-          </Typography.Text>
+          <Typography.Text type="secondary">{t('noNotes')}</Typography.Text>
         </div>
       </Card>
     </Flex>
   );
 };
 
-export default ClientViewRequestDetails; 
+export default ClientViewRequestDetails;

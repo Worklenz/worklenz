@@ -48,16 +48,10 @@ const TaskListGroup: React.FC<TaskListGroupProps> = ({
       {!isCollapsed && (
         <div className="task-list">
           {tasks.map((task, index) => {
-            const {
-              attributes,
-              listeners,
-              setNodeRef,
-              transform,
-              transition,
-              isDragging,
-            } = useSortable({
-              id: task.id,
-            });
+            const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+              useSortable({
+                id: task.id,
+              });
 
             const style = {
               transform: CSS.Transform.toString(transform),
@@ -91,4 +85,4 @@ const TaskListGroup: React.FC<TaskListGroupProps> = ({
   );
 };
 
-export default TaskListGroup; 
+export default TaskListGroup;

@@ -11,5 +11,6 @@ billingApiRouter.get("/get-direct-pay-data", BillingController.getDirectPayObjec
 billingApiRouter.post("/save-transaction-data", BillingController.saveTransactionData);
 billingApiRouter.get("/get-card-list", BillingController.getCardList);
 billingApiRouter.get("/contact-us", BillingController.contactUs);
+billingApiRouter.get("/pricing-plans", BillingController.getPricingPlans);
 
 export default billingApiRouter;

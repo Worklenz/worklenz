@@ -1,64 +1,29 @@
-import { Col, ConfigProvider, Layout } from 'antd';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { memo, useMemo, useEffect, useRef } from 'react';
-import { useMediaQuery } from 'react-responsive';
+import { ConfigProvider, Layout, Modal, Button } from '@/shared/antd-imports';
+import { Outlet, useLocation } from 'react-router-dom';
+import { memo, useMemo } from 'react';
 
-import Navbar from '../features/navbar/navbar';
+import Navbar from '@/features/navbar/navbar';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { colors } from '../styles/colors';
-
-import { useRenderPerformance } from '@/utils/performance';
-import HubSpot from '@/components/HubSpot';
-import { DynamicCSSLoader, LayoutStabilizer } from '@/utils/css-optimizations';
+import { TrialExpirationAlert } from '@/components/TrialExpirationAlert/TrialExpirationAlert';
+import UpgradePlans from '@/components/admin-center/billing/drawers/upgrade-plans/upgrade-plans';
+import UpgradePlansLKR from '@/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 const MainLayout = memo(() => {
+  const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const isDesktop = useMediaQuery({ query: '(min-width: 1024px)' });
-  const layoutRef = useRef<HTMLDivElement>(null);
+  const { isUpgradeModalOpen } = useAppSelector(state => state.adminCenterReducer);
+  const location = useLocation();
 
-  // Performance monitoring in development
-  useRenderPerformance('MainLayout');
+  // Get browser timezone for upgrade plans
+  const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  // Apply layout optimizations
-  useEffect(() => {
-    if (layoutRef.current) {
-      // Prevent layout shifts in main content area
-      LayoutStabilizer.applyContainment(layoutRef.current, 'layout');
-      
-      // Load non-critical CSS dynamically
-      DynamicCSSLoader.loadCSS('/styles/non-critical.css', {
-        priority: 'low',
-        media: 'all'
-      });
-    }
-  }, []);
+  const isProjectView =
+    (location.pathname.includes('/projects/') && !location.pathname.endsWith('/projects')) ||
+    location.pathname.includes('/worklenz/schedule');
 
-  
-
-  // Memoize styles to prevent object recreation on every render
-  const headerStyles = useMemo(
-    () => ({
-      zIndex: 999,
-      position: 'fixed' as const,
-      width: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      padding: 0,
-      borderBottom: themeMode === 'dark' ? '1px solid #303030' : 'none',
-    }),
-    [themeMode]
-  );
-
-  const contentStyles = useMemo(
-    () => ({
-      paddingInline: isDesktop ? 64 : 24,
-      overflowX: 'hidden' as const,
-    }),
-    [isDesktop]
-  );
-
-  // Memoize theme configuration
   const themeConfig = useMemo(
     () => ({
       components: {
@@ -71,25 +36,43 @@ const MainLayout = memo(() => {
     [themeMode]
   );
 
-  // Memoize header className
-  const headerClassName = useMemo(
-    () => `shadow-md ${themeMode === 'dark' ? '' : 'shadow-[#18181811]'}`,
-    [themeMode]
-  );
-
   return (
     <ConfigProvider theme={themeConfig}>
-      <Layout ref={layoutRef} style={{ minHeight: '100vh' }} className="prevent-layout-shift">
-        <Layout.Header className={`${headerClassName} gpu-accelerated`} style={headerStyles}>
+      <Layout className="min-h-screen">
+        {/* Trial expiration alert banner */}
+        <TrialExpirationAlert />
+
+        <Layout.Header
+          className={`sticky top-0 z-[999] flex items-center p-0 shadow-md ${
+            themeMode === 'dark' ? 'border-b border-[#303030]' : 'shadow-[#18181811]'
+          }`}
+        >
           <Navbar />
         </Layout.Header>
 
-        <Layout.Content className="layout-contained">
-          <Col xxl={{ span: 18, offset: 3, flex: '100%' }} style={contentStyles} className="task-content-container">
-            <Outlet />
-          </Col>
+        <Layout.Content
+          className={`px-4 sm:px-8 lg:px-12 xl:px-16 ${!isProjectView ? 'overflow-x-hidden max-w-[1400px]' : ''} mx-auto w-full`}
+        >
+          <Outlet />
         </Layout.Content>
       </Layout>
+
+      {/* Global Upgrade Modal */}
+      <Modal
+        open={isUpgradeModalOpen}
+        onCancel={() => dispatch(toggleUpgradeModal())}
+        width={1400}
+        centered
+        okButtonProps={{ hidden: true }}
+        cancelButtonProps={{ hidden: true }}
+        style={{ zIndex: 1000 }}
+        destroyOnClose
+        maskClosable={false}
+      >
+        <div style={{ padding: '20px' }}>
+          {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />}
+        </div>
+      </Modal>
     </ConfigProvider>
   );
 });

@@ -1,27 +1,30 @@
-import { Card, Col, Flex, Row, Statistic, Typography } from 'antd';
+import { Card, Col, Flex, Row, Statistic, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../hooks/useAppSelector';
-import { 
-  FileTextOutlined, 
-  ProjectOutlined, 
-  MessageOutlined, 
-  DollarOutlined 
+import {
+  FileTextOutlined,
+  ProjectOutlined,
+  MessageOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 
 const ClientViewDashboard = () => {
   const { t } = useTranslation('client-view-dashboard');
-  
+
   // Get client data from Redux (replace with real API calls)
-  const clientStats = useAppSelector((state) => state.clientViewReducer.dashboardReducer?.stats || {
-    totalRequests: 0,
-    pendingRequests: 0,
-    totalProjects: 0,
-    activeProjects: 0,
-    totalInvoices: 0,
-    unpaidInvoices: 0,
-    unreadMessages: 0
-  });
+  const clientStats = useAppSelector(
+    state =>
+      state.clientViewReducer.dashboardReducer?.stats || {
+        totalRequests: 0,
+        pendingRequests: 0,
+        totalProjects: 0,
+        activeProjects: 0,
+        totalInvoices: 0,
+        unpaidInvoices: 0,
+        unreadMessages: 0,
+      }
+  );
 
   return (
     <Flex vertical gap={24} style={{ width: '100%' }}>
@@ -78,18 +81,14 @@ const ClientViewDashboard = () => {
         <Col xs={24} lg={12}>
           <Card title={t('recentRequests')} style={{ height: 400 }}>
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Typography.Text type="secondary">
-                {t('noRecentRequests')}
-              </Typography.Text>
+              <Typography.Text type="secondary">{t('noRecentRequests')}</Typography.Text>
             </div>
           </Card>
         </Col>
         <Col xs={24} lg={12}>
           <Card title={t('recentMessages')} style={{ height: 400 }}>
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Typography.Text type="secondary">
-                {t('noRecentMessages')}
-              </Typography.Text>
+              <Typography.Text type="secondary">{t('noRecentMessages')}</Typography.Text>
             </div>
           </Card>
         </Col>
@@ -98,4 +97,4 @@ const ClientViewDashboard = () => {
   );
 };
 
-export default ClientViewDashboard; 
+export default ClientViewDashboard;

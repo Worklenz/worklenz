@@ -5,6 +5,7 @@
 
   "searchByName": "Search by name",
   "selectAll": "Select All",
+  "clearAll": "Clear All",
   "teams": "Teams",
 
   "searchByProject": "Search by project name",
@@ -15,6 +16,8 @@
 
   "billable": "Billable",
   "nonBillable": "Non Billable",
+  "allBillableTypes": "All Billable Types",
+  "filterByBillableStatus": "Filter by billable status",
 
   "total": "Total",
 
@@ -28,6 +31,9 @@
 
   "membersTimeSheet": "Members Time Sheet",
   "member": "Member",
+  "members": "Members",
+  "searchByMember": "Search by member",
+  "utilization": "Utilization",
 
   "estimatedVsActual": "Estimated vs Actual",
   "workingDays": "Working Days",
@@ -53,5 +59,20 @@
   "showSelected": "Show Selected Only",
   "expandAll": "Expand All",
   "collapseAll": "Collapse All",
-  "ungrouped": "Ungrouped"
+  "ungrouped": "Ungrouped",
+
+  "totalTimeLogged": "Total Time Logged",
+  "acrossAllTeamMembers": "Across all team members",
+  "expectedCapacity": "Expected Capacity",
+  "basedOnWorkingSchedule": "Based on working schedule",
+  "teamUtilization": "Team Utilization",
+  "targetRange": "Target Range",
+  "variance": "Variance",
+  "overCapacity": "Over Capacity",
+  "underCapacity": "Under Capacity",
+  "considerWorkloadRedistribution": "Consider workload redistribution",
+  "capacityAvailableForNewProjects": "Capacity available for new projects",
+  "optimal": "Optimal",
+  "underUtilized": "Under Utilized",
+  "overUtilized": "Over Utilized"
 }

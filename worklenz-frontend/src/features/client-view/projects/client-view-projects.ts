@@ -18,12 +18,7 @@ const tempProjectsList: TempProjectType[] = [
     totalTasks: 10,
     completedTasks: 5,
     lastUpdated: new Date('2024-10-08T08:30:00'),
-    members: [
-      'Chathuranga Pathum',
-      'Chamika Jayasri',
-      'Raveesha Dilanka',
-      'Sachintha Prasad',
-    ],
+    members: ['Chathuranga Pathum', 'Chamika Jayasri', 'Raveesha Dilanka', 'Sachintha Prasad'],
   },
 ];
 

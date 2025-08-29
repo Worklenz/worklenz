@@ -30,17 +30,17 @@ const clientViewRoutes: RouteObject[] = [
         path: 'services',
         element: <ClientViewServices />,
       },
-      { 
-        path: 'services/:id', 
-        element: <ClientViewServiceDetails /> 
+      {
+        path: 'services/:id',
+        element: <ClientViewServiceDetails />,
       },
       {
         path: 'projects',
         element: <ClientViewProjects />,
       },
-      { 
-        path: 'projects/:id', 
-        element: <ClientViewProjectDetails /> 
+      {
+        path: 'projects/:id',
+        element: <ClientViewProjectDetails />,
       },
       {
         path: 'chats',
@@ -50,9 +50,9 @@ const clientViewRoutes: RouteObject[] = [
         path: 'invoices',
         element: <ClientViewInvoices />,
       },
-      { 
-        path: 'invoices/:id', 
-        element: <ClientViewInvoiceDetails /> 
+      {
+        path: 'invoices/:id',
+        element: <ClientViewInvoiceDetails />,
       },
       {
         path: 'requests',
@@ -62,9 +62,9 @@ const clientViewRoutes: RouteObject[] = [
         path: 'requests/new',
         element: <NewRequestForm />,
       },
-      { 
-        path: 'requests/:id', 
-        element: <ClientViewRequestDetails /> 
+      {
+        path: 'requests/:id',
+        element: <ClientViewRequestDetails />,
       },
       {
         path: 'settings',

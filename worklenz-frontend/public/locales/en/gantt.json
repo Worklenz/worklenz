@@ -1,0 +1,15 @@
+{
+  "task": {
+    "open": "Open",
+    "clickViewPhaseDetails": "Click to view phase details",
+    "clickNavigateTimeline": "Click to navigate to task in timeline",
+    "clickTimelineSetDates": "Click on timeline to set dates for this task",
+    "clickTimelineAddDates": "Click timeline to add dates",
+    "resizeStartDate": "Resize start date",
+    "resizeEndDate": "Resize end date",
+    "dragToMove": "Drag to move task",
+    "addTaskFor": "Add task for {{date}}",
+    "enterTaskName": "Enter task name...",
+    "pressEnterToCreate": "Press Enter to create • Esc to cancel"
+  }
+}

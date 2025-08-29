@@ -12,9 +12,7 @@ import {
   Descriptions,
   Space,
   Statistic,
-  message
-} from '@/shared/antd-imports';
-import { 
+  message,
   UserOutlined, 
   MailOutlined, 
   PhoneOutlined,

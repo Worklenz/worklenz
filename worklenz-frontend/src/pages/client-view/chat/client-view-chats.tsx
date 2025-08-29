@@ -1,4 +1,4 @@
-import { Flex, Typography } from 'antd';
+import { Flex, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import ChatBoxWrapper from '../../client-portal/chats/chat-container/chat-box/chat-box-wrapper';
 import { useTranslation } from 'react-i18next';

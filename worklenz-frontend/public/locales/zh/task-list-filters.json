@@ -79,5 +79,12 @@
   "close": "关闭",
   "cannotMoveStatus": "无法移动状态",
   "cannotMoveStatusMessage": "无法移动此状态，因为这会使\"{{categoryName}}\"类别为空。每个类别必须至少有一个状态。",
-  "ok": "确定"
+  "ok": "确定",
+  "clearSort": "清除排序",
+  "sortAscending": "升序排列",
+  "sortDescending": "降序排列",
+  "sortByField": "按{{field}}排序",
+  "ascendingOrder": "升序",
+  "descendingOrder": "降序",
+  "currentSort": "当前排序：{{field}} {{order}}"
 }

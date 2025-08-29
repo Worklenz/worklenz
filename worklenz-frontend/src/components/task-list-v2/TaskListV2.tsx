@@ -1,8 +1,7 @@
-import ImprovedTaskFilters from "../task-management/improved-task-filters";
-import TaskListV2Section from "./TaskListV2Table";
+import ImprovedTaskFilters from '../task-management/improved-task-filters';
+import TaskListV2Section from './TaskListV2Table';
 
 const TaskListV2: React.FC = () => {
-
   return (
     <div>
       {/* Task Filters */}

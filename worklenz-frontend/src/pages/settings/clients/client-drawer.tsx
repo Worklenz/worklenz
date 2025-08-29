@@ -1,4 +1,4 @@
-import { Button, Drawer, Form, Input, message, Typography } from 'antd';
+import { Button, Drawer, Form, Input, message, Typography } from '@/shared/antd-imports';
 import { useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -9,6 +9,8 @@ import {
 } from '@/features/settings/client/clientSlice';
 import { IClient } from '@/types/client.types';
 import { useTranslation } from 'react-i18next';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_clients_create } from '@/shared/worklenz-analytics-events';
 
 type ClientDrawerProps = {
   client: IClient | null;
@@ -20,6 +22,7 @@ const ClientDrawer = ({ client, drawerClosed }: ClientDrawerProps) => {
   const { isClientDrawerOpen } = useAppSelector(state => state.clientReducer);
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useEffect(() => {
     if (client?.name) {
@@ -32,6 +35,7 @@ const ClientDrawer = ({ client, drawerClosed }: ClientDrawerProps) => {
       if (client && client.id) {
         await dispatch(updateClient({ id: client.id, body: { name: values.name } }));
       } else {
+        trackMixpanelEvent(evt_settings_clients_create);
         await dispatch(createClient({ name: values.name }));
       }
       dispatch(toggleClientDrawer());

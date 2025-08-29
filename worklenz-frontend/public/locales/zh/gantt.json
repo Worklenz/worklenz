@@ -1,0 +1,15 @@
+{
+  "task": {
+    "open": "打开",
+    "clickViewPhaseDetails": "点击查看阶段详情",
+    "clickNavigateTimeline": "点击导航到时间线中的任务",
+    "clickTimelineSetDates": "点击时间线为此任务设置日期",
+    "clickTimelineAddDates": "点击时间线添加日期",
+    "resizeStartDate": "调整开始日期",
+    "resizeEndDate": "调整结束日期",
+    "dragToMove": "拖拽移动任务",
+    "addTaskFor": "为{{date}}添加任务",
+    "enterTaskName": "输入任务名称...",
+    "pressEnterToCreate": "按回车创建 • 按Esc取消"
+  }
+}

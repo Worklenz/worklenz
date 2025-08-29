@@ -11,8 +11,8 @@ import {
   Skeleton,
   Row,
   Col,
-} from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
+} from '@/shared/antd-imports';
+import { SettingOutlined } from '@/shared/antd-imports';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import {
@@ -102,12 +102,14 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
         );
 
         // Update Redux state with recurring task status
-        dispatch(updateTaskCounts({
-          taskId: task.id,
-          counts: {
-            schedule_id: schedule.id as string || null
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: task.id,
+            counts: {
+              schedule_id: (schedule.id as string) || null,
+            },
+          })
+        );
 
         setRecurring(checked);
         if (!checked) setShowConfig(false);

@@ -1,3 +1,4 @@
+import RateCardSettings from '@/pages/settings/rate-card-settings/RateCardSettings';
 import {
   BankOutlined,
   FileZipOutlined,
@@ -12,21 +13,36 @@ import {
   UserOutlined,
   UserSwitchOutlined,
   BulbOutlined,
-} from '@ant-design/icons';
+  DeleteOutlined,
+  DollarCircleOutlined,
+} from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
-const NotificationsSettings = lazy(() => import('../../pages/settings/notifications/notifications-settings'));
+const NotificationsSettings = lazy(
+  () => import('../../pages/settings/notifications/notifications-settings')
+);
 const ClientsSettings = lazy(() => import('../../pages/settings/clients/clients-settings'));
 const JobTitlesSettings = lazy(() => import('@/pages/settings/job-titles/job-titles-settings'));
-const LabelsSettings = lazy(() => import('../../pages/settings/labels/labels-settings'));
-const CategoriesSettings = lazy(() => import('../../pages/settings/categories/categories-settings'));
-const ProjectTemplatesSettings = lazy(() => import('@/pages/settings/project-templates/project-templates-settings'));
-const TaskTemplatesSettings = lazy(() => import('@/pages/settings/task-templates/task-templates-settings'));
-const TeamMembersSettings = lazy(() => import('@/pages/settings/team-members/team-members-settings'));
+const LabelsSettings = lazy(() => import('../../pages/settings/labels/LabelsSettings'));
+const CategoriesSettings = lazy(
+  () => import('../../pages/settings/categories/categories-settings')
+);
+const ProjectTemplatesSettings = lazy(
+  () => import('@/pages/settings/project-templates/project-templates-settings')
+);
+const TaskTemplatesSettings = lazy(
+  () => import('@/pages/settings/task-templates/task-templates-settings')
+);
+const TeamMembersSettings = lazy(
+  () => import('@/pages/settings/team-members/team-members-settings')
+);
 const TeamsSettings = lazy(() => import('../../pages/settings/teams/teams-settings'));
 const ChangePassword = lazy(() => import('@/pages/settings/change-password/change-password'));
-const LanguageAndRegionSettings = lazy(() => import('@/pages/settings/language-and-region/language-and-region-settings'));
+const LanguageAndRegionSettings = lazy(
+  () => import('@/pages/settings/language-and-region/language-and-region-settings')
+);
 const AppearanceSettings = lazy(() => import('@/pages/settings/appearance/appearance-settings'));
+const AccountDeletion = lazy(() => import('@/pages/settings/account-deletion/AccountDeletion'));
 
 // type of menu item in settings sidebar
 type SettingMenuItems = {
@@ -36,6 +52,8 @@ type SettingMenuItems = {
   icon: ReactNode;
   element: ReactNode;
   adminOnly?: boolean;
+  isDangerous?: boolean;
+  businessPlanRequired?: boolean;
 };
 // settings all element items use for sidebar and routes
 export const settingsItems: SettingMenuItems[] = [
@@ -133,6 +151,14 @@ export const settingsItems: SettingMenuItems[] = [
     adminOnly: true,
   },
   {
+    key: 'ratecard',
+    name: 'Rate Card',
+    endpoint: 'ratecard',
+    icon: React.createElement(DollarCircleOutlined),
+    element: React.createElement(RateCardSettings),
+    businessPlanRequired: true,
+  },
+  {
     key: 'teams',
     name: 'teams',
     endpoint: 'teams',
@@ -140,8 +166,30 @@ export const settingsItems: SettingMenuItems[] = [
     element: React.createElement(TeamsSettings),
     adminOnly: true,
   },
+  // Danger zone - always at the bottom
+  {
+    key: 'account-deletion',
+    name: 'account-deletion',
+    endpoint: 'account-deletion',
+    icon: React.createElement(DeleteOutlined),
+    element: React.createElement(AccountDeletion),
+    isDangerous: true,
+  },
 ];
 
-export const getAccessibleSettings = (isAdmin: boolean) => {
-  return settingsItems.filter(item => !item.adminOnly || isAdmin);
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { ILocalSession } from '@/types/auth/local-session.types';
+
+export const getAccessibleSettings = (isAdmin: boolean, session: ILocalSession | null) => {
+  const hasBusinessAccess = hasBusinessFeatureAccess(session);
+
+  return settingsItems.filter(item => {
+    // Check admin requirement
+    if (item.adminOnly && !isAdmin) return false;
+
+    // Check business plan requirement
+    if (item.businessPlanRequired && !hasBusinessAccess) return false;
+
+    return true;
+  });
 };

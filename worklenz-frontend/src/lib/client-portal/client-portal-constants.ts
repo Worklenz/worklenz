@@ -1,11 +1,21 @@
 import React, { ReactNode, lazy } from 'react';
 
-const ClientPortalClients = lazy(() => import('../../pages/client-portal/clients/ClientPortalClients'));
-const ClientPortalRequests = lazy(() => import('../../pages/client-portal/requests/client-portal-requests'));
-const ClientPortalServices = lazy(() => import('../../pages/client-portal/services/client-portal-services'));
+const ClientPortalClients = lazy(
+  () => import('../../pages/client-portal/clients/ClientPortalClients')
+);
+const ClientPortalRequests = lazy(
+  () => import('../../pages/client-portal/requests/client-portal-requests')
+);
+const ClientPortalServices = lazy(
+  () => import('../../pages/client-portal/services/client-portal-services')
+);
 const ClientPortalChats = lazy(() => import('../../pages/client-portal/chats/client-portal-chats'));
-const ClientPortalInvoices = lazy(() => import('../../pages/client-portal/invoices/client-portal-invoices'));
-const ClientPortalSettings = lazy(() => import('../../pages/client-portal/settings/client-portal-settings'));
+const ClientPortalInvoices = lazy(
+  () => import('../../pages/client-portal/invoices/client-portal-invoices')
+);
+const ClientPortalSettings = lazy(
+  () => import('../../pages/client-portal/settings/client-portal-settings')
+);
 
 import {
   AppstoreOutlined,
@@ -69,4 +79,3 @@ export const clientPortalItems: ClientPortalMenuItems[] = [
     element: React.createElement(ClientPortalSettings),
   },
 ];
-  

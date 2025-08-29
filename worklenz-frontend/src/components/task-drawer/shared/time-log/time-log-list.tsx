@@ -1,4 +1,4 @@
-import { Flex } from 'antd';
+import { Flex } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import TimeLogItem from './time-log-item';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';

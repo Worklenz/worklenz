@@ -1,4 +1,4 @@
-import { Button, Card, Flex, Form, Select, Skeleton, Typography } from 'antd';
+import { Button, Card, Flex, Form, Select, Skeleton, Typography } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -56,7 +56,7 @@ const LanguageAndRegionSettings = () => {
       label: 'Deutsch',
     },
     {
-      value: Language.ZH_CN,
+      value: Language.ZH,
       label: '简体中文',
     },
   ];

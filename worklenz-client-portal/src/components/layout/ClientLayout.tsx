@@ -3,14 +3,10 @@ import {
   Layout,
   Avatar,
   Dropdown,
-  Badge,
-  Button,
   theme,
   Select,
   Switch,
-  Typography,
   UserOutlined,
-  BellOutlined,
   LogoutOutlined,
   MoonOutlined,
   SunOutlined,
@@ -20,16 +16,16 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { logout, setUser } from '@/store/slices/authSlice';
-import { toggleSidebar, setTheme, toggleNotificationPanel, setLanguage } from '@/store/slices/uiSlice';
+import { toggleSidebar, setTheme, setLanguage } from '@/store/slices/uiSlice';
 import { useGetProfileQuery, useGetNotificationsQuery } from '@/store/api';
 import type { RootState } from '@/store';
 import { useTranslation } from 'react-i18next';
 import ClientPortalSidebar from './ClientPortalSidebar';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useGetSettingsQuery } from '@/store/api';
+import NotificationCenter from '../NotificationCenter';
+// import { useGetSettingsQuery } from '@/store/api';
 
 const { Header, Sider, Content } = Layout;
-const { Text } = Typography;
 
 const ClientLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -50,7 +46,6 @@ const ClientLayout: React.FC = () => {
   const sidebarCollapsed = useAppSelector((state: RootState) => state.ui.sidebarCollapsed);
   const currentTheme = useAppSelector((state: RootState) => state.ui.theme);
   const currentLanguage = useAppSelector((state: RootState) => state.ui.language);
-  const notifications = useAppSelector((state: RootState) => state.ui.notifications);
   const user = useAppSelector((state: RootState) => state.auth.user);
 
   // RTK Query hooks
@@ -132,33 +127,6 @@ const ClientLayout: React.FC = () => {
       icon: <LogoutOutlined />,
       label: t('user.logout', 'Logout'),
       onClick: handleLogout,
-    },
-  ];
-
-  const notificationMenuItems = [
-    {
-      key: 'notifications',
-      label: (
-        <div style={{ padding: '8px 0', maxWidth: '280px' }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{t('notifications.title', 'Notifications')}</div>
-          {Array.isArray(notificationsData?.body) && notificationsData.body.length > 0 ? (
-            notificationsData.body.slice(0, 3).map((notification) => (
-              <div key={notification.id} style={{ 
-                fontSize: '12px', 
-                marginBottom: '6px',
-                padding: '4px 0',
-                borderBottom: '1px solid #f0f0f0'
-              }}>
-                <Text ellipsis={{ tooltip: notification.title }}>{notification.title}</Text>
-              </div>
-            ))
-          ) : (
-            <div style={{ fontSize: '12px', color: token.colorTextSecondary }}>
-              {t('notifications.empty', 'No new notifications')}
-            </div>
-          )}
-        </div>
-      ),
     },
   ];
 
@@ -250,35 +218,7 @@ const ClientLayout: React.FC = () => {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 20 }}>
-            <Dropdown
-              menu={{ items: notificationMenuItems }}
-              placement="bottomRight"
-              trigger={['click']}
-            >
-              <Badge count={notifications.unreadCount} size="small" offset={[-2, 2]}>
-                <Button
-                  type="text"
-                  icon={<BellOutlined />}
-                  style={{ 
-                    fontSize: '18px',
-                    width: 44,
-                    height: 44,
-                    borderRadius: '10px',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  onClick={() => dispatch(toggleNotificationPanel())}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = token.colorBgTextHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                />
-              </Badge>
-            </Dropdown>
+            <NotificationCenter />
             
             <Dropdown
               menu={{ items: userMenuItems }}

@@ -261,7 +261,7 @@ export const clientPortalApi = createApi({
       if (token) {
         headers.set('X-CSRF-Token', token);
       }
-      
+
       headers.set('Content-Type', 'application/json');
       return headers;
     },
@@ -282,9 +282,9 @@ export const clientPortalApi = createApi({
     'Chats',
     'Settings',
     'Profile',
-    'Notifications'
+    'Notifications',
   ],
-  endpoints: (builder) => ({
+  endpoints: builder => ({
     // Dashboard
     getDashboard: builder.query<ClientPortalDashboardData, void>({
       query: () => '/clients/portal/dashboard',
@@ -298,27 +298,30 @@ export const clientPortalApi = createApi({
     }),
 
     getServiceDetails: builder.query<ClientPortalService, string>({
-      query: (id) => `/clients/portal/services/${id}`,
+      query: id => `/clients/portal/services/${id}`,
       providesTags: (result, error, id) => [{ type: 'Services', id }],
     }),
 
     // Requests
-    getRequests: builder.query<{
-      done: boolean;
-      body: {
-        requests: ClientPortalRequest[];
-        total: number;
-        page: number;
-        limit: number;
-      };
-      message: string;
-    }, void>({
+    getRequests: builder.query<
+      {
+        done: boolean;
+        body: {
+          requests: ClientPortalRequest[];
+          total: number;
+          page: number;
+          limit: number;
+        };
+        message: string;
+      },
+      void
+    >({
       query: () => '/clients/portal/requests',
       providesTags: ['Requests'],
     }),
 
     createRequest: builder.mutation<ClientPortalRequest, Partial<ClientPortalRequest>>({
-      query: (requestData) => ({
+      query: requestData => ({
         url: '/clients/portal/requests',
         method: 'POST',
         body: requestData,
@@ -327,21 +330,28 @@ export const clientPortalApi = createApi({
     }),
 
     getRequestDetails: builder.query<ClientPortalRequest, string>({
-      query: (id) => `/clients/portal/requests/${id}`,
+      query: id => `/clients/portal/requests/${id}`,
       providesTags: (result, error, id) => [{ type: 'Requests', id }],
     }),
 
-    updateRequest: builder.mutation<ClientPortalRequest, { id: string; data: Partial<ClientPortalRequest> }>({
+    updateRequest: builder.mutation<
+      ClientPortalRequest,
+      { id: string; data: Partial<ClientPortalRequest> }
+    >({
       query: ({ id, data }) => ({
         url: `/clients/portal/requests/${id}`,
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Requests', id }, 'Requests', 'Dashboard'],
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Requests', id },
+        'Requests',
+        'Dashboard',
+      ],
     }),
 
     deleteRequest: builder.mutation<void, string>({
-      query: (id) => ({
+      query: id => ({
         url: `/clients/portal/requests/${id}`,
         method: 'DELETE',
       }),
@@ -355,7 +365,7 @@ export const clientPortalApi = createApi({
     }),
 
     getProjectDetails: builder.query<ClientPortalProject, string>({
-      query: (id) => `/clients/portal/projects/${id}`,
+      query: id => `/clients/portal/projects/${id}`,
       providesTags: (result, error, id) => [{ type: 'Projects', id }],
     }),
 
@@ -366,7 +376,7 @@ export const clientPortalApi = createApi({
     }),
 
     getInvoiceDetails: builder.query<ClientPortalInvoice, string>({
-      query: (id) => `/clients/portal/invoices/${id}`,
+      query: id => `/clients/portal/invoices/${id}`,
       providesTags: (result, error, id) => [{ type: 'Invoices', id }],
     }),
 
@@ -376,13 +386,17 @@ export const clientPortalApi = createApi({
         method: 'POST',
         body: paymentData,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Invoices', id }, 'Invoices', 'Dashboard'],
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Invoices', id },
+        'Invoices',
+        'Dashboard',
+      ],
     }),
 
     downloadInvoice: builder.query<Blob, string>({
-      query: (id) => ({
+      query: id => ({
         url: `/clients/portal/invoices/${id}/download`,
-        responseHandler: (response) => response.blob(),
+        responseHandler: response => response.blob(),
       }),
     }),
 
@@ -393,11 +407,14 @@ export const clientPortalApi = createApi({
     }),
 
     getChatDetails: builder.query<ClientPortalChat, string>({
-      query: (id) => `/clients/portal/chats/${id}`,
+      query: id => `/clients/portal/chats/${id}`,
       providesTags: (result, error, id) => [{ type: 'Chats', id }],
     }),
 
-    sendMessage: builder.mutation<any, { chatId: string; messageData: { content: string; attachments?: any[] } }>({
+    sendMessage: builder.mutation<
+      any,
+      { chatId: string; messageData: { content: string; attachments?: any[] } }
+    >({
       query: ({ chatId, messageData }) => ({
         url: `/clients/portal/chats/${chatId}/messages`,
         method: 'POST',
@@ -407,7 +424,7 @@ export const clientPortalApi = createApi({
     }),
 
     getMessages: builder.query<ClientPortalMessage[], string>({
-      query: (chatId) => `/clients/portal/chats/${chatId}/messages`,
+      query: chatId => `/clients/portal/chats/${chatId}/messages`,
       providesTags: (result, error, chatId) => [{ type: 'Chats', id: chatId }],
     }),
 
@@ -418,7 +435,7 @@ export const clientPortalApi = createApi({
     }),
 
     updateSettings: builder.mutation<ClientPortalSettings, Partial<ClientPortalSettings>>({
-      query: (settingsData) => ({
+      query: settingsData => ({
         url: '/client-portal/settings',
         method: 'PUT',
         body: settingsData,
@@ -433,7 +450,7 @@ export const clientPortalApi = createApi({
     }),
 
     updateProfile: builder.mutation<ClientPortalProfile, Partial<ClientPortalProfile>>({
-      query: (profileData) => ({
+      query: profileData => ({
         url: '/client-portal/profile',
         method: 'PUT',
         body: profileData,
@@ -448,7 +465,7 @@ export const clientPortalApi = createApi({
     }),
 
     markNotificationRead: builder.mutation<void, string>({
-      query: (id) => ({
+      query: id => ({
         url: `/client-portal/notifications/${id}/read`,
         method: 'PUT',
       }),
@@ -465,7 +482,7 @@ export const clientPortalApi = createApi({
 
     // File uploads
     uploadFile: builder.mutation<{ url: string; filename: string }, File>({
-      query: (file) => {
+      query: file => {
         const formData = new FormData();
         formData.append('file', file);
         return {
@@ -480,15 +497,18 @@ export const clientPortalApi = createApi({
     }),
 
     // Client Management APIs (Organization-side endpoints)
-    getClients: builder.query<ClientsResponse, {
-      page?: number;
-      limit?: number;
-      search?: string;
-      status?: string;
-      sortBy?: string;
-      sortOrder?: 'asc' | 'desc';
-    }>({
-      query: (params) => ({
+    getClients: builder.query<
+      ClientsResponse,
+      {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+      }
+    >({
+      query: params => ({
         url: '/clients/portal/clients',
         params,
       }),
@@ -496,17 +516,22 @@ export const clientPortalApi = createApi({
     }),
 
     getClientById: builder.query<ClientPortalClient, string>({
-      query: (id) => `/clients/portal/clients/${id}`,
+      query: id => `/clients/portal/clients/${id}`,
       providesTags: (result, error, id) => [{ type: 'Client', id }],
     }),
 
     getClientDetails: builder.query<ClientDetailsResponse, string>({
-      query: (id) => `/clients/portal/clients/${id}/details`,
-      providesTags: (result, error, id) => [{ type: 'Client', id }, { type: 'ClientStats', id }, { type: 'ClientProjects', id }, { type: 'ClientTeam', id }],
+      query: id => `/clients/portal/clients/${id}/details`,
+      providesTags: (result, error, id) => [
+        { type: 'Client', id },
+        { type: 'ClientStats', id },
+        { type: 'ClientProjects', id },
+        { type: 'ClientTeam', id },
+      ],
     }),
 
     createClient: builder.mutation<ClientPortalClient, CreateClientRequest>({
-      query: (clientData) => ({
+      query: clientData => ({
         url: '/clients/portal/clients',
         method: 'POST',
         body: clientData,
@@ -524,7 +549,7 @@ export const clientPortalApi = createApi({
     }),
 
     deleteClient: builder.mutation<void, string>({
-      query: (id) => ({
+      query: id => ({
         url: `/clients/portal/clients/${id}`,
         method: 'DELETE',
       }),
@@ -532,7 +557,10 @@ export const clientPortalApi = createApi({
     }),
 
     // Client Projects
-    getClientProjects: builder.query<ClientProjectsResponse, { clientId: string; params?: { page?: number; limit?: number; status?: string } }>({
+    getClientProjects: builder.query<
+      ClientProjectsResponse,
+      { clientId: string; params?: { page?: number; limit?: number; status?: string } }
+    >({
       query: ({ clientId, params }) => ({
         url: `/clients/portal/clients/${clientId}/projects`,
         params,
@@ -558,7 +586,10 @@ export const clientPortalApi = createApi({
     }),
 
     // Client Team Management
-    getClientTeam: builder.query<ClientTeamResponse, { clientId: string; params?: { page?: number; limit?: number; status?: string } }>({
+    getClientTeam: builder.query<
+      ClientTeamResponse,
+      { clientId: string; params?: { page?: number; limit?: number; status?: string } }
+    >({
       query: ({ clientId, params }) => ({
         url: `/clients/portal/clients/${clientId}/team`,
         params,
@@ -566,7 +597,10 @@ export const clientPortalApi = createApi({
       providesTags: (result, error, { clientId }) => [{ type: 'ClientTeam', id: clientId }],
     }),
 
-    inviteTeamMember: builder.mutation<ClientPortalTeamMember, { clientId: string; memberData: InviteTeamMemberRequest }>({
+    inviteTeamMember: builder.mutation<
+      ClientPortalTeamMember,
+      { clientId: string; memberData: InviteTeamMemberRequest }
+    >({
       query: ({ clientId, memberData }) => ({
         url: `/clients/portal/clients/${clientId}/team`,
         method: 'POST',
@@ -575,7 +609,10 @@ export const clientPortalApi = createApi({
       invalidatesTags: (result, error, { clientId }) => [{ type: 'ClientTeam', id: clientId }],
     }),
 
-    updateTeamMember: builder.mutation<ClientPortalTeamMember, { clientId: string; memberId: string; memberData: Partial<ClientPortalTeamMember> }>({
+    updateTeamMember: builder.mutation<
+      ClientPortalTeamMember,
+      { clientId: string; memberId: string; memberData: Partial<ClientPortalTeamMember> }
+    >({
       query: ({ clientId, memberId, memberData }) => ({
         url: `/clients/portal/clients/${clientId}/team/${memberId}`,
         method: 'PUT',
@@ -601,11 +638,14 @@ export const clientPortalApi = createApi({
 
     // Client Analytics
     getClientStats: builder.query<ClientStats, string>({
-      query: (clientId) => `/clients/portal/clients/${clientId}/stats`,
+      query: clientId => `/clients/portal/clients/${clientId}/stats`,
       providesTags: (result, error, clientId) => [{ type: 'ClientStats', id: clientId }],
     }),
 
-    getClientActivity: builder.query<ClientActivity, { clientId: string; params?: { page?: number; limit?: number; type?: string } }>({
+    getClientActivity: builder.query<
+      ClientActivity,
+      { clientId: string; params?: { page?: number; limit?: number; type?: string } }
+    >({
       query: ({ clientId, params }) => ({
         url: `/clients/portal/clients/${clientId}/activity`,
         params,
@@ -617,13 +657,13 @@ export const clientPortalApi = createApi({
       query: ({ clientId, format = 'csv' }) => ({
         url: `/clients/portal/clients/${clientId}/export`,
         params: { format },
-        responseHandler: (response) => response.blob(),
+        responseHandler: response => response.blob(),
       }),
     }),
 
     // Bulk Operations
     bulkUpdateClients: builder.mutation<ClientPortalClient[], BulkUpdateRequest>({
-      query: (bulkData) => ({
+      query: bulkData => ({
         url: '/clients/portal/clients/bulk-update',
         method: 'PUT',
         body: bulkData,
@@ -632,7 +672,7 @@ export const clientPortalApi = createApi({
     }),
 
     bulkDeleteClients: builder.mutation<void, BulkDeleteRequest>({
-      query: (bulkData) => ({
+      query: bulkData => ({
         url: '/clients/portal/clients/bulk-delete',
         method: 'DELETE',
         body: bulkData,
@@ -641,18 +681,21 @@ export const clientPortalApi = createApi({
     }),
 
     // Organization-side Client Portal Management
-    getOrganizationRequests: builder.query<any, {
-      page?: number;
-      limit?: number;
-      search?: string;
-      status?: string;
-      client_id?: string;
-      service_id?: string;
-      assigned_to?: string;
-      sortBy?: string;
-      sortOrder?: 'asc' | 'desc';
-    }>({
-      query: (params) => ({
+    getOrganizationRequests: builder.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+        client_id?: string;
+        service_id?: string;
+        assigned_to?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+      }
+    >({
+      query: params => ({
         url: '/clients/portal/requests',
         params,
       }),
@@ -660,11 +703,14 @@ export const clientPortalApi = createApi({
     }),
 
     getOrganizationRequestById: builder.query<any, string>({
-      query: (id) => `/clients/portal/requests/${id}`,
+      query: id => `/clients/portal/requests/${id}`,
       providesTags: (result, error, id) => [{ type: 'Requests', id }],
     }),
 
-    updateOrganizationRequestStatus: builder.mutation<any, { id: string; status: string; notes?: string; assigned_to?: string }>({
+    updateOrganizationRequestStatus: builder.mutation<
+      any,
+      { id: string; status: string; notes?: string; assigned_to?: string }
+    >({
       query: ({ id, ...data }) => ({
         url: `/clients/portal/requests/${id}/status`,
         method: 'PUT',
@@ -687,34 +733,40 @@ export const clientPortalApi = createApi({
       providesTags: ['Requests'],
     }),
 
-    getOrganizationServices: builder.query<any, {
-      page?: number;
-      limit?: number;
-      search?: string;
-      sortBy?: string;
-      sortOrder?: 'asc' | 'desc';
-    }>({
-      query: (params) => ({
-        url: '/clients/portal/services',
+    getOrganizationServices: builder.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+      }
+    >({
+      query: params => ({
+        url: '/client-portal/services/organization/all',
         params,
       }),
       providesTags: ['Services'],
     }),
 
     getOrganizationServiceById: builder.query<any, string>({
-      query: (id) => `/clients/portal/services/${id}`,
+      query: id => `/client-portal/services/organization/${id}`,
       providesTags: (result, error, id) => [{ type: 'Services', id }],
     }),
 
-    createOrganizationService: builder.mutation<any, {
-      name: string;
-      description?: string;
-      service_data?: any;
-      is_public?: boolean;
-      allowed_client_ids?: string[];
-    }>({
-      query: (serviceData) => ({
-        url: '/clients/portal/services',
+    createOrganizationService: builder.mutation<
+      any,
+      {
+        name: string;
+        description?: string;
+        service_data?: any;
+        is_public?: boolean;
+        allowed_client_ids?: string[];
+      }
+    >({
+      query: serviceData => ({
+        url: '/client-portal/services/organization',
         method: 'POST',
         body: serviceData,
       }),
@@ -723,7 +775,7 @@ export const clientPortalApi = createApi({
 
     updateOrganizationService: builder.mutation<any, { id: string; data: any }>({
       query: ({ id, data }) => ({
-        url: `/clients/portal/services/${id}`,
+        url: `/client-portal/services/organization/${id}`,
         method: 'PUT',
         body: data,
       }),
@@ -731,8 +783,8 @@ export const clientPortalApi = createApi({
     }),
 
     deleteOrganizationService: builder.mutation<void, string>({
-      query: (id) => ({
-        url: `/clients/portal/services/${id}`,
+      query: id => ({
+        url: `/client-portal/services/organization/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Services'],
@@ -746,9 +798,12 @@ export const clientPortalApi = createApi({
         body: { clientId },
       }),
     }),
-    
+
     // Handle organization invitation
-    handleOrganizationInvite: builder.mutation<{ redirectTo: string; message: string }, { token: string }>({
+    handleOrganizationInvite: builder.mutation<
+      { redirectTo: string; message: string },
+      { token: string }
+    >({
       query: ({ token }) => ({
         url: '/client-portal/handle-organization-invite',
         method: 'POST',
@@ -762,50 +817,50 @@ export const clientPortalApi = createApi({
 export const {
   // Dashboard
   useGetDashboardQuery,
-  
+
   // Services
   useGetServicesQuery,
   useGetServiceDetailsQuery,
-  
+
   // Requests
   useGetRequestsQuery,
   useCreateRequestMutation,
   useGetRequestDetailsQuery,
   useUpdateRequestMutation,
   useDeleteRequestMutation,
-  
+
   // Projects
   useGetProjectsQuery,
   useGetProjectDetailsQuery,
-  
+
   // Invoices
   useGetInvoicesQuery,
   useGetInvoiceDetailsQuery,
   usePayInvoiceMutation,
   useDownloadInvoiceQuery,
-  
+
   // Chat
   useGetChatsQuery,
   useGetChatDetailsQuery,
   useSendMessageMutation,
   useGetMessagesQuery,
-  
+
   // Settings
   useGetSettingsQuery,
   useUpdateSettingsMutation,
-  
+
   // Profile
   useGetProfileQuery,
   useUpdateProfileMutation,
-  
+
   // Notifications
   useGetNotificationsQuery,
   useMarkNotificationReadMutation,
   useMarkAllNotificationsReadMutation,
-  
+
   // File uploads
   useUploadFileMutation,
-  
+
   // Client Management
   useGetClientsQuery,
   useGetClientByIdQuery,
@@ -813,28 +868,28 @@ export const {
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeleteClientMutation,
-  
+
   // Client Projects
   useGetClientProjectsQuery,
   useAssignProjectToClientMutation,
   useRemoveProjectFromClientMutation,
-  
+
   // Client Team Management
   useGetClientTeamQuery,
   useInviteTeamMemberMutation,
   useUpdateTeamMemberMutation,
   useRemoveTeamMemberMutation,
   useResendTeamInvitationMutation,
-  
+
   // Client Analytics
   useGetClientStatsQuery,
   useGetClientActivityQuery,
   useExportClientDataQuery,
-  
+
   // Bulk Operations
   useBulkUpdateClientsMutation,
   useBulkDeleteClientsMutation,
-  
+
   // Organization-side Client Portal Management
   useGetOrganizationRequestsQuery,
   useGetOrganizationRequestByIdQuery,
@@ -846,8 +901,8 @@ export const {
   useCreateOrganizationServiceMutation,
   useUpdateOrganizationServiceMutation,
   useDeleteOrganizationServiceMutation,
-  
+
   // Client Invitation Management
   useGenerateClientInvitationLinkMutation,
   useHandleOrganizationInviteMutation,
-} = clientPortalApi; 
+} = clientPortalApi;

@@ -9,7 +9,7 @@ import {
   Select,
   Typography,
   Upload,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React from 'react';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { toggleRequestFormModal } from '../client-view-services';
@@ -25,7 +25,7 @@ const RequestFormModal = ({ serviceId }: { serviceId: string }) => {
 
   // get service details from client view service reducer
   const { isRequestFormModalOpen, services } = useAppSelector(
-    (state) => state.clientViewReducer.serviceReducer
+    state => state.clientViewReducer.serviceReducer
   );
 
   const dispatch = useAppDispatch();
@@ -47,7 +47,7 @@ const RequestFormModal = ({ serviceId }: { serviceId: string }) => {
   };
 
   // find the selected service from the services array
-  const service = services.find((service) => service.id === serviceId);
+  const service = services.find(service => service.id === serviceId);
 
   const props: UploadProps = {
     name: 'file',

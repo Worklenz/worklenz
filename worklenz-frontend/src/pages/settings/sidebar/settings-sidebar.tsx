@@ -1,5 +1,5 @@
-import { RightOutlined } from '@ant-design/icons';
-import { ConfigProvider, Flex, Menu, MenuProps } from 'antd';
+import { RightOutlined } from '@/shared/antd-imports';
+import { ConfigProvider, Flex, Menu, MenuProps } from '@/shared/antd-imports';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
@@ -19,24 +19,31 @@ const SettingSidebar: React.FC = () => {
   };
 
   // Get accessible settings based on user role
-  const accessibleSettings = getAccessibleSettings(isOwnerOrAdmin);
+  const accessibleSettings = getAccessibleSettings(isOwnerOrAdmin, currentSession);
 
   const items: Required<MenuProps>['items'] = accessibleSettings
     .map(item => {
       if (currentSession?.is_google && item.key === 'change-password') {
         return null;
       }
+      const isDangerous = item.isDangerous;
       return {
         key: item.key,
         label: (
           <Flex gap={8} justify="space-between" align="center">
             <Flex gap={8} align="center">
               {item.icon}
-              <Link to={`/worklenz/settings/${item.endpoint}`}>{t(item.name)}</Link>
+              <Link
+                to={`/worklenz/settings/${item.endpoint}`}
+                style={{ color: isDangerous ? '#ff4d4f' : undefined }}
+              >
+                {t(item.name)}
+              </Link>
             </Flex>
             <RightOutlined style={{ fontSize: 12 }} />
           </Flex>
         ),
+        style: undefined,
       };
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);

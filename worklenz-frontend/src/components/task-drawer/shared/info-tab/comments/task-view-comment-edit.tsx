@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, Form, Input, Space } from 'antd';
+import { Button, Form, Input, Space } from '@/shared/antd-imports';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import logger from '@/utils/errorLogger';
@@ -58,9 +58,11 @@ const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProp
         onUpdated(commentData);
 
         // Dispatch event to notify that a comment was updated
-        document.dispatchEvent(new CustomEvent('task-comment-update', { 
-          detail: { taskId: commentData.task_id } 
-        }));
+        document.dispatchEvent(
+          new CustomEvent('task-comment-update', {
+            detail: { taskId: commentData.task_id },
+          })
+        );
       }
     } catch (e) {
       logger.error('Error updating comment', e);

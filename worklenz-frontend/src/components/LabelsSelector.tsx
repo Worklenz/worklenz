@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
-import { PlusOutlined, TagOutlined } from '@ant-design/icons';
+import { PlusOutlined, TagOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
@@ -44,10 +44,10 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
       const dropdownHeight = 300; // Approximate height of dropdown (max-height + padding)
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      
+
       // Position dropdown above button if there's not enough space below
       const shouldPositionAbove = spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
-      
+
       if (shouldPositionAbove) {
         setDropdownPosition({
           top: rect.top + window.scrollY - dropdownHeight - 2,
@@ -228,7 +228,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                     flex items-center gap-2 px-2 py-1 cursor-pointer transition-colors
                     ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}
                   `}
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       handleLabelToggle(label);
                     }}
@@ -281,7 +281,9 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
 
             {/* Footer */}
             <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-              <div className={`flex items-center justify-center gap-1 px-2 py-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <div
+                className={`flex items-center justify-center gap-1 px-2 py-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+              >
                 <TagOutlined />
                 {t('manageLabelsPath')}
               </div>

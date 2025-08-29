@@ -43,10 +43,10 @@ const projectSlice = createSlice({
   name: 'projectReducer',
   initialState,
   reducers: {
-    toggleProjectModal: (state) => {
+    toggleProjectModal: state => {
       state.isProjectModalOpen = !state.isProjectModalOpen;
     },
-    toggleDrawer: (state) => {
+    toggleDrawer: state => {
       state.isDrawerOpen = !state.isDrawerOpen;
     },
     toggleUpdatedrawer: (state, action: PayloadAction<string | null>) => {
@@ -58,16 +58,14 @@ const projectSlice = createSlice({
       saveProjectListToLocalStorage(state.projectsList);
     },
     toggleFavouriteProjectSelection: (state, action: PayloadAction<string>) => {
-      const project = state.projectsList.find(
-        (project) => project.projectId === action.payload
-      );
+      const project = state.projectsList.find(project => project.projectId === action.payload);
       if (project) {
         project.isFavourite = !project.isFavourite;
       }
     },
     deleteProject: (state, action: PayloadAction<string>) => {
       state.projectsList = state.projectsList.filter(
-        (project) => project.projectId !== action.payload
+        project => project.projectId !== action.payload
       );
       saveProjectListToLocalStorage(state.projectsList);
     },
@@ -79,9 +77,7 @@ const projectSlice = createSlice({
       }>
     ) => {
       const { projectId, updatedData } = action.payload;
-      const projectIndex = state.projectsList.findIndex(
-        (project) => project.projectId === projectId
-      );
+      const projectIndex = state.projectsList.findIndex(project => project.projectId === projectId);
       if (projectIndex !== -1) {
         state.projectsList[projectIndex] = {
           ...state.projectsList[projectIndex],

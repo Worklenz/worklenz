@@ -21,13 +21,13 @@ export const useTimerInitialization = () => {
 
       try {
         hasInitialized.current = true;
-        
+
         // Fetch running timers from backend
         const response = await taskTimeLogsApiService.getRunningTimers();
-        
+
         if (response && response.done && Array.isArray(response.body)) {
           const runningTimers = response.body;
-          
+
           // Update Redux state for each running timer
           runningTimers.forEach(timer => {
             if (timer.task_id && timer.start_time) {
@@ -36,13 +36,15 @@ export const useTimerInitialization = () => {
                 const startTime = moment(timer.start_time);
                 if (startTime.isValid()) {
                   const timestamp = startTime.valueOf();
-                  
+
                   // Update the tasks slice activeTimers
-                  dispatch(updateTaskTimeTracking({ 
-                    taskId: timer.task_id, 
-                    timeTracking: timestamp 
-                  }));
-                  
+                  dispatch(
+                    updateTaskTimeTracking({
+                      taskId: timer.task_id,
+                      timeTracking: timestamp,
+                    })
+                  );
+
                   // Update the task-management slice if the task exists
                   const currentTask = store.getState().taskManagement.entities[timer.task_id];
                   if (currentTask) {
@@ -63,7 +65,7 @@ export const useTimerInitialization = () => {
               }
             }
           });
-          
+
           if (runningTimers.length > 0) {
             logger.info(`Initialized ${runningTimers.length} running timers from backend`);
           }
@@ -76,4 +78,4 @@ export const useTimerInitialization = () => {
     // Initialize timers when the hook mounts
     initializeTimers();
   }, [dispatch]);
-}; 
+};

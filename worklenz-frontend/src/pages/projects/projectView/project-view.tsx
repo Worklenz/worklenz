@@ -8,13 +8,17 @@ import {
   ConfigProvider,
   Flex,
   Tabs,
+  Tooltip,
   PushpinFilled,
   PushpinOutlined,
-  type TabsProps,
 } from '@/shared/antd-imports';
+import { CrownOutlined } from '@ant-design/icons';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { hasFinanceViewPermission } from '@/utils/finance-permissions';
 import { getProject, setProjectId, setProjectView } from '@/features/project/project.slice';
 import { fetchStatuses, resetStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { projectsApiService } from '@/api/projects/projects.api.service';
@@ -29,7 +33,11 @@ import { resetSelection } from '@/features/task-management/selection.slice';
 import { resetFields } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
-import { tabItems, updateTabLabels } from '@/lib/project/project-view-constants';
+import {
+  tabItems,
+  updateTabLabels,
+  getFilteredTabItems,
+} from '@/lib/project/project-view-constants';
 import {
   setSelectedTaskId,
   setShowTaskDrawer,
@@ -40,7 +48,7 @@ import { setProjectId as setInsightsProjectId } from '@/features/projects/insigh
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
-
+import { useAuthService } from '@/hooks/useAuth';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -75,15 +83,19 @@ const ProjectView = React.memo(() => {
   // Optimize document title updates
   useDocumentTitle(selectedProject?.name || t('projectView'));
 
+  // Get auth service and current session
+  const authService = useAuthService();
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+
   // Memoize URL params to prevent unnecessary state updates
-  const urlParams = useMemo(
-    () => ({
-      tab: searchParams.get('tab') || tabItems[0].key,
+  const urlParams = useMemo(() => {
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+    return {
+      tab: searchParams.get('tab') || filteredTabItems[0]?.key || 'tasks-list',
       pinnedTab: searchParams.get('pinned_tab') || '',
       taskId: searchParams.get('task') || '',
-    }),
-    [searchParams]
-  );
+    };
+  }, [searchParams, currentSession, selectedProject]);
 
   const [activeTab, setActiveTab] = useState<string>(urlParams.tab);
   const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
@@ -243,6 +255,19 @@ const ProjectView = React.memo(() => {
   // Optimized tab change handler
   const handleTabChange = useCallback(
     (key: string) => {
+      // Find the tab item to check if it's disabled
+      const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+      const tabItem = filteredTabItems.find(item => item.key === key);
+
+      if (!tabItem) {
+        return;
+      }
+
+      // If tab is disabled, open upgrade modal instead of navigating
+      if (tabItem?.disabled) {
+        dispatch(toggleUpgradeModal());
+        return;
+      }
       setActiveTab(key);
       dispatch(setProjectView(key === 'board' ? 'kanban' : 'list'));
 
@@ -258,7 +283,7 @@ const ProjectView = React.memo(() => {
         { replace: true }
       );
     },
-    [dispatch, location.pathname, navigate, pinnedTab]
+    [dispatch, location.pathname, navigate, pinnedTab, currentSession, selectedProject]
   );
 
   // Memoized tab menu items with enhanced styling
@@ -268,61 +293,85 @@ const ProjectView = React.memo(() => {
       return [];
     }
 
-    const menuItems = tabItems.map(item => ({
-      key: item.key,
-      label: (
-        <Flex align="center" gap={6} style={{ color: 'inherit' }}>
-          <span style={{ fontWeight: 500, fontSize: '13px' }}>{item.label}</span>
-          {(item.key === 'tasks-list' || item.key === 'board') && (
-            <ConfigProvider wave={{ disabled: true }}>
-              <Button
-                className="borderless-icon-btn"
-                size="small"
-                type="text"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  boxShadow: 'none',
-                  padding: '2px',
-                  minWidth: 'auto',
-                  height: 'auto',
-                  lineHeight: 1,
-                }}
-                icon={
-                  item.key === pinnedTab ? (
-                    <PushpinFilled
-                      style={{
-                        fontSize: '12px',
-                        color: 'currentColor',
-                        transform: 'rotate(-45deg)',
-                        transition: 'all 0.3s ease',
-                      }}
-                    />
-                  ) : (
-                    <PushpinOutlined
-                      style={{
-                        fontSize: '12px',
-                        color: 'currentColor',
-                        transition: 'all 0.3s ease',
-                      }}
-                    />
-                  )
-                }
-                onClick={e => {
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+
+    const menuItems = filteredTabItems.map(item => {
+      return {
+        key: item.key,
+        disabled: item.disabled,
+        label: (
+          <Tooltip title={item.disabled ? item.disabledReason : undefined} placement="bottom">
+            <Flex
+              align="center"
+              gap={6}
+              style={{
+                color: item.disabled ? '#8c8c8c' : 'inherit',
+                opacity: item.disabled ? 0.6 : 1,
+                cursor: item.disabled ? 'pointer' : 'pointer',
+              }}
+              onClick={e => {
+                // Fallback: Direct click handler for disabled tabs
+                if (item.disabled) {
+                  e.preventDefault();
                   e.stopPropagation();
-                  pinToDefaultTab(item.key);
-                }}
-                title={item.key === pinnedTab ? t('unpinTab') : t('pinTab')}
-              />
-            </ConfigProvider>
-          )}
-        </Flex>
-      ),
-      children: item.element,
-    }));
+                  dispatch(toggleUpgradeModal());
+                }
+              }}
+            >
+              <span style={{ fontWeight: 500, fontSize: '13px' }}>{item.label}</span>
+              {item.disabled && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+              {(item.key === 'tasks-list' || item.key === 'board') && !item.disabled && (
+                <ConfigProvider wave={{ disabled: true }}>
+                  <Button
+                    className="borderless-icon-btn"
+                    size="small"
+                    type="text"
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      boxShadow: 'none',
+                      padding: '2px',
+                      minWidth: 'auto',
+                      height: 'auto',
+                      lineHeight: 1,
+                    }}
+                    icon={
+                      item.key === pinnedTab ? (
+                        <PushpinFilled
+                          style={{
+                            fontSize: '12px',
+                            color: 'currentColor',
+                            transform: 'rotate(-45deg)',
+                            transition: 'all 0.3s ease',
+                          }}
+                        />
+                      ) : (
+                        <PushpinOutlined
+                          style={{
+                            fontSize: '12px',
+                            color: 'currentColor',
+                            transition: 'all 0.3s ease',
+                          }}
+                        />
+                      )
+                    }
+                    onClick={e => {
+                      e.stopPropagation();
+                      pinToDefaultTab(item.key);
+                    }}
+                    title={item.key === pinnedTab ? t('unpinTab') : t('pinTab')}
+                  />
+                </ConfigProvider>
+              )}
+            </Flex>
+          </Tooltip>
+        ),
+        children: item.element,
+      };
+    });
 
     return menuItems;
-  }, [pinnedTab, pinToDefaultTab, t, translationsReady]);
+  }, [pinnedTab, pinToDefaultTab, t, translationsReady, currentSession, selectedProject]);
 
   // Optimized secondary components loading with better UX
   const [shouldLoadSecondaryComponents, setShouldLoadSecondaryComponents] = useState(false);
@@ -362,20 +411,24 @@ const ProjectView = React.memo(() => {
   // Show loading state while project is being fetched or translations are loading
   if (projectLoading || !isInitialized || !translationsReady) {
     return (
-      <div style={{ marginBlockStart: 70, marginBlockEnd: 12, minHeight: '80vh' }}>
+      <div style={{ marginBlockEnd: 12, minHeight: '80vh' }}>
         <SuspenseFallback />
       </div>
     );
   }
 
   return (
-    <div style={{ marginBlockStart: 70, marginBlockEnd: 12, minHeight: '80vh' }}>
+    <div style={{ marginBlockEnd: 12, minHeight: '80vh' }}>
       <ProjectViewHeader />
 
       <Tabs
         className="project-view-tabs"
         activeKey={activeTab}
         onChange={handleTabChange}
+        onTabClick={(key, e) => {
+          // Ant Design sometimes calls onTabClick even for disabled tabs
+          handleTabChange(key);
+        }}
         items={tabMenuItems}
         destroyOnHidden={true}
         animated={{

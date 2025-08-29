@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Checkbox, theme } from 'antd';
+import { Checkbox, theme } from '@/shared/antd-imports';
 import {
   useReactTable,
   getCoreRowModel,

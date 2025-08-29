@@ -15,13 +15,11 @@ import {
   Tag,
   List,
   Empty,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
-import {
-  toggleClientTeamsDrawer,
-} from '../../features/clients-portal/clients/clients-slice';
+import { toggleClientTeamsDrawer } from '../../features/clients-portal/clients/clients-slice';
 import {
   CopyOutlined,
   DeleteOutlined,
@@ -32,7 +30,7 @@ import {
 } from '@ant-design/icons';
 import { TableProps } from 'antd/lib';
 import { colors } from '../../styles/colors';
-import { 
+import {
   useGetClientDetailsQuery,
   useGetClientTeamQuery,
   useInviteTeamMemberMutation,
@@ -46,11 +44,10 @@ const { Option } = Select;
 const ClientTeamsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
 
-  const {
-    isClientTeamsDrawerOpen,
-    selectedClientId,
-  } = useAppSelector((state) => state.clientsPortalReducer.clientsReducer);
-  
+  const { isClientTeamsDrawerOpen, selectedClientId } = useAppSelector(
+    state => state.clientsPortalReducer.clientsReducer
+  );
+
   const dispatch = useAppDispatch();
 
   // Local state
@@ -58,24 +55,25 @@ const ClientTeamsDrawer = () => {
   const [isInviting, setIsInviting] = useState(false);
 
   // RTK Query hooks - only load data when drawer is open
-  const { 
-    data: clientDetails, 
-    isLoading: isLoadingClient 
-  } = useGetClientDetailsQuery(selectedClientId!, { 
-    skip: !selectedClientId
-  });
+  const { data: clientDetails, isLoading: isLoadingClient } = useGetClientDetailsQuery(
+    selectedClientId!,
+    {
+      skip: !selectedClientId,
+    }
+  );
 
   // Extract data from comprehensive response
   const client = clientDetails?.body;
   const clientTeam = client ? { team_members: client.team_members } : null;
 
-  const { 
-    refetch: refetchTeam
-  } = useGetClientTeamQuery({ 
-    clientId: selectedClientId! 
-  }, { 
-    skip: !selectedClientId || !isClientTeamsDrawerOpen 
-  });
+  const { refetch: refetchTeam } = useGetClientTeamQuery(
+    {
+      clientId: selectedClientId!,
+    },
+    {
+      skip: !selectedClientId || !isClientTeamsDrawerOpen,
+    }
+  );
 
   const isLoadingTeam = isLoadingClient;
 
@@ -102,14 +100,16 @@ const ClientTeamsDrawer = () => {
           email: values.email,
           name: values.name,
           role: values.role,
-        }
+        },
       }).unwrap();
-      
+
       message.success(t('inviteSuccessMessage') || 'Team member invited successfully');
       inviteForm.resetFields();
       refetchTeam();
     } catch (error: any) {
-      message.error(error?.data?.message || t('inviteErrorMessage') || 'Failed to invite team member');
+      message.error(
+        error?.data?.message || t('inviteErrorMessage') || 'Failed to invite team member'
+      );
     } finally {
       setIsInviting(false);
     }
@@ -122,9 +122,9 @@ const ClientTeamsDrawer = () => {
     try {
       await removeTeamMember({
         clientId: selectedClientId,
-        memberId
+        memberId,
       }).unwrap();
-      
+
       message.success(t('removeMemberSuccessMessage') || 'Team member removed successfully');
       refetchTeam();
     } catch (error: any) {
@@ -139,9 +139,9 @@ const ClientTeamsDrawer = () => {
     try {
       await resendInvitation({
         clientId: selectedClientId,
-        memberId
+        memberId,
       }).unwrap();
-      
+
       message.success(t('resendInvitationSuccessMessage') || 'Invitation resent successfully');
     } catch (error: any) {
       message.error(t('resendInvitationErrorMessage') || 'Failed to resend invitation');
@@ -170,18 +170,14 @@ const ClientTeamsDrawer = () => {
     {
       key: 'role',
       title: t('roleColumn') || 'Role',
-      render: (_, record: any) => (
-        <Tag color="blue">{record.role || t('noRole') || 'No Role'}</Tag>
-      ),
+      render: (_, record: any) => <Tag color="blue">{record.role || t('noRole') || 'No Role'}</Tag>,
       width: 120,
     },
     {
       key: 'status',
       title: t('statusColumn') || 'Status',
       render: (_, record: any) => (
-        <Tag color={record.status === 'active' ? 'green' : 'orange'}>
-          {record.status}
-        </Tag>
+        <Tag color={record.status === 'active' ? 'green' : 'orange'}>{record.status}</Tag>
       ),
       width: 100,
     },
@@ -202,21 +198,22 @@ const ClientTeamsDrawer = () => {
               />
             </Tooltip>
           )}
-          
+
           <Popconfirm
             title={t('removeMemberConfirmationTitle') || 'Remove Team Member'}
-            description={t('removeMemberConfirmationDescription') || 'Are you sure you want to remove this team member?'}
-            icon={
-              <ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />
+            description={
+              t('removeMemberConfirmationDescription') ||
+              'Are you sure you want to remove this team member?'
             }
+            icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
             okText={t('removeConfirmationOk') || 'Remove'}
             cancelText={t('removeConfirmationCancel') || 'Cancel'}
             onConfirm={() => handleRemoveTeamMember(record.id)}
           >
             <Tooltip title={t('removeMemberTooltip') || 'Remove Member'}>
-              <Button 
-                shape="default" 
-                icon={<DeleteOutlined />} 
+              <Button
+                shape="default"
+                icon={<DeleteOutlined />}
                 size="small"
                 danger
                 loading={isRemovingMember}
@@ -256,7 +253,8 @@ const ClientTeamsDrawer = () => {
               {t('clientPortalLinkLabel') || 'Client Portal Link'}
             </Typography.Title>
             <Typography.Text type="secondary">
-              {t('clientPortalLinkDescription') || 'Share this link with your client to give them access to their portal'}
+              {t('clientPortalLinkDescription') ||
+                'Share this link with your client to give them access to their portal'}
             </Typography.Text>
             <Flex gap={8} align="center">
               <Input
@@ -264,11 +262,7 @@ const ClientTeamsDrawer = () => {
                 readOnly
                 style={{ flex: 1 }}
               />
-              <Button
-                type="default"
-                icon={<CopyOutlined />}
-                onClick={copyLinkToClipboard}
-              >
+              <Button type="default" icon={<CopyOutlined />} onClick={copyLinkToClipboard}>
                 {t('copyButton') || 'Copy'}
               </Button>
             </Flex>
@@ -280,7 +274,8 @@ const ClientTeamsDrawer = () => {
               {t('inviteTeamMemberLabel') || 'Invite Team Member'}
             </Typography.Title>
             <Typography.Text type="secondary">
-              {t('inviteTeamMemberDescription') || 'Send an invitation to add a new team member to this client'}
+              {t('inviteTeamMemberDescription') ||
+                'Send an invitation to add a new team member to this client'}
             </Typography.Text>
             <Form
               form={inviteForm}
@@ -292,15 +287,10 @@ const ClientTeamsDrawer = () => {
                 <Form.Item
                   name="name"
                   label={t('nameLabel') || 'Name'}
-                  rules={[
-                    { required: true, message: t('nameRequired') || 'Please enter name' }
-                  ]}
+                  rules={[{ required: true, message: t('nameRequired') || 'Please enter name' }]}
                   style={{ flex: 1 }}
                 >
-                  <Input 
-                    placeholder={t('namePlaceholder') || 'Enter full name'} 
-                    size="middle"
-                  />
+                  <Input placeholder={t('namePlaceholder') || 'Enter full name'} size="middle" />
                 </Form.Item>
 
                 <Form.Item
@@ -308,21 +298,17 @@ const ClientTeamsDrawer = () => {
                   label={t('emailLabel') || 'Email'}
                   rules={[
                     { required: true, message: t('emailRequired') || 'Please enter email' },
-                    { type: 'email', message: t('emailInvalid') || 'Please enter a valid email' }
+                    { type: 'email', message: t('emailInvalid') || 'Please enter a valid email' },
                   ]}
                   style={{ flex: 1 }}
                 >
-                  <Input 
-                    placeholder={t('emailPlaceholder') || 'Enter email address'} 
+                  <Input
+                    placeholder={t('emailPlaceholder') || 'Enter email address'}
                     size="middle"
                   />
                 </Form.Item>
 
-                <Form.Item
-                  name="role"
-                  label={t('roleLabel') || 'Role'}
-                  style={{ width: 150 }}
-                >
+                <Form.Item name="role" label={t('roleLabel') || 'Role'} style={{ width: 150 }}>
                   <Select placeholder={t('rolePlaceholder') || 'Select role'} size="middle">
                     <Option value="admin">{t('roleAdmin') || 'Admin'}</Option>
                     <Option value="member">{t('roleMember') || 'Member'}</Option>
@@ -362,9 +348,9 @@ const ClientTeamsDrawer = () => {
                 rowKey="id"
               />
             ) : (
-              <Empty 
-                description={t('noTeamMembersText') || 'No team members found'} 
-                image={Empty.PRESENTED_IMAGE_SIMPLE} 
+              <Empty
+                description={t('noTeamMembersText') || 'No team members found'}
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
               />
             )}
           </Flex>
@@ -375,4 +361,3 @@ const ClientTeamsDrawer = () => {
 };
 
 export default ClientTeamsDrawer;
-  

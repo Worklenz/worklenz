@@ -1,5 +1,7 @@
-import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from 'antd';
-import React, { useRef, useState } from 'react';
+import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from '@/shared/antd-imports';
+import React, { useRef, useEffect } from 'react';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_schedule_page_visit } from '@/shared/worklenz-analytics-events';
 import { SettingOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { setDate, setType, toggleSettingsDrawer } from '@/features/schedule/scheduleSlice';
@@ -8,7 +10,8 @@ import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import ScheduleDrawer from '@/features/schedule/ScheduleDrawer';
-import GranttChart from '@/components/schedule/grant-chart/grantt-chart';
+import GranttChart from '@/components/schedule/grant-chart/GranttChart';
+import ScheduleDataDebugger from '@/components/schedule/ScheduleDataDebugger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
 
@@ -31,8 +34,13 @@ const Schedule: React.FC = () => {
   const dispatch = useDispatch();
   const granttChartRef = useRef<any>(null);
   const { date, type } = useAppSelector(state => state.scheduleReducer);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle('Schedule');
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_schedule_page_visit);
+  }, [trackMixpanelEvent]);
 
   const handleDateChange = (value: dayjs.Dayjs | null) => {
     if (!value) return;
@@ -54,7 +62,7 @@ const Schedule: React.FC = () => {
   };
 
   return (
-    <div style={{ marginBlockStart: 65, minHeight: '90vh' }}>
+    <div style={{ minHeight: '90vh' }}>
       <Flex align="center" justify="space-between">
         <Flex
           gap={16}

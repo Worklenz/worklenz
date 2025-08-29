@@ -1,4 +1,4 @@
-import { SyncOutlined } from '@ant-design/icons';
+import { SyncOutlined } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -10,7 +10,7 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

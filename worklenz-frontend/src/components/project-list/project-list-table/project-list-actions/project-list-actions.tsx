@@ -11,11 +11,10 @@ import {
 } from '@/features/projects/projectsSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
-import { useAuthService } from '@/hooks/useAuth';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import logger from '@/utils/errorLogger';
-import { SettingOutlined, InboxOutlined } from '@ant-design/icons';
-import { Tooltip, Button, Popconfirm, Space } from 'antd';
+import { SettingOutlined, InboxOutlined } from '@/shared/antd-imports';
+import { Tooltip, Button, Popconfirm, Space } from '@/shared/antd-imports';
 import {
   evt_projects_archive,
   evt_projects_archive_all,
@@ -48,19 +47,19 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     if (record.id) {
       console.log('Opening project drawer for project:', record.id);
       trackMixpanelEvent(evt_projects_settings_click);
-      
+
       // Set project ID first
       dispatch(setProjectId(record.id));
-      
+
       // Then fetch project data
       dispatch(fetchProjectData(record.id))
         .unwrap()
-        .then((projectData) => {
+        .then(projectData => {
           console.log('Project data fetched successfully:', projectData);
           // Open drawer after data is fetched
           dispatch(toggleProjectDrawer());
         })
-        .catch((error) => {
+        .catch(error => {
           console.error('Failed to fetch project data:', error);
           // Still open drawer even if fetch fails, so user can see error state
           dispatch(toggleProjectDrawer());

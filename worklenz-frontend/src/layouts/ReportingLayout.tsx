@@ -1,6 +1,6 @@
-import { Col, ConfigProvider, Layout } from 'antd';
+import { Col, ConfigProvider, Layout } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
-import Navbar from '../features/navbar/navbar';
+import Navbar from '@/features/navbar/navbar';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { colors } from '../styles/colors';
 import { themeWiseColor } from '../utils/themeWiseColor';
@@ -21,8 +21,6 @@ const ReportingLayout = () => {
   const { getCurrentSession } = useAuthService();
   const currentSession = getCurrentSession();
   const navigate = useNavigate();
-
-  
 
   // function to handle collapse
   const handleCollapsedToggler = () => {

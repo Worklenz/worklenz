@@ -1,4 +1,4 @@
-import { Card, Descriptions, Flex, Typography, Button, Tag, Divider } from 'antd';
+import { Card, Descriptions, Flex, Typography, Button, Tag, Divider } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -12,7 +12,7 @@ const ClientViewInvoiceDetails = () => {
   const navigate = useNavigate();
 
   // Get invoice details from Redux (replace with API call)
-  const invoiceDetails = useAppSelector((state) => 
+  const invoiceDetails = useAppSelector(state =>
     state.clientViewReducer.invoicesReducer?.invoices?.find((invoice: any) => invoice.id === id)
   );
 
@@ -22,21 +22,25 @@ const ClientViewInvoiceDetails = () => {
         <Typography.Title level={4} style={{ marginBlock: 0 }}>
           {t('invoiceNotFound')}
         </Typography.Title>
-        <Button onClick={() => navigate('/client-portal/invoices')}>
-          {t('backToInvoices')}
-        </Button>
+        <Button onClick={() => navigate('/client-portal/invoices')}>{t('backToInvoices')}</Button>
       </Flex>
     );
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'default';
-      case 'sent': return 'processing';
-      case 'paid': return 'success';
-      case 'overdue': return 'error';
-      case 'cancelled': return 'default';
-      default: return 'default';
+      case 'draft':
+        return 'default';
+      case 'sent':
+        return 'processing';
+      case 'paid':
+        return 'success';
+      case 'overdue':
+        return 'error';
+      case 'cancelled':
+        return 'default';
+      default:
+        return 'default';
     }
   };
 
@@ -54,15 +58,9 @@ const ClientViewInvoiceDetails = () => {
           {t('invoiceDetails')} - {invoiceDetails.invoice_no || 'INV-001'}
         </Typography.Title>
         <Flex gap={8}>
-          <Button icon={<DownloadOutlined />}>
-            {t('download')}
-          </Button>
-          <Button icon={<PrinterOutlined />}>
-            {t('print')}
-          </Button>
-          <Button onClick={() => navigate('/client-portal/invoices')}>
-            {t('backToInvoices')}
-          </Button>
+          <Button icon={<DownloadOutlined />}>{t('download')}</Button>
+          <Button icon={<PrinterOutlined />}>{t('print')}</Button>
+          <Button onClick={() => navigate('/client-portal/invoices')}>{t('backToInvoices')}</Button>
         </Flex>
       </Flex>
 
@@ -72,9 +70,7 @@ const ClientViewInvoiceDetails = () => {
             {invoiceDetails.invoice_no || 'INV-001'}
           </Descriptions.Item>
           <Descriptions.Item label={t('status')} span={1}>
-            <Tag color={getStatusColor(invoiceDetails.status)}>
-              {t(invoiceDetails.status)}
-            </Tag>
+            <Tag color={getStatusColor(invoiceDetails.status)}>{t(invoiceDetails.status)}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label={t('amount')} span={1}>
             <Typography.Text strong style={{ fontSize: 16 }}>
@@ -101,9 +97,7 @@ const ClientViewInvoiceDetails = () => {
 
       <Card title={t('invoiceItems')}>
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <Typography.Text type="secondary">
-            {t('noItems')}
-          </Typography.Text>
+          <Typography.Text type="secondary">{t('noItems')}</Typography.Text>
         </div>
       </Card>
 
@@ -111,7 +105,9 @@ const ClientViewInvoiceDetails = () => {
         <Flex vertical gap={16}>
           <Flex align="center" justify="space-between">
             <Typography.Text>{t('subtotal')}:</Typography.Text>
-            <Typography.Text>{formatCurrency(invoiceDetails.amount || 0, invoiceDetails.currency)}</Typography.Text>
+            <Typography.Text>
+              {formatCurrency(invoiceDetails.amount || 0, invoiceDetails.currency)}
+            </Typography.Text>
           </Flex>
           <Flex align="center" justify="space-between">
             <Typography.Text>{t('tax')}:</Typography.Text>
@@ -133,22 +129,18 @@ const ClientViewInvoiceDetails = () => {
             <Button type="primary" size="large" icon={<DollarOutlined />}>
               {t('payNow')}
             </Button>
-            <Typography.Text type="secondary">
-              {t('paymentInstructions')}
-            </Typography.Text>
+            <Typography.Text type="secondary">{t('paymentInstructions')}</Typography.Text>
           </Flex>
         </Card>
       )}
 
       <Card title={t('notes')}>
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <Typography.Text type="secondary">
-            {t('noNotes')}
-          </Typography.Text>
+          <Typography.Text type="secondary">{t('noNotes')}</Typography.Text>
         </div>
       </Card>
     </Flex>
   );
 };
 
-export default ClientViewInvoiceDetails; 
+export default ClientViewInvoiceDetails;

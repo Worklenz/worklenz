@@ -130,7 +130,6 @@ export interface ClientSettings {
   project_updates: boolean;
   invoice_notifications: boolean;
   request_updates: boolean;
-  logo_url?: string;
 }
 
 export interface ClientNotification {

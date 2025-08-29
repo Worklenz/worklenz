@@ -9,7 +9,13 @@ import {
   Col,
   Space,
 } from '@/shared/antd-imports';
-import { PlusOutlined, UserOutlined, TeamOutlined, ProjectOutlined, ShareAltOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  UserOutlined,
+  TeamOutlined,
+  ProjectOutlined,
+  ShareAltOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleAddClientDrawer } from '@/features/clients-portal/clients/clients-slice';
@@ -31,7 +37,7 @@ const ClientPortalClients = () => {
   const { t } = useTranslation('client-portal-clients');
   const dispatch = useAppDispatch();
   const { isMobile, isTablet, isDesktop } = useResponsive();
-  
+
   // State for invite modal
   const [showInviteModal, setShowInviteModal] = React.useState(false);
 
@@ -48,11 +54,11 @@ const ClientPortalClients = () => {
   const handleAddClient = () => {
     dispatch(toggleAddClientDrawer());
   };
-  
+
   const handleShowInviteModal = () => {
     setShowInviteModal(true);
   };
-  
+
   const handleCloseInviteModal = () => {
     setShowInviteModal(false);
   };
@@ -206,12 +212,9 @@ const ClientPortalClients = () => {
       {createPortal(<ClientDetailsDrawer />, document.body)}
       {createPortal(<ClientTeamsDrawer />, document.body)}
       {createPortal(<ClientSettingsDrawer />, document.body)}
-      
+
       {/* Invite Link Modal */}
-      <InviteLinkModal 
-        visible={showInviteModal}
-        onClose={handleCloseInviteModal}
-      />
+      <InviteLinkModal visible={showInviteModal} onClose={handleCloseInviteModal} />
     </div>
   );
 };

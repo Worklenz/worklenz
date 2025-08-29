@@ -1,11 +1,15 @@
-import { Drawer, Typography, Input, Flex, Select, Table } from 'antd';
+import { Drawer, Typography, Input, Flex, Select, Table } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 
 import { useTranslation } from 'react-i18next';
 import TableColumns from '../project-list/table-columns';
-import { addProjectToClient, toggleClientSettingsDrawer, updateClientName } from '../../features/clients-portal/clients/clients-slice';
+import {
+  addProjectToClient,
+  toggleClientSettingsDrawer,
+  updateClientName,
+} from '../../features/clients-portal/clients/clients-slice';
 
 const ClientPortalClientsSettingsDrawer = () => {
   const [projectSearchQuery, setProjectSearchQuery] = useState('');
@@ -14,23 +18,19 @@ const ClientPortalClientsSettingsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
 
   // get all projects from state
-  const projectList = useAppSelector(
-    (state) => state.projectsReducer.projects.data
-  );
+  const projectList = useAppSelector(state => state.projectsReducer.projects.data);
 
   // get drawer data from client reducer
   const {
     isClientSettingsDrawerOpen,
     selectedClient,
     clients: clientsList,
-  } = useAppSelector((state) => state.clientsPortalReducer.clientsReducer);
+  } = useAppSelector(state => state.clientsPortalReducer.clientsReducer);
 
   const dispatch = useAppDispatch();
 
   // find the selected client
-  const selectedClientObj = clientsList.find(
-    (client) => client.id === selectedClient
-  );
+  const selectedClientObj = clientsList.find(client => client.id === selectedClient);
 
   const [clientName, setClientName] = useState(selectedClientObj?.name || '');
   const [isEditing, setIsEditing] = useState(false);
@@ -43,9 +43,7 @@ const ClientPortalClientsSettingsDrawer = () => {
   // handle input blur or Enter press
   const handleNameSave = () => {
     if (clientName.trim() && selectedClientObj) {
-      dispatch(
-        updateClientName({ id: selectedClientObj.id, name: clientName })
-      );
+      dispatch(updateClientName({ id: selectedClientObj.id, name: clientName }));
     }
     setIsEditing(false);
   };
@@ -53,9 +51,7 @@ const ClientPortalClientsSettingsDrawer = () => {
   // handle project selection
   const handleProjectSelect = (projectId: string) => {
     if (selectedClientObj) {
-      dispatch(
-        addProjectToClient({ clientId: selectedClientObj.id, projectId })
-      );
+      dispatch(addProjectToClient({ clientId: selectedClientObj.id, projectId }));
     }
   };
 
@@ -106,13 +102,8 @@ const ClientPortalClientsSettingsDrawer = () => {
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
             }
             options={projectList
-              .filter(
-                (proj) =>
-                  !selectedClientObj?.projects.some(
-                    (p) => p.id === proj.projectId
-                  )
-              ) // exclude already assigned projects
-              .map((proj) => ({
+              .filter(proj => !selectedClientObj?.projects.some(p => p.id === proj.projectId)) // exclude already assigned projects
+              .map(proj => ({
                 label: proj.projectName,
                 value: proj.projectId,
               }))}

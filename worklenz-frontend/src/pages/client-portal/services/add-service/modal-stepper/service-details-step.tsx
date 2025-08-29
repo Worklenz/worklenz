@@ -1,5 +1,15 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Form, Input, Button, Upload, message, Card, Space, Typography, Divider } from 'antd';
+import {
+  Form,
+  Input,
+  Button,
+  Upload,
+  message,
+  Card,
+  Space,
+  Typography,
+  Divider,
+} from '@/shared/antd-imports';
 import { PlusOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { RcFile } from 'antd/es/upload';
@@ -14,7 +24,11 @@ interface ServiceDetailsStepProps {
   setService: (service: any) => void;
 }
 
-const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({ setCurrent, service, setService }) => {
+const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
+  setCurrent,
+  service,
+  setService,
+}) => {
   const { t, ready } = useTranslation('client-portal-services');
   const [imageUrl, setImageUrl] = useState<string>('');
   const [uploading, setUploading] = useState(false);
@@ -47,25 +61,28 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({ setCurrent, ser
     return true;
   };
 
-  const handleImageUpload = useCallback((file: RcFile) => {
-    if (!beforeUpload(file)) return false;
+  const handleImageUpload = useCallback(
+    (file: RcFile) => {
+      if (!beforeUpload(file)) return false;
 
-    setUploading(true);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImageUrl(e.target?.result as string);
-      setService({
-        ...service,
-        service_data: {
-          ...service.service_data,
-          images: [e.target?.result as string]
-        }
-      });
-      setUploading(false);
-    };
-    reader.readAsDataURL(file);
-    return false;
-  }, [service, setService]);
+      setUploading(true);
+      const reader = new FileReader();
+      reader.onload = e => {
+        setImageUrl(e.target?.result as string);
+        setService({
+          ...service,
+          service_data: {
+            ...service.service_data,
+            images: [e.target?.result as string],
+          },
+        });
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+      return false;
+    },
+    [service, setService]
+  );
 
   const removeImage = () => {
     setImageUrl('');
@@ -73,8 +90,8 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({ setCurrent, ser
       ...service,
       service_data: {
         ...service.service_data,
-        images: []
-      }
+        images: [],
+      },
     });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -94,8 +111,8 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({ setCurrent, ser
       ...service,
       service_data: {
         ...service.service_data,
-        description: content
-      }
+        description: content,
+      },
     });
   };
 
@@ -116,7 +133,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({ setCurrent, ser
                   placeholder={t('addService.serviceDetails.serviceNamePlaceholder')}
                   className="h-9"
                   value={service.name || ''}
-                  onChange={(e) => setService({ ...service, name: e.target.value })}
+                  onChange={e => setService({ ...service, name: e.target.value })}
                 />
               </div>
 
@@ -151,7 +168,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({ setCurrent, ser
                         ref={fileInputRef}
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
+                        onChange={e => {
                           const file = e.target.files?.[0];
                           if (file) handleImageUpload(file as RcFile);
                         }}

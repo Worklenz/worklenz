@@ -1,4 +1,4 @@
-import { Card, Table, Typography, Spin, Alert, Empty } from 'antd';
+import { Card, Table, Typography, Spin, Alert, Empty } from '@/shared/antd-imports';
 import { TableProps } from 'antd/lib';
 import { useTranslation } from 'react-i18next';
 import { durationDateFormat } from '../../../utils/durationDateFormat';
@@ -23,17 +23,17 @@ const RequestsTable = () => {
     {
       key: 'requestNumber',
       title: t('reqNoColumn'),
-      render: (record) => <Typography.Text>{record.requestNumber}</Typography.Text>,
+      render: record => <Typography.Text>{record.requestNumber}</Typography.Text>,
     },
     {
       key: 'serviceName',
       title: t('serviceColumn'),
-      render: (record) => <Typography.Text>{record.serviceName}</Typography.Text>,
+      render: record => <Typography.Text>{record.serviceName}</Typography.Text>,
     },
     {
       key: 'clientName',
       title: t('clientColumn'),
-      render: (record) => (
+      render: record => (
         <Typography.Text style={{ textTransform: 'capitalize' }}>
           {record.clientName}
         </Typography.Text>
@@ -42,12 +42,12 @@ const RequestsTable = () => {
     {
       key: 'status',
       title: t('statusColumn'),
-      render: (record) => <ClientPortalStatusTags status={record.status} />,
+      render: record => <ClientPortalStatusTags status={record.status} />,
     },
     {
       key: 'createdAt',
       title: t('timeColumn'),
-      render: (record) => (
+      render: record => (
         <Typography.Text>{durationDateFormat(new Date(record.createdAt))}</Typography.Text>
       ),
     },
@@ -57,7 +57,14 @@ const RequestsTable = () => {
   if (isLoading) {
     return (
       <Card style={{ height: 'calc(100vh - 280px)' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '200px',
+          }}
+        >
           <Spin size="large" />
         </div>
       </Card>
@@ -78,7 +85,7 @@ const RequestsTable = () => {
     );
   }
 
-  // Extract requests from API response - backend returns IServerResponse with {total, data} structure  
+  // Extract requests from API response - backend returns IServerResponse with {total, data} structure
   const requestsResponse = requestsData?.body || { total: 0, data: [] };
   const requests = requestsResponse.data || [];
 
@@ -93,17 +100,15 @@ const RequestsTable = () => {
               <Typography.Title level={4} style={{ marginBottom: 8 }}>
                 {t('noRequestsTitle')}
               </Typography.Title>
-              <Typography.Text type="secondary">
-                {t('noRequestsDescription')}
-              </Typography.Text>
+              <Typography.Text type="secondary">{t('noRequestsDescription')}</Typography.Text>
             </div>
           }
-          style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'center', 
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
             alignItems: 'center',
-            height: 'calc(100vh - 320px)'
+            height: 'calc(100vh - 320px)',
           }}
         />
       </Card>
@@ -124,7 +129,7 @@ const RequestsTable = () => {
         scroll={{
           x: 'max-content',
         }}
-        onRow={(record) => {
+        onRow={record => {
           return {
             onClick: () => {
               dispatch(setSelectedRequestNo(record.requestNumber));

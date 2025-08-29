@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Flex, Typography, Spin, Alert } from 'antd';
+import { Card, Flex, Typography, Spin, Alert } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useGetServicesQuery } from '../store/api';

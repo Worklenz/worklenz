@@ -1,93 +1,96 @@
 import {
-    DeleteOutlined,
-    SettingOutlined,
-    ShareAltOutlined,
-    EyeOutlined,
-    FilterOutlined,
-    ReloadOutlined,
-    EditOutlined,
-    MoreOutlined,
-    PlusOutlined,
-    LinkOutlined,
-    CopyOutlined,
-  } from '@/shared/antd-imports';
-  import {
-    Button,
-    Card,
-    Flex,
-    Table,
-    Typography,
-    Input,
-    Select,
-    Tag,
-    Spin,
-    Pagination,
-    Dropdown,
-    message,
-    Space,
-    Modal,
-    Empty,
-    Alert,
-  } from '@/shared/antd-imports';
-  import { TableProps } from '@/shared/antd-imports';
-  import { useTranslation } from 'react-i18next';
-  import { useAppSelector } from '@/hooks/useAppSelector';
-  import { useAppDispatch } from '@/hooks/useAppDispatch';
-  import { 
-    toggleClientSettingsDrawer,
-    toggleClientTeamsDrawer,
-    toggleClientDetailsDrawer,
-    toggleEditClientDrawer,
-    setSearchFilter,
-    setStatusFilter,
-    setSortBy,
-    setSortOrder,
-    setPage,
-    setLimit,
-    clearFilters,
-  } from '@/features/clients-portal/clients/clients-slice';
-  import { ClientPortalClient } from '@/api/client-portal/client-portal-api';
-  import { 
-    useGetClientsQuery,
-    useDeleteClientMutation,
-    useBulkDeleteClientsMutation,
-    useBulkUpdateClientsMutation,
-  } from '@/api/client-portal/client-portal-api';
-  import { TempClientPortalClientType } from '@/types/client-portal/temp-client-portal.types';
-  import { useState } from 'react';
-  import './clients-table.css';
-  
-  const { Search } = Input;
-  const { Option } = Select;
-  
-  const ClientsTable = () => {
+  DeleteOutlined,
+  SettingOutlined,
+  ShareAltOutlined,
+  EyeOutlined,
+  FilterOutlined,
+  ReloadOutlined,
+  EditOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  LinkOutlined,
+  CopyOutlined,
+} from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Flex,
+  Table,
+  Typography,
+  Input,
+  Select,
+  Tag,
+  Spin,
+  Pagination,
+  Dropdown,
+  message,
+  Space,
+  Modal,
+  Empty,
+  Alert,
+} from '@/shared/antd-imports';
+import { TableProps } from '@/shared/antd-imports';
+import { useTranslation } from 'react-i18next';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import {
+  toggleClientSettingsDrawer,
+  toggleClientTeamsDrawer,
+  toggleClientDetailsDrawer,
+  toggleEditClientDrawer,
+  setSearchFilter,
+  setStatusFilter,
+  setSortBy,
+  setSortOrder,
+  setPage,
+  setLimit,
+  clearFilters,
+} from '@/features/clients-portal/clients/clients-slice';
+import { ClientPortalClient } from '@/api/client-portal/client-portal-api';
+import AddClientDrawer from '@/components/client-portal/AddClientDrawer';
+import {
+  useGetClientsQuery,
+  useDeleteClientMutation,
+  useBulkDeleteClientsMutation,
+  useBulkUpdateClientsMutation,
+} from '@/api/client-portal/client-portal-api';
+import { TempClientPortalClientType } from '@/types/client-portal/temp-client-portal.types';
+import { useState } from 'react';
+import './clients-table.css';
+
+const { Search } = Input;
+const { Option } = Select;
+
+const ClientsTable = () => {
   // localization
   const { t } = useTranslation('client-portal-clients');
 
   // Get state from Redux
-  const {
-    filters,
-    pagination,
-  } = useAppSelector((state) => state.clientsPortalReducer.clientsReducer);
-  
+  const { filters, pagination } = useAppSelector(
+    state => state.clientsPortalReducer.clientsReducer
+  );
+
   const dispatch = useAppDispatch();
 
   // Local state for bulk operations
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
-  
+
   // Local state for invitation functionality
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [invitationLink, setInvitationLink] = useState<string>('');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [currentClientId, setCurrentClientId] = useState<string>('');
 
+  // Local state for add client drawer
+  const [isAddClientDrawerOpen, setIsAddClientDrawerOpen] = useState(false);
+
   // RTK Query hooks
-  const { 
-    data: clientsData, 
-    isLoading, 
-    error, 
-    refetch 
+  const {
+    data: clientsData,
+    isLoading,
+    error,
+    refetch,
   } = useGetClientsQuery({
     page: pagination.page,
     limit: pagination.limit,
@@ -104,7 +107,7 @@ import {
   // Use API data - handle the ServerResponse wrapper
   const displayClients = clientsData?.body?.clients || [];
   const totalClients = clientsData?.body?.total || 0;
-  
+
   // Handle error state
   if (error) {
     return (
@@ -130,25 +133,22 @@ import {
               <Typography.Title level={4} style={{ marginBottom: 8 }}>
                 {t('noClientsTitle')}
               </Typography.Title>
-              <Typography.Text type="secondary">
-                {t('noClientsDescription')}
-              </Typography.Text>
+              <Typography.Text type="secondary">{t('noClientsDescription')}</Typography.Text>
             </div>
           }
-          style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'center', 
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
             alignItems: 'center',
-            padding: '40px 0'
+            padding: '40px 0',
           }}
         >
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => {
-              // TODO: Open add client modal/drawer
-              console.log('Add client clicked');
+              setIsAddClientDrawerOpen(true);
             }}
           >
             {t('addClientButton')}
@@ -169,7 +169,9 @@ import {
   };
 
   // Handle sorting
-  const handleTableChange: TableProps<ClientPortalClient | TempClientPortalClientType>['onChange'] = (pagination, filters, sorter) => {
+  const handleTableChange: TableProps<
+    ClientPortalClient | TempClientPortalClientType
+  >['onChange'] = (pagination, filters, sorter) => {
     if (Array.isArray(sorter)) {
       const sort = sorter[0];
       if (sort?.field && sort?.order) {
@@ -207,11 +209,13 @@ import {
     const confirmDelete = () => {
       handleDeleteClient(clientId);
     };
-    
+
     // Use Ant Design's Modal.confirm for better UX
     Modal.confirm({
       title: t('deleteConfirmationTitle') || 'Delete Client',
-      content: t('deleteConfirmationDescription') || 'Are you sure you want to delete this client? This action cannot be undone.',
+      content:
+        t('deleteConfirmationDescription') ||
+        'Are you sure you want to delete this client? This action cannot be undone.',
       okText: t('deleteConfirmationOk') || 'Delete',
       cancelText: t('deleteConfirmationCancel') || 'Cancel',
       okType: 'danger',
@@ -247,9 +251,9 @@ import {
 
     try {
       setBulkActionLoading(true);
-      await bulkUpdateClients({ 
+      await bulkUpdateClients({
         client_ids: selectedRowKeys,
-        status 
+        status,
       }).unwrap();
       message.success(t('bulkUpdateSuccessMessage') || 'Selected clients updated successfully');
       setSelectedRowKeys([]);
@@ -264,19 +268,19 @@ import {
   const handleGenerateInviteLink = async (clientId: string) => {
     setCurrentClientId(clientId);
     setIsGeneratingLink(true);
-    
+
     try {
       const response = await fetch('/api/clients/portal/generate-invitation-link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`, // Adjust based on your auth system
+          Authorization: `Bearer ${localStorage.getItem('token')}`, // Adjust based on your auth system
         },
         body: JSON.stringify({ clientId }),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.done) {
         if (data.body?.isExistingUser) {
           // Handle existing Worklenz user
@@ -286,7 +290,10 @@ import {
                 <div>{data.body.message}</div>
                 {data.body.portalUrl && (
                   <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
-                    Portal URL: <a href={data.body.portalUrl} target="_blank" rel="noopener noreferrer">{data.body.portalUrl}</a>
+                    Portal URL:{' '}
+                    <a href={data.body.portalUrl} target="_blank" rel="noopener noreferrer">
+                      {data.body.portalUrl}
+                    </a>
                   </div>
                 )}
               </div>
@@ -480,18 +487,14 @@ import {
       title: t('assignedProjectsColumn'),
       dataIndex: 'assigned_projects_count',
       sorter: true,
-      render: (count: number) => (
-        <Typography.Text>{count || 0}</Typography.Text>
-      ),
+      render: (count: number) => <Typography.Text>{count || 0}</Typography.Text>,
       width: 160,
     },
     {
       key: 'teamMembers',
       title: t('teamMembersColumn') || 'Team Members',
       dataIndex: 'team_members',
-      render: (teamMembers: any[]) => (
-        <Typography.Text>{teamMembers?.length || 0}</Typography.Text>
-      ),
+      render: (teamMembers: any[]) => <Typography.Text>{teamMembers?.length || 0}</Typography.Text>,
       width: 140,
     },
     {
@@ -499,23 +502,21 @@ import {
       title: t('actionBtnsColumn'),
       width: 80,
       render: (_, record) => (
-        <div className="action-buttons-container" style={{ opacity: 0, transition: 'opacity 0.2s' }}>
+        <div
+          className="action-buttons-container"
+          style={{ opacity: 0, transition: 'opacity 0.2s' }}
+        >
           <Dropdown
             menu={{ items: getActionMenuItems(record) }}
             trigger={['click']}
             placement="bottomRight"
           >
-            <Button
-              shape="default"
-              icon={<MoreOutlined />}
-              size="small"
-              type="text"
-            />
+            <Button shape="default" icon={<MoreOutlined />} size="small" type="text" />
           </Dropdown>
         </div>
       ),
       onCell: () => ({
-        style: { 
+        style: {
           width: 80,
           textAlign: 'center',
         },
@@ -535,7 +536,7 @@ import {
             onSearch={handleSearch}
             defaultValue={filters.search}
           />
-          
+
           <Select
             placeholder={t('statusFilterPlaceholder') || 'Filter by status'}
             allowClear
@@ -547,19 +548,12 @@ import {
             <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
             <Option value="pending">{t('statusPending') || 'Pending'}</Option>
           </Select>
-          
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={handleRefresh}
-            loading={isLoading}
-          >
+
+          <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={isLoading}>
             {t('refreshButton') || 'Refresh'}
           </Button>
-          
-          <Button
-            icon={<FilterOutlined />}
-            onClick={() => dispatch(clearFilters())}
-          >
+
+          <Button icon={<FilterOutlined />} onClick={() => dispatch(clearFilters())}>
             {t('clearFiltersButton') || 'Clear Filters'}
           </Button>
 
@@ -569,20 +563,14 @@ import {
               <Typography.Text type="secondary">
                 {t('selectedCount') || 'Selected'}: {selectedRowKeys.length}
               </Typography.Text>
-              <Dropdown
-                menu={{ items: bulkActionMenuItems }}
-                trigger={['click']}
-              >
-                <Button
-                  icon={<MoreOutlined />}
-                  loading={bulkActionLoading}
-                >
+              <Dropdown menu={{ items: bulkActionMenuItems }} trigger={['click']}>
+                <Button icon={<MoreOutlined />} loading={bulkActionLoading}>
                   {t('bulkActions') || 'Bulk Actions'}
                 </Button>
               </Dropdown>
             </Space>
           )}
-        </Flex> 
+        </Flex>
       </Flex>
 
       {/* Table */}
@@ -598,15 +586,15 @@ import {
             x: 'max-content',
           }}
           size="middle"
-          onRow={(record) => ({
-            onMouseEnter: (e) => {
+          onRow={record => ({
+            onMouseEnter: e => {
               const row = e.currentTarget;
               const actionContainer = row.querySelector('.action-buttons-container') as HTMLElement;
               if (actionContainer) {
                 actionContainer.style.opacity = '1';
               }
             },
-            onMouseLeave: (e) => {
+            onMouseLeave: e => {
               const row = e.currentTarget;
               const actionContainer = row.querySelector('.action-buttons-container') as HTMLElement;
               if (actionContainer) {
@@ -634,7 +622,7 @@ import {
           />
         </Flex>
       )}
-      
+
       {/* Invitation Modal */}
       <Modal
         title="Invitation Link Generated"
@@ -644,12 +632,7 @@ import {
           <Button key="close" onClick={closeInviteModal}>
             Close
           </Button>,
-          <Button
-            key="copy"
-            type="primary"
-            icon={<CopyOutlined />}
-            onClick={copyInvitationLink}
-          >
+          <Button key="copy" type="primary" icon={<CopyOutlined />} onClick={copyInvitationLink}>
             Copy Link
           </Button>,
         ]}
@@ -657,29 +640,39 @@ import {
       >
         <div style={{ marginBottom: 16 }}>
           <Typography.Text type="secondary">
-            Share this link with the client to invite them to create their portal account. The link will expire in 7 days.
+            Share this link with the client to invite them to create their portal account. The link
+            will expire in 7 days.
           </Typography.Text>
         </div>
-        
-        <div style={{ 
-          padding: 12, 
-          backgroundColor: '#f5f5f5', 
-          borderRadius: 6, 
-          marginBottom: 16,
-          wordBreak: 'break-all'
-        }}>
-          <Typography.Text copyable={{ text: invitationLink }}>
-            {invitationLink}
-          </Typography.Text>
+
+        <div
+          style={{
+            padding: 12,
+            backgroundColor: '#f5f5f5',
+            borderRadius: 6,
+            marginBottom: 16,
+            wordBreak: 'break-all',
+          }}
+        >
+          <Typography.Text copyable={{ text: invitationLink }}>{invitationLink}</Typography.Text>
         </div>
-        
+
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          When the client clicks this link, they'll be able to create their portal account and access their projects and services.
+          When the client clicks this link, they'll be able to create their portal account and
+          access their projects and services.
         </Typography.Text>
       </Modal>
+
+      <AddClientDrawer
+        open={isAddClientDrawerOpen}
+        onClose={() => setIsAddClientDrawerOpen(false)}
+        onSuccess={() => {
+          setIsAddClientDrawerOpen(false);
+          refetch();
+        }}
+      />
     </Card>
   );
 };
 
 export default ClientsTable;
-  

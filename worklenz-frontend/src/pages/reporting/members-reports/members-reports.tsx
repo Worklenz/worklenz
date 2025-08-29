@@ -1,5 +1,14 @@
-import { Button, Card, Checkbox, Dropdown, Flex, Skeleton, Space, Typography } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Dropdown,
+  Flex,
+  Skeleton,
+  Space,
+  Typography,
+} from '@/shared/antd-imports';
+import { DownOutlined } from '@/shared/antd-imports';
 import MembersReportsTable from './members-reports-table/members-reports-table';
 import TimeWiseFilter from '@/components/reporting/time-wise-filter';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -7,7 +16,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import CustomSearchbar from '@components/CustomSearchbar';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import CustomPageHeader from '../page-header/custom-page-header';
+import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
 import {
   fetchMembersData,
   setArchived,
@@ -18,12 +27,15 @@ import {
 import { useAuthService } from '@/hooks/useAuth';
 import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
 import { useEffect } from 'react';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_reporting_allocation } from '@/shared/worklenz-analytics-events';
 
 const MembersReports = () => {
   const { t } = useTranslation('reporting-members');
   const dispatch = useAppDispatch();
   useDocumentTitle('Reporting - Members');
   const currentSession = useAuthService().getCurrentSession();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { archived, searchQuery, total } = useAppSelector(state => state.membersReportsReducer);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
@@ -37,6 +49,10 @@ const MembersReports = () => {
       archived
     );
   };
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_reporting_allocation);
+  }, [trackMixpanelEvent]);
 
   useEffect(() => {
     dispatch(setDuration(duration));

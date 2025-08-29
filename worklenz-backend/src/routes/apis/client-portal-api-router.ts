@@ -18,9 +18,16 @@ router.use(authenticateClient);
 // Dashboard
 router.get("/dashboard", safeControllerFunction(ClientPortalController.getDashboard));
 
-// Services
+// Services (client-facing)
 router.get("/services", safeControllerFunction(ClientPortalController.getServices));
 router.get("/services/:id", safeControllerFunction(ClientPortalController.getServiceDetails));
+
+// Services (organization management)
+router.get("/services/organization/all", safeControllerFunction(ClientPortalController.getOrganizationServices));
+router.post("/services/organization", safeControllerFunction(ClientPortalController.createOrganizationService));
+router.get("/services/organization/:id", safeControllerFunction(ClientPortalController.getOrganizationServiceById));
+router.put("/services/organization/:id", safeControllerFunction(ClientPortalController.updateOrganizationService));
+router.delete("/services/organization/:id", safeControllerFunction(ClientPortalController.deleteOrganizationService));
 
 // Requests
 router.get("/requests", safeControllerFunction(ClientPortalController.getRequests));

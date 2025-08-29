@@ -1,37 +1,38 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import {
+  ForkOutlined,
+  CaretDownFilled,
+  CaretRightFilled,
+  Tag,
+  Flex,
+  Tooltip,
+  Progress,
+  Typography,
+  Button,
+  Divider,
+  List,
+  Skeleton,
+  PlusOutlined,
+  Dayjs,
+  dayjs,
+} from '@/shared/antd-imports';
 import { useSortable, defaultAnimateLayoutChanges } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import './EnhancedKanbanTaskCard.css';
-import Flex from 'antd/es/flex';
-import Tag from 'antd/es/tag';
-import Tooltip from 'antd/es/tooltip';
-import Progress from 'antd/es/progress';
-import Button from 'antd/es/button';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setShowTaskDrawer, setSelectedTaskId } from '@/features/task-drawer/task-drawer.slice';
-import PrioritySection from '../board/taskCard/priority-section/priority-section';
-import Typography from 'antd/es/typography';
-import CustomDueDatePicker from '../board/custom-due-date-picker';
-import { themeWiseColor } from '@/utils/themeWiseColor';
-import { ForkOutlined } from '@ant-design/icons';
-import { Dayjs } from 'dayjs';
-import dayjs from 'dayjs';
-import { CaretDownFilled, CaretRightFilled } from '@ant-design/icons';
 import {
   fetchBoardSubTasks,
   toggleTaskExpansion,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import { Divider } from 'antd';
-import { List } from 'antd';
-import { Skeleton } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import { themeWiseColor } from '@/utils/themeWiseColor';
+import './EnhancedKanbanTaskCard.css';
+import LazyAssigneeSelectorWrapper from '../task-management/lazy-assignee-selector';
+import CustomDueDatePicker from '../board/custom-due-date-picker';
 import BoardSubTaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-sub-task-card';
-import BoardCreateSubtaskCard from '@/pages/projects/projectView/board/board-section/board-sub-task-card/board-create-sub-task-card';
-import { useTranslation } from 'react-i18next';
 import EnhancedKanbanCreateSubtaskCard from './EnhancedKanbanCreateSubtaskCard';
-import LazyAssigneeSelectorWrapper from '@/components/task-management/lazy-assignee-selector';
 import AvatarGroup from '@/components/AvatarGroup';
 
 interface EnhancedKanbanTaskCardProps {
@@ -182,14 +183,24 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
                 isDarkMode={themeMode === 'dark'}
                 size={24}
               />
-              <LazyAssigneeSelectorWrapper task={task} groupId={sectionId} isDarkMode={themeMode === 'dark'} kanbanMode={true} />
+              <LazyAssigneeSelectorWrapper
+                task={task}
+                groupId={sectionId}
+                isDarkMode={themeMode === 'dark'}
+                kanbanMode={true}
+              />
             </Flex>
             <Flex gap={4} align="center">
               <CustomDueDatePicker task={task} onDateChange={setDueDate} />
 
               {/* Subtask Section - only show if count > 1 */}
               {task.sub_tasks_count != null && Number(task.sub_tasks_count) > 1 && (
-                <Tooltip title={t(`indicators.tooltips.subtasks${Number(task.sub_tasks_count) === 1 ? '' : '_plural'}`, { count: Number(task.sub_tasks_count) })}>
+                <Tooltip
+                  title={t(
+                    `indicators.tooltips.subtasks${Number(task.sub_tasks_count) === 1 ? '' : '_plural'}`,
+                    { count: Number(task.sub_tasks_count) }
+                  )}
+                >
                   <Button
                     onClick={handleSubtaskButtonClick}
                     size="small"

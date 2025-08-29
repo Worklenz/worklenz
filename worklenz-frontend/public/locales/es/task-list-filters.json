@@ -84,5 +84,12 @@
   "close": "Cerrar",
   "cannotMoveStatus": "No se puede mover el estado",
   "cannotMoveStatusMessage": "No se puede mover este estado porque dejaría vacía la categoría '{{categoryName}}'. Cada categoría debe tener al menos un estado.",
-  "ok": "OK"
+  "ok": "OK",
+  "clearSort": "Limpiar Ordenamiento",
+  "sortAscending": "Ordenar Ascendente",
+  "sortDescending": "Ordenar Descendente",
+  "sortByField": "Ordenar por {{field}}",
+  "ascendingOrder": "Ascendente",
+  "descendingOrder": "Descendente",
+  "currentSort": "Ordenamiento actual: {{field}} {{order}}"
 }

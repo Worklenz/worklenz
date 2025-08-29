@@ -57,6 +57,14 @@ import { on_update_task_weight } from "./commands/on-update-task-weight";
 import { on_get_task_subtasks_count } from "./commands/on-get-task-subtasks-count";
 import { on_get_done_statuses } from "./commands/on-get-done-statuses";
 
+// Client Portal imports
+import { on_client_connect } from "./commands/client-portal/on-client-connect";
+import { on_chat_send_message } from "./commands/client-portal/on-chat-send-message";
+import { on_chat_join } from "./commands/client-portal/on-chat-join";
+import { on_chat_leave } from "./commands/client-portal/on-chat-leave";
+import { on_chat_typing } from "./commands/client-portal/on-chat-typing";
+import { on_chat_mark_read } from "./commands/client-portal/on-chat-mark-read";
+
 export function register(io: any, socket: Socket) {
   log(socket.id, "client registered");
 
@@ -113,6 +121,14 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.UPDATE_TASK_WEIGHT.toString(), data => on_update_task_weight(io, socket, data));
   socket.on(SocketEvents.GET_TASK_SUBTASKS_COUNT.toString(), (taskId) => on_get_task_subtasks_count(io, socket, taskId));
   socket.on(SocketEvents.GET_DONE_STATUSES.toString(), (projectId, callback) => on_get_done_statuses(io, socket, projectId, callback));
+  
+  // Client Portal events
+  socket.on("client_portal:connect", data => on_client_connect(io, socket, data));
+  socket.on(SocketEvents.CHAT_SEND_MESSAGE.toString(), data => on_chat_send_message(io, socket, data));
+  socket.on(SocketEvents.CHAT_JOIN.toString(), data => on_chat_join(io, socket, data));
+  socket.on(SocketEvents.CHAT_LEAVE.toString(), data => on_chat_leave(io, socket, data));
+  socket.on(SocketEvents.CHAT_TYPING.toString(), data => on_chat_typing(io, socket, data));
+  socket.on(SocketEvents.CHAT_MESSAGE_READ.toString(), data => on_chat_mark_read(io, socket, data));
   
   // socket.io built-in event
   socket.on("disconnect", (reason) => on_disconnect(io, socket, reason));

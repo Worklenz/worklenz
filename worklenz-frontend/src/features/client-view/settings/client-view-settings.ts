@@ -28,10 +28,10 @@ const initialState: SettingsState = {
     email_notifications: true,
     project_updates: true,
     invoice_notifications: true,
-    request_updates: true
+    request_updates: true,
   },
   loading: false,
-  error: null
+  error: null,
 };
 
 const settingsSlice = createSlice({
@@ -49,9 +49,9 @@ const settingsSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
-    }
-  }
+    },
+  },
 });
 
 export const { setSettings, updateSettings, setLoading, setError } = settingsSlice.actions;
-export default settingsSlice.reducer; 
+export default settingsSlice.reducer;

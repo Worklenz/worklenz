@@ -1,4 +1,4 @@
-import { Flex, Typography } from 'antd';
+import { Flex, Typography } from '@/shared/antd-imports';
 import React, { ReactNode } from 'react';
 import { durationDateFormat } from '../../../../../utils/durationDateFormat';
 import { useTranslation } from 'react-i18next';
@@ -60,11 +60,13 @@ const SendChatItem = ({ chatData }: SendChatItemProps) => {
           </Typography.Text>
         </Flex>
 
-        <div style={{ 
-          wordBreak: 'break-word',
-          whiteSpace: 'pre-wrap',
-          lineHeight: '1.4'
-        }}>
+        <div
+          style={{
+            wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap',
+            lineHeight: '1.4',
+          }}
+        >
           {chatData.content}
         </div>
       </Flex>

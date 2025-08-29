@@ -5,10 +5,12 @@
   "files": "Arquivos",
   "members": "Membros",
   "updates": "Atualizações",
+  "roadmap": "Roteiro",
   "projectView": "Visualização do Projeto",
   "loading": "Carregando projeto...",
   "error": "Erro ao carregar projeto",
   "pinnedTab": "Fixada como aba padrão",
   "pinTab": "Fixar como aba padrão",
-  "unpinTab": "Desfixar aba padrão"
-} 
+  "unpinTab": "Desfixar aba padrão",
+  "finance": "Finance"
+}

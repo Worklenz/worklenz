@@ -143,7 +143,7 @@ class ClientPortalAPI {
             isOrganizationInvite: true
           },
           message: 'Organization invite token is valid',
-          title: null
+          title: undefined
         };
       }
     } catch (error) {
@@ -324,13 +324,13 @@ class ClientPortalAPI {
   }
 
   // Chat
-  async getChats(params?: { page?: number; limit?: number }) {
+  async getChats(params?: { page?: number; limit?: number }): Promise<ApiResponse<any>> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     
     const queryString = queryParams.toString();
-    return this.request(`/chats${queryString ? `?${queryString}` : ''}`);
+    return this.request<any>(`/chats${queryString ? `?${queryString}` : ''}`);
   }
 
   async getChatDetails(date: string, params?: { page?: number; limit?: number }) {
@@ -342,21 +342,21 @@ class ClientPortalAPI {
     return this.request(`/chats/${date}${queryString ? `?${queryString}` : ''}`);
   }
 
-  async sendMessage(messageData: { message: string; messageType?: string; fileUrl?: string }) {
-    return this.request('/messages', {
+  async sendMessage(messageData: { message: string; messageType?: string; fileUrl?: string }): Promise<ApiResponse<any>> {
+    return this.request<any>('/messages', {
       method: 'POST',
       data: messageData,
     });
   }
 
-  async getMessages(params?: { page?: number; limit?: number; since?: string }) {
+  async getMessages(params?: { page?: number; limit?: number; since?: string }): Promise<ApiResponse<any>> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.since) queryParams.append('since', params.since);
     
     const queryString = queryParams.toString();
-    return this.request(`/messages${queryString ? `?${queryString}` : ''}`);
+    return this.request<any>(`/messages${queryString ? `?${queryString}` : ''}`);
   }
 
   // Settings
@@ -384,14 +384,14 @@ class ClientPortalAPI {
   }
 
   // Notifications
-  async getNotifications(params?: { page?: number; limit?: number; unread_only?: boolean }) {
+  async getNotifications(params?: { page?: number; limit?: number; unread_only?: boolean }): Promise<ApiResponse<any>> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.unread_only) queryParams.append('unread_only', params.unread_only.toString());
     
     const queryString = queryParams.toString();
-    return this.request(`/notifications${queryString ? `?${queryString}` : ''}`);
+    return this.request<any>(`/notifications${queryString ? `?${queryString}` : ''}`);
   }
 
   async markNotificationRead(id: string) {

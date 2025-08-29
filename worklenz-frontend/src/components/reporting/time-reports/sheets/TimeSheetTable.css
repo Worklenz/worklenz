@@ -1,0 +1,111 @@
+.project-name {
+  width: 200px;
+  position: sticky;
+  left: 0;
+  padding: 16px 8px 16px 12px;
+  z-index: 1;
+  background-color: var(--background-color, #fff);
+  border-right: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+}
+
+.member-time,
+.member-name,
+.member-total-time {
+  width: 100px;
+  padding: 16px 6px 16px 6px;
+  border-right: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+}
+
+.member-time {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.member-time.numeric {
+  justify-content: flex-end;
+  padding-right: 16px;
+}
+
+.member-name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.header-row,
+.table-row_ {
+  width: fit-content;
+}
+
+.header-row {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--background-color, #fff);
+  border-bottom: 2px solid var(--border-color, rgba(0, 0, 0, 0.06));
+
+  .project-name {
+    border-left: none !important;
+  }
+
+  .member-name,
+  .total-time {
+    border-bottom: 2px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  }
+}
+
+.total-time {
+  width: 120px;
+  position: sticky;
+  right: 0;
+  text-align: right;
+  font-weight: 500;
+  padding: 16px 16px 16px 12px;
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  border-left: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background-color: var(--background-color, #fff);
+  z-index: 1;
+}
+
+.bg-bold {
+  font-weight: 500;
+}
+
+.f-500 {
+  font-weight: 500;
+}
+
+.member-project-table {
+  overflow: auto;
+  max-height: calc(100vh - 250px);
+}
+
+.badge-custom {
+  margin-top: -3px !important;
+  margin-right: 4px;
+}
+
+.no-data-img-holder {
+  width: 100px;
+  margin-top: 42px;
+}
+
+.bottom-row {
+  position: sticky;
+  bottom: 0;
+  background-color: var(--background-color, #fff);
+  z-index: 1;
+  border-top: 2px solid var(--border-color, rgba(0, 0, 0, 0.06));
+}
+
+.member-total-time.numeric {
+  justify-content: flex-end;
+  padding-right: 16px;
+  text-align: right;
+}

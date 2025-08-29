@@ -8,66 +8,67 @@ import ReportingInfoController from "../../controllers/reporting/reporting-info-
 import ReportingAllocationController from "../../controllers/reporting/reporting-allocation-controller";
 import ReportingProjectsController from "../../controllers/reporting/projects/reporting-projects-controller";
 import ReportingMembersController from "../../controllers/reporting/reporting-members-controller";
+import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 
 const reportingApiRouter = express.Router();
 
-reportingApiRouter.get("/info", safeControllerFunction(ReportingInfoController.getInfo));
+reportingApiRouter.get("/info", teamOwnerOrAdminValidator, safeControllerFunction(ReportingInfoController.getInfo));
 
-// Overview
-reportingApiRouter.get("/overview/statistics", safeControllerFunction(ReportingOverviewController.getStatistics));
-reportingApiRouter.get("/overview/teams", safeControllerFunction(ReportingOverviewController.getTeams));
-reportingApiRouter.get("/overview/projects", safeControllerFunction(ReportingOverviewController.getProjects));
-reportingApiRouter.get("/overview/projects/:team_id", safeControllerFunction(ReportingOverviewController.getProjectsByTeamOrMember));
-reportingApiRouter.get("/overview/members/:team_id", safeControllerFunction(ReportingOverviewController.getMembersByTeam));
-reportingApiRouter.get("/overview/team/info/:team_id", safeControllerFunction(ReportingOverviewController.getTeamOverview));
+// Overview - All overview routes require admin/team lead permissions
+reportingApiRouter.get("/overview/statistics", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getStatistics));
+reportingApiRouter.get("/overview/teams", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getTeams));
+reportingApiRouter.get("/overview/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getProjects));
+reportingApiRouter.get("/overview/projects/:team_id", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getProjectsByTeamOrMember));
+reportingApiRouter.get("/overview/members/:team_id", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getMembersByTeam));
+reportingApiRouter.get("/overview/team/info/:team_id", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getTeamOverview));
 
-reportingApiRouter.get("/overview/project/info/:project_id", safeControllerFunction(ReportingOverviewController.getProjectOverview));
-reportingApiRouter.get("/overview/project/members/:project_id", safeControllerFunction(ReportingOverviewController.getProjectMembers));
-reportingApiRouter.get("/overview/project/tasks/:project_id", safeControllerFunction(ReportingOverviewController.getProjectTasks));
+reportingApiRouter.get("/overview/project/info/:project_id", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getProjectOverview));
+reportingApiRouter.get("/overview/project/members/:project_id", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getProjectMembers));
+reportingApiRouter.get("/overview/project/tasks/:project_id", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getProjectTasks));
 
-reportingApiRouter.get("/overview/member/info", safeControllerFunction(ReportingOverviewController.getMemberOverview));
-reportingApiRouter.get("/overview/team-member/info", safeControllerFunction(ReportingOverviewController.getTeamMemberOverview));
-reportingApiRouter.get("/overview/member/tasks/:team_member_id", safeControllerFunction(ReportingOverviewController.getMemberTasks));
+reportingApiRouter.get("/overview/member/info", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getMemberOverview));
+reportingApiRouter.get("/overview/team-member/info", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getTeamMemberOverview));
+reportingApiRouter.get("/overview/member/tasks/:team_member_id", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getMemberTasks));
 
 // Projects
-reportingApiRouter.get("/projects", safeControllerFunction(ReportingProjectsController.get));
-reportingApiRouter.post("/project-timelogs", safeControllerFunction(ReportingProjectsController.getProjectTimeLogs));
+reportingApiRouter.get("/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsController.get));
+reportingApiRouter.post("/project-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsController.getProjectTimeLogs));
 
 // members
-reportingApiRouter.get("/members", safeControllerFunction(ReportingMembersController.getReportingMembers));
+reportingApiRouter.get("/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getReportingMembers));
 
-reportingApiRouter.post("/members/all", safeControllerFunction(ReportingController.getReportingMembers));
-reportingApiRouter.post("/projects-by-member", safeControllerFunction(ReportingController.getProjectsByMember));
-reportingApiRouter.get("/members/unassigned", safeControllerFunction(ReportingController.getUnAssignedUsers));
-reportingApiRouter.get("/members/overdue/:id", idParamValidator, safeControllerFunction(ReportingController.getMembersWithOverDueTasks));
-reportingApiRouter.get("/member/stats/:id", idParamValidator, safeControllerFunction(ReportingController.getReportingMemberStats));
-reportingApiRouter.get("/member/overview/:id", idParamValidator, safeControllerFunction(ReportingController.getReportingMemberOverview));
-reportingApiRouter.get("/member/projects", safeControllerFunction(ReportingController.getMemberProjects));
+reportingApiRouter.post("/members/all", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getReportingMembers));
+reportingApiRouter.post("/projects-by-member", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getProjectsByMember));
+reportingApiRouter.get("/members/unassigned", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getUnAssignedUsers));
+reportingApiRouter.get("/members/overdue/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ReportingController.getMembersWithOverDueTasks));
+reportingApiRouter.get("/member/stats/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ReportingController.getReportingMemberStats));
+reportingApiRouter.get("/member/overview/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ReportingController.getReportingMemberOverview));
+reportingApiRouter.get("/member/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getMemberProjects));
 
-reportingApiRouter.get("/member/project", safeControllerFunction(ReportingController.getTasksByProject));
-reportingApiRouter.get("/member/tasks", safeControllerFunction(ReportingController.getReportingMembersTasks));
+reportingApiRouter.get("/member/project", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getTasksByProject));
+reportingApiRouter.get("/member/tasks", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getReportingMembersTasks));
 
 
-reportingApiRouter.post("/", safeControllerFunction(ReportingController.create));
-reportingApiRouter.post("/actual-vs-estimate", safeControllerFunction(ReportingController.getEstimatedVsActualTime));
-reportingApiRouter.post("/allocation", safeControllerFunction(ReportingAllocationController.getAllocation));
-reportingApiRouter.get("/allocation/teams", safeControllerFunction(ReportingController.getMyTeams));
-reportingApiRouter.post("/allocation/categories", safeControllerFunction(ReportingController.getCategoriesByTeams));
-reportingApiRouter.post("/allocation/projects", safeControllerFunction(ReportingController.getProjectsByTeams));
+reportingApiRouter.post("/", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.create));
+reportingApiRouter.post("/actual-vs-estimate", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getEstimatedVsActualTime));
+reportingApiRouter.post("/allocation", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getAllocation));
+reportingApiRouter.get("/allocation/teams", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getMyTeams));
+reportingApiRouter.post("/allocation/categories", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getCategoriesByTeams));
+reportingApiRouter.post("/allocation/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.getProjectsByTeams));
 
-reportingApiRouter.get("/overview/export", safeControllerFunction(ReportingController.exportOverviewExcel));
-reportingApiRouter.get("/allocation/export", safeControllerFunction(ReportingController.exportAllocation));
-reportingApiRouter.get("/projects/export", safeControllerFunction(ReportingController.exportProjects));
-reportingApiRouter.get("/members/export", safeControllerFunction(ReportingController.exportMembers));
-reportingApiRouter.get("/members/single-member-task-stats", safeControllerFunction(ReportingMembersController.getMemberTaskStats));
-reportingApiRouter.get("/members/single-member-projects", safeControllerFunction(ReportingMembersController.getSingleMemberProjects));
+reportingApiRouter.get("/overview/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.exportOverviewExcel));
+reportingApiRouter.get("/allocation/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.exportAllocation));
+reportingApiRouter.get("/projects/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.exportProjects));
+reportingApiRouter.get("/members/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingController.exportMembers));
+reportingApiRouter.get("/members/single-member-task-stats", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberTaskStats));
+reportingApiRouter.get("/members/single-member-projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getSingleMemberProjects));
 
-reportingApiRouter.get("/member-projects", safeControllerFunction(ReportingMembersController.getMemberProjects));
-reportingApiRouter.post("/members/single-member-activities", safeControllerFunction(ReportingMembersController.getMemberActivities));
-reportingApiRouter.post("/members/single-member-timelogs", safeControllerFunction(ReportingMembersController.getMemberTimelogs));
+reportingApiRouter.get("/member-projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberProjects));
+reportingApiRouter.post("/members/single-member-activities", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberActivities));
+reportingApiRouter.post("/members/single-member-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberTimelogs));
 
-reportingApiRouter.post("/time-reports/projects", safeControllerFunction(ReportingAllocationController.getProjectTimeSheets));
-reportingApiRouter.post("/time-reports/members", safeControllerFunction(ReportingAllocationController.getMemberTimeSheets));
-reportingApiRouter.post("/time-reports/estimated-vs-actual", safeControllerFunction(ReportingAllocationController.getEstimatedVsActual));
+reportingApiRouter.post("/time-reports/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getProjectTimeSheets));
+reportingApiRouter.post("/time-reports/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getMemberTimeSheets));
+reportingApiRouter.post("/time-reports/estimated-vs-actual", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getEstimatedVsActual));
 
 export default reportingApiRouter;

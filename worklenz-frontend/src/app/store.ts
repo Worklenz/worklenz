@@ -7,6 +7,7 @@ import userReducer from '@features/user/userSlice';
 
 // Home Page
 import homePageReducer from '@features/home-page/home-page.slice';
+import userActivityReducer from '@features/home-page/user-activity.slice';
 
 // Account Setup
 import accountSetupReducer from '@features/account-setup/account-setup.slice';
@@ -62,6 +63,7 @@ import dateReducer from '@features/date/dateSlice';
 import notificationReducer from '@/features/navbar/notificationSlice';
 import buttonReducer from '@features/actionSetup/buttonSlice';
 import scheduleReducer from '../features/schedule/scheduleSlice';
+import scheduleRTKReducer from '../features/schedule/scheduleSliceRTK';
 
 // Reports
 import reportingReducer from '@features/reporting/reporting.slice';
@@ -82,9 +84,13 @@ import groupingReducer from '@/features/task-management/grouping.slice';
 import selectionReducer from '@/features/task-management/selection.slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
+import { userActivityApiService } from '@/api/home-page/user-activity.api.service';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
+import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 
 import projectViewReducer from '@features/project/project-view-slice';
 import taskManagementFieldsReducer from '@features/task-management/taskListFields.slice';
+import projectWorkloadReducer from '@features/project-workload/projectWorkloadSlice';
 
 //clients portal
 import clientsPortalReducer from '../features/clients-portal';
@@ -95,14 +101,25 @@ import clientViewReducer from '../features/client-view';
 // Client Portal API
 import { clientPortalApi } from '@/api/client-portal/client-portal-api';
 
+// Schedule API
+import { scheduleApi } from '@/api/schedule/scheduleApi';
+
+import projectFinanceRateCardReducer from '@/features/finance/project-finance-slice';
+import projectFinancesReducer from '@/features/projects/finance/project-finance.slice';
+import financeReducer from '@/features/projects/finance/finance-slice';
+
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: false,
     }).concat(
-      homePageApiService.middleware, 
+      homePageApiService.middleware,
       projectsApi.middleware,
-      clientPortalApi.middleware
+      clientPortalApi.middleware,
+      userActivityApiService.middleware,
+      roadmapApi.middleware,
+      projectWorkloadApi.middleware,
+      scheduleApi.middleware
     ),
   reducer: {
     // Auth & User
@@ -117,7 +134,12 @@ export const store = configureStore({
     [homePageApiService.reducerPath]: homePageApiService.reducer,
     [projectsApi.reducerPath]: projectsApi.reducer,
     [clientPortalApi.reducerPath]: clientPortalApi.reducer,
-    
+    [roadmapApi.reducerPath]: roadmapApi.reducer,
+    [projectWorkloadApi.reducerPath]: projectWorkloadApi.reducer,
+    [scheduleApi.reducerPath]: scheduleApi.reducer,
+    userActivityReducer: userActivityReducer,
+    [userActivityApiService.reducerPath]: userActivityApiService.reducer,
+
     // Core UI
     themeReducer: themeReducer,
     localesReducer: localesReducer,
@@ -140,6 +162,7 @@ export const store = configureStore({
     projectDrawerReducer: projectDrawerReducer,
 
     projectViewReducer: projectViewReducer,
+    projectWorkload: projectWorkloadReducer,
 
     // Project Lookups
     projectCategoriesReducer: projectCategoriesReducer,
@@ -172,6 +195,7 @@ export const store = configureStore({
     notificationReducer: notificationReducer,
     button: buttonReducer,
     scheduleReducer: scheduleReducer,
+    schedule: scheduleRTKReducer,
 
     // Reports
     reportingReducer: reportingReducer,
@@ -195,6 +219,10 @@ export const store = configureStore({
 
     //client view
     clientViewReducer: clientViewReducer,
+    // Finance
+    projectFinanceRateCardReducer: projectFinanceRateCardReducer,
+    projectFinancesReducer: projectFinancesReducer,
+    financeReducer: financeReducer,
   },
 });
 

@@ -10,12 +10,10 @@ import {
   Tooltip,
   Badge,
   Space,
-  Avatar,
   theme,
   Divider,
-} from 'antd';
+} from '@/shared/antd-imports';
 import {
-  ClockCircleOutlined,
   TeamOutlined,
   CheckCircleOutlined,
   ProjectOutlined,
@@ -23,7 +21,7 @@ import {
   SettingOutlined,
   InboxOutlined,
   MoreOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { ProjectGroupListProps } from '@/types/project/project.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -126,19 +124,19 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     e.stopPropagation();
     console.log('Opening project drawer from project group for project:', projectId);
     trackMixpanelEvent(evt_projects_settings_click);
-    
+
     // Set project ID first
     dispatch(setProjectId(projectId));
-    
+
     // Then fetch project data
     dispatch(fetchProjectData(projectId))
       .unwrap()
-      .then((projectData) => {
+      .then(projectData => {
         console.log('Project data fetched successfully from project group:', projectData);
         // Open drawer after data is fetched
         dispatch(toggleProjectDrawer());
       })
-      .catch((error) => {
+      .catch(error => {
         console.error('Failed to fetch project data from project group:', error);
         // Still open drawer even if fetch fails, so user can see error state
         dispatch(toggleProjectDrawer());

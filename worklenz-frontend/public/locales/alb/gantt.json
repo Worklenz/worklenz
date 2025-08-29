@@ -1,0 +1,15 @@
+{
+  "task": {
+    "open": "Hap",
+    "clickViewPhaseDetails": "Kliko për të parë detajet e fazës",
+    "clickNavigateTimeline": "Kliko për të naviguar te detyra në rrjedhën kohore",
+    "clickTimelineSetDates": "Kliko në rrjedhën kohore për të vendosur datat për këtë detyrë",
+    "clickTimelineAddDates": "Kliko rrjedhën kohore për të shtuar data",
+    "resizeStartDate": "Ndrysho datën e fillimit",
+    "resizeEndDate": "Ndrysho datën e përfundimit",
+    "dragToMove": "Tërhiq për të lëvizur detyrën",
+    "addTaskFor": "Shto detyrë për {{date}}",
+    "enterTaskName": "Shkruaj emrin e detyrës...",
+    "pressEnterToCreate": "Shtyp Enter për të krijuar • Esc për të anulluar"
+  }
+}

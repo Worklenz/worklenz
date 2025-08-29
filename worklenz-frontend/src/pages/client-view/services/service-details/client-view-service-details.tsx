@@ -1,4 +1,4 @@
-import { Button, Flex, Typography } from 'antd';
+import { Button, Flex, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -15,9 +15,7 @@ const ClientViewServiceDetails = () => {
 
   const navigate = useNavigate();
 
-  const { services } = useAppSelector(
-    (state) => state.clientViewReducer.serviceReducer
-  );
+  const { services } = useAppSelector(state => state.clientViewReducer.serviceReducer);
 
   const dispatch = useAppDispatch();
 
@@ -25,7 +23,7 @@ const ClientViewServiceDetails = () => {
   const serviceId = window.location.pathname.split('/').pop();
 
   // get service details
-  const service = services.find((service) => service.id === serviceId);
+  const service = services.find(service => service.id === serviceId);
 
   return (
     <Flex gap={24} style={{ width: '100%' }}>
@@ -44,20 +42,13 @@ const ClientViewServiceDetails = () => {
             </Typography.Title>
           </Flex>
 
-          <Button
-            type="primary"
-            onClick={() => dispatch(toggleRequestFormModal())}
-          >
+          <Button type="primary" onClick={() => dispatch(toggleRequestFormModal())}>
             {t('requestButton')}
           </Button>
         </Flex>
 
         <Flex vertical gap={24} style={{ width: '100%', maxWidth: 720 }}>
-          <img
-            src={coverImg}
-            alt={service?.name}
-            style={{ width: '100%', objectFit: 'cover' }}
-          />
+          <img src={coverImg} alt={service?.name} style={{ width: '100%', objectFit: 'cover' }} />
 
           <div>{service?.service_data?.description}</div>
         </Flex>

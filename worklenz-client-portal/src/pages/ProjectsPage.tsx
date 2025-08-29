@@ -76,7 +76,7 @@ const ProjectsPage: React.FC = () => {
     fetchProjects();
   }, []);
 
-  const handleTableChange = (paginationInfo: any, filtersInfo: any, sorter: any) => {
+  const handleTableChange = (paginationInfo: any, _filtersInfo: any, _sorter: any) => {
     fetchProjects(
       paginationInfo.current,
       paginationInfo.pageSize,

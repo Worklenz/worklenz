@@ -34,8 +34,14 @@ export {
   Timeline,
   Statistic,
   Progress,
-  Tooltip
-} from "antd";
+  Tooltip,
+  Image,
+  Popconfirm,
+  List,
+} from "antd/es";
+
+// Types
+export type { MenuProps } from "antd/es";
 
 // Icons
 export {
@@ -68,5 +74,18 @@ export {
   LockOutlined,
   SearchOutlined,
   CalendarOutlined,
-  ShareAltOutlined
+  ShareAltOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  FileOutlined,
+  FileImageOutlined,
+  VideoCameraOutlined,
+  FilePdfOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  DollarOutlined,
+  ReloadOutlined,
+  WarningOutlined,
+  InfoCircleOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";

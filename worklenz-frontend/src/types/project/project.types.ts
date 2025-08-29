@@ -3,7 +3,7 @@ import { IProjectStatus } from '@/types/project/projectStatus.types';
 import { IProjectViewModel } from './projectViewModel.types';
 import { NavigateFunction } from 'react-router-dom';
 import { AppDispatch } from '@/app/store';
-import { TablePaginationConfig } from 'antd';
+import { TablePaginationConfig } from '@/shared/antd-imports';
 import { FilterValue, SorterResult } from 'antd/es/table/interface';
 
 export interface IProject {

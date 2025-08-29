@@ -55,11 +55,16 @@ function saveFields(fields: TaskListField[]) {
 export const syncFieldWithDatabase = createAsyncThunk(
   'taskManagementFields/syncFieldWithDatabase',
   async (
-    { projectId, fieldKey, visible, columns }: { 
-      projectId: string; 
-      fieldKey: string; 
-      visible: boolean; 
-      columns: ITaskListColumn[] 
+    {
+      projectId,
+      fieldKey,
+      visible,
+      columns,
+    }: {
+      projectId: string;
+      fieldKey: string;
+      visible: boolean;
+      columns: ITaskListColumn[];
     },
     { dispatch }
   ) => {
@@ -67,13 +72,15 @@ export const syncFieldWithDatabase = createAsyncThunk(
     const backendColumn = columns.find(c => c.key === fieldKey);
     if (backendColumn) {
       // Update the column visibility in the database
-      await dispatch(updateColumnVisibility({
-        projectId,
-        item: {
-          ...backendColumn,
-          pinned: visible
-        }
-      }));
+      await dispatch(
+        updateColumnVisibility({
+          projectId,
+          item: {
+            ...backendColumn,
+            pinned: visible,
+          },
+        })
+      );
     }
     return { fieldKey, visible };
   }
@@ -83,10 +90,14 @@ export const syncFieldWithDatabase = createAsyncThunk(
 export const syncAllFieldsWithDatabase = createAsyncThunk(
   'taskManagementFields/syncAllFieldsWithDatabase',
   async (
-    { projectId, fields, columns }: { 
-      projectId: string; 
-      fields: TaskListField[]; 
-      columns: ITaskListColumn[] 
+    {
+      projectId,
+      fields,
+      columns,
+    }: {
+      projectId: string;
+      fields: TaskListField[];
+      columns: ITaskListColumn[];
     },
     { dispatch }
   ) => {
@@ -100,13 +111,15 @@ export const syncAllFieldsWithDatabase = createAsyncThunk(
     const syncPromises = fieldsToSync.map(field => {
       const backendColumn = columns.find(c => c.key === field.key);
       if (backendColumn) {
-        return dispatch(updateColumnVisibility({
-          projectId,
-          item: {
-            ...backendColumn,
-            pinned: field.visible
-          }
-        }));
+        return dispatch(
+          updateColumnVisibility({
+            projectId,
+            item: {
+              ...backendColumn,
+              pinned: field.visible,
+            },
+          })
+        );
       }
       return Promise.resolve();
     });
@@ -143,7 +156,10 @@ const taskListFieldsSlice = createSlice({
       return defaultFields;
     },
     // New action to update field visibility from database
-    updateFieldVisibilityFromDatabase(state, action: PayloadAction<{ fieldKey: string; visible: boolean }>) {
+    updateFieldVisibilityFromDatabase(
+      state,
+      action: PayloadAction<{ fieldKey: string; visible: boolean }>
+    ) {
       const { fieldKey, visible } = action.payload;
       const field = state.find(f => f.key === fieldKey);
       if (field) {
@@ -153,7 +169,7 @@ const taskListFieldsSlice = createSlice({
       }
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
       .addCase(syncFieldWithDatabase.fulfilled, (state, action) => {
         // Field visibility has been synced with database
@@ -177,7 +193,8 @@ const taskListFieldsSlice = createSlice({
   },
 });
 
-export const { toggleField, setFields, resetFields, updateFieldVisibilityFromDatabase } = taskListFieldsSlice.actions;
+export const { toggleField, setFields, resetFields, updateFieldVisibilityFromDatabase } =
+  taskListFieldsSlice.actions;
 
 // Utility function to force reset fields (can be called from browser console)
 export const forceResetFields = () => {

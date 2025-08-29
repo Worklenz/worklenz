@@ -10,9 +10,9 @@ import {
   TableProps,
   Tag,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
-import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { updateTaskCounts } from '@/features/task-management/task-management.slice';
@@ -63,14 +63,16 @@ const DependenciesTable = ({
         setIsDependencyInputShow(false);
         setTaskList([]);
         setSearchTerm('');
-        
+
         // Update Redux state with dependency status
-        dispatch(updateTaskCounts({
-          taskId: task.id,
-          counts: {
-            has_dependencies: true
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: task.id,
+            counts: {
+              has_dependencies: true,
+            },
+          })
+        );
       }
     } catch (error) {
       console.error('Error adding dependency:', error);
@@ -100,16 +102,18 @@ const DependenciesTable = ({
       const res = await taskDependenciesApiService.deleteTaskDependency(dependencyId);
       if (res.done) {
         refreshTaskDependencies();
-        
+
         // Update Redux state with dependency status
         // Check if there are any remaining dependencies
         const remainingDependencies = taskDependencies.filter(dep => dep.id !== dependencyId);
-        dispatch(updateTaskCounts({
-          taskId: task.id,
-          counts: {
-            has_dependencies: remainingDependencies.length > 0
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: task.id,
+            counts: {
+              has_dependencies: remainingDependencies.length > 0,
+            },
+          })
+        );
       }
     } catch (error) {
       console.error('Error deleting dependency:', error);

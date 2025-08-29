@@ -1,6 +1,6 @@
-import { SearchOutlined, SyncOutlined } from '@ant-design/icons';
+import { SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
-import { Button, Flex, Input, Tooltip } from 'antd';
+import { Button, Flex, Input, Tooltip } from '@/shared/antd-imports';
 
 import React, { useEffect, useState } from 'react';
 
@@ -20,6 +20,8 @@ import logger from '@/utils/errorLogger';
 import { RootState } from '@/app/store';
 import { useTranslation } from 'react-i18next';
 import AddTeamDrawer from '@/components/admin-center/teams/add-team-drawer/add-team-drawer';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_admin_center_teams_visit } from '@/shared/worklenz-analytics-events';
 
 export interface IRequestParams extends IOrganizationTeamRequestParams {
   total: number;
@@ -28,6 +30,7 @@ export interface IRequestParams extends IOrganizationTeamRequestParams {
 const Teams: React.FC = () => {
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
   const { t } = useTranslation('admin-center/teams');
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const [showAddTeamDrawer, setShowAddTeamDrawer] = useState(false);
 
@@ -63,6 +66,11 @@ const Teams: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    trackMixpanelEvent(evt_admin_center_teams_visit);
+    fetchTeams();
+  }, [trackMixpanelEvent]);
 
   useEffect(() => {
     fetchTeams();

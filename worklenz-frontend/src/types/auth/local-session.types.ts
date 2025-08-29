@@ -27,5 +27,7 @@ export interface ILocalSession extends IUserType {
   is_expired?: boolean;
   subscription_status?: string;
   subscription_type?: string;
+  plan_name?: string;
   trial_expire_date?: string;
+  valid_till_date?: string;
 }

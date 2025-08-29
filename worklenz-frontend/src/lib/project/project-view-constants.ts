@@ -1,10 +1,15 @@
 import React, { ReactNode, Suspense } from 'react';
 import { InlineSuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import i18n from '@/i18n';
+import { hasFinanceViewPermission } from '@/utils/finance-permissions';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { ILocalSession } from '@/types/auth/local-session.types';
+import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
 // Import core components synchronously to avoid suspense in main tabs
 import ProjectViewEnhancedBoard from '@/pages/projects/projectView/enhancedBoard/project-view-enhanced-board';
 import TaskListV2 from '@/components/task-list-v2/TaskListV2';
+import ProjectViewFinance from '@/pages/projects/projectView/finance/ProjectViewFinance';
 
 // Lazy load less critical components
 const ProjectViewInsights = React.lazy(
@@ -19,6 +24,12 @@ const ProjectViewMembers = React.lazy(
 const ProjectViewUpdates = React.lazy(
   () => import('@/pages/projects/project-view-1/updates/project-view-updates')
 );
+const ProjectViewRoadmap = React.lazy(
+  () => import('@/pages/projects/projectView/gantt/ProjectViewGantt')
+);
+const ProjectViewWorkload = React.lazy(
+  () => import('@/pages/projects/projectView/workload/ProjectViewWorkload')
+);
 
 // type of a tab items
 type TabItems = {
@@ -27,6 +38,8 @@ type TabItems = {
   label: string;
   isPinned?: boolean;
   element: ReactNode;
+  disabled?: boolean;
+  disabledReason?: string;
 };
 
 // Function to get translated labels with fallback
@@ -43,6 +56,9 @@ const getTabLabel = (key: string): string => {
         files: 'Files',
         members: 'Members',
         updates: 'Updates',
+        roadmap: 'Roadmap',
+        workload: 'Workload',
+        finance: 'Finance',
       };
       return fallbacks[key] || key;
     }
@@ -56,6 +72,7 @@ const getTabLabel = (key: string): string => {
       files: 'Files',
       members: 'Members',
       updates: 'Updates',
+      finance: 'Finance',
     };
     return fallbacks[key] || key;
   }
@@ -117,6 +134,36 @@ export const tabItems: TabItems[] = [
       React.createElement(ProjectViewUpdates)
     ),
   },
+  {
+    index: 6,
+    key: 'roadmap',
+    label: getTabLabel('roadmap'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewRoadmap)
+    ),
+  },
+  {
+    index: 7,
+    key: 'workload',
+    label: getTabLabel('workload'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewWorkload)
+    ),
+  },
+  {
+    index: 8,
+    key: 'finance',
+    label: getTabLabel('finance'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewFinance)
+    ),
+  },
 ];
 
 // Function to update tab labels when language changes
@@ -142,9 +189,50 @@ export const updateTabLabels = () => {
         case 'updates':
           item.label = getTabLabel('updates');
           break;
+        case 'roadmap':
+          item.label = getTabLabel('roadmap');
+          break;
+        case 'workload':
+          item.label = getTabLabel('workload');
+          break;
+        case 'finance':
+          item.label = getTabLabel('finance');
+          break;
       }
     });
   } catch (error) {
     console.error('Error updating tab labels:', error);
   }
+};
+
+// Function to get filtered tab items based on user permissions
+export const getFilteredTabItems = (
+  currentSession: ILocalSession | null,
+  currentProject?: IProjectViewModel | null
+): TabItems[] => {
+  const hasFinancePermission = hasFinanceViewPermission(currentSession, currentProject);
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+
+  return tabItems
+    .map(item => {
+      // Handle finance tab specially
+      if (item.key === 'finance') {
+        // If user has finance permission but no business access, show tab as disabled
+        if (hasFinancePermission && !hasBusinessAccess) {
+          return {
+            ...item,
+            disabled: true,
+            disabledReason: i18n.t('common:business-plan-upgrade'),
+          };
+        }
+        // If user has no finance permission, hide the tab
+        if (!hasFinancePermission) {
+          return null;
+        }
+      }
+
+      // Return tab as is for all other cases
+      return item;
+    })
+    .filter(item => item !== null) as TabItems[];
 };

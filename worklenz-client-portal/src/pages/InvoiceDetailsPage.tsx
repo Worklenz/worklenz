@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, Typography } from 'antd';
+import React from "react";
+import { Card, Typography } from "@/shared/antd-imports";
 
 const { Title } = Typography;
 
@@ -12,4 +12,4 @@ const InvoiceDetailsPage: React.FC = () => {
   );
 };
 
-export default InvoiceDetailsPage; 
+export default InvoiceDetailsPage;

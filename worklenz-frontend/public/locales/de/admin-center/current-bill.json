@@ -106,8 +106,34 @@
 
   "expirestoday": "heute",
   "expirestomorrow": "morgen",
+  "expiredDayAgo": "vor {{days}} Tag",
   "expiredDaysAgo": "vor {{days}} Tagen",
 
   "continueWith": "Fortfahren mit {{plan}}",
-  "changeToPlan": "Wechseln zu {{plan}}"
+  "changeToPlan": "Wechseln zu {{plan}}",
+
+  "pricingModel": "Preismodell",
+  "flatRate": "Pauschalrate",
+  "perUser": "Pro Benutzer",
+  "monthlyCost": "Monatliche Kosten",
+  "pricingModelSwitched": "Preismodell erfolgreich aktualisiert",
+  "errorSwitchingPricingModel": "Fehler beim Wechseln des Preismodells",
+  "switchTo": "Wechseln zu",
+  "pricing": "Preisgestaltung",
+
+  "upgradeToUnlockFeatures": "Upgrade für Premium-Funktionen",
+  "currentPlanLimits": "Aktueller Plan beinhaltet:",
+  "planFeatures": "Plan-Funktionen",
+  "teamSizeLimit": "Teamgrößenbegrenzung",
+  "storageLimit": "Speicherbegrenzung",
+  "projectLimit": "Projektbegrenzung",
+
+  "billingCyclePreference": "Abrechnungszyklus",
+  "annualSavings": "Sparen Sie mit jährlicher Abrechnung",
+  "monthlyBilling": "Monatlich",
+  "yearlyBilling": "Jährlich",
+
+  "planComparison": "Pläne vergleichen",
+  "currentUsage": "Aktuelle Nutzung",
+  "planRecommendation": "Empfohlen für Ihre Teamgröße"
 }

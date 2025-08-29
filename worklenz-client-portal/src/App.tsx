@@ -1,9 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { ConfigProvider, theme } from 'antd';
+import { ConfigProvider, theme } from '@/shared/antd-imports';
 import { store } from '@/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { socketManager } from '@/utils/socket';
 
 // Layout Components
 import ClientLayout from '@/components/layout/ClientLayout';
@@ -34,6 +35,21 @@ import ProfilePage from '@/pages/ProfilePage';
 // App Content Component
 const AppContent: React.FC = () => {
   const { theme: currentTheme } = useAppSelector((state) => state.ui);
+  
+  // Initialize socket connection
+  React.useEffect(() => {
+    const token = localStorage.getItem('clientToken');
+    if (token) {
+      // Socket manager is already initialized as singleton
+      // Additional setup if needed can be done here
+      console.log('Client portal app loaded with socket connection');
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      socketManager.disconnect();
+    };
+  }, []);
 
   return (
     <ConfigProvider

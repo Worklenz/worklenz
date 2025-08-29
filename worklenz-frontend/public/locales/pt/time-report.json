@@ -5,6 +5,7 @@
 
   "searchByName": "Pesquisar por nome",
   "selectAll": "Selecionar Tudo",
+  "clearAll": "Limpar Tudo",
   "teams": "Equipes",
 
   "searchByProject": "Pesquisar por nome do projeto",
@@ -15,6 +16,8 @@
 
   "billable": "Faturável",
   "nonBillable": "Não Faturável",
+  "allBillableTypes": "Todos os Tipos Faturáveis",
+  "filterByBillableStatus": "Filtrar por status faturável",
 
   "total": "Total",
 
@@ -28,6 +31,9 @@
 
   "membersTimeSheet": "Folha de Tempo de Membros",
   "member": "Membro",
+  "members": "Membros",
+  "searchByMember": "Pesquisar por membro",
+  "utilization": "Utilização",
 
   "estimatedVsActual": "Estimado vs Real",
   "workingDays": "Dias Úteis",
@@ -53,5 +59,20 @@
   "showSelected": "Mostrar Apenas Selecionados",
   "expandAll": "Expandir Tudo",
   "collapseAll": "Recolher Tudo",
-  "ungrouped": "Não Agrupado"
+  "ungrouped": "Não Agrupado",
+
+  "totalTimeLogged": "Tempo Total Registrado",
+  "acrossAllTeamMembers": "Em todos os membros da equipe",
+  "expectedCapacity": "Capacidade Esperada",
+  "basedOnWorkingSchedule": "Baseado no cronograma de trabalho",
+  "teamUtilization": "Utilização da Equipe",
+  "targetRange": "Faixa Alvo",
+  "variance": "Variância",
+  "overCapacity": "Sobre Capacidade",
+  "underCapacity": "Abaixo da Capacidade",
+  "considerWorkloadRedistribution": "Considerar redistribuição de carga de trabalho",
+  "capacityAvailableForNewProjects": "Capacidade disponível para novos projetos",
+  "optimal": "Ótimo",
+  "underUtilized": "Subutilizado",
+  "overUtilized": "Sobreutilizado"
 }

@@ -1,7 +1,7 @@
 import { toggleSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { Button, Checkbox, Drawer, Flex, Form, Input } from 'antd/es';
+import { Button, Checkbox, Drawer, Flex, Form, Input } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { ICustomProjectTemplateCreateRequest } from '@/types/project/projectTemplate.types';

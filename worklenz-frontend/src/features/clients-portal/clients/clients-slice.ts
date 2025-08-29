@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { TempClientPortalClientType } from '../../../types/client-portal/temp-client-portal.types';
-import { ClientPortalClient, ClientPortalTeamMember } from '../../../api/client-portal/client-portal-api';
+import {
+  ClientPortalClient,
+  ClientPortalTeamMember,
+} from '../../../api/client-portal/client-portal-api';
 
 export type ClientsState = {
   tempClients: TempClientPortalClientType[]; // Keep for backward compatibility
@@ -57,7 +60,7 @@ const clientsSlice = createSlice({
   initialState,
   reducers: {
     // UI Actions
-    toggleAddClientDrawer: (state) => {
+    toggleAddClientDrawer: state => {
       state.isAddClientDrawerOpen = !state.isAddClientDrawerOpen;
     },
     toggleEditClientDrawer: (state, action: PayloadAction<string | null>) => {
@@ -104,7 +107,7 @@ const clientsSlice = createSlice({
         state.selectedClientId = action.payload;
       }
     },
-    
+
     // Filter and Pagination Actions
     setSearchFilter: (state, action: PayloadAction<string>) => {
       state.filters.search = action.payload;
@@ -127,9 +130,9 @@ const clientsSlice = createSlice({
       state.pagination.limit = action.payload;
       state.pagination.page = 1; // Reset to first page when changing limit
     },
-    
+
     // Clear filters
-    clearFilters: (state) => {
+    clearFilters: state => {
       state.filters = {
         search: '',
         status: 'active', // Keep active as default when clearing filters
@@ -138,50 +141,54 @@ const clientsSlice = createSlice({
       };
       state.pagination.page = 1;
     },
-    
+
     // Set selected client
     setSelectedClient: (state, action: PayloadAction<ClientPortalClient | null>) => {
       state.selectedClient = action.payload;
     },
-    
+
     // Set client teams
-    setClientTeams: (state, action: PayloadAction<{ clientId: string; teams: ClientPortalTeamMember[] }>) => {
+    setClientTeams: (
+      state,
+      action: PayloadAction<{ clientId: string; teams: ClientPortalTeamMember[] }>
+    ) => {
       const { clientId, teams } = action.payload;
       state.clientTeams[clientId] = teams;
     },
-    
+
     // Set client stats
     setClientStats: (state, action: PayloadAction<{ clientId: string; stats: any }>) => {
       const { clientId, stats } = action.payload;
       state.clientStats[clientId] = stats;
     },
-    
+
     // Legacy actions for backward compatibility
     addClient: (state, action: PayloadAction<TempClientPortalClientType>) => {
       state.tempClients.push(action.payload);
     },
     updateClientName: (state, action) => {
       const { id, name } = action.payload;
-      const client = state.tempClients.find((c) => c.id === id);
+      const client = state.tempClients.find(c => c.id === id);
       if (client) {
         client.name = name;
       }
     },
     addProjectToClient: (state, action: PayloadAction<{ clientId: string; projectId: string }>) => {
       const clientIndex = state.tempClients.findIndex(
-        (client) => client.id === action.payload.clientId
+        client => client.id === action.payload.clientId
       );
       state.tempClients[clientIndex].projects.push(action.payload.projectId);
     },
-    deleteClientTeamMember: (state, action: PayloadAction<{ clientId: string; clientTeamMemberId: string }>) => {
+    deleteClientTeamMember: (
+      state,
+      action: PayloadAction<{ clientId: string; clientTeamMemberId: string }>
+    ) => {
       const clientIndex = state.tempClients.findIndex(
-        (client) => client.id === action.payload.clientId
+        client => client.id === action.payload.clientId
       );
       state.tempClients[clientIndex].team_members = state.tempClients[
         clientIndex
-      ].team_members.filter(
-        (teamMember) => teamMember.id !== action.payload.clientTeamMemberId
-      );
+      ].team_members.filter(teamMember => teamMember.id !== action.payload.clientTeamMemberId);
     },
   },
 });

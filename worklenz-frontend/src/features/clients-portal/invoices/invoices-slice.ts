@@ -52,23 +52,17 @@ const invoicesSlice = createSlice({
   name: 'invoicesReducer',
   initialState,
   reducers: {
-    toggleAddInvoiceDrawer: (state) => {
+    toggleAddInvoiceDrawer: state => {
       state.isAddInvoiceDrawerOpen = !state.isAddInvoiceDrawerOpen;
     },
     addInvoice: (state, action: PayloadAction<TempInvoiceType>) => {
       state.invoices.push(action.payload);
     },
     deleteInvoice: (state, action: PayloadAction<string>) => {
-      state.invoices = state.invoices.filter(
-        (invoice) => invoice.id !== action.payload
-      );
+      state.invoices = state.invoices.filter(invoice => invoice.id !== action.payload);
     },
   },
 });
 
-export const {
-  toggleAddInvoiceDrawer,
-  addInvoice,
-  deleteInvoice,
-} = invoicesSlice.actions;
-export default invoicesSlice.reducer; 
+export const { toggleAddInvoiceDrawer, addInvoice, deleteInvoice } = invoicesSlice.actions;
+export default invoicesSlice.reducer;

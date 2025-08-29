@@ -21,6 +21,7 @@
     "react-redux": "^9.1.0",
     "react-responsive": "^10.0.1",
     "react-router-dom": "^7.7.0",
+    "socket.io-client": "^4.8.1",
     "typescript-eslint": "^8.37.0"
   },
   "devDependencies": {

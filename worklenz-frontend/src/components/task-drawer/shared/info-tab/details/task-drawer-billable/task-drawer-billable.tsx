@@ -2,7 +2,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { useSocket } from '@/socket/socketContext';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import logger from '@/utils/errorLogger';
-import { Switch } from 'antd/es';
+import { Switch } from '@/shared/antd-imports';
 
 interface TaskDrawerBillableProps {
   task?: ITaskViewModel | null;

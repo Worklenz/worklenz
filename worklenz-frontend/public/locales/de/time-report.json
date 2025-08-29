@@ -5,6 +5,7 @@
 
   "searchByName": "Nach Namen suchen",
   "selectAll": "Alle auswählen",
+  "clearAll": "Alle löschen",
   "teams": "Teams",
 
   "searchByProject": "Nach Projektnamen suchen",
@@ -15,6 +16,8 @@
 
   "billable": "Abrechenbar",
   "nonBillable": "Nicht abrechenbar",
+  "allBillableTypes": "Alle Abrechnungsarten",
+  "filterByBillableStatus": "Nach abrechenbarem Status filtern",
 
   "total": "Gesamt",
 
@@ -28,6 +31,9 @@
 
   "membersTimeSheet": "Mitglieder-Zeiterfassung",
   "member": "Mitglied",
+  "members": "Mitglieder",
+  "searchByMember": "Nach Mitglied suchen",
+  "utilization": "Auslastung",
 
   "estimatedVsActual": "Geschätzt vs. Tatsächlich",
   "workingDays": "Arbeitstage",
@@ -40,5 +46,32 @@
   "noCategory": "Keine Kategorie",
   "noProjects": "Keine Projekte gefunden",
   "noTeams": "Keine Teams gefunden",
-  "noData": "Keine Daten gefunden"
+  "noData": "Keine Daten gefunden",
+  "groupBy": "Gruppieren nach",
+  "groupByCategory": "Kategorie",
+  "groupByTeam": "Team",
+  "groupByStatus": "Status",
+  "groupByNone": "Keine",
+  "clearSearch": "Suche löschen",
+  "selectedProjects": "Ausgewählte Projekte",
+  "projectsSelected": "Projekte ausgewählt",
+  "showSelected": "Nur Ausgewählte anzeigen",
+  "expandAll": "Alle erweitern",
+  "collapseAll": "Alle einklappen",
+  "ungrouped": "Nicht gruppiert",
+
+  "totalTimeLogged": "Gesamte erfasste Zeit",
+  "acrossAllTeamMembers": "Über alle Teammitglieder",
+  "expectedCapacity": "Erwartete Kapazität",
+  "basedOnWorkingSchedule": "Basierend auf Arbeitsplan",
+  "teamUtilization": "Team-Auslastung",
+  "targetRange": "Zielbereich",
+  "variance": "Abweichung",
+  "overCapacity": "Überkapazität",
+  "underCapacity": "Unterkapazität",
+  "considerWorkloadRedistribution": "Arbeitslast-Umverteilung erwägen",
+  "capacityAvailableForNewProjects": "Kapazität für neue Projekte verfügbar",
+  "optimal": "Optimal",
+  "underUtilized": "Unterausgelastet",
+  "overUtilized": "Überausgelastet"
 }

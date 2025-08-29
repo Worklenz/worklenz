@@ -5,17 +5,15 @@ import {
   Input,
   Select,
   Button,
-  Upload,
   message,
   Typography,
   Row,
   Col,
-  UploadOutlined,
   ArrowLeftOutlined,
 } from "@/shared/antd-imports";
 import { useNavigate } from "react-router-dom";
 import { useGetServicesQuery, useCreateRequestMutation } from "@/store/api";
-import type { UploadFile } from "antd";
+import FileUploader from "@/components/FileUploader";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -25,13 +23,12 @@ interface RequestFormValues {
   title: string;
   description: string;
   priority: string;
-  attachments?: UploadFile[];
 }
 
 const NewRequestPage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [attachments, setAttachments] = useState<any[]>([]);
 
   const { data: servicesData, isLoading: servicesLoading } =
     useGetServicesQuery();
@@ -45,6 +42,12 @@ const NewRequestPage: React.FC = () => {
           title: values.title,
           description: values.description,
           priority: values.priority,
+          attachments: attachments.map((file) => ({
+            url: file.url,
+            filename: file.filename,
+            originalName: file.originalName,
+            size: file.size,
+          })),
         },
         notes: values.description,
       };
@@ -62,18 +65,8 @@ const NewRequestPage: React.FC = () => {
     navigate("/requests");
   };
 
-  const uploadProps = {
-    onRemove: (file: UploadFile) => {
-      const index = fileList.indexOf(file);
-      const newFileList = fileList.slice();
-      newFileList.splice(index, 1);
-      setFileList(newFileList);
-    },
-    beforeUpload: (file: UploadFile) => {
-      setFileList([...fileList, file]);
-      return false;
-    },
-    fileList,
+  const handleFilesChange = (files: any[]) => {
+    setAttachments(files);
   };
 
   return (
@@ -110,11 +103,13 @@ const NewRequestPage: React.FC = () => {
                 showSearch
                 optionFilterProp="children"
               >
-                {servicesData?.body?.map((service: { id: string; name: string }) => (
-                  <Select.Option key={service.id} value={service.id}>
-                    {service.name}
-                  </Select.Option>
-                ))}
+                {servicesData?.body?.map(
+                  (service: { id: string; name: string }) => (
+                    <Select.Option key={service.id} value={service.id}>
+                      {service.name}
+                    </Select.Option>
+                  )
+                )}
               </Select>
             </Form.Item>
           </Col>
@@ -166,9 +161,14 @@ const NewRequestPage: React.FC = () => {
               label="Attachments"
               extra="You can upload up to 5 files. Supported formats: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG, JPEG"
             >
-              <Upload {...uploadProps} maxCount={5}>
-                <Button icon={<UploadOutlined />}>Click to Upload</Button>
-              </Upload>
+              <FileUploader
+                purpose="request"
+                maxFiles={5}
+                acceptedFileTypes=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                maxFileSize={10}
+                onFilesChange={handleFilesChange}
+                showFileList={true}
+              />
             </Form.Item>
           </Col>
 

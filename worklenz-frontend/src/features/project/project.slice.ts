@@ -116,6 +116,11 @@ const projectSlice = createSlice({
         state.project.phase_label = action.payload;
       }
     },
+    updateProjectCurrency: (state, action: PayloadAction<string>) => {
+      if (state.project) {
+        state.project.currency = action.payload;
+      }
+    },
     addTask: (
       state,
       action: PayloadAction<{ task: IProjectTask; groupId: string; insert?: boolean }>
@@ -143,7 +148,6 @@ const projectSlice = createSlice({
       } else {
         insert ? group.tasks.unshift(task) : group.tasks.push(task);
       }
-      console.log('addTask', group.tasks);
     },
     deleteTask: (state, action: PayloadAction<{ taskId: string; index?: number }>) => {
       const { taskId, index } = action.payload;
@@ -215,6 +219,7 @@ export const {
   setProjectView,
   updatePhaseLabel,
   setRefreshTimestamp,
+  updateProjectCurrency,
 } = projectSlice.actions;
 
 export default projectSlice.reducer;

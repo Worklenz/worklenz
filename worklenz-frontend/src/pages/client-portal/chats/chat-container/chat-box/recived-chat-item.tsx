@@ -1,4 +1,4 @@
-import { Flex, Typography } from 'antd';
+import { Flex, Typography } from '@/shared/antd-imports';
 import React, { ReactNode } from 'react';
 import CustomAvatar from '../../../../../components/CustomAvatar';
 import { durationDateFormat } from '../../../../../utils/durationDateFormat';
@@ -43,11 +43,13 @@ const RecivedChatItem = ({ sendersName, chatData }: RecivedChatItemProps) => {
           </Typography.Text>
         </Flex>
 
-        <div style={{ 
-          wordBreak: 'break-word',
-          whiteSpace: 'pre-wrap',
-          lineHeight: '1.4'
-        }}>
+        <div
+          style={{
+            wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap',
+            lineHeight: '1.4',
+          }}
+        >
           {chatData.content}
         </div>
       </Flex>

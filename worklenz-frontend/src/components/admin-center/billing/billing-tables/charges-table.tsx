@@ -2,7 +2,7 @@ import { adminCenterApiService } from '@/api/admin-center/admin-center.api.servi
 import { IBillingCharge, IBillingChargesResponse } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
 import { formatDate } from '@/utils/timeUtils';
-import { Table, TableProps, Tag } from 'antd';
+import { Table, TableProps, Tag } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -27,19 +27,19 @@ const ChargesTable: React.FC = () => {
 
   const columns: TableProps<IBillingCharge>['columns'] = [
     {
-      title: t('description'),
+      title: t('description') as string,
       key: 'name',
       dataIndex: 'name',
     },
     {
-      title: t('billingPeriod'),
+      title: t('billingPeriod') as string,
       key: 'billingPeriod',
       render: record => {
         return `${formatDate(new Date(record.start_date))} - ${formatDate(new Date(record.end_date))}`;
       },
     },
     {
-      title: t('billStatus'),
+      title: t('billStatus') as string,
       key: 'status',
       dataIndex: 'status',
       render: (_, record) => {
@@ -55,7 +55,7 @@ const ChargesTable: React.FC = () => {
       },
     },
     {
-      title: t('perUserValue'),
+      title: t('perUserValue') as string,
       key: 'perUserValue',
       dataIndex: 'perUserValue',
       render: (_, record) => (
@@ -65,12 +65,12 @@ const ChargesTable: React.FC = () => {
       ),
     },
     {
-      title: t('users'),
+      title: t('users') as string,
       key: 'quantity',
       dataIndex: 'quantity',
     },
     {
-      title: t('amount'),
+      title: t('amount') as string,
       key: 'amount',
       dataIndex: 'amount',
       render: (_, record) => (

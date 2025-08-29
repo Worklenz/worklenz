@@ -13,7 +13,7 @@ import {
   Tooltip,
   Typography,
   Tag,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { TableProps } from 'antd/lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -38,7 +38,7 @@ const InvoicesTable = () => {
 
   // Get invoices list from invoices reducer
   const invoicesList: TempInvoiceType[] = useAppSelector(
-    (state) => state.clientsPortalReducer.invoicesReducer.invoices
+    state => state.clientsPortalReducer.invoicesReducer.invoices
   );
 
   const dispatch = useAppDispatch();
@@ -81,7 +81,7 @@ const InvoicesTable = () => {
     {
       key: 'order_no',
       title: t('invoiceNoColumn'),
-      render: (record) => (
+      render: record => (
         <Typography.Text strong style={{ color: colors.skyBlue }}>
           {record.invoice_no}
         </Typography.Text>
@@ -93,9 +93,7 @@ const InvoicesTable = () => {
     {
       key: 'service',
       title: t('serviceColumn'),
-      render: (record) => (
-        <Typography.Text>{record.service}</Typography.Text>
-      ),
+      render: record => <Typography.Text>{record.service}</Typography.Text>,
       onCell: () => ({
         style: { minWidth: 250 },
       }),
@@ -103,20 +101,16 @@ const InvoicesTable = () => {
     {
       key: 'status',
       title: t('statusColumn'),
-      render: (record) => (
-        <Tag color={getStatusColor(record.status)}>
-          {getStatusText(record.status)}
-        </Tag>
+      render: record => (
+        <Tag color={getStatusColor(record.status)}>{getStatusText(record.status)}</Tag>
       ),
       width: 120,
     },
     {
       key: 'issued_time',
       title: t('issuedTimeColumn'),
-      render: (record) => (
-        <Typography.Text>
-          {new Date(record.issued_time).toLocaleDateString()}
-        </Typography.Text>
+      render: record => (
+        <Typography.Text>{new Date(record.issued_time).toLocaleDateString()}</Typography.Text>
       ),
       width: 150,
     },
@@ -133,7 +127,7 @@ const InvoicesTable = () => {
         scroll={{
           x: 'max-content',
         }}
-        onRow={(record) => ({
+        onRow={record => ({
           onClick: () => navigate(`/client-portal/invoices/${record.id}`),
           style: { cursor: 'pointer' },
         })}
@@ -142,4 +136,4 @@ const InvoicesTable = () => {
   );
 };
 
-export default InvoicesTable; 
+export default InvoicesTable;

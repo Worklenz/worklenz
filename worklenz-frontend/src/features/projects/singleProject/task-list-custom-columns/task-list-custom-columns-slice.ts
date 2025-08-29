@@ -64,7 +64,11 @@ const taskListCustomColumnsSlice = createSlice({
     },
     setCustomColumnModalAttributes: (
       state,
-      action: PayloadAction<{ modalType: 'create' | 'edit'; columnId: string | null; columnData?: any }>
+      action: PayloadAction<{
+        modalType: 'create' | 'edit';
+        columnId: string | null;
+        columnData?: any;
+      }>
     ) => {
       state.customColumnModalType = action.payload.modalType;
       state.customColumnId = action.payload.columnId;

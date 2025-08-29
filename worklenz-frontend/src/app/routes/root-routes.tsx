@@ -2,7 +2,9 @@ import { Navigate, RouteObject } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
-const OrganizationInvitePage = lazy(() => import('@/pages/client-view/organization-invite/organization-invite'));
+const OrganizationInvitePage = lazy(
+  () => import('@/pages/client-view/organization-invite/organization-invite')
+);
 
 const rootRoutes: RouteObject[] = [
   {

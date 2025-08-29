@@ -21,7 +21,7 @@ interface InvoicesState {
 const initialState: InvoicesState = {
   invoices: [],
   loading: false,
-  error: null
+  error: null,
 };
 
 const invoicesSlice = createSlice({
@@ -48,9 +48,10 @@ const invoicesSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
-    }
-  }
+    },
+  },
 });
 
-export const { setInvoices, addInvoice, updateInvoice, removeInvoice, setLoading, setError } = invoicesSlice.actions;
-export default invoicesSlice.reducer; 
+export const { setInvoices, addInvoice, updateInvoice, removeInvoice, setLoading, setError } =
+  invoicesSlice.actions;
+export default invoicesSlice.reducer;

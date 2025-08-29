@@ -1,10 +1,26 @@
-import { ConfigProvider, Flex, Menu, Badge, Button, Drawer, Typography } from 'antd';
+import {
+  ConfigProvider,
+  Flex,
+  Menu,
+  Badge,
+  Button,
+  Drawer,
+  Typography,
+} from '@/shared/antd-imports';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '../../../styles/colors';
 import { useTranslation } from 'react-i18next';
-import { clientPortalItems, ClientPortalMenuItems } from '@/lib/client-portal/client-portal-constants';
+import {
+  clientPortalItems,
+  ClientPortalMenuItems,
+} from '@/lib/client-portal/client-portal-constants';
 import { useMemo, useState } from 'react';
-import { RightOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MenuOutlined } from '@ant-design/icons';
+import {
+  RightOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  MenuOutlined,
+} from '@ant-design/icons';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import { useResponsive } from '../../../hooks/useResponsive';
@@ -17,21 +33,21 @@ interface ClientPortalSidebarProps {
   onToggleCollapse?: () => void;
 }
 
-const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({ 
-  items, 
-  collapsed = false, 
-  onToggleCollapse 
+const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
+  items,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const location = useLocation();
   const { t } = useTranslation('client-portal-common');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { isMobile } = useResponsive();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   // Example: get unread chat count from Redux (replace with real selector)
   const unreadChatsCount = useAppSelector(
-    (state) => state.clientsPortalReducer?.chatsReducer?.chatList || []
-  ).filter((chat) => chat.status === 'unread').length;
+    state => state.clientsPortalReducer?.chatsReducer?.chatList || []
+  ).filter(chat => chat.status === 'unread').length;
 
   const menuSource = items || clientPortalItems;
 
@@ -47,17 +63,24 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
               <Flex align="center" gap={8}>
                 <span>{t(item.name)}</span>
                 {item.key === 'chats' && unreadChatsCount > 0 && (
-                  <Badge count={unreadChatsCount} style={{ backgroundColor: '#ff4d4f', marginLeft: 4 }} />
+                  <Badge
+                    count={unreadChatsCount}
+                    style={{ backgroundColor: '#ff4d4f', marginLeft: 4 }}
+                  />
                 )}
               </Flex>
-              <RightOutlined style={{ fontSize: 12, color: themeWiseColor('#bfbfbf', '#888', themeMode) }} />
+              <RightOutlined
+                style={{ fontSize: 12, color: themeWiseColor('#bfbfbf', '#888', themeMode) }}
+              />
             </Flex>
           </Link>
         ),
-        onClick: collapsed ? () => {
-          // Handle navigation for collapsed state
-          window.location.href = `/worklenz/client-portal/${item.endpoint}`;
-        } : undefined,
+        onClick: collapsed
+          ? () => {
+              // Handle navigation for collapsed state
+              window.location.href = `/worklenz/client-portal/${item.endpoint}`;
+            }
+          : undefined,
       })),
     [t, unreadChatsCount, themeMode, menuSource, collapsed]
   );
@@ -98,8 +121,8 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
           items={menuItems}
           selectedKeys={[activeKey]}
           mode="inline"
-          style={{ 
-            border: 'none', 
+          style={{
+            border: 'none',
             background: 'transparent',
             width: '100%',
           }}
@@ -132,8 +155,8 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
         }}
       >
         {!collapsed && (
-          <Title 
-            level={3} 
+          <Title
+            level={3}
             style={{
               margin: 0,
               fontSize: 18,
@@ -166,8 +189,8 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
           selectedKeys={[activeKey]}
           mode="inline"
           inlineCollapsed={collapsed}
-          style={{ 
-            border: 'none', 
+          style={{
+            border: 'none',
             background: 'transparent',
             width: '100%',
           }}

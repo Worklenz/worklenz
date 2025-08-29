@@ -1,18 +1,27 @@
-import { RightOutlined } from '@ant-design/icons';
-import { ConfigProvider, Flex, Menu, MenuProps } from 'antd';
+import { RightOutlined } from '@/shared/antd-imports';
+import { ConfigProvider, Flex, Menu, MenuProps } from '@/shared/antd-imports';
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '../../../styles/colors';
 import { useTranslation } from 'react-i18next';
-import { adminCenterItems } from '../admin-center-constants';
+import { adminCenterItems } from '../../../lib/admin-center-constants';
 import './sidebar.css';
+import { useAuthService } from '@/hooks/useAuth';
+import { isBusinessPlan } from '@/utils/subscription-utils';
 
 const AdminCenterSidebar: React.FC = () => {
   const { t } = useTranslation('admin-center/sidebar');
   const location = useLocation();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
 
   type MenuItem = Required<MenuProps>['items'][number];
-  const menuItems = adminCenterItems;
+  const menuItems = adminCenterItems.filter(item => {
+    if (item.key === 'settings') {
+      return isBusinessPlan(currentSession);
+    }
+    return true;
+  });
 
   const items: MenuItem[] = [
     ...menuItems.map(item => ({

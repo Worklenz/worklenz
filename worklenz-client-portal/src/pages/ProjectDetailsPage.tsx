@@ -13,9 +13,7 @@ import {
   Space,
   Descriptions,
   Button,
-  List
-} from 'antd';
-import { 
+  List,
   ProjectOutlined, 
   TeamOutlined, 
   CalendarOutlined,
@@ -23,7 +21,8 @@ import {
   UserOutlined,
   ArrowLeftOutlined,
   FileTextOutlined
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
+
 import { useParams, useNavigate } from 'react-router-dom';
 import clientPortalAPI from '@/services/api';
 import { ProjectDetails } from '@/types';

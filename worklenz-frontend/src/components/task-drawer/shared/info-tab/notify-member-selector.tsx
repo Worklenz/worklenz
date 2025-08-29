@@ -1,4 +1,4 @@
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/shared/antd-imports';
 import {
   Button,
   Card,
@@ -10,7 +10,7 @@ import {
   InputRef,
   List,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TFunction } from 'i18next';
 
@@ -101,14 +101,16 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
       socket?.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), body);
       socket?.once(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), (data: InlineMember[]) => {
         dispatch(setTaskSubscribers(data));
-        
+
         // Update Redux state with subscriber status
-        dispatch(updateTaskCounts({
-          taskId: task.id,
-          counts: {
-            has_subscribers: data && data.length > 0
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: task.id,
+            counts: {
+              has_subscribers: data && data.length > 0,
+            },
+          })
+        );
       });
     } catch (error) {
       logger.error('Error notifying member:', error);

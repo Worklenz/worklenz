@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Typography } from 'antd';
+import { Tag, Typography } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { IProjectCategory } from '@/types/project/projectCategory.types';
 

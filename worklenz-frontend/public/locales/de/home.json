@@ -41,6 +41,22 @@
     "list": "Liste",
     "calendar": "Kalender",
     "tasks": "Aufgaben",
-    "refresh": "Aktualisieren"
+    "refresh": "Aktualisieren",
+    "recentActivity": "Aktuelle Aktivitäten",
+    "recentTasks": "Aktuelle Aufgaben",
+    "recentTasksSegment": "Aktuelle Aufgaben",
+    "timeLogged": "Erfasste Zeit",
+    "timeLoggedSegment": "Erfasste Zeit",
+    "noRecentTasks": "Keine aktuellen Aufgaben",
+    "noTimeLoggedTasks": "Keine Aufgaben mit erfasster Zeit",
+    "activityTag": "Aktivität",
+    "timeLogTag": "Zeiterfassung",
+    "timerTag": "Timer",
+    "activitySingular": "Aktivität",
+    "activityPlural": "Aktivitäten",
+    "recentTaskAriaLabel": "Aktuelle Aufgabe:",
+    "timeLoggedTaskAriaLabel": "Aufgabe mit erfasster Zeit:",
+    "errorLoadingRecentTasks": "Fehler beim Laden aktueller Aufgaben",
+    "errorLoadingTimeLoggedTasks": "Fehler beim Laden der Zeiterfassung"
   }
 }

@@ -8,10 +8,17 @@ import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-o
 const adminCenterApiRouter = express.Router();
 
 // overview
+adminCenterApiRouter.get("/settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getAdminCenterSettings));
 adminCenterApiRouter.get("/organization", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationDetails));
 adminCenterApiRouter.get("/organization/admins", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationAdmins));
 adminCenterApiRouter.put("/organization", teamOwnerOrAdminValidator, organizationSettingsValidator, safeControllerFunction(AdminCenterController.updateOrganizationName));
+adminCenterApiRouter.put("/organization/calculation-method", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.updateOrganizationCalculationMethod));
 adminCenterApiRouter.put("/organization/owner/contact-number", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.updateOwnerContactNumber));
+
+// holiday settings
+adminCenterApiRouter.get("/organization/holiday-settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationHolidaySettings));
+adminCenterApiRouter.put("/organization/holiday-settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.updateOrganizationHolidaySettings));
+adminCenterApiRouter.get("/countries-with-states", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getCountriesWithStates));
 
 // users
 adminCenterApiRouter.get("/organization/users", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationUsers));
@@ -53,5 +60,8 @@ adminCenterApiRouter.get("/billing/switch-to-free-plan/:id", teamOwnerOrAdminVal
 adminCenterApiRouter.get("/billing/free-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getFreePlanLimits));
 
 adminCenterApiRouter.post("/billing/redeem", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.redeem));
+
+// AppSumo endpoints
+adminCenterApiRouter.get("/appsumo/countdown-widget", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getAppSumoCountdownWidget));
 
 export default adminCenterApiRouter;
