@@ -18,6 +18,8 @@ import {
   transformToGanttPhases,
 } from './services/roadmap-api.service';
 import { TimelineUtils } from './utils/timeline-calculator';
+import { UnifiedTimelineCalculator } from './utils/unified-timeline-calculator';
+import { getColumnWidth } from './constants/gantt-constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   setShowTaskDrawer,
@@ -52,14 +54,28 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     error: tasksError,
     isLoading: tasksLoading,
     refetch: refetchTasks,
-  } = useGetRoadmapTasksQuery({ projectId: projectId || '' }, { skip: !projectId });
+  } = useGetRoadmapTasksQuery(
+    { projectId: projectId || '' }, 
+    { 
+      skip: !projectId,
+      // Poll every 30 seconds for real-time updates in collaborative environment
+      pollingInterval: 30000,
+    }
+  );
 
   const {
     data: phasesResponse,
     error: phasesError,
     isLoading: phasesLoading,
     refetch: refetchPhases,
-  } = useGetProjectPhasesQuery({ projectId: projectId || '' }, { skip: !projectId });
+  } = useGetProjectPhasesQuery(
+    { projectId: projectId || '' }, 
+    { 
+      skip: !projectId,
+      // Poll every 30 seconds for real-time updates in collaborative environment
+      pollingInterval: 30000,
+    }
+  );
 
   const [reorderPhases, { isLoading: isReordering }] = useReorderPhasesMutation();
 
@@ -67,12 +83,27 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const tasks = useMemo(() => {
     if (tasksResponse?.body && phasesResponse?.body) {
       const transformedTasks = transformToGanttTasks(tasksResponse.body, phasesResponse.body);
+      console.log('Transformed tasks from API:', transformedTasks);
       const result: any[] = [];
 
       transformedTasks.forEach(task => {
         // Always show phase milestones
         if (task.type === 'milestone' || task.is_milestone) {
-          result.push(task);
+          console.log(`Adding phase to result: ${task.name}`, {
+            start_date: task.start_date,
+            end_date: task.end_date,
+            phase_id: task.phase_id
+          });
+          
+          // Create a deep copy of the task to avoid mutation issues
+          const taskCopy = {
+            ...task,
+            start_date: task.start_date ? new Date(task.start_date) : null,
+            end_date: task.end_date ? new Date(task.end_date) : null,
+            children: task.children ? [...task.children] : undefined,
+          };
+          
+          result.push(taskCopy);
 
           // If this phase is expanded, show its children tasks
           const phaseId =
@@ -85,6 +116,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
             task.children.forEach((child: any) => {
               result.push({
                 ...child,
+                start_date: child.start_date ? new Date(child.start_date) : null,
+                end_date: child.end_date ? new Date(child.end_date) : null,
                 phase_id: task.phase_id, // Ensure child has correct phase_id
               });
             });
@@ -104,13 +137,43 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     return [];
   }, [phasesResponse]);
 
-  // Calculate date range based on tasks
+  // Calculate date range based on tasks using unified timeline calculator
   const dateRange = useMemo(() => {
     if (tasks.length > 0) {
-      return TimelineUtils.getSmartDateRange(tasks, viewMode);
+      const range = UnifiedTimelineCalculator.createAlignedDateRange(tasks, viewMode, true);
+      console.log('Calculated date range:', {
+        start: range.start,
+        end: range.end,
+        viewMode,
+        tasksCount: tasks.length
+      });
+      return range;
     }
-    return { start: new Date(), end: new Date() };
+    // Create a reasonable default range when no tasks exist
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - 15);
+    const end = new Date(today);
+    end.setDate(end.getDate() + 15);
+    return { start, end };
   }, [tasks, viewMode]);
+
+  // Create unified timeline calculator instance
+  const timelineCalculator = useMemo(() => {
+    if (!dateRange) return null;
+    const baseColumnWidth = getColumnWidth(viewMode);
+    const calculator = new UnifiedTimelineCalculator(viewMode, dateRange, baseColumnWidth);
+    
+    console.log('Created timeline calculator:', {
+      viewMode,
+      baseColumnWidth,
+      dateRange,
+      columnsCount: calculator.getColumns().length,
+      totalWidth: calculator.getConfiguration().totalWidth
+    });
+    
+    return calculator;
+  }, [viewMode, dateRange]);
 
   const loading = tasksLoading || phasesLoading;
 
@@ -375,6 +438,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         projectId: projectId || '',
         dateRange,
         onRefresh: handleRefresh,
+        timelineCalculator,
       }}
     >
       <div
@@ -434,6 +498,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 animatingTasks={animatingTasks}
                 onCreateQuickTask={handleCreateQuickTask}
                 projectId={projectId || ''}
+                onRefresh={handleRefresh}
               />
             </div>
           </div>

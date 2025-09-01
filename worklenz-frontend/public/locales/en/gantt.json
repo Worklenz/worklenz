@@ -10,6 +10,14 @@
     "dragToMove": "Drag to move task",
     "addTaskFor": "Add task for {{date}}",
     "enterTaskName": "Enter task name...",
-    "pressEnterToCreate": "Press Enter to create • Esc to cancel"
+    "pressEnterToCreate": "Press Enter to create • Esc to cancel",
+    "phaseTitle": "Phase: {{name}} - {{startDate}} to {{endDate}}",
+    "taskTitle": "{{name}} - {{startDate}} to {{endDate}}",
+    "datesUpdatedSuccessfully": "Task dates updated successfully",
+    "failedToUpdateDates": "Failed to update task dates"
+  },
+  "common": {
+    "noStart": "No start",
+    "noEnd": "No end"
   }
 }

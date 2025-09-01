@@ -10,6 +10,14 @@
     "dragToMove": "Arrastra para mover la tarea",
     "addTaskFor": "Agregar tarea para {{date}}",
     "enterTaskName": "Ingresa el nombre de la tarea...",
-    "pressEnterToCreate": "Presiona Enter para crear • Esc para cancelar"
+    "pressEnterToCreate": "Presiona Enter para crear • Esc para cancelar",
+    "phaseTitle": "Fase: {{name}} - {{startDate}} hasta {{endDate}}",
+    "taskTitle": "{{name}} - {{startDate}} hasta {{endDate}}",
+    "datesUpdatedSuccessfully": "Fechas de la tarea actualizadas con éxito",
+    "failedToUpdateDates": "Error al actualizar las fechas de la tarea"
+  },
+  "common": {
+    "noStart": "Sin inicio",
+    "noEnd": "Sin fin"
   }
 }

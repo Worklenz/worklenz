@@ -129,14 +129,7 @@
   opacity: 0.8;
 }
 
-/* Better hover states */
-.gantt-task-row:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-.dark .gantt-task-row:hover {
-  background-color: rgba(255, 255, 255, 0.02);
-}
+/* Task row hover states removed to prevent full-row shading */
 
 /* Improved button styles */
 .gantt-add-task-btn {
@@ -508,4 +501,26 @@ body.gantt-dragging * {
 /* Task bars should have lower z-index */
 .gantt-task-bar {
   z-index: 10;
+}
+
+/* Task Preview Hover Effect */
+.gantt-task-preview-container {
+  position: relative;
+}
+
+.gantt-task-preview-tracker {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.gantt-task-preview-bar {
+  z-index: 8;
+}
+
+/* Dark mode support for preview */
+.dark .gantt-task-preview-bar {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  box-shadow: 0 4px 8px rgba(5, 150, 105, 0.5) !important;
+  border-color: rgba(5, 150, 105, 0.7) !important;
 }

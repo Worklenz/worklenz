@@ -10,6 +10,14 @@
     "dragToMove": "Tërhiq për të lëvizur detyrën",
     "addTaskFor": "Shto detyrë për {{date}}",
     "enterTaskName": "Shkruaj emrin e detyrës...",
-    "pressEnterToCreate": "Shtyp Enter për të krijuar • Esc për të anulluar"
+    "pressEnterToCreate": "Shtyp Enter për të krijuar • Esc për të anulluar",
+    "phaseTitle": "Faza: {{name}} - {{startDate}} deri {{endDate}}",
+    "taskTitle": "{{name}} - {{startDate}} deri {{endDate}}",
+    "datesUpdatedSuccessfully": "Datat e detyrës u përditësuan me sukses",
+    "failedToUpdateDates": "Dështoi përditësimi i datave të detyrës"
+  },
+  "common": {
+    "noStart": "Pa fillim",
+    "noEnd": "Pa fund"
   }
 }

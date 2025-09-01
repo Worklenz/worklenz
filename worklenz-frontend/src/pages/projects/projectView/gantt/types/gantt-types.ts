@@ -60,4 +60,5 @@ export interface GanttContextType {
   projectId: string;
   dateRange: { start: Date; end: Date };
   onRefresh: () => void;
+  timelineCalculator?: any; // UnifiedTimelineCalculator instance
 }
