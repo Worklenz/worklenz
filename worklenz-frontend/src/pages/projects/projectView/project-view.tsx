@@ -298,20 +298,26 @@ const ProjectView = React.memo(() => {
     const menuItems = filteredTabItems.map(item => {
       return {
         key: item.key,
-        disabled: item.disabled,
+        disabled: item.disabled && item.key !== 'finance', // Don't disable finance tab at Ant Design level
         label: (
           <Tooltip title={item.disabled ? item.disabledReason : undefined} placement="bottom">
             <Flex
               align="center"
               gap={6}
               style={{
-                color: item.disabled ? '#8c8c8c' : 'inherit',
-                opacity: item.disabled ? 0.6 : 1,
-                cursor: item.disabled ? 'pointer' : 'pointer',
+                color: item.disabled && item.key !== 'finance' ? '#8c8c8c' : 'inherit',
+                opacity: item.disabled && item.key !== 'finance' ? 0.6 : 1,
+                cursor: 'pointer',
               }}
               onClick={e => {
-                // Fallback: Direct click handler for disabled tabs
-                if (item.disabled) {
+                // Handle finance tab specially - show upgrade modal if disabled but not visually disabled
+                if (item.disabled && item.key === 'finance') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  dispatch(toggleUpgradeModal());
+                }
+                // Fallback: Direct click handler for other disabled tabs
+                else if (item.disabled) {
                   e.preventDefault();
                   e.stopPropagation();
                   dispatch(toggleUpgradeModal());
@@ -319,7 +325,7 @@ const ProjectView = React.memo(() => {
               }}
             >
               <span style={{ fontWeight: 500, fontSize: '13px' }}>{item.label}</span>
-              {item.disabled && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+              {item.disabled && <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />}
               {(item.key === 'tasks-list' || item.key === 'board') && !item.disabled && (
                 <ConfigProvider wave={{ disabled: true }}>
                   <Button
