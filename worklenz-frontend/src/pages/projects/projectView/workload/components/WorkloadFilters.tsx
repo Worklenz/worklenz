@@ -5,9 +5,7 @@ import {
   Select,
   Button,
   Switch,
-  Space,
   Popover,
-  Badge,
   theme,
   Dropdown,
   Card,
@@ -18,11 +16,9 @@ import {
 } from '@/shared/antd-imports';
 import {
   FilterOutlined,
-  ReloadOutlined,
-  DownloadOutlined,
-  SettingOutlined,
-  DownOutlined,
   FilterFilled,
+  ReloadOutlined,
+  DownOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -50,7 +46,7 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
   const { t } = useTranslation('workload');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
-  const { dateRange, filters, timeScale, showWeekends, workingDays } = useAppSelector(
+  const { dateRange, filters, timeScale, capacityUnit, showWeekends, workingDays } = useAppSelector(
     state => state.projectWorkload
   );
 
@@ -198,7 +194,6 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     saturday: false,
     sunday: false,
   };
-  const defaultCapacityUnit = 'hours';
   const defaultTimeScale = 'week';
   const defaultShowWeekends = false;
   const defaultDateRange = {
@@ -215,7 +210,6 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     workingDays.friday !== defaultWorkingDays.friday ||
     workingDays.saturday !== defaultWorkingDays.saturday ||
     workingDays.sunday !== defaultWorkingDays.sunday;
-  const capacityUnitChanged = capacityUnit !== defaultCapacityUnit;
   const timeScaleChanged = timeScale !== defaultTimeScale;
   const showWeekendsChanged = showWeekends !== defaultShowWeekends;
   const dateRangeChanged = 
@@ -230,7 +224,6 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     (filters.taskStatuses?.length || 0) +
     (filters.taskPriorities?.length || 0) +
     (workingDaysChanged ? 1 : 0) +
-    (capacityUnitChanged ? 1 : 0) +
     (timeScaleChanged ? 1 : 0) +
     (showWeekendsChanged ? 1 : 0) +
     (dateRangeChanged ? 1 : 0);
@@ -343,7 +336,6 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
            dispatch(clearFilters());
            // Reset all values to defaults
            dispatch(setWorkingDays(defaultWorkingDays));
-           dispatch(setCapacityUnit(defaultCapacityUnit));
            dispatch(setTimeScale(defaultTimeScale));
            // Reset showWeekends to false only if it's currently true
            if (showWeekends) {
