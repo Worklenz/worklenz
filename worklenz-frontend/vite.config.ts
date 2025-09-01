@@ -34,7 +34,6 @@ export default defineConfig(({ command, mode }) => {
     // **Development Server**
     server: {
       port: 5173,
-      open: true,
       hmr: {
         overlay: false,
       },

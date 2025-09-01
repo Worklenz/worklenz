@@ -6,5 +6,7 @@
   "associatedTaskColumn": "Associated Projects",
   "searchPlaceholder": "Search by name",
   "emptyText": "Categories can be created while updating or creating projects.",
-  "colorChangeTooltip": "Click to change color"
+  "colorChangeTooltip": "Click to change color",
+  "deleteSuccessMessage": "Category deleted successfully",
+  "deleteErrorMessage": "Failed to delete category"
 }
