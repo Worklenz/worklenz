@@ -1,10 +1,19 @@
 export interface PricingTier {
-  monthly_price: string;
-  annual_price: string;
-  annual_total?: string;
-  users_included: string;
-  max_users: string;
-  additional_user_price?: string;
+  monthly_price?: string; // Legacy field, kept for compatibility
+  annual_price?: string; // Legacy field, kept for compatibility
+  annual_total?: string; // Legacy field, kept for compatibility
+  users_included?: string; // Legacy field, kept for compatibility
+  max_users?: string; // Legacy field, kept for compatibility
+  additional_user_price?: string; // Legacy field, kept for compatibility
+  
+  // New API fields to match actual structure
+  monthly_base_price: string;
+  annual_base_price: string;
+  monthly_per_user_price: string;
+  annual_per_user_price: string;
+  included_users: string;
+  max_users_limit?: string;
+  
   monthly_plan_id?: string;
   annual_plan_id?: string;
   pricing_model: string;
@@ -38,7 +47,12 @@ export interface PlanFeatureProps {
 }
 
 export interface PlanPriceDisplayProps {
-  price: string;
+  monthlyPrice: string;
+  annualPrice?: string;
+  perUserMonthlyPrice?: string | null;
+  perUserAnnualPrice?: string | null;
+  isSmallTeam?: boolean;
+  billingFrequency: 'monthly' | 'annual';
   label: string;
   subtitle?: React.ReactNode;
   isAppSumoUser?: boolean;

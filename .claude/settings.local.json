@@ -15,7 +15,10 @@
       "Bash(npm install:*)",
       "WebFetch(domain:manyrequests.io)",
       "WebFetch(domain:manyrequests.com)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(for lang in zh alb)",
+      "Bash(do echo \"=== $lang ===\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": [],

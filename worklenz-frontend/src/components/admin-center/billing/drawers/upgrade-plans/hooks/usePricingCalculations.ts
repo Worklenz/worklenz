@@ -16,25 +16,25 @@ export const usePricingCalculations = (
 
       if (teamSize <= TEAM_SIZE_THRESHOLD) {
         if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
-          const perUserMonthlyPrice = parseFloat(pricingData.pro_small.monthly_price || '0');
+          const perUserMonthlyPrice = parseFloat(pricingData.pro_small.monthly_per_user_price || '0');
           finalPrice = perUserMonthlyPrice * teamSize;
         } else if (
           planType === 'business' &&
           pricingData.business_small?.pricing_model === 'per_user'
         ) {
-          const perUserMonthlyPrice = parseFloat(pricingData.business_small.monthly_price || '0');
+          const perUserMonthlyPrice = parseFloat(pricingData.business_small.monthly_per_user_price || '0');
           finalPrice = perUserMonthlyPrice * teamSize;
         } else if (planType === 'enterprise') {
-          finalPrice = parseFloat(pricingData.enterprise.monthly_price || '0');
-          if (!finalPrice && pricingData.enterprise.annual_price) {
-            finalPrice = parseFloat(pricingData.enterprise.annual_price);
+          finalPrice = parseFloat(pricingData.enterprise.monthly_base_price || '0');
+          if (!finalPrice && pricingData.enterprise.annual_base_price) {
+            finalPrice = parseFloat(pricingData.enterprise.annual_base_price) / 12;
           }
         } else {
           const planData = planType === 'pro' ? pricingData.pro : pricingData.business;
-          const basePrice = parseFloat(planData.monthly_price || '0');
-          const includedUsers = parseInt(planData.users_included) || 0;
+          const basePrice = parseFloat(planData.monthly_base_price || '0');
+          const includedUsers = parseInt(planData.included_users) || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
-          const extraUserCost = extraUsers * parseFloat(planData.additional_user_price || '0');
+          const extraUserCost = extraUsers * parseFloat(planData.monthly_per_user_price || '0');
           finalPrice = basePrice + extraUserCost;
         }
       } else {
@@ -48,15 +48,15 @@ export const usePricingCalculations = (
         }
 
         if (planType === 'enterprise') {
-          finalPrice = parseFloat(planData.monthly_price || '0');
-          if (!finalPrice && planData.annual_price) {
-            finalPrice = parseFloat(planData.annual_price);
+          finalPrice = parseFloat(planData.monthly_base_price || '0');
+          if (!finalPrice && planData.annual_base_price) {
+            finalPrice = parseFloat(planData.annual_base_price) / 12;
           }
         } else {
-          const basePrice = parseFloat(planData.monthly_price || '0');
-          const includedUsers = parseInt(planData.users_included) || 0;
+          const basePrice = parseFloat(planData.monthly_base_price || '0');
+          const includedUsers = parseInt(planData.included_users) || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
-          const extraUserCost = extraUsers * parseFloat(planData.additional_user_price || '0');
+          const extraUserCost = extraUsers * parseFloat(planData.monthly_per_user_price || '0');
           finalPrice = basePrice + extraUserCost;
         }
       }
@@ -76,29 +76,25 @@ export const usePricingCalculations = (
 
       if (teamSize <= TEAM_SIZE_THRESHOLD) {
         if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
-          const perUserMonthlyIfAnnual = parseFloat(pricingData.pro_small.annual_price || '0');
-          finalPrice = perUserMonthlyIfAnnual * 12 * teamSize;
+          // annual_per_user_price is already the monthly rate when paid annually, so multiply by 12
+          const perUserMonthlyWhenAnnual = parseFloat(pricingData.pro_small.annual_per_user_price || '0');
+          finalPrice = perUserMonthlyWhenAnnual * 12 * teamSize;
         } else if (
           planType === 'business' &&
           pricingData.business_small?.pricing_model === 'per_user'
         ) {
-          const perUserMonthlyIfAnnual = parseFloat(pricingData.business_small.annual_price || '0');
-          finalPrice = perUserMonthlyIfAnnual * 12 * teamSize;
+          // annual_per_user_price is already the monthly rate when paid annually, so multiply by 12
+          const perUserMonthlyWhenAnnual = parseFloat(pricingData.business_small.annual_per_user_price || '0');
+          finalPrice = perUserMonthlyWhenAnnual * 12 * teamSize;
         } else if (planType === 'enterprise') {
-          const annualTotal = parseFloat(pricingData.enterprise.annual_total || '0');
-          if (annualTotal > 0) {
-            finalPrice = annualTotal;
-          } else {
-            finalPrice = parseFloat(pricingData.enterprise.annual_price || '0') * 12;
-          }
+          finalPrice = parseFloat(pricingData.enterprise.annual_base_price || '0');
         } else {
           const planData = planType === 'pro' ? pricingData.pro : pricingData.business;
-          const baseAnnualTotal = parseFloat(planData.annual_total || '0');
-          const includedUsers = parseInt(planData.users_included) || 0;
+          const baseAnnualPrice = parseFloat(planData.annual_base_price || '0');
+          const includedUsers = parseInt(planData.included_users) || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
-          const extraUserCost =
-            extraUsers * parseFloat(planData.additional_user_price || '0') * 12;
-          finalPrice = baseAnnualTotal + extraUserCost;
+          const extraUserCost = extraUsers * parseFloat(planData.annual_per_user_price || '0') * 12;
+          finalPrice = baseAnnualPrice + extraUserCost;
         }
       } else {
         let planData;
@@ -111,19 +107,13 @@ export const usePricingCalculations = (
         }
 
         if (planType === 'enterprise') {
-          const annualTotal = parseFloat(planData.annual_total || '0');
-          if (annualTotal > 0) {
-            finalPrice = annualTotal;
-          } else {
-            finalPrice = parseFloat(planData.annual_price || '0') * 12;
-          }
+          finalPrice = parseFloat(planData.annual_base_price || '0');
         } else {
-          const baseAnnualTotal = parseFloat(planData.annual_total || '0');
-          const includedUsers = parseInt(planData.users_included) || 0;
+          const baseAnnualPrice = parseFloat(planData.annual_base_price || '0');
+          const includedUsers = parseInt(planData.included_users) || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
-          const extraUserCost =
-            extraUsers * parseFloat(planData.additional_user_price || '0') * 12;
-          finalPrice = baseAnnualTotal + extraUserCost;
+          const extraUserCost = extraUsers * parseFloat(planData.annual_per_user_price || '0') * 12;
+          finalPrice = baseAnnualPrice + extraUserCost;
         }
       }
 
@@ -164,11 +154,48 @@ export const usePricingCalculations = (
   const getEffectivePricingModel = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       if (planType === 'enterprise') return 'base_plan';
+      
+      // Check if small plans exist and have valid plan IDs (consistent with plan selection logic)
+      const hasValidProSmall = pricingData.pro_small && 
+                              (pricingData.pro_small.monthly_plan_id || pricingData.pro_small.annual_plan_id);
+      const hasValidBusinessSmall = pricingData.business_small && 
+                                   (pricingData.business_small.monthly_plan_id || pricingData.business_small.annual_plan_id);
+      
       return teamSize <= TEAM_SIZE_THRESHOLD &&
-        ((planType === 'pro' && pricingData.pro_small) ||
-          (planType === 'business' && pricingData.business_small))
+        ((planType === 'pro' && hasValidProSmall) ||
+          (planType === 'business' && hasValidBusinessSmall))
         ? 'per_user'
         : 'base_plan';
+    },
+    [teamSize, pricingData]
+  );
+
+  const getPerUserMonthlyPrice = useCallback(
+    (planType: 'pro' | 'business' | 'enterprise') => {
+      if (teamSize > TEAM_SIZE_THRESHOLD) return null;
+      
+      if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
+        return pricingData.pro_small.monthly_per_user_price || '0';
+      } else if (planType === 'business' && pricingData.business_small?.pricing_model === 'per_user') {
+        return pricingData.business_small.monthly_per_user_price || '0';
+      }
+      
+      return null;
+    },
+    [teamSize, pricingData]
+  );
+
+  const getPerUserAnnualPrice = useCallback(
+    (planType: 'pro' | 'business' | 'enterprise') => {
+      if (teamSize > TEAM_SIZE_THRESHOLD) return null;
+      
+      if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
+        return pricingData.pro_small.annual_per_user_price || '0';
+      } else if (planType === 'business' && pricingData.business_small?.pricing_model === 'per_user') {
+        return pricingData.business_small.annual_per_user_price || '0';
+      }
+      
+      return null;
     },
     [teamSize, pricingData]
   );
@@ -178,5 +205,7 @@ export const usePricingCalculations = (
     calculateAnnualTotal,
     getPriceLabel,
     getEffectivePricingModel,
+    getPerUserMonthlyPrice,
+    getPerUserAnnualPrice,
   };
 };

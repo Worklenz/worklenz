@@ -84,6 +84,14 @@ export const getInitialPricingData = (): PricingData => ({
 export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
   const mapped = getInitialPricingData();
 
+  // Handle AppSumo promo plans first by grouping them
+  const appSumoBusinessPlans = tiers.filter(t => 
+    t.tier_name === 'APPSUMO_BUSINESS_MONTHLY' || t.tier_name === 'APPSUMO_BUSINESS_ANNUAL'
+  );
+  const appSumoEnterprisePlans = tiers.filter(t => 
+    t.tier_name === 'APPSUMO_ENTERPRISE_MONTHLY' || t.tier_name === 'APPSUMO_ENTERPRISE_ANNUAL'
+  );
+
   tiers.forEach(tier => {
     const tierName = tier.tier_name;
     const getPlanId = (tier: any, isAnnual: boolean) => 
@@ -99,6 +107,14 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
           users_included: tier.min_users?.toString() || '',
           max_users: tier.max_users?.toString() || '',
           additional_user_price: tier.monthly_per_user_price?.toString() || '',
+          
+          // New API fields
+          monthly_base_price: tier.monthly_base_price?.toString() || '0',
+          annual_base_price: tier.annual_base_price?.toString() || '0',
+          monthly_per_user_price: tier.monthly_per_user_price?.toString() || '',
+          annual_per_user_price: tier.annual_per_user_price?.toString() || '',
+          included_users: tier.included_users?.toString() || '0',
+          
           pricing_model: 'per_user',
           monthly_plan_id: getPlanId(tier, false),
           annual_plan_id: getPlanId(tier, true),
@@ -116,6 +132,14 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
           users_included: tier.included_users?.toString() || '',
           max_users: tier.max_users?.toString() || '',
           additional_user_price: tier.monthly_per_user_price?.toString() || '',
+          
+          // New API fields
+          monthly_base_price: tier.monthly_base_price?.toString() || '',
+          annual_base_price: tier.annual_base_price?.toString() || '',
+          monthly_per_user_price: tier.monthly_per_user_price?.toString() || '',
+          annual_per_user_price: tier.annual_per_user_price?.toString() || '',
+          included_users: tier.included_users?.toString() || '',
+          
           pricing_model: 'base_plan',
           monthly_plan_id: getPlanId(tier, false),
           annual_plan_id: getPlanId(tier, true),
@@ -130,6 +154,14 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
           users_included: tier.min_users?.toString() || '',
           max_users: tier.max_users?.toString() || '',
           additional_user_price: tier.monthly_per_user_price?.toString() || '',
+          
+          // New API fields
+          monthly_base_price: tier.monthly_base_price?.toString() || '0',
+          annual_base_price: tier.annual_base_price?.toString() || '0',
+          monthly_per_user_price: tier.monthly_per_user_price?.toString() || '',
+          annual_per_user_price: tier.annual_per_user_price?.toString() || '',
+          included_users: tier.included_users?.toString() || '0',
+          
           pricing_model: 'per_user',
           monthly_plan_id: getPlanId(tier, false),
           annual_plan_id: getPlanId(tier, true),
@@ -147,6 +179,14 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
           users_included: tier.included_users?.toString() || '',
           max_users: tier.max_users?.toString() || '',
           additional_user_price: tier.monthly_per_user_price?.toString() || '',
+          
+          // New API fields
+          monthly_base_price: tier.monthly_base_price?.toString() || '',
+          annual_base_price: tier.annual_base_price?.toString() || '',
+          monthly_per_user_price: tier.monthly_per_user_price?.toString() || '',
+          annual_per_user_price: tier.annual_per_user_price?.toString() || '',
+          included_users: tier.included_users?.toString() || '',
+          
           pricing_model: 'base_plan',
           monthly_plan_id: getPlanId(tier, false),
           annual_plan_id: getPlanId(tier, true),
@@ -164,6 +204,14 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
           users_included: 'Unlimited',
           max_users: 'Unlimited',
           additional_user_price: '0',
+          
+          // New API fields
+          monthly_base_price: tier.monthly_base_price?.toString() || '',
+          annual_base_price: tier.annual_base_price?.toString() || '',
+          monthly_per_user_price: '0',
+          annual_per_user_price: '0',
+          included_users: 'Unlimited',
+          
           pricing_model: 'base_plan',
           monthly_plan_id: getPlanId(tier, false),
           annual_plan_id: getPlanId(tier, true),
@@ -178,7 +226,72 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
           users_included: tier.included_users?.toString() || '',
           max_users: tier.max_users?.toString() || '',
           additional_user_price: '0',
+          
+          // New API fields
+          monthly_base_price: '0',
+          annual_base_price: '0',
+          monthly_per_user_price: '0',
+          annual_per_user_price: '0',
+          included_users: tier.included_users?.toString() || '',
+          
           pricing_model: 'free',
+          tier_id: tier.id,
+        };
+        break;
+        
+      // AppSumo Promo Plans
+      case 'APPSUMO_BUSINESS_MONTHLY':
+      case 'APPSUMO_BUSINESS_ANNUAL':
+        mapped.business = {
+          monthly_price: tier.monthly_base_price?.toString() || '',
+          annual_price: tier.annual_base_price 
+            ? (Number(tier.annual_base_price) / 12).toFixed(2)
+            : tier.monthly_base_price?.toString() || '',
+          annual_total: tier.annual_base_price?.toString() || 
+                       (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
+          users_included: 'Up to 100 users',
+          max_users: tier.max_users?.toString() || '100',
+          additional_user_price: '0',
+          
+          // New API fields
+          monthly_base_price: tier.monthly_base_price?.toString() || '',
+          annual_base_price: tier.annual_base_price?.toString() || 
+                            (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
+          monthly_per_user_price: '0',
+          annual_per_user_price: '0',
+          included_users: 'Up to 100 users',
+          
+          pricing_model: 'promo_flat_rate',
+          monthly_plan_id: tier.tier_name === 'APPSUMO_BUSINESS_MONTHLY' ? getPlanId(tier, false) : '',
+          annual_plan_id: tier.tier_name === 'APPSUMO_BUSINESS_ANNUAL' ? getPlanId(tier, true) : '',
+          tier_id: tier.id,
+        };
+        break;
+        
+      case 'APPSUMO_ENTERPRISE_MONTHLY':
+      case 'APPSUMO_ENTERPRISE_ANNUAL':
+        mapped.enterprise = {
+          monthly_price: tier.monthly_base_price?.toString() || '',
+          annual_price: tier.annual_base_price 
+            ? (Number(tier.annual_base_price) / 12).toFixed(2)
+            : tier.monthly_base_price?.toString() || '',
+          annual_total: tier.annual_base_price?.toString() || 
+                       (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
+          users_included: 'Unlimited',
+          max_users: 'Unlimited',
+          additional_user_price: '0',
+          
+          // New API fields
+          monthly_base_price: tier.monthly_base_price?.toString() || '',
+          annual_base_price: tier.annual_base_price?.toString() || 
+                            (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
+          monthly_per_user_price: '0',
+          annual_per_user_price: '0',
+          included_users: 'Unlimited',
+          
+          pricing_model: 'promo_unlimited',
+          monthly_plan_id: tier.tier_name === 'APPSUMO_ENTERPRISE_MONTHLY' ? getPlanId(tier, false) : '',
+          annual_plan_id: tier.tier_name === 'APPSUMO_ENTERPRISE_ANNUAL' ? getPlanId(tier, true) : '',
           tier_id: tier.id,
         };
         break;

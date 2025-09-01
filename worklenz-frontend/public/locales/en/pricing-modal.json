@@ -319,6 +319,7 @@
   },
   "billing": {
     "billedAnnually": "(billed annually)",
+    "billedMonthly": "(billed monthly)",
     "perYear": "/year",
     "perMonth": "/month",
     "forUsers": " for {{count}} user{{s}}"

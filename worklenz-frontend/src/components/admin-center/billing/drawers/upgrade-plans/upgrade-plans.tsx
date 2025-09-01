@@ -113,7 +113,9 @@ const UpgradePlans = () => {
     calculateMonthlyTotal, 
     calculateAnnualTotal, 
     getPriceLabel, 
-    getEffectivePricingModel 
+    getEffectivePricingModel,
+    getPerUserMonthlyPrice,
+    getPerUserAnnualPrice
   } = usePricingCalculations(teamSize, pricingData, isAppSumoUser);
   
   const { generateTeamSizeOptions } = useTeamSizeOptions(isAppSumoUser, selectedPlanType);
@@ -173,48 +175,25 @@ const UpgradePlans = () => {
       if (pricingRes.done && pricingRes.body) {
         const tiers = pricingRes.body.tiers || [];
 
-        // Filter tiers for AppSumo users
+        // Filter tiers for AppSumo users - show only promo plans until Sept 6th
         let filteredTiers = tiers;
         if (isAppSumoUser) {
-          filteredTiers = tiers.filter((tier: any) => {
-            return tier.tier_name.includes('BUSINESS') || tier.tier_name.includes('ENTERPRISE');
-          });
+          // Check if current date is before September 6th, 2024
+          const currentDate = new Date();
+          const promoEndDate = new Date('2024-09-06');
+          const isPromoActive = currentDate < promoEndDate;
 
-          // Apply AppSumo-specific modifications
-          filteredTiers = filteredTiers.map((tier: any) => {
-            const modifiedTier = { ...tier };
-
-            if (tier.tier_name.includes('BUSINESS')) {
-              modifiedTier.max_users = Math.min(50, tier.max_users || 25);
-              modifiedTier.appsumo_special_limit = 50;
-            }
-
-            // Apply 50% discount if eligible
-            if (appSumoDiscountInfo?.eligibleForDiscount) {
-              if (tier.monthly_base_price) {
-                modifiedTier.monthly_base_price = (
-                  parseFloat(tier.monthly_base_price) * 0.5
-                ).toFixed(2);
-              }
-              if (tier.annual_base_price) {
-                modifiedTier.annual_base_price = (parseFloat(tier.annual_base_price) * 0.5).toFixed(2);
-              }
-              if (tier.monthly_per_user_price) {
-                modifiedTier.monthly_per_user_price = (
-                  parseFloat(tier.monthly_per_user_price) * 0.5
-                ).toFixed(2);
-              }
-              if (tier.annual_per_user_price) {
-                modifiedTier.annual_per_user_price = (
-                  parseFloat(tier.annual_per_user_price) * 0.5
-                ).toFixed(2);
-              }
-
-              modifiedTier.appsumo_discount_applied = true;
-            }
-
-            return modifiedTier;
-          });
+          if (isPromoActive) {
+            // Show only AppSumo promo plans
+            filteredTiers = tiers.filter((tier: any) => {
+              return tier.is_promo && tier.promo_type === 'appsumo';
+            });
+          } else {
+            // After promo period, show regular business and enterprise plans
+            filteredTiers = tiers.filter((tier: any) => {
+              return tier.tier_name.includes('BUSINESS') || tier.tier_name.includes('ENTERPRISE');
+            });
+          }
 
           await fetchAppSumoDiscountInfo();
         }
@@ -422,16 +401,20 @@ const UpgradePlans = () => {
       // Get the correct plan ID based on selected plan type and team size
       const getPlanIdForType = (type: typeof targetPlanType) => {
         if (type === 'pro') {
-          const planData =
-            teamSize <= TEAM_SIZE_THRESHOLD && pricingData.pro_small 
-              ? pricingData.pro_small 
-              : pricingData.pro;
+          // Check if small plan exists and has valid plan IDs
+          const useSmallPlan = teamSize <= TEAM_SIZE_THRESHOLD && 
+                               pricingData.pro_small &&
+                               (isAnnual ? pricingData.pro_small.annual_plan_id : pricingData.pro_small.monthly_plan_id);
+          
+          const planData = useSmallPlan ? pricingData.pro_small : pricingData.pro;
           return isAnnual ? planData?.annual_plan_id : planData?.monthly_plan_id;
         } else if (type === 'business') {
-          const planData =
-            teamSize <= TEAM_SIZE_THRESHOLD && pricingData.business_small
-              ? pricingData.business_small
-              : pricingData.business;
+          // Check if small plan exists and has valid plan IDs
+          const useSmallPlan = teamSize <= TEAM_SIZE_THRESHOLD && 
+                               pricingData.business_small &&
+                               (isAnnual ? pricingData.business_small.annual_plan_id : pricingData.business_small.monthly_plan_id);
+          
+          const planData = useSmallPlan ? pricingData.business_small : pricingData.business;
           return isAnnual ? planData?.annual_plan_id : planData?.monthly_plan_id;
         } else if (type === 'enterprise') {
           return isAnnual
@@ -642,8 +625,14 @@ const UpgradePlans = () => {
                   features={generateFreePlanFeatures()}
                   priceDisplay={
                     <PlanPriceDisplay
-                      price="0"
+                      monthlyPrice="0"
+                      annualPrice="0"
+                      perUserMonthlyPrice={null}
+                      perUserAnnualPrice={null}
+                      isSmallTeam={false}
+                      billingFrequency={billingFrequency}
                       label={t('pricing-modal:plans.free.forever')}
+                      isAppSumoUser={isAppSumoUser}
                     />
                   }
                   selectedPlanType={selectedPlanType}
@@ -662,10 +651,13 @@ const UpgradePlans = () => {
                   features={generateProPlanFeatures()}
                   priceDisplay={
                     <PlanPriceDisplay
-                      price={billingFrequency === 'annual' 
-                        ? calculateAnnualTotal('pro') 
-                        : calculateMonthlyTotal('pro')}
-                      label={`${getPriceLabel('pro')} ${billingFrequency === 'annual' ? t('pricing-modal:billing.billedAnnually', '(billed annually)') : ''}`}
+                      monthlyPrice={calculateMonthlyTotal('pro')}
+                      annualPrice={calculateAnnualTotal('pro')}
+                      perUserMonthlyPrice={getPerUserMonthlyPrice('pro')}
+                      perUserAnnualPrice={getPerUserAnnualPrice('pro')}
+                      isSmallTeam={teamSize <= 5}
+                      billingFrequency={billingFrequency}
+                      label={getPriceLabel('pro')}
                       isAppSumoUser={isAppSumoUser}
                     />
                   }
@@ -682,15 +674,18 @@ const UpgradePlans = () => {
                 title={t('pricing-modal:plans.business.name')}
                 description={t('pricing-modal:plans.business.description')}
                 features={generateBusinessPlanFeatures()}
-                priceDisplay={
-                  <PlanPriceDisplay
-                    price={billingFrequency === 'annual' 
-                      ? calculateAnnualTotal('business') 
-                      : calculateMonthlyTotal('business')}
-                    label={`${getPriceLabel('business')} ${billingFrequency === 'annual' ? t('pricing-modal:billing.billedAnnually', '(billed annually)') : ''}`}
-                    isAppSumoUser={isAppSumoUser}
-                  />
-                }
+                                  priceDisplay={
+                    <PlanPriceDisplay
+                      monthlyPrice={calculateMonthlyTotal('business')}
+                      annualPrice={calculateAnnualTotal('business')}
+                      perUserMonthlyPrice={getPerUserMonthlyPrice('business')}
+                      perUserAnnualPrice={getPerUserAnnualPrice('business')}
+                      isSmallTeam={teamSize <= 5}
+                      billingFrequency={billingFrequency}
+                      label={getPriceLabel('business')}
+                      isAppSumoUser={isAppSumoUser}
+                    />
+                  }
                 selectedPlanType={selectedPlanType}
                 onPlanSelect={handlePlanSelect}
               />
@@ -703,15 +698,18 @@ const UpgradePlans = () => {
                 title={t('pricing-modal:plans.enterprise.name')}
                 description={t('pricing-modal:plans.enterprise.description')}
                 features={generateEnterprisePlanFeatures()}
-                priceDisplay={
-                  <PlanPriceDisplay
-                    price={billingFrequency === 'annual' 
-                      ? calculateAnnualTotal('enterprise') 
-                      : calculateMonthlyTotal('enterprise')}
-                    label={`${getPriceLabel('enterprise')} ${billingFrequency === 'annual' ? t('pricing-modal:billing.billedAnnually', '(billed annually)') : ''}`}
-                    isAppSumoUser={isAppSumoUser}
-                  />
-                }
+                                  priceDisplay={
+                    <PlanPriceDisplay
+                      monthlyPrice={calculateMonthlyTotal('enterprise')}
+                      annualPrice={calculateAnnualTotal('enterprise')}
+                      perUserMonthlyPrice={null}
+                      perUserAnnualPrice={null}
+                      isSmallTeam={false}
+                      billingFrequency={billingFrequency}
+                      label={getPriceLabel('enterprise')}
+                      isAppSumoUser={isAppSumoUser}
+                    />
+                  }
                 selectedPlanType={selectedPlanType}
                 onPlanSelect={handlePlanSelect}
               />
