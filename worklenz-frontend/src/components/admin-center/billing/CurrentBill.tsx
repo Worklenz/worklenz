@@ -15,7 +15,7 @@ import {
   fetchFreePlanSettings,
 } from '@/features/admin-center/admin-center.slice';
 
-import CurrentPlanDetails from './current-plan-details/current-plan-details';
+import CurrentPlanDetails from './current-plan-details/CurrentPlanDetails';
 import AccountStorage from './account-storage/account-storage';
 import { useAuthService } from '@/hooks/useAuth';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
