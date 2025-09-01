@@ -8,18 +8,28 @@ export const useGanttDimensions = (
   columnsCount: number
 ) => {
   const [containerWidth, setContainerWidth] = useState(0);
+  const [dimensionsVersion, setDimensionsVersion] = useState(0);
 
   const updateContainerWidth = useCallback(() => {
     if (containerRef.current) {
-      setContainerWidth(containerRef.current.offsetWidth);
+      const newWidth = containerRef.current.offsetWidth;
+      if (newWidth !== containerWidth) {
+        setContainerWidth(newWidth);
+        setDimensionsVersion(prev => prev + 1);
+      }
     }
-  }, [containerRef]);
+  }, [containerRef, containerWidth]);
 
   useEffect(() => {
     updateContainerWidth();
     window.addEventListener('resize', updateContainerWidth);
     return () => window.removeEventListener('resize', updateContainerWidth);
   }, [updateContainerWidth]);
+
+  // Force re-calculation when viewMode or columnsCount changes
+  useEffect(() => {
+    setDimensionsVersion(prev => prev + 1);
+  }, [viewMode, columnsCount]);
 
   const baseColumnWidth = getColumnWidth(viewMode);
   const minTotalWidth = columnsCount * baseColumnWidth;
@@ -30,7 +40,7 @@ export const useGanttDimensions = (
 
   const actualColumnWidth =
     shouldStretch && containerWidth > minTotalWidth
-      ? containerWidth / columnsCount
+      ? Math.max(baseColumnWidth, containerWidth / columnsCount)
       : baseColumnWidth;
 
   const totalWidth = columnsCount * actualColumnWidth;
@@ -41,5 +51,6 @@ export const useGanttDimensions = (
     totalWidth,
     columnsCount,
     shouldScroll: totalWidth > containerWidth,
+    dimensionsVersion, // Expose version for components that need to react to dimension changes
   };
 };

@@ -84,6 +84,8 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
     calculateDateFromPosition,
   }) => {
     const { t } = useTranslation('gantt');
+    const isPhase = task.type === 'milestone' || task.is_milestone;
+    
     const [isResizing, setIsResizing] = useState<'left' | 'right' | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [tempDates, setTempDates] = useState<{ start: Date | null; end: Date | null }>({
@@ -101,10 +103,13 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
     });
     const isActiveRef = useRef(false);
 
-    // Update temp dates when task changes
+    // Update temp dates when task changes (but not for phases - they should use actual dates)
     useEffect(() => {
-      setTempDates({ start: task.start_date, end: task.end_date });
-    }, [task.start_date, task.end_date]);
+      // Only update tempDates for regular tasks, not phases
+      if (!isPhase) {
+        setTempDates({ start: task.start_date, end: task.end_date });
+      }
+    }, [task.start_date, task.end_date, isPhase]);
 
     // Create stable refs for current values
     const currentStateRef = useRef({
@@ -262,32 +267,113 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
     );
 
     const renderMilestone = () => {
-      if (!task.start_date || !dateRange) return null;
+      if (!dateRange) return null;
 
-      // Calculate position for milestone diamond based on day alignment
+      // Use actual task dates, not tempDates for phase rendering
+      const actualStartDate = task.start_date;
+      const actualEndDate = task.end_date;
+
+      // For milestones without dates, show a placeholder
+      if (!actualStartDate || !actualEndDate) {
+        return (
+          <div
+            className="absolute inset-0 flex items-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
+            title={t('task.clickTimelineSetDates', 'Click on timeline to set dates for this phase')}
+          >
+            <div className="text-xs text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border border-gray-200 dark:border-gray-600 ml-2">
+              {t('task.clickTimelineAddDates', 'Click timeline to add dates')}
+            </div>
+          </div>
+        );
+      }
+
+      // Calculate position and width for milestone bar based on view mode and date alignment
       const startOfRange = new Date(dateRange.start);
       startOfRange.setHours(0, 0, 0, 0);
 
-      const startOfMilestone = new Date(task.start_date);
+      const startOfMilestone = new Date(actualStartDate);
       startOfMilestone.setHours(0, 0, 0, 0);
 
-      // Calculate days from range start to milestone start
-      const daysFromStart = Math.floor(
-        (startOfMilestone.getTime() - startOfRange.getTime()) / (1000 * 60 * 60 * 24)
-      );
+      const endOfMilestone = new Date(actualEndDate);
+      endOfMilestone.setHours(23, 59, 59, 999);
 
-      // Position milestone at the center of the day column
-      const left = daysFromStart * columnWidth + columnWidth / 2;
+      // Calculate position and width using the same logic as regular tasks
+      // This ensures consistency and prevents date calculation errors
+      
+      // Calculate total timeline width in days
+      const totalTimeSpan = dateRange.end.getTime() - dateRange.start.getTime();
+      const totalDays = Math.ceil(totalTimeSpan / (1000 * 60 * 60 * 24));
+      
+      // Calculate milestone position as a percentage of the total timeline
+      const milestoneStartOffset = startOfMilestone.getTime() - startOfRange.getTime();
+      const milestoneEndOffset = endOfMilestone.getTime() - startOfRange.getTime();
+      
+      // Convert time offsets to pixel positions
+      const totalWidth = columnsCount * columnWidth;
+      const startPercent = milestoneStartOffset / totalTimeSpan;
+      const endPercent = milestoneEndOffset / totalTimeSpan;
+      
+      const left = Math.max(0, startPercent * totalWidth);
+      const width = Math.max(columnWidth, (endPercent - startPercent) * totalWidth);
 
       return (
         <div
-          className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rotate-45 z-10 shadow-sm"
+          className="absolute inset-y-2 z-10 gantt-phase-bar"
           style={{
             left: `${left}px`,
-            backgroundColor: task.color || '#3b82f6',
+            width: `${width}px`,
           }}
-          title={`${task.name} - ${task.start_date.toLocaleDateString()}`}
-        />
+          title={`Phase: ${task.name} - ${actualStartDate.toLocaleDateString()} to ${actualEndDate.toLocaleDateString()}`}
+        >
+          {/* Main phase bar with gradient and distinctive styling */}
+          <div
+            className="h-full rounded-lg flex items-center text-sm text-white font-bold shadow-lg border-2 relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${task.color || '#3b82f6'} 0%, ${addAlphaToHex(task.color || '#3b82f6', 0.8)} 100%)`,
+              borderColor: task.color || '#3b82f6',
+              boxShadow: `0 4px 12px ${addAlphaToHex(task.color || '#3b82f6', 0.3)}`,
+            }}
+          >
+            {/* Left accent stripe */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 bg-white opacity-60"
+            />
+            
+            {/* Phase content */}
+            <div className="flex-1 flex items-center px-3 min-w-0 h-full pointer-events-none relative">
+              {/* Phase name */}
+              <div className="truncate flex-1 select-none font-bold tracking-wide text-shadow">
+                {task.name}
+              </div>
+              
+              {/* Progress indicator if phase has children */}
+              {task.children && task.children.length > 0 && (
+                <div className="flex-shrink-0 ml-2 text-xs gantt-phase-progress">
+                  {Math.round((task.children.filter((child: any) => child.progress === 100).length / task.children.length) * 100)}%
+                </div>
+              )}
+            </div>
+            
+            {/* Subtle pattern overlay */}
+            <div
+              className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: `repeating-linear-gradient(
+                  45deg,
+                  transparent,
+                  transparent 4px,
+                  rgba(255, 255, 255, 0.1) 4px,
+                  rgba(255, 255, 255, 0.1) 8px
+                )`,
+              }}
+            />
+            
+            {/* Right accent stripe */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-1 bg-white opacity-60"
+            />
+          </div>
+        </div>
       );
     };
 
@@ -296,13 +382,30 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
 
       // For tasks without dates, show a placeholder on click
       if (!tempDates.start || !tempDates.end) {
+        const getDurationText = () => {
+          switch (viewMode) {
+            case 'day':
+              return '3 days';
+            case 'week':
+              return '3 weeks';
+            case 'month':
+              return '3 months';
+            case 'quarter':
+              return '3 quarters';
+            case 'year':
+              return '3 years';
+            default:
+              return '3 days';
+          }
+        };
+
         return (
           <div
             className="absolute inset-0 flex items-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-            title={t('task.clickTimelineSetDates', 'Click on timeline to set dates for this task')}
+            title={t('task.clickTimelineSetDates', `Click on timeline to create ${getDurationText()} task`)}
           >
             <div className="text-xs text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border border-gray-200 dark:border-gray-600 ml-2">
-              {t('task.clickTimelineAddDates', 'Click timeline to add dates')}
+              {t('task.clickTimelineAddDates', `Click to add ${getDurationText()}`)}
             </div>
           </div>
         );
@@ -331,7 +434,37 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
 
       // Position based on day columns
       const left = Math.max(0, daysFromStart * columnWidth);
-      const width = Math.max(columnWidth, taskDurationDays * columnWidth);
+      
+      // For different view modes, calculate width appropriately
+      let width: number;
+      switch (viewMode) {
+        case 'day':
+          // In day view, each day gets one column
+          width = Math.max(columnWidth, taskDurationDays * columnWidth);
+          break;
+        case 'week':
+          // In week view, calculate weeks spanned
+          const weeksSpanned = Math.ceil(taskDurationDays / 7);
+          width = Math.max(columnWidth, weeksSpanned * columnWidth);
+          break;
+        case 'month':
+          // In month view, calculate months spanned
+          const monthsSpanned = Math.ceil(taskDurationDays / 30); // Approximate
+          width = Math.max(columnWidth, monthsSpanned * columnWidth);
+          break;
+        case 'quarter':
+          // In quarter view, calculate quarters spanned
+          const quartersSpanned = Math.ceil(taskDurationDays / 90); // Approximate
+          width = Math.max(columnWidth, quartersSpanned * columnWidth);
+          break;
+        case 'year':
+          // In year view, calculate years spanned
+          const yearsSpanned = Math.ceil(taskDurationDays / 365); // Approximate
+          width = Math.max(columnWidth, yearsSpanned * columnWidth);
+          break;
+        default:
+          width = Math.max(columnWidth, taskDurationDays * columnWidth);
+      }
 
       return (
         <div
@@ -392,8 +525,6 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
       );
     };
 
-    const isPhase = task.type === 'milestone' || task.is_milestone;
-
     const handleClick = (e: React.MouseEvent) => {
       // For regular tasks without dates, calculate date from click position
       if (
@@ -406,30 +537,43 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         const x = e.clientX - rect.left;
         const clickedDate = calculateDateFromPosition(x, columnWidth);
 
-        // Set both start and end date based on view mode
+        // Set both start and end date based on view mode with 3-cell duration
         const startDate = new Date(clickedDate);
         startDate.setHours(0, 0, 0, 0); // Start of day
 
-        const endDate = new Date(clickedDate);
+        const endDate = new Date(startDate);
         switch (viewMode) {
           case 'day':
-            // For day view, end at end of the same day
+            // For day view, span 3 days (3 cells)
+            endDate.setDate(endDate.getDate() + 2); // +2 to make it 3 days inclusive
             endDate.setHours(23, 59, 59, 999);
             break;
           case 'week':
-            // For week view, span one week
-            endDate.setDate(endDate.getDate() + 6);
+            // For week view, span 3 weeks (3 cells)
+            endDate.setDate(endDate.getDate() + (3 * 7) - 1); // 3 weeks minus 1 day for inclusive
             endDate.setHours(23, 59, 59, 999);
             break;
           case 'month':
-            // For month view, span one month
-            endDate.setMonth(endDate.getMonth() + 1);
+            // For month view, span 3 months (3 cells)
+            endDate.setMonth(endDate.getMonth() + 3);
+            endDate.setDate(endDate.getDate() - 1); // Make it inclusive
+            endDate.setHours(23, 59, 59, 999);
+            break;
+          case 'quarter':
+            // For quarter view, span 3 quarters (3 cells)
+            endDate.setMonth(endDate.getMonth() + 9); // 3 quarters = 9 months
+            endDate.setDate(endDate.getDate() - 1);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+          case 'year':
+            // For year view, span 3 years (3 cells)
+            endDate.setFullYear(endDate.getFullYear() + 3);
             endDate.setDate(endDate.getDate() - 1);
             endDate.setHours(23, 59, 59, 999);
             break;
           default:
-            // Default to next day
-            endDate.setDate(endDate.getDate() + 1);
+            // Default to 3 days
+            endDate.setDate(endDate.getDate() + 2);
             endDate.setHours(23, 59, 59, 999);
         }
 
@@ -1101,6 +1245,14 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       async (taskId: string, startDate: Date | null, endDate: Date | null) => {
         if (!startDate || !endDate) return;
 
+        // Find the task to check if it's a phase
+        const task = finalTasks.find(t => 'id' in t && t.id === taskId);
+        if (task && 'type' in task && (task.type === 'milestone' || task.is_milestone)) {
+          // Don't allow date updates for phases via this method
+          console.warn('Attempted to update phase dates via task update method');
+          return;
+        }
+
         try {
           await updateTaskDates({
             task_id: taskId,
@@ -1114,7 +1266,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
           message.error('Failed to update task dates');
         }
       },
-      [updateTaskDates]
+      [updateTaskDates, finalTasks]
     );
 
     return (

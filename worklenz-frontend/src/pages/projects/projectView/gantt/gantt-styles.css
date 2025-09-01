@@ -423,3 +423,89 @@ body.gantt-resizing *,
 body.gantt-dragging * {
   cursor: inherit !important;
 }
+
+/* Enhanced Phase Bar Styles */
+.gantt-phase-bar {
+  position: relative;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gantt-phase-bar:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  /* Removed translateY to prevent push-down effect */
+}
+
+/* Phase bar gradient overlay for depth */
+.gantt-phase-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    180deg, 
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  border-radius: 0.5rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Text shadow for better readability */
+.text-shadow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Phase bar hover animation */
+@keyframes phaseBarPulse {
+  0% { box-shadow: 0 4px 12px rgba(var(--phase-color), 0.3); }
+  50% { box-shadow: 0 4px 12px rgba(var(--phase-color), 0.5); }
+  100% { box-shadow: 0 4px 12px rgba(var(--phase-color), 0.3); }
+}
+
+.gantt-phase-bar:hover > div {
+  animation: phaseBarPulse 2s ease-in-out infinite;
+}
+
+/* Phase icon styling removed - no longer used */
+
+/* Progress indicator styling */
+.gantt-phase-progress {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(2px);
+}
+
+/* Distinguish phase bars in dark mode */
+.dark .gantt-phase-bar {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+}
+
+.dark .gantt-phase-bar:hover {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+}
+
+/* Make phase bars more prominent than task bars */
+.gantt-phase-bar > div {
+  position: relative;
+  z-index: 20;
+  border-width: 2px;
+  border-style: solid;
+}
+
+/* Ensure phase bars appear above task bars */
+.gantt-phase-bar {
+  z-index: 15 !important;
+}
+
+/* Task bars should have lower z-index */
+.gantt-task-bar {
+  z-index: 10;
+}
