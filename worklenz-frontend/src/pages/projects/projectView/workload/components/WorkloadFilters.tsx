@@ -22,6 +22,7 @@ import {
   DownloadOutlined,
   SettingOutlined,
   DownOutlined,
+  FilterFilled,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -188,9 +189,39 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     setIsDateDropdownOpen(false);
   };
 
-  const defaultWorkingDaysCount = 5; // Monday to Friday
-  const currentWorkingDaysCount = Object.values(workingDays).filter(Boolean).length;
-  const workingDaysChanged = currentWorkingDaysCount !== defaultWorkingDaysCount;
+  // Default values from the initial state
+  const defaultWorkingDays = {
+    monday: true,
+    tuesday: true,
+    wednesday: true,
+    thursday: true,
+    friday: true,
+    saturday: false,
+    sunday: false,
+  };
+  const defaultCapacityUnit = 'hours';
+  const defaultTimeScale = 'week';
+  const defaultShowWeekends = false;
+  const defaultDateRange = {
+    startDate: dayjs().startOf('week').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('week').add(3, 'weeks').format('YYYY-MM-DD'),
+  };
+
+  // Check if values have changed from defaults
+  const workingDaysChanged = 
+    workingDays.monday !== defaultWorkingDays.monday ||
+    workingDays.tuesday !== defaultWorkingDays.tuesday ||
+    workingDays.wednesday !== defaultWorkingDays.wednesday ||
+    workingDays.thursday !== defaultWorkingDays.thursday ||
+    workingDays.friday !== defaultWorkingDays.friday ||
+    workingDays.saturday !== defaultWorkingDays.saturday ||
+    workingDays.sunday !== defaultWorkingDays.sunday;
+  const capacityUnitChanged = capacityUnit !== defaultCapacityUnit;
+  const timeScaleChanged = timeScale !== defaultTimeScale;
+  const showWeekendsChanged = showWeekends !== defaultShowWeekends;
+  const dateRangeChanged = 
+    dateRange.startDate !== defaultDateRange.startDate || 
+    dateRange.endDate !== defaultDateRange.endDate;
 
   const activeFiltersCount =
     (filters.showOverallocated ? 1 : 0) +
@@ -199,7 +230,11 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     (filters.teamIds?.length || 0) +
     (filters.taskStatuses?.length || 0) +
     (filters.taskPriorities?.length || 0) +
-    (workingDaysChanged ? 1 : 0);
+    (workingDaysChanged ? 1 : 0) +
+    (capacityUnitChanged ? 1 : 0) +
+    (timeScaleChanged ? 1 : 0) +
+    (showWeekendsChanged ? 1 : 0) +
+    (dateRangeChanged ? 1 : 0);
 
   const filterContent = (
     <Flex vertical gap={16} style={{ width: 300 }}>
@@ -315,26 +350,28 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
         />
       </Flex>
 
-      <Button
-        type="text"
-        danger
-        onClick={() => {
-          dispatch(clearFilters());
-          // Reset working days to default (Monday-Friday)
-          dispatch(setWorkingDays({
-            monday: true,
-            tuesday: true,
-            wednesday: true,
-            thursday: true,
-            friday: true,
-            saturday: false,
-            sunday: false,
-          }));
-        }}
-        disabled={activeFiltersCount === 0}
-      >
-        {t('filters.clearAll')}
-      </Button>
+             <Button
+         type="text"
+         danger
+         onClick={() => {
+           dispatch(clearFilters());
+           // Reset all values to defaults
+           dispatch(setWorkingDays(defaultWorkingDays));
+           dispatch(setCapacityUnit(defaultCapacityUnit));
+           dispatch(setTimeScale(defaultTimeScale));
+           // Reset showWeekends to false only if it's currently true
+           if (showWeekends) {
+             dispatch(toggleWeekends());
+           }
+           dispatch(setDateRange(defaultDateRange));
+           // Reset local state
+           setSelectedTimeFrame('thisWeek');
+           setCustomRange(null);
+         }}
+         disabled={activeFiltersCount === 0}
+       >
+         {t('filters.clearAll')}
+       </Button>
     </Flex>
   );
 
@@ -426,9 +463,8 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
         onOpenChange={setFilterPopoverOpen}
         placement="bottomRight"
       >
-        <Badge count={activeFiltersCount} offset={[-5, 5]}>
-          <Button icon={<FilterOutlined />}>{t('filters.filters')}</Button>
-        </Badge>
+          <Button 
+          icon={activeFiltersCount > 0 ? <FilterFilled/> : <FilterOutlined />}>{t('filters.filters')}</Button>
       </Popover>
 
       <Button 
