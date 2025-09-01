@@ -23,7 +23,6 @@ The Workload Management feature is a comprehensive resource allocation and capac
 
 - **Advanced Filtering System**
   - Date range selection with preset and custom options
-  - Capacity unit switching (hours vs story points)
   - Time scale adjustments (daily/weekly/monthly views)
   - Working days configuration (✨ Latest Addition)
   - Member and team filtering capabilities
@@ -291,7 +290,5 @@ The roadmap balances immediate user needs with long-term strategic vision, ensur
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: December 2024  
-**Next Review**: Q1 2025  
+**Document Version**: 1.0
 **Owner**: Product & Engineering Teams

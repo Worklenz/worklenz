@@ -31,7 +31,6 @@ import {
   setFilters,
   clearFilters,
   setTimeScale,
-  setCapacityUnit,
   toggleWeekends,
   toggleWorkingDay,
   setWorkingDays,
@@ -48,7 +47,7 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
   const { t } = useTranslation('workload');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
-  const { dateRange, filters, timeScale, capacityUnit, showWeekends, workingDays } = useAppSelector(
+  const { dateRange, filters, timeScale, showWeekends, workingDays } = useAppSelector(
     state => state.projectWorkload
   );
 
@@ -189,19 +188,6 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
 
   const filterContent = (
     <Flex vertical gap={16} style={{ width: 300 }}>
-      <div>
-        <label style={{ display: 'block', marginBottom: 8 }}>{t('filters.capacityUnit')}</label>
-        <Select
-          value={capacityUnit}
-          onChange={value => dispatch(setCapacityUnit(value))}
-          style={{ width: '100%' }}
-          options={[
-            { label: t('filters.hours'), value: 'hours' },
-            { label: t('filters.storyPoints'), value: 'points' },
-          ]}
-        />
-      </div>
-
       <div>
         <label style={{ display: 'block', marginBottom: 8 }}>{t('filters.timeScale')}</label>
         <Select

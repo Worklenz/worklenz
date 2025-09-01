@@ -34,7 +34,7 @@ interface WorkloadChartProps {
 
 const WorkloadChart = ({ data }: WorkloadChartProps) => {
   const { t } = useTranslation('workload');
-  const { capacityUnit, alertThresholds } = useAppSelector(state => state.projectWorkload);
+  const { alertThresholds } = useAppSelector(state => state.projectWorkload);
   const { token } = theme.useToken();
   const [chartType, setChartType] = useState<'bar' | 'stacked' | 'comparison'>('bar');
   const [sortBy, setSortBy] = useState<'name' | 'workload' | 'utilization'>('utilization');
@@ -62,18 +62,14 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         datasets: [
           {
             label: t('chart.capacity'),
-            data: sortedMembers.map(member =>
-              capacityUnit === 'hours' ? member.weeklyCapacity : member.weeklyCapacity / 8
-            ),
+            data: sortedMembers.map(member => member.weeklyCapacity),
             backgroundColor: token.colorPrimary,
             borderColor: token.colorPrimary,
             borderWidth: 1,
           },
           {
             label: t('chart.allocated'),
-            data: sortedMembers.map(member =>
-              capacityUnit === 'hours' ? member.currentWorkload : member.currentWorkload / 8
-            ),
+            data: sortedMembers.map(member => member.currentWorkload),
             backgroundColor: sortedMembers.map(member =>
               member.isOverallocated ? token.colorError : token.colorSuccess
             ),
@@ -110,7 +106,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         },
       ],
     };
-  }, [sortedMembers, chartType, capacityUnit, alertThresholds, t]);
+  }, [sortedMembers, chartType, alertThresholds, t]);
 
   const chartOptions: ChartOptions<'bar'> = useMemo(() => {
     return {
@@ -129,8 +125,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
             label: context => {
               if (chartType === 'comparison') {
                 const value = context.parsed.y;
-                const unit = capacityUnit === 'hours' ? 'h' : 'pts';
-                return `${context.dataset.label}: ${value}${unit}`;
+                return `${context.dataset.label}: ${value}h`;
               } else {
                 const member = sortedMembers[context.dataIndex];
                 return [
@@ -154,8 +149,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           ticks: {
             callback: function (value) {
               if (chartType === 'comparison') {
-                const unit = capacityUnit === 'hours' ? 'h' : 'pts';
-                return `${value}${unit}`;
+                return `${value}h`;
               }
               return `${value}%`;
             },
@@ -164,7 +158,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         },
       },
     };
-  }, [chartType, capacityUnit, t, sortedMembers]);
+  }, [chartType, t, sortedMembers]);
 
   if (data.members.length === 0) {
     return <Empty description={t('noMembersFound')} />;
@@ -197,7 +191,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
       <Flex vertical gap={12} style={{ marginTop: 16 }}>
         <Typography.Title level={5}>{t('chart.memberDetails')}</Typography.Title>
         {sortedMembers.map(member => (
-          <MemberWorkloadCard key={member.id} member={member} capacityUnit={capacityUnit} />
+          <MemberWorkloadCard key={member.id} member={member} />
         ))}
       </Flex>
     </Flex>

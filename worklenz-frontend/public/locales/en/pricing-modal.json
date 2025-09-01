@@ -15,14 +15,17 @@
     "explanation": {
       "perUser": "Pay only for active users. Perfect for small teams (1-5 users) with flexible pricing that scales with your team.",
       "basePlan": "Fixed base price with included users plus additional user costs. Ideal for larger teams (6+ users) with predictable billing."
-    }
+    },
+    "autoPerUser": "Automatically using per-user pricing for {{count}} user{{s}}",
+    "autoBase": "Automatically using base plan pricing for {{count}} user{{s}}"
   },
   "teamSize": {
     "label": "Team Size",
     "help": "Select your current or expected team size",
     "user": "user",
     "users": "users",
-    "helpDescription": "Enter the number of users in your team (1-500)"
+    "helpDescription": "Enter the number of users in your team (1-500)",
+    "placeholder": "Select team size"
   },
   "plans": {
     "free": {
@@ -47,7 +50,10 @@
         "Time tracking",
         "Custom fields",
         "Email support"
-      ]
+      ],
+      "payPerUser": "Pay per user (1-5 users)",
+      "usersIncluded": "{{count}} Users Included",
+      "maxUsers": "Up to {{count}} Users Max"
     },
     "business": {
       "name": "Business",
@@ -59,7 +65,11 @@
         "API access",
         "Priority support",
         "Advanced integrations"
-      ]
+      ],
+      "payPerUser": "Pay per user (1-5 users)",
+      "usersIncluded": "{{count}} Users Included",
+      "maxUsers": "Up to {{count}} Users Max",
+      "maxUsersAppSumo": "Up to 50 Users Max (AppSumo Special)"
     },
     "proSmall": {
       "name": "Pro Small",
@@ -149,7 +159,11 @@
     "toggleTheme": "Toggle theme",
     "switchToLight": "Switch to light theme",
     "switchToDark": "Switch to dark theme",
-    "closeModal": "Close pricing modal"
+    "closeModal": "Close pricing modal",
+    "loadingPlans": "Loading Plans...",
+    "selectPlan": "Select a Plan",
+    "switchToFree": "Switch to Free Plan",
+    "planSummary": "{{planName}} Plan - ${{total}}{{period}}{{userText}}"
   },
   "userTypes": {
     "trial": {
@@ -287,5 +301,26 @@
       "onPremise": "On-Premise Deployment",
       "slaSupport": "SLA Support"
     }
+  },
+  "appsumo": {
+    "exclusiveTitle": "🎉 AppSumo Exclusive: 50% OFF Business & Enterprise Plans!",
+    "timeRemaining": "{{days}}d {{hours}}h {{minutes}}m remaining",
+    "urgency": {
+      "finalHours": "FINAL HOURS",
+      "urgent": "URGENT",
+      "limitedTime": "LIMITED TIME"
+    },
+    "specialPricing": "🎯 Special pricing for AppSumo lifetime deal members",
+    "businessUsers": "💪 Business plans support up to 50 users (normally 25)",
+    "lifetimeTitle": "AppSumo Lifetime Deal Member",
+    "discountExpired": "Your 50% discount period has expired, but you can still upgrade to Business or Enterprise plans at standard pricing.",
+    "watchOffers": "💡 Watch for future campaigns and special offers!",
+    "discountApplied": "50% AppSumo Discount Applied"
+  },
+  "billing": {
+    "billedAnnually": "(billed annually)",
+    "perYear": "/year",
+    "perMonth": "/month",
+    "forUsers": " for {{count}} user{{s}}"
   }
 }

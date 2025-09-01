@@ -15,14 +15,17 @@
     "explanation": {
       "perUser": "Bezahlen Sie nur für aktive Benutzer. Perfekt für kleine Teams (1-5 Benutzer) mit flexibler Preisgestaltung, die mit Ihrem Team wächst.",
       "basePlan": "Fester Grundpreis mit inbegriffenen Benutzern plus zusätzliche Benutzerkosten. Ideal für größere Teams (6+ Benutzer) mit vorhersagbarer Abrechnung."
-    }
+    },
+    "autoPerUser": "Automatisch Pro-Benutzer-Preise für {{count}} Benutzer{{s}}",
+    "autoBase": "Automatisch Basis-Plan-Preise für {{count}} Benutzer{{s}}"
   },
   "teamSize": {
     "label": "Teamgröße",
     "help": "Wählen Sie Ihre aktuelle oder erwartete Teamgröße",
     "user": "Benutzer",
     "users": "Benutzer",
-    "helpDescription": "Geben Sie die Anzahl der Benutzer in Ihrem Team ein (1-500)"
+    "helpDescription": "Geben Sie die Anzahl der Benutzer in Ihrem Team ein (1-500)",
+    "placeholder": "Teamgröße auswählen"
   },
   "plans": {
     "free": {
@@ -212,5 +215,26 @@
       "payment": "Zahlung",
       "complete": "Abschließen"
     }
+  },
+  "appsumo": {
+    "exclusiveTitle": "🎉 AppSumo Exklusiv: 50% RABATT auf Business & Enterprise Pläne!",
+    "timeRemaining": "{{days}}T {{hours}}St {{minutes}}Min verbleibend",
+    "urgency": {
+      "finalHours": "LETZTE STUNDEN",
+      "urgent": "DRINGEND",
+      "limitedTime": "BEGRENZTE ZEIT"
+    },
+    "specialPricing": "🎯 Spezialpreise für AppSumo Lifetime Deal Mitglieder",
+    "businessUsers": "💪 Business Pläne unterstützen bis zu 50 Benutzer (normalerweise 25)",
+    "lifetimeTitle": "AppSumo Lifetime Deal Mitglied",
+    "discountExpired": "Ihre 50% Rabattperiode ist abgelaufen, aber Sie können weiterhin auf Business oder Enterprise Pläne zu Standardpreisen upgraden.",
+    "watchOffers": "💡 Achten Sie auf zukünftige Kampagnen und Sonderangebote!",
+    "discountApplied": "50% AppSumo Rabatt angewendet"
+  },
+  "billing": {
+    "billedAnnually": "(jährlich abgerechnet)",
+    "perYear": "/Jahr",
+    "perMonth": "/Monat",
+    "forUsers": " für {{count}} Benutzer{{s}}"
   }
 }

@@ -77,7 +77,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
             placement="top"
           >
             <Typography.Text>
-              {capacity} {capacityUnit === 'hours' ? t('overview.hours') : t('overview.points')}
+              {capacity} {t('overview.hours')}
             </Typography.Text>
           </Tooltip>
         );
@@ -91,7 +91,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       render: (workload, record) => (
         <Flex vertical gap={4}>
           <Typography.Text>
-            {workload} {capacityUnit === 'hours' ? t('overview.hours') : t('overview.points')}
+            {workload} {t('overview.hours')}
           </Typography.Text>
           {record.isOverallocated && (
             <Tag
