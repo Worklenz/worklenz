@@ -1,12 +1,22 @@
--- Migration: Add AppSumo-specific Paddle plans
--- Version: 001
--- Description: Add AppSumo promotional plans to existing licensing_pricing_plans table
--- Note: Campaign management is handled by the licensing backend marketing campaigns system
+alter table public.licensing_pricing_plans
+    add is_custom_pricing BOOLEAN default FALSE;
 
--- Add AppSumo-specific pricing plans to the existing licensing_pricing_plans table
--- Using actual Paddle plan IDs provided
+alter table public.licensing_pricing_plans
+    add discount_percentage numeric(5, 2) default 0;
 
--- First, ensure we have the necessary plan tiers (in case they don't exist)
+alter table public.licensing_pricing_plans
+    add sort_order numeric;
+
+alter table public.licensing_pricing_plans
+    add key varchar(50);
+
+alter table public.licensing_pricing_plans
+    drop constraint licensing_pricing_plans_pricing_model_check;
+
+alter table public.licensing_pricing_plans
+    add constraint licensing_pricing_plans_pricing_model_check
+        check (pricing_model = ANY (ARRAY ['per_user'::text, 'base_plan'::text]));
+
 INSERT INTO licensing_plan_tiers (
     id,
     tier_name,

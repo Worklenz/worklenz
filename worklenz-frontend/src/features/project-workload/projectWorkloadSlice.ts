@@ -20,7 +20,7 @@ interface IWorkloadState {
   dateRange: IDateRange;
   filters: IWorkloadFilters;
   selectedMemberId: string | null;
-  capacityUnit: 'hours' | 'points';
+  capacityUnit: 'hours';
   timeScale: 'day' | 'week' | 'month';
   showWeekends: boolean;
   workingDays: {
@@ -86,9 +86,6 @@ const projectWorkloadSlice = createSlice({
     setSelectedMember: (state, action: PayloadAction<string | null>) => {
       state.selectedMemberId = action.payload;
     },
-    setCapacityUnit: (state, action: PayloadAction<'hours' | 'points'>) => {
-      state.capacityUnit = action.payload;
-    },
     setTimeScale: (state, action: PayloadAction<'day' | 'week' | 'month'>) => {
       state.timeScale = action.payload;
     },
@@ -101,10 +98,7 @@ const projectWorkloadSlice = createSlice({
     toggleWorkingDay: (state, action: PayloadAction<keyof typeof initialState.workingDays>) => {
       state.workingDays[action.payload] = !state.workingDays[action.payload];
     },
-    setAlertThresholds: (
-      state,
-      action: PayloadAction<{ overallocation?: number; underutilization?: number }>
-    ) => {
+    setAlertThresholds: (state, action: PayloadAction<Partial<typeof initialState.alertThresholds>>) => {
       state.alertThresholds = { ...state.alertThresholds, ...action.payload };
     },
     resetWorkloadState: () => initialState,
@@ -117,7 +111,6 @@ export const {
   setFilters,
   clearFilters,
   setSelectedMember,
-  setCapacityUnit,
   setTimeScale,
   toggleWeekends,
   setWorkingDays,

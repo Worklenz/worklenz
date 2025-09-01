@@ -12,7 +12,6 @@
     "teamMembers": "Team Members",
     "totalWorkload": "Total Workload",
     "hours": "hours",
-    "points": "points",
     "averageUtilization": "Average Utilization",
     "criticalTasks": "Critical Tasks",
     "totalTasks": "{{count}} Total Tasks",
@@ -84,9 +83,6 @@
   "filters": {
     "title": "Workload Filters",
     "filters": "Filters",
-    "capacityUnit": "Capacity Unit",
-    "hours": "Hours",
-    "storyPoints": "Story Points",
     "timeScale": "Time Scale",
     "daily": "Daily",
     "weekly": "Weekly",

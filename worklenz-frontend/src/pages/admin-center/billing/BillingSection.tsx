@@ -1,11 +1,11 @@
 import { PageHeader } from '@ant-design/pro-components';
 import { Tabs, TabsProps } from '@/shared/antd-imports';
 import React, { useMemo } from 'react';
-import CurrentBill from '@/components/admin-center/billing/current-bill';
+import CurrentBill from '@/components/admin-center/billing/CurrentBill';
 import Configuration from '@/components/admin-center/configuration/configuration';
 import { useTranslation } from 'react-i18next';
 
-const Billing: React.FC = React.memo(() => {
+const BillingSection: React.FC = React.memo(() => {
   const { t } = useTranslation('admin-center/current-bill');
 
   const items: TabsProps['items'] = useMemo(
@@ -34,6 +34,6 @@ const Billing: React.FC = React.memo(() => {
   );
 });
 
-Billing.displayName = 'Billing';
+BillingSection.displayName = 'BillingSection';
 
-export default Billing;
+export default BillingSection;

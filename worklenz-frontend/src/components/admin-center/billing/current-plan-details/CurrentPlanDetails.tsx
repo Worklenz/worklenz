@@ -34,7 +34,7 @@ import { useTranslation } from 'react-i18next';
 import { WarningTwoTone, PlusOutlined } from '@/shared/antd-imports';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDate } from '@/utils/timeUtils';
-import UpgradePlansLKR from '../drawers/upgrade-plans-lkr/upgrade-plans-lkr';
+// import UpgradePlansLKR from '../drawers/upgrade-plans-lkr/upgrade-plans-lkr';
 import UpgradePlans from '../drawers/upgrade-plans/upgrade-plans';
 import { ISUBSCRIPTION_TYPE, SUBSCRIPTION_STATUS } from '@/shared/constants';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
@@ -587,7 +587,9 @@ const CurrentPlanDetails = () => {
           okButtonProps={{ hidden: true }}
           cancelButtonProps={{ hidden: true }}
         >
-          {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />}
+          {/* LKR pricing disabled for now - always show main upgrade plans */}
+          <UpgradePlans />
+          {/* {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />} */}
         </Modal>
 
         <Modal

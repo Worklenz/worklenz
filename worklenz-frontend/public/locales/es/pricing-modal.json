@@ -15,14 +15,17 @@
     "explanation": {
       "perUser": "Paga solo por usuarios activos. Perfecto para equipos pequeños (1-5 usuarios) con precios flexibles que escalan con tu equipo.",
       "basePlan": "Precio base fijo con usuarios incluidos más costos adicionales por usuario. Ideal para equipos más grandes (6+ usuarios) con facturación predecible."
-    }
+    },
+    "autoPerUser": "Usando automáticamente precios por usuario para {{count}} usuario{{s}}",
+    "autoBase": "Usando automáticamente precios del plan base para {{count}} usuario{{s}}"
   },
   "teamSize": {
     "label": "Tamaño del Equipo",
     "help": "Selecciona el tamaño actual o esperado de tu equipo",
     "user": "usuario",
     "users": "usuarios",
-    "helpDescription": "Ingresa el número de usuarios en tu equipo (1-500)"
+    "helpDescription": "Ingresa el número de usuarios en tu equipo (1-500)",
+    "placeholder": "Seleccionar tamaño del equipo"
   },
   "plans": {
     "free": {
@@ -125,7 +128,11 @@
     "toggleTheme": "Alternar tema",
     "switchToLight": "Cambiar a tema claro",
     "switchToDark": "Cambiar a tema oscuro",
-    "closeModal": "Cerrar modal de precios"
+    "closeModal": "Cerrar modal de precios",
+    "loadingPlans": "Cargando Planes...",
+    "selectPlan": "Seleccionar un Plan",
+    "switchToFree": "Cambiar a Plan Gratuito",
+    "planSummary": "Plan {{planName}} - ${{total}}{{period}}{{userText}}"
   },
   "userTypes": {
     "trial": {
@@ -212,5 +219,27 @@
       "payment": "Pago",
       "complete": "Completar"
     }
+  },
+  "appsumo": {
+    "exclusiveTitle": "🎉 AppSumo Exclusivo: ¡50% DE DESCUENTO en Planes Business y Enterprise!",
+    "timeRemaining": "{{days}}d {{hours}}h {{minutes}}m restantes",
+    "urgency": {
+      "finalHours": "ÚLTIMAS HORAS",
+      "urgent": "URGENTE",
+      "limitedTime": "TIEMPO LIMITADO"
+    },
+    "specialPricing": "🎯 Precios especiales para miembros de AppSumo de por vida",
+    "businessUsers": "💪 Los planes Business soportan hasta 50 usuarios (normalmente 25)",
+    "lifetimeTitle": "Miembro de AppSumo de Por Vida",
+    "discountExpired": "Tu período de descuento del 50% ha expirado, pero aún puedes actualizar a planes Business o Enterprise a precios estándar.",
+    "watchOffers": "💡 ¡Mantente atento a futuras campañas y ofertas especiales!",
+    "discountApplied": "50% Descuento AppSumo Aplicado"
+  },
+  "billing": {
+    "billedAnnually": "(facturado anualmente)",
+    "billedMonthly": "(facturado mensualmente)",
+    "perYear": "/año",
+    "perMonth": "/mes",
+    "forUsers": " para {{count}} usuario{{s}}"
   }
 }
