@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Flex,
   DatePicker,
@@ -42,9 +42,11 @@ const { RangePicker } = DatePicker;
 
 interface WorkloadFiltersProps {
   onRefresh: () => void;
+  isLoading?: boolean;
+  isFetching?: boolean;
 }
 
-const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
+const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: WorkloadFiltersProps) => {
   const { t } = useTranslation('workload');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
@@ -56,6 +58,18 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const [selectedTimeFrame, setSelectedTimeFrame] = useState<string>('thisWeek');
   const [customRange, setCustomRange] = useState<[string, string] | null>(null);
+
+  // Enhanced refresh handler with error handling
+  const handleRefresh = useCallback(() => {
+    try {
+      onRefresh();
+    } catch (error) {
+      console.error('Error in refresh handler:', error);
+    }
+  }, [onRefresh, dateRange, filters, timeScale, capacityUnit]);
+
+  // Show loading state when fetching
+  const isRefreshing = isLoading || isFetching;
 
   const handleDateRangeChange = (dates: any) => {
     if (dates) {
@@ -155,9 +169,9 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
       key: 'thisQuarter',
       label: 'thisQuarter',
       dates:
-        dayjs().startOf('quarter').format('YYYY-MM-DD') +
+        dayjs().startOf('month').format('YYYY-MM-DD') +
         ' - ' +
-        dayjs().endOf('quarter').format('YYYY-MM-DD'),
+        dayjs().endOf('month').format('YYYY-MM-DD'),
     },
   ];
 
@@ -417,7 +431,13 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
         </Badge>
       </Popover>
 
-      <Button icon={<ReloadOutlined />} onClick={onRefresh} title={t('filters.refresh')} />
+      <Button 
+        icon={<ReloadOutlined spin={isRefreshing} />} 
+        onClick={handleRefresh} 
+        title={t('filters.refresh')}
+        loading={isRefreshing}
+        disabled={isRefreshing}
+      />
     </Flex>
   );
 };

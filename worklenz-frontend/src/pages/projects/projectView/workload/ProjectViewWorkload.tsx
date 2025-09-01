@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Flex, Card, Segmented, Spin, Empty } from '@/shared/antd-imports';
+import { Flex, Card, Segmented, Spin, Empty, Skeleton } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -10,6 +10,7 @@ import WorkloadCalendar from './components/WorkloadCalendar';
 import WorkloadTable from './components/WorkloadTable';
 import WorkloadFilters from './components/WorkloadFilters';
 import { useGetProjectWorkloadQuery } from '@/api/project-workload/project-workload.api.service';
+import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import { setWorkloadView, setDateRange } from '@/features/project-workload/projectWorkloadSlice';
 import dayjs from 'dayjs';
 
@@ -37,9 +38,9 @@ const ProjectViewWorkload = React.memo(() => {
     },
     {
       skip: !projectId || !dateRange.startDate || !dateRange.endDate,
-      refetchOnMountOrArgChange: true, // Always refetch when component mounts or args change
-      refetchOnFocus: false, // Don't refetch on window focus for performance
-      refetchOnReconnect: true, // Refetch on network reconnect
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true, // Enable refetch on focus for better UX
+      refetchOnReconnect: true,
     }
   );
 
@@ -54,7 +55,7 @@ const ProjectViewWorkload = React.memo(() => {
     }
   }, []); // Only run on mount
 
-  // Debug logging and auto-trigger fallback
+  // Debug logging and state monitoring
   useEffect(() => {
     const state = {
       projectId,
@@ -62,56 +63,22 @@ const ProjectViewWorkload = React.memo(() => {
       isLoading,
       isFetching,
       hasData: !!workloadData,
-      dataLength: workloadData?.members?.length || 0,
+      dataLength: (workloadData as any)?.members?.length || 0,
       error: error,
     };
-    console.log('Workload Component State:', state);
+  }, [projectId, dateRange, isLoading, isFetching, workloadData, error]);
 
-    // Fallback: If we have all required params but no data and not loading, trigger fetch
-    if (
-      projectId &&
-      dateRange.startDate &&
-      dateRange.endDate &&
-      !isLoading &&
-      !isFetching &&
-      !workloadData &&
-      !error
-    ) {
-      console.log('Fallback: Triggering refetch due to missing data');
-      const fallbackTimeout = setTimeout(() => {
-        refetch();
-      }, 500);
-      return () => clearTimeout(fallbackTimeout);
-    }
-  }, [projectId, dateRange, isLoading, isFetching, workloadData, error, refetch]);
-
-  // Force refetch when component mounts or projectId changes (tab switching)
+  // Force refetch when projectId or dateRange changes
   useEffect(() => {
     if (projectId && dateRange.startDate && dateRange.endDate) {
-      console.log('Project changed, refetching workload data for:', projectId);
-      // Small delay to ensure component is fully mounted
+      console.log('Project or date range changed, refetching workload data for:', projectId);
+      // Small delay to ensure component is fully mounted and state is updated
       const timeoutId = setTimeout(() => {
         refetch();
       }, 100);
       return () => clearTimeout(timeoutId);
     }
-  }, [projectId, refetch, dateRange.startDate, dateRange.endDate]);
-
-  // Handle page visibility change (page reload, browser tab switching)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && projectId && dateRange.startDate && dateRange.endDate) {
-        console.log('Page became visible, refetching workload data');
-        // Only refetch if we don't have recent data
-        if (!workloadData || error) {
-          refetch();
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [projectId, dateRange, workloadData, error, refetch]);
+  }, [projectId, dateRange.startDate, dateRange.endDate, refetch]);
 
   // Retry mechanism for failed loads
   const handleRetry = useCallback(() => {
@@ -119,18 +86,34 @@ const ProjectViewWorkload = React.memo(() => {
     refetch();
   }, [refetch]);
 
+  // Enhanced refetch handler with debugging
+  const handleRefresh = useCallback(() => {
+    console.log('=== REFRESH TRIGGERED ===');
+    
+    try {
+      // Invalidate cache first to ensure fresh data
+      dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
+      
+      // Force a fresh refetch
+      refetch();
+      console.log('Refetch completed successfully');
+    } catch (error) {
+      console.error('Error calling refetch:', error);
+    }
+  }, [refetch, projectId, dateRange, isLoading, isFetching, workloadData, error, dispatch]);
+
   // Memoize the content to prevent unnecessary re-renders
   const memoizedContent = useMemo(() => {
     if (!workloadData) return null;
 
     switch (localView) {
       case 'calendar':
-        return <WorkloadCalendar data={workloadData} />;
+        return <WorkloadCalendar data={workloadData as any} />;
       case 'table':
-        return <WorkloadTable data={workloadData} />;
+        return <WorkloadTable data={workloadData as any} />;
       case 'chart':
       default:
-        return <WorkloadChart data={workloadData} />;
+        return <WorkloadChart data={workloadData as any} />;
     }
   }, [workloadData, localView]);
 
@@ -185,7 +168,7 @@ const ProjectViewWorkload = React.memo(() => {
       );
     }
 
-    if (!workloadData || workloadData.members?.length === 0) {
+    if (!workloadData || (workloadData as any)?.members?.length === 0) {
       return (
         <div style={{ padding: '60px 0', textAlign: 'center' }}>
           <Empty
@@ -232,19 +215,25 @@ const ProjectViewWorkload = React.memo(() => {
             { label: t('tableView'), value: 'table' },
           ]}
         />
-        <WorkloadFilters onRefresh={refetch} />
+        <WorkloadFilters
+          onRefresh={handleRefresh}
+          isLoading={isLoading}
+          isFetching={isFetching}
+        />
       </Flex>
 
-      <WorkloadOverview data={workloadData} isLoading={isLoading} />
+      {isLoading || isFetching ? <Skeleton active paragraph={{ rows: 4 }} style={{ paddingTop: 16 }} /> : <>
+        <WorkloadOverview data={workloadData as any} isLoading={isLoading} />
 
-      <Card
-        style={{
-          flex: 1,
-          overflow: 'auto',
-        }}
-      >
-        {renderContent()}
-      </Card>
+        <Card
+          style={{
+            flex: 1,
+            overflow: 'auto',
+          }}
+        >
+          {renderContent()}
+        </Card>
+      </>}
     </Flex>
   );
 });

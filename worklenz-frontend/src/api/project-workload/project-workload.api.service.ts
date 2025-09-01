@@ -315,34 +315,47 @@ const projectWorkloadApi = createApi({
       IWorkloadData,
       { projectId: string; startDate?: string; endDate?: string }
     >({
-      queryFn: async ({ projectId, startDate, endDate }, { dispatch }) => {
+      queryFn: async ({ projectId, startDate, endDate }, { dispatch, getState }) => {
         try {
-          console.log('Fetching workload data for project:', projectId);
+          // Use RTK Query's built-in query dispatching with proper error handling
+          const chartDatesPromise = dispatch(
+            projectWorkloadApi.endpoints.getWorkloadChartDates.initiate({ projectId })
+          );
+          const membersPromise = dispatch(
+            projectWorkloadApi.endpoints.getWorkloadMembers.initiate({ projectId })
+          );
+          const tasksPromise = dispatch(
+            projectWorkloadApi.endpoints.getWorkloadTasksByMember.initiate({
+              projectId,
+              params: { startDate, endDate },
+            })
+          );
 
-          // Fetch all required data in parallel
+          // Wait for all promises to resolve
           const [chartDatesResult, membersResult, tasksResult] = await Promise.all([
-            dispatch(projectWorkloadApi.endpoints.getWorkloadChartDates.initiate({ projectId })),
-            dispatch(projectWorkloadApi.endpoints.getWorkloadMembers.initiate({ projectId })),
-            dispatch(
-              projectWorkloadApi.endpoints.getWorkloadTasksByMember.initiate({
-                projectId,
-                params: {
-                  startDate,
-                  endDate,
-                },
-              })
-            ),
+            chartDatesPromise,
+            membersPromise,
+            tasksPromise,
           ]);
 
-          console.log('API Results:', {
-            chartDates: chartDatesResult,
-            members: membersResult,
-            tasks: tasksResult,
-          });
+          // Check for errors in any of the requests
+          if (chartDatesResult.error) {
+            console.error('Chart dates API error:', chartDatesResult.error);
+            return { error: chartDatesResult.error };
+          }
+          if (membersResult.error) {
+            console.error('Members API error:', membersResult.error);
+            return { error: membersResult.error };
+          }
+          if (tasksResult.error) {
+            console.error('Tasks API error:', tasksResult.error);
+            return { error: tasksResult.error };
+          }
 
-          if (chartDatesResult.error || membersResult.error || tasksResult.error) {
-            const error = chartDatesResult.error || membersResult.error || tasksResult.error;
-            console.error('API Error:', error);
+          // Validate that we have data
+          if (!chartDatesResult.data || !membersResult.data || !tasksResult.data) {
+            const error = { status: 'FETCH_ERROR', error: 'One or more API calls returned no data' };
+            console.error('Missing data error:', error);
             return { error };
           }
 
@@ -353,24 +366,26 @@ const projectWorkloadApi = createApi({
             tasks: tasksResult.data?.body || [],
           };
 
-          console.log('Data for transformation:', transformData);
-
           // Transform data to match our interface
           const workloadData = transformToWorkloadData(transformData);
 
-          console.log('Transformed workload data:', workloadData);
           return { data: workloadData };
         } catch (error) {
           console.error('Error in getProjectWorkload:', error);
-          return { error: { status: 'FETCH_ERROR', error: error.message || 'Unknown error' } };
+          return { 
+            error: { 
+              status: 'FETCH_ERROR', 
+              error: error instanceof Error ? error.message : 'Unknown error occurred' 
+            } 
+          };
         }
       },
       providesTags: (result, error, { projectId }) => [
         { type: 'ProjectWorkload', id: projectId },
         { type: 'ProjectWorkload', id: 'LIST' },
       ],
-      // Keep cached data for 10 minutes to improve performance
-      keepUnusedDataFor: 10 * 60,
+      // Reduce cache time to ensure more frequent refetching
+      keepUnusedDataFor: 5 * 60, // 5 minutes instead of 10
     }),
   }),
 });
