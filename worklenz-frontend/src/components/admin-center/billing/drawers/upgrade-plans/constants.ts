@@ -3,7 +3,7 @@ export const TEAM_SIZE_THRESHOLD = 5;
 export const MAX_TEAM_SIZE = 100;
 export const MAX_REGULAR_USERS = 95;
 export const MAX_APPSUMO_USERS = 50;
-export const APPSUMO_BUSINESS_LIMIT = 25;
+export const APPSUMO_BUSINESS_LIMIT = 50;
 
 // Paddle configuration
 export const PADDLE_CHECKOUT_DELAY = 10000;

@@ -1,5 +1,6 @@
 import db from "../config/db";
 import { log_error } from "./utils";
+import { AppSumoService } from "../services/appsumo-service";
 
 export async function getTeamMemberCount(userId: string) {
   if (!userId) return;
@@ -44,6 +45,12 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                       subscription_id,
                       quantity::INT,
                       (SELECT key FROM sys_license_types WHERE id = ud.license_type_id) AS subscription_type,
+                      (SELECT name FROM licensing_pricing_plans lpp 
+                       JOIN licensing_user_subscriptions lus2 ON lpp.id = lus2.plan_id 
+                       WHERE lus2.user_id = ud.user_id AND lus2.subscription_status = 'active' LIMIT 1) AS plan_name,
+                      (SELECT user_limit FROM licensing_pricing_plans lpp 
+                       JOIN licensing_user_subscriptions lus2 ON lpp.id = lus2.plan_id 
+                       WHERE lus2.user_id = ud.user_id AND lus2.subscription_status = 'active' LIMIT 1) AS base_user_limit,
                       (SELECT EXISTS(SELECT id FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id)) AS is_custom,
                       (SELECT EXISTS(SELECT id FROM licensing_credit_subs lcs WHERE lcs.user_id = ud.user_id)) AS is_credit,
                       (SELECT EXISTS(SELECT id FROM licensing_coupon_codes WHERE redeemed_by = ud.user_id)) AS is_ltd,
@@ -59,6 +66,19 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
         WHERE ud.user_id = (SELECT user_id FROM teams WHERE id = $1);`;
     const result = await db.query(q, [team_id]);
     const [data] = result.rows;
+    
+    // If this is a business plan, check if AppSumo user gets special limit
+    if (data && data.subscription_type === "PADDLE" && data.plan_name) {
+      const appSumoLimit = AppSumoService.getBusinessPlanUserLimit(
+        data.subscription_type,
+        data.plan_name,
+        data.base_user_limit || 25
+      );
+      data.effective_user_limit = appSumoLimit;
+    } else {
+      data.effective_user_limit = data.base_user_limit || 25;
+    }
+    
     return data;
   } catch (error) {
     log_error(error);

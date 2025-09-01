@@ -166,12 +166,13 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
       const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
-      const requiredSeats = updatedCount - subscriptionData.quantity;
-      if (updatedCount > subscriptionData.quantity) {
+      const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+      const requiredSeats = updatedCount - effectiveUserLimit;
+      if (updatedCount > effectiveUserLimit) {
         const obj = {
           seats_enough: false,
           required_count: requiredSeats,
-          current_seat_amount: subscriptionData.quantity
+          current_seat_amount: effectiveUserLimit
         };
         return res.status(200).send(new ServerResponse(false, obj, null));
       }
