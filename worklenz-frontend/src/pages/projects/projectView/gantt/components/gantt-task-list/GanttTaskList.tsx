@@ -214,8 +214,8 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
         socket.once(SocketEvents.QUICK_TASK.toString(), (response: any) => {
           if (response) {
             // The task will be automatically added to the task management slice
-            // via global socket handlers, but we need to refresh the Gantt data
-            onCreateQuickTask?.(taskName, phaseId);
+            // via global socket handlers, no need to call onCreateQuickTask again
+            // The global socket listener in ProjectViewGantt will handle success messages
           }
         });
 
@@ -459,7 +459,8 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({ task, projectId, onCreateQ
       socket.once(SocketEvents.QUICK_TASK.toString(), (response: any) => {
         if (response) {
           // Immediately refresh the Gantt data to show the new task
-          onCreateQuickTask?.(taskName, phaseId);
+          // The global socket listener in ProjectViewGantt will handle success messages
+          // No need to call onCreateQuickTask again as it would duplicate the task creation
         }
       });
 

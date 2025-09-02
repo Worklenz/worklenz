@@ -328,8 +328,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         return;
       }
 
-      // Get current phases sorted by sort_index
-      const currentPhases = [...phasesResponse.body].sort((a, b) => a.sort_index - b.sort_index);
+      // Get current phases (already sorted from backend)
+      const currentPhases = [...phasesResponse.body];
 
       // Reorder phases array
       const reorderedPhases = [...currentPhases];
@@ -364,7 +364,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const handleCreateQuickTask = useCallback(
     (taskName: string, phaseId?: string, startDate?: Date) => {
       if (!socket || !projectId || !taskName.trim()) {
-        message.error('Socket connection or project ID missing, or task name is empty');
         return;
       }
 

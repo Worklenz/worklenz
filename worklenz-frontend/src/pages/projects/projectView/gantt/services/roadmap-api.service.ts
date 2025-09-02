@@ -240,10 +240,8 @@ export const transformToGanttTasks = (
 
   const result: GanttTask[] = [];
 
-  // Create phase milestones with their tasks (sorted by phase order)
-  [...apiPhases]
-    .sort((a, b) => a.sort_index - b.sort_index)
-    .forEach(phase => {
+  // Create phase milestones with their tasks (already sorted from backend)
+  apiPhases.forEach(phase => {
       const phaseTasks = tasksByPhase.get(phase.id) || [];
 
       // Use phase dates if provided, they are independent of child task dates

@@ -158,7 +158,7 @@ export default class GanttController extends WorklenzControllerBase {
       WHERE t.project_id = $1 
         AND t.archived = FALSE
         AND t.parent_task_id IS NULL
-      ORDER BY t.roadmap_sort_order, t.created_at DESC;
+      ORDER BY COALESCE(t.roadmap_sort_order, t.sort_order, 0), t.created_at;
     `;
     
     const result = await db.query(q, [projectId]);
@@ -178,7 +178,7 @@ export default class GanttController extends WorklenzControllerBase {
         FROM tasks 
         WHERE parent_task_id = $1 
           AND archived = FALSE
-        ORDER BY roadmap_sort_order, created_at DESC;
+        ORDER BY COALESCE(roadmap_sort_order, sort_order, 0), created_at;
       `;
       
       const subtasksResult = await db.query(subtasksQuery, [task.id]);
@@ -240,7 +240,7 @@ export default class GanttController extends WorklenzControllerBase {
         ) as total_count
       FROM project_phases pp
       WHERE pp.project_id = $1
-      ORDER BY pp.sort_index, pp.created_at;
+      ORDER BY pp.sort_index DESC, pp.created_at DESC;
     `;
     
     const result = await db.query(q, [projectId]);
@@ -308,6 +308,16 @@ export default class GanttController extends WorklenzControllerBase {
       }
     }
 
+    // Get next sort order for the new task (add to bottom)
+    // Use roadmap_sort_order for gantt tasks since that's what the ordering query uses
+    const sortOrderQuery = `
+      SELECT COALESCE(MAX(COALESCE(roadmap_sort_order, sort_order, 0)), 0) + 1 as next_sort_order 
+      FROM tasks 
+      WHERE project_id = $1;
+    `;
+    const sortOrderResult = await db.query(sortOrderQuery, [project_id]);
+    const nextSortOrder = sortOrderResult.rows[0]?.next_sort_order || 1;
+
     // Create the task
     const createTaskQuery = `
       INSERT INTO tasks (
@@ -317,11 +327,13 @@ export default class GanttController extends WorklenzControllerBase {
         priority_id,
         start_date, 
         end_date, 
+        roadmap_sort_order,
+        sort_order,
         created_by,
         updated_by,
         created_at,
         updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $7, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $8, NOW(), NOW())
       RETURNING id, name, start_date, end_date, project_id;
     `;
     
@@ -332,6 +344,7 @@ export default class GanttController extends WorklenzControllerBase {
       priority_id,
       start_date,
       end_date,
+      nextSortOrder,
       req.user?.id
     ]);
 
@@ -443,5 +456,31 @@ export default class GanttController extends WorklenzControllerBase {
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows[0]));
+  }
+
+  @HandleExceptions()
+  public static async reorderPhases(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { project_id, phase_orders } = req.body;
+    
+    if (!project_id || !Array.isArray(phase_orders)) {
+      return res.status(400).send(new ServerResponse(false, null, "Project ID and phase orders array are required"));
+    }
+
+    try {
+      // Update each phase with its new sort_index
+      for (const order of phase_orders) {
+        const { phase_id, sort_index } = order;
+        
+        await db.query(
+          `UPDATE project_phases SET sort_index = $1 WHERE id = $2 AND project_id = $3`,
+          [sort_index, phase_id, project_id]
+        );
+      }
+
+      return res.status(200).send(new ServerResponse(true, { message: "Phases reordered successfully" }));
+    } catch (error) {
+      console.error('Failed to reorder phases:', error);
+      return res.status(500).send(new ServerResponse(false, null, "Failed to reorder phases"));
+    }
   }
 }
