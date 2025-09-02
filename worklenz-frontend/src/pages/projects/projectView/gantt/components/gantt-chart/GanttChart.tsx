@@ -109,12 +109,14 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
       originalEnd: null,
     });
     const isActiveRef = useRef(false);
+    const hasDraggedRef = useRef(false); // Track if the user actually dragged
 
     // Update temp dates when task changes (but not for phases - they should use actual dates)
     useEffect(() => {
       // Only update tempDates for regular tasks, not phases
       // AND only when not actively dragging/resizing
-      if (!isPhase && !isDragging && !isResizing) {
+      // AND not when we just finished dragging (hasDraggedRef)
+      if (!isPhase && !isDragging && !isResizing && !hasDraggedRef.current) {
         // Check if the dates have actually changed to avoid unnecessary updates
         const startChanged = tempDates.start?.getTime() !== task.start_date?.getTime();
         const endChanged = tempDates.end?.getTime() !== task.end_date?.getTime();
@@ -123,7 +125,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
           setTempDates({ start: task.start_date, end: task.end_date });
         }
       }
-    }, [task.start_date, task.end_date, isPhase, tempDates.start, tempDates.end, isDragging, isResizing]);
+    }, [task.start_date, task.end_date, isPhase, isDragging, isResizing]);
 
     // Create stable refs for current values
     const currentStateRef = useRef({
@@ -159,6 +161,11 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
       } = currentStateRef.current;
 
       const deltaX = e.clientX - dragStartRef.current.x;
+      
+      // Mark that we've actually dragged if movement is significant (more than 5 pixels)
+      if (Math.abs(deltaX) > 5) {
+        hasDraggedRef.current = true;
+      }
 
       // Calculate delta based on view mode for more precision
       let deltaUnits: number;
@@ -230,16 +237,29 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
 
       // Save the changes if dates changed
       const currentTempDates = currentStateRef.current.tempDates;
-      if (
-        onTaskDateUpdate &&
+      const datesChanged = hasDraggedRef.current &&
         (currentTempDates.start?.getTime() !== task.start_date?.getTime() ||
-          currentTempDates.end?.getTime() !== task.end_date?.getTime())
-      ) {
+          currentTempDates.end?.getTime() !== task.end_date?.getTime());
+      
+      if (onTaskDateUpdate && datesChanged) {
+        // Keep the temp dates as they are (don't revert) since we're updating the DB
         onTaskDateUpdate(task.id, currentTempDates.start, currentTempDates.end);
       }
 
-      setIsResizing(null);
-      setIsDragging(false);
+      // Reset dragging state after a small delay to prevent click from firing
+      setTimeout(() => {
+        setIsResizing(null);
+        setIsDragging(false);
+        // Only reset hasDraggedRef after a longer delay if dates were changed
+        // This prevents the useEffect from reverting the dates
+        if (datesChanged) {
+          setTimeout(() => {
+            hasDraggedRef.current = false;
+          }, 500);
+        } else {
+          hasDraggedRef.current = false;
+        }
+      }, 50);
     }, [handleMouseMove, onTaskDateUpdate, task.id, task.start_date, task.end_date]);
 
     // Cleanup effect to remove body classes and event listeners on unmount
@@ -258,6 +278,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         e.preventDefault();
 
         isActiveRef.current = true;
+        hasDraggedRef.current = false; // Reset drag tracking
 
         if (type === 'drag') {
           setIsDragging(true);
@@ -588,6 +609,10 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
           <div
             className="gantt-resize-handle left"
             onMouseDown={e => handleMouseDown(e, 'left')}
+            onClick={e => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
             title={t('task.resizeStartDate', 'Resize start date')}
           >
             <div className="w-1 h-4 bg-white bg-opacity-60 rounded-sm opacity-20 group-hover:opacity-100 hover:opacity-100 transition-opacity" />
@@ -601,7 +626,8 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
             onMouseDown={e => handleMouseDown(e, 'drag')}
             onClick={(e) => {
               e.stopPropagation();
-              if (!isDragging && !isResizing && onTaskClick) {
+              // Only trigger click if we haven't dragged
+              if (!hasDraggedRef.current && !isDragging && !isResizing && onTaskClick) {
                 onTaskClick(task.id);
               }
             }}
@@ -624,6 +650,10 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
           <div
             className="gantt-resize-handle right"
             onMouseDown={e => handleMouseDown(e, 'right')}
+            onClick={e => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
             title={t('task.resizeEndDate', 'Resize end date')}
           >
             <div className="w-1 h-4 bg-white bg-opacity-60 rounded-sm opacity-20 group-hover:opacity-100 hover:opacity-100 transition-opacity" />
@@ -800,6 +830,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation('gantt');
     // Get timeline calculator from context
     const { timelineCalculator } = useGanttContext();
     // State for popover task creation
@@ -1378,17 +1409,24 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
           console.log('Task dates updated successfully in database');
           message.success(t('task.datesUpdatedSuccessfully', 'Task dates updated successfully'));
           
-          // Always refresh to get fresh data since we don't use caching
+          // Delay the refresh slightly to allow the UI to settle
+          // This prevents the task bar from jumping back
           if (onRefresh) {
-            console.log('Calling manual refresh...');
-            onRefresh();
+            setTimeout(() => {
+              console.log('Calling manual refresh...');
+              onRefresh();
+            }, 100);
           }
         } catch (error) {
           console.error('Failed to update task dates:', error);
           message.error(t('task.failedToUpdateDates', 'Failed to update task dates'));
+          // On error, refresh to revert to correct state
+          if (onRefresh) {
+            onRefresh();
+          }
         }
       },
-      [updateTaskDates, finalTasks, onRefresh]
+      [updateTaskDates, finalTasks, onRefresh, t]
     );
 
     return (
