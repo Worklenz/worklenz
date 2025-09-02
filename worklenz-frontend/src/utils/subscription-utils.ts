@@ -3,13 +3,18 @@ import { ILocalSession } from '@/types/auth/local-session.types';
 
 /**
  * Checks if user has access to business features (client portal, project finance)
- * Only PADDLE users with business or enterprise plans have access
+ * PADDLE users with business or enterprise plans and ANNUAL_BUSINESS users have access
  * Excludes lifetime deal users and other subscription types
  */
 export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean => {
   if (!session) return false;
 
-  // Only PADDLE subscription type qualifies
+  // ANNUAL_BUSINESS subscription type qualifies
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS) {
+    return true;
+  }
+
+  // Only PADDLE subscription type qualifies for plan-based access
   if (session.subscription_type !== ISUBSCRIPTION_TYPE.PADDLE) {
     return false;
   }
@@ -24,6 +29,11 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
  */
 export const isBusinessPlan = (session: ILocalSession | null): boolean => {
   if (!session) return false;
+
+  // ANNUAL_BUSINESS is considered a business plan
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS) {
+    return true;
+  }
 
   if (session.subscription_type !== ISUBSCRIPTION_TYPE.PADDLE) {
     return false;
@@ -72,6 +82,8 @@ export const getSubscriptionPlanType = (session: ILocalSession | null): string =
       return 'Custom';
     case ISUBSCRIPTION_TYPE.CREDIT:
       return 'Credit';
+    case ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS:
+      return 'Annual Business';
     case ISUBSCRIPTION_TYPE.PADDLE:
       const planName = session.plan_name?.toLowerCase() || '';
       if (planName.includes('business')) return 'Business';

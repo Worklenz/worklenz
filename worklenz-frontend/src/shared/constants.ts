@@ -236,6 +236,7 @@ export enum ISUBSCRIPTION_TYPE {
   CUSTOM = 'CUSTOM',
   FREE = 'FREE',
   CREDIT = 'CREDIT',
+  ANNUAL_BUSINESS = 'ANNUAL_BUSINESS',
 }
 
 export const IconsMap: { [x: string]: string } = {
