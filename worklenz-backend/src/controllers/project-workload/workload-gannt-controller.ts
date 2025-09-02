@@ -408,7 +408,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
   private static getFilterByDatesWhereClosure(text: string) {
     let closure = "";
-    switch (text.trim()) {
+    switch ((text || "").trim()) {
       case "":
         closure = ``;
         break;
