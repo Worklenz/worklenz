@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { Tooltip, Flex, Dropdown, DatePicker, Input } from '@/shared/antd-imports';
-import { PlusOutlined, SettingOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, SettingOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -12,45 +12,69 @@ import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/mem
 import PeopleDropdown from '@/components/common/people-dropdown/PeopleDropdown';
 import AvatarGroup from '@/components/AvatarGroup';
 import dayjs from 'dayjs';
+import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 // Add Custom Column Button Component
 export const AddCustomColumnButton: React.FC = memo(() => {
   const dispatch = useAppDispatch();
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
   const { t } = useTranslation('task-list-table');
+  const { t: tCommon } = useTranslation('common');
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isFree = isFreeUser(currentSession);
 
   const handleModalOpen = useCallback(() => {
+    if (isFree) {
+      dispatch(toggleUpgradeModal());
+      return;
+    }
     dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
     dispatch(toggleCustomColumnModalOpen(true));
-  }, [dispatch]);
+  }, [dispatch, isFree]);
+
+  const tooltipTitle = isFree ? tCommon('upgrade-plan') : t('customColumns.addCustomColumn');
 
   return (
-    <Tooltip title={t('customColumns.addCustomColumn')} placement="top">
+    <Tooltip title={tooltipTitle} placement="top">
       <button
         onClick={handleModalOpen}
+        disabled={isFree}
         className={`
           group relative w-9 h-9 rounded-lg border-2 border-dashed transition-all duration-200
           flex items-center justify-center
           ${
-            isDarkMode
-              ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400'
-              : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-400 hover:text-blue-600'
+            isFree
+              ? isDarkMode
+                ? 'border-gray-600 text-gray-500 cursor-pointer'
+                : 'border-gray-300 text-gray-400 cursor-pointer'
+              : isDarkMode
+                ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400'
+                : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-400 hover:text-blue-600'
           }
         `}
       >
-        <PlusOutlined className="text-sm transition-transform duration-200 group-hover:scale-110" />
+        {isFree ? (
+          <CrownOutlined style={{ fontSize: '16px', color: '#faad14' }} />
+        ) : (
+          <PlusOutlined className="text-sm transition-transform duration-200 group-hover:scale-110" />
+        )}
 
-        {/* Subtle glow effect on hover */}
-        <div
-          className={`
-          absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200
-          ${
-            isDarkMode
-              ? 'bg-blue-500/5 shadow-lg shadow-blue-500/20'
-              : 'bg-blue-500/5 shadow-lg shadow-blue-500/10'
-          }
-        `}
-        />
+        {/* Subtle glow effect on hover - only for non-free users */}
+        {!isFree && (
+          <div
+            className={`
+            absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200
+            ${
+              isDarkMode
+                ? 'bg-blue-500/5 shadow-lg shadow-blue-500/20'
+                : 'bg-blue-500/5 shadow-lg shadow-blue-500/10'
+            }
+          `}
+          />
+        )}
       </button>
     </Tooltip>
   );
