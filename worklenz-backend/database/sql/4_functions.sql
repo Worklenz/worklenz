@@ -912,7 +912,7 @@ BEGIN
     _start_date = (_body ->> 'start_date')::TIMESTAMP;
     _end_date = (_body ->> 'end_date')::TIMESTAMP;
 
-    INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, parent_task_id, sort_order, start_date, end_date)
+    INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, parent_task_id, sort_order, roadmap_sort_order, start_date, end_date)
     VALUES (TRIM((_body ->> 'name')::TEXT),
             _priority_id,
             (_body ->> 'project_id')::UUID,
@@ -920,7 +920,8 @@ BEGIN
 
                -- This should be came from client side later
             _status_id, _parent_task,
-            COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
+            COALESCE((SELECT MAX(COALESCE(sort_order, roadmap_sort_order, 0)) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
+            COALESCE((SELECT MAX(COALESCE(roadmap_sort_order, sort_order, 0)) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
             (_body ->> 'start_date')::TIMESTAMP,
             (_body ->> 'end_date')::TIMESTAMP)
     RETURNING id INTO _task_id;
