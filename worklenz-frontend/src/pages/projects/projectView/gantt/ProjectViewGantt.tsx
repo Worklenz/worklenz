@@ -302,6 +302,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   }, []);
 
   const handlePhaseClick = useCallback((phase: any) => {
+    // Open the PhaseDetailsModal (Configure Phase) when clicking on a phase bar
     setSelectedPhase(phase);
     setShowPhaseDetailsModal(true);
   }, []);
@@ -491,6 +492,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 ref={chartRef}
                 onScroll={handleChartScroll}
                 onPhaseClick={handlePhaseClick}
+                onTaskClick={handleTaskClick}
                 containerRef={containerRef}
                 dateRange={dateRange}
                 phases={phases}

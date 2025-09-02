@@ -35,6 +35,7 @@ interface GanttChartProps {
   viewMode: GanttViewMode;
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
   onPhaseClick?: (phase: GanttTask) => void;
+  onTaskClick?: (taskId: string) => void;
   containerRef: RefObject<HTMLDivElement | null>;
   dateRange?: { start: Date; end: Date };
   phases?: GanttPhase[];
@@ -69,6 +70,7 @@ interface TaskBarRowProps {
   dateRange?: { start: Date; end: Date };
   animationClass?: string;
   onPhaseClick?: (phase: GanttTask) => void;
+  onTaskClick?: (taskId: string) => void;
   onTaskDateUpdate?: (taskId: string, startDate: Date | null, endDate: Date | null) => void;
   calculateDateFromPosition?: (x: number, columnWidth: number) => Date;
   timelineCalculator?: any; // Pass timeline calculator
@@ -83,6 +85,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
     dateRange,
     animationClass = '',
     onPhaseClick,
+    onTaskClick,
     onTaskDateUpdate,
     calculateDateFromPosition,
     timelineCalculator,
@@ -593,11 +596,17 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
           {/* Task content area - draggable */}
           <div
             className={`flex-1 flex items-center px-2 min-w-0 h-full ${
-              isDragging ? 'cursor-move' : 'cursor-grab hover:cursor-grab'
+              isDragging ? 'cursor-move' : 'cursor-pointer hover:cursor-grab'
             }`}
             onMouseDown={e => handleMouseDown(e, 'drag')}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isDragging && !isResizing && onTaskClick) {
+                onTaskClick(task.id);
+              }
+            }}
             style={{ userSelect: 'none' }}
-            title={t('task.dragToMove', 'Drag to move task')}
+            title={t('task.dragToMove', 'Click to open task details, drag to move')}
           >
             {/* Task name */}
             <div className="truncate flex-1 pointer-events-none select-none">{task.name}</div>
@@ -678,7 +687,11 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         setTempDates({ start: startDate, end: endDate });
         onTaskDateUpdate(task.id, startDate, endDate);
       } else if (isPhase && onPhaseClick) {
+        // When clicking on a phase bar, trigger the phase click handler
         onPhaseClick(task);
+      } else if (!isPhase && onTaskClick) {
+        // When clicking on a regular task bar, open the task drawer
+        onTaskClick(task.id);
       }
     };
 
@@ -775,6 +788,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       viewMode,
       onScroll,
       onPhaseClick,
+      onTaskClick,
       containerRef,
       dateRange,
       phases,
@@ -1276,14 +1290,8 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       (e: React.MouseEvent, rowIndex: number) => {
         if (!dateRange || !onCreateQuickTask) return;
 
-        // Get the task for this row
-        const task = flattenedTasks[rowIndex];
-
-        // Check if this is a phase row - only show popover for phase rows
-        const isPhase = task && 'type' in task && (task.type === 'milestone' || task.is_milestone);
-        if (!isPhase) {
-          return; // Don't show popover for non-phase rows
-        }
+        // Disable the task creation popover on timeline clicks completely
+        return;
 
         // Get the click position relative to the timeline
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -1497,7 +1505,8 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                         columnsCount={effectiveColumnsCount}
                         dateRange={dateRange}
                         animationClass=""
-                        onPhaseClick={undefined}
+                        onPhaseClick={isPhase ? onPhaseClick : undefined}
+                        onTaskClick={!isPhase ? onTaskClick : undefined}
                         onTaskDateUpdate={handleTaskDateUpdate}
                         calculateDateFromPosition={calculateDateFromPosition}
                         timelineCalculator={timelineCalculator}
