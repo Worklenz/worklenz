@@ -9,7 +9,7 @@ import WorkloadChart from './components/WorkloadChart';
 import WorkloadCalendar from './components/WorkloadCalendar';
 import WorkloadTable from './components/WorkloadTable';
 import WorkloadFilters from './components/WorkloadFilters';
-import { useGetProjectWorkloadQuery } from '@/api/project-workload/project-workload.api.service';
+import { useGetWorkloadMembersQuery } from '@/api/project-workload/project-workload.api.service';
 import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import { setWorkloadView, setDateRange } from '@/features/project-workload/projectWorkloadSlice';
 import dayjs from 'dayjs';
@@ -24,22 +24,19 @@ const ProjectViewWorkload = React.memo(() => {
   const { workloadView, dateRange, filters } = useAppSelector(state => state.projectWorkload);
   const [localView, setLocalView] = useState<WorkloadView>(workloadView || 'chart');
 
+  // Use the members API directly for better compatibility with the chart component
   const {
     data: workloadData,
     isLoading,
     error,
     refetch,
     isFetching,
-  } = useGetProjectWorkloadQuery(
+  } = useGetWorkloadMembersQuery(
+    { projectId: projectId! },
     {
-      projectId: projectId!,
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-    },
-    {
-      skip: !projectId || !dateRange.startDate || !dateRange.endDate,
+      skip: !projectId,
       refetchOnMountOrArgChange: true,
-      refetchOnFocus: true, // Enable refetch on focus for better UX
+      refetchOnFocus: true,
       refetchOnReconnect: true,
     }
   );
@@ -63,7 +60,7 @@ const ProjectViewWorkload = React.memo(() => {
       isLoading,
       isFetching,
       hasData: !!workloadData,
-      dataLength: (workloadData as any)?.members?.length || 0,
+      dataLength: workloadData?.body?.length || 0,
       error: error,
     };
   }, [projectId, dateRange, isLoading, isFetching, workloadData, error]);
@@ -168,7 +165,7 @@ const ProjectViewWorkload = React.memo(() => {
       );
     }
 
-    if (!workloadData || (workloadData as any)?.members?.length === 0) {
+    if (!workloadData || !workloadData.body || workloadData.body.length === 0) {
       return (
         <div style={{ padding: '60px 0', textAlign: 'center' }}>
           <Empty

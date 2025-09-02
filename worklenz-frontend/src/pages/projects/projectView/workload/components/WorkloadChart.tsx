@@ -28,8 +28,79 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, ChartTooltip, Legend);
 
+// Helper function to calculate working days per week from organization settings
+const calculateWorkingDaysFromOrgSettings = (workingDays: any): number => {
+  if (!workingDays) return 5; // Default to 5 days if no working days data
+
+  const days = {
+    monday: workingDays.monday || false,
+    tuesday: workingDays.tuesday || false,
+    wednesday: workingDays.wednesday || false,
+    thursday: workingDays.thursday || false,
+    friday: workingDays.friday || false,
+    saturday: workingDays.saturday || false,
+    sunday: workingDays.sunday || false,
+  };
+
+  return Object.values(days).filter(Boolean).length;
+};
+
+// Helper function to calculate workload from tasks based on backend data structure
+const calculateWorkloadFromTasks = (tasks: any[]): number => {
+  if (!Array.isArray(tasks)) return 0;
+  
+  let totalHours = 0;
+  const now = new Date();
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  // Count tasks that are active in current month or next month
+  const startOfPeriod = new Date(currentYear, currentMonth, 1);
+  const endOfPeriod = new Date(currentYear, currentMonth + 2, 0); // End of next month
+  
+  let activeTasks = 0;
+  
+  tasks.forEach(task => {
+    if (task?.start_date && task?.end_date) {
+      const startDate = new Date(task.start_date);
+      const endDate = new Date(task.end_date);
+      
+      // Check if task overlaps with our period
+      if (startDate <= endOfPeriod && endDate >= startOfPeriod) {
+        activeTasks++;
+        // Calculate overlap period
+        const overlapStart = new Date(Math.max(startDate.getTime(), startOfPeriod.getTime()));
+        const overlapEnd = new Date(Math.min(endDate.getTime(), endOfPeriod.getTime()));
+        const overlapDays = Math.max(1, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)));
+        
+        // Estimate 3-6 hours per active task based on duration
+        const baseHours = Math.min(6, Math.max(3, overlapDays * 0.5));
+        totalHours += baseHours;
+      }
+    } else if (task?.end_date) {
+      // Tasks with only end date
+      const endDate = new Date(task.end_date);
+      if (endDate >= startOfPeriod && endDate <= endOfPeriod) {
+        activeTasks++;
+        totalHours += 4; // Default 4 hours for tasks without start date
+      }
+    } else if (!task?.start_date && !task?.end_date) {
+      // Tasks without dates - assume some workload if there are many
+      activeTasks++;
+      totalHours += 2; // Minimal hours for undated tasks
+    }
+  });
+  
+  // If no dated tasks but there are tasks in the array, assume some workload
+  if (totalHours === 0 && tasks.length > 0) {
+    totalHours = Math.min(20, tasks.length * 2); // 2 hours per task, max 20 hours
+  }
+  
+  return Math.round(totalHours);
+};
+
 interface WorkloadChartProps {
-  data: IWorkloadData;
+  data: IWorkloadData | any; // Allow any to handle raw API responses
 }
 
 const WorkloadChart = ({ data }: WorkloadChartProps) => {
@@ -40,7 +111,68 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
   const [sortBy, setSortBy] = useState<'name' | 'workload' | 'utilization'>('utilization');
 
   const sortedMembers = useMemo(() => {
-    const members = [...data.members];
+    // Handle the case where data might have different structures
+    let members = [];
+    
+    if (data?.members && Array.isArray(data.members)) {
+      // If data is already transformed to IWorkloadData format
+      members = [...data.members];
+    } else if (data?.body && Array.isArray(data.body)) {
+      // If data is raw API response format from /workload-members endpoint, transform it
+      members = data.body.map((member: any) => {
+        const dailyHours = member.org_working_hours || 8;
+        const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
+        const weeklyCapacity = dailyHours * workingDaysPerWeek;
+        
+        // Calculate workload from tasks array
+        const currentWorkload = calculateWorkloadFromTasks(member.tasks) || 0;
+        const utilizationPercentage = weeklyCapacity > 0 ? Math.round((currentWorkload / weeklyCapacity) * 100) : 0;
+        
+        return {
+          id: member.project_member_id || member.team_member_id || member.user_id,
+          name: member.name || 'Unknown',
+          email: member.email || '',
+          avatar: member.avatar_url,
+          role: member.role,
+          teamId: member.team_member_id,
+          dailyCapacity: dailyHours,
+          weeklyCapacity: weeklyCapacity,
+          currentWorkload: currentWorkload,
+          utilizationPercentage: utilizationPercentage,
+          isOverallocated: utilizationPercentage > 100,
+          isUnderutilized: utilizationPercentage < 50,
+        };
+      });
+    } else if (Array.isArray(data)) {
+      // If data is directly an array of members (direct API response)
+      members = data.map((member: any) => {
+        const dailyHours = member.org_working_hours || 8;
+        const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
+        const weeklyCapacity = dailyHours * workingDaysPerWeek;
+        
+        // Calculate workload from tasks array
+        const currentWorkload = calculateWorkloadFromTasks(member.tasks) || 0;
+        const utilizationPercentage = weeklyCapacity > 0 ? Math.round((currentWorkload / weeklyCapacity) * 100) : 0;
+        
+        return {
+          id: member.project_member_id || member.team_member_id || member.user_id,
+          name: member.name || 'Unknown',
+          email: member.email || '',
+          avatar: member.avatar_url,
+          role: member.role,
+          teamId: member.team_member_id,
+          dailyCapacity: dailyHours,
+          weeklyCapacity: weeklyCapacity,
+          currentWorkload: currentWorkload,
+          utilizationPercentage: utilizationPercentage,
+          isOverallocated: utilizationPercentage > 100,
+          isUnderutilized: utilizationPercentage < 50,
+        };
+      });
+    } else {
+      members = [];
+    }
+    
     switch (sortBy) {
       case 'name':
         return members.sort((a, b) => a.name.localeCompare(b.name));
@@ -51,7 +183,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
       default:
         return members;
     }
-  }, [data.members, sortBy]);
+  }, [data, sortBy]);
 
   const chartData = useMemo(() => {
     const labels = sortedMembers.map(member => member.name);
@@ -160,7 +292,10 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
     };
   }, [chartType, t, sortedMembers]);
 
-  if (data.members.length === 0) {
+  // Check if we have any members to display
+  const hasMembers = sortedMembers && sortedMembers.length > 0;
+  
+  if (!hasMembers) {
     return <Empty description={t('noMembersFound')} />;
   }
 
@@ -191,7 +326,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
       <Flex vertical gap={12} style={{ marginTop: 16 }}>
         <Typography.Title level={5}>{t('chart.memberDetails')}</Typography.Title>
         {sortedMembers.map(member => (
-          <MemberWorkloadCard key={member.id} member={member} />
+          <MemberWorkloadCard key={member.id} member={member} capacityUnit="hours" />
         ))}
       </Flex>
     </Flex>
