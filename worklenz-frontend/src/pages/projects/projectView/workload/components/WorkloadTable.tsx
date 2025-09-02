@@ -22,8 +22,65 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSelectedMember } from '@/features/project-workload/projectWorkloadSlice';
 import { ColumnsType } from 'antd/es/table';
 
+// Helper function to calculate working days per week from organization settings
+const calculateWorkingDaysFromOrgSettings = (workingDays: any): number => {
+  if (!workingDays) return 5;
+  const days = {
+    monday: workingDays.monday || false,
+    tuesday: workingDays.tuesday || false,
+    wednesday: workingDays.wednesday || false,
+    thursday: workingDays.thursday || false,
+    friday: workingDays.friday || false,
+    saturday: workingDays.saturday || false,
+    sunday: workingDays.sunday || false,
+  };
+  return Object.values(days).filter(Boolean).length;
+};
+
+// Helper function to calculate workload from tasks
+const calculateWorkloadFromTasks = (tasks: any[]): number => {
+  if (!Array.isArray(tasks)) return 0;
+  
+  let totalHours = 0;
+  const now = new Date();
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  const startOfPeriod = new Date(currentYear, currentMonth, 1);
+  const endOfPeriod = new Date(currentYear, currentMonth + 2, 0);
+  
+  tasks.forEach(task => {
+    if (task?.start_date && task?.end_date) {
+      const startDate = new Date(task.start_date);
+      const endDate = new Date(task.end_date);
+      
+      if (startDate <= endOfPeriod && endDate >= startOfPeriod) {
+        const overlapStart = new Date(Math.max(startDate.getTime(), startOfPeriod.getTime()));
+        const overlapEnd = new Date(Math.min(endDate.getTime(), endOfPeriod.getTime()));
+        const overlapDays = Math.max(1, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)));
+        
+        const baseHours = Math.min(6, Math.max(3, overlapDays * 0.5));
+        totalHours += baseHours;
+      }
+    } else if (task?.end_date) {
+      const endDate = new Date(task.end_date);
+      if (endDate >= startOfPeriod && endDate <= endOfPeriod) {
+        totalHours += 4;
+      }
+    } else if (!task?.start_date && !task?.end_date) {
+      totalHours += 2;
+    }
+  });
+  
+  if (totalHours === 0 && tasks.length > 0) {
+    totalHours = Math.min(20, tasks.length * 2);
+  }
+  
+  return Math.round(totalHours);
+};
+
 interface WorkloadTableProps {
-  data: IWorkloadData;
+  data: IWorkloadData | any; // Allow raw API responses
 }
 
 const WorkloadTable = ({ data }: WorkloadTableProps) => {
@@ -34,6 +91,43 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
   const [reassignModalVisible, setReassignModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<ITaskAllocation | null>(null);
+
+  // Transform raw API response to expected format
+  const workloadMembers = useMemo(() => {
+    if (data?.members && Array.isArray(data.members)) {
+      // Data is already in the expected format
+      return data.members;
+    }
+    
+    const members = data?.body || [];
+    if (!Array.isArray(members)) {
+      return [];
+    }
+    
+    return members.map((member: any) => {
+      const dailyHours = member.org_working_hours || 8;
+      const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
+      const weeklyCapacity = dailyHours * workingDaysPerWeek;
+      
+      const currentWorkload = calculateWorkloadFromTasks(member.tasks) || 0;
+      const utilizationPercentage = weeklyCapacity > 0 ? Math.round((currentWorkload / weeklyCapacity) * 100) : 0;
+      
+      return {
+        id: member.project_member_id || member.team_member_id || member.user_id,
+        name: member.name || 'Unknown',
+        email: member.email || '',
+        avatar: member.avatar_url,
+        role: member.role,
+        teamId: member.team_member_id,
+        dailyCapacity: dailyHours,
+        weeklyCapacity: weeklyCapacity,
+        currentWorkload: currentWorkload,
+        utilizationPercentage: utilizationPercentage,
+        isOverallocated: utilizationPercentage > 100,
+        isUnderutilized: utilizationPercentage < 50,
+      };
+    });
+  }, [data]);
 
   const columns: ColumnsType<IWorkloadMember> = [
     {
@@ -217,10 +311,13 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       key: 'tasks',
       width: 100,
       render: (_, record) => {
-        const tasks = data.allocations.filter(a => a.memberId === record.id);
+        const memberData = data?.body?.find((m: any) => 
+          (m.project_member_id || m.team_member_id || m.user_id) === record.id
+        );
+        const tasksCount = memberData?.tasks?.length || 0;
         return (
           <Typography.Text>
-            {tasks.length} {t('table.tasks')}
+            {tasksCount} {t('table.tasks')}
           </Typography.Text>
         );
       },
@@ -249,7 +346,12 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
                 key: 'reassign',
                 label: t('actions.reassignTasks'),
                 icon: <SwapOutlined />,
-                disabled: data.allocations.filter(a => a.memberId === record.id).length === 0,
+                disabled: (() => {
+                  const memberData = data?.body?.find((m: any) => 
+                    (m.project_member_id || m.team_member_id || m.user_id) === record.id
+                  );
+                  return !memberData?.tasks?.length;
+                })(),
               },
               {
                 type: 'divider',
@@ -270,56 +372,75 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
   ];
 
   const expandedRowRender = (record: IWorkloadMember) => {
-    const memberTasks = data.allocations.filter(a => a.memberId === record.id);
+    const memberData = data?.body?.find((m: any) => 
+      (m.project_member_id || m.team_member_id || m.user_id) === record.id
+    );
+    const memberTasks = memberData?.tasks || [];
 
-    const taskColumns: ColumnsType<ITaskAllocation> = [
+    const taskColumns: ColumnsType<any> = [
       {
         title: t('table.taskName'),
-        dataIndex: 'taskName',
         key: 'taskName',
-        render: name => (
+        render: (_, task) => (
           <Typography.Text ellipsis style={{ maxWidth: 300 }}>
-            {name}
+            {task.name || `Task ${task.id || 'Unknown'}`}
           </Typography.Text>
         ),
       },
       {
         title: t('table.project'),
-        dataIndex: 'projectName',
         key: 'projectName',
+        render: (_, task) => (
+          <Typography.Text>
+            {task.project_name || 'Current Project'}
+          </Typography.Text>
+        ),
       },
       {
         title: t('table.duration'),
         key: 'duration',
         render: (_, task) => (
           <Typography.Text type="secondary" style={{ color: token.colorTextSecondary }}>
-            {task.startDate} - {task.endDate}
+            {task.start_date ? task.start_date.split('T')[0] : 'No start'} - {task.end_date ? task.end_date.split('T')[0] : 'No end'}
           </Typography.Text>
         ),
       },
       {
         title: t('table.estimatedHours'),
-        dataIndex: 'estimatedHours',
         key: 'estimatedHours',
-        render: hours => `${hours}h`,
+        render: (_, task) => {
+          const hours = task.total_minutes ? Math.round(task.total_minutes / 60) : 4;
+          return `${hours}h`;
+        },
       },
       {
         title: t('table.priority'),
-        dataIndex: 'priority',
         key: 'priority',
-        render: (priority, task) => <Tag color={task.priorityColor || 'default'}>{priority}</Tag>,
+        render: (_, task) => (
+          <Tag color={task.priority_color || 'default'}>
+            {task.priority_value || 'Medium'}
+          </Tag>
+        ),
       },
       {
         title: t('table.status'),
-        dataIndex: 'status',
         key: 'status',
-        render: (status, task) => <Tag color={task.statusColor || 'default'}>{status}</Tag>,
+        render: (_, task) => (
+          <Tag color={task.status_color || 'default'}>
+            {task.status_name || 'To Do'}
+          </Tag>
+        ),
       },
       {
         title: t('table.progress'),
-        dataIndex: 'completionPercentage',
         key: 'progress',
-        render: progress => <Progress percent={progress} size="small" style={{ width: 60 }} />,
+        render: (_, task) => (
+          <Progress 
+            percent={task.complete_ratio || 0} 
+            size="small" 
+            style={{ width: 60 }} 
+          />
+        ),
       },
       {
         title: '',
@@ -331,7 +452,25 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
             size="small"
             icon={<SwapOutlined />}
             onClick={() => {
-              setSelectedTask(task);
+              const transformedTask = {
+                id: task.id,
+                taskId: task.id,
+                taskName: task.name || `Task ${task.id}`,
+                projectId: task.project_id,
+                projectName: task.project_name || 'Current Project',
+                memberId: record.id,
+                memberName: record.name,
+                estimatedHours: task.total_minutes ? Math.round(task.total_minutes / 60) : 4,
+                actualHours: 0,
+                startDate: task.start_date ? task.start_date.split('T')[0] : '',
+                endDate: task.end_date ? task.end_date.split('T')[0] : '',
+                priority: task.priority_value || 'Medium',
+                priorityColor: task.priority_color || 'default',
+                status: task.status_name || 'To Do',
+                statusColor: task.status_color || 'default',
+                completionPercentage: task.complete_ratio || 0,
+              };
+              setSelectedTask(transformedTask);
               setReassignModalVisible(true);
             }}
           >
@@ -345,7 +484,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       <Table
         columns={taskColumns}
         dataSource={memberTasks}
-        rowKey="id"
+        rowKey={(task) => task.id || `task-${Math.random()}`}
         pagination={false}
         size="small"
       />
@@ -364,7 +503,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
     <>
       <Table
         columns={columns}
-        dataSource={data.members}
+        dataSource={workloadMembers}
         rowKey="id"
         expandable={{
           expandedRowKeys,

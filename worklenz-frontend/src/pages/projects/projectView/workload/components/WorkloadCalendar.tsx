@@ -24,8 +24,131 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
+// Helper function to calculate working days per week from organization settings
+const calculateWorkingDaysFromOrgSettings = (workingDays: any): number => {
+  if (!workingDays) return 5;
+  const days = {
+    monday: workingDays.monday || false,
+    tuesday: workingDays.tuesday || false,
+    wednesday: workingDays.wednesday || false,
+    thursday: workingDays.thursday || false,
+    friday: workingDays.friday || false,
+    saturday: workingDays.saturday || false,
+    sunday: workingDays.sunday || false,
+  };
+  return Object.values(days).filter(Boolean).length;
+};
+
+// Helper function to transform raw API response to IWorkloadData format
+const transformToWorkloadData = (rawData: any) => {
+  const members = rawData?.body || rawData?.members || [];
+  
+  if (!Array.isArray(members)) {
+    return {
+      members: [],
+      allocations: [],
+      availability: [],
+    };
+  }
+  
+  const transformedMembers = members.map((member: any) => {
+    const dailyHours = member.org_working_hours || 8;
+    const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
+    const weeklyCapacity = dailyHours * workingDaysPerWeek;
+    
+    return {
+      id: member.project_member_id || member.team_member_id || member.user_id,
+      name: member.name || 'Unknown',
+      email: member.email || '',
+      avatar: member.avatar_url,
+      role: member.role,
+      teamId: member.team_member_id,
+      dailyCapacity: dailyHours,
+      weeklyCapacity: weeklyCapacity,
+      currentWorkload: 0,
+      utilizationPercentage: 0,
+      isOverallocated: false,
+      isUnderutilized: false,
+    };
+  });
+  
+  // Generate allocations from member tasks
+  const allocations: ITaskAllocation[] = [];
+  members.forEach((member: any) => {
+    if (Array.isArray(member.tasks)) {
+      member.tasks.forEach((task: any, index: number) => {
+        if (task.start_date && task.end_date) {
+          allocations.push({
+            id: `${member.project_member_id || member.team_member_id}-task-${index}`,
+            taskId: `task-${index}`,
+            taskName: `Task ${index + 1}`,
+            projectId: 'current-project',
+            projectName: 'Current Project',
+            memberId: member.project_member_id || member.team_member_id || member.user_id,
+            memberName: member.name || 'Unknown',
+            estimatedHours: 4, // Default estimation
+            actualHours: 0,
+            startDate: task.start_date.split('T')[0], // Extract date part
+            endDate: task.end_date.split('T')[0], // Extract date part
+            priority: 'Medium',
+            priorityColor: '#1890ff',
+            status: 'In Progress',
+            statusColor: '#52c41a',
+            completionPercentage: 0,
+          });
+        }
+      });
+    }
+  });
+  
+  // Generate availability data
+  const availability: IMemberAvailability[] = [];
+  transformedMembers.forEach(member => {
+    // Generate availability for next 60 days
+    for (let i = 0; i < 60; i++) {
+      const date = dayjs().add(i, 'day');
+      const dayOfWeek = date.day(); // 0 = Sunday, 1 = Monday, etc.
+      
+      // Find the original member data to get working days
+      const originalMember = members.find(
+        m => (m.project_member_id || m.team_member_id || m.user_id) === member.id
+      );
+      const workingDays = originalMember?.org_working_days || {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false,
+      };
+      
+      // Map day of week to working days object
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const isWorkingDay = workingDays[dayNames[dayOfWeek]] || false;
+      
+      availability.push({
+        memberId: member.id,
+        date: date.format('YYYY-MM-DD'),
+        availableHours: isWorkingDay ? member.dailyCapacity : 0,
+        plannedHours: isWorkingDay ? Math.min(member.dailyCapacity, 4) : 0, // Assume 4 hours planned
+        actualHours: 0,
+        isWorkingDay: isWorkingDay,
+        isHoliday: false,
+        isLeave: false,
+      });
+    }
+  });
+  
+  return {
+    members: transformedMembers,
+    allocations,
+    availability,
+  };
+};
+
 interface WorkloadCalendarProps {
-  data: IWorkloadData;
+  data: IWorkloadData | any; // Allow raw API responses
 }
 
 const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
@@ -34,6 +157,16 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
   const { token } = theme.useToken();
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+
+  // Transform raw API response to expected format
+  const workloadData = useMemo(() => {
+    if (data?.members && data?.allocations && data?.availability) {
+      // Data is already in the expected format
+      return data;
+    }
+    // Transform raw API response
+    return transformToWorkloadData(data);
+  }, [data]);
 
   const dateWorkloadMap = useMemo(() => {
     const map = new Map<
@@ -46,7 +179,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
       }
     >();
 
-    data.allocations.forEach(allocation => {
+    workloadData.allocations.forEach(allocation => {
       const start = dayjs(allocation.startDate);
       const end = dayjs(allocation.endDate);
       let current = start;
@@ -68,7 +201,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
       }
     });
 
-    data.availability.forEach(avail => {
+    workloadData.availability.forEach(avail => {
       const dateKey = avail.date;
       const existing = map.get(dateKey) || {
         allocations: [],
@@ -83,7 +216,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
     });
 
     return map;
-  }, [data]);
+  }, [workloadData]);
 
   const dateCellRender = (date: Dayjs) => {
     const dateKey = date.format('YYYY-MM-DD');
@@ -121,7 +254,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
         {Object.entries(tasksByMember)
           .slice(0, 3)
           .map(([memberId, tasks]) => {
-            const member = data.members.find(m => m.id === memberId);
+            const member = workloadData.members.find(m => m.id === memberId);
             if (!member) return null;
 
             return (
@@ -189,7 +322,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
 
   const selectedDateWorkload = dateWorkloadMap.get(selectedDate.format('YYYY-MM-DD'));
 
-  if (data.members.length === 0) {
+  if (workloadData.members.length === 0) {
     return <Empty description={t('noWorkloadData')} />;
   }
 
@@ -235,7 +368,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
               </Typography.Text>
               <Flex vertical gap={8} style={{ marginTop: 8 }}>
                 {selectedDateWorkload.allocations.map(task => {
-                  const member = data.members.find(m => m.id === task.memberId);
+                  const member = workloadData.members.find(m => m.id === task.memberId);
                   return (
                     <Flex key={task.id} align="center" gap={8}>
                       <Avatar size={24}>{member?.name.charAt(0) || 'U'}</Avatar>
@@ -267,7 +400,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
               </Typography.Text>
               <Flex vertical gap={4} style={{ marginTop: 8 }}>
                 {selectedDateWorkload.availability.map(avail => {
-                  const member = data.members.find(m => m.id === avail.memberId);
+                  const member = workloadData.members.find(m => m.id === avail.memberId);
                   return (
                     <Flex key={avail.memberId} justify="space-between">
                       <Typography.Text style={{ fontSize: 12, color: token.colorText }}>
