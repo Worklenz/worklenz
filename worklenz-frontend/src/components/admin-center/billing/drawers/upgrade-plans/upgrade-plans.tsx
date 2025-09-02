@@ -470,7 +470,9 @@ const UpgradePlans = () => {
     initializeData();
 
     if (billingInfo?.total_used) {
-      setTeamSize(billingInfo.total_used || 1);
+      // Ensure team size is never negative (can happen with AppSumo users due to free_count calculations)
+      const actualTeamSize = Math.max(1, billingInfo.total_used);
+      setTeamSize(actualTeamSize);
     }
   }, [billingInfo]);
 
