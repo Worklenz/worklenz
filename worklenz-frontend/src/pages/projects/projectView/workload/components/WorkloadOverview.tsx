@@ -107,10 +107,19 @@ const calculateSummaryFromRawData = (data: any) => {
     const weeklyCapacity = dailyHours * workingDaysPerWeek;
     
     const currentWorkload = calculateWorkloadFromTasks(member.tasks) || 0;
-    const utilizationPercentage = weeklyCapacity > 0 ? Math.round((currentWorkload / weeklyCapacity) * 100) : 0;
+    
+    // Calculate capacity for the same 2-month period that calculateWorkloadFromTasks uses
+    const now = new Date();
+    const startOfPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfPeriod = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+    const totalDays = Math.ceil((endOfPeriod.getTime() - startOfPeriod.getTime()) / (1000 * 60 * 60 * 24));
+    const totalWeeks = totalDays / 7;
+    const periodCapacity = weeklyCapacity * totalWeeks;
+    
+    const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
     
     totalWorkload += currentWorkload;
-    totalCapacity += weeklyCapacity;
+    totalCapacity += periodCapacity;
     totalTasksCount += (member.tasks?.length || 0);
     
     if (utilizationPercentage > 100) {

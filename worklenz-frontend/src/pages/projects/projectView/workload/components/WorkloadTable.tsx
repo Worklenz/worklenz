@@ -110,7 +110,16 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       const weeklyCapacity = dailyHours * workingDaysPerWeek;
       
       const currentWorkload = calculateWorkloadFromTasks(member.tasks) || 0;
-      const utilizationPercentage = weeklyCapacity > 0 ? Math.round((currentWorkload / weeklyCapacity) * 100) : 0;
+      
+      // Calculate capacity for the same 2-month period that calculateWorkloadFromTasks uses
+      const now = new Date();
+      const startOfPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfPeriod = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+      const totalDays = Math.ceil((endOfPeriod.getTime() - startOfPeriod.getTime()) / (1000 * 60 * 60 * 24));
+      const totalWeeks = totalDays / 7;
+      const periodCapacity = weeklyCapacity * totalWeeks;
+      
+      const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
       
       return {
         id: member.project_member_id || member.team_member_id || member.user_id,
