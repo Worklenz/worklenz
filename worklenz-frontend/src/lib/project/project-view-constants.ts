@@ -2,7 +2,7 @@ import React, { ReactNode, Suspense } from 'react';
 import { InlineSuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import i18n from '@/i18n';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
 import { ILocalSession } from '@/types/auth/local-session.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
@@ -212,6 +212,7 @@ export const getFilteredTabItems = (
 ): TabItems[] => {
   const hasFinancePermission = hasFinanceViewPermission(currentSession, currentProject);
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const isFree = isFreeUser(currentSession);
 
   return tabItems
     .map(item => {
@@ -229,6 +230,15 @@ export const getFilteredTabItems = (
         if (!hasFinancePermission) {
           return null;
         }
+      }
+
+      // Disable insights, roadmap, and workload tabs for free users
+      if (isFree && ['project-insights-member-overview', 'roadmap', 'workload'].includes(item.key)) {
+        return {
+          ...item,
+          disabled: true,
+          disabledReason: i18n.t('common:upgrade-plan'),
+        };
       }
 
       // Return tab as is for all other cases

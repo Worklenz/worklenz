@@ -296,22 +296,25 @@ const ProjectView = React.memo(() => {
     const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
 
     const menuItems = filteredTabItems.map(item => {
+      const premiumTabs = ['finance', 'project-insights-member-overview', 'roadmap', 'workload'];
+      const isPremiumTab = premiumTabs.includes(item.key);
+      
       return {
         key: item.key,
-        disabled: item.disabled && item.key !== 'finance', // Don't disable finance tab at Ant Design level
+        disabled: item.disabled && !isPremiumTab, // Don't disable premium tabs at Ant Design level
         label: (
           <Tooltip title={item.disabled ? item.disabledReason : undefined} placement="bottom">
             <Flex
               align="center"
               gap={6}
               style={{
-                color: item.disabled && item.key !== 'finance' ? '#8c8c8c' : 'inherit',
-                opacity: item.disabled && item.key !== 'finance' ? 0.6 : 1,
+                color: item.disabled && !isPremiumTab ? '#8c8c8c' : 'inherit',
+                opacity: item.disabled && !isPremiumTab ? 0.6 : 1,
                 cursor: 'pointer',
               }}
               onClick={e => {
-                // Handle finance tab specially - show upgrade modal if disabled but not visually disabled
-                if (item.disabled && item.key === 'finance') {
+                // Handle premium tabs specially - show upgrade modal if disabled but not visually disabled
+                if (item.disabled && isPremiumTab) {
                   e.preventDefault();
                   e.stopPropagation();
                   dispatch(toggleUpgradeModal());

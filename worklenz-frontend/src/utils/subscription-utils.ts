@@ -48,6 +48,14 @@ export const isEnterprisePlan = (session: ILocalSession | null): boolean => {
 };
 
 /**
+ * Checks if user is on a free plan
+ */
+export const isFreeUser = (session: ILocalSession | null): boolean => {
+  if (!session) return true;
+  return session.subscription_type === ISUBSCRIPTION_TYPE.FREE;
+};
+
+/**
  * Get the subscription plan type for display purposes
  */
 export const getSubscriptionPlanType = (session: ILocalSession | null): string => {

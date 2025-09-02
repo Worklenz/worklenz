@@ -35,6 +35,7 @@ import {
   setRefreshTimestamp,
   getProject,
 } from '@features/project/project.slice';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import {
   addTask,
   fetchTaskGroups,
@@ -67,6 +68,7 @@ import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-k
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { ShareAltOutlined } from '@/shared/antd-imports';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import { isFreeUser } from '@/utils/subscription-utils';
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
@@ -246,8 +248,12 @@ const ProjectViewHeader = memo(() => {
 
   // Memoized import task template handler
   const handleImportTaskTemplate = useCallback(() => {
-    dispatch(setImportTaskTemplateDrawerOpen(true));
-  }, [dispatch]);
+    if (isFreeUser(currentSession)) {
+      dispatch(toggleUpgradeModal());
+    } else {
+      dispatch(setImportTaskTemplateDrawerOpen(true));
+    }
+  }, [dispatch, currentSession]);
 
   // Memoized navigation handler
   const handleNavigateToProjects = useCallback(() => {
@@ -256,8 +262,12 @@ const ProjectViewHeader = memo(() => {
 
   // Memoized save as template handler
   const handleSaveAsTemplate = useCallback(() => {
-    dispatch(toggleSaveAsTemplateDrawer());
-  }, [dispatch]);
+    if (isFreeUser(currentSession)) {
+      dispatch(toggleUpgradeModal());
+    } else {
+      dispatch(toggleSaveAsTemplateDrawer());
+    }
+  }, [dispatch, currentSession]);
 
   // Memoized invite handler
   const handleInvite = useCallback(() => {

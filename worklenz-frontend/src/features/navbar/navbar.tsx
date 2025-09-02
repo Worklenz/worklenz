@@ -93,8 +93,15 @@ const Navbar = () => {
           key: route.path.split('/').pop() || route.name,
           disabled: false, // Don't disable the menu item so click events work
           label: shouldDisable ? (
-            // Special handling for client-portal: show normal colors but keep upgrade functionality
-            route.name === 'client-portal' ? (
+            // Show all premium features with normal colors and crown icon
+            <Tooltip
+              title={
+                isFreePlanRoute && isFreePlan
+                  ? tCommon('upgrade-plan')
+                  : tCommon('business-plan-upgrade')
+              }
+              placement="bottom"
+            >
               <span
                 style={{
                   cursor: 'pointer',
@@ -104,28 +111,7 @@ const Navbar = () => {
                 {t(route.name)}
                 <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
               </span>
-            ) : (
-              <Tooltip
-                title={
-                  isFreePlanRoute && isFreePlan
-                    ? tCommon('upgrade-plan')
-                    : tCommon('business-plan-upgrade')
-                }
-                placement="bottom"
-              >
-                <span
-                  className="disabled-navlink disabled-navlink-with-crown"
-                  style={{
-                    cursor: 'pointer',
-                    color: '#8c8c8c',
-                    opacity: 0.6,
-                  }}
-                >
-                  {t(route.name)}
-                  <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
-                </span>
-              </Tooltip>
-            )
+            </Tooltip>
           ) : (
             <Link to={route.path} style={{ fontWeight: 600 }}>
               {t(route.name)}
