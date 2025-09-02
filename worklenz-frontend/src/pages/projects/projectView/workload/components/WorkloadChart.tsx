@@ -45,18 +45,27 @@ const calculateWorkingDaysFromOrgSettings = (workingDays: any): number => {
   return Object.values(days).filter(Boolean).length;
 };
 
-// Helper function to calculate workload from tasks based on backend data structure
-const calculateWorkloadFromTasks = (tasks: any[]): number => {
+// Helper function to calculate workload from tasks for a specific date range
+const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: string): number => {
   if (!Array.isArray(tasks)) return 0;
   
   let totalHours = 0;
-  const now = new Date();
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
   
-  // Count tasks that are active in current month or next month
-  const startOfPeriod = new Date(currentYear, currentMonth, 1);
-  const endOfPeriod = new Date(currentYear, currentMonth + 2, 0); // End of next month
+  // Use provided date range or default to current/next month
+  let startOfPeriod: Date;
+  let endOfPeriod: Date;
+  
+  if (startDate && endDate) {
+    startOfPeriod = new Date(startDate);
+    endOfPeriod = new Date(endDate);
+  } else {
+    // Fallback to 2-month period
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    startOfPeriod = new Date(currentYear, currentMonth, 1);
+    endOfPeriod = new Date(currentYear, currentMonth + 2, 0);
+  }
   
   let activeTasks = 0;
   
@@ -105,7 +114,7 @@ interface WorkloadChartProps {
 
 const WorkloadChart = ({ data }: WorkloadChartProps) => {
   const { t } = useTranslation('workload');
-  const { alertThresholds } = useAppSelector(state => state.projectWorkload);
+  const { alertThresholds, dateRange } = useAppSelector(state => state.projectWorkload);
   const { token } = theme.useToken();
   const [chartType, setChartType] = useState<'bar' | 'stacked' | 'comparison'>('bar');
   const [sortBy, setSortBy] = useState<'name' | 'workload' | 'utilization'>('utilization');
@@ -124,15 +133,14 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
         const weeklyCapacity = dailyHours * workingDaysPerWeek;
         
-        // Calculate workload from tasks array (this returns hours for 2-month period)
-        const currentWorkload = calculateWorkloadFromTasks(member.tasks) || 0;
+        // Calculate workload from tasks array for the selected date range
+        const currentWorkload = calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
         
-        // Calculate capacity for the same 2-month period
-        const now = new Date();
-        const startOfPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
-        const endOfPeriod = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+        // Calculate capacity for the same date range period
+        const startOfPeriod = new Date(dateRange.startDate || new Date());
+        const endOfPeriod = new Date(dateRange.endDate || new Date());
         const totalDays = Math.ceil((endOfPeriod.getTime() - startOfPeriod.getTime()) / (1000 * 60 * 60 * 24));
-        const totalWeeks = totalDays / 7;
+        const totalWeeks = Math.max(1, totalDays / 7); // Ensure at least 1 week
         const periodCapacity = weeklyCapacity * totalWeeks;
         
         const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
@@ -159,15 +167,14 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
         const weeklyCapacity = dailyHours * workingDaysPerWeek;
         
-        // Calculate workload from tasks array (this returns hours for 2-month period)
-        const currentWorkload = calculateWorkloadFromTasks(member.tasks) || 0;
+        // Calculate workload from tasks array for the selected date range
+        const currentWorkload = calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
         
-        // Calculate capacity for the same 2-month period
-        const now = new Date();
-        const startOfPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
-        const endOfPeriod = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+        // Calculate capacity for the same date range period
+        const startOfPeriod = new Date(dateRange.startDate || new Date());
+        const endOfPeriod = new Date(dateRange.endDate || new Date());
         const totalDays = Math.ceil((endOfPeriod.getTime() - startOfPeriod.getTime()) / (1000 * 60 * 60 * 24));
-        const totalWeeks = totalDays / 7;
+        const totalWeeks = Math.max(1, totalDays / 7); // Ensure at least 1 week
         const periodCapacity = weeklyCapacity * totalWeeks;
         
         const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
@@ -201,7 +208,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
       default:
         return members;
     }
-  }, [data, sortBy]);
+  }, [data, sortBy, dateRange.startDate, dateRange.endDate]);
 
   const chartData = useMemo(() => {
     const labels = sortedMembers.map(member => member.name);

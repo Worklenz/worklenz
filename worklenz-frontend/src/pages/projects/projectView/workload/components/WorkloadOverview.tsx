@@ -36,17 +36,27 @@ const calculateWorkingDaysFromOrgSettings = (workingDays: any): number => {
   return Object.values(days).filter(Boolean).length;
 };
 
-// Helper function to calculate workload from tasks
-const calculateWorkloadFromTasks = (tasks: any[]): number => {
+// Helper function to calculate workload from tasks for a specific date range
+const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: string): number => {
   if (!Array.isArray(tasks)) return 0;
   
   let totalHours = 0;
-  const now = new Date();
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
   
-  const startOfPeriod = new Date(currentYear, currentMonth, 1);
-  const endOfPeriod = new Date(currentYear, currentMonth + 2, 0);
+  // Use provided date range or default to current/next month
+  let startOfPeriod: Date;
+  let endOfPeriod: Date;
+  
+  if (startDate && endDate) {
+    startOfPeriod = new Date(startDate);
+    endOfPeriod = new Date(endDate);
+  } else {
+    // Fallback to 2-month period
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    startOfPeriod = new Date(currentYear, currentMonth, 1);
+    endOfPeriod = new Date(currentYear, currentMonth + 2, 0);
+  }
   
   tasks.forEach(task => {
     if (task?.start_date && task?.end_date) {
@@ -79,7 +89,7 @@ const calculateWorkloadFromTasks = (tasks: any[]): number => {
 };
 
 // Helper function to calculate summary from raw API response
-const calculateSummaryFromRawData = (data: any) => {
+const calculateSummaryFromRawData = (data: any, startDate?: string, endDate?: string) => {
   const members = data?.body || data?.members || [];
   
   if (!Array.isArray(members) || members.length === 0) {
@@ -106,14 +116,13 @@ const calculateSummaryFromRawData = (data: any) => {
     const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
     const weeklyCapacity = dailyHours * workingDaysPerWeek;
     
-    const currentWorkload = calculateWorkloadFromTasks(member.tasks) || 0;
+    const currentWorkload = calculateWorkloadFromTasks(member.tasks, startDate, endDate) || 0;
     
-    // Calculate capacity for the same 2-month period that calculateWorkloadFromTasks uses
-    const now = new Date();
-    const startOfPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfPeriod = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+    // Calculate capacity for the same date range period
+    const startOfPeriod = new Date(startDate || new Date());
+    const endOfPeriod = new Date(endDate || new Date());
     const totalDays = Math.ceil((endOfPeriod.getTime() - startOfPeriod.getTime()) / (1000 * 60 * 60 * 24));
-    const totalWeeks = totalDays / 7;
+    const totalWeeks = Math.max(1, totalDays / 7); // Ensure at least 1 week
     const periodCapacity = weeklyCapacity * totalWeeks;
     
     const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
@@ -151,7 +160,7 @@ interface WorkloadOverviewProps {
 const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
   const { t } = useTranslation('workload');
   const { token } = theme.useToken();
-  const { alertThresholds } = useAppSelector(state => state.projectWorkload);
+  const { alertThresholds, dateRange } = useAppSelector(state => state.projectWorkload);
 
   if (isLoading) {
     return (
@@ -182,7 +191,7 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
   }
 
   // Handle both transformed IWorkloadData and raw API response
-  const summary = data?.summary || calculateSummaryFromRawData(data);
+  const summary = data?.summary || calculateSummaryFromRawData(data, dateRange.startDate, dateRange.endDate);
   
   const utilizationColor =
     summary.averageUtilization > 100

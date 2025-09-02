@@ -32,9 +32,13 @@ const ProjectViewWorkload = React.memo(() => {
     refetch,
     isFetching,
   } = useGetWorkloadMembersQuery(
-    { projectId: projectId! },
+    { 
+      projectId: projectId!,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate
+    },
     {
-      skip: !projectId,
+      skip: !projectId || !dateRange.startDate || !dateRange.endDate,
       refetchOnMountOrArgChange: true,
       refetchOnFocus: true,
       refetchOnReconnect: true,

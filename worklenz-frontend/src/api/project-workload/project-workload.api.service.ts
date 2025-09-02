@@ -274,11 +274,15 @@ const projectWorkloadApi = createApi({
       keepUnusedDataFor: 10 * 60, // 10 minutes cache
     }),
 
-    getWorkloadMembers: builder.query<any, { projectId: string; expandedMembers?: string[] }>({
-      query: ({ projectId, expandedMembers = [] }) => ({
+    getWorkloadMembers: builder.query<any, { projectId: string; expandedMembers?: string[]; startDate?: string; endDate?: string }>({
+      query: ({ projectId, expandedMembers = [], startDate, endDate }) => ({
         url: `/workload-gannt/workload-members/${projectId}`,
         method: 'GET',
-        params: { expanded_members: expandedMembers },
+        params: { 
+          expanded_members: expandedMembers,
+          start_date: startDate,
+          end_date: endDate 
+        },
       }),
       providesTags: (result, error, { projectId }) => [
         { type: 'ProjectWorkload', id: `members-${projectId}` },
