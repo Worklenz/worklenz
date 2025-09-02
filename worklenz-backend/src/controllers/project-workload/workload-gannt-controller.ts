@@ -221,6 +221,8 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
   public static async getMembers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
     const expandedMembers: string[] = req.body?.expanded_members || req.query?.expanded_members || [];
+    const startDate: string | undefined = req.query?.start_date as string;
+    const endDate: string | undefined = req.query?.end_date as string;
 
     const q = `SELECT pm.id AS project_member_id,
                       tmiv.team_member_id,
@@ -244,7 +246,8 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                                       INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
                             WHERE archived IS FALSE
                               AND project_id = $1
-                              AND ta.team_member_id = tmiv.team_member_id) rec) AS duration,
+                              AND ta.team_member_id = tmiv.team_member_id
+                              ${this.getTaskDateRangeFilter(startDate, endDate)}) rec) AS duration,
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT  MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS min_date,
@@ -262,6 +265,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                             WHERE archived IS FALSE
                               AND project_id = pm.project_id
                               AND ta.team_member_id = tmiv.team_member_id
+                              ${this.getTaskDateRangeFilter(startDate, endDate)}
                             ORDER BY start_date ASC) rec) AS tasks
               FROM project_members pm
                       INNER JOIN team_member_info_view tmiv ON pm.team_member_id = tmiv.team_member_id
@@ -423,6 +427,24 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
         break;
     }
     return closure;
+  }
+
+  private static getTaskDateRangeFilter(startDate?: string, endDate?: string): string {
+    if (!startDate || !endDate) {
+      return ""; // No filtering if date range is not provided
+    }
+
+    return `
+      AND (
+        -- Task overlaps with the selected date range
+        (start_date IS NOT NULL AND end_date IS NOT NULL AND start_date <= '${endDate}' AND end_date >= '${startDate}') OR
+        -- Task has only end_date and it falls within the range
+        (start_date IS NULL AND end_date IS NOT NULL AND end_date >= '${startDate}' AND end_date <= '${endDate}') OR
+        -- Task has only start_date and it falls within the range
+        (start_date IS NOT NULL AND end_date IS NULL AND start_date >= '${startDate}' AND start_date <= '${endDate}')
+        -- Note: Tasks with both dates NULL are excluded from date range filtering
+      )
+    `;
   }
 
   private static getFilterByMembersWhereClosure(text: string) {
