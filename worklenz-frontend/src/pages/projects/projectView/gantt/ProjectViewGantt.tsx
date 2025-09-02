@@ -337,9 +337,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       reorderedPhases.splice(newIndex, 0, moved);
 
       // Create phase order data with new indices
+      // Since backend returns phases in descending order (latest first),
+      // we need to assign higher sort_index to phases at the top
       const phase_orders = reorderedPhases.map((phase, index) => ({
         phase_id: phase.id,
-        sort_index: index + 1, // Start from 1
+        sort_index: reorderedPhases.length - index, // Higher index for top positions
       }));
 
       try {
