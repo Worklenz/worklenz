@@ -118,7 +118,7 @@ const UpgradePlans = () => {
     getPerUserAnnualPrice
   } = usePricingCalculations(teamSize, pricingData, isAppSumoUser);
   
-  const { generateTeamSizeOptions } = useTeamSizeOptions(isAppSumoUser, selectedPlanType);
+  const { generateTeamSizeOptions } = useTeamSizeOptions(isAppSumoUser, selectedPlanType, teamSize);
 
   // Event handlers
   const handleTeamSizeChange = (size: number) => {
@@ -469,8 +469,9 @@ const UpgradePlans = () => {
 
     initializeData();
 
-    if (billingInfo?.total_used) {
+    if (billingInfo?.total_used !== undefined) {
       // Ensure team size is never negative (can happen with AppSumo users due to free_count calculations)
+      // Also handle cases where actual team size might be larger than standard options
       const actualTeamSize = Math.max(1, billingInfo.total_used);
       setTeamSize(actualTeamSize);
     }
