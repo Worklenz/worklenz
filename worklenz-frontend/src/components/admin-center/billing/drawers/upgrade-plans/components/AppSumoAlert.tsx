@@ -16,38 +16,36 @@ export const AppSumoAlert: React.FC<AppSumoAlertProps> = ({ appSumoDiscountInfo 
                 level={4}
                 style={{
                   margin: 0,
-                  color:
-                    appSumoDiscountInfo.urgencyLevel === 'critical' ||
-                    appSumoDiscountInfo.urgencyLevel === 'high'
-                      ? '#d32f2f'
-                      : '#f57c00',
+                  color: '#f57c00',
                 }}
               >
                 {t('pricing-modal:appsumo.exclusiveTitle', '🎉 AppSumo Exclusive: 50% OFF Business & Enterprise Plans!')}
               </Typography.Title>
-              <Space size="large" align="center" wrap>
-                <Typography.Text strong>
-                  {t('pricing-modal:appsumo.timeRemaining', '{{days}}d {{hours}}h {{minutes}}m remaining', {
-                    days: appSumoDiscountInfo.remainingDays,
-                    hours: appSumoDiscountInfo.remainingHours,
-                    minutes: appSumoDiscountInfo.remainingMinutes
-                  })}
-                </Typography.Text>
-                <Tag
-                  color={
-                    appSumoDiscountInfo.urgencyLevel === 'critical' ||
-                    appSumoDiscountInfo.urgencyLevel === 'high'
-                      ? 'red'
-                      : 'orange'
-                  }
-                >
-                  {appSumoDiscountInfo.urgencyLevel === 'critical'
-                    ? t('pricing-modal:appsumo.urgency.finalHours', 'FINAL HOURS')
-                    : appSumoDiscountInfo.urgencyLevel === 'high'
-                      ? t('pricing-modal:appsumo.urgency.urgent', 'URGENT')
-                      : t('pricing-modal:appsumo.urgency.limitedTime', 'LIMITED TIME')}
-                </Tag>
-              </Space>
+              {appSumoDiscountInfo.remainingDays > 0 && (
+                <Space size="large" align="center" wrap>
+                  <Typography.Text strong>
+                    {t('pricing-modal:appsumo.timeRemaining', '{{days}}d {{hours}}h {{minutes}}m remaining', {
+                      days: appSumoDiscountInfo.remainingDays,
+                      hours: appSumoDiscountInfo.remainingHours,
+                      minutes: appSumoDiscountInfo.remainingMinutes
+                    })}
+                  </Typography.Text>
+                  <Tag
+                    color={
+                      appSumoDiscountInfo.urgencyLevel === 'critical' ||
+                      appSumoDiscountInfo.urgencyLevel === 'high'
+                        ? 'red'
+                        : 'orange'
+                    }
+                  >
+                    {appSumoDiscountInfo.urgencyLevel === 'critical'
+                      ? t('pricing-modal:appsumo.urgency.finalHours', 'FINAL HOURS')
+                      : appSumoDiscountInfo.urgencyLevel === 'high'
+                        ? t('pricing-modal:appsumo.urgency.urgent', 'URGENT')
+                        : t('pricing-modal:appsumo.urgency.limitedTime', 'LIMITED TIME')}
+                  </Tag>
+                </Space>
+              )}
             </Space>
           }
           description={
@@ -56,34 +54,17 @@ export const AppSumoAlert: React.FC<AppSumoAlertProps> = ({ appSumoDiscountInfo 
                 {t('pricing-modal:appsumo.specialPricing', '🎯 Special pricing for AppSumo lifetime deal members')}
               </Typography.Text>
               <Typography.Text>
-                {t('pricing-modal:appsumo.businessUsers', '💪 Business plans support up to 50 users (normally 25)')}
+                {t('pricing-modal:appsumo.businessUsers', '💪 Business plans support up to 100 users included')}
               </Typography.Text>
-              <Typography.Text
-                style={{
-                  color:
-                    appSumoDiscountInfo.urgencyLevel === 'critical' ||
-                    appSumoDiscountInfo.urgencyLevel === 'high'
-                      ? '#d32f2f'
-                      : '#666',
-                }}
-              >
+              <Typography.Text style={{ color: '#666' }}>
                 {appSumoDiscountInfo.message}
               </Typography.Text>
             </Space>
           }
-          type={
-            appSumoDiscountInfo.urgencyLevel === 'critical' ||
-            appSumoDiscountInfo.urgencyLevel === 'high'
-              ? 'error'
-              : 'warning'
-          }
+          type="info"
           showIcon
           style={{
-            border:
-              appSumoDiscountInfo.urgencyLevel === 'critical' ||
-              appSumoDiscountInfo.urgencyLevel === 'high'
-                ? '2px solid #d32f2f'
-                : '2px solid #f57c00',
+            border: '2px solid #1890ff',
           }}
         />
       ) : (

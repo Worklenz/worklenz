@@ -38,6 +38,7 @@ import { formatDate } from '@/utils/timeUtils';
 import UpgradePlans from '../drawers/upgrade-plans/upgrade-plans';
 import { ISUBSCRIPTION_TYPE, SUBSCRIPTION_STATUS } from '@/shared/constants';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
+import { useAuthService } from '@/hooks/useAuth';
 
 type SubscriptionAction = 'pause' | 'resume';
 type SeatOption = { label: string; value: number | string };
@@ -58,6 +59,7 @@ const CurrentPlanDetails = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('admin-center/current-bill');
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const currentSession = useAuthService().getCurrentSession();
 
   const [pausingPlan, setPausingPlan] = useState(false);
   const [cancellingPlan, setCancellingPlan] = useState(false);
@@ -220,6 +222,18 @@ const CurrentPlanDetails = () => {
       billingInfo.status === SUBSCRIPTION_STATUS.ACTIVE
     );
   }, [billingInfo]);
+
+  const isAppSumoUser = useMemo(() => {
+    const planName = billingInfo?.plan_name?.toLowerCase() || '';
+    const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
+    
+    return (
+      planName.includes('appsumo') ||
+      subscriptionType.includes('appsumo') ||
+      planName.includes('life_time_deal') ||
+      subscriptionType.includes('life_time_deal')
+    );
+  }, [billingInfo, currentSession]);
 
   const renderExtra = useCallback(() => {
     if (!billingInfo || billingInfo.is_custom) return null;
@@ -588,7 +602,7 @@ const CurrentPlanDetails = () => {
         <Modal
           open={isUpgradeModalOpen}
           onCancel={() => dispatch(toggleUpgradeModal())}
-          width={1400}
+          width={isAppSumoUser ? 900 : 1400}
           centered
           okButtonProps={{ hidden: true }}
           cancelButtonProps={{ hidden: true }}

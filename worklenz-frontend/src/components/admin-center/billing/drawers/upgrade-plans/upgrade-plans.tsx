@@ -99,10 +99,11 @@ const UpgradePlans = () => {
     return (
       planName.includes('appsumo') ||
       subscriptionType.includes('appsumo') ||
-      planName.includes('lifetime') ||
-      subscriptionType.includes('lifetime')
+      planName.includes('life_time_deal') ||
+      subscriptionType.includes('life_time_deal')
     );
   }, [billingInfo, currentSession]);
+
 
   const isFreeUser = useMemo(() => {
     return currentSession?.subscription_type === 'FREE';
@@ -138,26 +139,18 @@ const UpgradePlans = () => {
   };
 
   // API functions
-  const fetchAppSumoDiscountInfo = async () => {
+  const setDefaultAppSumoInfo = () => {
     if (!isAppSumoUser) return;
-
-    try {
-      const response = await adminCenterApiService.getAppSumoCountdownWidget();
-
-      if (response.done && response.body.isVisible) {
-        const data = response.body;
-        setAppSumoDiscountInfo({
-          remainingDays: data.remainingDays,
-          remainingHours: data.remainingHours,
-          remainingMinutes: data.remainingMinutes,
-          eligibleForDiscount: data.remainingDays > 0,
-          urgencyLevel: data.urgencyLevel as 'low' | 'medium' | 'high' | 'critical',
-          message: data.message,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to fetch AppSumo discount info:', error);
-    }
+    
+    // Set static AppSumo promo info without countdown
+    setAppSumoDiscountInfo({
+      remainingDays: 0,
+      remainingHours: 0,
+      remainingMinutes: 0,
+      eligibleForDiscount: true,
+      urgencyLevel: 'medium',
+      message: '🎉 Special 50% OFF pricing for AppSumo lifetime deal members',
+    });
   };
 
   const fetchPricingPlans = async () => {
@@ -178,15 +171,10 @@ const UpgradePlans = () => {
         // Filter tiers for AppSumo users - show only Business and Enterprise plans
         let filteredTiers = tiers;
         if (isAppSumoUser) {
-          console.log('🔍 AppSumo user detected, filtering tiers...');
-          console.log('📊 All tiers:', tiers.map(t => t.tier_name));
-          
-          // Check if current date is before September 6th, 2025
+          // Check if current date is before September 10th, 2025
           const currentDate = new Date();
-          const promoEndDate = new Date('2025-09-06');
+          const promoEndDate = new Date('2025-09-10');
           const isPromoActive = currentDate < promoEndDate;
-
-          console.log('📅 Promo active:', isPromoActive);
 
           if (isPromoActive) {
             // During promo period, show ONLY AppSumo promo plans
@@ -205,8 +193,7 @@ const UpgradePlans = () => {
             });
           }
 
-          console.log('✅ Filtered tiers for AppSumo user:', filteredTiers.map(t => t.tier_name));
-          await fetchAppSumoDiscountInfo();
+          setDefaultAppSumoInfo();
         }
 
         setBackendPlans(filteredTiers as any);
@@ -474,7 +461,7 @@ const UpgradePlans = () => {
       await fetchPricingPlans();
 
       if (isAppSumoUser) {
-        await fetchAppSumoDiscountInfo();
+        setDefaultAppSumoInfo();
       }
     };
 
@@ -536,8 +523,8 @@ const UpgradePlans = () => {
     <PlanFeature key="1" text={`${teamSize <= TEAM_SIZE_THRESHOLD && pricingData.business_small?.pricing_model === 'per_user'
       ? t('pricing-modal:plans.business.payPerUser', 'Pay per user (1-5 users)')
       : t('pricing-modal:plans.business.usersIncluded', '{{count}} Users Included', { count: pricingData.business.users_included })}`} />,
-    <PlanFeature key="2" text={`${isAppSumoUser && teamSize > TEAM_SIZE_THRESHOLD 
-      ? t('pricing-modal:plans.business.maxUsersAppSumo', 'Up to 50 Users Max (AppSumo Special)')
+    <PlanFeature key="2" text={`${isAppSumoUser 
+      ? t('pricing-modal:plans.business.maxUsersAppSumo', 'Up to 100 Users Included (AppSumo Special)')
       : t('pricing-modal:plans.business.maxUsers', 'Up to {{count}} Users Max', { 
           count: teamSize <= TEAM_SIZE_THRESHOLD && pricingData.business_small 
             ? pricingData.business_small.max_users 
@@ -687,48 +674,49 @@ const UpgradePlans = () => {
             )}
 
             {/* Business Plan */}
-            <Col xs={24} lg={isAppSumoUser ? 12 : 6}>
+            <Col xs={24} md={isAppSumoUser ? 12 : 6} lg={isAppSumoUser ? 12 : 6}>
               <PlanCard
                 planType="business"
-                title={t('pricing-modal:plans.business.name')}
+                title={isAppSumoUser ? t('pricing-modal:plans.business.namePromo', 'Business (AppSumo Special)') : t('pricing-modal:plans.business.name')}
                 description={t('pricing-modal:plans.business.description')}
                 features={generateBusinessPlanFeatures()}
-                                  priceDisplay={
-                    <PlanPriceDisplay
-                      monthlyPrice={calculateMonthlyTotal('business')}
-                      annualPrice={calculateAnnualTotal('business')}
-                      perUserMonthlyPrice={getPerUserMonthlyPrice('business')}
-                      perUserAnnualPrice={getPerUserAnnualPrice('business')}
-                      isSmallTeam={teamSize <= 5}
-                      billingFrequency={billingFrequency}
-                      label={getPriceLabel('business')}
-                      isAppSumoUser={isAppSumoUser}
-                    />
-                  }
+                priceDisplay={
+                  <PlanPriceDisplay
+                    monthlyPrice={calculateMonthlyTotal('business')}
+                    annualPrice={calculateAnnualTotal('business')}
+                    perUserMonthlyPrice={getPerUserMonthlyPrice('business')}
+                    perUserAnnualPrice={getPerUserAnnualPrice('business')}
+                    isSmallTeam={teamSize <= 5}
+                    billingFrequency={billingFrequency}
+                    label={getPriceLabel('business')}
+                    isAppSumoUser={isAppSumoUser}
+                  />
+                }
                 selectedPlanType={selectedPlanType}
                 onPlanSelect={handlePlanSelect}
+                isPopular={isAppSumoUser}
               />
             </Col>
 
             {/* Enterprise Plan */}
-            <Col xs={24} lg={isAppSumoUser ? 12 : 6}>
+            <Col xs={24} md={isAppSumoUser ? 12 : 6} lg={isAppSumoUser ? 12 : 6}>
               <PlanCard
                 planType="enterprise"
-                title={t('pricing-modal:plans.enterprise.name')}
+                title={isAppSumoUser ? t('pricing-modal:plans.enterprise.namePromo', 'Enterprise (AppSumo Special)') : t('pricing-modal:plans.enterprise.name')}
                 description={t('pricing-modal:plans.enterprise.description')}
                 features={generateEnterprisePlanFeatures()}
-                                  priceDisplay={
-                    <PlanPriceDisplay
-                      monthlyPrice={calculateMonthlyTotal('enterprise')}
-                      annualPrice={calculateAnnualTotal('enterprise')}
-                      perUserMonthlyPrice={null}
-                      perUserAnnualPrice={null}
-                      isSmallTeam={false}
-                      billingFrequency={billingFrequency}
-                      label={getPriceLabel('enterprise')}
-                      isAppSumoUser={isAppSumoUser}
-                    />
-                  }
+                priceDisplay={
+                  <PlanPriceDisplay
+                    monthlyPrice={calculateMonthlyTotal('enterprise')}
+                    annualPrice={calculateAnnualTotal('enterprise')}
+                    perUserMonthlyPrice={null}
+                    perUserAnnualPrice={null}
+                    isSmallTeam={false}
+                    billingFrequency={billingFrequency}
+                    label={getPriceLabel('enterprise')}
+                    isAppSumoUser={isAppSumoUser}
+                  />
+                }
                 selectedPlanType={selectedPlanType}
                 onPlanSelect={handlePlanSelect}
               />
