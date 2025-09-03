@@ -259,6 +259,12 @@ const CurrentPlanDetails = () => {
           </Button>
         )}
 
+        {billingInfo.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL && (
+          <Button type="primary" onClick={() => dispatch(toggleUpgradeModal())}>
+            {t('upgradePlan')}
+          </Button>
+        )}
+
         {showChangeButton && (
           <Button
             type="primary"

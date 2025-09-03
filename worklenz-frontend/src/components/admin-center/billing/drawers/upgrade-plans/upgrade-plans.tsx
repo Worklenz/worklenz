@@ -178,9 +178,9 @@ const UpgradePlans = () => {
         // Filter tiers for AppSumo users - show only promo plans until Sept 6th
         let filteredTiers = tiers;
         if (isAppSumoUser) {
-          // Check if current date is before September 6th, 2024
+          // Check if current date is before September 6th, 2025
           const currentDate = new Date();
-          const promoEndDate = new Date('2024-09-06');
+          const promoEndDate = new Date('2025-09-06');
           const isPromoActive = currentDate < promoEndDate;
 
           if (isPromoActive) {
