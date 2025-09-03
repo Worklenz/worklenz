@@ -39,13 +39,13 @@ export const authenticateClient = async (
 
     // Convert permissions array to access object
     const clientAccess = {
-      canViewServices: permissions.includes('read:services'),
-      canCreateRequests: permissions.includes('create:requests'),
-      canViewProjects: permissions.includes('read:projects'),
-      canViewInvoices: permissions.includes('read:invoices'),
-      canChat: permissions.includes('read:chats'),
-      canWriteChat: permissions.includes('write:chats'),
-      canUpdateProfile: permissions.includes('write:profile')
+      canViewServices: permissions.includes("read:services"),
+      canCreateRequests: permissions.includes("create:requests"),
+      canViewProjects: permissions.includes("read:projects"),
+      canViewInvoices: permissions.includes("read:invoices"),
+      canChat: permissions.includes("read:chats"),
+      canWriteChat: permissions.includes("write:chats"),
+      canUpdateProfile: permissions.includes("write:profile")
     };
 
     // Attach client data to request
@@ -56,7 +56,7 @@ export const authenticateClient = async (
 
     next();
   } catch (error) {
-    console.error('Client authentication error:', error);
+    console.error("Client authentication error:", error);
     return res.status(401).json(
       new ServerResponse(false, null, "Authentication failed")
     );

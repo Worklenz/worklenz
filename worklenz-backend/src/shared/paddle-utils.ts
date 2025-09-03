@@ -75,6 +75,9 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
         data.base_user_limit || 25
       );
       data.effective_user_limit = appSumoLimit;
+    } else if (data && data.subscription_type === "ANNUAL_BUSINESS") {
+      // ANNUAL_BUSINESS license type has business plan features with default business limit
+      data.effective_user_limit = data.base_user_limit || 100; // Default business plan limit
     } else {
       data.effective_user_limit = data.base_user_limit || 25;
     }

@@ -6,6 +6,7 @@ import { useAppSelector } from '../../../../../hooks/useAppSelector';
 import { useGetChatsQuery } from '../../../../../api/client-portal/client-portal-api';
 import { useTranslation } from 'react-i18next';
 import { MessageOutlined } from '@ant-design/icons';
+import NewChatModal from '../../../../../components/client-portal/NewChatModal';
 
 export type TempChatsType = {
   id: string;
@@ -25,6 +26,7 @@ export type TempChatsType = {
 
 const ChatBoxWrapper = () => {
   const [openedChatId, setOpenedChatId] = useState<string | null>(null);
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
 
   // localization
   const { t } = useTranslation('client-portal-chats');
@@ -109,6 +111,12 @@ const ChatBoxWrapper = () => {
     ? chatList.find(chat => chat.id === openedChatId)
     : null;
 
+  // Handle new chat success
+  const handleNewChatSuccess = (chatId: string) => {
+    setOpenedChatId(chatId);
+    setIsNewChatModalOpen(false);
+  };
+
   if (isLoading) {
     return (
       <Card
@@ -169,7 +177,7 @@ const ChatBoxWrapper = () => {
             height: 'calc(100vh - 320px)',
           }}
         >
-          <Button type="primary" icon={<MessageOutlined />} onClick={() => setOpenedChatId(null)}>
+          <Button type="primary" icon={<MessageOutlined />} onClick={() => setIsNewChatModalOpen(true)}>
             {t('startConversation')}
           </Button>
         </Empty>
@@ -205,6 +213,12 @@ const ChatBoxWrapper = () => {
           </Flex>
         )}
       </Flex>
+
+      <NewChatModal
+        open={isNewChatModalOpen}
+        onClose={() => setIsNewChatModalOpen(false)}
+        onSuccess={handleNewChatSuccess}
+      />
     </Card>
   );
 };

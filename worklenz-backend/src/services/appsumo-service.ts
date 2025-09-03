@@ -180,6 +180,11 @@ export class AppSumoService {
     planName?: string,
     defaultLimit = 25
   ): number {
+    // ANNUAL_BUSINESS subscription type gets business plan limits
+    if (subscriptionType === "ANNUAL_BUSINESS") {
+      return 100; // Annual business plan gets 100 users
+    }
+    
     // Check if this is an AppSumo user
     if (this.isAppSumoUser(subscriptionType, planName)) {
       // Check if this is a business plan
