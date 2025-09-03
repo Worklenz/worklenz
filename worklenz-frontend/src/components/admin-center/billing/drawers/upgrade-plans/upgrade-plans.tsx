@@ -175,7 +175,7 @@ const UpgradePlans = () => {
       if (pricingRes.done && pricingRes.body) {
         const tiers = pricingRes.body.tiers || [];
 
-        // Filter tiers for AppSumo users - show only promo plans until Sept 6th
+        // Filter tiers for AppSumo users - show only Business and Enterprise plans
         let filteredTiers = tiers;
         if (isAppSumoUser) {
           // Check if current date is before September 6th, 2025
@@ -184,21 +184,26 @@ const UpgradePlans = () => {
           const isPromoActive = currentDate < promoEndDate;
 
           if (isPromoActive) {
-            // Show only AppSumo promo plans
+            // During promo period, show ONLY AppSumo promo plans
             filteredTiers = tiers.filter((tier: any) => {
-              return tier.is_promo && tier.promo_type === 'appsumo';
+              const tierName = tier.tier_name;
+              
+              // Include ONLY the specific AppSumo tier plans
+              return tierName === 'APPSUMO_BUSINESS' || tierName === 'APPSUMO_ENTERPRISE';
             });
           } else {
             // After promo period, show regular business and enterprise plans
             filteredTiers = tiers.filter((tier: any) => {
-              return tier.tier_name.includes('BUSINESS') || tier.tier_name.includes('ENTERPRISE');
+              const tierName = tier.tier_name;
+              // Include regular Business and Enterprise plans (BUSINESS_SMALL, BUSINESS_LARGE, ENTERPRISE)
+              return tierName === 'BUSINESS_SMALL' || tierName === 'BUSINESS_LARGE' || tierName === 'ENTERPRISE';
             });
           }
 
           await fetchAppSumoDiscountInfo();
         }
 
-        setBackendPlans(tiers as any);
+        setBackendPlans(filteredTiers as any);
         const mappedPricing = mapTierBasedPricingToFrontend(filteredTiers);
         setPricingData(mappedPricing);
       }
@@ -469,13 +474,18 @@ const UpgradePlans = () => {
 
     initializeData();
 
-    if (billingInfo?.total_used !== undefined) {
+    // Set team size based on user type
+    if (isAppSumoUser) {
+      // For AppSumo users, always default to 50 users
+      setTeamSize(50);
+    } else if (billingInfo?.total_used !== undefined) {
+      // For regular users, use their actual team size
       // Ensure team size is never negative (can happen with AppSumo users due to free_count calculations)
       // Also handle cases where actual team size might be larger than standard options
       const actualTeamSize = Math.max(1, billingInfo.total_used);
       setTeamSize(actualTeamSize);
     }
-  }, [billingInfo]);
+  }, [billingInfo, isAppSumoUser]);
 
   useEffect(() => {
     return () => {

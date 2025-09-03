@@ -21,20 +21,22 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
       style={{ marginTop: isAppSumoUser ? 8 : 24, marginBottom: 16 }}
     >
       <Space size="large" align="center">
-        <Space align="center" size="middle">
-          <Typography.Text strong>{t('pricing-modal:teamSize.label')}:</Typography.Text>
-          <Select
-            value={teamSize}
-            onChange={onTeamSizeChange}
-            style={{ width: 140 }}
-            size="large"
-            options={generateTeamSizeOptions()}
-            optionFilterProp="label"
-            placeholder={t('pricing-modal:teamSize.placeholder', 'Select team size')}
-            loading={isLoadingPlans}
-            disabled={isLoadingPlans}
-          />
-        </Space>
+        {!isAppSumoUser && (
+          <Space align="center" size="middle">
+            <Typography.Text strong>{t('pricing-modal:teamSize.label')}:</Typography.Text>
+            <Select
+              value={teamSize}
+              onChange={onTeamSizeChange}
+              style={{ width: 140 }}
+              size="large"
+              options={generateTeamSizeOptions()}
+              optionFilterProp="label"
+              placeholder={t('pricing-modal:teamSize.placeholder', 'Select team size')}
+              loading={isLoadingPlans}
+              disabled={isLoadingPlans}
+            />
+          </Space>
+        )}
 
         <Space align="center" size="middle">
           <Typography.Text strong>{t('pricing-modal:billingCycle.label')}:</Typography.Text>
