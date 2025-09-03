@@ -178,10 +178,15 @@ const UpgradePlans = () => {
         // Filter tiers for AppSumo users - show only Business and Enterprise plans
         let filteredTiers = tiers;
         if (isAppSumoUser) {
+          console.log('🔍 AppSumo user detected, filtering tiers...');
+          console.log('📊 All tiers:', tiers.map(t => t.tier_name));
+          
           // Check if current date is before September 6th, 2025
           const currentDate = new Date();
           const promoEndDate = new Date('2025-09-06');
           const isPromoActive = currentDate < promoEndDate;
+
+          console.log('📅 Promo active:', isPromoActive);
 
           if (isPromoActive) {
             // During promo period, show ONLY AppSumo promo plans
@@ -192,14 +197,15 @@ const UpgradePlans = () => {
               return tierName === 'APPSUMO_BUSINESS' || tierName === 'APPSUMO_ENTERPRISE';
             });
           } else {
-            // After promo period, show regular business and enterprise plans
+            // After promo period, show only large business and enterprise plans (no small plans)
             filteredTiers = tiers.filter((tier: any) => {
               const tierName = tier.tier_name;
-              // Include regular Business and Enterprise plans (BUSINESS_SMALL, BUSINESS_LARGE, ENTERPRISE)
-              return tierName === 'BUSINESS_SMALL' || tierName === 'BUSINESS_LARGE' || tierName === 'ENTERPRISE';
+              // Include only large Business and Enterprise plans (exclude SMALL variants)
+              return tierName === 'BUSINESS_LARGE' || tierName === 'ENTERPRISE';
             });
           }
 
+          console.log('✅ Filtered tiers for AppSumo user:', filteredTiers.map(t => t.tier_name));
           await fetchAppSumoDiscountInfo();
         }
 

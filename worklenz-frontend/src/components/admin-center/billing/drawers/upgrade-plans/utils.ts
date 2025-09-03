@@ -248,8 +248,8 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
             : tier.monthly_base_price?.toString() || '',
           annual_total: tier.annual_base_price?.toString() || 
                        (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
-          users_included: 'Up to 50 users',
-          max_users: tier.max_users?.toString() || '50',
+          users_included: `Up to ${tier.max_users || 100} users`,
+          max_users: tier.max_users?.toString() || '100',
           additional_user_price: '0',
           
           // New API fields
@@ -258,7 +258,7 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
                             (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
           monthly_per_user_price: '0',
           annual_per_user_price: '0',
-          included_users: 'Up to 50 users',
+          included_users: `Up to ${tier.max_users || 100} users`,
           
           pricing_model: 'promo_flat_rate',
           monthly_plan_id: getPlanId(tier, false),
