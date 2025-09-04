@@ -108,6 +108,8 @@ export interface IColumnConfiguration {
     expression?: string;
     first_numeric_column_id?: string;
     second_numeric_column_id?: string;
+    first_numeric_column_key?: string;
+    second_numeric_column_key?: string;
 }
 
 export interface ISelectionOption {

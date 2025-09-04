@@ -271,6 +271,7 @@ const SaveProjectAsTemplate = () => {
           statuses: projectAttributesState.statuses.checked,
           phases: projectAttributesState.phases.checked,
           labels: projectAttributesState.labels.checked,
+          customColumns: projectAttributesState.customColumns.checked,
         },
         taskIncludes: {
           status: taskAttributesState.status.checked,
@@ -354,7 +355,7 @@ const SaveProjectAsTemplate = () => {
         open={isSaveAsTemplateDrawerOpen}
         width={800}
         centered
-        destroyOnClose
+        destroyOnHidden
         maskClosable={!creating}
         closable={!creating}
         footer={

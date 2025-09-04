@@ -541,8 +541,8 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
               label,
               label_position,
               expression,
-              first_numeric_column_id,
-              second_numeric_column_id
+              first_numeric_column_key,
+              second_numeric_column_key
             FROM cc_column_configurations 
             WHERE column_id = cc.id
           ) config
@@ -648,7 +648,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
       if (column.label_options && column.label_options.length > 0) {
         for (const option of column.label_options) {
           const labelQuery = `
-            INSERT INTO cpt_label_options (
+            INSERT INTO cc_label_options (
               column_id, label_id, label_name, label_color, label_order
             ) VALUES ($1, $2, $3, $4, $5);
           `;
@@ -754,7 +754,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
         const configQuery = `
           INSERT INTO cc_column_configurations (
             column_id, field_title, field_type, number_type, decimals,
-            label, label_position, expression, first_numeric_column_id, second_numeric_column_id
+            label, label_position, expression, first_numeric_column_key, second_numeric_column_key
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
         `;
         await db.query(configQuery, [
@@ -766,8 +766,8 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
           column.configuration.label,
           column.configuration.label_position,
           column.configuration.expression,
-          column.configuration.first_numeric_column_id,
-          column.configuration.second_numeric_column_id
+          column.configuration.first_numeric_column_key || column.configuration.first_numeric_column_id,
+          column.configuration.second_numeric_column_key || column.configuration.second_numeric_column_id
         ]);
       }
 
