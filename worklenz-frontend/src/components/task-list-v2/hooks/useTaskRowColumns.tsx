@@ -276,11 +276,11 @@ export const useTaskRowColumns = ({
               updateTaskCustomColumnValue
             ) {
               return (
-                <DragHandleColumn
+                <CustomColumn
                   width={width}
-                  isSubtask={isSubtask}
-                  attributes={attributes}
-                  listeners={listeners}
+                  column={column}
+                  task={task}
+                  updateTaskCustomColumnValue={updateTaskCustomColumnValue}
                 />
               );
             }
