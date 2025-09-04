@@ -25,7 +25,7 @@ const ClientPortalLayout = () => {
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
 
   // Redirect unauthorized users to main dashboard
-  if (!auth.isLoggedIn()) {
+  if (!auth.isAuthenticated()) {
     return <Navigate to="/auth/signin" replace />;
   }
 
