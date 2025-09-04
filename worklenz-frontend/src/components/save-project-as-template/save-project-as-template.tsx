@@ -392,7 +392,7 @@ const SaveProjectAsTemplate = () => {
           </div>
         }
       >
-        <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '0 4px' }}>
+        <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '4px' }}>
           <Spin spinning={creating} tip={t('creating')} size="large">
             <Form form={form} layout="vertical" onFinish={handleFinish}>
             {/* Quick Actions Bar */}
@@ -441,8 +441,6 @@ const SaveProjectAsTemplate = () => {
                 size="small" 
                 style={{ 
                   marginBottom: 20,
-                  boxShadow: token.boxShadowSecondary,
-                  borderRadius: token.borderRadius
                 }}
                 title={
                   <Space>
