@@ -1,15 +1,15 @@
 import { toggleSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { 
-  Button, 
-  Modal, 
-  Flex, 
-  Form, 
-  Input, 
-  Typography, 
-  Card, 
-  Space, 
+import {
+  Button,
+  Modal,
+  Flex,
+  Form,
+  Input,
+  Typography,
+  Card,
+  Space,
   Spin,
   Tooltip,
   Badge,
@@ -18,16 +18,16 @@ import {
   Switch,
   ConfigProvider,
   notification,
-  theme
+  theme,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { ICustomProjectTemplateCreateRequest } from '@/types/project/projectTemplate.types';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
-import { 
-  SaveOutlined, 
-  ProjectOutlined, 
-  CheckSquareOutlined, 
+import {
+  SaveOutlined,
+  ProjectOutlined,
+  CheckSquareOutlined,
   InfoCircleOutlined,
   BulbOutlined,
   SettingOutlined,
@@ -40,7 +40,7 @@ import {
   UnorderedListOutlined,
   ThunderboltOutlined,
   ExperimentOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 
 const { Panel } = Collapse;
@@ -71,107 +71,113 @@ const SaveProjectAsTemplate = () => {
   const [expandedPanels, setExpandedPanels] = useState<string | string[]>(['project', 'task']);
   const [quickSelectMode, setQuickSelectMode] = useState<'all' | 'none' | 'custom'>('custom');
 
-  const projectAttributes = useMemo<Record<string, AttributeConfig>>(() => ({
-    statuses: {
-      label: t('includesOptions.statuses'),
-      value: 'statuses',
-      disabled: true,
-      checked: true,
-      icon: <ThunderboltOutlined />,
-      description: t('descriptions.statuses')
-    },
-    phases: { 
-      label: t('includesOptions.phases'), 
-      value: 'phases', 
-      disabled: false, 
-      checked: true,
-      icon: <FolderOpenOutlined />,
-      description: t('descriptions.phases')
-    },
-    labels: { 
-      label: t('includesOptions.labels'), 
-      value: 'labels', 
-      disabled: false, 
-      checked: true,
-      icon: <TagsOutlined />,
-      description: t('descriptions.labels')
-    },
-    customColumns: { 
-      label: t('includesOptions.customColumns'),
-      value: 'customColumns', 
-      disabled: false, 
-      checked: false,
-      icon: <ExperimentOutlined />,
-      description: t('descriptions.customColumns')
-    },
-  }), [t]);
+  const projectAttributes = useMemo<Record<string, AttributeConfig>>(
+    () => ({
+      statuses: {
+        label: t('includesOptions.statuses'),
+        value: 'statuses',
+        disabled: true,
+        checked: true,
+        icon: <ThunderboltOutlined />,
+        description: t('descriptions.statuses'),
+      },
+      phases: {
+        label: t('includesOptions.phases'),
+        value: 'phases',
+        disabled: false,
+        checked: true,
+        icon: <FolderOpenOutlined />,
+        description: t('descriptions.phases'),
+      },
+      labels: {
+        label: t('includesOptions.labels'),
+        value: 'labels',
+        disabled: false,
+        checked: true,
+        icon: <TagsOutlined />,
+        description: t('descriptions.labels'),
+      },
+      customColumns: {
+        label: t('includesOptions.customColumns'),
+        value: 'customColumns',
+        disabled: false,
+        checked: false,
+        icon: <ExperimentOutlined />,
+        description: t('descriptions.customColumns'),
+      },
+    }),
+    [t]
+  );
 
-  const taskAttributes = useMemo<Record<string, AttributeConfig>>(() => ({
-    name: { 
-      label: t('taskIncludesOptions.name'), 
-      value: 'name', 
-      disabled: true, 
-      checked: true,
-      icon: <FileTextOutlined />,
-      description: t('descriptions.taskName')
-    },
-    priority: {
-      label: t('taskIncludesOptions.priority'),
-      value: 'priority',
-      disabled: true,
-      checked: true,
-      icon: <ThunderboltOutlined />,
-      description: t('descriptions.taskPriority')
-    },
-    status: {
-      label: t('taskIncludesOptions.status'),
-      value: 'status',
-      disabled: true,
-      checked: true,
-      icon: <CheckCircleOutlined />,
-      description: t('descriptions.taskStatus')
-    },
-    phase: {
-      label: t('taskIncludesOptions.phase'),
-      value: 'phase',
-      disabled: false,
-      checked: true,
-      icon: <FolderOpenOutlined />,
-      description: t('descriptions.taskPhase')
-    },
-    label: {
-      label: t('taskIncludesOptions.label'),
-      value: 'label',
-      disabled: false,
-      checked: true,
-      icon: <TagsOutlined />,
-      description: t('descriptions.taskLabel')
-    },
-    timeEstimate: {
-      label: t('taskIncludesOptions.timeEstimate'),
-      value: 'timeEstimate',
-      disabled: false,
-      checked: true,
-      icon: <ClockCircleOutlined />,
-      description: t('descriptions.timeEstimate')
-    },
-    description: {
-      label: t('taskIncludesOptions.description'),
-      value: 'description',
-      disabled: false,
-      checked: true,
-      icon: <FileTextOutlined />,
-      description: t('descriptions.description')
-    },
-    subTasks: {
-      label: t('taskIncludesOptions.subTasks'),
-      value: 'subTasks',
-      disabled: false,
-      checked: true,
-      icon: <UnorderedListOutlined />,
-      description: t('descriptions.subTasks')
-    },
-  }), [t]);
+  const taskAttributes = useMemo<Record<string, AttributeConfig>>(
+    () => ({
+      name: {
+        label: t('taskIncludesOptions.name'),
+        value: 'name',
+        disabled: true,
+        checked: true,
+        icon: <FileTextOutlined />,
+        description: t('descriptions.taskName'),
+      },
+      priority: {
+        label: t('taskIncludesOptions.priority'),
+        value: 'priority',
+        disabled: true,
+        checked: true,
+        icon: <ThunderboltOutlined />,
+        description: t('descriptions.taskPriority'),
+      },
+      status: {
+        label: t('taskIncludesOptions.status'),
+        value: 'status',
+        disabled: true,
+        checked: true,
+        icon: <CheckCircleOutlined />,
+        description: t('descriptions.taskStatus'),
+      },
+      phase: {
+        label: t('taskIncludesOptions.phase'),
+        value: 'phase',
+        disabled: false,
+        checked: true,
+        icon: <FolderOpenOutlined />,
+        description: t('descriptions.taskPhase'),
+      },
+      label: {
+        label: t('taskIncludesOptions.label'),
+        value: 'label',
+        disabled: false,
+        checked: true,
+        icon: <TagsOutlined />,
+        description: t('descriptions.taskLabel'),
+      },
+      timeEstimate: {
+        label: t('taskIncludesOptions.timeEstimate'),
+        value: 'timeEstimate',
+        disabled: false,
+        checked: true,
+        icon: <ClockCircleOutlined />,
+        description: t('descriptions.timeEstimate'),
+      },
+      description: {
+        label: t('taskIncludesOptions.description'),
+        value: 'description',
+        disabled: false,
+        checked: true,
+        icon: <FileTextOutlined />,
+        description: t('descriptions.description'),
+      },
+      subTasks: {
+        label: t('taskIncludesOptions.subTasks'),
+        value: 'subTasks',
+        disabled: false,
+        checked: true,
+        icon: <UnorderedListOutlined />,
+        description: t('descriptions.subTasks'),
+      },
+    }),
+    [t]
+  );
 
   const [projectAttributesState, setProjectAttributesState] = useState(projectAttributes);
   const [taskAttributesState, setTaskAttributesState] = useState(taskAttributes);
@@ -203,34 +209,26 @@ const SaveProjectAsTemplate = () => {
 
   const handleQuickSelect = useCallback((mode: 'all' | 'none' | 'essential') => {
     if (mode === 'all') {
-      setProjectAttributesState(prev => 
+      setProjectAttributesState(prev =>
         Object.fromEntries(
-          Object.entries(prev).map(([key, attr]) => 
-            [key, { ...attr, checked: true }]
-          )
+          Object.entries(prev).map(([key, attr]) => [key, { ...attr, checked: true }])
         )
       );
-      setTaskAttributesState(prev => 
+      setTaskAttributesState(prev =>
         Object.fromEntries(
-          Object.entries(prev).map(([key, attr]) => 
-            [key, { ...attr, checked: true }]
-          )
+          Object.entries(prev).map(([key, attr]) => [key, { ...attr, checked: true }])
         )
       );
       setQuickSelectMode('all');
     } else if (mode === 'none') {
-      setProjectAttributesState(prev => 
+      setProjectAttributesState(prev =>
         Object.fromEntries(
-          Object.entries(prev).map(([key, attr]) => 
-            [key, { ...attr, checked: attr.disabled }]
-          )
+          Object.entries(prev).map(([key, attr]) => [key, { ...attr, checked: attr.disabled }])
         )
       );
-      setTaskAttributesState(prev => 
+      setTaskAttributesState(prev =>
         Object.fromEntries(
-          Object.entries(prev).map(([key, attr]) => 
-            [key, { ...attr, checked: attr.disabled }]
-          )
+          Object.entries(prev).map(([key, attr]) => [key, { ...attr, checked: attr.disabled }])
         )
       );
       setQuickSelectMode('none');
@@ -286,34 +284,16 @@ const SaveProjectAsTemplate = () => {
 
       const res = await projectTemplatesApiService.createCustomTemplate(body);
       if (res.done) {
-        api.success({
-          message: t('notifications.createSuccess'),
-          description: t('notifications.createSuccessDesc'),
-          placement: 'topRight',
-          duration: 3,
-        });
         setTimeout(() => {
           handleCancel();
         }, 1000);
       } else {
         setError(res.message || 'Failed to create template');
-        api.error({
-          message: t('notifications.createError'),
-          description: res.message || t('notifications.createError'),
-          placement: 'topRight',
-          duration: 4,
-        });
       }
     } catch (error: any) {
       console.error(error);
       const errorMsg = error?.response?.data?.message || 'An unexpected error occurred';
       setError(errorMsg);
-      api.error({
-        message: t('notifications.error'),
-        description: errorMsg,
-        placement: 'topRight',
-        duration: 4,
-      });
     } finally {
       setCreating(false);
     }
@@ -325,16 +305,18 @@ const SaveProjectAsTemplate = () => {
     setQuickSelectMode('custom');
     setExpandedPanels(['project', 'task']);
     form.resetFields();
-    
+
     // Reset attributes to default state
     setProjectAttributesState(projectAttributes);
     setTaskAttributesState(taskAttributes);
-    
+
     dispatch(toggleSaveAsTemplateDrawer());
   };
 
   // Calculate selected counts
-  const selectedProjectItems = Object.values(projectAttributesState).filter(attr => attr.checked).length;
+  const selectedProjectItems = Object.values(projectAttributesState).filter(
+    attr => attr.checked
+  ).length;
   const selectedTaskItems = Object.values(taskAttributesState).filter(attr => attr.checked).length;
   const totalProjectItems = Object.keys(projectAttributesState).length;
   const totalTaskItems = Object.keys(taskAttributesState).length;
@@ -359,10 +341,12 @@ const SaveProjectAsTemplate = () => {
         maskClosable={!creating}
         closable={!creating}
         footer={
-          <div style={{ 
-            padding: '12px 0',
-            borderTop: `1px solid ${token.colorBorder}`
-          }}>
+          <div
+            style={{
+              padding: '12px 0',
+              borderTop: `1px solid ${token.colorBorder}`,
+            }}
+          >
             <Flex justify="space-between" align="center">
               <Space>
                 <Tag color="blue" icon={<InfoCircleOutlined />}>
@@ -396,51 +380,49 @@ const SaveProjectAsTemplate = () => {
         <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '4px' }}>
           <Spin spinning={creating} tip={t('creating')} size="large">
             <Form form={form} layout="vertical" onFinish={handleFinish}>
-            {/* Quick Actions Bar */}
-            <Card 
-              size="small" 
-              style={{ 
-                marginBottom: 16, 
-                backgroundColor: token.colorInfoBg,
-                borderColor: token.colorInfoBorder
-              }}
-            >
-              <Flex justify="space-between" align="center">
-                <Space>
-                  <Typography.Text strong>
-                    {t('quickSelect')}
-                  </Typography.Text>
-                  <Button 
-                    size="small" 
-                    onClick={() => handleQuickSelect('all')}
-                    type={quickSelectMode === 'all' ? 'primary' : 'default'}
-                    icon={<CheckSquareOutlined />}
-                  >
-                    {t('selectAll')}
-                  </Button>
-                  <Button 
-                    size="small" 
-                    onClick={() => handleQuickSelect('essential')}
-                    icon={<ThunderboltOutlined />}
-                  >
-                    {t('essentialOnly')}
-                  </Button>
-                  <Button 
-                    size="small" 
-                    onClick={() => handleQuickSelect('none')}
-                    type={quickSelectMode === 'none' ? 'primary' : 'default'}
-                    icon={<CloseCircleOutlined />}
-                  >
-                    {t('clearAll')}
-                  </Button>
-                </Space>
-              </Flex>
-            </Card>
+              {/* Quick Actions Bar */}
+              <Card
+                size="small"
+                style={{
+                  marginBottom: 16,
+                  backgroundColor: token.colorInfoBg,
+                  borderColor: token.colorInfoBorder,
+                }}
+              >
+                <Flex justify="space-between" align="center">
+                  <Space>
+                    <Typography.Text strong>{t('quickSelect')}</Typography.Text>
+                    <Button
+                      size="small"
+                      onClick={() => handleQuickSelect('all')}
+                      type={quickSelectMode === 'all' ? 'primary' : 'default'}
+                      icon={<CheckSquareOutlined />}
+                    >
+                      {t('selectAll')}
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => handleQuickSelect('essential')}
+                      icon={<ThunderboltOutlined />}
+                    >
+                      {t('essentialOnly')}
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => handleQuickSelect('none')}
+                      type={quickSelectMode === 'none' ? 'primary' : 'default'}
+                      icon={<CloseCircleOutlined />}
+                    >
+                      {t('clearAll')}
+                    </Button>
+                  </Space>
+                </Flex>
+              </Card>
 
               {/* Template Name Section */}
-              <Card 
-                size="small" 
-                style={{ 
+              <Card
+                size="small"
+                style={{
                   marginBottom: 20,
                 }}
                 title={
@@ -457,19 +439,19 @@ const SaveProjectAsTemplate = () => {
                   )
                 }
               >
-                <Form.Item 
-                  name="name" 
+                <Form.Item
+                  name="name"
                   label={
                     <Space>
                       <Typography.Text strong>{t('templateName')}</Typography.Text>
                       <Typography.Text type="danger">*</Typography.Text>
                     </Space>
-                  } 
+                  }
                   required
                   rules={[
                     { required: true, message: t('validation.nameRequired') },
                     { min: 3, message: t('validation.nameMinLength') },
-                    { max: 50, message: t('validation.nameMaxLength') }
+                    { max: 50, message: t('validation.nameMaxLength') },
                   ]}
                   extra={
                     templateName && (
@@ -493,8 +475,8 @@ const SaveProjectAsTemplate = () => {
               </Card>
 
               {/* Configuration Sections */}
-              <Collapse 
-                activeKey={expandedPanels} 
+              <Collapse
+                activeKey={expandedPanels}
                 onChange={setExpandedPanels}
                 expandIconPosition="end"
                 style={{ marginBottom: 20 }}
@@ -502,26 +484,29 @@ const SaveProjectAsTemplate = () => {
                 size="small"
               >
                 {/* Project Attributes Panel */}
-                <Panel 
+                <Panel
                   header={
                     <Space>
                       <SettingOutlined style={{ color: token.colorPrimary }} />
                       <Typography.Text strong>{t('includes')}</Typography.Text>
-                      <Badge 
-                        count={selectedProjectItems} 
-                        style={{ backgroundColor: selectedProjectItems > 0 ? token.colorSuccess : token.colorBorder }} 
+                      <Badge
+                        count={selectedProjectItems}
+                        style={{
+                          backgroundColor:
+                            selectedProjectItems > 0 ? token.colorSuccess : token.colorBorder,
+                        }}
                       />
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                         ({selectedProjectItems}/{totalProjectItems} selected)
                       </Typography.Text>
                     </Space>
-                  } 
+                  }
                   key="project"
-                  style={{ 
+                  style={{
                     background: token.colorBgContainer,
                     marginBottom: 8,
                     borderRadius: token.borderRadius,
-                    border: `1px solid ${token.colorBorder}`
+                    border: `1px solid ${token.colorBorder}`,
                   }}
                   extra={
                     <Tooltip title={t('tooltips.projectElements')}>
@@ -530,19 +515,29 @@ const SaveProjectAsTemplate = () => {
                   }
                 >
                   <Form.Item name="includes">
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                        gap: 12,
+                      }}
+                    >
                       {Object.entries(projectAttributesState).map(([key, attr]) => (
-                        <Card 
+                        <Card
                           key={key}
                           size="small"
                           hoverable={!attr.disabled}
-                          style={{ 
-                            border: attr.checked ? `2px solid ${token.colorSuccess}` : `1px solid ${token.colorBorder}`,
-                            backgroundColor: attr.checked ? token.colorSuccessBg : token.colorFillAlter,
+                          style={{
+                            border: attr.checked
+                              ? `2px solid ${token.colorSuccess}`
+                              : `1px solid ${token.colorBorder}`,
+                            backgroundColor: attr.checked
+                              ? token.colorSuccessBg
+                              : token.colorFillAlter,
                             borderRadius: token.borderRadius,
                             transition: 'all 0.3s ease',
                             cursor: attr.disabled ? 'not-allowed' : 'pointer',
-                            opacity: attr.disabled && !attr.checked ? 0.6 : 1
+                            opacity: attr.disabled && !attr.checked ? 0.6 : 1,
                           }}
                           onClick={() => !attr.disabled && handleProjectAttributeChange(key)}
                         >
@@ -562,14 +557,18 @@ const SaveProjectAsTemplate = () => {
                                 onClick={(_, e) => e.stopPropagation()}
                               />
                             </Flex>
-                            <Typography.Text 
-                              type="secondary" 
+                            <Typography.Text
+                              type="secondary"
                               style={{ fontSize: 11, display: 'block' }}
                             >
                               {attr.description}
                             </Typography.Text>
                             {attr.disabled && (
-                              <Tag color="orange" icon={<InfoCircleOutlined />} style={{ fontSize: 11 }}>
+                              <Tag
+                                color="orange"
+                                icon={<InfoCircleOutlined />}
+                                style={{ fontSize: 11 }}
+                              >
                                 {t('required')}
                               </Tag>
                             )}
@@ -581,25 +580,28 @@ const SaveProjectAsTemplate = () => {
                 </Panel>
 
                 {/* Task Attributes Panel */}
-                <Panel 
+                <Panel
                   header={
                     <Space>
                       <CheckSquareOutlined style={{ color: token.colorWarning }} />
                       <Typography.Text strong>{t('taskIncludes')}</Typography.Text>
-                      <Badge 
-                        count={selectedTaskItems} 
-                        style={{ backgroundColor: selectedTaskItems > 0 ? token.colorSuccess : token.colorBorder }} 
+                      <Badge
+                        count={selectedTaskItems}
+                        style={{
+                          backgroundColor:
+                            selectedTaskItems > 0 ? token.colorSuccess : token.colorBorder,
+                        }}
                       />
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                         ({selectedTaskItems}/{totalTaskItems} selected)
                       </Typography.Text>
                     </Space>
-                  } 
+                  }
                   key="task"
-                  style={{ 
+                  style={{
                     background: token.colorBgContainer,
                     borderRadius: token.borderRadius,
-                    border: `1px solid ${token.colorBorder}`
+                    border: `1px solid ${token.colorBorder}`,
                   }}
                   extra={
                     <Tooltip title={t('tooltips.taskElements')}>
@@ -608,19 +610,29 @@ const SaveProjectAsTemplate = () => {
                   }
                 >
                   <Form.Item name="taskIncludes">
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                        gap: 12,
+                      }}
+                    >
                       {Object.entries(taskAttributesState).map(([key, attr]) => (
-                        <Card 
+                        <Card
                           key={key}
                           size="small"
                           hoverable={!attr.disabled}
-                          style={{ 
-                            border: attr.checked ? `2px solid ${token.colorWarning}` : `1px solid ${token.colorBorder}`,
-                            backgroundColor: attr.checked ? token.colorWarningBg : token.colorFillAlter,
+                          style={{
+                            border: attr.checked
+                              ? `2px solid ${token.colorWarning}`
+                              : `1px solid ${token.colorBorder}`,
+                            backgroundColor: attr.checked
+                              ? token.colorWarningBg
+                              : token.colorFillAlter,
                             borderRadius: token.borderRadius,
                             transition: 'all 0.3s ease',
                             cursor: attr.disabled ? 'not-allowed' : 'pointer',
-                            opacity: attr.disabled && !attr.checked ? 0.6 : 1
+                            opacity: attr.disabled && !attr.checked ? 0.6 : 1,
                           }}
                           onClick={() => !attr.disabled && handleTaskAttributeChange(key)}
                         >
@@ -640,14 +652,18 @@ const SaveProjectAsTemplate = () => {
                                 onClick={(_, e) => e.stopPropagation()}
                               />
                             </Flex>
-                            <Typography.Text 
-                              type="secondary" 
+                            <Typography.Text
+                              type="secondary"
                               style={{ fontSize: 11, display: 'block' }}
                             >
                               {attr.description}
                             </Typography.Text>
                             {attr.disabled && (
-                              <Tag color="orange" icon={<InfoCircleOutlined />} style={{ fontSize: 11 }}>
+                              <Tag
+                                color="orange"
+                                icon={<InfoCircleOutlined />}
+                                style={{ fontSize: 11 }}
+                              >
                                 {t('required')}
                               </Tag>
                             )}
@@ -660,12 +676,12 @@ const SaveProjectAsTemplate = () => {
               </Collapse>
 
               {/* Help Section */}
-              <Card 
-                size="small" 
-                style={{ 
-                  backgroundColor: token.colorInfoBg, 
+              <Card
+                size="small"
+                style={{
+                  backgroundColor: token.colorInfoBg,
                   border: `1px solid ${token.colorInfoBorder}`,
-                  borderRadius: token.borderRadius
+                  borderRadius: token.borderRadius,
                 }}
               >
                 <Space align="start">
@@ -674,14 +690,14 @@ const SaveProjectAsTemplate = () => {
                     <Typography.Text strong style={{ color: token.colorInfo }}>
                       {t('proTips')}
                     </Typography.Text>
-                    <Typography.Paragraph 
-                      type="secondary" 
+                    <Typography.Paragraph
+                      type="secondary"
                       style={{ margin: '8px 0 0 0', fontSize: 13 }}
                     >
-                      • {t('tips.line1')}<br />
-                      • {t('tips.line2')}<br />
-                      • {t('tips.line3')}<br />
-                      • {t('tips.line4')}
+                      • {t('tips.line1')}
+                      <br />• {t('tips.line2')}
+                      <br />• {t('tips.line3')}
+                      <br />• {t('tips.line4')}
                     </Typography.Paragraph>
                   </div>
                 </Space>
