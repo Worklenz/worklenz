@@ -14,4 +14,5 @@ export interface ICustomProjectTemplateCreateRequest {
     description: boolean;
     subtasks: boolean;
   };
+  includeCustomColumns?: boolean;
 }

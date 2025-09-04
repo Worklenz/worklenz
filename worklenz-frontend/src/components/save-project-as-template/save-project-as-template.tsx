@@ -28,6 +28,12 @@ const SaveProjectAsTemplate = () => {
     },
     phases: { label: t('includesOptions.phases'), value: 'phases', disabled: false, checked: true },
     labels: { label: t('includesOptions.labels'), value: 'labels', disabled: false, checked: true },
+    customColumns: { 
+      label: t('includesOptions.customColumns'),
+      value: 'customColumns', 
+      disabled: false, 
+      checked: false 
+    },
   });
 
   const [taskAttributes, setTaskAttributes] = useState({
@@ -111,6 +117,7 @@ const SaveProjectAsTemplate = () => {
           description: taskAttributes.description.checked,
           subtasks: taskAttributes.subTasks.checked,
         },
+        includeCustomColumns: projectAttributes.customColumns.checked,
       };
 
       const res = await projectTemplatesApiService.createCustomTemplate(body);

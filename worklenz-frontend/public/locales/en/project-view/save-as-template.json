@@ -5,7 +5,8 @@
   "includesOptions": {
     "statuses": "Statuses",
     "phases": "Phases",
-    "labels": "Labels"
+    "labels": "Labels",
+    "customColumns": "Custom Columns"
   },
   "taskIncludes": "What should be included in the template from the tasks ?",
   "taskIncludesOptions": {
