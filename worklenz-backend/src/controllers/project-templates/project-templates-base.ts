@@ -648,7 +648,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
       if (column.label_options && column.label_options.length > 0) {
         for (const option of column.label_options) {
           const labelQuery = `
-            INSERT INTO cc_label_options (
+            INSERT INTO cpt_label_options (
               column_id, label_id, label_name, label_color, label_order
             ) VALUES ($1, $2, $3, $4, $5);
           `;
