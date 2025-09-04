@@ -3,7 +3,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { Button, Checkbox, Drawer, Flex, Form, Input } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ICustomProjectTemplateCreateRequest } from '@/types/project/projectTemplate.types';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 
@@ -19,7 +19,8 @@ const SaveProjectAsTemplate = () => {
   const [creating, setCreating] = useState(false);
 
   const [templateName, setTemplateName] = useState('');
-  const [projectAttributes, setProjectAttributes] = useState({
+
+  const projectAttributes = useMemo(() => ({
     statuses: {
       label: t('includesOptions.statuses'),
       value: 'statuses',
@@ -34,9 +35,9 @@ const SaveProjectAsTemplate = () => {
       disabled: false, 
       checked: false 
     },
-  });
+  }), [t]);
 
-  const [taskAttributes, setTaskAttributes] = useState({
+  const taskAttributes = useMemo(() => ({
     name: { label: t('taskIncludesOptions.name'), value: 'name', disabled: true, checked: true },
     priority: {
       label: t('taskIncludesOptions.priority'),
@@ -80,17 +81,29 @@ const SaveProjectAsTemplate = () => {
       disabled: false,
       checked: true,
     },
-  });
+  }), [t]);
+
+  const [projectAttributesState, setProjectAttributesState] = useState(projectAttributes);
+  const [taskAttributesState, setTaskAttributesState] = useState(taskAttributes);
+
+  // Sync state when translations change
+  useEffect(() => {
+    setProjectAttributesState(projectAttributes);
+  }, [projectAttributes]);
+
+  useEffect(() => {
+    setTaskAttributesState(taskAttributes);
+  }, [taskAttributes]);
 
   const handleProjectAttributeChange = (key: keyof typeof projectAttributes) => {
-    setProjectAttributes(prev => ({
+    setProjectAttributesState(prev => ({
       ...prev,
       [key]: { ...prev[key], checked: !prev[key].checked },
     }));
   };
 
   const handleTaskAttributeChange = (key: keyof typeof taskAttributes) => {
-    setTaskAttributes(prev => ({
+    setTaskAttributesState(prev => ({
       ...prev,
       [key]: { ...prev[key], checked: !prev[key].checked },
     }));
@@ -105,19 +118,19 @@ const SaveProjectAsTemplate = () => {
         project_id: projectId,
         templateName: values.name,
         projectIncludes: {
-          statuses: projectAttributes.statuses.checked,
-          phases: projectAttributes.phases.checked,
-          labels: projectAttributes.labels.checked,
+          statuses: projectAttributesState.statuses.checked,
+          phases: projectAttributesState.phases.checked,
+          labels: projectAttributesState.labels.checked,
         },
         taskIncludes: {
-          status: taskAttributes.status.checked,
-          phase: taskAttributes.phase.checked,
-          labels: taskAttributes.label.checked,
-          estimation: taskAttributes.timeEstimate.checked,
-          description: taskAttributes.description.checked,
-          subtasks: taskAttributes.subTasks.checked,
+          status: taskAttributesState.status.checked,
+          phase: taskAttributesState.phase.checked,
+          labels: taskAttributesState.label.checked,
+          estimation: taskAttributesState.timeEstimate.checked,
+          description: taskAttributesState.description.checked,
+          subtasks: taskAttributesState.subTasks.checked,
         },
-        includeCustomColumns: projectAttributes.customColumns.checked,
+        includeCustomColumns: projectAttributesState.customColumns.checked,
       };
 
       const res = await projectTemplatesApiService.createCustomTemplate(body);
@@ -168,7 +181,7 @@ const SaveProjectAsTemplate = () => {
         </Form.Item>
         <Form.Item name="includes" label={t('includes')}>
           <Flex vertical gap={8}>
-            {Object.entries(projectAttributes).map(([key, attr]) => (
+            {Object.entries(projectAttributesState).map(([key, attr]) => (
               <Checkbox
                 key={key}
                 value={attr.value}
@@ -183,7 +196,7 @@ const SaveProjectAsTemplate = () => {
         </Form.Item>
         <Form.Item name="taskIncludes" label={t('taskIncludes')}>
           <Flex vertical gap={8}>
-            {Object.entries(taskAttributes).map(([key, attr]) => (
+            {Object.entries(taskAttributesState).map(([key, attr]) => (
               <Checkbox
                 key={key}
                 value={attr.value}
