@@ -81,5 +81,7 @@ export interface PlanSelectionControlsProps {
   selectedPlanType: PlanType;
   onTeamSizeChange: (size: number) => void;
   onBillingFrequencyChange: (frequency: BillingFrequency) => void;
-  generateTeamSizeOptions: () => { value: number; label: string }[];
+  generateTeamSizeOptions: () => { value: number; label: string; disabled?: boolean }[];
+  minTeamSize: number;
+  maxTeamSize: number;
 }

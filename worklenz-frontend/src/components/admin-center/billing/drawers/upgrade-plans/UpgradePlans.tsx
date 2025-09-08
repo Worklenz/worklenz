@@ -139,7 +139,12 @@ const UpgradePlans = () => {
     getPerUserAnnualPrice
   } = usePricingCalculations(teamSize, pricingData, isAppSumoUser);
   
-  const { generateTeamSizeOptions } = useTeamSizeOptions(isAppSumoUser, selectedPlanType, teamSize);
+  const minSelectableTeamSize = Math.max(1, billingInfo?.total_used ?? 1);
+  const { generateTeamSizeOptions } = useTeamSizeOptions(
+    isAppSumoUser,
+    selectedPlanType,
+    minSelectableTeamSize
+  );
 
   // Helper function to get user type for tracking
   const getUserType = useMemo((): UserType => {
@@ -773,6 +778,8 @@ const UpgradePlans = () => {
         onTeamSizeChange={handleTeamSizeChange}
         onBillingFrequencyChange={handleBillingFrequencyChange}
         generateTeamSizeOptions={generateTeamSizeOptions}
+        minTeamSize={Math.max(1, billingInfo?.total_used ?? 1)}
+        maxTeamSize={isAppSumoUser ? 50 : 95}
       />
 
       {/* Pricing Model Information */}
@@ -792,6 +799,26 @@ const UpgradePlans = () => {
                     })}
               </Typography.Text>
             )}
+            {(() => {
+              // Show extra user charge when on base plan and exceeding included users
+              if (isAppSumoUser) return null;
+              if (selectedPlanType === 'enterprise' || !selectedPlanType) return null;
+              const effectiveModel = getEffectivePricingModel(selectedPlanType as 'pro' | 'business' | 'enterprise');
+              if (effectiveModel !== 'base_plan') return null;
+              const planData = selectedPlanType === 'pro' ? pricingData.pro : pricingData.business;
+              const included = Number(planData?.included_users || planData?.users_included);
+              if (!included || Number.isNaN(included)) return null;
+              if (teamSize <= included) return null;
+              const perUserMonthly = planData?.monthly_per_user_price || planData?.additional_user_price || '5.99';
+              return (
+                <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                  {t('pricing-modal:pricingModel.additionalUserCharge', 'Includes {{included}} users. Each additional user is ${{price}}/month.', {
+                    included,
+                    price: perUserMonthly,
+                  })}
+                </Typography.Text>
+              );
+            })()}
           </Space>
         </Row>
       )}

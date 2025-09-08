@@ -1,4 +1,4 @@
-import { Row, Space, Typography, Select, Button } from '@/shared/antd-imports';
+import { Row, Space, Typography, Select, Button, InputNumber, Flex } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { PlanSelectionControlsProps } from '../types';
 import { IPaddlePlans } from '@/shared/constants';
@@ -11,6 +11,8 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
   onTeamSizeChange,
   onBillingFrequencyChange,
   generateTeamSizeOptions,
+  minTeamSize,
+  maxTeamSize,
 }) => {
   const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
 
@@ -24,17 +26,28 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
         {!isAppSumoUser && (
           <Space align="center" size="middle">
             <Typography.Text strong>{t('pricing-modal:teamSize.label')}:</Typography.Text>
-            <Select
-              value={teamSize}
-              onChange={onTeamSizeChange}
-              style={{ width: 140 }}
-              size="large"
-              options={generateTeamSizeOptions()}
-              optionFilterProp="label"
-              placeholder={t('pricing-modal:teamSize.placeholder', 'Select team size')}
-              loading={isLoadingPlans}
-              disabled={isLoadingPlans}
-            />
+            <Flex align="center" gap={8}>
+              <InputNumber
+                value={teamSize}
+                min={minTeamSize}
+                max={maxTeamSize}
+                step={1}
+                size="large"
+                style={{ width: 140 }}
+                onChange={(value) => {
+                  const v = Number(value);
+                  if (Number.isFinite(v)) {
+                    onTeamSizeChange(Math.min(Math.max(v, minTeamSize), maxTeamSize));
+                  }
+                }}
+                onBlur={() => {
+                  if (teamSize < minTeamSize) onTeamSizeChange(minTeamSize);
+                  if (teamSize > maxTeamSize) onTeamSizeChange(maxTeamSize);
+                }}
+                aria-label={t('pricing-modal:teamSize.aria', 'Team size')}
+                disabled={isLoadingPlans}
+              />
+            </Flex>
           </Space>
         )}
 
