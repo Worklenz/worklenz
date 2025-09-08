@@ -71,6 +71,7 @@ import migrationApiRouter from "./migration-api-router";
 import subscriptionsApiRouter from "./subscriptions-api-router";
 import plansApiRouter from "./plans-api-router";
 import usersApiRouter from "./users-api-router";
+import clientPortalApiRouter from "./client-portal-api-router";
 
 const api = express.Router();
 
@@ -151,5 +152,8 @@ api.use("/migration", migrationApiRouter);
 api.use("/subscriptions", subscriptionsApiRouter);
 api.use("/plans", plansApiRouter);
 api.use("/users", usersApiRouter);
+
+// Client portal APIs
+api.use("/client-portal", clientPortalApiRouter);
 
 export default api;
