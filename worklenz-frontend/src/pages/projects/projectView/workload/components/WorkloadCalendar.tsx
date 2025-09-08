@@ -179,23 +179,41 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
       }
     >();
 
+    // Filter allocations to only process those within or overlapping the date range
+    const filterStartDate = dayjs(dateRange.startDate);
+    const filterEndDate = dayjs(dateRange.endDate);
+
     workloadData.allocations.forEach(allocation => {
       const start = dayjs(allocation.startDate);
       const end = dayjs(allocation.endDate);
+      
+      // Check if allocation overlaps with the selected date range
+      const overlapsDateRange = start.isSameOrBefore(filterEndDate, 'day') && 
+                                end.isSameOrAfter(filterStartDate, 'day');
+      
+      if (!overlapsDateRange) {
+        return; // Skip allocations outside the date range
+      }
+
       let current = start;
 
       while (current.isSameOrBefore(end, 'day')) {
         const dateKey = current.format('YYYY-MM-DD');
-        const existing = map.get(dateKey) || {
-          allocations: [],
-          availability: [],
-          totalHours: 0,
-          totalCapacity: 0,
-        };
+        
+        // Only add to map if the current date is within the filter range
+        if (current.isSameOrAfter(filterStartDate, 'day') && 
+            current.isSameOrBefore(filterEndDate, 'day')) {
+          const existing = map.get(dateKey) || {
+            allocations: [],
+            availability: [],
+            totalHours: 0,
+            totalCapacity: 0,
+          };
 
-        existing.allocations.push(allocation);
-        existing.totalHours += allocation.estimatedHours / Math.ceil(end.diff(start, 'day') + 1);
-        map.set(dateKey, existing);
+          existing.allocations.push(allocation);
+          existing.totalHours += allocation.estimatedHours / Math.ceil(end.diff(start, 'day') + 1);
+          map.set(dateKey, existing);
+        }
 
         current = current.add(1, 'day');
       }
@@ -203,30 +221,32 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
 
     workloadData.availability.forEach(avail => {
       const dateKey = avail.date;
-      const existing = map.get(dateKey) || {
-        allocations: [],
-        availability: [],
-        totalHours: 0,
-        totalCapacity: 0,
-      };
+      const availDate = dayjs(avail.date);
+      
+      // Only add availability data if it's within the selected date range
+      if (availDate.isSameOrAfter(filterStartDate, 'day') && 
+          availDate.isSameOrBefore(filterEndDate, 'day')) {
+        const existing = map.get(dateKey) || {
+          allocations: [],
+          availability: [],
+          totalHours: 0,
+          totalCapacity: 0,
+        };
 
-      existing.availability.push(avail);
-      existing.totalCapacity += avail.availableHours;
-      map.set(dateKey, existing);
+        existing.availability.push(avail);
+        existing.totalCapacity += avail.availableHours;
+        map.set(dateKey, existing);
+      }
     });
 
     return map;
-  }, [workloadData]);
+  }, [workloadData, dateRange.startDate, dateRange.endDate]);
 
   const dateCellRender = (date: Dayjs) => {
     const dateKey = date.format('YYYY-MM-DD');
     const workload = dateWorkloadMap.get(dateKey);
 
-    // Check if the current date is within the selected date range filter
-    const isWithinDateRange = date.isSameOrAfter(dayjs(dateRange.startDate), 'day') &&
-                              date.isSameOrBefore(dayjs(dateRange.endDate), 'day');
-
-    if (!workload || workload.allocations.length === 0 || !isWithinDateRange) {
+    if (!workload || workload.allocations.length === 0) {
       return null;
     }
 
@@ -304,7 +324,10 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
 
     dateWorkloadMap.forEach((workload, dateKey) => {
       const workloadDate = dayjs(dateKey);
-      if (workloadDate.isSameOrAfter(monthStart) && workloadDate.isSameOrBefore(monthEnd)) {
+      // Since dateWorkloadMap is already filtered by date range, just check if it's within the month
+      const isWithinMonth = workloadDate.isSameOrAfter(monthStart) && workloadDate.isSameOrBefore(monthEnd);
+      
+      if (isWithinMonth) {
         totalTasks += workload.allocations.length;
         totalHours += workload.totalHours;
       }
