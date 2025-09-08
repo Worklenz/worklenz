@@ -62,7 +62,7 @@ const CurrentBill: React.FC = React.memo(() => {
       is_appsumo_user: getUserType() === 'appsumo',
       team_size: billingInfo?.total_used,
       subscription_status: billingInfo?.status,
-      storage_usage_percentage: billingInfo?.storage_usage_percentage,
+      storage_usage_percentage: billingInfo?.usedPercentage,
       has_invoices: false, // Will be updated when invoices load
       has_charges: false, // Will be updated when charges load
     };

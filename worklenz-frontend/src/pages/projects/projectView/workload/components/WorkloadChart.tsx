@@ -197,6 +197,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           teamId: member.team_member_id,
           dailyCapacity: dailyHours,
           weeklyCapacity: weeklyCapacity,
+          expectedCapacity: periodCapacity, // This is the correct capacity for the selected date range
           currentWorkload: currentWorkload,
           utilizationPercentage: utilizationPercentage,
           isOverallocated: utilizationPercentage > 100,
@@ -232,6 +233,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           teamId: member.team_member_id,
           dailyCapacity: dailyHours,
           weeklyCapacity: weeklyCapacity,
+          expectedCapacity: periodCapacity, // This is the correct capacity for the selected date range
           currentWorkload: currentWorkload,
           utilizationPercentage: utilizationPercentage,
           isOverallocated: utilizationPercentage > 100,
@@ -263,7 +265,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         datasets: [
           {
             label: t('chart.capacity'),
-            data: sortedMembers.map(member => member.weeklyCapacity),
+            data: sortedMembers.map(member => member.expectedCapacity),
             backgroundColor: token.colorPrimary,
             borderColor: token.colorPrimary,
             borderWidth: 1,
@@ -332,7 +334,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
                 return [
                   `${t('chart.utilization')}: ${context.parsed.y}%`,
                   `${t('chart.allocated')}: ${member.currentWorkload}h`,
-                  `${t('chart.capacity')}: ${member.weeklyCapacity}h`,
+                  `${t('chart.capacity')}: ${member.expectedCapacity}h`,
                 ];
               }
             },
