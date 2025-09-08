@@ -2788,7 +2788,7 @@ class ClientPortalController {
       await db.query(upsertQuery, [teamId, inviteToken, userId, new Date(expiresAt)]);
 
       // Generate organization portal link with secure token
-      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `http://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/organization-invite?token=${inviteToken}`;
+      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/organization-invite?token=${inviteToken}`;
 
       return res.json(new ServerResponse(true, {
         invitationLink: portalLink,
