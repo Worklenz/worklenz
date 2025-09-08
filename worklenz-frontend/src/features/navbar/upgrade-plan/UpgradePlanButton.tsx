@@ -147,6 +147,45 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     return 'default';
   }, [isAppSumoUser, daysRemaining]);
 
+  // Create user personalization object for pricing modal
+  const userPersonalization: UserPersonalization | undefined = useMemo(() => {
+    if (!billingInfo) return undefined;
+
+    const userType = isAppSumoUser
+      ? 'appsumo'
+      : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL
+        ? 'trial'
+        : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE
+          ? 'free'
+          : 'paid';
+
+    return {
+      userType,
+      currentPlan: billingInfo.plan_name,
+      trialDaysRemaining: daysRemaining || undefined,
+    };
+  }, [billingInfo, isAppSumoUser, currentSession, daysRemaining]);
+
+  const handlePlanSelect = useCallback(
+    (calculation: PricingCalculation) => {
+      console.log('Plan selected:', calculation);
+      setShowPricingModal(false);
+      navigate('/worklenz/admin-center/billing');
+    },
+    [navigate]
+  );
+
+  const handleModalClose = useCallback(() => {
+    setShowPricingModal(false);
+    // Track modal close event
+    trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_CLOSED, {
+      user_type: getUserType(),
+      current_plan: billingInfo?.plan_name,
+      is_appsumo_user: isAppSumoUser,
+      trigger_source: 'upgrade_button',
+    });
+  }, [trackMixpanelEvent, getUserType, billingInfo, isAppSumoUser]);
+
   const getButtonStyles = () => {
     const isDark = themeMode === 'dark';
     const baseStyles = {
@@ -290,94 +329,22 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     return t('upgradePlanTooltip');
   };
 
-  if (daysRemaining !== null) {
-    return (
-      <Tooltip title={getTooltipContent()} placement="bottom" overlayStyle={{ maxWidth: '280px' }}>
-        <Badge
-          count={getBadgeText()}
-          style={{
-            backgroundColor: getBadgeColor(),
-            fontSize: '11px',
-            height: '20px',
-            lineHeight: '20px',
-            padding: '0 8px',
-            borderRadius: '10px',
-            fontWeight: 600,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            animation: daysRemaining === 0 ? 'pulse 2s infinite' : undefined,
-          }}
-        >
-          <style>
-            {`
-              @keyframes pulse {
-                0% {
-                  box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.7);
-                }
-                70% {
-                  box-shadow: 0 0 0 10px rgba(255, 77, 79, 0);
-                }
-                100% {
-                  box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
-                }
-              }
-            `}
-          </style>
-          {button}
-        </Badge>
-      </Tooltip>
-    );
-  }
-
-  // Create user personalization object for pricing modal
-  const userPersonalization: UserPersonalization | undefined = useMemo(() => {
-    if (!billingInfo) return undefined;
-
-    const userType = isAppSumoUser
-      ? 'appsumo'
-      : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL
-        ? 'trial'
-        : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE
-          ? 'free'
-          : 'paid';
-
-    return {
-      userType,
-      currentPlan: billingInfo.plan_name,
-      trialDaysRemaining: daysRemaining || undefined,
-    };
-  }, [billingInfo, isAppSumoUser, currentSession, daysRemaining]);
-
-  const handlePlanSelect = useCallback(
-    (calculation: PricingCalculation) => {
-      console.log('Plan selected:', calculation);
-      setShowPricingModal(false);
-      navigate('/worklenz/admin-center/billing');
-    },
-    [navigate]
-  );
-
-  const handleModalClose = useCallback(() => {
-    setShowPricingModal(false);
-    // Track modal close event
-    trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_CLOSED, {
-      user_type: getUserType(),
-      current_plan: billingInfo?.plan_name,
-      is_appsumo_user: isAppSumoUser,
-      trigger_source: 'upgrade_button',
-    });
-  }, [trackMixpanelEvent, getUserType, billingInfo, isAppSumoUser]);
+  // Determine if we should show the badge
+  const shouldShowBadge = daysRemaining !== null;
 
   return (
     <>
-      <Tooltip title={getTooltipContent()} placement="bottom">
-        {button}
-      </Tooltip>
+      {(
+        <Tooltip title={getTooltipContent()} placement="bottom">
+          {button}
+        </Tooltip>
+      )}
 
       {/* Pricing Modal with lazy loading */}
       {showPricingModal && (
         <Suspense
           fallback={
-            <Modal visible={true} footer={null} closable={false}>
+            <Modal open={true} footer={null} closable={false}>
               <div style={{ textAlign: 'center', padding: '20px' }}>Loading pricing options...</div>
             </Modal>
           }
