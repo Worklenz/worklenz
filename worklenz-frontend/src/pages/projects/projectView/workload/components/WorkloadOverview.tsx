@@ -36,6 +36,48 @@ const calculateWorkingDaysFromOrgSettings = (workingDays: any): number => {
   return Object.values(days).filter(Boolean).length;
 };
 
+// Helper function to calculate working days in a date range
+const calculateWorkingDaysInPeriod = (
+  startDate: string,
+  endDate: string,
+  workingDaysConfig: any
+): number => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  if (end < start) return 0;
+
+  const workingDays = workingDaysConfig || {
+    monday: true,
+    tuesday: true,
+    wednesday: true,
+    thursday: true,
+    friday: true,
+    saturday: false,
+    sunday: false,
+  };
+
+  // Map JS day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday) to working days config
+  const dayMapping = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+  let workingDaysCount = 0;
+  let currentDate = new Date(start);
+
+  // Include end date in calculation
+  while (currentDate <= end) {
+    const dayOfWeek = currentDate.getDay();
+    const dayName = dayMapping[dayOfWeek];
+    
+    if (workingDays[dayName]) {
+      workingDaysCount++;
+    }
+    
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return workingDaysCount;
+};
+
 // Helper function to calculate workload from tasks for a specific date range
 const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: string): number => {
   if (!Array.isArray(tasks)) return 0;
@@ -118,12 +160,13 @@ const calculateSummaryFromRawData = (data: any, startDate?: string, endDate?: st
     
     const currentWorkload = calculateWorkloadFromTasks(member.tasks, startDate, endDate) || 0;
     
-    // Calculate capacity for the same date range period
-    const startOfPeriod = new Date(startDate || new Date());
-    const endOfPeriod = new Date(endDate || new Date());
-    const totalDays = Math.ceil((endOfPeriod.getTime() - startOfPeriod.getTime()) / (1000 * 60 * 60 * 24));
-    const totalWeeks = Math.max(1, totalDays / 7); // Ensure at least 1 week
-    const periodCapacity = weeklyCapacity * totalWeeks;
+    // Calculate capacity for the same date range period based on actual working days
+    const workingDaysInPeriod = calculateWorkingDaysInPeriod(
+      startDate || new Date().toISOString().split('T')[0],
+      endDate || new Date().toISOString().split('T')[0],
+      member.org_working_days
+    );
+    const periodCapacity = workingDaysInPeriod * dailyHours;
     
     const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
     

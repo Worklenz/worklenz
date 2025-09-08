@@ -476,14 +476,14 @@ const MemberWorkloadCard = ({
           title={t('calculations.utilizationTooltip', {
             utilization: member.utilizationPercentage,
             assignedHours: member.currentWorkload,
-            weeklyCapacity: member.weeklyCapacity,
+            expectedCapacity: member.expectedCapacity,
             dailyHours: member.dailyCapacity,
             workingDays: workingDays,
           })}
           placement="left"
         >
           <Typography.Text>
-            {member.currentWorkload} / {member.weeklyCapacity}{' '}
+            {member.currentWorkload} / {member.expectedCapacity}{' '}
             {capacityUnit === 'hours' ? t('overview.hours') : t('overview.points')}
           </Typography.Text>
         </Tooltip>
@@ -491,7 +491,7 @@ const MemberWorkloadCard = ({
           title={t('calculations.utilizationTooltip', {
             utilization: member.utilizationPercentage,
             assignedHours: member.currentWorkload,
-            weeklyCapacity: member.weeklyCapacity,
+            expectedCapacity: member.expectedCapacity,
             dailyHours: member.dailyCapacity,
             workingDays: workingDays,
           })}
