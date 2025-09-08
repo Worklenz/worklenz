@@ -84,4 +84,5 @@ export interface PlanSelectionControlsProps {
   generateTeamSizeOptions: () => { value: number; label: string; disabled?: boolean }[];
   minTeamSize: number;
   maxTeamSize: number;
+  annualSavingsPercent?: number;
 }

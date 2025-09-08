@@ -138,6 +138,18 @@ const UpgradePlans = () => {
     getPerUserMonthlyPrice,
     getPerUserAnnualPrice
   } = usePricingCalculations(teamSize, pricingData, isAppSumoUser);
+
+  // Compute savings percent for the currently selected plan (based on displayed totals)
+  const annualSavingsPercent = useMemo(() => {
+    if (!selectedPlanType || selectedPlanType === 'free') return undefined;
+    const plan: 'pro' | 'business' | 'enterprise' = selectedPlanType as any;
+    const monthly = Number(calculateMonthlyTotal(plan));
+    const annual = Number(calculateAnnualTotal(plan));
+    if (!Number.isFinite(monthly) || !Number.isFinite(annual)) return undefined;
+    const baseline = monthly * 12;
+    if (annual >= baseline) return undefined;
+    return Math.round(((baseline - annual) / baseline) * 100);
+  }, [selectedPlanType, teamSize, pricingData, isAppSumoUser, calculateMonthlyTotal, calculateAnnualTotal]);
   
   const minSelectableTeamSize = Math.max(1, billingInfo?.total_used ?? 1);
   const { generateTeamSizeOptions } = useTeamSizeOptions(
@@ -748,6 +760,23 @@ const UpgradePlans = () => {
         ? pricingData.pro_small.max_users 
         : pricingData.pro.max_users 
     })} />,
+    ...(getEffectivePricingModel('pro') === 'base_plan'
+      ? [
+          <PlanFeature
+            key="extra-pro"
+            text={t(
+              'pricing-modal:plans.additionalUsersCharged',
+              'Additional users beyond included: ${{price}}/user/month',
+              {
+                price:
+                  pricingData.pro?.monthly_per_user_price ||
+                  pricingData.pro?.additional_user_price ||
+                  '5.99',
+              }
+            )}
+          />,
+        ]
+      : []),
     <PlanFeature key="4" text={t('timeTracking', 'Time Tracking & Analytics')} />,
     <PlanFeature key="5" text={t('projectTemplates', 'Project Templates & Phases')} />,
     <PlanFeature key="6" text={t('ganttReadOnly', 'Gantt Charts (Read-only)')} />,
@@ -769,6 +798,23 @@ const UpgradePlans = () => {
             ? pricingData.business_small.max_users 
             : pricingData.business.max_users 
         })}`} />,
+    ...(getEffectivePricingModel('business') === 'base_plan'
+      ? [
+          <PlanFeature
+            key="extra-business"
+            text={t(
+              'pricing-modal:plans.additionalUsersCharged',
+              'Additional users beyond included: ${{price}}/user/month',
+              {
+                price:
+                  pricingData.business?.monthly_per_user_price ||
+                  pricingData.business?.additional_user_price ||
+                  '5.99',
+              }
+            )}
+          />,
+        ]
+      : []),
     <PlanFeature key="3" text={t('fullGanttCharts', 'Full Gantt Charts')} />,
     <PlanFeature key="4" text={t('projectHealth', 'Project Health Monitoring')} />,
     <PlanFeature key="5" text={t('clientPortal', 'Client Portal')} />,
@@ -815,6 +861,7 @@ const UpgradePlans = () => {
         generateTeamSizeOptions={generateTeamSizeOptions}
         minTeamSize={Math.max(1, billingInfo?.total_used ?? 1)}
         maxTeamSize={isAppSumoUser ? 50 : 95}
+        annualSavingsPercent={annualSavingsPercent}
       />
 
       {/* Pricing Model Information */}

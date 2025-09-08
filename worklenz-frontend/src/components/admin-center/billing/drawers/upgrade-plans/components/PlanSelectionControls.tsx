@@ -13,6 +13,7 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
   generateTeamSizeOptions,
   minTeamSize,
   maxTeamSize,
+  annualSavingsPercent,
 }) => {
   const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
 
@@ -69,6 +70,11 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
               {t('pricing-modal:billingCycle.yearly')}
             </Button>
           </Button.Group>
+          {annualSavingsPercent !== undefined && annualSavingsPercent > 0 && (
+            <Typography.Text style={{ color: '#52c41a', fontWeight: 600, marginLeft: 8 }}>
+              {t('pricing-modal:billing.annualSavingsShortOff', 'Up to {{percent}}% off', { percent: annualSavingsPercent })}
+            </Typography.Text>
+          )}
         </Space>
       </Space>
     </Row>
