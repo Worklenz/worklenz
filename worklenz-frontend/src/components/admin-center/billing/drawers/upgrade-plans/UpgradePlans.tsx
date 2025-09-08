@@ -23,6 +23,20 @@ import { billingApiService, IPricingPlan } from '@/api/admin-center/billing.api.
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { setSession } from '@/utils/session-helper';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { 
+  MixpanelBillingEvents,
+  PlanSelectionEventProps,
+  TeamSizeChangeEventProps,
+  BillingFrequencyChangeEventProps,
+  CheckoutEventProps,
+  CheckoutResultEventProps,
+  AppSumoEventProps,
+  UserType,
+  PlanType as MixpanelPlanType,
+  BillingFrequency as MixpanelBillingFrequency,
+  PricingModel
+} from '@/types/mixpanel-events.types';
 
 // Import our new components and utilities
 import { 
@@ -61,6 +75,7 @@ declare const Paddle: any;
 const UpgradePlans = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
+  const { trackMixpanelEvent } = useMixpanelTracking();
   
   // Redux state
   const { billingInfo } = useAppSelector(state => state.adminCenterReducer);
@@ -121,21 +136,101 @@ const UpgradePlans = () => {
   
   const { generateTeamSizeOptions } = useTeamSizeOptions(isAppSumoUser, selectedPlanType, teamSize);
 
+  // Helper function to get user type for tracking
+  const getUserType = useMemo((): UserType => {
+    if (isAppSumoUser) return 'appsumo';
+    if (currentSession?.subscription_type === 'TRIAL') return 'trial';
+    if (isFreeUser) return 'free';
+    return 'paid';
+  }, [isAppSumoUser, currentSession, isFreeUser]);
+
+  // Helper function to get current plan type
+  const getCurrentPlanType = useMemo((): MixpanelPlanType | undefined => {
+    const planName = billingInfo?.plan_name?.toLowerCase() || '';
+    if (planName.includes('enterprise')) return 'enterprise';
+    if (planName.includes('business')) return 'business';
+    if (planName.includes('pro')) return 'pro';
+    if (isFreeUser) return 'free';
+    return undefined;
+  }, [billingInfo, isFreeUser]);
+
   // Event handlers
   const handleTeamSizeChange = (size: number) => {
+    const oldSize = teamSize;
     setTeamSize(size);
+    
+    // Track team size change
+    const eventProps: TeamSizeChangeEventProps = {
+      user_type: getUserType,
+      current_plan: billingInfo?.plan_name,
+      current_plan_type: getCurrentPlanType,
+      is_appsumo_user: isAppSumoUser,
+      team_size: billingInfo?.total_used,
+      subscription_status: billingInfo?.status,
+      old_team_size: oldSize,
+      new_team_size: size,
+      selected_plan: selectedPlanType as MixpanelPlanType,
+      pricing_model: getEffectivePricingModel(selectedPlanType as 'pro' | 'business' | 'enterprise') as PricingModel,
+    };
+    trackMixpanelEvent(MixpanelBillingEvents.TEAM_SIZE_CHANGED, eventProps);
   };
 
   const handleBillingFrequencyChange = (frequency: BillingFrequency) => {
+    const oldFrequency = billingFrequency;
     setBillingFrequency(frequency);
     setSelectedCard(frequency === 'annual' ? paddlePlans.ANNUAL : paddlePlans.MONTHLY);
+    
+    // Track billing frequency change
+    const annualTotal = calculateAnnualTotal(selectedPlanType as 'pro' | 'business' | 'enterprise');
+    const monthlyTotal = calculateMonthlyTotal(selectedPlanType as 'pro' | 'business' | 'enterprise');
+    const annualSavings = parseFloat(monthlyTotal) * 12 - parseFloat(annualTotal);
+    
+    const eventProps: BillingFrequencyChangeEventProps = {
+      user_type: getUserType,
+      current_plan: billingInfo?.plan_name,
+      current_plan_type: getCurrentPlanType,
+      is_appsumo_user: isAppSumoUser,
+      team_size: teamSize,
+      subscription_status: billingInfo?.status,
+      old_frequency: oldFrequency as MixpanelBillingFrequency,
+      new_frequency: frequency as MixpanelBillingFrequency,
+      selected_plan: selectedPlanType as MixpanelPlanType,
+      annual_savings: annualSavings > 0 ? annualSavings : undefined,
+    };
+    trackMixpanelEvent(MixpanelBillingEvents.BILLING_FREQUENCY_CHANGED, eventProps);
   };
 
   const handlePlanSelect = (planType: PlanType) => {
+    const previousPlan = selectedPlanType;
     setSelectedPlanType(planType);
     if (planType === 'free') {
       setSelectedCard(paddlePlans.FREE);
     }
+    
+    // Track plan selection
+    const effectivePricingModel = planType !== 'free' && planType !== 'enterprise' 
+      ? getEffectivePricingModel(planType as 'pro' | 'business')
+      : 'base_plan';
+    
+    const eventProps: PlanSelectionEventProps = {
+      user_type: getUserType,
+      current_plan: billingInfo?.plan_name,
+      current_plan_type: getCurrentPlanType,
+      is_appsumo_user: isAppSumoUser,
+      team_size: billingInfo?.total_used,
+      subscription_status: billingInfo?.status,
+      selected_plan: planType as MixpanelPlanType,
+      previous_plan: previousPlan as MixpanelPlanType,
+      billing_frequency: billingFrequency as MixpanelBillingFrequency,
+      selected_team_size: teamSize,
+      pricing_model: effectivePricingModel as PricingModel,
+      calculated_monthly_price: planType !== 'free' ? parseFloat(calculateMonthlyTotal(planType as 'pro' | 'business' | 'enterprise')) : 0,
+      calculated_annual_price: planType !== 'free' ? parseFloat(calculateAnnualTotal(planType as 'pro' | 'business' | 'enterprise')) : 0,
+      discount_applied: isAppSumoUser,
+      discount_percentage: isAppSumoUser ? 50 : undefined,
+      is_small_team: teamSize <= TEAM_SIZE_THRESHOLD,
+    };
+    trackMixpanelEvent(MixpanelBillingEvents.PLAN_SELECTED, eventProps);
   };
 
   // API functions
@@ -151,6 +246,23 @@ const UpgradePlans = () => {
       urgencyLevel: 'medium',
       message: '🎉 Special 50% OFF pricing for AppSumo lifetime deal members',
     });
+    
+    // Track AppSumo discount viewed
+    const currentDate = new Date();
+    const promoEndDate = new Date('2025-09-10');
+    const isPromoActive = currentDate < promoEndDate;
+    
+    const eventProps: AppSumoEventProps = {
+      user_type: 'appsumo',
+      current_plan: billingInfo?.plan_name,
+      current_plan_type: getCurrentPlanType,
+      is_appsumo_user: true,
+      team_size: billingInfo?.total_used,
+      subscription_status: billingInfo?.status,
+      promo_active: isPromoActive,
+      discount_percentage: 50,
+    };
+    trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_DISCOUNT_VIEWED, eventProps);
   };
 
   const fetchPricingPlans = async () => {
@@ -240,6 +352,25 @@ const UpgradePlans = () => {
         setPaddleLoading(false);
         break;
       case 'Checkout.Complete':
+        // Track successful checkout
+        const checkoutSuccessProps: CheckoutResultEventProps = {
+          user_type: getUserType,
+          current_plan: billingInfo?.plan_name,
+          current_plan_type: getCurrentPlanType,
+          is_appsumo_user: isAppSumoUser,
+          team_size: teamSize,
+          subscription_status: billingInfo?.status,
+          plan_id: data.checkout?.recurring_prices?.[0]?.id || '',
+          plan_type: selectedPlanType as MixpanelPlanType,
+          billing_frequency: billingFrequency as MixpanelBillingFrequency,
+          checkout_amount: data.checkout?.recurring_totals?.total || 0,
+          pricing_model: getEffectivePricingModel(selectedPlanType as 'pro' | 'business' | 'enterprise') as PricingModel,
+          discount_applied: isAppSumoUser,
+          discount_percentage: isAppSumoUser ? 50 : undefined,
+          success: true,
+        };
+        trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_COMPLETED, checkoutSuccessProps);
+        
         message.success('Subscription updated successfully!');
         setPaddleLoading(true);
         setTimeout(() => {
@@ -250,10 +381,40 @@ const UpgradePlans = () => {
         }, PADDLE_CHECKOUT_DELAY);
         break;
       case 'Checkout.Close':
+        // Track checkout abandonment
+        trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_ABANDONED, {
+          user_type: getUserType,
+          current_plan: billingInfo?.plan_name,
+          plan_type: selectedPlanType as MixpanelPlanType,
+          billing_frequency: billingFrequency as MixpanelBillingFrequency,
+          team_size: teamSize,
+          is_appsumo_user: isAppSumoUser,
+        });
         setSwitchingToPaddlePlan(false);
         setPaddleLoading(false);
         break;
       case 'Checkout.Error':
+        // Track checkout failure
+        const checkoutFailProps: CheckoutResultEventProps = {
+          user_type: getUserType,
+          current_plan: billingInfo?.plan_name,
+          current_plan_type: getCurrentPlanType,
+          is_appsumo_user: isAppSumoUser,
+          team_size: teamSize,
+          subscription_status: billingInfo?.status,
+          plan_id: '',
+          plan_type: selectedPlanType as MixpanelPlanType,
+          billing_frequency: billingFrequency as MixpanelBillingFrequency,
+          checkout_amount: 0,
+          pricing_model: getEffectivePricingModel(selectedPlanType as 'pro' | 'business' | 'enterprise') as PricingModel,
+          discount_applied: isAppSumoUser,
+          discount_percentage: isAppSumoUser ? 50 : undefined,
+          success: false,
+          error_message: data.error?.message || 'Unknown error',
+          error_code: data.error?.code,
+        };
+        trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_FAILED, checkoutFailProps);
+        
         setSwitchingToPaddlePlan(false);
         setPaddleLoading(false);
         setPaddleError(data.error?.message || 'An error occurred during checkout');
@@ -317,6 +478,32 @@ const UpgradePlans = () => {
       const effectivePricingModel = getEffectivePricingModel(
         selectedPlanType as 'pro' | 'business' | 'enterprise'
       );
+      
+      // Track checkout initiation
+      const checkoutProps: CheckoutEventProps = {
+        user_type: getUserType,
+        current_plan: billingInfo?.plan_name,
+        current_plan_type: getCurrentPlanType,
+        is_appsumo_user: isAppSumoUser,
+        team_size: teamSize,
+        subscription_status: billingInfo?.status,
+        plan_id: planId,
+        plan_type: selectedPlanType as MixpanelPlanType,
+        billing_frequency: billingFrequency as MixpanelBillingFrequency,
+        checkout_amount: billingFrequency === 'annual' 
+          ? parseFloat(calculateAnnualTotal(selectedPlanType as 'pro' | 'business' | 'enterprise'))
+          : parseFloat(calculateMonthlyTotal(selectedPlanType as 'pro' | 'business' | 'enterprise')),
+        pricing_model: effectivePricingModel as PricingModel,
+        discount_applied: isAppSumoUser,
+        discount_percentage: isAppSumoUser ? 50 : undefined,
+      };
+      
+      // Track AppSumo upgrade if applicable
+      if (isAppSumoUser) {
+        trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_UPGRADE_INITIATED, checkoutProps);
+      }
+      
+      trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_INITIATED, checkoutProps);
 
       const shouldUseUpgradeAPI =
         !billingInfo?.subscription_id ||

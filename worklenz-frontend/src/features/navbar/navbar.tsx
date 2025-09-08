@@ -39,7 +39,7 @@ const Navbar = () => {
   const { t } = useTranslation('navbar');
   const { t: tCommon } = useTranslation('common');
   const authService = useAuthService();
-  const { setIdentity } = useMixpanelTracking();
+  const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState<boolean>(authService.isOwnerOrAdmin());
   const showUpgradeTypes = [ISUBSCRIPTION_TYPE.TRIAL];
@@ -180,6 +180,15 @@ const Navbar = () => {
                 });
 
                 if (clickedRoute) {
+                  // Track navigation clicks for client portal
+                  if (clickedRoute.name === 'client-portal') {
+                    trackMixpanelEvent('client_portal_nav_clicked', {
+                      source: 'navbar',
+                      user_type: isFreePlan ? 'free' : currentSession?.subscription_type?.toLowerCase(),
+                      is_admin: isOwnerOrAdmin,
+                    });
+                  }
+                  
                   const isBusinessRoute = clickedRoute.businessPlanRequired;
                   const isFreePlanRoute = !clickedRoute.freePlanFeature;
                   const shouldOpenModal =

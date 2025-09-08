@@ -49,6 +49,7 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -86,6 +87,7 @@ const ProjectView = React.memo(() => {
   // Get auth service and current session
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(() => {
@@ -263,6 +265,23 @@ const ProjectView = React.memo(() => {
         return;
       }
 
+      // Track finance tab clicks
+      if (key === 'finance') {
+        const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+        const hasFinanceAccess = hasFinanceViewPermission(currentSession, selectedProject);
+        
+        trackMixpanelEvent('finance_tab_clicked', {
+          source: 'project_view_header',
+          project_id: projectId,
+          project_name: selectedProject?.name,
+          user_type: currentSession?.subscription_type?.toLowerCase(),
+          has_business_access: hasBusinessAccess,
+          has_finance_permission: hasFinanceAccess,
+          is_admin: currentSession?.is_admin || currentSession?.owner,
+          tab_disabled: tabItem?.disabled || false,
+        });
+      }
+
       // If tab is disabled, open upgrade modal instead of navigating
       if (tabItem?.disabled) {
         dispatch(toggleUpgradeModal());
@@ -283,7 +302,7 @@ const ProjectView = React.memo(() => {
         { replace: true }
       );
     },
-    [dispatch, location.pathname, navigate, pinnedTab, currentSession, selectedProject]
+    [dispatch, location.pathname, navigate, pinnedTab, currentSession, selectedProject, projectId, trackMixpanelEvent]
   );
 
   // Memoized tab menu items with enhanced styling

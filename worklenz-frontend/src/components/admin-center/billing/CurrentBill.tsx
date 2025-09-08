@@ -19,6 +19,8 @@ import CurrentPlanDetails from './current-plan-details/CurrentPlanDetails';
 import AccountStorage from './account-storage/account-storage';
 import { useAuthService } from '@/hooks/useAuth';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { MixpanelBillingEvents, BillingPageEventProps, UserType } from '@/types/mixpanel-events.types';
 
 const CurrentBill: React.FC = React.memo(() => {
   const dispatch = useAppDispatch();
@@ -26,11 +28,41 @@ const CurrentBill: React.FC = React.memo(() => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isTablet = useMediaQuery({ query: '(min-width: 1025px)' });
   const currentSession = useAuthService().getCurrentSession();
+  const { trackMixpanelEvent } = useMixpanelTracking();
+  const { billingInfo } = useAppSelector(state => state.adminCenterReducer);
 
   useEffect(() => {
     dispatch(fetchBillingInfo());
     dispatch(fetchFreePlanSettings());
-  }, [dispatch]);
+    
+    // Track billing page view
+    const getUserType = (): UserType => {
+      const planName = billingInfo?.plan_name?.toLowerCase() || '';
+      const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
+      
+      if (planName.includes('appsumo') || subscriptionType.includes('appsumo') || 
+          planName.includes('lifetime') || subscriptionType.includes('lifetime')) {
+        return 'appsumo';
+      }
+      if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return 'trial';
+      if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE) return 'free';
+      return 'paid';
+    };
+    
+    const eventProps: BillingPageEventProps = {
+      user_type: getUserType(),
+      current_plan: billingInfo?.plan_name,
+      is_appsumo_user: getUserType() === 'appsumo',
+      team_size: billingInfo?.total_used,
+      subscription_status: billingInfo?.status,
+      storage_usage_percentage: billingInfo?.storage_usage_percentage,
+      has_invoices: false, // Will be updated when invoices load
+      has_charges: false, // Will be updated when charges load
+    };
+    
+    trackMixpanelEvent(MixpanelBillingEvents.BILLING_PAGE_VIEWED, eventProps);
+    trackMixpanelEvent(MixpanelBillingEvents.CURRENT_PLAN_VIEWED, eventProps);
+  }, [dispatch, trackMixpanelEvent, billingInfo, currentSession]);
 
   const titleStyle = useMemo(
     () => ({

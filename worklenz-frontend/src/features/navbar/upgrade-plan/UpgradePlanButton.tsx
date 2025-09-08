@@ -18,6 +18,13 @@ import type {
 } from '@/components/pricing-modal/PricingModal';
 import { fetchBillingInfo } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { 
+  MixpanelBillingEvents, 
+  UpgradeButtonEventProps,
+  PricingModalEventProps,
+  UserType 
+} from '@/types/mixpanel-events.types';
 
 // Lazy load the PricingModal to avoid circular dependencies and improve performance
 const PricingModal = lazy(() => import('@/components/pricing-modal/PricingModal'));
@@ -44,6 +51,7 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { billingInfo } = useAppSelector(state => state.adminCenterReducer);
   const currentSession = authService.getCurrentSession();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Detect AppSumo user
   const checkAppSumoUser = useCallback(() => {
@@ -115,6 +123,30 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     return <CrownOutlined />;
   };
 
+  // Helper function to get user type for tracking
+  const getUserType = useCallback((): UserType => {
+    if (isAppSumoUser) return 'appsumo';
+    if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return 'trial';
+    if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE) return 'free';
+    return 'paid';
+  }, [isAppSumoUser, currentSession]);
+
+  // Helper function to get badge state for tracking
+  const getBadgeState = useCallback(() => {
+    if (isAppSumoUser) return 'appsumo';
+    if (daysRemaining === 0) return 'last_day';
+    if (daysRemaining !== null && daysRemaining <= 7) return 'trial_expiring';
+    return null;
+  }, [isAppSumoUser, daysRemaining]);
+
+  // Helper function to get button style type for tracking
+  const getButtonStyleType = useCallback(() => {
+    if (isAppSumoUser) return 'appsumo';
+    if (daysRemaining === 0) return 'urgent';
+    if (daysRemaining !== null && daysRemaining <= 3) return 'warning';
+    return 'default';
+  }, [isAppSumoUser, daysRemaining]);
+
   const getButtonStyles = () => {
     const isDark = themeMode === 'dark';
     const baseStyles = {
@@ -171,8 +203,34 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
       type="primary"
       icon={getButtonIcon()}
       onClick={() => {
+        // Track upgrade button click
+        const eventProps: UpgradeButtonEventProps = {
+          user_type: getUserType(),
+          current_plan: billingInfo?.plan_name,
+          trial_days_remaining: daysRemaining || undefined,
+          is_appsumo_user: isAppSumoUser,
+          team_size: billingInfo?.total_used,
+          subscription_status: billingInfo?.status,
+          source_location: showModal ? 'navbar_modal' : 'navbar_redirect',
+          badge_state: getBadgeState() as any,
+          button_style: getButtonStyleType() as any,
+        };
+        trackMixpanelEvent(MixpanelBillingEvents.UPGRADE_BUTTON_CLICKED, eventProps);
+
         if (showModal) {
           setShowPricingModal(true);
+          // Track modal open event
+          const modalProps: PricingModalEventProps = {
+            user_type: getUserType(),
+            current_plan: billingInfo?.plan_name,
+            trial_days_remaining: daysRemaining || undefined,
+            is_appsumo_user: isAppSumoUser,
+            team_size: billingInfo?.total_used,
+            subscription_status: billingInfo?.status,
+            trigger_source: 'upgrade_button',
+            initial_team_size: billingInfo?.total_used,
+          };
+          trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_OPENED, modalProps);
         } else if (redirectToBilling) {
           navigate('/worklenz/admin-center/billing');
         }
@@ -298,6 +356,17 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     [navigate]
   );
 
+  const handleModalClose = useCallback(() => {
+    setShowPricingModal(false);
+    // Track modal close event
+    trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_CLOSED, {
+      user_type: getUserType(),
+      current_plan: billingInfo?.plan_name,
+      is_appsumo_user: isAppSumoUser,
+      trigger_source: 'upgrade_button',
+    });
+  }, [trackMixpanelEvent, getUserType, billingInfo, isAppSumoUser]);
+
   return (
     <>
       <Tooltip title={getTooltipContent()} placement="bottom">
@@ -315,7 +384,7 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
         >
           <PricingModal
             visible={showPricingModal}
-            onClose={() => setShowPricingModal(false)}
+            onClose={handleModalClose}
             onPlanSelect={handlePlanSelect}
             userPersonalization={userPersonalization}
             organizationId={currentSession?.team_id}

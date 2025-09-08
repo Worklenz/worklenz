@@ -35,7 +35,7 @@ import { WarningTwoTone, PlusOutlined } from '@/shared/antd-imports';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDate } from '@/utils/timeUtils';
 // import UpgradePlansLKR from '../drawers/upgrade-plans-lkr/upgrade-plans-lkr';
-import UpgradePlans from '../drawers/upgrade-plans/upgrade-plans';
+import UpgradePlans from '../drawers/upgrade-plans/UpgradePlans';
 import { ISUBSCRIPTION_TYPE, SUBSCRIPTION_STATUS } from '@/shared/constants';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
 import { useAuthService } from '@/hooks/useAuth';
