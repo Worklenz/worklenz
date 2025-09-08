@@ -132,7 +132,8 @@
     "loadingPlans": "Cargando Planes...",
     "selectPlan": "Seleccionar un Plan",
     "switchToFree": "Cambiar a Plan Gratuito",
-    "planSummary": "Plan {{planName}} - ${{total}}{{period}}{{userText}}"
+    "planSummary": "Plan {{planName}} - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
   },
   "userTypes": {
     "trial": {
@@ -174,7 +175,7 @@
   },
   "errors": {
     "loadingData": "Error al cargar datos de precios",
-    "calculating": "Calculando precios...",
+    "calculando": "Calculando precios...",
     "selectedPlan": "Plan seleccionado: {{plan}}"
   },
   "accessibility": {

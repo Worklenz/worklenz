@@ -1,4 +1,4 @@
-import { Card, Typography } from '@/shared/antd-imports';
+import { Card, Typography, Button } from '@/shared/antd-imports';
 import { PlanCardProps } from '../types';
 import { IPaddlePlans } from '@/shared/constants';
 
@@ -10,6 +10,11 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   priceDisplay,
   selectedPlanType,
   onPlanSelect,
+  primaryActionLabel,
+  onPrimaryAction,
+  primaryActionDisabled,
+  primaryActionLoading,
+  footerNote,
 }) => (
   <Card
     style={{
@@ -27,7 +32,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
     onClick={() => onPlanSelect(planType)}
     hoverable
   >
-    <div style={{ textAlign: 'center', marginBottom: 24 }}>
+    <div style={{ textAlign: 'center', marginBottom: 24, position: 'relative' }}>
       <Typography.Title level={4} style={{ marginBottom: 8 }}>
         {title}
       </Typography.Title>
@@ -37,5 +42,28 @@ export const PlanCard: React.FC<PlanCardProps> = ({
     {priceDisplay}
 
     <div style={{ flex: 1, marginBottom: 24 }}>{features}</div>
+
+    <div style={{ marginTop: 'auto' }}>
+      <Button
+        type="primary"
+        block
+        onClick={(e) => {
+          e.stopPropagation();
+          onPrimaryAction();
+        }}
+        disabled={primaryActionDisabled}
+        loading={primaryActionLoading}
+      >
+        {primaryActionLabel}
+      </Button>
+      {footerNote && (
+        <Typography.Text
+          type="secondary"
+          style={{ display: 'block', textAlign: 'center', marginTop: 8 }}
+        >
+          {footerNote}
+        </Typography.Text>
+      )}
+    </div>
   </Card>
 );

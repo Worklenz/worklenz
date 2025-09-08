@@ -67,6 +67,11 @@ export interface PlanCardProps {
   selectedPlanType: PlanType;
   onPlanSelect: (planType: PlanType) => void;
   isLoading?: boolean;
+  primaryActionLabel: string;
+  onPrimaryAction: () => void;
+  primaryActionDisabled?: boolean;
+  primaryActionLoading?: boolean;
+  footerNote?: React.ReactNode;
 }
 
 export interface AppSumoAlertProps {

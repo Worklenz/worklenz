@@ -128,7 +128,12 @@
     "toggleTheme": "Theme umschalten",
     "switchToLight": "Zum hellen Theme wechseln",
     "switchToDark": "Zum dunklen Theme wechseln",
-    "closeModal": "Preismodal schließen"
+    "closeModal": "Preismodal schließen",
+    "loadingPlans": "Preise werden geladen...",
+    "selectPlan": "Plan auswählen",
+    "switchToFree": "Zum kostenlosen Plan wechseln",
+    "planSummary": "Plan {{planName}} - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
   },
   "userTypes": {
     "trial": {

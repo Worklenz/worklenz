@@ -163,7 +163,8 @@
     "loadingPlans": "Loading Plans...",
     "selectPlan": "Select a Plan",
     "switchToFree": "Switch to Free Plan",
-    "planSummary": "{{planName}} Plan - ${{total}}{{period}}{{userText}}"
+    "planSummary": "{{planName}} Plan - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
   },
   "userTypes": {
     "trial": {
