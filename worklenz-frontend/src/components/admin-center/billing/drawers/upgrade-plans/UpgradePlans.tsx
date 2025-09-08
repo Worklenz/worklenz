@@ -146,6 +146,35 @@ const UpgradePlans = () => {
     minSelectableTeamSize
   );
 
+  // Helpers to derive plan limits and auto-select appropriate plan for a team size
+  const getMaxUsersFromTier = (tier?: any): number | null => {
+    if (!tier) return null;
+    const raw = (tier.max_users_limit ?? tier.max_users) as string | undefined;
+    const n = raw !== undefined ? Number(raw) : NaN;
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const getMaxUsersForPlan = (plan: 'pro' | 'business' | 'enterprise', size: number): number => {
+    if (plan === 'enterprise') return Number.POSITIVE_INFINITY;
+    if (plan === 'pro') {
+      const useSmall = size <= TEAM_SIZE_THRESHOLD && pricingData.pro_small;
+      const max = getMaxUsersFromTier(useSmall ? pricingData.pro_small : pricingData.pro);
+      return max ?? Number.POSITIVE_INFINITY;
+    }
+    // business
+    const useSmall = size <= TEAM_SIZE_THRESHOLD && pricingData.business_small;
+    const max = getMaxUsersFromTier(useSmall ? pricingData.business_small : pricingData.business);
+    return max ?? Number.POSITIVE_INFINITY;
+  };
+
+  const getPlanForSize = (size: number): PlanType => {
+    const proMax = getMaxUsersForPlan('pro', size);
+    if (size <= proMax) return 'pro';
+    const businessMax = getMaxUsersForPlan('business', size);
+    if (size <= businessMax) return 'business';
+    return 'enterprise';
+  };
+
   // Helper function to get user type for tracking
   const getUserType = useMemo((): UserType => {
     if (isAppSumoUser) return 'appsumo';
@@ -168,6 +197,12 @@ const UpgradePlans = () => {
   const handleTeamSizeChange = (size: number) => {
     const oldSize = teamSize;
     setTeamSize(size);
+
+    // Auto-select plan based on size thresholds
+    const autoPlan = getPlanForSize(size);
+    if (autoPlan !== selectedPlanType && autoPlan !== 'free') {
+      handlePlanSelect(autoPlan);
+    }
     
     // Track team size change
     const eventProps: TeamSizeChangeEventProps = {

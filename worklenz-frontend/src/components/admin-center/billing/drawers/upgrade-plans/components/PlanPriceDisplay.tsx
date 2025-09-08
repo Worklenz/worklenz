@@ -27,8 +27,8 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
   
   return (
   <div style={{ textAlign: 'center', marginBottom: 24 }}>
-    {/* For small teams: Show per-user pricing in bigger text */}
-    {isSmallTeam && perUserMonthlyPrice ? (
+    {/* Show per-user pricing prominently whenever per-user pricing exists */}
+    {perUserMonthlyPrice ? (
       <>
         <Typography.Title level={1} style={{ fontSize: PRICE_FONT_SIZE, margin: 0 }}>
           ${isAnnual ? perUserAnnualPrice : perUserMonthlyPrice}
