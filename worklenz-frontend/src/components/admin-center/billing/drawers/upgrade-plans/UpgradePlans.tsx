@@ -312,6 +312,13 @@ const UpgradePlans = () => {
 
           setDefaultAppSumoInfo();
         }
+        // For non-AppSumo users, hide AppSumo promo tiers entirely
+        else {
+          filteredTiers = tiers.filter((tier: any) => {
+            const tierName = tier.tier_name as string;
+            return !(tierName && tierName.startsWith('APPSUMO_'));
+          });
+        }
 
         setBackendPlans(filteredTiers as any);
         const mappedPricing = mapTierBasedPricingToFrontend(filteredTiers);
