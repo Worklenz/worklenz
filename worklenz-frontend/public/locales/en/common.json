@@ -58,5 +58,12 @@
   "license-badge-today": "Last day!",
   "license-badge-hours": "{{hours}}h left",
   "business-plan-upgrade": "Upgrade to Business plan to access this feature",
-  "upgrade-plan": "Upgrade your plan to access this feature"
+  "upgrade-plan": "Upgrade your plan to access this feature",
+  "bizPlan": {
+    "title": "New: Business Plan",
+    "desc": "Unlock advanced reporting, workload, client portal, and more.",
+    "learnMore": "Learn more",
+    "remindLater": "Remind me tomorrow",
+    "dismiss": "Dismiss"
+  }
 }
