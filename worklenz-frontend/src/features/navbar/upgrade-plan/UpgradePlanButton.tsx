@@ -1,5 +1,5 @@
 import { Button, Tooltip, Badge, Modal } from '@/shared/antd-imports';
-import React, { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { colors } from '../../../styles/colors';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -12,13 +12,11 @@ import {
   ThunderboltOutlined,
   RocketOutlined,
 } from '@ant-design/icons';
-import type {
-  UserPersonalization,
-  PricingCalculation,
-} from '@/components/pricing-modal/PricingModal';
+// Removed PricingModal types as we now use the global UpgradePlans modal
 import { fetchBillingInfo } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { 
   MixpanelBillingEvents, 
   UpgradeButtonEventProps,
@@ -26,8 +24,7 @@ import {
   UserType 
 } from '@/types/mixpanel-events.types';
 
-// Lazy load the PricingModal to avoid circular dependencies and improve performance
-const PricingModal = lazy(() => import('@/components/pricing-modal/PricingModal'));
+// PricingModal removed in favor of global UpgradePlans modal
 
 interface UpgradePlanButtonProps {
   showModal?: boolean;
@@ -45,7 +42,7 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
   const dispatch = useAppDispatch();
   const authService = useAuthService();
   const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
-  const [showPricingModal, setShowPricingModal] = useState(false);
+  // Local pricing modal state removed; using global UpgradePlans modal
   const [isAppSumoUser, setIsAppSumoUser] = useState(false);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -152,44 +149,7 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     return 'default';
   }, [isAppSumoUser, daysRemaining]);
 
-  // Create user personalization object for pricing modal
-  const userPersonalization: UserPersonalization | undefined = useMemo(() => {
-    if (!billingInfo) return undefined;
-
-    const userType = isAppSumoUser
-      ? 'appsumo'
-      : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL
-        ? 'trial'
-        : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE
-          ? 'free'
-          : 'paid';
-
-    return {
-      userType,
-      currentPlan: billingInfo.plan_name,
-      trialDaysRemaining: daysRemaining || undefined,
-    };
-  }, [billingInfo, isAppSumoUser, currentSession, daysRemaining]);
-
-  const handlePlanSelect = useCallback(
-    (calculation: PricingCalculation) => {
-      console.log('Plan selected:', calculation);
-      setShowPricingModal(false);
-      navigate('/worklenz/admin-center/billing');
-    },
-    [navigate]
-  );
-
-  const handleModalClose = useCallback(() => {
-    setShowPricingModal(false);
-    // Track modal close event
-    trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_CLOSED, {
-      user_type: getUserType(),
-      current_plan: billingInfo?.plan_name,
-      is_appsumo_user: isAppSumoUser,
-      trigger_source: 'upgrade_button',
-    });
-  }, [trackMixpanelEvent, getUserType, billingInfo, isAppSumoUser]);
+  // Removed local PricingModal handlers; using global modal
 
   const getButtonStyles = () => {
     const isDark = themeMode === 'dark';
@@ -262,8 +222,8 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
         trackMixpanelEvent(MixpanelBillingEvents.UPGRADE_BUTTON_CLICKED, eventProps);
 
         if (showModal) {
-          setShowPricingModal(true);
-          // Track modal open event
+          // Open global UpgradePlans modal
+          dispatch(toggleUpgradeModal());
           const modalProps: PricingModalEventProps = {
             user_type: getUserType(),
             current_plan: billingInfo?.plan_name,
@@ -345,26 +305,7 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
         </Tooltip>
       )}
 
-      {/* Pricing Modal with lazy loading */}
-      {showPricingModal && (
-        <Suspense
-          fallback={
-            <Modal open={true} footer={null} closable={false}>
-              <div style={{ textAlign: 'center', padding: '20px' }}>Loading pricing options...</div>
-            </Modal>
-          }
-        >
-          <PricingModal
-            visible={showPricingModal}
-            onClose={handleModalClose}
-            onPlanSelect={handlePlanSelect}
-            userPersonalization={userPersonalization}
-            organizationId={currentSession?.team_id}
-            defaultPricingModel={isAppSumoUser ? 'BASE_PLAN' : 'PER_USER'}
-            defaultBillingCycle="YEARLY"
-          />
-        </Suspense>
-      )}
+      {/* Global UpgradePlans modal is handled in layout; no local modal here */}
     </>
   );
 };

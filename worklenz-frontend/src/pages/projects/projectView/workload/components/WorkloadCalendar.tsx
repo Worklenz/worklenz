@@ -153,7 +153,7 @@ interface WorkloadCalendarProps {
 
 const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
   const { t } = useTranslation('workload');
-  const { showWeekends, alertThresholds } = useAppSelector(state => state.projectWorkload);
+  const { showWeekends, alertThresholds, dateRange } = useAppSelector(state => state.projectWorkload);
   const { token } = theme.useToken();
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
@@ -222,7 +222,11 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
     const dateKey = date.format('YYYY-MM-DD');
     const workload = dateWorkloadMap.get(dateKey);
 
-    if (!workload || workload.allocations.length === 0) {
+    // Check if the current date is within the selected date range filter
+    const isWithinDateRange = date.isSameOrAfter(dayjs(dateRange.startDate), 'day') &&
+                              date.isSameOrBefore(dayjs(dateRange.endDate), 'day');
+
+    if (!workload || workload.allocations.length === 0 || !isWithinDateRange) {
       return null;
     }
 

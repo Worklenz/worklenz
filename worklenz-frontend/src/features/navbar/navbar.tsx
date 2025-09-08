@@ -209,7 +209,7 @@ const Navbar = () => {
                   {isOwnerOrAdmin &&
                     showUpgradeTypes.includes(
                       currentSession?.subscription_type as ISUBSCRIPTION_TYPE
-                    ) && <UpgradePlanButton />}
+                    ) && <UpgradePlanButton showModal redirectToBilling={false} />}
                   {isOwnerOrAdmin && <InviteButton />}
                   <Flex align="center">
                     <SwitchTeamButton />

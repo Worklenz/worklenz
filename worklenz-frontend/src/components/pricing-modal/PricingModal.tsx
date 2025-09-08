@@ -291,7 +291,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
 }) => {
   const { t } = useTranslation(['pricing-modal', 'common']);
   const dispatch = useDispatch();
-  const theme = useSelector((state: RootState) => state.theme.mode);
+  const theme = useSelector((state: RootState) => state.themeReducer.mode);
   const isDarkMode = theme === 'dark';
 
   // State management
