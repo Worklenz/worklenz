@@ -58,6 +58,11 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     const planName = billingInfo?.plan_name?.toLowerCase() || '';
     const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
 
+    // First check if user is on trial - trial users should never be considered AppSumo users
+    if (currentSession?.subscription_type === 'TRIAL') {
+      return false;
+    }
+
     return (
       planName.includes('appsumo') ||
       subscriptionType.includes('appsumo') ||
@@ -71,7 +76,7 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     if (!billingInfo) {
       dispatch(fetchBillingInfo());
     }
-  }, [dispatch, billingInfo]);
+  }, [dispatch]);
 
   useEffect(() => {
     // Check if AppSumo user
@@ -101,7 +106,7 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
         setDaysRemaining(null);
       }
     }
-  }, [currentSession, checkAppSumoUser]);
+  }, [currentSession, billingInfo]);
 
   const getBadgeColor = () => {
     if (daysRemaining === null) return undefined;

@@ -34,17 +34,24 @@ const CurrentBill: React.FC = React.memo(() => {
   useEffect(() => {
     dispatch(fetchBillingInfo());
     dispatch(fetchFreePlanSettings());
+  }, [dispatch]);
+
+  // Separate effect for tracking events when billing info is available
+  useEffect(() => {
+    if (!billingInfo || !currentSession) return;
     
     // Track billing page view
     const getUserType = (): UserType => {
       const planName = billingInfo?.plan_name?.toLowerCase() || '';
       const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
       
+      // First check if user is on trial - trial users should never be considered AppSumo users
+      if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return 'trial';
+      
       if (planName.includes('appsumo') || subscriptionType.includes('appsumo') || 
           planName.includes('lifetime') || subscriptionType.includes('lifetime')) {
         return 'appsumo';
       }
-      if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return 'trial';
       if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE) return 'free';
       return 'paid';
     };
@@ -62,7 +69,7 @@ const CurrentBill: React.FC = React.memo(() => {
     
     trackMixpanelEvent(MixpanelBillingEvents.BILLING_PAGE_VIEWED, eventProps);
     trackMixpanelEvent(MixpanelBillingEvents.CURRENT_PLAN_VIEWED, eventProps);
-  }, [dispatch, trackMixpanelEvent, billingInfo, currentSession]);
+  }, [billingInfo, currentSession, trackMixpanelEvent]);
 
   const titleStyle = useMemo(
     () => ({
