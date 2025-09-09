@@ -40,6 +40,7 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 import { colors } from '@/styles/colors';
 import { getRoleColor } from '@/types/roles/role.types';
 import { canManageUserRole } from '@/utils/role-permissions.utils';
+import './team-members-settings.css';
 
 const TeamMembersSettings = () => {
   const { t } = useTranslation('settings/team-members');
@@ -167,12 +168,15 @@ const TeamMembersSettings = () => {
   }, []);
 
   const currentUser = auth.getCurrentSession();
+  const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })?.role_name;
   const canManageUser = useCallback(
     (targetRole: string | undefined) => {
-      return canManageUserRole(currentUser?.role_name, targetRole, currentUser?.owner);
+      return canManageUserRole(currentUserRoleName, targetRole, currentUser?.owner);
     },
-    [currentUser?.role_name, currentUser?.owner]
+    [currentUserRoleName, currentUser?.owner]
   );
+  const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
+  const isPrivilegedUser = !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
 
   const columns: TableProps['columns'] = [
     {
@@ -268,14 +272,14 @@ const TeamMembersSettings = () => {
       render: (record: ITeamMemberViewModel) => {
         const canManage = canManageUser(record.role_name);
         return (
-          record.role_name !== 'owner' &&
-          canManage && (
-            <Flex gap={8} style={{ padding: 0 }}>
+          isPrivilegedUser && (
+            <Flex gap={8} style={{ padding: 0 }} className="action-buttons">
               <Tooltip title={t('editTooltip')}>
                 <Button
                   size="small"
                   icon={<EditOutlined />}
-                  onClick={() => record.id && handleMemberClick(record.id)}
+                  disabled={!canManage}
+                  onClick={() => canManage && record.id && handleMemberClick(record.id)}
                 />
               </Tooltip>
               <Tooltip title={record.active ? t('deactivateTooltip') : t('activateTooltip')}>
@@ -284,9 +288,9 @@ const TeamMembersSettings = () => {
                   icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
                   okText={t('okText')}
                   cancelText={t('cancelText')}
-                  onConfirm={() => handleStatusChange(record)}
+                  onConfirm={() => canManage && handleStatusChange(record)}
                 >
-                  <Button size="small" icon={<UserSwitchOutlined />} />
+                  <Button size="small" icon={<UserSwitchOutlined />} disabled={!canManage} />
                 </Popconfirm>
               </Tooltip>
               <Tooltip title={t('deleteTooltip')}>
@@ -295,9 +299,9 @@ const TeamMembersSettings = () => {
                   icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
                   okText={t('okText')}
                   cancelText={t('cancelText')}
-                  onConfirm={() => record.id && handleDeleteMember(record)}
+                  onConfirm={() => canManage && record.id && handleDeleteMember(record)}
                 >
-                  <Button size="small" icon={<DeleteOutlined />} />
+                  <Button size="small" icon={<DeleteOutlined />} disabled={!canManage} />
                 </Popconfirm>
               </Tooltip>
             </Flex>
@@ -335,6 +339,7 @@ const TeamMembersSettings = () => {
           size="small"
           dataSource={model.data}
           rowKey={record => record.id}
+          rowClassName={() => 'team-member-row'}
           onChange={handleTableChange}
           loading={isLoading}
           pagination={{

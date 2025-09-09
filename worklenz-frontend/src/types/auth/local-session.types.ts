@@ -12,6 +12,7 @@ export interface ILocalSession extends IUserType {
   demo_data?: boolean;
   is_admin?: boolean;
   is_member?: boolean;
+  role_name?: string;
   build_v?: string;
   is_google?: boolean;
   setup_completed?: boolean;
