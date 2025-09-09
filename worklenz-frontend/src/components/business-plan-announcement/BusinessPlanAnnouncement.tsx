@@ -76,11 +76,11 @@ export const BusinessPlanAnnouncement = () => {
     
     // Enhanced gradient backgrounds for better contrast
     containerBackground: isDark 
-      ? `linear-gradient(135deg, ${token.colorBgElevated} 0%, ${token.colorFillQuaternary}30 100%)`
+      ? `linear-gradient(135deg, #1f1f1f 0%, ${token.colorBgContainer} 50%, #2a2a2a 100%)`
       : `linear-gradient(135deg, ${token.colorBgElevated} 0%, ${token.colorFillQuaternary} 100%)`,
       
     descriptionBackground: isDark
-      ? `linear-gradient(135deg, ${token.colorFillTertiary}30, ${token.colorFillQuaternary}15)`
+      ? `linear-gradient(135deg, #2a2a2a 0%, #333333 100%)`
       : `linear-gradient(135deg, ${token.colorFillTertiary}20, ${token.colorFillQuaternary}10)`
   }), [isDark, token, purpleColor]);
 
@@ -115,7 +115,8 @@ export const BusinessPlanAnnouncement = () => {
           display: 'flex', 
           alignItems: 'center',
           fontWeight: 600,
-          fontSize: '16px'
+          fontSize: '16px',
+          color: token.colorText
         }}>
           <Badge 
             count="NEW" 
@@ -129,12 +130,21 @@ export const BusinessPlanAnnouncement = () => {
             }}
           />
           <span style={{ 
-            background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorWarning})`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            fontWeight: 700,
-            fontSize: '18px'
+            ...(isDark ? {
+              // In dark mode, use solid color instead of gradient for better visibility
+              color: token.colorPrimary,
+              fontWeight: 700,
+              fontSize: '18px',
+              textShadow: `0 0 8px ${token.colorPrimary}40`
+            } : {
+              // In light mode, use gradient text
+              background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorWarning})`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontWeight: 700,
+              fontSize: '18px'
+            })
           }}>
             Business Plan
           </span>
@@ -334,12 +344,13 @@ export const BusinessPlanAnnouncement = () => {
                   background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryHover})`,
                   border: 'none',
                   fontWeight: 600,
-                  boxShadow: `0 4px 12px ${token.colorPrimary}40`,
+                  boxShadow: `0 4px 12px ${token.colorPrimary}${isDark ? '60' : '40'}`,
                   height: '36px',
                   paddingLeft: '20px',
                   paddingRight: '20px',
                   borderRadius: '8px',
-                  fontSize: '13px'
+                  fontSize: '13px',
+                  color: isDark ? '#fff' : token.colorWhite
                 }}
               >
                 {t('bizPlan.learnMore')}
@@ -370,7 +381,7 @@ export const BusinessPlanAnnouncement = () => {
       style: {
         background: themeStyles.containerBackground,
         border: `2px solid ${token.colorPrimary}`,
-        borderRadius: '12px',
+        borderRadius: token.borderRadius,
         boxShadow: `
           0 8px 32px ${token.colorPrimary}${themeStyles.containerShadowOpacity},
           0 4px 16px ${token.colorFillSecondary}40,
