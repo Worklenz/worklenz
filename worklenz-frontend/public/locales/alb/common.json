@@ -50,8 +50,19 @@
   "business-plan-upgrade": "Përmirësoni në planin Business për të aksesuar këtë veçori",
   "upgrade-plan": "Përmirësoni planin tuaj për të aksesuar këtë veçori",
   "bizPlan": {
+    "badgeNew": "E RE",
     "title": "E re: Plani Business",
+    "subtitle": "Shkyçni veçori të fuqishme për të rritur produktivitetin e ekipit",
     "desc": "Shkyçni raportim të avancuar, ngarkesë pune, portalin e klientit dhe më shumë.",
+    "features": {
+      "advancedAnalytics": "Analitika të avancuara",
+      "reporting": "Raportim",
+      "workload": "Ngarkesë pune",
+      "roadmap": "Roadmap",
+      "clientPortal": "Portali i klientit",
+      "projectFinance": "Financat e projektit"
+    },
+    "unlockAllFeatures": "Shkyç të gjitha veçoritë",
     "learnMore": "Mëso më shumë",
     "dismiss": "Hidhe"
   }

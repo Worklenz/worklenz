@@ -119,7 +119,7 @@ export const BusinessPlanAnnouncement = () => {
           color: token.colorText
         }}>
           <Badge 
-            count="NEW" 
+            count={t('bizPlan.badgeNew')} 
             style={{ 
               backgroundColor: '#FFD700',
               color: '#000',
@@ -146,7 +146,7 @@ export const BusinessPlanAnnouncement = () => {
               fontSize: '18px'
             })
           }}>
-            Business Plan
+            {t('bizPlan.title')}
           </span>
         </div>
       ),
@@ -193,7 +193,7 @@ export const BusinessPlanAnnouncement = () => {
                 color: token.colorText,
                 fontSize: '15px'
               }}>
-                Unlock powerful features to supercharge your team's productivity
+                {t('bizPlan.subtitle')}
               </div>
               <div style={{
                 display: 'flex',
@@ -217,7 +217,7 @@ export const BusinessPlanAnnouncement = () => {
                   boxShadow: `0 2px 8px ${token.colorWarning}${themeStyles.shadowOpacity}`
                 }}>
                   <LockOutlined style={{ fontSize: '12px' }} />
-                  Advanced Analytics
+                  {t('bizPlan.features.advancedAnalytics')}
                 </div>
                 
                 {/* Reporting */}
@@ -235,7 +235,7 @@ export const BusinessPlanAnnouncement = () => {
                   boxShadow: `0 2px 8px ${token.colorError}${themeStyles.shadowOpacity}`
                 }}>
                   <LockOutlined style={{ fontSize: '12px' }} />
-                  Reporting
+                  {t('bizPlan.features.reporting')}
                 </div>
                 
                 {/* Workload Management */}
@@ -253,7 +253,7 @@ export const BusinessPlanAnnouncement = () => {
                   boxShadow: `0 2px 8px ${token.colorSuccess}${themeStyles.shadowOpacity}`
                 }}>
                   <LockOutlined style={{ fontSize: '12px' }} />
-                  Workload
+                  {t('bizPlan.features.workload')}
                 </div>
                 
                 {/* Roadmap */}
@@ -271,7 +271,7 @@ export const BusinessPlanAnnouncement = () => {
                   boxShadow: `0 2px 8px ${token.colorPrimary}${themeStyles.shadowOpacity}`
                 }}>
                   <LockOutlined style={{ fontSize: '12px' }} />
-                  Roadmap
+                  {t('bizPlan.features.roadmap')}
                 </div>
                 
                 {/* Client Portal */}
@@ -289,7 +289,7 @@ export const BusinessPlanAnnouncement = () => {
                   boxShadow: `0 2px 8px ${token.colorInfo}${themeStyles.shadowOpacity}`
                 }}>
                   <LockOutlined style={{ fontSize: '12px' }} />
-                  Client Portal
+                  {t('bizPlan.features.clientPortal')}
                 </div>
                 
                 {/* Project Finance */}
@@ -307,7 +307,7 @@ export const BusinessPlanAnnouncement = () => {
                   boxShadow: `0 2px 8px ${purpleColor}${themeStyles.shadowOpacity}`
                 }}>
                   <LockOutlined style={{ fontSize: '12px' }} />
-                  Project Finance
+                  {t('bizPlan.features.projectFinance')}
                 </div>
               </div>
             </div>
@@ -330,7 +330,7 @@ export const BusinessPlanAnnouncement = () => {
               gap: 4
             }}>
               <LockOutlined style={{ fontSize: '10px' }} />
-              Unlock all features
+              {t('bizPlan.unlockAllFeatures')}
             </div>
             <div style={{ 
               display: 'flex',

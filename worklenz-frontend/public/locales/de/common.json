@@ -60,8 +60,19 @@
   "business-plan-upgrade": "Auf Business-Plan upgraden, um auf diese Funktion zuzugreifen",
   "upgrade-plan": "Upgraden Sie Ihren Plan, um auf diese Funktion zuzugreifen",
   "bizPlan": {
+    "badgeNew": "NEU",
     "title": "Neu: Business-Plan",
+    "subtitle": "Leistungsstarke Funktionen freischalten, um die Produktivität Ihres Teams zu steigern",
     "desc": "Erweiterte Berichte, Arbeitslast, Client-Portal und mehr freischalten.",
+    "features": {
+      "advancedAnalytics": "Erweiterte Analysen",
+      "reporting": "Berichterstattung",
+      "workload": "Arbeitslast",
+      "roadmap": "Roadmap",
+      "clientPortal": "Client-Portal",
+      "projectFinance": "Projektfinanzen"
+    },
+    "unlockAllFeatures": "Alle Funktionen freischalten",
     "learnMore": "Mehr erfahren",
     "dismiss": "Verwerfen"
   }

@@ -50,8 +50,19 @@
   "business-plan-upgrade": "Atualize para o plano Business para acessar este recurso",
   "upgrade-plan": "Atualize seu plano para acessar este recurso",
   "bizPlan": {
+    "badgeNew": "NOVO",
     "title": "Novo: Plano Business",
+    "subtitle": "Desbloqueie recursos poderosos para turbinar a produtividade da sua equipe",
     "desc": "Desbloqueie relatórios avançados, carga de trabalho, portal do cliente e muito mais.",
+    "features": {
+      "advancedAnalytics": "Análises avançadas",
+      "reporting": "Relatórios",
+      "workload": "Carga de trabalho",
+      "roadmap": "Roadmap",
+      "clientPortal": "Portal do cliente",
+      "projectFinance": "Finanças do projeto"
+    },
+    "unlockAllFeatures": "Desbloquear todos os recursos",
     "learnMore": "Saiba mais",
     "dismiss": "Dispensar"
   }

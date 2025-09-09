@@ -60,8 +60,19 @@
   "business-plan-upgrade": "Actualizar al plan Business para acceder a esta función",
   "upgrade-plan": "Actualiza tu plan para acceder a esta función",
   "bizPlan": {
+    "badgeNew": "NUEVO",
     "title": "Nuevo: Plan Business",
+    "subtitle": "Desbloquea potentes funciones para potenciar la productividad de tu equipo",
     "desc": "Desbloquea informes avanzados, carga de trabajo, portal de clientes y más.",
+    "features": {
+      "advancedAnalytics": "Analítica avanzada",
+      "reporting": "Informes",
+      "workload": "Carga de trabajo",
+      "roadmap": "Hoja de ruta",
+      "clientPortal": "Portal de clientes",
+      "projectFinance": "Finanzas de proyectos"
+    },
+    "unlockAllFeatures": "Desbloquear todas las funciones",
     "learnMore": "Saber más",
     "dismiss": "Descartar"
   }

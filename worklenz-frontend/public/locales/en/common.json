@@ -60,8 +60,19 @@
   "business-plan-upgrade": "Upgrade to Business plan to access this feature",
   "upgrade-plan": "Upgrade your plan to access this feature",
   "bizPlan": {
+    "badgeNew": "NEW",
     "title": "New: Business Plan",
+    "subtitle": "Unlock powerful features to supercharge your team's productivity",
     "desc": "Unlock advanced reporting, workload, client portal, and more.",
+    "features": {
+      "advancedAnalytics": "Advanced Analytics",
+      "reporting": "Reporting",
+      "workload": "Workload",
+      "roadmap": "Roadmap",
+      "clientPortal": "Client Portal",
+      "projectFinance": "Project Finance"
+    },
+    "unlockAllFeatures": "Unlock all features",
     "learnMore": "Learn more",
     "dismiss": "Dismiss"
   }
