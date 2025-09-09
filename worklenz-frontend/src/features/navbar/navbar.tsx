@@ -108,13 +108,13 @@ const Navbar = () => {
                   fontWeight: 600,
                 }}
               >
-                {t(route.name)}
+                {t(route.name, { defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1) })}
                 <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
               </span>
             </Tooltip>
           ) : (
             <Link to={route.path} style={{ fontWeight: 600 }}>
-              {t(route.name)}
+              {t(route.name, { defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1) })}
             </Link>
           ),
         };
