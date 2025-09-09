@@ -1,6 +1,7 @@
 import { Card, Typography, Button } from '@/shared/antd-imports';
 import { PlanCardProps } from '../types';
 import { IPaddlePlans } from '@/shared/constants';
+import { PlanRibbon } from './PlanRibbon';
 
 export const PlanCard: React.FC<PlanCardProps> = ({
   planType,
@@ -15,6 +16,11 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   primaryActionDisabled,
   primaryActionLoading,
   footerNote,
+  isAppSumoUser,
+  themeMode,
+  teamSize,
+  billingFrequency,
+  calculateTotalCostForPlan,
 }) => (
   <Card
     style={{
@@ -23,6 +29,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       padding: '8px',
       display: 'flex',
       flexDirection: 'column',
+      position: 'relative',
+      overflow: 'visible',
     }}
     bodyStyle={{
       display: 'flex',
@@ -32,6 +40,15 @@ export const PlanCard: React.FC<PlanCardProps> = ({
     onClick={() => onPlanSelect(planType)}
     hoverable
   >
+    <PlanRibbon
+      isSelected={selectedPlanType === planType}
+      planType={planType}
+      isAppSumoUser={isAppSumoUser}
+      themeMode={themeMode}
+      teamSize={teamSize}
+      billingFrequency={billingFrequency}
+      calculateTotalCostForPlan={calculateTotalCostForPlan}
+    />
     <div style={{ textAlign: 'center', marginBottom: 24, position: 'relative' }}>
       <Typography.Title level={4} style={{ marginBottom: 8 }}>
         {title}

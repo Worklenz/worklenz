@@ -17,7 +17,8 @@
       "basePlan": "Precio base fijo con usuarios incluidos más costos adicionales por usuario. Ideal para equipos más grandes (6+ usuarios) con facturación predecible."
     },
     "autoPerUser": "Usando automáticamente precios por usuario para {{count}} usuario{{s}}",
-    "autoBase": "Usando automáticamente precios del plan base para {{count}} usuario{{s}}"
+    "autoBase": "Usando automáticamente precios del plan base para {{count}} usuario{{s}}",
+    "additionalUserCharge": "Incluye {{included}} usuarios. Cada usuario adicional cuesta ${{price}}/mes."
   },
   "teamSize": {
     "label": "Tamaño del Equipo",
@@ -242,5 +243,11 @@
     "perYear": "/año",
     "perMonth": "/mes",
     "forUsers": " para {{count}} usuario{{s}}"
+  },
+  "ribbon": {
+    "recommended": "Recomendado",
+    "popular": "Más Popular",
+    "bestValue": "Mejor Valor",
+    "appsumoSpecial": "Especial AppSumo"
   }
 }

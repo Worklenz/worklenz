@@ -72,6 +72,11 @@ export interface PlanCardProps {
   primaryActionDisabled?: boolean;
   primaryActionLoading?: boolean;
   footerNote?: React.ReactNode;
+  isAppSumoUser?: boolean;
+  themeMode?: 'light' | 'dark';
+  teamSize?: number;
+  billingFrequency?: 'monthly' | 'annual';
+  calculateTotalCostForPlan?: (planType: 'pro' | 'business' | 'enterprise', teamSize: number, isAnnual: boolean) => number;
 }
 
 export interface AppSumoAlertProps {

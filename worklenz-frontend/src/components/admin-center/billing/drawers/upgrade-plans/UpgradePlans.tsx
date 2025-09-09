@@ -171,11 +171,114 @@ const UpgradePlans = () => {
     return max ?? Number.POSITIVE_INFINITY;
   };
 
+  // Calculate total cost for a plan based on team size
+  const calculateTotalCostForPlan = (planType: 'pro' | 'business' | 'enterprise', teamSize: number, isAnnual: boolean): number => {
+    if (planType === 'enterprise') {
+      // Enterprise has unlimited users, so just return the base price
+      return isAnnual 
+        ? parseFloat(calculateAnnualTotal('enterprise'))
+        : parseFloat(calculateMonthlyTotal('enterprise'));
+    }
+
+    // Temporarily override teamSize to calculate cost for the specific team size
+    const originalTeamSize = teamSize;
+    
+    // Create a temporary pricing calculation with the specific team size
+    const calculateCostForSpecificTeamSize = (plan: 'pro' | 'business' | 'enterprise') => {
+      let finalPrice = 0;
+      
+      // Get the appropriate plan data
+      let planData;
+      if (plan === 'pro') {
+        planData = pricingData.pro;
+      } else if (plan === 'business') {
+        planData = pricingData.business;
+      } else {
+        planData = pricingData.enterprise;
+      }
+
+
+      // Handle AppSumo promo plans first
+      if (isAppSumoUser && planData?.pricing_model?.startsWith('promo_')) {
+        finalPrice = parseFloat(planData.monthly_base_price || '0');
+        if (!finalPrice && planData.annual_base_price) {
+          finalPrice = parseFloat(planData.annual_base_price) / 12;
+        }
+        return isAnnual ? finalPrice * 12 : finalPrice;
+      }
+
+      // Regular pricing logic for non-AppSumo users
+      if (teamSize <= TEAM_SIZE_THRESHOLD) {
+        if (plan === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
+          const perUserPrice = isAnnual 
+            ? parseFloat(pricingData.pro_small.annual_per_user_price || '0')
+            : parseFloat(pricingData.pro_small.monthly_per_user_price || '0');
+          finalPrice = perUserPrice * teamSize;
+        } else if (
+          plan === 'business' &&
+          pricingData.business_small?.pricing_model === 'per_user'
+        ) {
+          const perUserPrice = isAnnual 
+            ? parseFloat(pricingData.business_small.annual_per_user_price || '0')
+            : parseFloat(pricingData.business_small.monthly_per_user_price || '0');
+          finalPrice = perUserPrice * teamSize;
+        } else if (plan === 'enterprise') {
+          finalPrice = isAnnual 
+            ? parseFloat(pricingData.enterprise.annual_base_price || '0')
+            : parseFloat(pricingData.enterprise.monthly_base_price || '0');
+        } else {
+          const basePrice = isAnnual 
+            ? parseFloat(planData.annual_base_price || '0')
+            : parseFloat(planData.monthly_base_price || '0');
+          const includedUsers = parseInt(planData.included_users) || 0;
+          const extraUsers = Math.max(0, teamSize - includedUsers);
+          const perUserPrice = isAnnual 
+            ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') * 12
+            : parseFloat(planData.monthly_per_user_price || planData.additional_user_price || '0');
+          const extraUserCost = extraUsers * perUserPrice;
+          finalPrice = basePrice + extraUserCost;
+        }
+      } else {
+        if (plan === 'enterprise') {
+          finalPrice = isAnnual 
+            ? parseFloat(planData.annual_base_price || '0')
+            : parseFloat(planData.monthly_base_price || '0');
+        } else {
+          const basePrice = isAnnual 
+            ? parseFloat(planData.annual_base_price || '0')
+            : parseFloat(planData.monthly_base_price || '0');
+          const includedUsers = parseInt(planData.included_users) || 0;
+          const extraUsers = Math.max(0, teamSize - includedUsers);
+          const perUserPrice = isAnnual 
+            ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') * 12
+            : parseFloat(planData.monthly_per_user_price || planData.additional_user_price || '0');
+          const extraUserCost = extraUsers * perUserPrice;
+          finalPrice = basePrice + extraUserCost;
+        }
+      }
+
+      return finalPrice;
+    };
+
+    return calculateCostForSpecificTeamSize(planType);
+  };
+
   const getPlanForSize = (size: number): PlanType => {
-    const proMax = getMaxUsersForPlan('pro', size);
-    if (size <= proMax) return 'pro';
-    const businessMax = getMaxUsersForPlan('business', size);
-    if (size <= businessMax) return 'business';
+    // Calculate actual costs for Pro and Business plans
+    const isAnnual = billingFrequency === 'annual';
+    const proCost = calculateTotalCostForPlan('pro', size, isAnnual);
+    const businessCost = calculateTotalCostForPlan('business', size, isAnnual);
+    
+    // Recommend the cheaper option between Pro and Business
+    if (proCost < businessCost) {
+      const proMax = getMaxUsersForPlan('pro', size);
+      if (size <= proMax) return 'pro';
+    } else {
+      const businessMax = getMaxUsersForPlan('business', size);
+      if (size <= businessMax) return 'business';
+    }
+    
+    // Fallback to Enterprise if neither Pro nor Business can handle the team size
     return 'enterprise';
   };
 
@@ -202,10 +305,10 @@ const UpgradePlans = () => {
     const oldSize = teamSize;
     setTeamSize(size);
 
-    // Auto-select plan based on size thresholds
+    // Auto-select plan based on cost-effectiveness
     const autoPlan = getPlanForSize(size);
     if (autoPlan !== selectedPlanType && autoPlan !== 'free') {
-      handlePlanSelect(autoPlan);
+      setSelectedPlanType(autoPlan);
     }
     
     // Track team size change
@@ -218,8 +321,8 @@ const UpgradePlans = () => {
       subscription_status: billingInfo?.status,
       old_team_size: oldSize,
       new_team_size: size,
-      selected_plan: selectedPlanType as MixpanelPlanType,
-      pricing_model: getEffectivePricingModel(selectedPlanType as 'pro' | 'business' | 'enterprise') as PricingModel,
+      selected_plan: autoPlan as MixpanelPlanType, // Use the auto-selected plan
+      pricing_model: getEffectivePricingModel(autoPlan as 'pro' | 'business' | 'enterprise') as PricingModel,
     };
     trackMixpanelEvent(MixpanelBillingEvents.TEAM_SIZE_CHANGED, eventProps);
   };
@@ -229,9 +332,15 @@ const UpgradePlans = () => {
     setBillingFrequency(frequency);
     setSelectedCard(frequency === 'annual' ? paddlePlans.ANNUAL : paddlePlans.MONTHLY);
     
+    // Auto-select the best plan for the new billing frequency
+    const autoPlan = getPlanForSize(teamSize);
+    if (autoPlan !== selectedPlanType && autoPlan !== 'free') {
+      setSelectedPlanType(autoPlan);
+    }
+    
     // Track billing frequency change
-    const annualTotal = calculateAnnualTotal(selectedPlanType as 'pro' | 'business' | 'enterprise');
-    const monthlyTotal = calculateMonthlyTotal(selectedPlanType as 'pro' | 'business' | 'enterprise');
+    const annualTotal = calculateAnnualTotal(autoPlan as 'pro' | 'business' | 'enterprise');
+    const monthlyTotal = calculateMonthlyTotal(autoPlan as 'pro' | 'business' | 'enterprise');
     const annualSavings = parseFloat(monthlyTotal) * 12 - parseFloat(annualTotal);
     
     const eventProps: BillingFrequencyChangeEventProps = {
@@ -243,7 +352,7 @@ const UpgradePlans = () => {
       subscription_status: billingInfo?.status,
       old_frequency: oldFrequency as MixpanelBillingFrequency,
       new_frequency: frequency as MixpanelBillingFrequency,
-      selected_plan: selectedPlanType as MixpanelPlanType,
+      selected_plan: autoPlan as MixpanelPlanType, // Use the auto-selected plan
       annual_savings: annualSavings > 0 ? annualSavings : undefined,
     };
     trackMixpanelEvent(MixpanelBillingEvents.BILLING_FREQUENCY_CHANGED, eventProps);
@@ -954,6 +1063,11 @@ const UpgradePlans = () => {
                   primaryActionDisabled={isLoadingPlans}
                   primaryActionLoading={switchingToFreePlan}
                   footerNote={t('pricing-modal:buttons.switchToFree', 'Switch to Free Plan')}
+                  isAppSumoUser={isAppSumoUser}
+                  themeMode={themeMode}
+                  teamSize={teamSize}
+                  billingFrequency={billingFrequency}
+                  calculateTotalCostForPlan={calculateTotalCostForPlan}
                 />
               </Col>
             )}
@@ -993,6 +1107,11 @@ const UpgradePlans = () => {
                     const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
                     return t('pricing-modal:buttons.planSummaryNoName', '${{total}}{{period}}{{userText}}', { total, period, userText });
                   })()}
+                  isAppSumoUser={isAppSumoUser}
+                  themeMode={themeMode}
+                  teamSize={teamSize}
+                  billingFrequency={billingFrequency}
+                  calculateTotalCostForPlan={calculateTotalCostForPlan}
                 />
               </Col>
             )}
@@ -1031,6 +1150,11 @@ const UpgradePlans = () => {
                   const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
                   return t('pricing-modal:buttons.planSummaryNoName', '${{total}}{{period}}{{userText}}', { total, period, userText });
                 })()}
+                isAppSumoUser={isAppSumoUser}
+                themeMode={themeMode}
+                teamSize={teamSize}
+                billingFrequency={billingFrequency}
+                calculateTotalCostForPlan={calculateTotalCostForPlan}
               />
             </Col>
 
@@ -1067,6 +1191,11 @@ const UpgradePlans = () => {
                   const period = billingFrequency === 'annual' ? t('pricing-modal:billing.perYear', '/year') : t('pricing-modal:billing.perMonth', '/month');
                   return t('pricing-modal:buttons.planSummaryNoName', '${{total}}{{period}}{{userText}}', { total, period, userText: '' });
                 })()}
+                isAppSumoUser={isAppSumoUser}
+                themeMode={themeMode}
+                teamSize={teamSize}
+                billingFrequency={billingFrequency}
+                calculateTotalCostForPlan={calculateTotalCostForPlan}
               />
             </Col>
           </>
