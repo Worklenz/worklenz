@@ -66,7 +66,6 @@ import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/boar
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
-import { ShareAltOutlined } from '@/shared/antd-imports';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { isFreeUser } from '@/utils/subscription-utils';
 
@@ -214,7 +213,7 @@ const ProjectViewHeader = memo(() => {
       setCreatingTask(true);
 
       const body: Partial<ITaskCreateRequest> = {
-        name: t('defaultTaskName'),
+        name: t('defaultTaskName', { defaultValue: 'Untitled Task' }),
         project_id: selectedProject.id,
         reporter_id: currentSession.id,
         team_id: currentSession.team_id,
@@ -283,9 +282,9 @@ const ProjectViewHeader = memo(() => {
           <div
             style={{ width: '100%', margin: 0, padding: 0 }}
             onClick={handleImportTaskTemplate}
-            title={t('importTaskTooltip')}
+            title={t('importTaskTooltip', { defaultValue: 'Import task from template' })}
           >
-            <ImportOutlined /> {t('importTask')}
+            <ImportOutlined /> {t('importTask', { defaultValue: 'Import task' })}
           </div>
         ),
       },
@@ -303,7 +302,7 @@ const ProjectViewHeader = memo(() => {
       elements.push(
         <Tooltip
           key="category-tooltip"
-          title={`${t('projectCategoryTooltip')}: ${selectedProject.category_name}`}
+          title={`${t('projectCategoryTooltip', { defaultValue: 'Project category' })}: ${selectedProject.category_name}`}
         >
           <Tag
             key="category"
@@ -318,7 +317,7 @@ const ProjectViewHeader = memo(() => {
 
     if (selectedProject.status) {
       elements.push(
-        <Tooltip key="status" title={`${t('projectStatusTooltip')}: ${selectedProject.status}`}>
+        <Tooltip key="status" title={`${t('projectStatusTooltip', { defaultValue: 'Project status' })}: ${selectedProject.status}`}>
           <ProjectStatusIcon
             iconName={selectedProject.status_icon || ''}
             color={selectedProject.status_color || ''}
@@ -330,14 +329,14 @@ const ProjectViewHeader = memo(() => {
     if (selectedProject.start_date || selectedProject.end_date) {
       const tooltipContent = (
         <Typography.Text style={{ color: colors.white }}>
-          {t('projectDatesInfo')}
+          {t('projectDatesInfo', { defaultValue: 'Project timeline information' })}
           <br />
           {selectedProject.start_date &&
-            `${t('startDate')}: ${formatDate(new Date(selectedProject.start_date))}`}
+            `${t('startDate', { defaultValue: 'Start date' })}: ${formatDate(new Date(selectedProject.start_date))}`}
           {selectedProject.end_date && (
             <>
               <br />
-              {`${t('endDate')}: ${formatDate(new Date(selectedProject.end_date))}`}
+              {`${t('endDate', { defaultValue: 'End date' })}: ${formatDate(new Date(selectedProject.end_date))}`}
             </>
           )}
         </Typography.Text>
@@ -371,7 +370,7 @@ const ProjectViewHeader = memo(() => {
 
     // Refresh button
     actions.push(
-      <Tooltip key="refresh" title={t('refreshTooltip')}>
+      <Tooltip key="refresh" title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
         <Button
           shape="circle"
           icon={<SyncOutlined spin={loadingGroups} />}
@@ -383,7 +382,7 @@ const ProjectViewHeader = memo(() => {
     // Save as template (owner/admin/team lead only)
     if (isOwnerOrAdmin) {
       actions.push(
-        <Tooltip key="template" title={t('saveAsTemplateTooltip')}>
+        <Tooltip key="template" title={t('saveAsTemplateTooltip', { defaultValue: 'Save this project as a template' })}>
           <Button shape="circle" icon={<SaveOutlined />} onClick={handleSaveAsTemplate} />
         </Tooltip>
       );
@@ -391,7 +390,7 @@ const ProjectViewHeader = memo(() => {
 
     // Settings button
     actions.push(
-      <Tooltip key="settings" title={t('settingsTooltip')}>
+      <Tooltip key="settings" title={t('settingsTooltip', { defaultValue: 'Open project settings' })}>
         <Button shape="circle" icon={<SettingOutlined />} onClick={handleSettingsClick} />
       </Tooltip>
     );
@@ -400,7 +399,7 @@ const ProjectViewHeader = memo(() => {
     actions.push(
       <Tooltip
         key="subscribe"
-        title={selectedProject?.subscribed ? t('unsubscribeTooltip') : t('subscribeTooltip')}
+        title={selectedProject?.subscribed ? t('unsubscribeTooltip', { defaultValue: 'Unsubscribe from project notifications' }) : t('subscribeTooltip', { defaultValue: 'Subscribe to project notifications' })}
       >
         <Button
           shape="round"
@@ -408,7 +407,7 @@ const ProjectViewHeader = memo(() => {
           icon={selectedProject?.subscribed ? <BellFilled /> : <BellOutlined />}
           onClick={handleSubscribe}
         >
-          {selectedProject?.subscribed ? t('unsubscribe') : t('subscribe')}
+          {selectedProject?.subscribed ? t('unsubscribe', { defaultValue: 'Unsubscribe' }) : t('subscribe', { defaultValue: 'Subscribe' })}
         </Button>
       </Tooltip>
     );
@@ -416,10 +415,10 @@ const ProjectViewHeader = memo(() => {
     // Invite button (owner/admin/team lead/project manager only)
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
-        <Tooltip key="invite-tooltip" title={t('inviteTooltip')}>
-          <Button key="invite" type="primary" icon={<ShareAltOutlined />} onClick={handleInvite}>
-            {t('share')}
-          </Button>
+        <Tooltip key="invite-tooltip" title={t('inviteTooltip', { defaultValue: 'Invite team members to this project' })}>
+            <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
+              {t('invite', { defaultValue: 'Invite' })}
+            </Button>
         </Tooltip>
       );
     }
@@ -427,7 +426,7 @@ const ProjectViewHeader = memo(() => {
     // Create task button
     if (isOwnerOrAdmin) {
       actions.push(
-        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip')}>
+        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}>
           <Dropdown.Button
             key="create-task-dropdown"
             loading={creatingTask}
@@ -437,13 +436,13 @@ const ProjectViewHeader = memo(() => {
             trigger={['click']}
             onClick={handleCreateTask}
           >
-            <EditOutlined /> {t('createTask')}
+            <EditOutlined /> {t('createTask', { defaultValue: 'Create task' })}
           </Dropdown.Button>
         </Tooltip>
       );
     } else {
       actions.push(
-        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip')}>
+        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}>
           <Button
             key="create-task"
             loading={creatingTask}
@@ -451,7 +450,7 @@ const ProjectViewHeader = memo(() => {
             icon={<EditOutlined />}
             onClick={handleCreateTask}
           >
-            {t('createTask')}
+            {t('createTask', { defaultValue: 'Create task' })}
           </Button>
         </Tooltip>
       );
@@ -483,7 +482,7 @@ const ProjectViewHeader = memo(() => {
   const pageHeaderTitle = useMemo(
     () => (
       <Flex gap={4} align="center">
-        <Tooltip title={t('navigateBackTooltip')}>
+        <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
             style={{ fontSize: 16, cursor: 'pointer' }}
             onClick={handleNavigateToProjects}
