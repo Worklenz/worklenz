@@ -111,6 +111,18 @@ const ProjectViewHeader = memo(() => {
       case 'board':
         dispatch(fetchEnhancedKanbanGroups(projectId));
         break;
+      case 'workload':
+        // Trigger workload refresh via timestamp
+        dispatch(setRefreshTimestamp());
+        break;
+      case 'roadmap':
+        // Trigger roadmap refresh via timestamp
+        dispatch(setRefreshTimestamp());
+        break;
+      case 'finance':
+        // Finance already listens to refreshTimestamp, but make it explicit
+        dispatch(setRefreshTimestamp());
+        break;
       case 'project-insights-member-overview':
       case 'all-attachments':
       case 'members':
