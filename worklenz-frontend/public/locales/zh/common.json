@@ -48,5 +48,11 @@
   "license-badge-today": "最后一天！",
   "license-badge-hours": "剩余{{hours}}小时",
   "business-plan-upgrade": "升级到商业版以访问此功能",
-  "upgrade-plan": "升级您的计划以访问此功能"
+  "upgrade-plan": "升级您的计划以访问此功能",
+  "bizPlan": {
+    "title": "新功能：商业版",
+    "desc": "解锁高级报告、工作负载、客户门户等功能。",
+    "learnMore": "了解更多",
+    "dismiss": "关闭"
+  }
 }

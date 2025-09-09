@@ -48,5 +48,11 @@
   "license-badge-today": "Último dia!",
   "license-badge-hours": "{{hours}}h restantes",
   "business-plan-upgrade": "Atualize para o plano Business para acessar este recurso",
-  "upgrade-plan": "Atualize seu plano para acessar este recurso"
+  "upgrade-plan": "Atualize seu plano para acessar este recurso",
+  "bizPlan": {
+    "title": "Novo: Plano Business",
+    "desc": "Desbloqueie relatórios avançados, carga de trabalho, portal do cliente e muito mais.",
+    "learnMore": "Saiba mais",
+    "dismiss": "Dispensar"
+  }
 }

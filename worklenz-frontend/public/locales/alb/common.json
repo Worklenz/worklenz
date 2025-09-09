@@ -48,5 +48,11 @@
   "license-badge-today": "Dita e fundit!",
   "license-badge-hours": "{{hours}} orë të mbetura",
   "business-plan-upgrade": "Përmirësoni në planin Business për të aksesuar këtë veçori",
-  "upgrade-plan": "Përmirësoni planin tuaj për të aksesuar këtë veçori"
+  "upgrade-plan": "Përmirësoni planin tuaj për të aksesuar këtë veçori",
+  "bizPlan": {
+    "title": "E re: Plani Business",
+    "desc": "Shkyçni raportim të avancuar, ngarkesë pune, portalin e klientit dhe më shumë.",
+    "learnMore": "Mëso më shumë",
+    "dismiss": "Hidhe"
+  }
 }

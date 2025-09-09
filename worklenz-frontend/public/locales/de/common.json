@@ -58,5 +58,11 @@
   "license-badge-today": "Letzter Tag!",
   "license-badge-hours": "{{hours}}h übrig",
   "business-plan-upgrade": "Auf Business-Plan upgraden, um auf diese Funktion zuzugreifen",
-  "upgrade-plan": "Upgraden Sie Ihren Plan, um auf diese Funktion zuzugreifen"
+  "upgrade-plan": "Upgraden Sie Ihren Plan, um auf diese Funktion zuzugreifen",
+  "bizPlan": {
+    "title": "Neu: Business-Plan",
+    "desc": "Erweiterte Berichte, Arbeitslast, Client-Portal und mehr freischalten.",
+    "learnMore": "Mehr erfahren",
+    "dismiss": "Verwerfen"
+  }
 }
