@@ -135,7 +135,9 @@ const UpgradePlans = () => {
     getPriceLabel, 
     getEffectivePricingModel,
     getPerUserMonthlyPrice,
-    getPerUserAnnualPrice
+    getPerUserAnnualPrice,
+    calculateOriginalMonthlyTotal,
+    calculateOriginalAnnualTotal
   } = usePricingCalculations(teamSize, pricingData, isAppSumoUser);
 
   // Show a constant "Up to 30% off" label regardless of team size/plan selection
@@ -951,11 +953,6 @@ const UpgradePlans = () => {
         </Typography.Title>
       </Flex>
 
-      {/* AppSumo User Notification */}
-      {isAppSumoUser && appSumoDiscountInfo && (
-        <AppSumoAlert appSumoDiscountInfo={appSumoDiscountInfo} />
-      )}
-
       {/* Team Size Input and Billing Frequency Toggle */}
       <PlanSelectionControls
         teamSize={teamSize}
@@ -1133,6 +1130,8 @@ const UpgradePlans = () => {
                     billingFrequency={billingFrequency}
                     label={getPriceLabel('business')}
                     isAppSumoUser={isAppSumoUser}
+                    originalMonthlyPrice={calculateOriginalMonthlyTotal('business')}
+                    originalAnnualPrice={calculateOriginalAnnualTotal('business')}
                   />
                 }
                 selectedPlanType={selectedPlanType}
@@ -1175,6 +1174,8 @@ const UpgradePlans = () => {
                     billingFrequency={billingFrequency}
                     label={getPriceLabel('enterprise')}
                     isAppSumoUser={isAppSumoUser}
+                    originalMonthlyPrice={calculateOriginalMonthlyTotal('enterprise')}
+                    originalAnnualPrice={calculateOriginalAnnualTotal('enterprise')}
                   />
                 }
                 selectedPlanType={selectedPlanType}
@@ -1207,7 +1208,6 @@ const UpgradePlans = () => {
           <Alert message={paddleError} type="error" showIcon />
         </Row>
       )}
-      {/* Removed global action button in favor of per-card buttons */}
     </div>
   );
 };

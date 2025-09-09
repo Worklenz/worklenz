@@ -93,6 +93,9 @@ export const usePricingCalculations = (
       // Handle AppSumo promo plans first
       if (isAppSumoUser && planData?.pricing_model?.startsWith('promo_')) {
         finalPrice = parseFloat(planData.annual_base_price || '0');
+        if (!finalPrice && planData.monthly_base_price) {
+          finalPrice = parseFloat(planData.monthly_base_price) * 12;
+        }
         return finalPrice.toFixed(2);
       }
 
@@ -217,6 +220,31 @@ export const usePricingCalculations = (
     [teamSize, pricingData]
   );
 
+  // Calculate original pricing (before 50% AppSumo discount) for strikethrough display
+  const calculateOriginalMonthlyTotal = useCallback(
+    (planType: 'pro' | 'business' | 'enterprise') => {
+      if (!isAppSumoUser) return null;
+      
+      // For AppSumo users, calculate what the price would be without the 50% discount
+      const discountedPrice = parseFloat(calculateMonthlyTotal(planType));
+      const originalPrice = discountedPrice * 2; // Reverse the 50% discount
+      return originalPrice.toFixed(2);
+    },
+    [isAppSumoUser, calculateMonthlyTotal]
+  );
+
+  const calculateOriginalAnnualTotal = useCallback(
+    (planType: 'pro' | 'business' | 'enterprise') => {
+      if (!isAppSumoUser) return null;
+      
+      // For AppSumo users, calculate what the price would be without the 50% discount
+      const discountedPrice = parseFloat(calculateAnnualTotal(planType));
+      const originalPrice = discountedPrice * 2; // Reverse the 50% discount
+      return originalPrice.toFixed(2);
+    },
+    [isAppSumoUser, calculateAnnualTotal]
+  );
+
   return {
     calculateMonthlyTotal,
     calculateAnnualTotal,
@@ -224,5 +252,7 @@ export const usePricingCalculations = (
     getEffectivePricingModel,
     getPerUserMonthlyPrice,
     getPerUserAnnualPrice,
+    calculateOriginalMonthlyTotal,
+    calculateOriginalAnnualTotal,
   };
 };

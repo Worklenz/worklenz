@@ -13,7 +13,9 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
   billingFrequency,
   label, 
   subtitle, 
-  isAppSumoUser 
+  isAppSumoUser,
+  originalMonthlyPrice,
+  originalAnnualPrice
 }) => {
   const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -21,6 +23,7 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
   // Theme-aware colors
   const textColor = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.65)';
   const labelColor = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
+  const strikethroughColor = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)';
   
   // Determine which pricing to show based on billing frequency
   const isAnnual = billingFrequency === 'annual';
@@ -50,42 +53,121 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
   
   return (
   <div style={{ textAlign: 'center', marginBottom: 24 }}>
-    {/* Show monthly price on top (or annual-to-monthly equivalent when annual), and annual total beneath */}
     {perUserMonthlyPrice ? (
+      // Per-user pricing display
       <>
-        <Typography.Title level={1} style={{ fontSize: PRICE_FONT_SIZE, margin: 0 }}>
-          ${isAnnual ? (perUserAnnualPrice ?? computedAnnualMonthly) : (monthlyNumeric !== undefined ? monthlyNumeric.toFixed(2) : perUserMonthlyPrice)}
-        </Typography.Title>
-        <Typography.Text style={{ fontSize: '16px', marginBottom: '8px', display: 'block', color: labelColor }}>
-          {t('pricing-modal:pricing.perUser')} {t('pricing-modal:pricing.perMonth')}
-        </Typography.Text>
-
-        <Typography.Text style={{ fontSize: '18px', fontWeight: 'bold', color: labelColor, display: 'block', marginBottom: '4px' }}>
-          ${displayedAnnualTotal} {t('pricing-modal:billing.perYear', '/year')}
-        </Typography.Text>
-
-        <Typography.Text style={{ fontSize: '14px', color: textColor, display: 'block' }}>
-          {t('pricing-modal:billing.billedAnnually', 'billed annually')}
-        </Typography.Text>
-        {/* Savings now shown near billing toggle only */}
+        {isAnnual ? (
+          // Annual billing - show annual pricing only
+          <>
+            {/* Show strikethrough original annual price for AppSumo users */}
+            {isAppSumoUser && originalAnnualPrice && (
+              <Typography.Text 
+                style={{ 
+                  fontSize: '18px', 
+                  color: strikethroughColor, 
+                  textDecoration: 'line-through',
+                  display: 'block',
+                  marginBottom: '4px'
+                }}
+              >
+                ${originalAnnualPrice} {t('pricing-modal:billing.perYear', '/year')}
+              </Typography.Text>
+            )}
+            
+            <Typography.Title level={1} style={{ fontSize: PRICE_FONT_SIZE, margin: 0 }}>
+              ${displayedAnnualTotal}
+            </Typography.Title>
+            <Typography.Text style={{ fontSize: '16px', marginBottom: '8px', display: 'block', color: labelColor }}>
+              {t('pricing-modal:billing.perYear', '/year')}
+            </Typography.Text>
+            <Typography.Text style={{ fontSize: '14px', color: textColor, display: 'block' }}>
+              {t('pricing-modal:billing.billedAnnually', 'billed annually')}
+            </Typography.Text>
+          </>
+        ) : (
+          // Monthly billing - show monthly pricing only
+          <>
+            {/* Show strikethrough original monthly price for AppSumo users */}
+            {isAppSumoUser && originalMonthlyPrice && (
+              <Typography.Text 
+                style={{ 
+                  fontSize: '18px', 
+                  color: strikethroughColor, 
+                  textDecoration: 'line-through',
+                  display: 'block',
+                  marginBottom: '4px'
+                }}
+              >
+                ${originalMonthlyPrice} {t('pricing-modal:billing.perMonth', '/month')}
+              </Typography.Text>
+            )}
+            
+            <Typography.Title level={1} style={{ fontSize: PRICE_FONT_SIZE, margin: 0 }}>
+              ${monthlyNumeric !== undefined ? monthlyNumeric.toFixed(2) : perUserMonthlyPrice}
+            </Typography.Title>
+            <Typography.Text style={{ fontSize: '16px', marginBottom: '8px', display: 'block', color: labelColor }}>
+              {t('pricing-modal:pricing.perUser')} {t('pricing-modal:billing.perMonth', '/month')}
+            </Typography.Text>
+          </>
+        )}
       </>
     ) : (
+      // Base plan pricing display
       <>
-        <Typography.Title level={1} style={{ fontSize: PRICE_FONT_SIZE, margin: 0 }}>
-          ${isAnnual ? (computedAnnualMonthly ?? (monthlyNumeric !== undefined ? monthlyNumeric.toFixed(2) : monthlyPrice)) : (monthlyNumeric !== undefined ? monthlyNumeric.toFixed(2) : monthlyPrice)}
-        </Typography.Title>
-        <Typography.Text style={{ fontSize: '16px', marginBottom: '8px', display: 'block', color: labelColor }}>
-          {t('pricing-modal:billing.perMonth', '/month')}
-        </Typography.Text>
-
-        <Typography.Text style={{ fontSize: '18px', fontWeight: 'bold', color: labelColor, display: 'block', marginBottom: '4px' }}>
-          ${displayedAnnualTotal} {t('pricing-modal:billing.perYear', '/year')}
-        </Typography.Text>
-
-        <Typography.Text style={{ fontSize: '14px', color: textColor, display: 'block' }}>
-          {t('pricing-modal:billing.billedAnnually', 'billed annually')}
-        </Typography.Text>
-        {/* Savings now shown near billing toggle only */}
+        {isAnnual ? (
+          // Annual billing - show annual pricing only
+          <>
+            {/* Show strikethrough original annual price for AppSumo users */}
+            {isAppSumoUser && originalAnnualPrice && (
+              <Typography.Text 
+                style={{ 
+                  fontSize: '18px', 
+                  color: strikethroughColor, 
+                  textDecoration: 'line-through',
+                  display: 'block',
+                  marginBottom: '4px'
+                }}
+              >
+                ${originalAnnualPrice} {t('pricing-modal:billing.perYear', '/year')}
+              </Typography.Text>
+            )}
+            
+            <Typography.Title level={1} style={{ fontSize: PRICE_FONT_SIZE, margin: 0 }}>
+              ${displayedAnnualTotal}
+            </Typography.Title>
+            <Typography.Text style={{ fontSize: '16px', marginBottom: '8px', display: 'block', color: labelColor }}>
+              {t('pricing-modal:billing.perYear', '/year')}
+            </Typography.Text>
+            <Typography.Text style={{ fontSize: '14px', color: textColor, display: 'block' }}>
+              {t('pricing-modal:billing.billedAnnually', 'billed annually')}
+            </Typography.Text>
+          </>
+        ) : (
+          // Monthly billing - show monthly pricing only
+          <>
+            {/* Show strikethrough original monthly price for AppSumo users */}
+            {isAppSumoUser && originalMonthlyPrice && (
+              <Typography.Text 
+                style={{ 
+                  fontSize: '18px', 
+                  color: strikethroughColor, 
+                  textDecoration: 'line-through',
+                  display: 'block',
+                  marginBottom: '4px'
+                }}
+              >
+                ${originalMonthlyPrice} {t('pricing-modal:billing.perMonth', '/month')}
+              </Typography.Text>
+            )}
+            
+            <Typography.Title level={1} style={{ fontSize: PRICE_FONT_SIZE, margin: 0 }}>
+              ${monthlyNumeric !== undefined ? monthlyNumeric.toFixed(2) : monthlyPrice}
+            </Typography.Title>
+            <Typography.Text style={{ fontSize: '16px', marginBottom: '8px', display: 'block', color: labelColor }}>
+              {t('pricing-modal:billing.perMonth', '/month')}
+            </Typography.Text>
+          </>
+        )}
       </>
     )}
     

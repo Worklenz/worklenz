@@ -56,6 +56,8 @@ export interface PlanPriceDisplayProps {
   label: string;
   subtitle?: React.ReactNode;
   isAppSumoUser?: boolean;
+  originalMonthlyPrice?: string | null;
+  originalAnnualPrice?: string | null;
 }
 
 export interface PlanCardProps {
