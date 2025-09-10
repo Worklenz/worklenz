@@ -443,9 +443,9 @@ const UpgradePlans = () => {
         // Filter tiers for AppSumo users - show only Business and Enterprise plans
         let filteredTiers = tiers;
         if (isAppSumoUser) {
-          // Check if current date is before September 10th, 2025
+          // Check if current date is before September 15th, 2025
           const currentDate = new Date();
-          const promoEndDate = new Date('2025-09-10');
+          const promoEndDate = new Date('2025-09-15');
           const isPromoActive = currentDate < promoEndDate;
 
           if (isPromoActive) {
