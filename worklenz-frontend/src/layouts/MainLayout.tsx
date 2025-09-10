@@ -11,15 +11,35 @@ import { TrialExpirationAlert } from '@/components/TrialExpirationAlert/TrialExp
 import UpgradePlans from '@/components/admin-center/billing/drawers/upgrade-plans/UpgradePlans';
 // import UpgradePlansLKR from '@/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useAuthService } from '../hooks/useAuth';
 
 const MainLayout = memo(() => {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const { isUpgradeModalOpen } = useAppSelector(state => state.adminCenterReducer);
+  const { isUpgradeModalOpen, billingInfo } = useAppSelector(state => state.adminCenterReducer);
+  const currentSession = useAuthService().getCurrentSession();
   const location = useLocation();
 
   // Get browser timezone for upgrade plans
   const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Determine if user is AppSumo user for modal width
+  const isAppSumoUser = useMemo(() => {
+    const planName = billingInfo?.plan_name?.toLowerCase() || '';
+    const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
+    
+    // First check if user is on trial - trial users should never be considered AppSumo users
+    if (currentSession?.subscription_type === 'TRIAL') {
+      return false;
+    }
+    
+    return (
+      planName.includes('appsumo') ||
+      subscriptionType.includes('appsumo') ||
+      planName.includes('life_time_deal') ||
+      subscriptionType.includes('life_time_deal')
+    );
+  }, [billingInfo, currentSession]);
 
   const isProjectView =
     (location.pathname.includes('/projects/') && !location.pathname.endsWith('/projects')) ||
@@ -63,7 +83,7 @@ const MainLayout = memo(() => {
       <Modal
         open={isUpgradeModalOpen}
         onCancel={() => dispatch(toggleUpgradeModal())}
-        width={1400}
+        width={isAppSumoUser ? 900 : 1400}
         centered
         okButtonProps={{ hidden: true }}
         cancelButtonProps={{ hidden: true }}

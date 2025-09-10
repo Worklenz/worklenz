@@ -35,7 +35,7 @@ import { WarningTwoTone, PlusOutlined } from '@/shared/antd-imports';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDate } from '@/utils/timeUtils';
 // import UpgradePlansLKR from '../drawers/upgrade-plans-lkr/upgrade-plans-lkr';
-import UpgradePlans from '../drawers/upgrade-plans/UpgradePlans';
+// UpgradePlans modal is now handled globally in MainLayout.tsx
 import { ISUBSCRIPTION_TYPE, SUBSCRIPTION_STATUS } from '@/shared/constants';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
 import { useAuthService } from '@/hooks/useAuth';
@@ -189,6 +189,16 @@ const CurrentPlanDetails = () => {
   useEffect(() => {
     setSelectedSeatCount(getDefaultSeatCount);
   }, [getDefaultSeatCount]);
+
+  // Handle query parameter to open upgrade modal from email links
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'upgrade-plans') {
+      dispatch(toggleUpgradeModal());
+      // Clean up URL to remove the query parameter
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    }
+  }, [dispatch]);
 
   const checkSubscriptionStatus = useCallback(
     (allowedStatuses: string[]) => {
@@ -604,18 +614,6 @@ const CurrentPlanDetails = () => {
             <RedeemCodeDrawer />
           </>
         )}
-        <Modal
-          open={isUpgradeModalOpen}
-          onCancel={() => dispatch(toggleUpgradeModal())}
-          width={isAppSumoUser ? 900 : 1400}
-          centered
-          okButtonProps={{ hidden: true }}
-          cancelButtonProps={{ hidden: true }}
-        >
-          {/* LKR pricing disabled for now - always show main upgrade plans */}
-          <UpgradePlans />
-          {/* {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />} */}
-        </Modal>
 
         <Modal
           title={t('addMoreSeats')}
