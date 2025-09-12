@@ -513,7 +513,13 @@ const ProjectList: React.FC = () => {
         newParams.index !== groupedRequestParams.index ||
         newParams.size !== groupedRequestParams.size
       ) {
-        dispatch(setGroupedRequestParams(newParams));
+        const updatedParams = {
+          ...groupedRequestParams,
+          ...newParams,
+        };
+        dispatch(setGroupedRequestParams(updatedParams));
+        // Trigger API call with new pagination parameters
+        dispatch(fetchGroupedProjects(updatedParams));
       }
     },
     [dispatch, groupedRequestParams]
