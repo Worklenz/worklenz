@@ -10,7 +10,6 @@ import {
   evt_settings_language_and_region_visit,
   evt_settings_language_changed,
 } from '@/shared/worklenz-analytics-events';
-import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import { timezonesApiService } from '@/api/settings/language-timezones/language-timezones-api.service';
 import { ITimezone } from '@/types/settings/timezone.types';
 import logger from '@/utils/errorLogger';
@@ -21,7 +20,7 @@ import { setUser } from '@/features/user/userSlice';
 
 const LanguageAndRegionSettings = () => {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation('settings/language');
+  const { t, ready } = useTranslation('settings/language');
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { lng } = useAppSelector(state => state.localesReducer);
   const [timezones, setTimezones] = useState<ITimezone[]>([]);
@@ -111,7 +110,7 @@ const LanguageAndRegionSettings = () => {
 
   return (
     <Card style={{ width: '100%' }}>
-      {!loadingTimezones ? (
+      {!loadingTimezones && ready ? (
         <Form
           layout="vertical"
           style={{ width: '100%', maxWidth: 350 }}
