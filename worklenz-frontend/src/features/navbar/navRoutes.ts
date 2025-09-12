@@ -4,6 +4,7 @@ export type NavRoutesType = {
   adminOnly: boolean;
   freePlanFeature?: boolean;
   businessPlanRequired?: boolean;
+  selfHostedExcluded?: boolean;
 };
 
 export const navRoutes: NavRoutesType[] = [
@@ -37,5 +38,6 @@ export const navRoutes: NavRoutesType[] = [
     adminOnly: true,
     freePlanFeature: false,
     businessPlanRequired: true,
+    selfHostedExcluded: true,
   },
 ];

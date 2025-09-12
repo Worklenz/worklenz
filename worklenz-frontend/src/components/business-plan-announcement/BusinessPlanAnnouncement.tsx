@@ -6,6 +6,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { StarOutlined, CloseOutlined, LockOutlined } from '@ant-design/icons';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 const STORAGE_KEY = 'wlz_bizplan_announce_seen_v1';
 const SNOOZE_KEY = 'wlz_bizplan_announce_snooze_until_v1';
@@ -88,13 +89,19 @@ export const BusinessPlanAnnouncement = () => {
     if (!isOwnerOrAdmin) return;
     if (getHasSeen()) return;
     
+    // Don't show notification for self-hosted users
+    const currentSession = authService.getCurrentSession();
+    if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED) return;
+    
     // Don't show notification after end date
     if (Date.now() > END_DATE) return;
 
     const snoozeUntil = getSnoozeUntil();
     if (snoozeUntil && Date.now() < snoozeUntil) return;
 
-    const key = 'bizplan_announcement';
+    // Add a delay before showing the notification (3 seconds)
+    const timeoutId = setTimeout(() => {
+      const key = 'bizplan_announcement';
 
     const onLearnMore = () => {
       markSeen();
@@ -392,7 +399,13 @@ export const BusinessPlanAnnouncement = () => {
         minWidth: '320px'
       }
     });
-  }, [dispatch, isOwnerOrAdmin, t, token, themeStyles]);
+    }, 10000); // 3 second delay
+
+    // Cleanup timeout on unmount or dependency change
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [dispatch, isOwnerOrAdmin, t, token, themeStyles, authService]);
 
   return null;
 };

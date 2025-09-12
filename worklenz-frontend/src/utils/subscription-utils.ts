@@ -3,7 +3,7 @@ import { ILocalSession } from '@/types/auth/local-session.types';
 
 /**
  * Checks if user has access to business features (client portal, project finance)
- * PADDLE users with business or enterprise plans and ANNUAL_BUSINESS users have access
+ * PADDLE users with business or enterprise plans, ANNUAL_BUSINESS users, and SELF_HOSTED users have access
  * Excludes lifetime deal users and other subscription types
  */
 export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean => {
@@ -11,6 +11,11 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
 
   // ANNUAL_BUSINESS subscription type qualifies
   if (session.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS) {
+    return true;
+  }
+
+  // SELF_HOSTED users have the same privileges as business plan users
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED) {
     return true;
   }
 
@@ -35,6 +40,11 @@ export const isBusinessPlan = (session: ILocalSession | null): boolean => {
     return true;
   }
 
+  // SELF_HOSTED users are considered to have business plan privileges
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED) {
+    return true;
+  }
+
   if (session.subscription_type !== ISUBSCRIPTION_TYPE.PADDLE) {
     return false;
   }
@@ -48,6 +58,11 @@ export const isBusinessPlan = (session: ILocalSession | null): boolean => {
  */
 export const isEnterprisePlan = (session: ILocalSession | null): boolean => {
   if (!session) return false;
+
+  // SELF_HOSTED users are considered to have enterprise plan privileges
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED) {
+    return true;
+  }
 
   if (session.subscription_type !== ISUBSCRIPTION_TYPE.PADDLE) {
     return false;
@@ -84,6 +99,8 @@ export const getSubscriptionPlanType = (session: ILocalSession | null): string =
       return 'Credit';
     case ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS:
       return 'Annual Business';
+    case ISUBSCRIPTION_TYPE.SELF_HOSTED:
+      return 'Self Hosted';
     case ISUBSCRIPTION_TYPE.PADDLE:
       const planName = session.plan_name?.toLowerCase() || '';
       if (planName.includes('business')) return 'Business';

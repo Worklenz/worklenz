@@ -20,7 +20,14 @@ import PointOptionsObject from "../point-options-object";
 import moment from "moment";
 
 export default class ReportingOverviewBase extends ReportingControllerBase {
-  protected static async getTeamsCounts(teamId: string | null, archivedQuery = "") {
+  protected static async getTeamsCounts(teamId: string | null, archivedQuery = "", req?: any) {
+    // Add project filtering for Team Leads
+    let projectFilterClause = "";
+    if (req) {
+      projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+      // Replace 'p.id' with 'projects.id' for this query context
+      projectFilterClause = projectFilterClause.replace('p.id', 'projects.id');
+    }
 
     const q = `
     WITH team_count AS (
@@ -31,7 +38,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     project_count AS (
         SELECT COUNT(*) AS count
         FROM projects
-        WHERE in_organization(team_id, $1) ${archivedQuery}
+        WHERE in_organization(team_id, $1) ${archivedQuery} ${projectFilterClause}
     ),
     team_member_count AS (
         SELECT COUNT(DISTINCT email) AS count
@@ -54,19 +61,27 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     };
   }
 
-  protected static async getProjectsCounts(teamId: string | null, archivedQuery = "") {
+  protected static async getProjectsCounts(teamId: string | null, archivedQuery = "", req?: any) {
+    // Add project filtering for Team Leads
+    let projectFilterClause = "";
+    if (req) {
+      projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+      // Replace 'p.id' with 'projects.id' for this query context
+      projectFilterClause = projectFilterClause.replace('p.id', 'projects.id');
+    }
+
     const q = `
       SELECT JSON_BUILD_OBJECT(
                'active_projects', (SELECT COUNT(*)
                                    FROM projects
                                    WHERE in_organization(team_id, $1) AND (end_date > CURRENT_TIMESTAMP
-                                      OR end_date IS NULL) ${archivedQuery}),
+                                      OR end_date IS NULL) ${archivedQuery} ${projectFilterClause}),
                'overdue_projects', (SELECT COUNT(*)
                                     FROM projects
                                     WHERE in_organization(team_id, $1)
                                       AND end_date < CURRENT_TIMESTAMP
                                       AND status_id NOT IN
-                                          (SELECT id FROM sys_project_statuses WHERE name = 'Completed') ${archivedQuery})
+                                          (SELECT id FROM sys_project_statuses WHERE name = 'Completed') ${archivedQuery} ${projectFilterClause})
                ) AS counts;
     `;
 

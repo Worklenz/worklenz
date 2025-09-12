@@ -77,10 +77,12 @@ const Navbar = () => {
   const navlinkItems = useMemo(() => {
     const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
     const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
+    const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
 
     return navRoutesList
       .filter(route => {
         if (route.adminOnly && !isOwnerOrAdmin) return false;
+        if (route.selfHostedExcluded && isSelfHosted) return false;
         return true;
       })
       .map((route, index) => {
