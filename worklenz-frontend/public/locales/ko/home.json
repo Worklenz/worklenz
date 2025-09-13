@@ -41,6 +41,22 @@
     "list": "목록",
     "calendar": "달력",
     "tasks": "작업",
-    "refresh": "새로 고치다"
+    "refresh": "새로 고치다",
+    "recentActivity": "최근 활동",
+    "recentTasks": "최근 작업",
+    "recentTasksSegment": "최근 작업",
+    "timeLogged": "기록된 시간",
+    "timeLoggedSegment": "기록된 시간",
+    "noRecentTasks": "최근 작업이 없습니다",
+    "noTimeLoggedTasks": "시간이 기록된 작업이 없습니다",
+    "activityTag": "활동",
+    "timeLogTag": "시간 기록",
+    "timerTag": "타이머",
+    "activitySingular": "활동",
+    "activityPlural": "활동들",
+    "recentTaskAriaLabel": "최근 작업:",
+    "timeLoggedTaskAriaLabel": "시간 기록 작업:",
+    "errorLoadingRecentTasks": "최근 작업 로딩 오류",
+    "errorLoadingTimeLoggedTasks": "시간 기록 작업 로딩 오류"
   }
 }
