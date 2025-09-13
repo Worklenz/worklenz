@@ -1,0 +1,34 @@
+{
+  "noTasksInGroup": "이 그룹에는 작업이 없습니다",
+  "noTasksInGroupDescription": "시작하려면 작업을 추가하십시오",
+  "addFirstTask": "첫 번째 작업을 추가하십시오",
+  "openTask": "열려 있는",
+  "subtask": "하위 태스크",
+  "subtasks": "하위 작업",
+  "comment": "논평",
+  "comments": "의견",
+  "attachment": "부착",
+  "attachments": "첨부 파일",
+  "enterSubtaskName": "하위 작업 이름을 입력하십시오 ...",
+  "add": "추가하다",
+  "cancel": "취소",
+  "renameGroup": "이름을 바꾸십시오",
+  "renameStatus": "이름을 바꾸십시오",
+  "renamePhase": "이름 바꾸기 단계",
+  "changeCategory": "범주 변경",
+  "clickToEditGroupName": "그룹 이름을 편집하려면 클릭하십시오",
+  "enterGroupName": "그룹 이름을 입력하십시오",
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} 하위 작업",
+      "subtasks_plural": "{{count}} 하위 작업",
+      "comments": "{{count}} 주석",
+      "comments_plural": "{{count}} 주석",
+      "attachments": "{{count}} 첨부 파일",
+      "attachments_plural": "{{count}} 첨부 파일",
+      "subscribers": "작업에는 가입자가 있습니다",
+      "dependencies": "작업에는 종속성이 있습니다",
+      "recurring": "반복되는 과제"
+    }
+  }
+}

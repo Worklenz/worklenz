@@ -1,0 +1,16 @@
+{
+  "title": "팀",
+  "team": "팀",
+  "teams": "팀",
+  "name": "이름",
+  "created": "생성",
+  "ownsBy": "소유합니다",
+  "edit": "편집하다",
+  "editTeam": "편집 팀",
+  "pinTooltip": "이것을 메인 메뉴에 고정하려면 클릭하십시오",
+  "editTeamName": "팀 이름 편집",
+  "updateName": "업데이트 이름",
+  "namePlaceholder": "이름",
+  "nameRequired": "이름을 입력하십시오",
+  "updateFailed": "팀 이름 변경이 실패했습니다!"
+}
