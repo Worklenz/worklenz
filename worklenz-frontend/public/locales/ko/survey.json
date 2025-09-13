@@ -1,0 +1,14 @@
+{
+  "modalTitle": "경험 개선에 도움을 주세요",
+  "skip": "지금은 건너뛰기",
+  "previous": "이전",
+  "next": "다음",
+  "completeSurvey": "설문조사 완료",
+  "submitting": "응답을 제출하는 중...",
+  "submitSuccessTitle": "감사합니다!",
+  "submitSuccessSubtitle": "귀하의 피드백은 모든 사람을 위해 Worklenz를 개선하는 데 도움이 됩니다.",
+  "submitSuccessMessage": "설문조사를 완료해 주셔서 감사합니다!",
+  "submitErrorMessage": "설문조사 제출에 실패했습니다. 다시 시도해 주세요.",
+  "submitErrorLog": "설문조사 제출 실패",
+  "fetchErrorLog": "설문조사 가져오기 실패"
+}

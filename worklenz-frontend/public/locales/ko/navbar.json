@@ -18,6 +18,7 @@
   "profileTooltip": "프로필을 봅니다",
   "adminCenter": "관리 센터",
   "settings": "설정",
+  "deleteAccount": "계정 삭제",
   "logOut": "로그 아웃하십시오",
   "notificationsDrawer": {
     "read": "알림을 읽습니다",
