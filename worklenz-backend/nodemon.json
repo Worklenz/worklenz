@@ -1,0 +1,14 @@
+{
+  "watch": ["build"],
+  "ext": "js",
+  "ignore": [
+    "build/**/*.map",
+    "build/**/*.tmp",
+    "build/public/**",
+    "build/views/**"
+  ],
+  "delay": "1000",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
