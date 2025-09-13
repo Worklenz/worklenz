@@ -1,4 +1,3 @@
-import moment from "moment";
 
 import {IWorkLenzRequest} from "../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../interfaces/worklenz-response";
@@ -11,6 +10,25 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 
 export default class SubTasksController extends WorklenzControllerBase {
+  @HandleExceptions()
+  public static async moveToParent(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { subtask_id, new_parent_task_id } = req.body as { subtask_id: string; new_parent_task_id: string };
+
+    if (!subtask_id || !new_parent_task_id)
+      return res.status(400).send(new ServerResponse(false, {}, "subtask_id and new_parent_task_id are required"));
+
+    const q = `
+      UPDATE tasks
+      SET parent_task_id = ($2)::UUID,
+          project_id = (SELECT project_id FROM tasks WHERE id = ($2)::UUID)
+      WHERE id = ($1)::UUID
+      RETURNING id;
+    `;
+
+    await db.query(q, [subtask_id, new_parent_task_id]);
+    return res.status(200).send(new ServerResponse(true, { message: "Subtask moved successfully" }));
+  }
+
   @HandleExceptions()
   public static async getNames(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `SELECT name FROM tasks WHERE archived IS FALSE AND parent_task_id = $1;`;

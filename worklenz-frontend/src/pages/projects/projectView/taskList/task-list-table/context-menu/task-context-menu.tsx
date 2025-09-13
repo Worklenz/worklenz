@@ -6,7 +6,7 @@ import {
   RetweetOutlined,
   UserAddOutlined,
 } from '@/shared/antd-imports';
-import { Badge, Dropdown, Flex, Typography, Modal } from '@/shared/antd-imports';
+import { Badge, Dropdown, Flex, Typography, Modal, Select, message } from '@/shared/antd-imports';
 import { MenuProps } from 'antd/lib';
 import { useState } from 'react';
 import { TFunction } from 'i18next';
@@ -35,7 +35,8 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { tasksApiService } from '@/api/tasks/tasks.api.service';
+import { tasksApiService, subTasksApiService } from '@/api/tasks/tasks.api.service';
+import { projectsApiService } from '@/api/projects/projects.api.service';
 
 type TaskContextMenuProps = {
   visible: boolean;
@@ -251,6 +252,85 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
     }
   };
 
+  const openMoveTaskToProjectModal = async () => {
+    try {
+      const res = await projectsApiService.getProjects(1, 100, null, null, '', null, null);
+      const projects = res.body?.data || [];
+      let selectedProjectId: string | undefined = undefined;
+
+      Modal.confirm({
+        title: 'Move Task to Project',
+        content: (
+          <Select
+            style={{ width: '100%' }}
+            placeholder="Select target project"
+            options={projects.map((p: any) => ({ label: p.name, value: p.id }))}
+            onChange={v => (selectedProjectId = v)}
+          />
+        ),
+        okText: 'Move',
+        onOk: async () => {
+          if (!selectedProjectId) {
+            message.error('Please select a project');
+            return Promise.reject();
+          }
+          if (!selectedTask?.id) return Promise.resolve();
+          const r = await tasksApiService.moveTaskToProject({
+            taskId: selectedTask.id,
+            targetProjectId: selectedProjectId,
+          });
+          if (r.done && projectId) {
+            dispatch(fetchTaskGroups(projectId));
+          }
+        },
+      });
+    } catch (e) {
+      logger.error('Failed to open move task modal', e);
+    }
+  };
+
+  const openMoveSubtaskModal = async () => {
+    try {
+      // Build list of candidate parent tasks from current groups
+      const parents: { id: string; name: string }[] = [];
+      taskGroups.forEach(g => {
+        g.tasks.forEach(t => {
+          if (t.id !== selectedTask.id) parents.push({ id: t.id!, name: t.name || t.id! });
+        });
+      });
+      let selectedParentId: string | undefined = undefined;
+
+      Modal.confirm({
+        title: 'Move Subtask to Parent Task',
+        content: (
+          <Select
+            style={{ width: '100%' }}
+            placeholder="Select new parent task"
+            options={parents.map(p => ({ label: p.name, value: p.id }))}
+            onChange={v => (selectedParentId = v)}
+          />
+        ),
+        okText: 'Move',
+        onOk: async () => {
+          if (!selectedParentId) {
+            message.error('Please select a parent task');
+            return Promise.reject();
+          }
+          if (!selectedTask?.id) return Promise.resolve();
+          const r = await subTasksApiService.moveSubtaskToParent({
+            subtaskId: selectedTask.id,
+            newParentTaskId: selectedParentId,
+          });
+          if (r.done && projectId) {
+            dispatch(fetchTaskGroups(projectId));
+          }
+        },
+      });
+    } catch (e) {
+      logger.error('Failed to open move subtask modal', e);
+    }
+  };
+
   const items: MenuProps['items'] = [
     {
       key: '1',
@@ -264,6 +344,21 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
       icon: <RetweetOutlined />,
       label: t('contextMenu.moveTo'),
       children: getMoveToOptions(),
+    },
+    // New move actions
+    {
+      key: 'move-project',
+      icon: <RetweetOutlined />,
+      label: 'Move task to project',
+      onClick: openMoveTaskToProjectModal,
+      disabled: !!selectedTask?.parent_task_id, // Only for top-level tasks
+    },
+    {
+      key: 'move-subtask',
+      icon: <RetweetOutlined />,
+      label: 'Move subtask to parent',
+      onClick: openMoveSubtaskModal,
+      disabled: !selectedTask?.parent_task_id, // Only for subtasks
     },
     ...(!selectedTask?.parent_task_id
       ? [
