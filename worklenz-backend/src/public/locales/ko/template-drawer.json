@@ -1,0 +1,19 @@
+{
+  "title": "작업 템플릿 편집",
+  "cancelText": "취소",
+  "saveText": "구하다",
+  "templateNameText": "템플릿 이름",
+  "selectedTasks": "선택된 작업",
+  "removeTask": "제거하다",
+  "description": "설명",
+  "phase": "단계",
+  "statuses": "상태",
+  "priorities": "우선 순위",
+  "labels": "라벨",
+  "tasks": "작업",
+  "noTemplateSelected": "템플릿이 선택되지 않았습니다",
+  "noDescription": "설명이 없습니다",
+  "worklenzTemplates": "Worklenz 템플릿",
+  "yourTemplatesLibrary": "당신의 도서관",
+  "searchTemplates": "검색 템플릿"
+}

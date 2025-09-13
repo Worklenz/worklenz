@@ -7,7 +7,7 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { humanFileSize, log_error, megabytesToBytes } from "../shared/utils";
-import { HTML_TAG_REGEXP, S3_URL } from "../shared/constants";
+import { HTML_TAG_REGEXP, S3_URL, getStorageUrl } from "../shared/constants";
 import { getBaseUrl } from "../cron_jobs/helpers";
 import { ICommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendTaskComment } from "../shared/email-notifications";
@@ -382,7 +382,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
   }
 
   private static async getTaskComments(taskId: string) {
-    const url = `${S3_URL}/${getRootDir()}`;
+    const url = `${getStorageUrl()}/${getRootDir()}`;
 
     const q = `SELECT task_comments.id,
                     tc.text_content AS content,
@@ -567,7 +567,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
     const commentId = data.id;
 
-    const url = `${S3_URL}/${getRootDir()}`;
+    const url = `${getStorageUrl()}/${getRootDir()}`;
 
     for (const attachment of attachments) {
       if (req.user?.subscription_status === "free" && req.user?.owner_id) {

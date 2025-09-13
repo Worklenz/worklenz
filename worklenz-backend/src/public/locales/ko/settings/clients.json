@@ -1,0 +1,22 @@
+{
+  "nameColumn": "이름",
+  "projectColumn": "프로젝트",
+  "noProjectsAvailable": "사용 가능한 프로젝트가 없습니다",
+  "deleteConfirmationTitle": "확실합니까?",
+  "deleteConfirmationOk": "예",
+  "deleteConfirmationCancel": "취소",
+  "searchPlaceholder": "이름으로 검색하십시오",
+  "createClient": "클라이언트 생성",
+  "pinTooltip": "이것을 메인 메뉴에 고정하려면 클릭하십시오",
+  "createClientDrawerTitle": "클라이언트 생성",
+  "updateClientDrawerTitle": "클라이언트 업데이트",
+  "nameLabel": "이름",
+  "namePlaceholder": "이름",
+  "nameRequiredError": "이름을 입력하십시오",
+  "createButton": "만들다",
+  "updateButton": "업데이트",
+  "createClientSuccessMessage": "클라이언트 성공을 창출하십시오!",
+  "createClientErrorMessage": "클라이언트가 실패했습니다!",
+  "updateClientSuccessMessage": "클라이언트 성공을 업데이트하십시오!",
+  "updateClientErrorMessage": "클라이언트 업데이트 실패!"
+}

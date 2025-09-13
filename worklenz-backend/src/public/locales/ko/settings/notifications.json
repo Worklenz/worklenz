@@ -1,0 +1,11 @@
+{
+  "title": "알림 설정",
+  "emailTitle": "이메일 알림을 보내주세요",
+  "emailDescription": "여기에는 새로운 작업 할당이 포함됩니다",
+  "dailyDigestTitle": "매일 다이제스트를 보내주세요",
+  "dailyDigestDescription": "매일 저녁, 당신은 최근의 활동에 대한 요약을 받게됩니다.",
+  "popupTitle": "Worklenz가 열렸을 때 내 컴퓨터에서 알림 팝업",
+  "popupDescription": "브라우저에서 팝업 알림을 비활성화 할 수 있습니다. 브라우저 설정을 변경하여 허용하십시오.",
+  "unreadItemsTitle": "읽지 않은 항목의 수를 보여줍니다",
+  "unreadItemsDescription": "각 알림마다 카운트가 표시됩니다."
+}
