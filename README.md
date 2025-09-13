@@ -22,6 +22,9 @@
     <a href="https://github.com/Worklenz/worklenz/issues">
         <img src="https://img.shields.io/github/issues/Worklenz/worklenz" alt="Issues">
     </a>
+    <a href="https://discord.gg/AVbkGXHA">
+        <img src="https://img.shields.io/discord/1202616582757556276?style=flat&logo=discord&logoColor=white&label=Discord&color=5865F2" alt="Issues">
+    </a>
 </p>
 
 <p align="center">
