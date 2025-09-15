@@ -9,6 +9,9 @@ import CreateStatusButton from '@/components/project-task-filters/create-status-
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setGroupBy } from '@features/group-by-filter-dropdown/group-by-filter-dropdown-slice';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_project_task_list_search_task } from '@/shared/worklenz-analytics-events';
+import { FilterSortEventProps } from '@/types/mixpanel-events.types';
 
 const GroupByFilterDropdown = ({ position }: { position: 'list' | 'board' }) => {
   const dispatch = useAppDispatch();
@@ -19,10 +22,18 @@ const GroupByFilterDropdown = ({ position }: { position: 'list' | 'board' }) => 
 
   // localization
   const { t } = useTranslation('task-list-filters');
+  const { projectId } = useAppSelector(state => state.projectReducer);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const handleChange = (value: string) => {
     setActiveGroup(value as GroupTypes);
     dispatch(setGroupBy(value as GroupTypes));
+    const props: FilterSortEventProps = {
+      filter_type: 'custom',
+      sort_order: 'asc',
+      project_id: projectId || undefined,
+    };
+    trackMixpanelEvent(evt_project_task_list_search_task, props);
   };
 
   // get selected project from useSelectedPro

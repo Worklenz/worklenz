@@ -17,6 +17,9 @@ import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_project_task_list_search_task } from '@/shared/worklenz-analytics-events';
+import { FilterSortEventProps } from '@/types/mixpanel-events.types';
 
 const LabelsFilterDropdown = (props: { labels: ITaskLabel[] }) => {
   const { t } = useTranslation('task-list-filters');
@@ -30,10 +33,18 @@ const LabelsFilterDropdown = (props: { labels: ITaskLabel[] }) => {
   }, [props.labels]);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { projectId } = useAppSelector(state => state.projectReducer);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // handle selected filters count
   const handleSelectedFiltersCount = (checked: boolean) => {
     setSelectedCount(prev => (checked ? prev + 1 : prev - 1));
+    const props: FilterSortEventProps = {
+      filter_type: 'label',
+      sort_order: 'asc',
+      project_id: projectId || undefined,
+    };
+    trackMixpanelEvent(evt_project_task_list_search_task, props);
   };
 
   // function to focus labels input

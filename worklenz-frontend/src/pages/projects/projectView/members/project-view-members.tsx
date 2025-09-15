@@ -151,8 +151,10 @@ const ProjectViewMembers = () => {
   ]);
 
   useEffect(() => {
-    trackMixpanelEvent(evt_project_members_visit);
-  }, []);
+    trackMixpanelEvent(evt_project_members_visit, {
+      project_id: projectId || '',
+    });
+  }, [trackMixpanelEvent, projectId]);
 
   // Table Configuration
   const columns: TableProps['columns'] = [
