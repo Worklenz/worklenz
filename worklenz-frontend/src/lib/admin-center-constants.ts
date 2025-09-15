@@ -21,6 +21,7 @@ type AdminCenterMenuItems = {
   endpoint: string;
   icon: ReactNode;
   element: ReactNode;
+  selfHostedExcluded?: boolean;
 };
 // settings all element items use for sidebar and routes
 export const adminCenterItems: AdminCenterMenuItems[] = [
@@ -58,6 +59,7 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     endpoint: 'billing',
     icon: React.createElement(CreditCardOutlined),
     element: React.createElement(Billing),
+    selfHostedExcluded: true,
   },
   {
     key: 'settings',
