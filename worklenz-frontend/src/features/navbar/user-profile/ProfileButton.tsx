@@ -11,6 +11,7 @@ import {
 
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { memo } from 'react';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -145,4 +146,4 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   );
 };
 
-export default ProfileButton;
+export default memo(ProfileButton);

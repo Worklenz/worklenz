@@ -27,7 +27,7 @@ import CustomAvatar from '@/components/CustomAvatar';
 // Styles
 import { colors } from '@/styles/colors';
 import './switchTeam.css';
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 
 const SwitchTeamButton = () => {
   const dispatch = useAppDispatch();
@@ -139,4 +139,4 @@ const SwitchTeamButton = () => {
   );
 };
 
-export default SwitchTeamButton;
+export default memo(SwitchTeamButton);

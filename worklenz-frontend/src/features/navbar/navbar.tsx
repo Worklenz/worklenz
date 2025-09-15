@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Col, ConfigProvider, Flex, Menu, Tooltip, Button } from '@/shared/antd-imports';
@@ -31,18 +31,21 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 const Navbar = () => {
   const dispatch = useAppDispatch();
   const [current, setCurrent] = useState<string>('home');
-  const currentSession = useAuthService().getCurrentSession();
   const [daysUntilExpiry, setDaysUntilExpiry] = useState<number | null>(null);
 
   const location = useLocation();
   const { isDesktop, isMobile, isTablet } = useResponsive();
   const { t } = useTranslation('navbar');
   const { t: tCommon } = useTranslation('common');
-  const authService = useAuthService();
+  
+  // Memoize auth service to prevent recreation
+  const authService = useMemo(() => useAuthService(), []);
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
+  
   const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
-  const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState<boolean>(authService.isOwnerOrAdmin());
-  const showUpgradeTypes = [ISUBSCRIPTION_TYPE.TRIAL];
+  const showUpgradeTypes = useMemo(() => [ISUBSCRIPTION_TYPE.TRIAL], []);
 
   useEffect(() => {
     authApiService
@@ -51,13 +54,13 @@ const Navbar = () => {
         if (authorizeResponse.authenticated) {
           authService.setCurrentSession(authorizeResponse.user);
           setIdentity(authorizeResponse.user);
-          setIsOwnerOrAdmin(!!(authorizeResponse.user.is_admin || authorizeResponse.user.owner));
+          // Remove setIsOwnerOrAdmin since it's now computed
         }
       })
       .catch(error => {
         logger.error('Error during authorization', error);
       });
-  }, []);
+  }, [authService, setIdentity]);
 
   useEffect(() => {
     const storedNavRoutesList: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
@@ -123,12 +126,19 @@ const Navbar = () => {
       });
   }, [navRoutesList, t, isOwnerOrAdmin, currentSession, tCommon, dispatch]);
 
-  useEffect(() => {
+  // Memoize current route calculation to prevent unnecessary rerenders
+  const currentRoute = useMemo(() => {
     const afterWorklenzString = location.pathname.split('/worklenz/')[1];
-    const pathKey = afterWorklenzString.split('/')[0];
+    const pathKey = afterWorklenzString?.split('/')[0];
+    return pathKey ?? 'home';
+  }, [location.pathname]);
 
-    setCurrent(pathKey ?? 'home');
-  }, [location]);
+  // Only update state if the route actually changed
+  useEffect(() => {
+    if (currentRoute !== current) {
+      setCurrent(currentRoute);
+    }
+  }, [currentRoute, current]);
 
   return (
     <Col
@@ -171,7 +181,7 @@ const Navbar = () => {
                 border: 'none',
               }}
               items={navlinkItems}
-              onClick={({ key }) => {
+              onClick={useCallback(({ key }) => {
                 // Handle clicks on disabled items to open upgrade modal
                 const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
                 const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
@@ -200,7 +210,7 @@ const Navbar = () => {
                     dispatch(toggleUpgradeModal());
                   }
                 }
-              }}
+              }, [currentSession, navRoutesList, trackMixpanelEvent, isOwnerOrAdmin, dispatch])}
             />
           )}
 
@@ -248,4 +258,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default memo(Navbar);
