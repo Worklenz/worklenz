@@ -302,6 +302,22 @@ const UpgradePlans = () => {
     return undefined;
   }, [billingInfo, isFreeUser]);
 
+  // Helper: plan ranking for upgrade/downgrade comparison
+  const getPlanRank = (plan?: MixpanelPlanType): number => {
+    switch (plan) {
+      case 'free':
+        return 0;
+      case 'pro':
+        return 1;
+      case 'business':
+        return 2;
+      case 'enterprise':
+        return 3;
+      default:
+        return -1;
+    }
+  };
+
   // Event handlers
   const handleTeamSizeChange = (size: number) => {
     const oldSize = teamSize;
@@ -391,6 +407,16 @@ const UpgradePlans = () => {
       is_small_team: teamSize <= TEAM_SIZE_THRESHOLD,
     };
     trackMixpanelEvent(MixpanelBillingEvents.PLAN_SELECTED, eventProps);
+
+    // Optional: compare plans interaction
+    trackMixpanelEvent(MixpanelBillingEvents.PLAN_COMPARED, {
+      user_type: getUserType,
+      current_plan: billingInfo?.plan_name,
+      current_plan_type: getCurrentPlanType,
+      is_appsumo_user: isAppSumoUser,
+      team_size: billingInfo?.total_used,
+      subscription_status: billingInfo?.status,
+    });
   };
 
   // API functions
@@ -478,10 +504,29 @@ const UpgradePlans = () => {
         setBackendPlans(filteredTiers as any);
         const mappedPricing = mapTierBasedPricingToFrontend(filteredTiers);
         setPricingData(mappedPricing);
+      } else {
+        // Track pricing fetch error
+        trackMixpanelEvent(MixpanelBillingEvents.PRICING_FETCH_ERROR, {
+          user_type: getUserType,
+          current_plan: billingInfo?.plan_name,
+          current_plan_type: getCurrentPlanType,
+          is_appsumo_user: isAppSumoUser,
+          team_size: teamSize,
+          subscription_status: billingInfo?.status,
+        });
       }
     } catch (error) {
       logger.error('Error fetching pricing plans', error);
       message.error('Failed to load pricing plans. Please refresh the page.');
+      // Track pricing fetch error
+      trackMixpanelEvent(MixpanelBillingEvents.PRICING_FETCH_ERROR, {
+        user_type: getUserType,
+        current_plan: billingInfo?.plan_name,
+        current_plan_type: getCurrentPlanType,
+        is_appsumo_user: isAppSumoUser,
+        team_size: teamSize,
+        subscription_status: billingInfo?.status,
+      });
     } finally {
       setIsLoadingPlans(false);
     }
@@ -495,6 +540,23 @@ const UpgradePlans = () => {
       setSwitchingToFreePlan(true);
       const res = await adminCenterApiService.switchToFreePlan(teamId);
       if (res.done) {
+        // Track downgrade to free and free plan switch completed
+        const fromPlan = getCurrentPlanType;
+        const toPlan: MixpanelPlanType = 'free';
+        if (fromPlan && fromPlan !== 'free') {
+          const baseProps = {
+            user_type: getUserType,
+            current_plan: billingInfo?.plan_name,
+            current_plan_type: fromPlan,
+            is_appsumo_user: isAppSumoUser,
+            team_size: billingInfo?.total_used,
+            subscription_status: billingInfo?.status,
+            from_plan: fromPlan,
+            to_plan: toPlan,
+          } as any;
+          trackMixpanelEvent('downgraded_plan' as any, baseProps);
+          trackMixpanelEvent(MixpanelBillingEvents.FREE_PLAN_SWITCH_COMPLETED, baseProps);
+        }
         dispatch(fetchBillingInfo());
         dispatch(toggleUpgradeModal());
         const authorizeResponse = await authApiService.verify();
@@ -537,6 +599,31 @@ const UpgradePlans = () => {
           success: true,
         };
         trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_COMPLETED, checkoutSuccessProps);
+        // Also track plan upgraded/downgraded (compare current vs selected)
+        {
+          const fromPlan = getCurrentPlanType;
+          const toPlan = selectedPlanType as MixpanelPlanType;
+          if (fromPlan) {
+            const direction = getPlanRank(toPlan) - getPlanRank(fromPlan);
+            const baseProps = {
+              user_type: getUserType,
+              current_plan: billingInfo?.plan_name,
+              current_plan_type: fromPlan,
+              is_appsumo_user: isAppSumoUser,
+              team_size: teamSize,
+              subscription_status: billingInfo?.status,
+              from_plan: fromPlan,
+              to_plan: toPlan,
+            } as any;
+            if (direction > 0) {
+              // Upgraded
+              trackMixpanelEvent('plan_upgraded' as any, baseProps);
+            } else if (direction < 0) {
+              // Downgraded
+              trackMixpanelEvent('downgraded_plan' as any, baseProps);
+            }
+          }
+        }
         
         message.success('Subscription updated successfully!');
         setPaddleLoading(true);
@@ -614,6 +701,16 @@ const UpgradePlans = () => {
       setPaddleError('Failed to load Paddle checkout');
       message.error('Failed to load payment processor');
       logger.error('Failed to load Paddle script');
+
+      // Track Paddle load error
+      trackMixpanelEvent(MixpanelBillingEvents.PADDLE_LOAD_ERROR, {
+        user_type: getUserType,
+        current_plan: billingInfo?.plan_name,
+        current_plan_type: getCurrentPlanType,
+        is_appsumo_user: isAppSumoUser,
+        team_size: teamSize,
+        subscription_status: billingInfo?.status,
+      });
     };
 
     document.getElementsByTagName('head')[0].appendChild(script);
@@ -703,6 +800,27 @@ const UpgradePlans = () => {
       ) {
         const res = await adminCenterApiService.changePlan(planId);
         if (res.done) {
+          // Track plan upgrade/downgrade for direct plan change path
+          const fromPlan = getCurrentPlanType;
+          const toPlan = selectedPlanType as MixpanelPlanType;
+          if (fromPlan) {
+            const direction = getPlanRank(toPlan) - getPlanRank(fromPlan);
+            const baseProps = {
+              user_type: getUserType,
+              current_plan: billingInfo?.plan_name,
+              current_plan_type: fromPlan,
+              is_appsumo_user: isAppSumoUser,
+              team_size: teamSize,
+              subscription_status: billingInfo?.status,
+              from_plan: fromPlan,
+              to_plan: toPlan,
+            } as any;
+            if (direction > 0) {
+              trackMixpanelEvent('plan_upgraded' as any, baseProps);
+            } else if (direction < 0) {
+              trackMixpanelEvent('downgraded_plan' as any, baseProps);
+            }
+          }
           message.success('Subscription plan changed successfully!');
           dispatch(fetchBillingInfo());
           dispatch(toggleUpgradeModal());

@@ -75,6 +75,24 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     }
   }, [dispatch]);
 
+  // Track upgrade button viewed
+  useEffect(() => {
+    if (!billingInfo) return;
+    const eventProps: UpgradeButtonEventProps = {
+      user_type: getUserType(),
+      current_plan: billingInfo?.plan_name,
+      trial_days_remaining: daysRemaining || undefined,
+      is_appsumo_user: isAppSumoUser,
+      team_size: billingInfo?.total_used,
+      subscription_status: billingInfo?.status,
+      source_location: 'navbar_button',
+      badge_state: getBadgeState() as any,
+      button_style: getButtonStyleType() as any,
+    };
+    trackMixpanelEvent(MixpanelBillingEvents.UPGRADE_BUTTON_VIEWED, eventProps);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [billingInfo, isAppSumoUser, daysRemaining]);
+
   useEffect(() => {
     // Check if AppSumo user
     setIsAppSumoUser(checkAppSumoUser());
