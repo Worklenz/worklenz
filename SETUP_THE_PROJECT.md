@@ -91,27 +91,25 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 
 6. **Run the Development Server:**
 
+   **Option 1: Combined development mode (Recommended)**
+   
    ```bash
+   npm run dev:all
+   ```
+   
+   This single command runs both the build watch process and the server with auto-restart. No need to run `npm run dev` and `npm start` separately.
+
+   **Option 2: Separate commands**
+   
+   ```bash
+   # Terminal 1: Build and watch for changes
    npm run dev
-   ```
-
-   This starts the development server allowing you to work on the project.
-
-7. **Run the Production Server:**
-
-   **a. Build the project:**
-
-   ```bash
-   npm run build
-   ```
-
-   This will compile the TypeScript code into JavaScript for production use.
-
-   **b. Start the production server:**
-
-   ```bash
+   
+   # Terminal 2: Start the server
    npm start
    ```
+
+   The first option (`npm run dev:all`) is recommended as it simplifies the development workflow.
 
 ## Docker Setup (Alternative)
 
