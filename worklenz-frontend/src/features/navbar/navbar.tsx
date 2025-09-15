@@ -38,8 +38,8 @@ const Navbar = () => {
   const { t } = useTranslation('navbar');
   const { t: tCommon } = useTranslation('common');
   
-  // Memoize auth service to prevent recreation
-  const authService = useMemo(() => useAuthService(), []);
+  // Get auth service and memoize derived values
+  const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
   
@@ -181,7 +181,8 @@ const Navbar = () => {
                 border: 'none',
               }}
               items={navlinkItems}
-              onClick={useCallback(({ key }) => {
+              onClick={useCallback((menuInfo: { key: string }) => {
+                const { key } = menuInfo;
                 // Handle clicks on disabled items to open upgrade modal
                 const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
                 const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
