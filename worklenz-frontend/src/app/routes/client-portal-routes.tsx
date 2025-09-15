@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { RouteObject } from 'react-router-dom';
+import { Spin } from 'antd';
 import ClientPortalLayout from '@/layouts/client-portal-layout';
-import ClientPortalClients from '@/pages/client-portal/clients/ClientPortalClients';
-import ClientPortalRequests from '@/pages/client-portal/requests/client-portal-requests';
-import ClientPortalRequestDetails from '@/pages/client-portal/requests/request-details/client-portal-request-details';
-import ClientPortalServices from '@/pages/client-portal/services/client-portal-services';
-import ClientPortalAddServices from '@/pages/client-portal/services/add-service/client-portal-add-service';
-import ClientPortalEditService from '@/pages/client-portal/services/edit-service/client-portal-edit-service';
-import ClientPortalChats from '@/pages/client-portal/chats/client-portal-chats';
-import ClientPortalSettings from '@/pages/client-portal/settings/client-portal-settings';
-import ClientPortalInvoices from '@/pages/client-portal/invoices/client-portal-invoices';
-import ClientPortalInvoiceDetails from '@/pages/client-portal/invoices/invoice-details/client-portal-invoice-details';
+
+// Lazy load all client portal components
+const ClientPortalClients = lazy(() => import('@/pages/client-portal/clients/ClientPortalClients'));
+const ClientPortalRequests = lazy(() => import('@/pages/client-portal/requests/client-portal-requests'));
+const ClientPortalRequestDetails = lazy(() => import('@/pages/client-portal/requests/request-details/client-portal-request-details'));
+const ClientPortalServices = lazy(() => import('@/pages/client-portal/services/client-portal-services'));
+const ClientPortalAddServices = lazy(() => import('@/pages/client-portal/services/add-service/client-portal-add-service'));
+const ClientPortalEditService = lazy(() => import('@/pages/client-portal/services/edit-service/client-portal-edit-service'));
+const ClientPortalChats = lazy(() => import('@/pages/client-portal/chats/client-portal-chats'));
+const ClientPortalSettings = lazy(() => import('@/pages/client-portal/settings/client-portal-settings'));
+const ClientPortalInvoices = lazy(() => import('@/pages/client-portal/invoices/client-portal-invoices'));
+const ClientPortalInvoiceDetails = lazy(() => import('@/pages/client-portal/invoices/invoice-details/client-portal-invoice-details'));
 
 const clientPortalRoutes: RouteObject[] = [
   {
@@ -19,43 +22,83 @@ const clientPortalRoutes: RouteObject[] = [
     children: [
       {
         path: 'clients',
-        element: <ClientPortalClients />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalClients />
+          </Suspense>
+        ),
       },
       {
         path: 'requests',
-        element: <ClientPortalRequests />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalRequests />
+          </Suspense>
+        ),
       },
       {
         path: 'requests/:id',
-        element: <ClientPortalRequestDetails />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalRequestDetails />
+          </Suspense>
+        ),
       },
       {
         path: 'services',
-        element: <ClientPortalServices />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalServices />
+          </Suspense>
+        ),
       },
       {
         path: 'add-service',
-        element: <ClientPortalAddServices />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalAddServices />
+          </Suspense>
+        ),
       },
       {
         path: 'edit-service/:id',
-        element: <ClientPortalEditService />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalEditService />
+          </Suspense>
+        ),
       },
       {
         path: 'chats',
-        element: <ClientPortalChats />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalChats />
+          </Suspense>
+        ),
       },
       {
         path: 'invoices',
-        element: <ClientPortalInvoices />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalInvoices />
+          </Suspense>
+        ),
       },
       {
         path: 'invoices/:invoiceId',
-        element: <ClientPortalInvoiceDetails />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalInvoiceDetails />
+          </Suspense>
+        ),
       },
       {
         path: 'settings',
-        element: <ClientPortalSettings />,
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <ClientPortalSettings />
+          </Suspense>
+        ),
       },
     ],
   },
