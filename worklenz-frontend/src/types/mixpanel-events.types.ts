@@ -4,6 +4,13 @@ export type UserType = 'free' | 'trial' | 'paid' | 'appsumo';
 export type BillingFrequency = 'monthly' | 'annual';
 export type PricingModel = 'per_user' | 'base_plan';
 export type PlanType = 'free' | 'pro' | 'business' | 'enterprise';
+export type DeviceType = 'web' | 'mobile' | 'tablet';
+export type ButtonLocation = 'header' | 'footer' | 'modal' | 'sidebar' | 'inline';
+export type FileType = 'doc' | 'pdf' | 'img' | 'video' | 'audio' | 'other';
+export type ThemeMode = 'light' | 'dark';
+export type CustomFieldType = 'text' | 'number' | 'date' | 'dropdown' | 'checkbox' | 'url';
+export type FilterType = 'status' | 'priority' | 'assignee' | 'label' | 'date' | 'custom';
+export type SortOrder = 'asc' | 'desc';
 
 // Common properties across billing events
 export interface BaseBillingEventProps {
@@ -145,6 +152,108 @@ export enum MixpanelBillingEvents {
   PRICING_FETCH_ERROR = 'pricing_fetch_error',
 }
 
+// General Mixpanel Events Enum
+export enum MixpanelEvents {
+  // Authentication
+  LOGIN_WITH_EMAIL_CLICKED = 'login_with_email_click',
+  LOGIN_WITH_GOOGLE_CLICKED = 'login_with_google_click',
+  SIGNUP_WITH_EMAIL_CLICKED = 'signup_with_email_click',
+  SIGNUP_WITH_GOOGLE_CLICKED = 'signup_with_google_click',
+  ACCOUNT_SETUP_COMPLETED = 'account_setup_complete',
+  
+  // Project Management
+  PROJECT_CREATED = 'projects_create',
+  PROJECT_TASK_CREATED = 'project_task_create',
+  PROJECT_BOARD_VISITED = 'project_board_visit',
+  PROJECT_TASK_LIST_VISITED = 'project_task_list_visit',
+  PROJECT_ROADMAP_VISITED = 'project_roadmap_visit',
+  PROJECT_MEMBERS_VISITED = 'project_members_visit',
+  PROJECT_INSIGHTS_VIEWED = 'project_insights_overview_visit',
+  
+  // Team Management
+  TEAMMATE_INVITED = 'project_invite_members',
+  
+  // File Management
+  FILE_UPLOADED = 'file_uploaded',
+  
+  // Timer
+  TIMER_STARTED = 'timer_started',
+  
+  // Client Portal
+  CLIENT_PORTAL_VIEWED = 'client_portal_viewed',
+  
+  // Theme
+  DARK_MODE_TOGGLED = 'dark_mode_toggled',
+  
+  // Custom Fields
+  CUSTOM_FIELD_ENABLED = 'custom_field_enabled',
+  
+  // Filter & Sort
+  FILTER_SORT_APPLIED = 'project_task_list_search_task',
+}
+
+// Authentication Events
+export interface LoginEventProps {
+  device_type: DeviceType;
+  button_location?: ButtonLocation;
+  signup_method?: 'email' | 'google';
+}
+
+export interface SignupEventProps {
+  device_type: DeviceType;
+  button_location: ButtonLocation;
+  signup_method: 'email' | 'google';
+  plan_type?: PlanType;
+}
+
+// Project Events
+export interface ProjectEventProps {
+  project_id: string;
+  project_template_used?: boolean;
+}
+
+export interface TaskEventProps {
+  task_id: string;
+  project_id: string;
+  from_template?: boolean;
+}
+
+// File Events
+export interface FileUploadEventProps {
+  file_type: FileType;
+  project_id?: string;
+}
+
+// Timer Events
+export interface TimerEventProps {
+  task_id: string;
+  project_id: string;
+}
+
+// Theme Events
+export interface ThemeEventProps {
+  mode: ThemeMode;
+}
+
+// Custom Field Events
+export interface CustomFieldEventProps {
+  field_type: CustomFieldType;
+  project_id?: string;
+}
+
+// Filter & Sort Events
+export interface FilterSortEventProps {
+  filter_type: FilterType;
+  sort_order: SortOrder;
+  project_id?: string;
+}
+
+// Team Invite Events
+export interface TeamInviteEventProps {
+  count: number;
+  project_id?: string;
+}
+
 // Helper function to get base properties
 export function getBaseBillingProperties(
   userType: UserType,
@@ -162,4 +271,36 @@ export function getBaseBillingProperties(
     team_size: teamSize,
     subscription_status: subscriptionStatus,
   };
+}
+
+// Helper function to detect device type
+export function getDeviceType(): DeviceType {
+  if (typeof window === 'undefined') return 'web';
+  
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  if (/mobile|android|iphone|ipad|tablet/.test(userAgent)) {
+    return /tablet|ipad/.test(userAgent) ? 'tablet' : 'mobile';
+  }
+  return 'web';
+}
+
+// Helper function to get file type from filename
+export function getFileType(filename: string): FileType {
+  const extension = filename.split('.').pop()?.toLowerCase();
+  
+  if (!extension) return 'other';
+  
+  const docTypes = ['doc', 'docx', 'txt', 'rtf', 'odt'];
+  const pdfTypes = ['pdf'];
+  const imgTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
+  const videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'];
+  const audioTypes = ['mp3', 'wav', 'flac', 'aac', 'ogg'];
+  
+  if (docTypes.includes(extension)) return 'doc';
+  if (pdfTypes.includes(extension)) return 'pdf';
+  if (imgTypes.includes(extension)) return 'img';
+  if (videoTypes.includes(extension)) return 'video';
+  if (audioTypes.includes(extension)) return 'audio';
+  
+  return 'other';
 }

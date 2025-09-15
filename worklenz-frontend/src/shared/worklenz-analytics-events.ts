@@ -54,6 +54,15 @@ export const evt_project_import_tasks_click = 'project_import_tasks_click';
 export const evt_project_import_tasks = 'project_import_tasks';
 export const evt_project_update = 'project_update';
 
+// File Management
+export const evt_file_uploaded = 'file_uploaded';
+
+// Timer & Time Tracking
+export const evt_timer_started = 'timer_started';
+
+// Client Portal
+export const evt_client_portal_viewed = 'client_portal_viewed';
+
 // Board Interactions
 export const evt_project_board_open_task = 'project_board_open_task';
 export const evt_project_board_transition_task = 'project_board_transition_task';
@@ -135,6 +144,12 @@ export const evt_settings_labels_delete = 'settings_labels_delete';
 export const evt_settings_category_delete = 'settings_category_delete';
 export const evt_settings_task_templates_delete = 'settings_task_templates_delete';
 export const evt_settings_profile_picture_update = 'settings_profile_picture_update';
+
+// Theme & UI
+export const evt_dark_mode_toggled = 'dark_mode_toggled';
+
+// Custom Fields
+export const evt_custom_field_enabled = 'custom_field_enabled';
 
 // Common Actions
 export const evt_common_switch_team = 'common_switch_team';
