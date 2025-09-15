@@ -321,12 +321,18 @@ const projectWorkloadApi = createApi({
     >({
       queryFn: async ({ projectId, startDate, endDate }, { dispatch, getState }) => {
         try {
+          console.log('getProjectWorkload called with:', { projectId, startDate, endDate });
+          
           // Use RTK Query's built-in query dispatching with proper error handling
           const chartDatesPromise = dispatch(
             projectWorkloadApi.endpoints.getWorkloadChartDates.initiate({ projectId })
           );
           const membersPromise = dispatch(
-            projectWorkloadApi.endpoints.getWorkloadMembers.initiate({ projectId })
+            projectWorkloadApi.endpoints.getWorkloadMembers.initiate({ 
+              projectId,
+              startDate,
+              endDate 
+            })
           );
           const tasksPromise = dispatch(
             projectWorkloadApi.endpoints.getWorkloadTasksByMember.initiate({
@@ -341,6 +347,12 @@ const projectWorkloadApi = createApi({
             membersPromise,
             tasksPromise,
           ]);
+
+          console.log('API Results:', {
+            chartDates: chartDatesResult,
+            members: membersResult,
+            tasks: tasksResult
+          });
 
           // Check for errors in any of the requests
           if (chartDatesResult.error) {
@@ -370,8 +382,12 @@ const projectWorkloadApi = createApi({
             tasks: tasksResult.data?.body || [],
           };
 
+          console.log('Transform data:', transformData);
+
           // Transform data to match our interface
           const workloadData = transformToWorkloadData(transformData);
+
+          console.log('Transformed workload data:', workloadData);
 
           return { data: workloadData };
         } catch (error) {

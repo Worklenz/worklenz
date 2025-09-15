@@ -9,7 +9,7 @@ import WorkloadChart from './components/WorkloadChart';
 import WorkloadCalendar from './components/WorkloadCalendar';
 import WorkloadTable from './components/WorkloadTable';
 import WorkloadFilters from './components/WorkloadFilters';
-import { useGetWorkloadMembersQuery } from '@/api/project-workload/project-workload.api.service';
+import { useGetProjectWorkloadQuery, useGetWorkloadMembersQuery } from '@/api/project-workload/project-workload.api.service';
 import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import { setWorkloadView, setDateRange } from '@/features/project-workload/projectWorkloadSlice';
 import dayjs from 'dayjs';
@@ -24,13 +24,34 @@ const ProjectViewWorkload = React.memo(() => {
   const { workloadView, dateRange, filters } = useAppSelector(state => state.projectWorkload);
   const [localView, setLocalView] = useState<WorkloadView>(workloadView || 'chart');
 
-  // Use the members API directly for better compatibility with the chart component
+  // Use the comprehensive project workload API that combines all data
   const {
     data: workloadData,
     isLoading,
     error,
     refetch,
     isFetching,
+  } = useGetProjectWorkloadQuery(
+    { 
+      projectId: projectId!,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate
+    },
+    {
+      skip: !projectId,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
+
+  // Fallback to simpler API if the comprehensive one fails
+  const {
+    data: fallbackData,
+    isLoading: fallbackLoading,
+    error: fallbackError,
+    refetch: fallbackRefetch,
+    isFetching: fallbackFetching,
   } = useGetWorkloadMembersQuery(
     { 
       projectId: projectId!,
@@ -38,12 +59,19 @@ const ProjectViewWorkload = React.memo(() => {
       endDate: dateRange.endDate
     },
     {
-      skip: !projectId || !dateRange.startDate || !dateRange.endDate,
+      skip: !projectId || !error, // Only use fallback if main query has error
       refetchOnMountOrArgChange: true,
       refetchOnFocus: true,
       refetchOnReconnect: true,
     }
   );
+
+  // Use fallback data if main query failed
+  const finalData = error && fallbackData ? fallbackData : workloadData;
+  const finalLoading = error ? fallbackLoading : isLoading;
+  const finalError = error && fallbackError ? fallbackError : error;
+  const finalRefetch = error ? fallbackRefetch : refetch;
+  const finalFetching = error ? fallbackFetching : isFetching;
 
   // Initialize date range on component mount if not set
   useEffect(() => {
@@ -54,69 +82,78 @@ const ProjectViewWorkload = React.memo(() => {
       };
       dispatch(setDateRange(defaultRange));
     }
-  }, []); // Only run on mount
+  }, [dateRange.startDate, dateRange.endDate, dispatch]); // Run when date range is missing
 
   // Debug logging and state monitoring
   useEffect(() => {
-    const state = {
+    console.log('ProjectViewWorkload State:', {
       projectId,
       dateRange,
-      isLoading,
-      isFetching,
-      hasData: !!workloadData,
-      dataLength: workloadData?.body?.length || 0,
-      error: error,
-    };
-  }, [projectId, dateRange, isLoading, isFetching, workloadData, error]);
+      isLoading: finalLoading,
+      isFetching: finalFetching,
+      hasData: !!finalData,
+      dataLength: finalData?.members?.length || finalData?.body?.length || 0,
+      error: finalError,
+      usingFallback: error && fallbackData,
+    });
+  }, [projectId, dateRange, finalLoading, finalFetching, finalData, finalError, error, fallbackData]);
 
   // Force refetch when projectId or dateRange changes
   useEffect(() => {
-    if (projectId && dateRange.startDate && dateRange.endDate) {
+    if (projectId) {
       console.log('Project or date range changed, refetching workload data for:', projectId);
       // Small delay to ensure component is fully mounted and state is updated
       const timeoutId = setTimeout(() => {
-        refetch();
+        finalRefetch();
       }, 100);
       return () => clearTimeout(timeoutId);
     }
-  }, [projectId, dateRange.startDate, dateRange.endDate, refetch]);
+  }, [projectId, dateRange.startDate, dateRange.endDate, finalRefetch]);
 
   // Retry mechanism for failed loads
   const handleRetry = useCallback(() => {
     console.log('Manual retry triggered');
-    refetch();
-  }, [refetch]);
+    finalRefetch();
+  }, [finalRefetch]);
 
   // Enhanced refetch handler with debugging
   const handleRefresh = useCallback(() => {
     console.log('=== REFRESH TRIGGERED ===');
+    console.log('Current state:', {
+      projectId,
+      dateRange,
+      isLoading: finalLoading,
+      isFetching: finalFetching,
+      hasData: !!finalData,
+      error: finalError
+    });
     
     try {
       // Invalidate cache first to ensure fresh data
       dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
       
       // Force a fresh refetch
-      refetch();
+      finalRefetch();
       console.log('Refetch completed successfully');
     } catch (error) {
       console.error('Error calling refetch:', error);
     }
-  }, [refetch, projectId, dateRange, isLoading, isFetching, workloadData, error, dispatch]);
+  }, [finalRefetch, projectId, dateRange, finalLoading, finalFetching, finalData, finalError, dispatch]);
 
   // Memoize the content to prevent unnecessary re-renders
   const memoizedContent = useMemo(() => {
-    if (!workloadData) return null;
+    if (!finalData) return null;
 
     switch (localView) {
       case 'calendar':
-        return <WorkloadCalendar data={workloadData as any} />;
+        return <WorkloadCalendar data={finalData as any} />;
       case 'table':
-        return <WorkloadTable data={workloadData as any} />;
+        return <WorkloadTable data={finalData as any} />;
       case 'chart':
       default:
-        return <WorkloadChart data={workloadData as any} />;
+        return <WorkloadChart data={finalData as any} />;
     }
-  }, [workloadData, localView]);
+  }, [finalData, localView]);
 
   const handleViewChange = useCallback(
     (value: string | number) => {
@@ -128,7 +165,7 @@ const ProjectViewWorkload = React.memo(() => {
   );
 
   const renderContent = () => {
-    if (isLoading || isFetching) {
+    if (finalLoading || finalFetching) {
       return (
         <Flex justify="center" align="center" style={{ minHeight: 400 }}>
           <Spin size="large" />
@@ -136,7 +173,7 @@ const ProjectViewWorkload = React.memo(() => {
       );
     }
 
-    if (error) {
+    if (finalError) {
       return (
         <div style={{ padding: '60px 0', textAlign: 'center' }}>
           <Empty
@@ -150,7 +187,7 @@ const ProjectViewWorkload = React.memo(() => {
                     marginBottom: '16px',
                   }}
                 >
-                  {typeof error === 'string' ? error : JSON.stringify(error)}
+                  {typeof finalError === 'string' ? finalError : JSON.stringify(finalError)}
                 </p>
                 <button
                   onClick={handleRetry}
@@ -169,7 +206,7 @@ const ProjectViewWorkload = React.memo(() => {
       );
     }
 
-    if (!workloadData || !workloadData.body || workloadData.body.length === 0) {
+    if (!finalData || (!finalData.members && !finalData.body) || (finalData.members && finalData.members.length === 0) || (finalData.body && finalData.body.length === 0)) {
       return (
         <div style={{ padding: '60px 0', textAlign: 'center' }}>
           <Empty
@@ -218,13 +255,13 @@ const ProjectViewWorkload = React.memo(() => {
         />
         <WorkloadFilters
           onRefresh={handleRefresh}
-          isLoading={isLoading}
-          isFetching={isFetching}
+          isLoading={finalLoading}
+          isFetching={finalFetching}
         />
       </Flex>
 
-      {isLoading || isFetching ? <Skeleton active paragraph={{ rows: 4 }} style={{ paddingTop: 16 }} /> : <>
-        <WorkloadOverview data={workloadData as any} isLoading={isLoading} />
+      {finalLoading || finalFetching ? <Skeleton active paragraph={{ rows: 4 }} style={{ paddingTop: 16 }} /> : <>
+        <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
 
         <Card
           style={{
