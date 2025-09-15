@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Switch, Select, Table, Tag, Modal, Form, Input, message } from 'antd';
-import { SlackOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button, Card, Switch, Select, Table, Tag, Modal, Form, message } from 'antd';
+import { SlackOutlined, PlusOutlined, DeleteOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import api from '../../../services/api';
+import apiClient from '@api/api-client';
+
 
 interface SlackChannel {
     id: string;
@@ -49,7 +50,7 @@ export function SlackIntegration() {
 
     const checkSlackConnection = async () => {
         try {
-            const response = await api.get('/api/slack/status');
+            const response = await apiClient.get('/api/slack/status');
             setIsConnected(response.data.connected);
             setWorkspace(response.data.workspace);
             
@@ -63,7 +64,7 @@ export function SlackIntegration() {
 
     const loadChannelConfigurations = async () => {
         try {
-            const response = await api.get('/api/slack/channel-configs');
+            const response = await apiClient.get('/api/slack/channel-configs');
             setChannels(response.data);
         } catch (error) {
             console.error('Failed to load channel configurations:', error);
@@ -72,7 +73,7 @@ export function SlackIntegration() {
 
     const loadAvailableChannels = async () => {
         try {
-            const response = await api.get('/api/slack/channels');
+            const response = await apiClient.get('/api/slack/channels');
             setAvailableChannels(response.data);
         } catch (error) {
             console.error('Failed to load available channels:', error);
@@ -81,7 +82,7 @@ export function SlackIntegration() {
 
     const loadProjects = async () => {
         try {
-            const response = await api.get('/api/projects');
+            const response = await apiClient.get('/api/projects');
             setProjects(response.data);
         } catch (error) {
             console.error('Failed to load projects:', error);
@@ -91,7 +92,7 @@ export function SlackIntegration() {
     const handleConnect = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/api/slack/install-url');
+            const response = await apiClient.get('/api/slack/install-url');
             
             // Open Slack OAuth in new window
             const width = 600;
@@ -125,7 +126,7 @@ export function SlackIntegration() {
             content: 'This will remove all Slack configurations and stop notifications for your team.',
             onOk: async () => {
                 try {
-                    await api.delete('/api/slack/disconnect');
+                    await apiClient.delete('/api/slack/disconnect');
                     setIsConnected(false);
                     setWorkspace(null);
                     setChannels([]);
@@ -140,7 +141,7 @@ export function SlackIntegration() {
 
     const handleAddChannel = async (values: any) => {
         try {
-            await api.post('/api/integrations/slack/channels', values);
+            await apiClient.post('/api/integrations/slack/channels', values);
             message.success('Channel configuration added');
             setModalVisible(false);
             form.resetFields();
@@ -152,7 +153,7 @@ export function SlackIntegration() {
 
     const handleToggleChannel = async (channelId: string, isActive: boolean) => {
         try {
-            await api.patch(`/api/integrations/slack/channels/${channelId}`, { isActive });
+            await apiClient.patch(`/api/integrations/slack/channels/${channelId}`, { isActive });
             message.success('Channel status updated');
             loadChannelConfigurations();
         } catch (error) {
@@ -162,7 +163,7 @@ export function SlackIntegration() {
 
     const handleDeleteChannel = async (channelId: string) => {
         try {
-            await api.delete(`/api/integrations/slack/channels/${channelId}`);
+            await apiClient.delete(`/api/integrations/slack/channels/${channelId}`);
             message.success('Channel configuration removed');
             loadChannelConfigurations();
         } catch (error) {

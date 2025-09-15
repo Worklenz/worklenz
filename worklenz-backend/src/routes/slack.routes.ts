@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { SlackService } from "../services/slack/slack.service";
-import { authMiddleware } from "../middleware/auth";
+import { authMiddleware } from "../middlewares/auth";
 
 const router = Router();
 const slackService = new SlackService();
