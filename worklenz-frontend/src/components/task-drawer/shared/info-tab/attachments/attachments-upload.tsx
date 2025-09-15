@@ -3,6 +3,9 @@ import React, { useRef, useState } from 'react';
 import { TFunction } from 'i18next';
 import './attachments-upload.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_file_uploaded } from '@/shared/worklenz-analytics-events';
+import { getFileType } from '@/types/mixpanel-events.types';
 
 interface AttachmentsUploadProps {
   t: TFunction;
@@ -20,9 +23,14 @@ const AttachmentsUpload = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { trackMixpanelEvent } = useMixpanelTracking();
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       const filesArray = Array.from(event.target.files);
+      // Track each file upload by detected file type
+      filesArray.forEach(file => {
+        trackMixpanelEvent(evt_file_uploaded, { file_type: getFileType(file.name) });
+      });
       onFilesSelected(filesArray);
     }
   };
@@ -49,6 +57,10 @@ const AttachmentsUpload = ({
 
     if (!loadingTask && !uploading && e.dataTransfer.files.length > 0) {
       const filesArray = Array.from(e.dataTransfer.files);
+      // Track each dropped file upload by detected file type
+      filesArray.forEach(file => {
+        trackMixpanelEvent(evt_file_uploaded, { file_type: getFileType(file.name) });
+      });
       onFilesSelected(filesArray);
     }
   };

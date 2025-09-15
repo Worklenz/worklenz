@@ -10,6 +10,8 @@ import { clientPortalItems } from '../lib/client-portal/client-portal-constants'
 import { themeWiseColor } from '../utils/themeWiseColor';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_client_portal_viewed } from '@/shared/worklenz-analytics-events';
 
 const ClientPortalLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -23,6 +25,7 @@ const ClientPortalLayout = () => {
   const auth = useAuthService();
   const currentSession = auth.getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Redirect unauthorized users to main dashboard
   if (!auth.isAuthenticated()) {
@@ -39,6 +42,11 @@ const ClientPortalLayout = () => {
       setSidebarCollapsed(true);
     }
   }, [isMobile]);
+
+  // Track client portal view
+  useEffect(() => {
+    trackMixpanelEvent(evt_client_portal_viewed);
+  }, [trackMixpanelEvent]);
 
   const sidebarWidth = sidebarCollapsed ? 80 : 280;
   const contentPadding = isDesktop ? 32 : isTablet ? 24 : 16;
