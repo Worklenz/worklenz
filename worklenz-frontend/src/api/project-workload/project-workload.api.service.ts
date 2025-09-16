@@ -262,16 +262,16 @@ const projectWorkloadApi = createApi({
   }),
   tagTypes: ['ProjectWorkload', 'MemberCapacity', 'TaskAllocations', 'WorkloadAnalytics'],
   endpoints: builder => ({
-    getWorkloadChartDates: builder.query<any, { projectId: string; timeZone?: string }>({
-      query: ({ projectId, timeZone = 'UTC' }) => ({
+    getWorkloadChartDates: builder.query<any, { projectId: string; timeZone?: string; startDate?: string; endDate?: string }>({
+      query: ({ projectId, timeZone = 'UTC', startDate, endDate }) => ({
         url: `/workload-gannt/chart-dates/${projectId}`,
         method: 'GET',
-        params: { timeZone },
+        params: { timeZone, start_date: startDate, end_date: endDate },
       }),
-      providesTags: (result, error, { projectId }) => [
-        { type: 'ProjectWorkload', id: `chart-dates-${projectId}` },
+      providesTags: (result, error, { projectId, startDate, endDate }) => [
+        { type: 'ProjectWorkload', id: `chart-dates-${projectId}-${startDate}-${endDate}` },
       ],
-      keepUnusedDataFor: 10 * 60, // 10 minutes cache
+      keepUnusedDataFor: 0, // No caching - always fetch fresh data
     }),
 
     getWorkloadMembers: builder.query<any, { projectId: string; expandedMembers?: string[]; startDate?: string; endDate?: string }>({
@@ -284,10 +284,10 @@ const projectWorkloadApi = createApi({
           end_date: endDate 
         },
       }),
-      providesTags: (result, error, { projectId }) => [
-        { type: 'ProjectWorkload', id: `members-${projectId}` },
+      providesTags: (result, error, { projectId, startDate, endDate }) => [
+        { type: 'ProjectWorkload', id: `members-${projectId}-${startDate}-${endDate}` },
       ],
-      keepUnusedDataFor: 10 * 60, // 10 minutes cache
+      keepUnusedDataFor: 0, // No caching - always fetch fresh data
     }),
 
     getWorkloadTasksByMember: builder.query<any, { projectId: string; params?: any }>({
@@ -296,10 +296,10 @@ const projectWorkloadApi = createApi({
         method: 'GET',
         params,
       }),
-      providesTags: (result, error, { projectId }) => [
-        { type: 'TaskAllocations', id: `tasks-${projectId}` },
+      providesTags: (result, error, { projectId, params }) => [
+        { type: 'TaskAllocations', id: `tasks-${projectId}-${params?.startDate}-${params?.endDate}` },
       ],
-      keepUnusedDataFor: 5 * 60, // 5 minutes cache (tasks change more frequently)
+      keepUnusedDataFor: 0, // No caching - always fetch fresh data
     }),
 
     getMemberOverview: builder.query<any, { projectId: string; teamMemberId: string }>({
@@ -325,7 +325,11 @@ const projectWorkloadApi = createApi({
           
           // Use RTK Query's built-in query dispatching with proper error handling
           const chartDatesPromise = dispatch(
-            projectWorkloadApi.endpoints.getWorkloadChartDates.initiate({ projectId })
+            projectWorkloadApi.endpoints.getWorkloadChartDates.initiate({ 
+              projectId,
+              startDate,
+              endDate 
+            })
           );
           const membersPromise = dispatch(
             projectWorkloadApi.endpoints.getWorkloadMembers.initiate({ 
@@ -400,12 +404,12 @@ const projectWorkloadApi = createApi({
           };
         }
       },
-      providesTags: (result, error, { projectId }) => [
-        { type: 'ProjectWorkload', id: projectId },
+      providesTags: (result, error, { projectId, startDate, endDate }) => [
+        { type: 'ProjectWorkload', id: `${projectId}-${startDate}-${endDate}` },
         { type: 'ProjectWorkload', id: 'LIST' },
       ],
-      // Reduce cache time to ensure more frequent refetching
-      keepUnusedDataFor: 5 * 60, // 5 minutes instead of 10
+      // No caching - always fetch fresh data when date range changes
+      keepUnusedDataFor: 0,
     }),
   }),
 });

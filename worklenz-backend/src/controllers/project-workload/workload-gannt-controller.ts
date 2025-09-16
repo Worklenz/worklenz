@@ -137,18 +137,29 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
     const today = new Date();
 
-    let startDate = moment(today).clone().startOf("month");
-    let endDate = moment(today).clone().endOf("month");
+    // Use provided date parameters if available, otherwise use existing logic
+    let startDate: moment.Moment;
+    let endDate: moment.Moment;
 
-    this.setChartStartEnd(dateRange, logRange, req.query.timeZone as string);
+    if (req.query.start_date && req.query.end_date) {
+      // Use provided date range directly
+      startDate = moment(req.query.start_date as string);
+      endDate = moment(req.query.end_date as string);
+    } else {
+      // Fall back to existing complex logic
+      startDate = moment(today).clone().startOf("month");
+      endDate = moment(today).clone().endOf("month");
 
-    if (dateRange.start_date && dateRange.end_date) {
-      startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
-      endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
-    } else if (dateRange.start_date && !dateRange.end_date) {
-      startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
-    } else if (!dateRange.start_date && dateRange.end_date) {
-      endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
+      this.setChartStartEnd(dateRange, logRange, req.query.timeZone as string);
+
+      if (dateRange.start_date && dateRange.end_date) {
+        startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
+        endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
+      } else if (dateRange.start_date && !dateRange.end_date) {
+        startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
+      } else if (!dateRange.start_date && dateRange.end_date) {
+        endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
+      }
     }
 
     const xMonthsBeforeStart = startDate.clone().subtract(1, "months");
@@ -255,7 +266,8 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                                   FROM task_work_log twl
                                           INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
                                   WHERE t.project_id = $1
-                                    AND twl.user_id = tmiv.user_id) rec) AS logs_date_union,
+                                    AND twl.user_id = tmiv.user_id
+                                    ${this.getLogDateRangeFilter(startDate, endDate)}) rec) AS logs_date_union,
 
                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                       FROM (SELECT start_date,
@@ -443,6 +455,20 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
         -- Task has only start_date and it falls within the range
         (start_date IS NOT NULL AND end_date IS NULL AND start_date >= '${startDate}' AND start_date <= '${endDate}')
         -- Note: Tasks with both dates NULL are excluded from date range filtering
+      )
+    `;
+  }
+
+  private static getLogDateRangeFilter(startDate?: string, endDate?: string): string {
+    if (!startDate || !endDate) {
+      return ""; // No filtering if date range is not provided
+    }
+
+    return `
+      AND (
+        -- Log date (created_at - time_spent) falls within the selected date range
+        (twl.created_at - INTERVAL '1 second' * twl.time_spent)::date >= '${startDate}'::date
+        AND (twl.created_at - INTERVAL '1 second' * twl.time_spent)::date <= '${endDate}'::date
       )
     `;
   }

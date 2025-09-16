@@ -32,6 +32,7 @@ import {
   toggleWorkingDay,
   setWorkingDays,
 } from '@/features/project-workload/projectWorkloadSlice';
+import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
@@ -80,6 +81,10 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     if (customRange) {
       setSelectedTimeFrame('custom');
       setIsDateDropdownOpen(false);
+      
+      // Invalidate cache before setting new date range to ensure fresh data
+      dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
+      
       dispatch(
         setDateRange({
           startDate: dayjs(customRange[0]).format('YYYY-MM-DD'),
@@ -175,6 +180,10 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     setSelectedTimeFrame(item.label);
     setCustomRange(null);
     const [startDate, endDate] = item.dates.split(' - ');
+    
+    // Invalidate cache before setting new date range to ensure fresh data
+    dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
+    
     dispatch(
       setDateRange({
         startDate,
@@ -198,7 +207,7 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
   const defaultShowWeekends = false;
   const defaultDateRange = {
     startDate: dayjs().startOf('week').format('YYYY-MM-DD'),
-    endDate: dayjs().endOf('week').add(3, 'weeks').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('week').format('YYYY-MM-DD'),
   };
 
   // Check if values have changed from defaults

@@ -78,7 +78,7 @@ const ProjectViewWorkload = React.memo(() => {
     if (!dateRange.startDate || !dateRange.endDate) {
       const defaultRange = {
         startDate: dayjs().startOf('week').format('YYYY-MM-DD'),
-        endDate: dayjs().endOf('week').add(3, 'weeks').format('YYYY-MM-DD'),
+        endDate: dayjs().endOf('week').format('YYYY-MM-DD'),
       };
       dispatch(setDateRange(defaultRange));
     }

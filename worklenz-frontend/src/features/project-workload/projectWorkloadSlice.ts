@@ -42,7 +42,7 @@ const initialState: IWorkloadState = {
   workloadView: 'chart',
   dateRange: {
     startDate: dayjs().startOf('week').format('YYYY-MM-DD'),
-    endDate: dayjs().endOf('week').add(3, 'weeks').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('week').format('YYYY-MM-DD'),
   },
   filters: {
     showOverallocated: false,

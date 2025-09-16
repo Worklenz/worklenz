@@ -342,7 +342,8 @@ const transformTask = (task: RoadmapTasksResponse, level: number = 0): GanttTask
     name: task.name,
     start_date: task.start_date ? new Date(task.start_date) : null,
     end_date: task.end_date ? new Date(task.end_date) : null,
-    progress: task.progress,
+    // Normalize completion: if backend marks task as done, force 100% progress
+    progress: task.done ? 100 : task.progress,
     dependencies: task.dependencies.map(dep => dep.related_task_id),
     dependencyType: (task.dependencies[0]?.dependency_type as any) || 'blocked_by',
     parent_id: task.parent_task_id,
@@ -351,7 +352,8 @@ const transformTask = (task: RoadmapTasksResponse, level: number = 0): GanttTask
       name: subtask.name,
       start_date: subtask.start_date ? new Date(subtask.start_date) : null,
       end_date: subtask.end_date ? new Date(subtask.end_date) : null,
-      progress: subtask.progress,
+      // Normalize completion for subtasks as well
+      progress: subtask.done ? 100 : subtask.progress,
       parent_id: subtask.parent_task_id,
       level: level + 1,
       type: 'task',
