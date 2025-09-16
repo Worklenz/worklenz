@@ -23,6 +23,7 @@ interface IWorkloadState {
   capacityUnit: 'hours';
   timeScale: 'day' | 'week' | 'month';
   showWeekends: boolean;
+  workingHoursPerDay: number;
   workingDays: {
     monday: boolean;
     tuesday: boolean;
@@ -52,6 +53,7 @@ const initialState: IWorkloadState = {
   capacityUnit: 'hours',
   timeScale: 'week',
   showWeekends: false,
+  workingHoursPerDay: 8,
   workingDays: {
     monday: true,
     tuesday: true,
@@ -92,6 +94,9 @@ const projectWorkloadSlice = createSlice({
     toggleWeekends: state => {
       state.showWeekends = !state.showWeekends;
     },
+    setWorkingHoursPerDay: (state, action: PayloadAction<number>) => {
+      state.workingHoursPerDay = action.payload;
+    },
     setWorkingDays: (state, action: PayloadAction<Partial<typeof initialState.workingDays>>) => {
       state.workingDays = { ...state.workingDays, ...action.payload };
     },
@@ -113,6 +118,7 @@ export const {
   setSelectedMember,
   setTimeScale,
   toggleWeekends,
+  setWorkingHoursPerDay,
   setWorkingDays,
   toggleWorkingDay,
   setAlertThresholds,

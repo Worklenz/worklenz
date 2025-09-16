@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { IWorkloadData, IWorkloadMember } from '@/types/workload/workload.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { formatTime } from '@/api/project-workload/project-workload.api.service';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -171,7 +172,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
     } else if (data?.body && Array.isArray(data.body)) {
       // If data is raw API response format from /workload-members endpoint, transform it
       members = data.body.map((member: any) => {
-        const dailyHours = member.org_working_hours || 8;
+        const dailyHours = Number(member.org_working_hours) || 8;
         const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
         const weeklyCapacity = dailyHours * workingDaysPerWeek;
         
@@ -179,12 +180,31 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         const currentWorkload = calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
         
         // Calculate capacity for the same date range period based on actual working days
+        const startDate = dateRange.startDate || new Date().toISOString().split('T')[0];
+        const endDate = dateRange.endDate || new Date().toISOString().split('T')[0];
         const workingDaysInPeriod = calculateWorkingDaysInPeriod(
-          dateRange.startDate || new Date().toISOString().split('T')[0],
-          dateRange.endDate || new Date().toISOString().split('T')[0],
+          startDate,
+          endDate,
           member.org_working_days
         );
-        const periodCapacity = workingDaysInPeriod * dailyHours;
+        let periodCapacity = workingDaysInPeriod * dailyHours;
+        
+        // Fallback: if periodCapacity is 0, use weekly capacity as fallback
+        if (periodCapacity === 0) {
+          periodCapacity = weeklyCapacity;
+        }
+        
+        // Debug logging
+        console.log('Member capacity calculation:', {
+          memberName: member.name,
+          startDate,
+          endDate,
+          dailyHours,
+          workingDaysInPeriod,
+          periodCapacity,
+          weeklyCapacity,
+          orgWorkingDays: member.org_working_days
+        });
         
         const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
         
@@ -207,7 +227,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
     } else if (Array.isArray(data)) {
       // If data is directly an array of members (direct API response)
       members = data.map((member: any) => {
-        const dailyHours = member.org_working_hours || 8;
+        const dailyHours = Number(member.org_working_hours) || 8;
         const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
         const weeklyCapacity = dailyHours * workingDaysPerWeek;
         
@@ -215,12 +235,19 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         const currentWorkload = calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
         
         // Calculate capacity for the same date range period based on actual working days
+        const startDate = dateRange.startDate || new Date().toISOString().split('T')[0];
+        const endDate = dateRange.endDate || new Date().toISOString().split('T')[0];
         const workingDaysInPeriod = calculateWorkingDaysInPeriod(
-          dateRange.startDate || new Date().toISOString().split('T')[0],
-          dateRange.endDate || new Date().toISOString().split('T')[0],
+          startDate,
+          endDate,
           member.org_working_days
         );
-        const periodCapacity = workingDaysInPeriod * dailyHours;
+        let periodCapacity = workingDaysInPeriod * dailyHours;
+        
+        // Fallback: if periodCapacity is 0, use weekly capacity as fallback
+        if (periodCapacity === 0) {
+          periodCapacity = weeklyCapacity;
+        }
         
         const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
         
@@ -328,13 +355,13 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
             label: context => {
               if (chartType === 'comparison') {
                 const value = context.parsed.y;
-                return `${context.dataset.label}: ${value}h`;
+                return `${context.dataset.label}: ${formatTime(value)}`;
               } else {
                 const member = sortedMembers[context.dataIndex];
                 return [
                   `${t('chart.utilization')}: ${context.parsed.y}%`,
-                  `${t('chart.allocated')}: ${member.currentWorkload}h`,
-                  `${t('chart.capacity')}: ${member.expectedCapacity}h`,
+                  `${t('chart.allocated')}: ${formatTime(member.currentWorkload)}`,
+                  `${t('chart.capacity')}: ${formatTime(member.expectedCapacity)}`,
                 ];
               }
             },
@@ -346,18 +373,37 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           grid: {
             display: false,
           },
+          ticks: {
+            maxRotation: 45, // Rotate labels if needed
+            minRotation: 0,
+            autoSkip: false, // Show all labels
+          },
         },
         y: {
           beginAtZero: true,
           ticks: {
             callback: function (value) {
               if (chartType === 'comparison') {
-                return `${value}h`;
+                return formatTime(value);
               }
               return `${value}%`;
             },
           },
           max: chartType === 'comparison' ? undefined : 120,
+        },
+      },
+      elements: {
+        bar: {
+          borderRadius: 4, // Rounded corners for better appearance
+          borderSkipped: false, // Apply border radius to all corners
+        },
+      },
+      layout: {
+        padding: {
+          left: 20,
+          right: 20,
+          top: 10,
+          bottom: 10,
         },
       },
     };
@@ -372,6 +418,24 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
 
   return (
     <Flex vertical gap={16}>
+      <style>
+        {`
+          .workload-chart-container::-webkit-scrollbar {
+            height: 8px;
+          }
+          .workload-chart-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+          }
+          .workload-chart-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+          }
+          .workload-chart-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+          }
+        `}
+      </style>
       <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
         <Radio.Group value={chartType} onChange={e => setChartType(e.target.value)}>
           <Radio.Button value="bar">{t('chart.barChart')}</Radio.Button>
@@ -390,8 +454,41 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         />
       </Flex>
 
-      <div style={{ height: 400 }}>
-        <Bar data={chartData} options={chartOptions} />
+      <div
+        className="workload-chart-container"
+        style={{
+          height: 400,
+          minHeight: 300,
+          width: '100%',
+          position: 'relative',
+          overflowX: 'auto',
+          overflowY: 'hidden'
+        }}
+      >
+        <div style={{
+          minWidth: Math.max(600, sortedMembers.length * 50), // Smaller fixed width per column (50px instead of 80px)
+          height: '100%'
+        }}>
+          <Bar
+            data={chartData}
+            options={{
+              ...chartOptions,
+              plugins: {
+                ...chartOptions.plugins,
+              },
+              scales: {
+                ...chartOptions.scales,
+              },
+              elements: {
+                bar: {
+                  ...chartOptions.elements?.bar,
+                  barThickness: 35, // Smaller fixed bar width (35px instead of dynamic)
+                  maxBarThickness: 35, // Ensure maximum width is also 35px
+                },
+              },
+            }}
+          />
+        </div>
       </div>
 
       <Flex vertical gap={12} style={{ marginTop: 16 }}>
@@ -476,22 +573,21 @@ const MemberWorkloadCard = ({
           title={t('calculations.utilizationTooltip', {
             utilization: member.utilizationPercentage,
             assignedHours: member.currentWorkload,
-            expectedCapacity: member.expectedCapacity,
+            weeklyCapacity: member.expectedCapacity,
             dailyHours: member.dailyCapacity,
             workingDays: workingDays,
           })}
           placement="left"
         >
           <Typography.Text>
-            {member.currentWorkload} / {member.expectedCapacity}{' '}
-            {capacityUnit === 'hours' ? t('overview.hours') : t('overview.points')}
+            {formatTime(member.currentWorkload)} / {formatTime(member.expectedCapacity)}
           </Typography.Text>
         </Tooltip>
         <Tooltip
           title={t('calculations.utilizationTooltip', {
             utilization: member.utilizationPercentage,
             assignedHours: member.currentWorkload,
-            expectedCapacity: member.expectedCapacity,
+            weeklyCapacity: member.expectedCapacity,
             dailyHours: member.dailyCapacity,
             workingDays: workingDays,
           })}

@@ -17,6 +17,7 @@ import { MoreOutlined, SwapOutlined, EditOutlined, ExportOutlined } from '@ant-d
 import { useTranslation } from 'react-i18next';
 import { IWorkloadData, IWorkloadMember, ITaskAllocation } from '@/types/workload/workload.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { formatTime } from '@/api/project-workload/project-workload.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 import { setSelectedMember } from '@/features/project-workload/projectWorkloadSlice';
@@ -157,19 +158,26 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
     }
     
     return members.map((member: any) => {
-      const dailyHours = member.org_working_hours || 8;
+      const dailyHours = Number(member.org_working_hours) || 8;
       const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
       const weeklyCapacity = dailyHours * workingDaysPerWeek;
       
       const currentWorkload = calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
       
       // Calculate capacity for the same date range period based on actual working days
+      const startDate = dateRange.startDate || new Date().toISOString().split('T')[0];
+      const endDate = dateRange.endDate || new Date().toISOString().split('T')[0];
       const workingDaysInPeriod = calculateWorkingDaysInPeriod(
-        dateRange.startDate || new Date().toISOString().split('T')[0],
-        dateRange.endDate || new Date().toISOString().split('T')[0],
+        startDate,
+        endDate,
         member.org_working_days
       );
-      const periodCapacity = workingDaysInPeriod * dailyHours;
+      let periodCapacity = workingDaysInPeriod * dailyHours;
+      
+      // Fallback: if periodCapacity is 0, use weekly capacity as fallback
+      if (periodCapacity === 0) {
+        periodCapacity = weeklyCapacity;
+      }
       
       const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
       
@@ -226,14 +234,14 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         return (
           <Tooltip
             title={t('calculations.capacityTooltip', {
-              expectedCapacity: capacity,
+              weeklyCapacity: capacity,
               dailyHours: record.dailyCapacity,
               workingDays: workingDays,
             })}
             placement="top"
           >
             <Typography.Text>
-              {capacity} {t('overview.hours')}
+              {formatTime(capacity)}
             </Typography.Text>
           </Tooltip>
         );
@@ -247,7 +255,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       render: (workload, record) => (
         <Flex vertical gap={4}>
           <Typography.Text>
-            {workload} {t('overview.hours')}
+            {formatTime(workload)}
           </Typography.Text>
           {record.isOverallocated && (
             <Tag
@@ -286,7 +294,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
             title={t('calculations.utilizationTooltip', {
               utilization: utilization,
               assignedHours: record.currentWorkload,
-              expectedCapacity: record.expectedCapacity,
+              weeklyCapacity: record.expectedCapacity,
               dailyHours: record.dailyCapacity,
               workingDays: workingDays,
             })}
@@ -471,8 +479,8 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         title: t('table.estimatedHours'),
         key: 'estimatedHours',
         render: (_, task) => {
-          const hours = task.total_minutes ? Math.round(task.total_minutes / 60) : 4;
-          return `${hours}h`;
+          const hours = task.total_minutes ? task.total_minutes / 60 : 4;
+          return formatTime(hours);
         },
       },
       {
@@ -522,7 +530,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
                 projectName: task.project_name || 'Current Project',
                 memberId: record.id,
                 memberName: record.name,
-                estimatedHours: task.total_minutes ? Math.round(task.total_minutes / 60) : 4,
+                estimatedHours: task.total_minutes ? task.total_minutes / 60 : 4,
                 actualHours: 0,
                 startDate: task.start_date ? task.start_date.split('T')[0] : '',
                 endDate: task.end_date ? task.end_date.split('T')[0] : '',

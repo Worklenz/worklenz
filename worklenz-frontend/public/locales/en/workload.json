@@ -39,7 +39,22 @@
     "utilization": "Utilization",
     "assignedTasks": "Assigned Tasks",
     "teamAvailability": "Team Availability",
-    "noTasksScheduled": "No tasks scheduled for this day"
+    "noTasksScheduled": "No tasks scheduled for this day",
+    "taskSummary": "Task Summary",
+    "task": "Task",
+    "tasks_plural": "Tasks",
+    "member": "Member",
+    "members_plural": "Members",
+    "logged": "logged",
+    "planned": "planned",
+    "unscheduled": "Unscheduled",
+    "hoursAssigned": "{{hours}}h assigned",
+    "capacityHours": "{{hours}}h capacity",
+    "unknownMember": "Unknown",
+    "currentProject": "Current Project",
+    "unknownInitial": "U",
+    "defaultPriority": "Medium",
+    "defaultStatus": "In Progress"
   },
 
   "table": {

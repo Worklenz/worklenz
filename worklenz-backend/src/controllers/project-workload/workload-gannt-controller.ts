@@ -262,7 +262,8 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT  MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS min_date,
-                                    MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS max_date
+                                    MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS max_date,
+                                    SUM(twl.time_spent) AS total_time_spent_seconds
                                   FROM task_work_log twl
                                           INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
                                   WHERE t.project_id = $1
@@ -270,15 +271,51 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                                     ${this.getLogDateRangeFilter(startDate, endDate)}) rec) AS logs_date_union,
 
                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
-                      FROM (SELECT start_date,
-                                    end_date
+                      FROM (
+                            -- Tasks with start/end dates
+                            SELECT tasks.id AS task_id,
+                                   tasks.name AS task_name,
+                                   start_date,
+                                   end_date,
+                                   (SELECT name FROM task_statuses WHERE id = tasks.status_id) AS status_name,
+                                   (SELECT color_code FROM sys_task_status_categories WHERE id = (SELECT category_id FROM task_statuses WHERE id = tasks.status_id)) AS status_color,
+                                   (SELECT name FROM task_priorities WHERE id = tasks.priority_id) AS priority_name,
+                                   (SELECT color_code FROM task_priorities WHERE id = tasks.priority_id) AS priority_color,
+                                   NULL::NUMERIC AS logged_hours,
+                                   'task' AS entry_type
                             FROM tasks
                                       INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
                             WHERE archived IS FALSE
                               AND project_id = pm.project_id
                               AND ta.team_member_id = tmiv.team_member_id
                               ${this.getTaskDateRangeFilter(startDate, endDate)}
-                            ORDER BY start_date ASC) rec) AS tasks
+
+                            UNION ALL
+
+                            -- Time logs as single-day entries
+                            SELECT DISTINCT ON (twl.created_at::date, t.id)
+                                   t.id AS task_id,
+                                   t.name AS task_name,
+                                   twl.created_at::date AS start_date,
+                                   twl.created_at::date AS end_date,
+                                   (SELECT name FROM task_statuses WHERE id = t.status_id) AS status_name,
+                                   (SELECT color_code FROM sys_task_status_categories WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+                                   (SELECT name FROM task_priorities WHERE id = t.priority_id) AS priority_name,
+                                   (SELECT color_code FROM task_priorities WHERE id = t.priority_id) AS priority_color,
+                                   SUM(twl.time_spent / 3600.0) OVER (PARTITION BY twl.created_at::date, t.id) AS logged_hours,
+                                   'time_log' AS entry_type
+                            FROM task_work_log twl
+                                      INNER JOIN tasks t ON twl.task_id = t.id
+                                      INNER JOIN tasks_assignees ta ON t.id = ta.task_id
+                            WHERE t.archived IS FALSE
+                              AND t.project_id = pm.project_id
+                              AND ta.team_member_id = tmiv.team_member_id
+                              AND twl.user_id = tmiv.user_id
+                              ${startDate ? `AND twl.created_at::date >= '${startDate}'` : ''}
+                              ${endDate ? `AND twl.created_at::date <= '${endDate}'` : ''}
+
+                            ORDER BY start_date ASC
+                      ) rec) AS tasks
               FROM project_members pm
                       INNER JOIN team_member_info_view tmiv ON pm.team_member_id = tmiv.team_member_id
               WHERE project_id = $1
@@ -453,8 +490,9 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
         -- Task has only end_date and it falls within the range
         (start_date IS NULL AND end_date IS NOT NULL AND end_date >= '${startDate}' AND end_date <= '${endDate}') OR
         -- Task has only start_date and it falls within the range
-        (start_date IS NOT NULL AND end_date IS NULL AND start_date >= '${startDate}' AND start_date <= '${endDate}')
-        -- Note: Tasks with both dates NULL are excluded from date range filtering
+        (start_date IS NOT NULL AND end_date IS NULL AND start_date >= '${startDate}' AND start_date <= '${endDate}') OR
+        -- Include tasks with both dates NULL (unscheduled tasks)
+        (start_date IS NULL AND end_date IS NULL)
       )
     `;
   }
@@ -467,8 +505,9 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
     return `
       AND (
         -- Log date (created_at - time_spent) falls within the selected date range
-        (twl.created_at - INTERVAL '1 second' * twl.time_spent)::date >= '${startDate}'::date
-        AND (twl.created_at - INTERVAL '1 second' * twl.time_spent)::date <= '${endDate}'::date
+        -- Convert to date and compare with the provided date range
+        DATE(twl.created_at - INTERVAL '1 second' * twl.time_spent) >= '${startDate}'
+        AND DATE(twl.created_at - INTERVAL '1 second' * twl.time_spent) <= '${endDate}'
       )
     `;
   }

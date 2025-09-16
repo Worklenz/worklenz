@@ -13,6 +13,7 @@ import {
   Typography,
   Divider,
   Checkbox,
+  InputNumber,
 } from '@/shared/antd-imports';
 import {
   FilterOutlined,
@@ -29,6 +30,7 @@ import {
   clearFilters,
   setTimeScale,
   toggleWeekends,
+  setWorkingHoursPerDay,
   toggleWorkingDay,
   setWorkingDays,
 } from '@/features/project-workload/projectWorkloadSlice';
@@ -47,7 +49,7 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
   const { t } = useTranslation('workload');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
-  const { dateRange, filters, timeScale, capacityUnit, showWeekends, workingDays } = useAppSelector(
+  const { dateRange, filters, timeScale, capacityUnit, showWeekends, workingHoursPerDay, workingDays } = useAppSelector(
     state => state.projectWorkload
   );
 
@@ -205,6 +207,7 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
   };
   const defaultTimeScale = 'week';
   const defaultShowWeekends = false;
+  const defaultWorkingHoursPerDay = 8;
   const defaultDateRange = {
     startDate: dayjs().startOf('week').format('YYYY-MM-DD'),
     endDate: dayjs().endOf('week').format('YYYY-MM-DD'),
@@ -221,8 +224,9 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     workingDays.sunday !== defaultWorkingDays.sunday;
   const timeScaleChanged = timeScale !== defaultTimeScale;
   const showWeekendsChanged = showWeekends !== defaultShowWeekends;
-  const dateRangeChanged = 
-    dateRange.startDate !== defaultDateRange.startDate || 
+  const workingHoursChanged = workingHoursPerDay !== defaultWorkingHoursPerDay;
+  const dateRangeChanged =
+    dateRange.startDate !== defaultDateRange.startDate ||
     dateRange.endDate !== defaultDateRange.endDate;
 
   const activeFiltersCount =
@@ -235,6 +239,7 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     (workingDaysChanged ? 1 : 0) +
     (timeScaleChanged ? 1 : 0) +
     (showWeekendsChanged ? 1 : 0) +
+    (workingHoursChanged ? 1 : 0) +
     (dateRangeChanged ? 1 : 0);
 
   const filterContent = (
@@ -250,6 +255,19 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
             { label: t('filters.weekly'), value: 'week' },
             { label: t('filters.monthly'), value: 'month' },
           ]}
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: 8 }}>Working Hours per Day</label>
+        <InputNumber
+          value={workingHoursPerDay}
+          onChange={value => dispatch(setWorkingHoursPerDay(value || 8))}
+          style={{ width: '100%' }}
+          min={1}
+          max={24}
+          step={0.5}
+          addonAfter="hours"
         />
       </div>
 
@@ -346,6 +364,7 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
            // Reset all values to defaults
            dispatch(setWorkingDays(defaultWorkingDays));
            dispatch(setTimeScale(defaultTimeScale));
+           dispatch(setWorkingHoursPerDay(defaultWorkingHoursPerDay));
            // Reset showWeekends to false only if it's currently true
            if (showWeekends) {
              dispatch(toggleWeekends());
