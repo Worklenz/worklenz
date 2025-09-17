@@ -58,9 +58,15 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
     {priceDisplay}
 
-    <div style={{ flex: 1, marginBottom: 24 }}>{features}</div>
-
-    <div style={{ marginTop: 'auto' }}>
+    <div style={{ marginTop: 16, marginBottom: 24 }}>
+      {footerNote && (
+        <Typography.Text
+          type="secondary"
+          style={{ display: 'block', textAlign: 'center', marginBottom: 12 }}
+        >
+          {footerNote}
+        </Typography.Text>
+      )}
       <Button
         type="primary"
         block
@@ -73,14 +79,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       >
         {primaryActionLabel}
       </Button>
-      {footerNote && (
-        <Typography.Text
-          type="secondary"
-          style={{ display: 'block', textAlign: 'center', marginTop: 8 }}
-        >
-          {footerNote}
-        </Typography.Text>
-      )}
     </div>
+
+    <div style={{ flex: 1 }}>{features}</div>
   </Card>
 );
