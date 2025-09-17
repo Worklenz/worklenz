@@ -1217,10 +1217,15 @@ const UpgradePlans = () => {
                   primaryActionDisabled={isLoadingPlans}
                   primaryActionLoading={switchingToPaddlePlan || paddleLoading}
                   footerNote={(() => {
-                    const total = billingFrequency === 'annual' ? calculateAnnualTotal('pro') : calculateMonthlyTotal('pro');
-                    const period = billingFrequency === 'annual' ? t('pricing-modal:billing.perYear', '/year') : t('pricing-modal:billing.perMonth', '/month');
-                    const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
-                    return t('pricing-modal:buttons.planSummaryNoName', '${{total}}{{period}}{{userText}}', { total, period, userText });
+                    if (billingFrequency === 'annual') {
+                      const annualTotal = calculateAnnualTotal('pro');
+                      const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
+                      return `$${annualTotal}/year${userText}`;
+                    } else {
+                      const monthlyTotal = calculateMonthlyTotal('pro');
+                      const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
+                      return `$${monthlyTotal}/month${userText}`;
+                    }
                   })()}
                   isAppSumoUser={isAppSumoUser}
                   themeMode={themeMode}
@@ -1262,10 +1267,15 @@ const UpgradePlans = () => {
                 primaryActionDisabled={isLoadingPlans}
                 primaryActionLoading={switchingToPaddlePlan || paddleLoading}
                 footerNote={(() => {
-                  const total = billingFrequency === 'annual' ? calculateAnnualTotal('business') : calculateMonthlyTotal('business');
-                  const period = billingFrequency === 'annual' ? t('pricing-modal:billing.perYear', '/year') : t('pricing-modal:billing.perMonth', '/month');
-                  const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
-                  return t('pricing-modal:buttons.planSummaryNoName', '${{total}}{{period}}{{userText}}', { total, period, userText });
+                  if (billingFrequency === 'annual') {
+                    const annualTotal = calculateAnnualTotal('business');
+                    const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
+                    return `$${annualTotal}/year${userText}`;
+                  } else {
+                    const monthlyTotal = calculateMonthlyTotal('business');
+                    const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
+                    return `$${monthlyTotal}/month${userText}`;
+                  }
                 })()}
                 isAppSumoUser={isAppSumoUser}
                 themeMode={themeMode}
@@ -1306,9 +1316,13 @@ const UpgradePlans = () => {
                 primaryActionDisabled={isLoadingPlans}
                 primaryActionLoading={switchingToPaddlePlan || paddleLoading}
                 footerNote={(() => {
-                  const total = billingFrequency === 'annual' ? calculateAnnualTotal('enterprise') : calculateMonthlyTotal('enterprise');
-                  const period = billingFrequency === 'annual' ? t('pricing-modal:billing.perYear', '/year') : t('pricing-modal:billing.perMonth', '/month');
-                  return t('pricing-modal:buttons.planSummaryNoName', '${{total}}{{period}}{{userText}}', { total, period, userText: '' });
+                  if (billingFrequency === 'annual') {
+                    const annualTotal = calculateAnnualTotal('enterprise');
+                    return `$${annualTotal}/year`;
+                  } else {
+                    const monthlyTotal = calculateMonthlyTotal('enterprise');
+                    return `$${monthlyTotal}/month`;
+                  }
                 })()}
                 isAppSumoUser={isAppSumoUser}
                 themeMode={themeMode}

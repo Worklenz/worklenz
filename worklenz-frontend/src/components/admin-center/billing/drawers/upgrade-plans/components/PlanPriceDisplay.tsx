@@ -57,9 +57,9 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
       // Per-user pricing display
       <>
         {isAnnual ? (
-          // Annual billing - show annual pricing only
+          // Annual billing - show monthly rate calculated from annual price
           <>
-            {/* Show strikethrough original annual price for AppSumo users */}
+            {/* Show strikethrough original price for AppSumo users */}
             {isAppSumoUser && originalAnnualPrice && (
               <Typography.Text
                 style={{
@@ -70,15 +70,15 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
                   marginBottom: '2px'
                 }}
               >
-                ${originalAnnualPrice} {t('pricing-modal:billing.perYear', '/year')}
+                ${(parseFloat(originalAnnualPrice) / 12).toFixed(2)} {t('pricing-modal:pricing.perUser')} {t('pricing-modal:billing.perMonth', '/month')}
               </Typography.Text>
             )}
 
             <Typography.Title level={2} style={{ fontSize: '28px', margin: 0, lineHeight: 1.2 }}>
-              ${displayedAnnualTotal}
+              ${perUserAnnualPrice || (parseFloat(displayedAnnualTotal) / 12).toFixed(2)}
             </Typography.Title>
             <Typography.Text style={{ fontSize: '14px', marginBottom: '4px', display: 'block', color: labelColor }}>
-              {t('pricing-modal:billing.perYear', '/year')}
+              {t('pricing-modal:pricing.perUser')} {t('pricing-modal:billing.perMonth', '/month')}
             </Typography.Text>
             <Typography.Text style={{ fontSize: '12px', color: textColor, display: 'block' }}>
               {t('pricing-modal:billing.billedAnnually', 'billed annually')}
@@ -98,7 +98,7 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
                   marginBottom: '2px'
                 }}
               >
-                ${originalMonthlyPrice} {t('pricing-modal:billing.perMonth', '/month')}
+                ${originalMonthlyPrice} {t('pricing-modal:pricing.perUser')} {t('pricing-modal:billing.perMonth', '/month')}
               </Typography.Text>
             )}
 
@@ -115,9 +115,9 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
       // Base plan pricing display
       <>
         {isAnnual ? (
-          // Annual billing - show annual pricing only
+          // Annual billing - show monthly rate calculated from annual price
           <>
-            {/* Show strikethrough original annual price for AppSumo users */}
+            {/* Show strikethrough original price for AppSumo users */}
             {isAppSumoUser && originalAnnualPrice && (
               <Typography.Text
                 style={{
@@ -128,15 +128,15 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
                   marginBottom: '2px'
                 }}
               >
-                ${originalAnnualPrice} {t('pricing-modal:billing.perYear', '/year')}
+                ${(parseFloat(originalAnnualPrice) / 12).toFixed(2)} {t('pricing-modal:billing.perMonth', '/month')}
               </Typography.Text>
             )}
 
             <Typography.Title level={2} style={{ fontSize: '28px', margin: 0, lineHeight: 1.2 }}>
-              ${displayedAnnualTotal}
+              ${(parseFloat(displayedAnnualTotal) / 12).toFixed(2)}
             </Typography.Title>
             <Typography.Text style={{ fontSize: '14px', marginBottom: '4px', display: 'block', color: labelColor }}>
-              {t('pricing-modal:billing.perYear', '/year')}
+              {t('pricing-modal:billing.perMonth', '/month')}
             </Typography.Text>
             <Typography.Text style={{ fontSize: '12px', color: textColor, display: 'block' }}>
               {t('pricing-modal:billing.billedAnnually', 'billed annually')}
