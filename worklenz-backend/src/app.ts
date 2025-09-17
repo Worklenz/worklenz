@@ -22,6 +22,8 @@ import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
+import slackRouter from "./routes/slack.routes";
+
 
 const app = express();
 
@@ -127,7 +129,8 @@ app.use((req, res, next) => {
     req.path.startsWith("/webhook/") ||
     req.path.startsWith("/secure/") ||
     req.path.startsWith("/api/") ||
-    req.path.startsWith("/public/")
+    req.path.startsWith("/public/") ||
+    req.path.startsWith("/slack/")
   ) {
     next();
   } else {
@@ -236,5 +239,8 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     ...(process.env.NODE_ENV === "development" ? { stack: err.stack } : {})
   });
 });
+
+app.use("/slack", slackRouter);
+
 
 export default app;

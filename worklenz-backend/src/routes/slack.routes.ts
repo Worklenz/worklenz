@@ -2,8 +2,10 @@ import { Router } from "express";
 import { SlackService } from "../services/slack/slack.service";
 import { authMiddleware } from "../middlewares/auth";
 
+
 const router = Router();
 const slackService = new SlackService();
+
 
 // Get Slack connection status for current team
 router.get("/status", authMiddleware, async (req, res) => {
@@ -97,6 +99,7 @@ router.post("/commands", async (req, res) => {
   await slackService.handleSlashCommand(req, res);
 });
 
+
 // Event subscriptions
 router.post("/events", async (req, res) => {
   // Slack URL verification
@@ -116,5 +119,6 @@ router.post("/interactive", async (req, res) => {
   // Handle interactive components
   res.status(200).send();
 });
+
 
 export default router;
