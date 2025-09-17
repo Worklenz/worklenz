@@ -26,7 +26,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
     style={{
       height: '100%',
       border: selectedPlanType === planType ? '2px solid #1890ff' : '1px solid #d9d9d9',
-      padding: '8px',
+      padding: '4px',
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
@@ -36,6 +36,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
+      padding: '12px',
     }}
     onClick={() => onPlanSelect(planType)}
     hoverable
@@ -49,20 +50,20 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       billingFrequency={billingFrequency}
       calculateTotalCostForPlan={calculateTotalCostForPlan}
     />
-    <div style={{ textAlign: 'center', marginBottom: 24, position: 'relative' }}>
-      <Typography.Title level={4} style={{ marginBottom: 8 }}>
+    <div style={{ textAlign: 'center', marginBottom: 12, position: 'relative' }}>
+      <Typography.Title level={4} style={{ marginBottom: 4 }}>
         {title}
       </Typography.Title>
-      <Typography.Text type="secondary">{description}</Typography.Text>
+      <Typography.Text type="secondary" style={{ fontSize: '12px' }}>{description}</Typography.Text>
     </div>
 
     {priceDisplay}
 
-    <div style={{ marginTop: 16, marginBottom: 24 }}>
+    <div style={{ marginTop: 12, marginBottom: 16 }}>
       {footerNote && (
         <Typography.Text
           type="secondary"
-          style={{ display: 'block', textAlign: 'center', marginBottom: 12 }}
+          style={{ display: 'block', textAlign: 'center', marginBottom: 8, fontSize: '12px' }}
         >
           {footerNote}
         </Typography.Text>
@@ -70,6 +71,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       <Button
         type="primary"
         block
+        size="middle"
         onClick={(e) => {
           e.stopPropagation();
           onPrimaryAction();

@@ -1088,7 +1088,7 @@ const UpgradePlans = () => {
 
       {/* Pricing Model Information */}
       {!isAppSumoUser && !isLoadingPlans && (pricingData.pro_small || pricingData.business_small) && (
-        <Row justify="center" style={{ marginBottom: 16 }}>
+        <Row justify="center" style={{ marginBottom: 8 }}>
           <Space direction="vertical" size="small" style={{ textAlign: 'center' }}>
             {billingInfo?.total_used && (
               <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
@@ -1128,7 +1128,7 @@ const UpgradePlans = () => {
       )}
 
       {/* Pricing Cards */}
-      <Row className="w-full" gutter={[16, 16]} style={{ marginTop: 16 }}>
+      <Row className="w-full" gutter={[12, 12]} style={{ marginTop: 8 }}>
         {/* Show loading skeletons when loading */}
         {isLoadingPlans ? (
           <>
@@ -1322,7 +1322,7 @@ const UpgradePlans = () => {
       </Row>
 
       {paddleError && (
-        <Row justify="center" style={{ marginTop: 16 }}>
+        <Row justify="center" style={{ marginTop: 12 }}>
           <Alert message={paddleError} type="error" showIcon />
         </Row>
       )}

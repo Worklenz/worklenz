@@ -21,20 +21,20 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
     <Row
       justify="center"
       align="middle"
-      style={{ marginTop: isAppSumoUser ? 8 : 24, marginBottom: 16 }}
+      style={{ marginTop: isAppSumoUser ? 8 : 16, marginBottom: 12 }}
     >
-      <Space size="large" align="center">
+      <Space size="middle" align="center">
         {!isAppSumoUser && (
-          <Space align="center" size="middle">
-            <Typography.Text strong>{t('pricing-modal:teamSize.label')}:</Typography.Text>
+          <Space align="center" size="small">
+            <Typography.Text strong style={{ fontSize: '13px' }}>{t('pricing-modal:teamSize.label')}:</Typography.Text>
             <Flex align="center" gap={8}>
               <InputNumber
                 value={teamSize}
                 min={minTeamSize}
                 max={maxTeamSize}
                 step={1}
-                size="large"
-                style={{ width: 140 }}
+                size="middle"
+                style={{ width: 120 }}
                 onChange={(value) => {
                   const v = Number(value);
                   if (Number.isFinite(v)) {
@@ -52,9 +52,9 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
           </Space>
         )}
 
-        <Space align="center" size="middle">
-          <Typography.Text strong>{t('pricing-modal:billingCycle.label')}:</Typography.Text>
-          <Button.Group size="large">
+        <Space align="center" size="small">
+          <Typography.Text strong style={{ fontSize: '13px' }}>{t('pricing-modal:billingCycle.label')}:</Typography.Text>
+          <Button.Group size="middle">
             <Button
               type={billingFrequency === 'monthly' ? 'primary' : 'default'}
               onClick={() => onBillingFrequencyChange('monthly')}
@@ -71,7 +71,7 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
             </Button>
           </Button.Group>
           {annualSavingsPercent !== undefined && annualSavingsPercent > 0 && (
-            <Typography.Text style={{ color: '#52c41a', fontWeight: 600, marginLeft: 8 }}>
+            <Typography.Text style={{ color: '#52c41a', fontWeight: 600, marginLeft: 8, fontSize: '12px' }}>
               {t('pricing-modal:billing.annualSavingsShortOff', 'Up to {{percent}}% off', { percent: annualSavingsPercent })}
             </Typography.Text>
           )}
