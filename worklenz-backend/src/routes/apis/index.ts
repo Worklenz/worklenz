@@ -54,6 +54,7 @@ import projectManagerApiRouter from "./project-managers-api-router";
 import surveyApiRouter from "./survey-api-router";
 
 import billingApiRouter from "./billing-api-router";
+import planTrialApiRouter from "./plan-trial-api-router";
 import taskDependenciesApiRouter from "./task-dependencies-api-router";
 
 import taskRecurringApiRouter from "./task-recurring-api-router";
@@ -127,6 +128,7 @@ api.get("/access-controls/roles", safeControllerFunction(AccessControlsControlle
 api.get("/logs/my-dashboard", safeControllerFunction(LogsController.getActivityLog));
 
 api.use("/billing", billingApiRouter);
+api.use("/plans", planTrialApiRouter);
 api.use("/task-dependencies", taskDependenciesApiRouter);
 
 api.use("/task-recurring", taskRecurringApiRouter);

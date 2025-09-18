@@ -38,13 +38,14 @@ import {
 } from '@/types/mixpanel-events.types';
 
 // Import our new components and utilities
-import { 
-  PlanFeature, 
-  PlanPriceDisplay, 
-  PlanCardSkeleton, 
-  PlanCard, 
-  AppSumoAlert, 
-  PlanSelectionControls 
+import {
+  PlanFeature,
+  PlanPriceDisplay,
+  PlanCardSkeleton,
+  PlanCard,
+  AppSumoAlert,
+  PlanSelectionControls,
+  BusinessTrialCard
 } from './components';
 import { usePricingCalculations, useTeamSizeOptions } from './hooks';
 import { PricingData, AppSumoDiscountInfo, PlanType, BillingFrequency } from './types';
@@ -1086,6 +1087,17 @@ const UpgradePlans = () => {
         annualSavingsPercent={annualSavingsPercent}
       />
 
+      {/* Business Trial Card - Show for non-AppSumo, non-Business users */}
+      {!isAppSumoUser && !isLoadingPlans && selectedPlanType !== 'business' && (
+        <BusinessTrialCard
+          onTrialStarted={() => {
+            // Refresh the page to get updated session with trial data
+            window.location.reload();
+          }}
+          disabled={isLoadingPlans || switchingToPaddlePlan || switchingToFreePlan}
+        />
+      )}
+
       {/* Pricing Model Information */}
       {!isAppSumoUser && !isLoadingPlans && (pricingData.pro_small || pricingData.business_small) && (
         <Row justify="center" style={{ marginBottom: 8 }}>
@@ -1093,13 +1105,13 @@ const UpgradePlans = () => {
             {billingInfo?.total_used && (
               <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
                 {teamSize <= TEAM_SIZE_THRESHOLD && (pricingData.pro_small || pricingData.business_small)
-                  ? t('pricing-modal:pricingModel.autoPerUser', 'Automatically using per-user pricing for {{count}} user{{s}}', { 
-                      count: teamSize, 
-                      s: teamSize > 1 ? 's' : '' 
+                  ? t('pricing-modal:pricingModel.autoPerUser', 'Automatically using per-user pricing for {{count}} user{{s}}', {
+                      count: teamSize,
+                      s: teamSize > 1 ? 's' : ''
                     })
-                  : t('pricing-modal:pricingModel.autoBase', 'Automatically using base plan pricing for {{count}} user{{s}}', { 
-                      count: teamSize, 
-                      s: teamSize > 1 ? 's' : '' 
+                  : t('pricing-modal:pricingModel.autoBase', 'Automatically using base plan pricing for {{count}} user{{s}}', {
+                      count: teamSize,
+                      s: teamSize > 1 ? 's' : ''
                     })}
               </Typography.Text>
             )}
