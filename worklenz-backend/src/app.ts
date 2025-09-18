@@ -130,7 +130,8 @@ app.use((req, res, next) => {
     req.path.startsWith("/secure/") ||
     req.path.startsWith("/api/") ||
     req.path.startsWith("/public/") ||
-    req.path.startsWith("/slack/")
+    req.path.includes("/slack/")
+    //req.path.startsWith("/api/v1/slack")
   ) {
     next();
   } else {
@@ -196,6 +197,7 @@ const apiLimiter = rateLimit({
 
 // Routes
 app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
+app.use("/api/slack", slackRouter);
 app.use("/secure", authRouter);
 app.use("/public", public_router);
 
@@ -240,7 +242,6 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-app.use("/slack", slackRouter);
 
 
 export default app;
