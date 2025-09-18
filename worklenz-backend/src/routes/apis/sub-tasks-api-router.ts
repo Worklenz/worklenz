@@ -11,4 +11,7 @@ subTasksApiRouter.get("/names/:id", idParamValidator, safeControllerFunction(Sub
 subTasksApiRouter.post("/roadmap/:id", idParamValidator, safeControllerFunction(SubTasksController.getSubTasksRoadMap)); // :id = parent task id
 subTasksApiRouter.get("/:id", idParamValidator, safeControllerFunction(SubTasksController.get)); // :id = parent task id
 
+// Move subtask to a different parent
+subTasksApiRouter.post("/move", safeControllerFunction(SubTasksController.moveToParent));
+
 export default subTasksApiRouter;

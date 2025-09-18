@@ -151,16 +151,14 @@ export class LayoutStabilizer {
   }
 
   // Preload fonts to prevent text layout shifts
+  // Note: This function is disabled as the project uses Google Fonts instead of local font files
+  // If you need to preload Google Fonts, use the following approach:
+  // <link rel="preconnect" href="https://fonts.googleapis.com">
+  // <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   static preloadFonts(fontFaces: Array<{ family: string; weight?: string; style?: string }>): void {
-    fontFaces.forEach(({ family, weight = '400', style = 'normal' }) => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'font';
-      link.type = 'font/woff2';
-      link.crossOrigin = 'anonymous';
-      link.href = `/fonts/${family}-${weight}-${style}.woff2`;
-      document.head.appendChild(link);
-    });
+    // Google Fonts are already preloaded in index.html
+    // Local font preloading is disabled as fonts are served from Google Fonts
+    console.warn('Font preloading is disabled. The project uses Google Fonts which are preloaded in index.html');
   }
 
   // Apply size-based CSS containment

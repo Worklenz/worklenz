@@ -268,3 +268,18 @@ ON task_timers(user_id, task_id);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sys_task_status_categories_covering
 ON sys_task_status_categories(id, color_code, color_code_dark, is_done, is_doing, is_todo);
 
+-- Slack Integration Indexes
+-- Core performance indexes for Slack tables
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_workspaces_team_id ON slack_workspaces(team_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_users_user_id ON slack_users(user_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_channels_project_id ON slack_channels(project_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_notifications_status ON slack_notifications(status);
+
+-- Additional Slack performance indexes
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_workspaces_slack_team_id ON slack_workspaces(slack_team_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_users_slack_workspace_id ON slack_users(slack_workspace_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_channels_slack_workspace_id ON slack_channels(slack_workspace_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_channels_is_active ON slack_channels(is_active);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_notifications_slack_workspace_id ON slack_notifications(slack_workspace_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_slack_notifications_created_at ON slack_notifications(created_at);
+

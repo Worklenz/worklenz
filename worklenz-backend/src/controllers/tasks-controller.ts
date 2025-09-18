@@ -23,6 +23,54 @@ import { IActivityLog } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 
 export default class TasksController extends TasksControllerBase {
+
+  @HandleExceptions()
+  public static async moveToProject(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { task_id, target_project_id } = req.body as { task_id: string; target_project_id: string };
+
+    if (!task_id || !target_project_id)
+      return res.status(400).send(new ServerResponse(false, {}, "task_id and target_project_id are required"));
+
+    const q = `
+      WITH old_task AS (
+        SELECT t.id, ts.name AS status_name
+        FROM tasks t
+        JOIN task_statuses ts ON ts.id = t.status_id
+        WHERE t.id = ($2)::UUID
+      ),
+      chosen_status AS (
+        SELECT COALESCE(
+          (SELECT id FROM task_statuses WHERE project_id = ($1)::UUID AND name = (SELECT status_name FROM old_task) ORDER BY sort_order LIMIT 1),
+          (SELECT id FROM task_statuses WHERE project_id = ($1)::UUID ORDER BY sort_order LIMIT 1)
+        ) AS id
+      ),
+      to_move AS (
+        SELECT id FROM tasks WHERE id = ($2)::UUID
+        UNION ALL
+        SELECT id FROM tasks WHERE parent_task_id = ($2)::UUID
+      ),
+      base AS (
+        SELECT COALESCE(MAX(sort_order), -1) + 1 AS start FROM tasks WHERE project_id = ($1)::UUID
+      ),
+      numbered AS (
+        SELECT tm.id, b.start + ROW_NUMBER() OVER (ORDER BY tm.id) - 1 AS new_sort
+        FROM to_move tm CROSS JOIN base b
+      )
+      UPDATE tasks t
+      SET project_id     = ($1)::UUID,
+          sort_order     = n.new_sort,
+          parent_task_id = CASE WHEN t.id = ($2)::UUID THEN NULL ELSE t.parent_task_id END,
+          status_id      = (SELECT id FROM chosen_status)
+      FROM numbered n
+      WHERE t.id = n.id
+      RETURNING 1;
+    `;
+
+    await db.query(q, [target_project_id, task_id]);
+
+    return res.status(200).send(new ServerResponse(true, { message: "Task moved successfully" }));
+  }
+
   private static notifyProjectUpdates(socketId: string, projectId: string) {
     IO.getSocketById(socketId)
       ?.to(projectId)
