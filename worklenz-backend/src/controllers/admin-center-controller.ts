@@ -1336,7 +1336,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async getAppSumoCountdownWidget(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     
     if (!organizationId) {
       return res.status(400).send(new ServerResponse(false, null, "Organization ID is required"));

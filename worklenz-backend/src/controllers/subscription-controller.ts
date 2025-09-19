@@ -26,7 +26,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async listPlans(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { includeLegacy, includeDiscounts, userCount } = req.query;
     
     try {
@@ -76,7 +76,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async createSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const userId = req.user?.id;
     const { 
       planId, 
@@ -185,7 +185,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async getCurrentSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const userId = req.user?.id;
     
     if (!organizationId) {
@@ -248,7 +248,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async upgradeSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const userId = req.user?.id;
     const { 
       newPlanId, 
@@ -332,7 +332,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async getUsage(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { period, includeProjections } = req.query;
     
     if (!organizationId) {
@@ -407,7 +407,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async cancelSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const userId = req.user?.id;
     const { 
       reason, 

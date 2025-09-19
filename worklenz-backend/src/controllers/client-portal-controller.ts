@@ -1729,7 +1729,7 @@ class ClientPortalController {
   // Settings
   static async getSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_team_id || req.user?.team_id;
+      const organizationTeamId = req.user?.organization_id || req.user?.team_id;
       if (!organizationTeamId) {
         return res.status(400).json(new ServerResponse(false, null, "Organization team ID not found"));
       }
@@ -1763,7 +1763,7 @@ class ClientPortalController {
 
   static async updateSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_team_id || req.user?.team_id;
+      const organizationTeamId = req.user?.organization_id || req.user?.team_id;
       const teamId = req.user?.team_id;
       
       if (!organizationTeamId || !teamId) {
@@ -1823,7 +1823,7 @@ class ClientPortalController {
 
   static async uploadLogo(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_team_id || req.user?.team_id;
+      const organizationTeamId = req.user?.organization_id || req.user?.team_id;
       if (!organizationTeamId) {
         return res.status(400).json(new ServerResponse(false, null, "Organization team ID not found"));
       }

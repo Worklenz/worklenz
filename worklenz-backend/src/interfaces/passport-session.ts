@@ -6,7 +6,7 @@ export interface IPassportSession extends IUser {
   name?: string;
   owner?: boolean;
   team_id?: string;
-  organization_team_id?: string;
+  organization_id?: string;
   team_member_id?: string;
   team_name?: string;
   is_admin?: boolean;

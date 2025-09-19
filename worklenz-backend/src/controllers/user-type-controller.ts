@@ -24,7 +24,7 @@ export default class UserTypeController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const userId = req.user?.id;
 
     if (!organizationId) {
@@ -83,7 +83,7 @@ export default class UserTypeController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
 
     if (!organizationId) {
       return res
@@ -198,7 +198,7 @@ export default class UserTypeController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { newUserType, reason, adminOverride } = req.body;
 
     if (!req.user?.is_admin && !adminOverride) {
@@ -291,7 +291,7 @@ export default class UserTypeController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { limit = 10 } = req.query;
 
     if (!organizationId) {
@@ -341,7 +341,7 @@ export default class UserTypeController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { actions } = req.body;
 
     if (!organizationId || !actions || !Array.isArray(actions)) {

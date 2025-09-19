@@ -34,9 +34,13 @@ export default class PlanTrialController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async startBusinessTrial(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const userId = req.user?.id;
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
+
+    console.log("DEBUG: startBusinessTrial - userId:", userId, "organizationId:", organizationId);
+    console.log("DEBUG: startBusinessTrial - req.user:", req.user ? "exists" : "null");
 
     if (!userId || !organizationId) {
+      console.log("DEBUG: startBusinessTrial - Missing userId or organizationId");
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
@@ -184,7 +188,7 @@ export default class PlanTrialController extends WorklenzControllerBase {
       // });
 
       // Log to database for analytics
-      this.logTrialEvent(userId, 'trial_started', { plan_name: planName });
+      this.logTrialEvent(userId, "trial_started", { plan_name: planName });
     } catch (error) {
       // Don't fail the request if analytics fails
       console.error("Failed to log trial start event:", error);
@@ -196,7 +200,7 @@ export default class PlanTrialController extends WorklenzControllerBase {
       console.log(`[ANALYTICS] Trial cancelled: User ${userId} - Reason: ${reason || "Not specified"}`);
 
       // Log to database for analytics
-      this.logTrialEvent(userId, 'trial_cancelled', {
+      this.logTrialEvent(userId, "trial_cancelled", {
         reason: reason || "Not specified"
       });
     } catch (error) {
@@ -209,7 +213,7 @@ export default class PlanTrialController extends WorklenzControllerBase {
       console.log(`[ANALYTICS] Trial converted: User ${userId} - Trial ${trialId}`);
 
       // Log to database for analytics
-      this.logTrialEvent(userId, 'trial_converted', {
+      this.logTrialEvent(userId, "trial_converted", {
         trial_id: trialId
       });
     } catch (error) {
@@ -227,10 +231,10 @@ export default class PlanTrialController extends WorklenzControllerBase {
       const analyticsEvent = {
         user_id: userId,
         event_type: eventType,
-        event_category: 'plan_trial',
+        event_category: "plan_trial",
         metadata,
         timestamp: new Date().toISOString(),
-        source: 'backend'
+        source: "backend"
       };
 
       console.log(`[TRIAL_ANALYTICS] ${JSON.stringify(analyticsEvent)}`);
