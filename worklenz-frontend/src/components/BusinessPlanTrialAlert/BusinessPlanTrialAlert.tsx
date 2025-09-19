@@ -1,0 +1,296 @@
+import { Alert, Button, Space, Spin, message } from '@/shared/antd-imports';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { CloseOutlined, GiftOutlined, ClockCircleOutlined, RocketOutlined } from '@ant-design/icons';
+import { useAuthService } from '@/hooks/useAuth';
+import { isOnBusinessTrial, getPlanTrialDaysRemaining } from '@/utils/subscription-utils';
+import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+
+const DISMISS_KEY = 'business-trial-alert-dismissed';
+
+export const BusinessPlanTrialAlert = () => {
+  const { t } = useTranslation('common');
+  const navigate = useNavigate();
+  const authService = useAuthService();
+  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [canStartTrial, setCanStartTrial] = useState(false);
+  const [eligibilityChecked, setEligibilityChecked] = useState(false);
+
+  const currentSession = authService.getCurrentSession();
+  const isOnTrial = isOnBusinessTrial(currentSession);
+  const trialDaysRemaining = getPlanTrialDaysRemaining(currentSession);
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+
+  useEffect(() => {
+    // Only show for owners/admins
+    if (!isOwnerOrAdmin) {
+      setVisible(false);
+      return;
+    }
+
+    // Check if user has dismissed today
+    const dismissedDate = localStorage.getItem(DISMISS_KEY);
+    const today = new Date().toDateString();
+    if (dismissedDate === today) {
+      setVisible(false);
+      return;
+    }
+
+    // Don't show for self-hosted or business/enterprise users
+    const subscriptionType = currentSession?.subscription_type;
+    if (
+      subscriptionType === ISUBSCRIPTION_TYPE.SELF_HOSTED ||
+      subscriptionType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS
+    ) {
+      setVisible(false);
+      return;
+    }
+
+    // Check if already on paid Business/Enterprise plan
+    if (subscriptionType === ISUBSCRIPTION_TYPE.PADDLE) {
+      const planName = currentSession?.plan_name?.toLowerCase() || '';
+      if (planName.includes('business') || planName.includes('enterprise')) {
+        setVisible(false);
+        return;
+      }
+    }
+
+    // If on Business trial, show the countdown
+    if (isOnTrial) {
+      setVisible(true);
+      setEligibilityChecked(true);
+      return;
+    }
+
+    // Check eligibility for new trial
+    checkTrialEligibility();
+  }, [
+    isOwnerOrAdmin,
+    isOnTrial,
+    currentSession?.subscription_type,
+    currentSession?.plan_name,
+    currentSession?.plan_trial_plan_id
+  ]);
+
+  const checkTrialEligibility = async () => {
+    setLoading(true);
+    try {
+      const response = await PlanTrialApiService.checkBusinessTrialEligibility();
+      if (response.done && response.body) {
+        setCanStartTrial(response.body.can_start_trial || false);
+        setVisible(response.body.can_start_trial || false);
+      }
+    } catch (error) {
+      console.error('Failed to check trial eligibility:', error);
+      setVisible(false);
+    } finally {
+      setLoading(false);
+      setEligibilityChecked(true);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    setStarting(true);
+    try {
+      const response = await PlanTrialApiService.startBusinessTrial();
+      if (response.done) {
+        message.success(t('business-trial-started', { defaultValue: 'Business trial started successfully! Refreshing...' }));
+        // Refresh to update session
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        message.error(response.message || t('business-trial-start-failed', { defaultValue: 'Failed to start trial' }));
+      }
+    } catch (error: any) {
+      message.error(
+        error.response?.data?.message ||
+        t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
+      );
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const handleUpgrade = () => {
+    navigate('/worklenz/admin-center/billing');
+  };
+
+  const handleDismiss = () => {
+    setVisible(false);
+    // Remember dismissal for today only
+    localStorage.setItem(DISMISS_KEY, new Date().toDateString());
+  };
+
+  // Don't show if not visible or still checking
+  if (!visible || (!eligibilityChecked && !isOnTrial)) {
+    return null;
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          padding: '12px 48px',
+          background: 'linear-gradient(90deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%)',
+          borderBottom: '1px solid rgba(102,126,234,0.2)',
+          textAlign: 'center'
+        }}
+      >
+        <Space>
+          <Spin size="small" />
+          <span>{t('business-trial-checking', { defaultValue: 'Checking trial availability...' })}</span>
+        </Space>
+      </div>
+    );
+  }
+
+  // Active trial state - show countdown
+  if (isOnTrial) {
+    const getMessage = () => {
+      if (trialDaysRemaining === 0) {
+        return t('business-trial-expires-today', { defaultValue: 'Your Business trial expires today!' });
+      } else if (trialDaysRemaining === 1) {
+        return t('business-trial-days-remaining', { days: 1, defaultValue: '1 day remaining in your Business trial' });
+      } else {
+        return t('business-trial-days-remaining_plural', {
+          days: trialDaysRemaining,
+          defaultValue: `${trialDaysRemaining} days remaining in your Business trial`
+        });
+      }
+    };
+
+    return (
+      <div
+        style={{
+          width: '100%',
+          padding: '8px 48px',
+          background: 'linear-gradient(90deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)',
+          borderBottom: '1px solid rgba(102,126,234,0.3)',
+          backdropFilter: 'blur(10px)'
+        }}
+      >
+        <Alert
+          message={
+            <Space size="large" style={{ width: '100%', justifyContent: 'space-between' }}>
+              <Space>
+                <ClockCircleOutlined style={{ color: '#722ed1' }} />
+                <span style={{ fontWeight: 500 }}>
+                  {t('business-trial-active', { defaultValue: 'Business Trial Active' })}
+                </span>
+                <span style={{ opacity: 0.9 }}>- {getMessage()}</span>
+              </Space>
+              <Space>
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={handleUpgrade}
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    border: 'none'
+                  }}
+                >
+                  {t('business-trial-upgrade', { defaultValue: 'Upgrade Now' })}
+                </Button>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CloseOutlined />}
+                  onClick={handleDismiss}
+                  style={{ color: '#595959' }}
+                  title={t('business-trial-dismiss', { defaultValue: 'Dismiss' })}
+                />
+              </Space>
+            </Space>
+          }
+          type="info"
+          showIcon={false}
+          closable={false}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            padding: '4px 0'
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Eligible for trial - show offer with start button
+  if (canStartTrial) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          padding: '8px 48px',
+          background: 'linear-gradient(90deg, rgba(82,196,26,0.08) 0%, rgba(102,126,234,0.08) 100%)',
+          borderBottom: '1px solid rgba(82,196,26,0.3)',
+          backdropFilter: 'blur(10px)'
+        }}
+      >
+        <Alert
+          message={
+            <Space size="large" style={{ width: '100%', justifyContent: 'space-between' }}>
+              <Space>
+                <GiftOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+                <span style={{ fontWeight: 600, fontSize: 15 }}>
+                  {t('business-trial-offer', { defaultValue: 'Try Business Plan Free for 7 Days' })}
+                </span>
+                <span style={{ opacity: 0.85 }}>
+                  - {t('business-trial-unlock', { defaultValue: 'Unlock Client Portal, Project Finance & More' })}
+                </span>
+                <span style={{ opacity: 0.7, fontSize: 13 }}>
+                  {t('business-trial-no-card', { defaultValue: 'No credit card required' })}
+                </span>
+              </Space>
+              <Space>
+                <Button
+                  type="primary"
+                  size="small"
+                  loading={starting}
+                  onClick={handleStartTrial}
+                  icon={<RocketOutlined />}
+                  style={{
+                    background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+                    border: 'none',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 8px rgba(82,196,26,0.3)'
+                  }}
+                >
+                  {starting ?
+                    t('business-trial-starting', { defaultValue: 'Starting...' }) :
+                    t('business-trial-start', { defaultValue: 'Start Free Trial' })
+                  }
+                </Button>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CloseOutlined />}
+                  onClick={handleDismiss}
+                  style={{ color: '#595959' }}
+                  title={t('business-trial-dismiss', { defaultValue: 'Dismiss' })}
+                />
+              </Space>
+            </Space>
+          }
+          type="success"
+          showIcon={false}
+          closable={false}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            padding: '4px 0'
+          }}
+        />
+      </div>
+    );
+  }
+
+  return null;
+};
+
+export default BusinessPlanTrialAlert;

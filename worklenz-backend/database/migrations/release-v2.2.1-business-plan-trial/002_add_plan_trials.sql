@@ -1,5 +1,5 @@
 -- Migration: Add plan-specific trial support
--- Description: Enables 3-day trial for Business plan and other plan-specific trials
+-- Description: Enables 7-day trial for Business plan and other plan-specific trials
 -- Date: 2025-01-18
 
 -- 1. Add trial configuration columns to licensing_plan_tiers
@@ -46,9 +46,9 @@ COMMENT ON COLUMN licensing_plan_trials.cancellation_reason IS 'Reason for not c
 COMMENT ON COLUMN licensing_plan_tiers.trial_duration_days IS 'Number of days for plan-specific trial (NULL means no trial available)';
 COMMENT ON COLUMN licensing_plan_tiers.trial_enabled IS 'Whether trial is enabled for this plan tier';
 
--- 5. Update Business plan tier to enable 3-day trial
+-- 5. Update Business plan tier to enable 7-day trial
 UPDATE licensing_plan_tiers
-SET trial_duration_days = 3,
+SET trial_duration_days = 7,
     trial_enabled = TRUE,
     updated_at = NOW()
 WHERE tier_name = 'BUSINESS_LARGE';

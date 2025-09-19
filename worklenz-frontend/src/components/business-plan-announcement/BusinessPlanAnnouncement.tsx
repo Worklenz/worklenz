@@ -1,12 +1,14 @@
-import { React, Button, notification, theme, Badge } from '@/shared/antd-imports';
-import { useEffect, useMemo } from 'react';
+import { React, Button, notification, theme, Badge, message } from '@/shared/antd-imports';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { StarOutlined, CloseOutlined, LockOutlined } from '@ant-design/icons';
+import { StarOutlined, CloseOutlined, LockOutlined, GiftOutlined, RocketOutlined } from '@ant-design/icons';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
+import { isOnBusinessTrial } from '@/utils/subscription-utils';
 
 const STORAGE_KEY = 'wlz_bizplan_announce_seen_v1';
 const SNOOZE_KEY = 'wlz_bizplan_announce_snooze_until_v1';
@@ -51,8 +53,12 @@ export const BusinessPlanAnnouncement = () => {
   const authService = useAuthService();
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const [canStartTrial, setCanStartTrial] = useState(false);
+  const [trialEligibilityChecked, setTrialEligibilityChecked] = useState(false);
 
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
+  const currentSession = authService.getCurrentSession();
+  const isOnTrial = isOnBusinessTrial(currentSession);
   
   // Theme-sensitive styling
   const isDark = themeMode === 'dark';
@@ -85,19 +91,43 @@ export const BusinessPlanAnnouncement = () => {
       : `linear-gradient(135deg, ${token.colorFillTertiary}20, ${token.colorFillQuaternary}10)`
   }), [isDark, token, purpleColor]);
 
+  // Check trial eligibility
+  useEffect(() => {
+    const checkEligibility = async () => {
+      if (!isOwnerOrAdmin) return;
+      if (isOnTrial) return; // Already on trial
+
+      try {
+        const response = await PlanTrialApiService.checkBusinessTrialEligibility();
+        if (response.done) {
+          setCanStartTrial(response.body?.can_start_trial || false);
+          setTrialEligibilityChecked(true);
+        }
+      } catch (error) {
+        console.error('Failed to check trial eligibility:', error);
+        setTrialEligibilityChecked(true);
+      }
+    };
+
+    checkEligibility();
+  }, [isOwnerOrAdmin, isOnTrial]);
+
   useEffect(() => {
     if (!isOwnerOrAdmin) return;
     if (getHasSeen()) return;
-    
+    if (isOnTrial) return; // Don't show if already on trial
+
     // Don't show notification for self-hosted users
-    const currentSession = authService.getCurrentSession();
     if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED) return;
-    
+
     // Don't show notification after end date
     if (Date.now() > END_DATE) return;
 
     const snoozeUntil = getSnoozeUntil();
     if (snoozeUntil && Date.now() < snoozeUntil) return;
+
+    // Wait for trial eligibility check
+    if (!trialEligibilityChecked) return;
 
     // Add a delay before showing the notification (3 seconds)
     const timeoutId = setTimeout(() => {
@@ -109,6 +139,22 @@ export const BusinessPlanAnnouncement = () => {
       dispatch(toggleUpgradeModal());
     };
 
+    const onStartTrial = async () => {
+      try {
+        const response = await PlanTrialApiService.startBusinessTrial();
+        if (response.done) {
+          message.success('Business trial started successfully! Refreshing...');
+          notification.destroy(key);
+          // Refresh to update session
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          message.error(response.message || 'Failed to start trial');
+        }
+      } catch (error: any) {
+        message.error(error.response?.data?.message || 'Failed to start trial');
+      }
+    };
+
     const onDismiss = () => {
       // When dismissed, set snooze for 2 days (remind me later functionality)
       setSnoozeForDays(2);
@@ -118,25 +164,25 @@ export const BusinessPlanAnnouncement = () => {
     notification.open({
       key,
       message: (
-        <div style={{ 
-          display: 'flex', 
+        <div style={{
+          display: 'flex',
           alignItems: 'center',
           fontWeight: 600,
           fontSize: '16px',
           color: token.colorText
         }}>
-          <Badge 
-            count={t('bizPlan.badgeNew')} 
-            style={{ 
-              backgroundColor: '#FFD700',
-              color: '#000',
+          <Badge
+            count={canStartTrial ? 'FREE TRIAL' : t('bizPlan.badgeNew')}
+            style={{
+              backgroundColor: canStartTrial ? token.colorSuccess : '#FFD700',
+              color: canStartTrial ? '#fff' : '#000',
               fontSize: '10px',
               fontWeight: 'bold',
               marginRight: 12,
               boxShadow: `0 2px 4px rgba(255, 215, 0, ${themeStyles.badgeShadowOpacity})`
             }}
           />
-          <span style={{ 
+          <span style={{
             ...(isDark ? {
               // In dark mode, use solid color instead of gradient for better visibility
               color: token.colorPrimary,
@@ -153,7 +199,7 @@ export const BusinessPlanAnnouncement = () => {
               fontSize: '18px'
             })
           }}>
-            {t('bizPlan.title')}
+            {canStartTrial ? 'Try Business Plan Free for 3 Days!' : t('bizPlan.title')}
           </span>
         </div>
       ),
@@ -164,43 +210,61 @@ export const BusinessPlanAnnouncement = () => {
           lineHeight: '1.6'
         }}>
           {/* Main description with enhanced styling */}
-          <div style={{ 
-            display: 'flex', 
+          <div style={{
+            display: 'flex',
             alignItems: 'flex-start',
             marginBottom: 12,
             padding: '12px',
-            background: themeStyles.descriptionBackground,
+            background: canStartTrial ?
+              `linear-gradient(135deg, ${token.colorSuccess}15, ${token.colorSuccess}10)` :
+              themeStyles.descriptionBackground,
             borderRadius: '8px',
-            border: `1px solid ${token.colorBorder}${themeStyles.borderOpacity}`
+            border: canStartTrial ?
+              `2px solid ${token.colorSuccess}60` :
+              `1px solid ${token.colorBorder}${themeStyles.borderOpacity}`
           }}>
-            <div style={{ 
+            <div style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               marginRight: 12,
               minWidth: '24px'
             }}>
-              <StarOutlined style={{ 
-                color: token.colorWarning, 
-                fontSize: '18px',
-                filter: `drop-shadow(0 0 6px rgba(255, 193, 7, ${themeStyles.starGlowOpacity}))`,
-                marginBottom: 4
-              }} />
+              {canStartTrial ? (
+                <GiftOutlined style={{
+                  color: token.colorSuccess,
+                  fontSize: '20px',
+                  filter: `drop-shadow(0 0 6px ${token.colorSuccess}60)`,
+                  marginBottom: 4
+                }} />
+              ) : (
+                <StarOutlined style={{
+                  color: token.colorWarning,
+                  fontSize: '18px',
+                  filter: `drop-shadow(0 0 6px rgba(255, 193, 7, ${themeStyles.starGlowOpacity}))`,
+                  marginBottom: 4
+                }} />
+              )}
               <div style={{
                 width: '2px',
                 height: '20px',
-                background: `linear-gradient(to bottom, ${token.colorWarning}, transparent)`,
+                background: canStartTrial ?
+                  `linear-gradient(to bottom, ${token.colorSuccess}, transparent)` :
+                  `linear-gradient(to bottom, ${token.colorWarning}, transparent)`,
                 borderRadius: '1px'
               }} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ 
+              <div style={{
                 fontWeight: 600,
                 marginBottom: 6,
                 color: token.colorText,
                 fontSize: '15px'
               }}>
-                {t('bizPlan.subtitle')}
+                {canStartTrial ?
+                  'Experience all Business features risk-free!' :
+                  t('bizPlan.subtitle')
+                }
               </div>
               <div style={{
                 display: 'flex',
@@ -339,19 +403,24 @@ export const BusinessPlanAnnouncement = () => {
               <LockOutlined style={{ fontSize: '10px' }} />
               {t('bizPlan.unlockAllFeatures')}
             </div>
-            <div style={{ 
+            <div style={{
               display: 'flex',
               gap: 8
             }}>
-              <Button 
+              <Button
                 type="primary"
                 size="small"
-                onClick={onLearnMore}
-                style={{ 
-                  background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryHover})`,
+                onClick={canStartTrial ? onStartTrial : onLearnMore}
+                icon={canStartTrial ? <RocketOutlined /> : undefined}
+                style={{
+                  background: canStartTrial ?
+                    `linear-gradient(135deg, ${token.colorSuccess}, ${token.colorSuccessHover})` :
+                    `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryHover})`,
                   border: 'none',
                   fontWeight: 600,
-                  boxShadow: `0 4px 12px ${token.colorPrimary}${isDark ? '60' : '40'}`,
+                  boxShadow: canStartTrial ?
+                    `0 4px 12px ${token.colorSuccess}${isDark ? '60' : '40'}` :
+                    `0 4px 12px ${token.colorPrimary}${isDark ? '60' : '40'}`,
                   height: '36px',
                   paddingLeft: '20px',
                   paddingRight: '20px',
@@ -360,7 +429,7 @@ export const BusinessPlanAnnouncement = () => {
                   color: isDark ? '#fff' : token.colorWhite
                 }}
               >
-                {t('bizPlan.learnMore')}
+                {canStartTrial ? 'Start Free Trial' : t('bizPlan.learnMore')}
               </Button>
               <Button 
                 type="text"
@@ -399,13 +468,13 @@ export const BusinessPlanAnnouncement = () => {
         minWidth: '320px'
       }
     });
-    }, 10000); // 3 second delay
+    }, 10000); // 10 second delay
 
     // Cleanup timeout on unmount or dependency change
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [dispatch, isOwnerOrAdmin, t, token, themeStyles, authService]);
+  }, [dispatch, isOwnerOrAdmin, t, token, themeStyles, currentSession, isOnTrial, trialEligibilityChecked, canStartTrial, isDark]);
 
   return null;
 };

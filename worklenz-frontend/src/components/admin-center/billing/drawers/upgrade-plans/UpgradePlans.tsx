@@ -23,7 +23,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { setSession } from '@/utils/session-helper';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { 
+import {
   MixpanelBillingEvents,
   PlanSelectionEventProps,
   TeamSizeChangeEventProps,
@@ -36,6 +36,8 @@ import {
   BillingFrequency as MixpanelBillingFrequency,
   PricingModel
 } from '@/types/mixpanel-events.types';
+import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
+import { isOnBusinessTrial } from '@/utils/subscription-utils';
 
 // Import our new components and utilities
 import {
@@ -44,8 +46,7 @@ import {
   PlanCardSkeleton,
   PlanCard,
   AppSumoAlert,
-  PlanSelectionControls,
-  BusinessTrialCard
+  PlanSelectionControls
 } from './components';
 import { usePricingCalculations, useTeamSizeOptions } from './hooks';
 import { PricingData, AppSumoDiscountInfo, PlanType, BillingFrequency } from './types';
@@ -98,7 +99,12 @@ const UpgradePlans = () => {
   
   // Error states
   const [paddleError, setPaddleError] = useState<string | null>(null);
-  
+
+  // Business trial states
+  const [canStartBusinessTrial, setCanStartBusinessTrial] = useState(false);
+  const [businessTrialLoading, setBusinessTrialLoading] = useState(false);
+  const [trialEligibilityChecked, setTrialEligibilityChecked] = useState(false);
+
   // AppSumo states
   const [appSumoDiscountInfo, setAppSumoDiscountInfo] = useState<AppSumoDiscountInfo | null>(null);
   
@@ -928,6 +934,35 @@ const UpgradePlans = () => {
     }
   };
 
+  // Start Business Plan Trial
+  const startBusinessTrial = async () => {
+    setBusinessTrialLoading(true);
+    try {
+      const response = await PlanTrialApiService.startBusinessTrial();
+      if (response.done) {
+        message.success(
+          t('business-trial-started', { defaultValue: 'Business trial started successfully! Refreshing...' })
+        );
+        // Refresh session and close modal
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        message.error(
+          response.message ||
+          t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
+        );
+      }
+    } catch (error: any) {
+      message.error(
+        error.response?.data?.message ||
+        t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
+      );
+    } finally {
+      setBusinessTrialLoading(false);
+    }
+  };
+
   // Effects
   useEffect(() => {
     const initializeData = async () => {
@@ -952,6 +987,30 @@ const UpgradePlans = () => {
       setTeamSize(actualTeamSize);
     }
   }, [billingInfo, isAppSumoUser]);
+
+  // Check Business trial eligibility
+  useEffect(() => {
+    const checkTrialEligibility = async () => {
+      if (!currentSession || isOnBusinessTrial(currentSession)) {
+        setTrialEligibilityChecked(true);
+        return;
+      }
+
+      try {
+        const response = await PlanTrialApiService.checkBusinessTrialEligibility();
+        if (response.done && response.body) {
+          setCanStartBusinessTrial(response.body.can_start_trial || false);
+        }
+      } catch (error) {
+        console.error('Failed to check Business trial eligibility:', error);
+        setCanStartBusinessTrial(false);
+      } finally {
+        setTrialEligibilityChecked(true);
+      }
+    };
+
+    checkTrialEligibility();
+  }, [currentSession]);
 
   useEffect(() => {
     return () => {
@@ -1087,16 +1146,6 @@ const UpgradePlans = () => {
         annualSavingsPercent={annualSavingsPercent}
       />
 
-      {/* Business Trial Card - Show for non-AppSumo, non-Business users */}
-      {!isAppSumoUser && !isLoadingPlans && selectedPlanType !== 'business' && (
-        <BusinessTrialCard
-          onTrialStarted={() => {
-            // Refresh the page to get updated session with trial data
-            window.location.reload();
-          }}
-          disabled={isLoadingPlans || switchingToPaddlePlan || switchingToFreePlan}
-        />
-      )}
 
       {/* Pricing Model Information */}
       {!isAppSumoUser && !isLoadingPlans && (pricingData.pro_small || pricingData.business_small) && (
@@ -1271,13 +1320,25 @@ const UpgradePlans = () => {
                 }
                 selectedPlanType={selectedPlanType}
                 onPlanSelect={handlePlanSelect}
-                primaryActionLabel={t('pricing-modal:buttons.choosePlan', 'Continue with Selected Plan')}
+                primaryActionLabel={
+                  trialEligibilityChecked && canStartBusinessTrial && !isOnBusinessTrial(currentSession)
+                    ? t('business-trial-start', { defaultValue: 'Start Free Trial' })
+                    : t('pricing-modal:buttons.choosePlan', 'Continue with Selected Plan')
+                }
                 onPrimaryAction={() => {
-                  handlePlanSelect('business');
-                  void continueWithPaddlePlan('business');
+                  if (trialEligibilityChecked && canStartBusinessTrial && !isOnBusinessTrial(currentSession)) {
+                    void startBusinessTrial();
+                  } else {
+                    handlePlanSelect('business');
+                    void continueWithPaddlePlan('business');
+                  }
                 }}
                 primaryActionDisabled={isLoadingPlans}
-                primaryActionLoading={switchingToPaddlePlan || paddleLoading}
+                primaryActionLoading={
+                  trialEligibilityChecked && canStartBusinessTrial && !isOnBusinessTrial(currentSession)
+                    ? businessTrialLoading
+                    : switchingToPaddlePlan || paddleLoading
+                }
                 footerNote={(() => {
                   if (billingFrequency === 'annual') {
                     const annualTotal = calculateAnnualTotal('business');

@@ -178,184 +178,80 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
     return null; // Don't show the trial card if they've already used it
   }
 
-  // Show trial offer card
+  // Show trial offer card - Clean, minimal design
   return (
     <Card
-      hoverable
-      className="business-trial-card"
       style={{
         marginBottom: 16,
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
         border: 'none',
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: '0 10px 40px rgba(102, 126, 234, 0.4)',
-        transition: 'all 0.3s ease'
+        boxShadow: '0 4px 20px rgba(102, 126, 234, 0.25)'
       }}
-      bodyStyle={{ padding: 32 }}
+      bodyStyle={{ padding: 24 }}
     >
-      {/* Animated sparkles effect */}
-      <div style={{
-        position: 'absolute',
-        top: -50,
-        right: -50,
-        width: 200,
-        height: 200,
-        background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
-        animation: 'pulse 2s ease-in-out infinite'
-      }} />
-
-      {/* Floating badge */}
-      <div style={{
-        position: 'absolute',
-        top: 20,
-        right: 20,
-        animation: 'float 3s ease-in-out infinite'
-      }}>
-        <Badge.Ribbon text="LIMITED OFFER" color="gold">
-          <div style={{ width: 1, height: 1 }} />
-        </Badge.Ribbon>
-      </div>
-
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        {/* Header with icon animation */}
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            display: 'inline-block',
-            padding: 16,
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '50%',
-            marginBottom: 16,
-            animation: 'rotate 10s linear infinite'
-          }}>
-            <GiftOutlined style={{ fontSize: 48, color: '#ffd700' }} />
-          </div>
-
-          <Title level={3} style={{ margin: 0, color: 'white', fontWeight: 700 }}>
-            Unlock Business Plan Powers
-          </Title>
-          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 16 }}>
-            3-Day All-Access Pass • No Credit Card Required
-          </Text>
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        {/* Simple badge and title */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Space>
+            <Tag color="gold" style={{ margin: 0 }}>LIMITED OFFER</Tag>
+            <Text strong style={{ color: 'white', fontSize: 16 }}>
+              Try Business Plan Free
+            </Text>
+          </Space>
+          <Tag style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white' }}>
+            7 Days • No Card Required
+          </Tag>
         </div>
 
-        {/* Features grid with icons */}
-        <Row gutter={[16, 16]}>
+        {/* Compact features list */}
+        <Row gutter={[12, 12]}>
           <Col span={12}>
-            <Space>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <SafetyCertificateOutlined style={{ fontSize: 16 }} />
-              </div>
-              <Text style={{ color: 'white', fontWeight: 500 }}>Client Portal</Text>
+            <Space size="small">
+              <CheckCircleOutlined style={{ color: '#52c41a' }} />
+              <Text style={{ color: 'white', fontSize: 14 }}>Client Portal</Text>
             </Space>
           </Col>
           <Col span={12}>
-            <Space>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <ThunderboltOutlined style={{ fontSize: 16 }} />
-              </div>
-              <Text style={{ color: 'white', fontWeight: 500 }}>Project Finance</Text>
+            <Space size="small">
+              <CheckCircleOutlined style={{ color: '#52c41a' }} />
+              <Text style={{ color: 'white', fontSize: 14 }}>Project Finance</Text>
             </Space>
           </Col>
           <Col span={12}>
-            <Space>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <StarFilled style={{ fontSize: 16 }} />
-              </div>
-              <Text style={{ color: 'white', fontWeight: 500 }}>Advanced Reports</Text>
+            <Space size="small">
+              <CheckCircleOutlined style={{ color: '#52c41a' }} />
+              <Text style={{ color: 'white', fontSize: 14 }}>Advanced Analytics</Text>
             </Space>
           </Col>
           <Col span={12}>
-            <Space>
-              <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <CrownOutlined style={{ fontSize: 16 }} />
-              </div>
-              <Text style={{ color: 'white', fontWeight: 500 }}>Resource Tools</Text>
+            <Space size="small">
+              <CheckCircleOutlined style={{ color: '#52c41a' }} />
+              <Text style={{ color: 'white', fontSize: 14 }}>Resource Tools</Text>
             </Space>
           </Col>
         </Row>
 
-        {/* CTA Button with hover effect */}
+        {/* Clear CTA */}
         <Button
           type="primary"
           size="large"
           onClick={startTrial}
           loading={loading}
           disabled={disabled}
-          icon={<RocketOutlined />}
-          className="trial-cta-button"
+          block
           style={{
-            width: '100%',
-            height: 48,
-            fontSize: 18,
-            fontWeight: 700,
+            height: 44,
+            fontSize: 16,
+            fontWeight: 600,
             background: 'white',
             color: '#764ba2',
             border: 'none',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
           }}
         >
-          Start My Free Trial Now
+          Start Free Trial
         </Button>
-
-        {/* Trust indicators */}
-        <div style={{ textAlign: 'center' }}>
-          <Space split={<span style={{ color: 'rgba(255,255,255,0.5)' }}>•</span>}>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12 }}>
-              <CheckCircleOutlined /> No credit card
-            </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12 }}>
-              <ClockCircleOutlined /> 3-day trial
-            </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12 }}>
-              <SafetyCertificateOutlined /> Cancel anytime
-            </Text>
-          </Space>
-        </div>
       </Space>
-
     </Card>
   );
 };

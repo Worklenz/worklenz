@@ -34,7 +34,7 @@ export class PlanTrialApiService {
    */
   public static async checkBusinessTrialEligibility(): Promise<IServerResponse<IPlanTrialInfo>> {
     const response = await apiClient.get<IServerResponse<IPlanTrialInfo>>(
-      `${this.rootUrl}/plans/business/trial/eligibility`
+      `${this.rootUrl}/plan-trials/business/trial/eligibility`
     );
     return response.data;
   }
@@ -44,7 +44,7 @@ export class PlanTrialApiService {
    */
   public static async startBusinessTrial(): Promise<IServerResponse<IPlanTrialStartResponse>> {
     const response = await apiClient.post<IServerResponse<IPlanTrialStartResponse>>(
-      `${this.rootUrl}/plans/business/trial`
+      `${this.rootUrl}/plan-trials/business/trial`
     );
     return response.data;
   }
@@ -54,7 +54,7 @@ export class PlanTrialApiService {
    */
   public static async getTrialStatus(): Promise<IServerResponse<IPlanTrialStatusResponse>> {
     const response = await apiClient.get<IServerResponse<IPlanTrialStatusResponse>>(
-      `${this.rootUrl}/plans/trial/status`
+      `${this.rootUrl}/plan-trials/trial/status`
     );
     return response.data;
   }
@@ -64,7 +64,7 @@ export class PlanTrialApiService {
    */
   public static async cancelTrial(reason?: string): Promise<IServerResponse<{ message: string }>> {
     const response = await apiClient.post<IServerResponse<{ message: string }>>(
-      `${this.rootUrl}/plans/trial/cancel`,
+      `${this.rootUrl}/plan-trials/trial/cancel`,
       { reason }
     );
     return response.data;
@@ -75,7 +75,7 @@ export class PlanTrialApiService {
    */
   public static async convertTrial(trialId: string): Promise<IServerResponse<{ message: string; plan_tier_id?: string }>> {
     const response = await apiClient.post<IServerResponse<{ message: string; plan_tier_id?: string }>>(
-      `${this.rootUrl}/plans/trial/convert`,
+      `${this.rootUrl}/plan-trials/trial/convert`,
       { trial_id: trialId }
     );
     return response.data;
@@ -86,8 +86,8 @@ export class PlanTrialApiService {
    */
   public static async getTrialStats(plan?: string): Promise<IServerResponse<any[]>> {
     const url = plan
-      ? `${this.rootUrl}/plans/trial/stats?plan=${plan}`
-      : `${this.rootUrl}/plans/trial/stats`;
+      ? `${this.rootUrl}/plan-trials/trial/stats?plan=${plan}`
+      : `${this.rootUrl}/plan-trials/trial/stats`;
 
     const response = await apiClient.get<IServerResponse<any[]>>(url);
     return response.data;

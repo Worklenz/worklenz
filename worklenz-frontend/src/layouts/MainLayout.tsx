@@ -3,7 +3,8 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { memo, useMemo } from 'react';
 
 import Navbar from '@/features/navbar/navbar';
-import BusinessPlanAnnouncement from '@/components/business-plan-announcement/BusinessPlanAnnouncement';
+// import BusinessPlanAnnouncement from '@/components/business-plan-announcement/BusinessPlanAnnouncement';
+import { BusinessPlanTrialAlert } from '@/components/BusinessPlanTrialAlert/BusinessPlanTrialAlert';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { colors } from '../styles/colors';
@@ -62,7 +63,8 @@ const MainLayout = memo(() => {
       <Layout className="min-h-screen">
         {/* Trial expiration alert banner */}
         <TrialExpirationAlert />
-        <BusinessPlanAnnouncement />
+        <BusinessPlanTrialAlert />
+        {/* <BusinessPlanAnnouncement /> */}
 
         <Layout.Header
           className={`sticky top-0 z-[999] flex items-center p-0 shadow-md ${

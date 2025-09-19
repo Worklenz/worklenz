@@ -128,7 +128,7 @@ api.get("/access-controls/roles", safeControllerFunction(AccessControlsControlle
 api.get("/logs/my-dashboard", safeControllerFunction(LogsController.getActivityLog));
 
 api.use("/billing", billingApiRouter);
-api.use("/plans", planTrialApiRouter);
+api.use("/plan-trials", planTrialApiRouter);
 api.use("/task-dependencies", taskDependenciesApiRouter);
 
 api.use("/task-recurring", taskRecurringApiRouter);
