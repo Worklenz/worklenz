@@ -7,6 +7,9 @@ import { isOnBusinessTrial, getPlanTrialDaysRemaining, isOnPlanTrial } from '@/u
 import { useAuthService } from '@/hooks/useAuth';
 import { message } from 'antd';
 import { PlanTrialApiService, IPlanTrialInfo } from '@/api/admin-center/plan-trial.api.service';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { MixpanelBillingEvents, BusinessTrialEventProps, BusinessTrialStartEventProps } from '@/types/mixpanel-events.types';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import './BusinessTrialCard.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -20,6 +23,7 @@ interface BusinessTrialCardProps {
 export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCardProps) => {
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
+  const { trackMixpanelEvent } = useMixpanelTracking();
   const [loading, setLoading] = useState(false);
   const [eligibilityChecked, setEligibilityChecked] = useState(false);
   const [canStartTrial, setCanStartTrial] = useState(false);
@@ -30,18 +34,56 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
   const trialDaysRemaining = getPlanTrialDaysRemaining(currentSession);
   const hasAnyPlanTrial = isOnPlanTrial(currentSession);
 
+  // Helper function to create base trial properties
+  const getBaseTrialProperties = (): BusinessTrialEventProps => ({
+    user_type: isCurrentlyOnTrial ? 'trial' : (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE ? 'paid' : 'free'),
+    current_plan: currentSession?.plan_name,
+    trial_days_remaining: trialDaysRemaining,
+    team_size: currentSession?.team_member_count,
+    subscription_status: currentSession?.subscription_type,
+    trial_type: 'business_plan' as const,
+    trial_duration_days: 7,
+    source_component: 'BusinessTrialCard',
+    display_location: 'upgrade_plans_modal'
+  });
+
   // Check trial eligibility on mount
   useEffect(() => {
     checkTrialEligibility();
   }, []);
 
+  // Track when active trial status is viewed
+  useEffect(() => {
+    if (isCurrentlyOnTrial) {
+      trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_STATUS_CHECKED, {
+        ...getBaseTrialProperties(),
+        trial_active: true,
+        days_elapsed: 7 - trialDaysRemaining,
+        check_source: 'upgrade_modal_active_trial'
+      });
+    }
+  }, [isCurrentlyOnTrial]);
+
   const checkTrialEligibility = async () => {
     try {
       const response = await PlanTrialApiService.checkBusinessTrialEligibility();
       if (response.done) {
+        const canStart = response.body?.can_start_trial || false;
         setTrialInfo(response.body);
-        setCanStartTrial(response.body?.can_start_trial || false);
+        setCanStartTrial(canStart);
         setEligibilityChecked(true);
+
+        // Track eligibility check
+        trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_ELIGIBLE, {
+          ...getBaseTrialProperties(),
+          trial_active: false,
+          check_source: 'upgrade_modal_load'
+        });
+
+        if (canStart) {
+          // Track that offer is being viewed in upgrade modal
+          trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_OFFER_VIEWED, getBaseTrialProperties());
+        }
       }
     } catch (error) {
       console.error('Failed to check trial eligibility:', error);
@@ -51,9 +93,20 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
 
   const startTrial = async () => {
     setLoading(true);
+
+    // Track trial start attempt
+    const startEventProps: BusinessTrialStartEventProps = {
+      ...getBaseTrialProperties(),
+      start_method: 'upgrade_button',
+      original_plan: currentSession?.plan_name as any
+    };
+
     try {
       const response = await PlanTrialApiService.startBusinessTrial();
       if (response.done) {
+        // Track successful trial start
+        trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_STARTED, startEventProps);
+
         message.success(response.body?.message || 'Business trial started successfully!');
 
         // Refresh user session to get updated trial status
@@ -145,7 +198,16 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
                   fontWeight: 600,
                   width: '100%'
                 }}
-                onClick={() => window.location.href = '/admin-center/billing?upgrade=true'}
+                onClick={() => {
+                  // Track upgrade button click from trial status
+                  trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_UPGRADE_INITIATED, {
+                    ...getBaseTrialProperties(),
+                    trial_active: true,
+                    days_elapsed: 7 - trialDaysRemaining,
+                    check_source: 'upgrade_button_trial_card'
+                  });
+                  window.location.href = '/admin-center/billing?upgrade=true';
+                }}
               >
                 Upgrade Now
               </Button>

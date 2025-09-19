@@ -7,6 +7,8 @@ import { useAuthService } from '@/hooks/useAuth';
 import { isOnBusinessTrial, getPlanTrialDaysRemaining } from '@/utils/subscription-utils';
 import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { MixpanelBillingEvents, BusinessTrialEventProps, BusinessTrialStartEventProps, BusinessTrialStatusEventProps } from '@/types/mixpanel-events.types';
 
 const DISMISS_KEY = 'business-trial-alert-dismissed';
 
@@ -14,6 +16,7 @@ export const BusinessPlanTrialAlert = () => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const authService = useAuthService();
+  const { trackMixpanelEvent } = useMixpanelTracking();
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -24,6 +27,19 @@ export const BusinessPlanTrialAlert = () => {
   const isOnTrial = isOnBusinessTrial(currentSession);
   const trialDaysRemaining = getPlanTrialDaysRemaining(currentSession);
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+
+  // Helper function to create base trial properties
+  const getBaseTrialProperties = (): BusinessTrialEventProps => ({
+    user_type: isOnTrial ? 'trial' : (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE ? 'paid' : 'free'),
+    current_plan: currentSession?.plan_name,
+    trial_days_remaining: trialDaysRemaining,
+    team_size: currentSession?.team_member_count,
+    subscription_status: currentSession?.subscription_type,
+    trial_type: 'business_plan' as const,
+    trial_duration_days: 7,
+    source_component: 'BusinessPlanTrialAlert',
+    display_location: 'header_banner'
+  });
 
   useEffect(() => {
     // Only show for owners/admins
@@ -63,6 +79,15 @@ export const BusinessPlanTrialAlert = () => {
     if (isOnTrial) {
       setVisible(true);
       setEligibilityChecked(true);
+
+      // Track trial status being viewed
+      trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_STATUS_CHECKED, {
+        ...getBaseTrialProperties(),
+        trial_active: true,
+        days_elapsed: 7 - trialDaysRemaining,
+        check_source: 'trial_status_banner'
+      });
+
       return;
     }
 
@@ -81,8 +106,21 @@ export const BusinessPlanTrialAlert = () => {
     try {
       const response = await PlanTrialApiService.checkBusinessTrialEligibility();
       if (response.done && response.body) {
-        setCanStartTrial(response.body.can_start_trial || false);
-        setVisible(response.body.can_start_trial || false);
+        const canStart = response.body.can_start_trial || false;
+        setCanStartTrial(canStart);
+        setVisible(canStart);
+
+        // Track eligibility check result
+        trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_ELIGIBLE, {
+          ...getBaseTrialProperties(),
+          trial_active: false,
+          check_source: 'component_mount'
+        });
+
+        if (canStart) {
+          // Track that offer is being viewed
+          trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_OFFER_VIEWED, getBaseTrialProperties());
+        }
       }
     } catch (error) {
       console.error('Failed to check trial eligibility:', error);
@@ -95,9 +133,20 @@ export const BusinessPlanTrialAlert = () => {
 
   const handleStartTrial = async () => {
     setStarting(true);
+
+    // Track trial start attempt
+    const startEventProps: BusinessTrialStartEventProps = {
+      ...getBaseTrialProperties(),
+      start_method: 'banner_click',
+      original_plan: currentSession?.plan_name as any
+    };
+
     try {
       const response = await PlanTrialApiService.startBusinessTrial();
       if (response.done) {
+        // Track successful trial start
+        trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_STARTED, startEventProps);
+
         message.success(t('business-trial-started', { defaultValue: 'Business trial started successfully! Refreshing...' }));
         // Refresh to update session
         setTimeout(() => window.location.reload(), 1500);
@@ -115,10 +164,25 @@ export const BusinessPlanTrialAlert = () => {
   };
 
   const handleUpgrade = () => {
+    // Track upgrade button click
+    trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_UPGRADE_INITIATED, {
+      ...getBaseTrialProperties(),
+      trial_active: isOnTrial,
+      days_elapsed: isOnTrial ? (7 - trialDaysRemaining) : undefined,
+      check_source: 'upgrade_button_click'
+    });
+
     navigate('/worklenz/admin-center/billing');
   };
 
   const handleDismiss = () => {
+    // Track dismissal
+    trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_DISMISSED, {
+      ...getBaseTrialProperties(),
+      trial_active: isOnTrial,
+      check_source: 'dismiss_button_click'
+    });
+
     setVisible(false);
     // Remember dismissal for today only
     localStorage.setItem(DISMISS_KEY, new Date().toDateString());

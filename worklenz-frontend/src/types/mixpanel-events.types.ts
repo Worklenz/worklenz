@@ -107,46 +107,85 @@ export interface PricingModalEventProps extends BaseBillingEventProps {
   initial_team_size?: number;
 }
 
+// Business Plan Trial events
+export interface BusinessTrialEventProps extends BaseBillingEventProps {
+  trial_type: 'business_plan';
+  trial_duration_days: number;
+  source_component?: string;
+  display_location?: string;
+}
+
+export interface BusinessTrialStartEventProps extends BusinessTrialEventProps {
+  start_method: 'banner_click' | 'upgrade_button' | 'manual_request';
+  original_plan?: PlanType;
+}
+
+export interface BusinessTrialStatusEventProps extends BusinessTrialEventProps {
+  trial_active: boolean;
+  days_elapsed?: number;
+  check_source?: string;
+}
+
+export interface BusinessTrialConversionEventProps extends BusinessTrialEventProps {
+  conversion_successful: boolean;
+  final_plan_selected?: PlanType;
+  billing_frequency?: BillingFrequency;
+  team_size?: number;
+  total_amount?: number;
+  error_message?: string;
+}
+
 // Event names enum for consistency
 export enum MixpanelBillingEvents {
   // Upgrade button events
   UPGRADE_BUTTON_CLICKED = 'upgrade_button_clicked',
   UPGRADE_BUTTON_VIEWED = 'upgrade_button_viewed',
-  
+
   // Pricing modal events
   PRICING_MODAL_OPENED = 'pricing_modal_opened',
   PRICING_MODAL_CLOSED = 'pricing_modal_closed',
-  
+
   // Plan selection events
   PLAN_SELECTED = 'plan_selected',
   PLAN_COMPARED = 'plan_compared',
-  
+
   // Configuration events
   BILLING_FREQUENCY_CHANGED = 'billing_frequency_changed',
   TEAM_SIZE_CHANGED = 'team_size_changed',
-  
+
   // Checkout events
   CHECKOUT_INITIATED = 'checkout_initiated',
   CHECKOUT_COMPLETED = 'checkout_completed',
   CHECKOUT_FAILED = 'checkout_failed',
   CHECKOUT_ABANDONED = 'checkout_abandoned',
-  
+
   // Free plan events
   FREE_PLAN_SELECTED = 'free_plan_selected',
   FREE_PLAN_SWITCH_COMPLETED = 'free_plan_switch_completed',
-  
+
   // Billing page events
   BILLING_PAGE_VIEWED = 'billing_page_viewed',
   CURRENT_PLAN_VIEWED = 'current_plan_viewed',
   STORAGE_USAGE_VIEWED = 'storage_usage_viewed',
   INVOICES_VIEWED = 'invoices_viewed',
   CHARGES_VIEWED = 'charges_viewed',
-  
+
   // AppSumo events
   APPSUMO_DISCOUNT_VIEWED = 'appsumo_discount_viewed',
   APPSUMO_UPGRADE_INITIATED = 'appsumo_upgrade_initiated',
   APPSUMO_PLAN_SELECTED = 'appsumo_plan_selected',
-  
+
+  // Business Plan Trial events
+  BUSINESS_TRIAL_ELIGIBLE = 'business_trial_eligible',
+  BUSINESS_TRIAL_OFFER_VIEWED = 'business_trial_offer_viewed',
+  BUSINESS_TRIAL_BANNER_CLICKED = 'business_trial_banner_clicked',
+  BUSINESS_TRIAL_STARTED = 'business_trial_started',
+  BUSINESS_TRIAL_STATUS_CHECKED = 'business_trial_status_checked',
+  BUSINESS_TRIAL_UPGRADE_INITIATED = 'business_trial_upgrade_initiated',
+  BUSINESS_TRIAL_CONVERTED = 'business_trial_converted',
+  BUSINESS_TRIAL_EXPIRED = 'business_trial_expired',
+  BUSINESS_TRIAL_DISMISSED = 'business_trial_dismissed',
+
   // Error events
   PADDLE_LOAD_ERROR = 'paddle_load_error',
   PRICING_FETCH_ERROR = 'pricing_fetch_error',
