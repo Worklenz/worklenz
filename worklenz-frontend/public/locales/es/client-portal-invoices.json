@@ -1,5 +1,6 @@
 {
   "title": "Facturas",
+  "description": "Gestiona y rastrea tus facturas",
   "addInvoiceButton": "Agregar Factura",
   "createInvoiceDrawerTitle": "Crear Factura",
   "selectRequestLabel": "Seleccionar Solicitud",

@@ -1,3 +1,4 @@
+import React from 'react';
 import { Button, Flex, Typography, Card } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';

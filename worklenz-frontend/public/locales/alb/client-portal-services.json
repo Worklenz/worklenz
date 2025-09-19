@@ -1,5 +1,6 @@
 {
   "title": "Shërbimet",
+  "description": "Menaxho shërbimet dhe ofertat tuaja",
   "nameColumn": "Emri",
   "createdByColumn": "Krijuar nga",
   "statusColumn": "Statusi",

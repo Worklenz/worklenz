@@ -14,7 +14,7 @@ import { MessageOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
   useGetClientsQuery,
-  useSendMessageMutation,
+  useCreateChatMutation,
 } from '@/api/client-portal/client-portal-api';
 
 const { TextArea } = Input;
@@ -40,38 +40,23 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess })
 
   // Get available clients for team members to message
   const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery({});
-  const [sendMessage] = useSendMessageMutation();
+  const [createChat] = useCreateChatMutation();
 
   const handleSubmit = async (values: NewChatForm) => {
     try {
       setIsSubmitting(true);
 
-      // Create initial message data
-      const messageData = {
-        content: values.message,
-        subject: values.subject,
+      const response = await createChat({
         recipientType: values.recipientType,
         recipientId: values.recipientId,
-      };
-
-      // For now, we'll use a temporary chat ID until the backend creates the chat
-      // In a real implementation, you'd create the chat first, then send the message
-      const tempChatId = `temp_${Date.now()}`;
-      
-      await sendMessage({
-        chatId: tempChatId,
-        messageData: {
-          content: values.message,
-          subject: values.subject,
-          recipientType: values.recipientType,
-          recipientId: values.recipientId,
-        },
+        subject: values.subject,
+        message: values.message,
       }).unwrap();
 
       message.success(t('newChatCreatedSuccessfully', { ns: 'client-portal-chats' }) || 'Chat created successfully!');
       form.resetFields();
       onClose();
-      onSuccess?.(tempChatId);
+      onSuccess?.(response.chatId);
     } catch (error) {
       console.error('Failed to create new chat:', error);
       message.error(t('newChatFailed', { ns: 'client-portal-chats' }) || 'Failed to create chat. Please try again.');

@@ -15,6 +15,9 @@ import {
   Image,
   Tooltip,
   Alert,
+  Progress,
+  Steps,
+  Badge,
 } from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +30,13 @@ import {
   InfoCircleOutlined,
   CheckCircleOutlined,
   SettingOutlined,
+  CloudUploadOutlined,
+  StarOutlined,
+  SecurityScanOutlined,
+  ThunderboltOutlined,
+  MobileOutlined,
+  DesktopOutlined,
+  TabletOutlined,
 } from '@ant-design/icons';
 import { profileSettingsApiService } from '../../../api/settings/profile/profile-settings.api.service';
 import { colors } from '../../../styles/colors';
@@ -209,33 +219,115 @@ const ClientPortalSettings = () => {
   }
 
   return (
-    <Flex vertical gap={24} style={{ width: '100%' }}>
-      {/* Header */}
-      <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-        <Flex vertical gap={4}>
-          <Flex align="center" gap={12}>
-            <SettingOutlined style={{ fontSize: 20 }} />
-            <Typography.Title level={4} style={{ margin: 0 }}>
-              {t('title')}
-            </Typography.Title>
-          </Flex>
-          <Typography.Text type="secondary">{t('customizePortalText')}</Typography.Text>
-        </Flex>
-      </Flex>
-
-      {/* Main Content */}
-      <Row gutter={[24, 24]}>
-        {/* Left Column - Upload Section */}
-        <Col xs={24} lg={14}>
-          <Card
-            title={
-              <Flex align="center" gap={8}>
-                <UploadOutlined />
-                <span>{t('logoManagementTitle')}</span>
+    <div style={{
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      minHeight: 'calc(100vh - 120px)',
+      padding: '24px',
+      borderRadius: '12px',
+    }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Enhanced Header */}
+        <Card
+          style={{
+            marginBottom: 24,
+            borderRadius: '16px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            border: 'none',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+          }}
+        >
+          <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+            <Flex vertical gap={8}>
+              <Flex align="center" gap={16}>
+                <div style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  padding: '12px',
+                  borderRadius: '12px',
+                  backdropFilter: 'blur(10px)',
+                }}>
+                  <SettingOutlined style={{ fontSize: 24, color: 'white' }} />
+                </div>
+                <div>
+                  <Typography.Title level={3} style={{ margin: 0, color: 'white' }}>
+                    {t('title')}
+                  </Typography.Title>
+                  <Typography.Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '16px' }}>
+                    {t('customizePortalText')}
+                  </Typography.Text>
+                </div>
               </Flex>
-            }
-            style={{ height: 'fit-content' }}
-          >
+            </Flex>
+            <Badge count={customLogo ? 1 : 0} color="#52c41a" dot>
+              <div style={{
+                background: 'rgba(255,255,255,0.2)',
+                padding: '16px',
+                borderRadius: '12px',
+                backdropFilter: 'blur(10px)',
+              }}>
+                <StarOutlined style={{ fontSize: 20, color: 'white' }} />
+              </div>
+            </Badge>
+          </Flex>
+        </Card>
+
+        {/* Progress Steps */}
+        <Card
+          style={{
+            marginBottom: 24,
+            borderRadius: '16px',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+            border: 'none',
+          }}
+        >
+          <Steps
+            current={customLogo ? 2 : 0}
+            size="small"
+            items={[
+              {
+                title: t('stepSelectTitle') || 'Select Logo',
+                description: t('stepSelectDesc') || 'Choose your brand image',
+                icon: <PictureOutlined />,
+              },
+              {
+                title: t('stepUploadTitle') || 'Upload',
+                description: t('stepUploadDesc') || 'Upload and process',
+                icon: <CloudUploadOutlined />,
+              },
+              {
+                title: t('stepCompleteTitle') || 'Complete',
+                description: t('stepCompleteDesc') || 'Ready to use',
+                icon: <CheckCircleOutlined />,
+              },
+            ]}
+          />
+        </Card>
+
+        {/* Main Content */}
+        <Row gutter={[24, 24]}>
+          {/* Left Column - Upload Section */}
+          <Col xs={24} lg={14}>
+            <Card
+              title={
+                <Flex align="center" gap={12}>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    color: 'white',
+                  }}>
+                    <UploadOutlined />
+                  </div>
+                  <span style={{ fontSize: '18px', fontWeight: 600 }}>{t('logoManagementTitle')}</span>
+                </Flex>
+              }
+              style={{
+                height: 'fit-content',
+                borderRadius: '16px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                border: 'none',
+              }}
+            >
             <Flex vertical gap={24}>
               {/* Current Logo Section */}
               {customLogo && (

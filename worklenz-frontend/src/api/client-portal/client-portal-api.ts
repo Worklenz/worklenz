@@ -411,6 +411,23 @@ export const clientPortalApi = createApi({
       providesTags: (result, error, id) => [{ type: 'Chats', id }],
     }),
 
+    createChat: builder.mutation<
+      { chatId: string; message: string },
+      {
+        recipientType: 'client' | 'team';
+        recipientId: string;
+        subject: string;
+        message: string;
+      }
+    >({
+      query: (chatData) => ({
+        url: '/clients/portal/chats',
+        method: 'POST',
+        body: chatData,
+      }),
+      invalidatesTags: ['Chats'],
+    }),
+
     sendMessage: builder.mutation<
       any,
       { chatId: string; messageData: { content: string; attachments?: any[] } }
@@ -842,6 +859,7 @@ export const {
   // Chat
   useGetChatsQuery,
   useGetChatDetailsQuery,
+  useCreateChatMutation,
   useSendMessageMutation,
   useGetMessagesQuery,
 

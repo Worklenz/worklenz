@@ -1,5 +1,6 @@
 {
   "title": "Faturat",
+  "description": "Menaxho dhe gjurmo faturat tuaja",
   "addInvoiceButton": "Shto Faturë",
   "createInvoiceDrawerTitle": "Krijo Faturë",
   "selectRequestLabel": "Zgjidh Kërkesën",

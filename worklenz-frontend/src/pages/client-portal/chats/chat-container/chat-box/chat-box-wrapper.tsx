@@ -177,8 +177,12 @@ const ChatBoxWrapper = () => {
             height: 'calc(100vh - 320px)',
           }}
         >
-          <Button type="primary" icon={<MessageOutlined />} onClick={() => setIsNewChatModalOpen(true)}>
-            {t('startConversation')}
+          <Button
+            type="primary"
+            icon={<MessageOutlined />}
+            onClick={() => setIsNewChatModalOpen(true)}
+          >
+            {t('startConversation') || 'Start Conversation'}
           </Button>
         </Empty>
       </Card>
