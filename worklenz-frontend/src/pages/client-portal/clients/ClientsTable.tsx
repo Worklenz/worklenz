@@ -38,6 +38,7 @@ import {
   toggleClientTeamsDrawer,
   toggleClientDetailsDrawer,
   toggleEditClientDrawer,
+  toggleAddClientDrawer,
   setSearchFilter,
   setStatusFilter,
   setSortBy,
@@ -47,7 +48,6 @@ import {
   clearFilters,
 } from '@/features/clients-portal/clients/clients-slice';
 import { ClientPortalClient } from '@/api/client-portal/client-portal-api';
-import AddClientDrawer from '@/components/client-portal/AddClientDrawer';
 import {
   useGetClientsQuery,
   useDeleteClientMutation,
@@ -82,8 +82,6 @@ const ClientsTable = () => {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [currentClientId, setCurrentClientId] = useState<string>('');
 
-  // Local state for add client drawer
-  const [isAddClientDrawerOpen, setIsAddClientDrawerOpen] = useState(false);
 
   // RTK Query hooks
   const {
@@ -148,7 +146,7 @@ const ClientsTable = () => {
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => {
-              setIsAddClientDrawerOpen(true);
+              dispatch(toggleAddClientDrawer());
             }}
           >
             {t('addClientButton')}
@@ -663,14 +661,6 @@ const ClientsTable = () => {
         </Typography.Text>
       </Modal>
 
-      <AddClientDrawer
-        open={isAddClientDrawerOpen}
-        onClose={() => setIsAddClientDrawerOpen(false)}
-        onSuccess={() => {
-          setIsAddClientDrawerOpen(false);
-          refetch();
-        }}
-      />
     </Card>
   );
 };
