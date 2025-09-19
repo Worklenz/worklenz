@@ -29,7 +29,9 @@ import ClientSettingsDrawer from '@/components/client-portal/ClientSettingsDrawe
 import InviteLinkModal from '@/components/client-portal/InviteLinkModal';
 import { useResponsive } from '@/hooks/useResponsive';
 import { createPortal } from 'react-dom';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { MixpanelEvents, ClientPortalEventProps, ClientPortalActionEventProps } from '@/types/mixpanel-events.types';
 
 const { Title } = Typography;
 
@@ -37,6 +39,7 @@ const ClientPortalClients = () => {
   const { t } = useTranslation('client-portal-clients');
   const dispatch = useAppDispatch();
   const { isMobile, isTablet, isDesktop } = useResponsive();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // State for invite modal
   const [showInviteModal, setShowInviteModal] = React.useState(false);
@@ -50,14 +53,6 @@ const ClientPortalClients = () => {
     page: 1,
     limit: 1000, // Get all clients for stats
   });
-
-  const handleAddClient = () => {
-    dispatch(toggleAddClientDrawer());
-  };
-
-  const handleShowInviteModal = () => {
-    setShowInviteModal(true);
-  };
 
   const handleCloseInviteModal = () => {
     setShowInviteModal(false);
@@ -77,6 +72,45 @@ const ClientPortalClients = () => {
       (sum: number, client: any) => sum + (client.team_members?.length || 0),
       0
     ) || 0;
+
+  // Track page visit
+  useEffect(() => {
+    const pageEventProps: ClientPortalEventProps = {
+      page: 'clients',
+      section: 'client_portal',
+      total_items: totalClients,
+      source: 'direct_visit'
+    };
+
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_PAGE_VISITED, pageEventProps);
+  }, [trackMixpanelEvent, totalClients]);
+
+  // Enhanced action handlers with tracking
+  const handleAddClientWithTracking = () => {
+    const actionProps: ClientPortalActionEventProps = {
+      action_type: 'create',
+      item_type: 'client',
+      page: 'clients',
+      section: 'client_portal',
+      source: 'add_client_button'
+    };
+
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CLIENT_CREATED, actionProps);
+    dispatch(toggleAddClientDrawer());
+  };
+
+  const handleShowInviteModalWithTracking = () => {
+    const actionProps: ClientPortalActionEventProps = {
+      action_type: 'view',
+      item_type: 'client',
+      page: 'clients',
+      section: 'client_portal',
+      source: 'invite_button'
+    };
+
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CLIENT_LINK_COPIED, actionProps);
+    setShowInviteModal(true);
+  };
 
   return (
     <div
@@ -114,7 +148,7 @@ const ClientPortalClients = () => {
           <Space wrap>
             <Button
               icon={<ShareAltOutlined />}
-              onClick={handleShowInviteModal}
+              onClick={handleShowInviteModalWithTracking}
               size={isMobile ? 'small' : 'middle'}
             >
               {t('inviteButton') || 'Invite'}
@@ -122,7 +156,7 @@ const ClientPortalClients = () => {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              onClick={handleAddClient}
+              onClick={handleAddClientWithTracking}
               size={isMobile ? 'small' : 'middle'}
             >
               {t('addClientButton') || 'Add Client'}

@@ -33,10 +33,13 @@ import {
 } from '@ant-design/icons';
 import { profileSettingsApiService } from '../../../api/settings/profile/profile-settings.api.service';
 import { colors } from '../../../styles/colors';
+import { useMixpanelTracking } from '../../../hooks/useMixpanelTracking';
+import { MixpanelEvents, ClientPortalEventProps, ClientPortalActionEventProps } from '../../../types/mixpanel-events.types';
 
 const ClientPortalSettings = () => {
   // localization
   const { t } = useTranslation('client-portal-settings');
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // State for custom logo
   const [customLogo, setCustomLogo] = useState<string | null>(null);
@@ -52,6 +55,17 @@ const ClientPortalSettings = () => {
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // Track page visit
+  useEffect(() => {
+    const pageEventProps: ClientPortalEventProps = {
+      page: 'settings',
+      section: 'client_portal',
+      source: 'direct_visit'
+    };
+
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_SETTINGS_VIEWED, pageEventProps);
+  }, [trackMixpanelEvent]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -106,6 +120,17 @@ const ClientPortalSettings = () => {
   };
 
   const handleStageLogoRemoval = () => {
+    // Track logo removal action
+    const actionProps: ClientPortalActionEventProps = {
+      action_type: 'delete',
+      item_type: 'settings',
+      page: 'settings',
+      section: 'client_portal',
+      source: 'remove_logo_button'
+    };
+
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_LOGO_REMOVED, actionProps);
+
     // Stage logo removal
     setPendingLogoRemoval(true);
     setPendingLogoFile(null);
@@ -120,6 +145,17 @@ const ClientPortalSettings = () => {
       setSaving(true);
 
       if (pendingLogoFile) {
+        // Track logo upload action
+        const actionProps: ClientPortalActionEventProps = {
+          action_type: 'create',
+          item_type: 'settings',
+          page: 'settings',
+          section: 'client_portal',
+          source: 'save_changes_button'
+        };
+
+        trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_LOGO_UPLOADED, actionProps);
+
         // Upload new logo
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -149,6 +185,18 @@ const ClientPortalSettings = () => {
         });
 
         if (response.done) {
+          // Track successful settings save
+          const saveProps: ClientPortalActionEventProps = {
+            action_type: 'edit',
+            item_type: 'settings',
+            page: 'settings',
+            section: 'client_portal',
+            source: 'save_changes_button',
+            success: true
+          };
+
+          trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_SETTINGS_SAVED, saveProps);
+
           setCustomLogo(null);
           resetPendingChanges();
           message.success(t('settingsSavedText'));

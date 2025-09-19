@@ -6,18 +6,40 @@ import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useGetChatsQuery } from '../../../api/client-portal/client-portal-api';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useResponsive } from '../../../hooks/useResponsive';
+import { useMixpanelTracking } from '../../../hooks/useMixpanelTracking';
+import { MixpanelEvents, ClientPortalEventProps, ClientPortalActionEventProps } from '../../../types/mixpanel-events.types';
 
 const ClientPortalChats = () => {
   // localization
   const { t } = useTranslation('client-portal-chats');
   const { isDesktop } = useResponsive();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // API hooks
   const { data: chats, isLoading, error, refetch } = useGetChatsQuery();
 
-  // Unread count calculation removed since badges were removed
+  // Track page visit
+  useEffect(() => {
+    const pageEventProps: ClientPortalEventProps = {
+      page: 'chats',
+      section: 'client_portal',
+      total_items: chats?.length || 0,
+      source: 'direct_visit'
+    };
+
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_PAGE_VISITED, pageEventProps);
+  }, [trackMixpanelEvent, chats]);
 
   const handleRefresh = () => {
+    const actionProps: ClientPortalActionEventProps = {
+      action_type: 'refresh',
+      item_type: 'chat',
+      page: 'chats',
+      section: 'client_portal',
+      source: 'refresh_button'
+    };
+
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CHAT_REFRESHED, actionProps);
     refetch();
   };
 

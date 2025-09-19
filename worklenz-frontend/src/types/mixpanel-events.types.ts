@@ -220,6 +220,47 @@ export enum MixpanelEvents {
   
   // Client Portal
   CLIENT_PORTAL_VIEWED = 'client_portal_viewed',
+  CLIENT_PORTAL_PAGE_VISITED = 'client_portal_page_visited',
+  CLIENT_PORTAL_NAVIGATION = 'client_portal_navigation',
+
+  // Client Portal - Clients
+  CLIENT_PORTAL_CLIENT_CREATED = 'client_portal_client_created',
+  CLIENT_PORTAL_CLIENT_EDITED = 'client_portal_client_edited',
+  CLIENT_PORTAL_CLIENT_DELETED = 'client_portal_client_deleted',
+  CLIENT_PORTAL_CLIENT_VIEWED = 'client_portal_client_viewed',
+  CLIENT_PORTAL_CLIENT_LINK_COPIED = 'client_portal_client_link_copied',
+
+  // Client Portal - Services
+  CLIENT_PORTAL_SERVICE_CREATED = 'client_portal_service_created',
+  CLIENT_PORTAL_SERVICE_EDITED = 'client_portal_service_edited',
+  CLIENT_PORTAL_SERVICE_DELETED = 'client_portal_service_deleted',
+  CLIENT_PORTAL_SERVICE_VIEWED = 'client_portal_service_viewed',
+  CLIENT_PORTAL_SERVICE_FORM_STEP = 'client_portal_service_form_step',
+
+  // Client Portal - Requests
+  CLIENT_PORTAL_REQUEST_CREATED = 'client_portal_request_created',
+  CLIENT_PORTAL_REQUEST_VIEWED = 'client_portal_request_viewed',
+  CLIENT_PORTAL_REQUEST_STATUS_CHANGED = 'client_portal_request_status_changed',
+  CLIENT_PORTAL_REQUEST_FILTERED = 'client_portal_request_filtered',
+
+  // Client Portal - Chats
+  CLIENT_PORTAL_CHAT_STARTED = 'client_portal_chat_started',
+  CLIENT_PORTAL_CHAT_MESSAGE_SENT = 'client_portal_chat_message_sent',
+  CLIENT_PORTAL_CHAT_VIEWED = 'client_portal_chat_viewed',
+  CLIENT_PORTAL_CHAT_REFRESHED = 'client_portal_chat_refreshed',
+
+  // Client Portal - Invoices
+  CLIENT_PORTAL_INVOICE_CREATED = 'client_portal_invoice_created',
+  CLIENT_PORTAL_INVOICE_VIEWED = 'client_portal_invoice_viewed',
+  CLIENT_PORTAL_INVOICE_EDITED = 'client_portal_invoice_edited',
+  CLIENT_PORTAL_INVOICE_DELETED = 'client_portal_invoice_deleted',
+  CLIENT_PORTAL_INVOICE_FILTERED = 'client_portal_invoice_filtered',
+
+  // Client Portal - Settings
+  CLIENT_PORTAL_SETTINGS_VIEWED = 'client_portal_settings_viewed',
+  CLIENT_PORTAL_LOGO_UPLOADED = 'client_portal_logo_uploaded',
+  CLIENT_PORTAL_LOGO_REMOVED = 'client_portal_logo_removed',
+  CLIENT_PORTAL_SETTINGS_SAVED = 'client_portal_settings_saved',
   
   // Theme
   DARK_MODE_TOGGLED = 'dark_mode_toggled',
@@ -291,6 +332,44 @@ export interface FilterSortEventProps {
 export interface TeamInviteEventProps {
   count: number;
   project_id?: string;
+}
+
+// Client Portal Events
+export interface ClientPortalEventProps {
+  page?: string;
+  section?: string;
+  source?: string;
+  total_items?: number;
+  filter_applied?: boolean;
+}
+
+export interface ClientPortalNavigationEventProps extends ClientPortalEventProps {
+  from_page?: string;
+  to_page: string;
+  navigation_method?: 'sidebar' | 'link' | 'breadcrumb';
+}
+
+export interface ClientPortalActionEventProps extends ClientPortalEventProps {
+  action_type: 'create' | 'edit' | 'delete' | 'view' | 'copy' | 'filter' | 'refresh';
+  item_id?: string;
+  item_type?: 'client' | 'service' | 'request' | 'chat' | 'invoice' | 'settings';
+  success?: boolean;
+  error_message?: string;
+}
+
+export interface ClientPortalServiceFormEventProps extends ClientPortalEventProps {
+  step: number;
+  total_steps: number;
+  step_name?: string;
+  form_valid?: boolean;
+  completion_time?: number;
+}
+
+export interface ClientPortalChatEventProps extends ClientPortalEventProps {
+  chat_id?: string;
+  message_length?: number;
+  attachment_count?: number;
+  participant_count?: number;
 }
 
 // Helper function to get base properties
