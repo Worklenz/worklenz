@@ -27,6 +27,9 @@ import {
   InfoCircleOutlined,
   CheckCircleOutlined,
   SettingOutlined,
+  SaveOutlined,
+  CloseOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { profileSettingsApiService } from '../../../api/settings/profile/profile-settings.api.service';
 import { colors } from '../../../styles/colors';
@@ -37,15 +40,27 @@ const ClientPortalSettings = () => {
 
   // State for custom logo
   const [customLogo, setCustomLogo] = useState<string | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [pendingLogoUrl, setPendingLogoUrl] = useState<string | null>(null);
+  const [pendingLogoRemoval, setPendingLogoRemoval] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Load client portal settings on component mount
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingLogoUrl) {
+        URL.revokeObjectURL(pendingLogoUrl);
+      }
+    };
+  }, [pendingLogoUrl]);
 
   const loadSettings = async () => {
     try {
@@ -61,7 +76,7 @@ const ClientPortalSettings = () => {
     }
   };
 
-  const handleLogoUpload = async (file: File) => {
+  const handleLogoSelect = (file: File) => {
     // Validate file type
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
@@ -76,62 +91,97 @@ const ClientPortalSettings = () => {
       return false;
     }
 
-    try {
-      setUploading(true);
+    // Create preview URL for the selected file
+    const previewUrl = URL.createObjectURL(file);
 
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onload = async e => {
-        try {
-          const base64String = e.target?.result as string;
+    // Stage the file and preview
+    setPendingLogoFile(file);
+    setPendingLogoUrl(previewUrl);
+    setPendingLogoRemoval(false);
+    setHasUnsavedChanges(true);
 
-          // Upload to backend
-          const response = await profileSettingsApiService.uploadClientPortalLogo(base64String);
-
-          if (response.done && response.body?.logo_url) {
-            setCustomLogo(response.body.logo_url);
-            setLogoFile(file);
-            message.success(`${file.name} uploaded successfully!`);
-          } else {
-            message.error('Failed to upload logo');
-          }
-        } catch (error) {
-          console.error('Logo upload error:', error);
-          message.error('Failed to upload logo');
-        } finally {
-          setUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      setUploading(false);
-      message.error('Failed to upload logo');
-    }
+    message.success(t('logoUploadedText'));
 
     return false; // Prevent default upload
   };
 
-  const handleRemoveLogo = async () => {
+  const handleStageLogoRemoval = () => {
+    // Stage logo removal
+    setPendingLogoRemoval(true);
+    setPendingLogoFile(null);
+    setPendingLogoUrl(null);
+    setHasUnsavedChanges(true);
+
+    message.success(t('logoRemovedText'));
+  };
+
+  const handleSaveChanges = async () => {
     try {
-      setUploading(true);
+      setSaving(true);
 
-      // Update settings with null logo_url
-      const response = await profileSettingsApiService.updateClientPortalSettings({
-        logo_url: null,
-      });
+      if (pendingLogoFile) {
+        // Upload new logo
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const base64String = e.target?.result as string;
+            const response = await profileSettingsApiService.uploadClientPortalLogo(base64String);
 
-      if (response.done) {
-        setCustomLogo(null);
-        setLogoFile(null);
-        message.success('Custom logo removed successfully!');
+            if (response.done && response.body?.logo_url) {
+              setCustomLogo(response.body.logo_url);
+            }
+          } catch (error) {
+            console.error('Logo upload error:', error);
+            message.error('Failed to upload logo');
+            return;
+          } finally {
+            // Reset pending states
+            resetPendingChanges();
+            setSaving(false);
+            message.success(t('settingsSavedText'));
+          }
+        };
+        reader.readAsDataURL(pendingLogoFile);
+      } else if (pendingLogoRemoval) {
+        // Remove logo
+        const response = await profileSettingsApiService.updateClientPortalSettings({
+          logo_url: null,
+        });
+
+        if (response.done) {
+          setCustomLogo(null);
+          resetPendingChanges();
+          message.success(t('settingsSavedText'));
+        } else {
+          message.error('Failed to remove logo');
+        }
+        setSaving(false);
       } else {
-        message.error('Failed to remove logo');
+        // No changes to save
+        resetPendingChanges();
+        setSaving(false);
       }
     } catch (error) {
-      console.error('Failed to remove logo:', error);
-      message.error('Failed to remove logo');
-    } finally {
-      setUploading(false);
+      console.error('Failed to save settings:', error);
+      message.error('Failed to save settings');
+      setSaving(false);
+    }
+  };
+
+  const handleCancelChanges = () => {
+    resetPendingChanges();
+    message.info(t('discardButton'));
+  };
+
+  const resetPendingChanges = () => {
+    setPendingLogoFile(null);
+    setPendingLogoUrl(null);
+    setPendingLogoRemoval(false);
+    setHasUnsavedChanges(false);
+
+    // Clean up object URLs to prevent memory leaks
+    if (pendingLogoUrl) {
+      URL.revokeObjectURL(pendingLogoUrl);
     }
   };
 
@@ -139,7 +189,7 @@ const ClientPortalSettings = () => {
     name: 'file',
     multiple: false,
     accept: 'image/*',
-    beforeUpload: handleLogoUpload,
+    beforeUpload: handleLogoSelect,
     showUploadList: false,
     onDrop(e: React.DragEvent<HTMLDivElement>) {
       console.log('Dropped files', e.dataTransfer.files);
@@ -172,7 +222,26 @@ const ClientPortalSettings = () => {
             textAlign: 'center',
           }}
         >
-          {customLogo ? (
+          {(pendingLogoUrl && !pendingLogoRemoval) ? (
+            <img
+              src={pendingLogoUrl}
+              alt="New Client Portal Logo"
+              style={{
+                maxWidth: '200px',
+                maxHeight: '80px',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                border: '2px dashed #1890ff',
+                borderRadius: '4px'
+              }}
+            />
+          ) : pendingLogoRemoval ? (
+            <Flex vertical gap={8} align="center">
+              <PictureOutlined style={{ fontSize: '32px', color: colors.lightGray }} />
+              <Typography.Text type="secondary">{t('noLogoUploadedText')}</Typography.Text>
+              <Tag color="orange">Pending Removal</Tag>
+            </Flex>
+          ) : customLogo ? (
             <img
               src={customLogo}
               alt="Client Portal Logo"
@@ -195,6 +264,12 @@ const ClientPortalSettings = () => {
           <Tag color="blue">{t('headerDisplayTag')}</Tag>
           <Tag color="green">{t('responsiveTag')}</Tag>
           <Tag color="orange">{t('autoScaledTag')}</Tag>
+          {pendingLogoUrl && !pendingLogoRemoval && (
+            <Tag color="cyan">Pending Upload</Tag>
+          )}
+          {pendingLogoRemoval && (
+            <Tag color="orange">Pending Removal</Tag>
+          )}
         </Flex>
       </Flex>
     </Card>
@@ -221,6 +296,34 @@ const ClientPortalSettings = () => {
           </Flex>
           <Typography.Text type="secondary">{t('customizePortalText')}</Typography.Text>
         </Flex>
+
+        {/* Save/Cancel Buttons in Header */}
+        {hasUnsavedChanges && (
+          <Space size="middle">
+            <Space>
+              <ExclamationCircleOutlined style={{ color: '#faad14' }} />
+              <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
+                {t('pendingChangesText')}
+              </Typography.Text>
+            </Space>
+            <Space>
+              <Button
+                onClick={handleCancelChanges}
+                icon={<CloseOutlined />}
+              >
+                {t('cancelButton')}
+              </Button>
+              <Button
+                type="primary"
+                onClick={handleSaveChanges}
+                loading={saving}
+                icon={<SaveOutlined />}
+              >
+                {saving ? t('savingText') : t('saveButton')}
+              </Button>
+            </Space>
+          </Space>
+        )}
       </Flex>
 
       {/* Main Content */}
@@ -237,54 +340,73 @@ const ClientPortalSettings = () => {
             style={{ height: 'fit-content' }}
           >
             <Flex vertical gap={24}>
-              {/* Current Logo Section */}
-              {customLogo && (
+              {/* Current/Pending Logo Section */}
+              {(customLogo || pendingLogoUrl || pendingLogoRemoval) && (
                 <>
                   <div>
                     <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
-                      {t('currentLogoText')}
+                      {pendingLogoUrl ? t('newLogoText') : t('currentLogoText')}
                     </Typography.Text>
-                    <Flex
-                      align="center"
-                      gap={16}
-                      style={{
-                        padding: '16px',
-                        border: `1px solid ${colors.deepLightGray}`,
-                        borderRadius: '8px',
-                        backgroundColor: 'var(--ant-color-bg-layout)',
-                      }}
-                    >
-                      <img
-                        src={customLogo}
-                        alt="Current company logo"
+
+                    {!pendingLogoRemoval && (
+                      <Flex
+                        align="center"
+                        gap={16}
                         style={{
-                          maxWidth: 120,
-                          maxHeight: 60,
-                          objectFit: 'contain',
-                          borderRadius: '4px',
+                          padding: '16px',
+                          border: pendingLogoUrl
+                            ? `2px dashed #1890ff`
+                            : `1px solid ${colors.deepLightGray}`,
+                          borderRadius: '8px',
+                          backgroundColor: 'var(--ant-color-bg-layout)',
                         }}
+                      >
+                        <img
+                          src={pendingLogoUrl || customLogo || ''}
+                          alt={pendingLogoUrl ? "New company logo" : "Current company logo"}
+                          style={{
+                            maxWidth: 120,
+                            maxHeight: 60,
+                            objectFit: 'contain',
+                            borderRadius: '4px',
+                          }}
+                        />
+                        <Space direction="vertical" size="small">
+                          <Space>
+                            <Tooltip title={t('previewLogoTooltip')}>
+                              <Button
+                                type="text"
+                                icon={<EyeOutlined />}
+                                onClick={() => setPreviewVisible(true)}
+                                size="small"
+                              />
+                            </Tooltip>
+                            <Tooltip title={t('removeLogoTooltip')}>
+                              <Button
+                                type="text"
+                                danger
+                                icon={<DeleteOutlined />}
+                                onClick={handleStageLogoRemoval}
+                                size="small"
+                              />
+                            </Tooltip>
+                          </Space>
+                          {pendingLogoUrl && (
+                            <Tag color="blue" size="small">Pending Upload</Tag>
+                          )}
+                        </Space>
+                      </Flex>
+                    )}
+
+                    {pendingLogoRemoval && (
+                      <Alert
+                        message="Logo will be removed"
+                        type="warning"
+                        showIcon
+                        icon={<ExclamationCircleOutlined />}
+                        style={{ marginBottom: 8 }}
                       />
-                      <Space>
-                        <Tooltip title={t('previewLogoTooltip')}>
-                          <Button
-                            type="text"
-                            icon={<EyeOutlined />}
-                            onClick={() => setPreviewVisible(true)}
-                            size="small"
-                          />
-                        </Tooltip>
-                        <Tooltip title={t('removeLogoTooltip')}>
-                          <Button
-                            type="text"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={handleRemoveLogo}
-                            loading={uploading}
-                            size="small"
-                          />
-                        </Tooltip>
-                      </Space>
-                    </Flex>
+                    )}
                   </div>
                   <Divider />
                 </>
@@ -382,10 +504,11 @@ const ClientPortalSettings = () => {
         </Col>
       </Row>
 
+
       {/* Image Preview Modal */}
       <Image
         style={{ display: 'none' }}
-        src={customLogo || ''}
+        src={pendingLogoUrl || customLogo || ''}
         preview={{
           visible: previewVisible,
           onVisibleChange: setPreviewVisible,
