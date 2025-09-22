@@ -336,7 +336,7 @@ const TeamMembersSettings = () => {
                   size='small'
                   icon={<UsergroupAddOutlined />}
                   onClick={() => handleAssignManager(record)}
-                  disabled={!canManageUserRole(auth.role, record.role_name, auth.owner)}
+                  disabled={!canManageUserRole(currentUserRoleName, record.role_name, currentUser?.owner)}
                 />
               </Tooltip>
             </Flex>
@@ -379,7 +379,7 @@ const TeamMembersSettings = () => {
           loading={isLoading}
           rowSelection={{
             type: 'checkbox',
-            selectedRowKeys: selectedMembers.map(member => member.id).filter(Boolean),
+            selectedRowKeys: selectedMembers.map(member => member.id).filter((id): id is string => Boolean(id)),
             onChange: handleMemberSelection,
             getCheckboxProps: (record) => ({
               disabled: record.role_name === 'Owner' || record.role_name === 'Admin' || record.role_name === 'Team Lead',
