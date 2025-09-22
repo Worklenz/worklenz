@@ -5,6 +5,7 @@ import {
   SearchOutlined,
   SyncOutlined,
   UserSwitchOutlined,
+  UsergroupAddOutlined,
 } from '@/shared/antd-imports';
 import {
   Avatar,
@@ -30,6 +31,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import UpdateMemberDrawer from '@/components/settings/update-member-drawer';
 import { AssignManagerDrawer } from '@/components/settings/assign-manager-drawer';
+import { BulkAssignManagerDrawer } from '@/components/settings/bulk-assign-manager-drawer';
 import {
   toggleInviteMemberDrawer,
   toggleUpdateMemberDrawer,
@@ -58,6 +60,8 @@ const TeamMembersSettings = () => {
   const [isManagerDrawerVisible, setManagerDrawerVisible] = useState(false);
   const [selectedMember, setSelectedMember] = useState<ITeamMemberViewModel | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
+  const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -140,6 +144,19 @@ const TeamMembersSettings = () => {
   const handleAssignManager = (record: ITeamMemberViewModel) => {
     setSelectedMember(record);
     setManagerDrawerVisible(true);
+  };
+
+  const handleBulkAssignManager = () => {
+    setBulkAssignDrawerVisible(true);
+  };
+
+  const handleMemberSelection = (selectedRowKeys: React.Key[], selectedRows: ITeamMemberViewModel[]) => {
+    setSelectedMembers(selectedRows);
+  };
+
+  const handleBulkAssignComplete = () => {
+    setSelectedMembers([]);
+    getTeamMembers();
   };
 
   
@@ -314,16 +331,14 @@ const TeamMembersSettings = () => {
                   <Button size="small" icon={<DeleteOutlined />} disabled={!canManage} />
                 </Popconfirm>
               </Tooltip>
-              <Button
-                icon={<UserSwitchOutlined />}
-                onClick={() => handleAssignManager(record)}
-                disabled={!canManageUserRole(auth.role, record.role_name)}
-              />
-              <Button
-                icon={<EditOutlined />}
-                onClick={() => handleMemberClick(record.id || '')}
-                disabled={!canManageUserRole(auth.role, record.role_name)}
-              />
+              <Tooltip title={t('assign_team_lead')}>
+                <Button
+                  size='small'
+                  icon={<UsergroupAddOutlined />}
+                  onClick={() => handleAssignManager(record)}
+                  disabled={!canManageUserRole(auth.role, record.role_name, auth.owner)}
+                />
+              </Tooltip>
             </Flex>
           )
         );
@@ -337,7 +352,7 @@ const TeamMembersSettings = () => {
         <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
           {model.total} {model.total !== 1 ? t('membersCountPlural') : t('memberCount')}
         </Typography.Title>
-        <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 400 }}>
+        <Flex gap={12} align="center" justify="flex-end" style={{ width: '100%' }}>
           <Tooltip title={t('pinTooltip')}>
             <Button shape="circle" icon={<SyncOutlined />} onClick={handleRefresh} />
           </Tooltip>
@@ -345,7 +360,7 @@ const TeamMembersSettings = () => {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder={t('searchPlaceholder')}
-            style={{ maxWidth: 232 }}
+            style={{ width: 250 }}
             suffix={<SearchOutlined />}
           />
           <Button type="primary" onClick={() => dispatch(toggleInviteMemberDrawer())}>
@@ -362,6 +377,15 @@ const TeamMembersSettings = () => {
           rowClassName={() => 'team-member-row'}
           onChange={handleTableChange}
           loading={isLoading}
+          rowSelection={{
+            type: 'checkbox',
+            selectedRowKeys: selectedMembers.map(member => member.id).filter(Boolean),
+            onChange: handleMemberSelection,
+            getCheckboxProps: (record) => ({
+              disabled: record.role_name === 'Owner' || record.role_name === 'Admin' || record.role_name === 'Team Lead',
+              name: record.name,
+            }),
+          }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -375,11 +399,51 @@ const TeamMembersSettings = () => {
           scroll={{ x: 'max-content' }}
         />
       </Card>
-            <AssignManagerDrawer
+      
+      {/* Floating Action Button for Bulk Assign */}
+      {isPrivilegedUser && selectedMembers.length > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            borderRadius: '8px',
+          }}
+        >
+          <Button
+            type="primary"
+            size="large"
+            icon={<UsergroupAddOutlined />}
+            onClick={handleBulkAssignManager}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              paddingLeft: '16px',
+              paddingRight: '16px',
+              height: '48px',
+              fontSize: '14px',
+              fontWeight: 500,
+            }}
+          >
+            {t('bulk_assign_team_lead')} ({selectedMembers.length})
+          </Button>
+        </div>
+      )}
+      
+      <AssignManagerDrawer
         open={isManagerDrawerVisible}
         onClose={() => setManagerDrawerVisible(false)}
         member={selectedMember}
         onManagerAssigned={getTeamMembers}
+      />
+      <BulkAssignManagerDrawer
+        open={isBulkAssignDrawerVisible}
+        onClose={() => setBulkAssignDrawerVisible(false)}
+        selectedMembers={selectedMembers}
+        onAssignmentComplete={handleBulkAssignComplete}
       />
       {createPortal(
         <UpdateMemberDrawer selectedMemberId={selectedMemberId} onRoleUpdate={handleRoleUpdate} />,

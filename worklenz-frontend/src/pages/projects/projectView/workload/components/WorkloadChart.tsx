@@ -210,7 +210,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         
         return {
           id: member.project_member_id || member.team_member_id || member.user_id,
-          name: member.name || 'Unknown',
+          name: member.name || t('table.unknown'),
           email: member.email || '',
           avatar: member.avatar_url,
           role: member.role,
@@ -253,7 +253,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         
         return {
           id: member.project_member_id || member.team_member_id || member.user_id,
-          name: member.name || 'Unknown',
+          name: member.name || t('table.unknown'),
           email: member.email || '',
           avatar: member.avatar_url,
           role: member.role,

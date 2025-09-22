@@ -20,6 +20,8 @@ import taskCommentsApiRouter from "./task-comments-api-router";
 import taskWorkLogApiRouter from "./task-work-log-api-router";
 import tasksApiRouter from "./tasks-api-router";
 import teamMembersApiRouter from "./team-members-api-router";
+import teamManagementApiRouter from "./team-management-api-router";
+import teamLeadReportsApiRouter from "./team-lead-reports-api-router";
 import teamsApiRouter from "./teams-api-router";
 import timezonesApiRouter from "./timezones-api-router";
 import todoListApiRouter from "./todo-list-api-router";
@@ -78,6 +80,8 @@ const api = express.Router();
 
 api.use("/projects", projectsApiRouter);
 api.use("/team-members", teamMembersApiRouter);
+api.use("/team-management", teamManagementApiRouter);
+api.use("/team-lead-reports", teamLeadReportsApiRouter);
 api.use("/job-titles", jobTitlesApiRouter);
 api.use("/clients", clientsApiRouter);
 api.use("/teams", teamsApiRouter);

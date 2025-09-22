@@ -181,10 +181,10 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       
       const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
       
-      return {
-        id: member.project_member_id || member.team_member_id || member.user_id,
-        name: member.name || 'Unknown',
-        email: member.email || '',
+        return {
+          id: member.project_member_id || member.team_member_id || member.user_id,
+          name: member.name || t('table.unknown'),
+          email: member.email || '',
         avatar: member.avatar_url,
         role: member.role,
         teamId: member.team_member_id,
@@ -453,7 +453,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         key: 'taskName',
         render: (_, task) => (
           <Typography.Text ellipsis style={{ maxWidth: 300 }}>
-            {task.name || `Task ${task.id || 'Unknown'}`}
+            {task.name || `${t('calendar.task')} ${task.id || t('table.unknown')}`}
           </Typography.Text>
         ),
       },
@@ -462,7 +462,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         key: 'projectName',
         render: (_, task) => (
           <Typography.Text>
-            {task.project_name || 'Current Project'}
+            {task.project_name || t('table.currentProject')}
           </Typography.Text>
         ),
       },
@@ -471,7 +471,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         key: 'duration',
         render: (_, task) => (
           <Typography.Text type="secondary" style={{ color: token.colorTextSecondary }}>
-            {task.start_date ? task.start_date.split('T')[0] : 'No start'} - {task.end_date ? task.end_date.split('T')[0] : 'No end'}
+            {task.start_date ? task.start_date.split('T')[0] : t('table.noStart')} - {task.end_date ? task.end_date.split('T')[0] : t('table.noEnd')}
           </Typography.Text>
         ),
       },
@@ -488,7 +488,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         key: 'priority',
         render: (_, task) => (
           <Tag color={task.priority_color || 'default'}>
-            {task.priority_value || 'Medium'}
+            {task.priority_value || t('table.defaultPriority')}
           </Tag>
         ),
       },
@@ -497,7 +497,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         key: 'status',
         render: (_, task) => (
           <Tag color={task.status_color || 'default'}>
-            {task.status_name || 'To Do'}
+            {task.status_name || t('table.defaultStatus')}
           </Tag>
         ),
       },
@@ -525,18 +525,18 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
               const transformedTask = {
                 id: task.id,
                 taskId: task.id,
-                taskName: task.name || `Task ${task.id}`,
+                taskName: task.name || `${t('calendar.task')} ${task.id}`,
                 projectId: task.project_id,
-                projectName: task.project_name || 'Current Project',
+                projectName: task.project_name || t('table.currentProject'),
                 memberId: record.id,
                 memberName: record.name,
                 estimatedHours: task.total_minutes ? task.total_minutes / 60 : 4,
                 actualHours: 0,
                 startDate: task.start_date ? task.start_date.split('T')[0] : '',
                 endDate: task.end_date ? task.end_date.split('T')[0] : '',
-                priority: task.priority_value || 'Medium',
+                priority: task.priority_value || t('table.defaultPriority'),
                 priorityColor: task.priority_color || 'default',
-                status: task.status_name || 'To Do',
+                status: task.status_name || t('table.defaultStatus'),
                 statusColor: task.status_color || 'default',
                 completionPercentage: task.complete_ratio || 0,
               };

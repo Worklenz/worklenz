@@ -70,7 +70,7 @@ import {
   Slider,
   Descriptions,
   Upload,
-  UploadProps,
+  Tree,
 } from 'antd';
 
 import TextArea from 'antd/es/input/TextArea';
@@ -272,6 +272,7 @@ export {
   Slider,
   Descriptions,
   Upload,
+  Tree,
 };
 
 // TypeScript Types - Import commonly used ones

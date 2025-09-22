@@ -66,7 +66,7 @@ SELECT
         ELSE 0 
     END as completion_percentage,
     COALESCE(SUM(twl.time_spent), 0) as total_time_minutes,
-    COUNT(DISTINCT CASE WHEN tasks.due_date < CURRENT_DATE AND tasks.done = FALSE THEN tasks.id END) as overdue_tasks,
+    COUNT(DISTINCT CASE WHEN tasks.end_date < CURRENT_DATE AND tasks.done = FALSE THEN tasks.id END) as overdue_tasks,
     COUNT(DISTINCT tasks.project_id) as active_projects
 FROM team_lead_managed_members tlmm
 LEFT JOIN tasks_assignees ta ON tlmm.managed_member_id = ta.team_member_id
@@ -96,7 +96,7 @@ SELECT
         ELSE 0 
     END as completion_percentage,
     COALESCE(SUM(twl.time_spent), 0) as total_time_minutes,
-    COUNT(DISTINCT CASE WHEN tasks.due_date < CURRENT_DATE AND tasks.done = FALSE THEN tasks.id END) as overdue_tasks,
+    COUNT(DISTINCT CASE WHEN tasks.end_date < CURRENT_DATE AND tasks.done = FALSE THEN tasks.id END) as overdue_tasks,
     COUNT(DISTINCT tasks.project_id) as active_projects,
     MAX(twl.created_at) as last_time_log
 FROM team_lead_managed_members tlmm
