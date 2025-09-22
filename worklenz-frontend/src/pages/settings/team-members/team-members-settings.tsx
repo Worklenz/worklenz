@@ -29,6 +29,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import UpdateMemberDrawer from '@/components/settings/update-member-drawer';
+import { AssignManagerDrawer } from '@/components/settings/assign-manager-drawer';
 import {
   toggleInviteMemberDrawer,
   toggleUpdateMemberDrawer,
@@ -53,8 +54,11 @@ const TeamMembersSettings = () => {
 
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isDrawerVisible, setDrawerVisible] = useState(false);
+  const [isManagerDrawerVisible, setManagerDrawerVisible] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<ITeamMemberViewModel | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -133,6 +137,12 @@ const TeamMembersSettings = () => {
     [dispatch]
   );
 
+  const handleAssignManager = (record: ITeamMemberViewModel) => {
+    setSelectedMember(record);
+    setManagerDrawerVisible(true);
+  };
+
+  
   const handleTableChange = useCallback((newPagination: any, filters: any, sorter: any) => {
     setPagination(prev => ({
       ...prev,
@@ -304,6 +314,16 @@ const TeamMembersSettings = () => {
                   <Button size="small" icon={<DeleteOutlined />} disabled={!canManage} />
                 </Popconfirm>
               </Tooltip>
+              <Button
+                icon={<UserSwitchOutlined />}
+                onClick={() => handleAssignManager(record)}
+                disabled={!canManageUserRole(auth.role, record.role_name)}
+              />
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => handleMemberClick(record.id || '')}
+                disabled={!canManageUserRole(auth.role, record.role_name)}
+              />
             </Flex>
           )
         );
@@ -355,6 +375,12 @@ const TeamMembersSettings = () => {
           scroll={{ x: 'max-content' }}
         />
       </Card>
+            <AssignManagerDrawer
+        open={isManagerDrawerVisible}
+        onClose={() => setManagerDrawerVisible(false)}
+        member={selectedMember}
+        onManagerAssigned={getTeamMembers}
+      />
       {createPortal(
         <UpdateMemberDrawer selectedMemberId={selectedMemberId} onRoleUpdate={handleRoleUpdate} />,
         document.body
