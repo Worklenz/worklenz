@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Flex, Select, Table, Typography, Input, Dropdown, Space, Checkbox } from '@/shared/antd-imports';
+import { DownOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
-import { teamLeadReportsApiService } from '@/api/team-lead-reports/team-lead-reports.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import TimeWiseFilter from '@/components/reporting/time-wise-filter';
+import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
 
 interface LogRow {
   key: string;
@@ -23,7 +24,7 @@ const TimeLogsPage: React.FC = () => {
   const { t } = useTranslation('time-report');
 
   // Global context
-  const team = useAppSelector(state => state.auth?.team);
+  const team = useAppSelector(state => (state as any).auth?.team);
   const reporting = useAppSelector(state => state.reportingReducer);
 
   // Local state
@@ -37,7 +38,13 @@ const TimeLogsPage: React.FC = () => {
   // Columns
   const columns = useMemo(
     () => [
-      { title: t('Date'), dataIndex: 'date', key: 'date', width: 160 },
+      {
+        title: t('Date'),
+        dataIndex: 'date',
+        key: 'date',
+        width: 160,
+        render: (value: string) => dayjs(value).format('MMM DD, YYYY'),
+      },
       { title: t('Member'), dataIndex: 'member', key: 'member', width: 200 },
       { title: t('Project'), dataIndex: 'project', key: 'project', width: 220 },
       { title: t('Task'), dataIndex: 'task', key: 'task', width: 260 },
@@ -59,7 +66,8 @@ const TimeLogsPage: React.FC = () => {
       try {
         const res = await teamMembersApiService.getAll();
         if (res.done && Array.isArray(res.body)) {
-          setMembers(res.body.map(m => ({ id: m.id, name: m.name })));
+          const mapped = res.body.map(m => ({ id: m.id as string, name: m.name as string }));
+          setMembers(mapped);
         }
       } catch {
         // noop
@@ -76,8 +84,9 @@ const TimeLogsPage: React.FC = () => {
       const startDate = dayjs(dr[0]).format('YYYY-MM-DD');
       const endDate = dayjs(dr[1]).format('YYYY-MM-DD');
 
-      // Minimal implementation: if a member is selected, use admin/owner-friendly reporting endpoint
+      // If a member is selected, fetch member-specific; otherwise fetch flat logs
       if (selectedMemberId) {
+        // Use the same flat endpoint with member filter for consistency with the no-member case
         const body = {
           team_member_id: selectedMemberId,
           team_id: team?.id || null,
@@ -85,15 +94,15 @@ const TimeLogsPage: React.FC = () => {
           date_range: [startDate, endDate],
           billable: billableFilter,
           archived: false,
-        };
-        const res = await reportingApiService.getSingleMemberTimeLogs(body);
+          search: search || undefined,
+        } as any;
+        const res = await reportingApiService.getTimelogsFlat(body);
         if (res.done && Array.isArray(res.body)) {
-          const memberName = members.find(m => m.id === selectedMemberId)?.name || '';
           const rows: LogRow[] = res.body.flatMap(group =>
-            group.logs.map((l, idx) => ({
+            group.logs.map((l: any, idx: number) => ({
               key: `${group.log_day}-${idx}`,
               date: group.log_day,
-              member: memberName,
+              member: (l as any).user_name,
               project: l.project_name,
               task: l.task_name,
               description: undefined,
@@ -105,8 +114,32 @@ const TimeLogsPage: React.FC = () => {
           setLogs([]);
         }
       } else {
-        // Fallback: show empty or require member selection in minimal version
-        setLogs([]);
+        const body = {
+          team_member_id: null,
+          team_id: team?.id || null,
+          duration: null,
+          date_range: [startDate, endDate],
+          billable: billableFilter,
+          archived: false,
+          search: search || undefined,
+        } as any;
+        const res = await reportingApiService.getTimelogsFlat(body);
+        if (res.done && Array.isArray(res.body)) {
+          const rows: LogRow[] = res.body.flatMap(group =>
+            group.logs.map((l: any, idx: number) => ({
+              key: `${group.log_day}-${idx}`,
+              date: group.log_day,
+              member: (l as any).user_name,
+              project: l.project_name,
+              task: l.task_name,
+              description: undefined,
+              duration: l.time_spent_string,
+            }))
+          );
+          setLogs(rows);
+        } else {
+          setLogs([]);
+        }
       }
     } catch {
       setLogs([]);
@@ -118,7 +151,7 @@ const TimeLogsPage: React.FC = () => {
   useEffect(() => {
     fetchLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMemberId, reporting.dateRange?.[0], reporting.dateRange?.[1]]);
+  }, [selectedMemberId, reporting.dateRange?.[0], reporting.dateRange?.[1], billableFilter.billable, billableFilter.nonBillable, search]);
 
   const onExport = () => {
     if (!selectedMemberId || !reporting.dateRange || reporting.dateRange.length !== 2) return;
@@ -134,7 +167,7 @@ const TimeLogsPage: React.FC = () => {
       team_name: team?.name,
       billable: billableFilter,
       archived: false,
-    });
+    } as any);
   };
 
   const filteredLogs = useMemo(() => {
@@ -157,19 +190,36 @@ const TimeLogsPage: React.FC = () => {
     },
   } as any;
 
+  const secondaryFiltersMenu = {
+    items: [
+      {
+        key: 'filters',
+        label: (
+          <Space size={12}>
+            <Checkbox
+              checked={billableFilter.billable}
+              onChange={e => setBillableFilter(prev => ({ ...prev, billable: e.target.checked }))}
+            >
+              {t('Billable')}
+            </Checkbox>
+            <Checkbox
+              checked={billableFilter.nonBillable}
+              onChange={e => setBillableFilter(prev => ({ ...prev, nonBillable: e.target.checked }))}
+            >
+              {t('Non-billable')}
+            </Checkbox>
+          </Space>
+        ),
+      },
+    ],
+  } as any;
+
   return (
     <Flex vertical>
-      <Card
-        style={{ borderRadius: '4px' }}
-        title={
-          <div style={{ padding: '16px 0' }}>
-            <Typography.Title level={5} style={{ margin: 0 }}>
-              {t('Time Logs')}
-            </Typography.Title>
-          </div>
-        }
-        extra={
-          <Flex gap={8} align="center">
+      <CustomPageHeader
+        title={t('Time Logs')}
+        children={
+          <Space>
             <TimeWiseFilter />
             <Select
               placeholder={t('Select member')}
@@ -186,28 +236,20 @@ const TimeLogsPage: React.FC = () => {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            <Space size={8}>
-              <Checkbox
-                checked={billableFilter.billable}
-                onChange={e => setBillableFilter(prev => ({ ...prev, billable: e.target.checked }))}
-              >
-                {t('Billable')}
-              </Checkbox>
-              <Checkbox
-                checked={billableFilter.nonBillable}
-                onChange={e => setBillableFilter(prev => ({ ...prev, nonBillable: e.target.checked }))}
-              >
-                {t('Non-billable')}
-              </Checkbox>
-            </Space>
+            <Dropdown menu={secondaryFiltersMenu} trigger={["click"]}>
+              <Button>{t('Filters')}</Button>
+            </Dropdown>
             <Button onClick={fetchLogs}>{t('Refresh')}</Button>
             <Dropdown menu={exportMenu} disabled={!selectedMemberId}>
-              <Button type="primary">{t('Export')}</Button>
+              <Button type="primary" icon={<DownOutlined />} iconPosition="end">
+                {t('Export')}
+              </Button>
             </Dropdown>
-          </Flex>
+          </Space>
         }
-        styles={{ body: { padding: 0 } }}
-      >
+      />
+
+      <Card style={{ borderRadius: '4px' }} styles={{ body: { padding: 0 } }}>
         <Table
           size="small"
           loading={loading}

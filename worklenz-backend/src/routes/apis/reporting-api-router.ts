@@ -66,6 +66,7 @@ reportingApiRouter.get("/members/single-member-projects", teamOwnerOrAdminValida
 reportingApiRouter.get("/member-projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberProjects));
 reportingApiRouter.post("/members/single-member-activities", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberActivities));
 reportingApiRouter.post("/members/single-member-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getMemberTimelogs));
+reportingApiRouter.post("/members/timelogs-flat", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.getTimelogsFlat));
 
 reportingApiRouter.post("/time-reports/projects", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getProjectTimeSheets));
 reportingApiRouter.post("/time-reports/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getMemberTimeSheets));
