@@ -108,6 +108,11 @@ for port in "${ports[@]}"; do
     fi
 done
 
+# Fix line endings (convert CRLF to LF) and set executable permission for 00_init.sh
+dos2unix worklenz-backend/database/00_init.sh 2>/dev/null || true
+chmod +x worklenz-backend/database/00_init.sh
+
+
 # Start the containers
 echo -e "${BLUE}Starting Worklenz services...${NC}"
 $DOCKER_COMPOSE_CMD down
@@ -120,6 +125,28 @@ echo "This may take a minute or two depending on your system..."
 # Check each service
 check_service "Database" "worklenz_db" ""
 DB_STATUS=$?
+
+
+# Wait for database to be healthy before running migrations
+echo -e "${BLUE}Waiting for database to be healthy...${NC}"
+until [ "$(docker inspect --format='{{.State.Health.Status}}' worklenz_db 2>/dev/null)" == "healthy" ]; do
+  sleep 2
+  echo -n "."
+done
+echo -e "${GREEN}✓${NC} Database is healthy"
+
+# Run node-pg-migrate migrations if DB is up
+if [ $DB_STATUS -eq 0 ]; then
+    echo -e "${BLUE}Running database migrations...${NC}"
+    $DOCKER_COMPOSE_CMD run --rm backend npm run migrate:up
+    MIGRATE_STATUS=$?
+    if [ $MIGRATE_STATUS -eq 0 ]; then
+        echo -e "${GREEN}✓${NC} Database migrations applied successfully"
+    else
+        echo -e "${RED}✗${NC} Database migrations failed"
+        exit 1
+    fi
+fi
 
 check_service "MinIO" "worklenz_minio" "http://localhost:9000/minio/health/live"
 MINIO_STATUS=$?

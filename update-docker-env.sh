@@ -96,6 +96,7 @@ DB_PASSWORD=password
 DB_NAME=worklenz_db
 DB_MAX_CLIENTS=50
 USE_PG_NATIVE=true
+DATABASE_URL=postgres://postgres:password@db:5432/worklenz_db
 
 # Storage Configuration
 STORAGE_PROVIDER=s3
