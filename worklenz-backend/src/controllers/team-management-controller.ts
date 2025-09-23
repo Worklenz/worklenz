@@ -14,7 +14,7 @@ export default class TeamManagementController {
 
       // Validate that the member being assigned doesn't have a higher role
       const roleCheck = `
-        SELECT tm.id, u.name, r.name as role_name
+        SELECT tm.id, u.name, r.name as role_name, tm.reports_to_member_id
         FROM team_members tm
         JOIN users u ON tm.user_id = u.id
         JOIN roles r ON tm.role_id = r.id
@@ -27,14 +27,49 @@ export default class TeamManagementController {
         return res.status(400).send(new ServerResponse(false, null, "Team member not found or inactive"));
       }
 
-      const member = memberResult.rows[0];
+      const [member] = memberResult.rows;
       if (["Owner", "Admin", "Team Lead"].includes(member.role_name)) {
         return res.status(400).send(new ServerResponse(false, null, `Cannot assign ${member.role_name} to report to Team Lead`));
       }
 
+      // Check if member is already assigned to another team lead
+      if (member.reports_to_member_id && member.reports_to_member_id !== managerId) {
+        // Get current team lead name for better error message
+        const currentTeamLeadQuery = `
+          SELECT u.name as current_team_lead_name
+          FROM team_members tm
+          JOIN users u ON tm.user_id = u.id
+          WHERE tm.id = $1::UUID
+        `;
+        const currentTeamLeadResult = await db.query(currentTeamLeadQuery, [member.reports_to_member_id]);
+        const currentTeamLeadName = currentTeamLeadResult.rows[0]?.current_team_lead_name || "another Team Lead";
+        
+        return res.status(400).send(new ServerResponse(false, null, `Member is already assigned to ${currentTeamLeadName}. Please remove the current assignment first.`));
+      }
+
+      // Verify the target manager is actually a Team Lead
+      const managerRoleCheck = `
+        SELECT tm.id, u.name, r.name as role_name
+        FROM team_members tm
+        JOIN users u ON tm.user_id = u.id
+        JOIN roles r ON tm.role_id = r.id
+        WHERE tm.id = $1::UUID AND tm.active = TRUE
+      `;
+      
+      const managerResult = await db.query(managerRoleCheck, [managerId]);
+      
+      if (managerResult.rows.length === 0) {
+        return res.status(400).send(new ServerResponse(false, null, "Target manager not found or inactive"));
+      }
+
+      const [manager] = managerResult.rows;
+      if (manager.role_name !== "Team Lead") {
+        return res.status(400).send(new ServerResponse(false, null, `Cannot assign member to ${manager.role_name}. Only Team Leads can manage team members.`));
+      }
+
       const q = `
         UPDATE team_members
-        SET reports_to_member_id = $1::UUID
+        SET reports_to_member_id = $1::UUID, updated_at = CURRENT_TIMESTAMP
         WHERE id = $2::UUID
       `;
 
@@ -75,14 +110,14 @@ export default class TeamManagementController {
         return res.status(400).send(new ServerResponse(false, null, "Team Lead not found or inactive"));
       }
 
-      const teamLeadData = teamLeadResult.rows[0];
+      const [teamLeadData] = teamLeadResult.rows;
       if (teamLeadData.role_name !== "Team Lead") {
         return res.status(400).send(new ServerResponse(false, null, "Selected member is not a Team Lead"));
       }
 
       // Verify all member IDs exist and belong to the same team
       const memberCheck = `
-        SELECT tm.id, tm.user_id, u.name, r.name as role_name
+        SELECT tm.id, tm.user_id, u.name, r.name as role_name, tm.reports_to_member_id
         FROM team_members tm
         JOIN users u ON tm.user_id = u.id
         JOIN roles r ON tm.role_id = r.id
@@ -103,6 +138,16 @@ export default class TeamManagementController {
       if (invalidRoles.length > 0) {
         const invalidNames = invalidRoles.map(member => `${member.name} (${member.role_name})`).join(", ");
         return res.status(400).send(new ServerResponse(false, null, `Cannot assign higher-level roles to Team Lead: ${invalidNames}`));
+      }
+
+      // Check if any members are already assigned to other team leads
+      const alreadyAssignedMembers = memberResult.rows.filter(member => 
+        member.reports_to_member_id && member.reports_to_member_id !== teamLeadId
+      );
+      
+      if (alreadyAssignedMembers.length > 0) {
+        const assignedNames = alreadyAssignedMembers.map(member => member.name).join(", ");
+        return res.status(400).send(new ServerResponse(false, null, `The following members are already assigned to other Team Leads: ${assignedNames}. Please remove their current assignments first.`));
       }
 
       // Check for circular references - prevent assigning team lead to themselves
@@ -166,7 +211,6 @@ export default class TeamManagementController {
       ));
 
     } catch (error) {
-      console.error("Bulk assignment error:", error);
       return res.status(500).send(new ServerResponse(false, null, error instanceof Error ? error.message : "Unknown error"));
     }
   }
@@ -174,20 +218,52 @@ export default class TeamManagementController {
   public static async removeManagerAssignment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     try {
       const { teamMemberId } = req.body;
+      const userId = req.user?.id;
+      const teamId = req.user?.team_id;
 
       if (!teamMemberId) {
         return res.status(400).send(new ServerResponse(false, null, "Team member ID is required"));
       }
 
-      const q = `
+      if (!userId || !teamId) {
+        return res.status(400).send(new ServerResponse(false, null, "User context is required"));
+      }
+
+      // Verify member exists and belongs to the team
+      const memberCheck = `
+        SELECT tm.id, u.name, tm.reports_to_member_id
+        FROM team_members tm
+        JOIN users u ON tm.user_id = u.id
+        WHERE tm.id = $1::UUID AND tm.team_id = $2::UUID AND tm.active = TRUE
+      `;
+      
+      const memberResult = await db.query(memberCheck, [teamMemberId, teamId]);
+      
+      if (memberResult.rows.length === 0) {
+        return res.status(400).send(new ServerResponse(false, null, "Team member not found or inactive"));
+      }
+
+      const [member] = memberResult.rows;
+      
+      if (!member.reports_to_member_id) {
+        return res.status(400).send(new ServerResponse(false, null, "Member is not currently assigned to any Team Lead"));
+      }
+
+      // Remove the manager assignment
+      const removeQuery = `
         UPDATE team_members
-        SET reports_to_member_id = NULL
+        SET reports_to_member_id = NULL, updated_at = CURRENT_TIMESTAMP
         WHERE id = $1::UUID
+        RETURNING id, (SELECT name FROM users WHERE id = user_id) as member_name
       `;
 
-      await db.query(q, [teamMemberId]);
+      const result = await db.query(removeQuery, [teamMemberId]);
 
-      return res.send(new ServerResponse(true, null, "Manager assignment removed successfully"));
+      if (result.rows.length === 0) {
+        return res.status(500).send(new ServerResponse(false, null, "Failed to remove manager assignment"));
+      }
+
+      return res.send(new ServerResponse(true, { member: result.rows[0] }, "Manager assignment removed successfully"));
     } catch (error) {
       return res.status(500).send(new ServerResponse(false, null, error instanceof Error ? error.message : "Unknown error"));
     }

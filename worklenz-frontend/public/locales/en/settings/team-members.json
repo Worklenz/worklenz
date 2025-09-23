@@ -68,5 +68,15 @@
   "no_team_leads_available": "No Team Leads available",
   "no_matching_team_leads": "No matching Team Leads found",
   "no_team_leads_found": "No Team Leads Found",
-  "create_team_leads_first": "Create Team Lead roles first to use bulk assignment"
+  "create_team_leads_first": "Create Team Lead roles first to use bulk assignment",
+  "assign_team_lead_for": "Assign Team Lead for",
+  "current_assignment": "Current Assignment",
+  "currently_assigned_to": "Currently assigned to",
+  "select_a_team_lead": "Select a Team Lead",
+  "no_team_leads_description": "There are no Team Leads available in your team. Create Team Lead roles first.",
+  "manager_assigned_successfully": "Team Lead assigned successfully",
+  "failed_to_assign_manager": "Failed to assign Team Lead",
+  "assign": "Assign",
+  "cancel": "Cancel",
+  "assign_team_lead": "Assign Team Lead"
 }

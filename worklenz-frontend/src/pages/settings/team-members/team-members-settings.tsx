@@ -17,11 +17,12 @@ import {
   Popconfirm,
   Table,
   TableProps,
+  Tag,
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -40,9 +41,11 @@ import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
+import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
 import { colors } from '@/styles/colors';
 import { getRoleColor } from '@/types/roles/role.types';
 import { canManageUserRole } from '@/utils/role-permissions.utils';
+import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import './team-members-settings.css';
 
 const TeamMembersSettings = () => {
@@ -159,6 +162,22 @@ const TeamMembersSettings = () => {
     getTeamMembers();
   };
 
+  const handleRemoveTeamLeadAssignment = async (member: ITeamMemberViewModel) => {
+    if (!member.id) return;
+    
+    try {
+      setIsLoading(true);
+      const res = await teamManagementApiService.removeManagerAssignment(member.id);
+      if (res.done) {
+        await getTeamMembers();
+      }
+    } catch (error) {
+      console.error('Error removing team lead assignment:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   
   const handleTableChange = useCallback((newPagination: any, filters: any, sorter: any) => {
     setPagination(prev => ({
@@ -205,170 +224,223 @@ const TeamMembersSettings = () => {
   const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
   const isPrivilegedUser = !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
 
-  const columns: TableProps['columns'] = [
-    {
-      key: 'name',
-      dataIndex: 'name',
-      title: t('nameColumn'),
-      defaultSortOrder: 'ascend',
-      sorter: true,
-      onCell: (record: ITeamMemberViewModel) => ({
-        onClick: () => handleMemberClick(record.id || ''),
-        style: { cursor: 'pointer' },
-      }),
-      render: (_, record: ITeamMemberViewModel) => (
-        <Typography.Text
-          style={{
-            textTransform: 'capitalize',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <Avatar size={28} src={record.avatar_url} style={{ backgroundColor: record.color_code }}>
-            {record.name?.charAt(0)}
-          </Avatar>
-          {record.name}
-          {record.is_online && <Badge color={colors.limeGreen} />}
-          {!record.active && (
-            <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
-              {t('deactivatedText')}
-            </Typography.Text>
-          )}
-        </Typography.Text>
-      ),
-    },
-    {
-      key: 'projects_count',
-      dataIndex: 'projects_count',
-      title: t('projectsColumn'),
-      sorter: true,
-      onCell: (record: ITeamMemberViewModel) => ({
-        onClick: () => handleMemberClick(record.id || ''),
-        style: { cursor: 'pointer' },
-      }),
-      render: (_, record: ITeamMemberViewModel) => (
-        <Typography.Text>{record.projects_count}</Typography.Text>
-      ),
-    },
-    {
-      key: 'email',
-      dataIndex: 'email',
-      title: t('emailColumn'),
-      sorter: true,
-      onCell: (record: ITeamMemberViewModel) => ({
-        onClick: () => handleMemberClick(record.id || ''),
-        style: { cursor: 'pointer' },
-      }),
-      render: (_, record: ITeamMemberViewModel) => (
-        <div>
-          <Typography.Text>{record.email}</Typography.Text>
-          {record.pending_invitation && (
-            <Typography.Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
-              {t('pendingInvitationText')}
-            </Typography.Text>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'role_name',
-      dataIndex: 'role_name',
-      title: t('teamAccessColumn'),
-      sorter: true,
-      onCell: (record: ITeamMemberViewModel) => ({
-        onClick: () => handleMemberClick(record.id || ''),
-        style: { cursor: 'pointer' },
-      }),
-      render: (_, record: ITeamMemberViewModel) => (
-        <Flex gap={16} align="center">
+  const columns: TableProps['columns'] = useMemo(
+    () => [
+      {
+        key: 'name',
+        dataIndex: 'name',
+        title: t('nameColumn'),
+        defaultSortOrder: 'ascend',
+        sorter: true,
+        onCell: (record: ITeamMemberViewModel) => ({
+          onClick: () => handleMemberClick(record.id || ''),
+          style: { cursor: 'pointer' },
+        }),
+        render: (_, record: ITeamMemberViewModel) => (
           <Typography.Text
             style={{
-              color: getColor(record.role_name),
               textTransform: 'capitalize',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
             }}
           >
-            {record.role_name}
+            <Avatar size={28} src={record.avatar_url} style={{ backgroundColor: record.color_code }}>
+              {record.name?.charAt(0)}
+            </Avatar>
+            {record.name}
+            {record.is_online && <Badge color={colors.limeGreen} />}
+            {!record.active && (
+              <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
+                {t('deactivatedText')}
+              </Typography.Text>
+            )}
           </Typography.Text>
-        </Flex>
-      ),
-    },
-    {
-      key: 'actionBtns',
-      width: 120,
-      render: (record: ITeamMemberViewModel) => {
-        const canManage = canManageUser(record.role_name);
-        return (
-          isPrivilegedUser && (
-            <Flex gap={8} style={{ padding: 0 }} className="action-buttons">
-              <Tooltip title={t('editTooltip')}>
-                <Button
-                  size="small"
-                  icon={<EditOutlined />}
-                  disabled={!canManage}
-                  onClick={() => canManage && record.id && handleMemberClick(record.id)}
-                />
+        ),
+      },
+      {
+        key: 'projects_count',
+        dataIndex: 'projects_count',
+        title: t('projectsColumn'),
+        sorter: true,
+        onCell: (record: ITeamMemberViewModel) => ({
+          onClick: () => handleMemberClick(record.id || ''),
+          style: { cursor: 'pointer' },
+        }),
+        render: (_, record: ITeamMemberViewModel) => (
+          <Typography.Text>{record.projects_count}</Typography.Text>
+        ),
+      },
+      {
+        key: 'email',
+        dataIndex: 'email',
+        title: t('emailColumn'),
+        sorter: true,
+        onCell: (record: ITeamMemberViewModel) => ({
+          onClick: () => handleMemberClick(record.id || ''),
+          style: { cursor: 'pointer' },
+        }),
+        render: (_, record: ITeamMemberViewModel) => (
+          <div>
+            <Typography.Text>{record.email}</Typography.Text>
+            {record.pending_invitation && (
+              <Typography.Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+                {t('pendingInvitationText')}
+              </Typography.Text>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'role_name',
+        dataIndex: 'role_name',
+        title: t('teamAccessColumn'),
+        sorter: true,
+        onCell: (record: ITeamMemberViewModel) => ({
+          onClick: () => handleMemberClick(record.id || ''),
+          style: { cursor: 'pointer' },
+        }),
+        render: (_, record: ITeamMemberViewModel) => (
+          <Flex gap={16} align="center">
+            <Typography.Text
+              style={{
+                color: getColor(record.role_name),
+                textTransform: 'capitalize',
+              }}
+            >
+              {record.role_name}
+            </Typography.Text>
+          </Flex>
+        ),
+      },
+      {
+        key: 'team_lead_assignment',
+        title: 'Team Lead',
+        render: (_, record: ITeamMemberViewModel) => {
+          if (record.role_name === 'Team Lead' || record.role_name === 'Admin' || record.role_name === 'Owner') {
+            return <Typography.Text type="secondary">-</Typography.Text>;
+          }
+          
+          if (record.reports_to_member_id && record.current_team_lead_name) {
+            return (
+              <Flex align="center" gap={8}>
+                <Tag color="blue" style={{ margin: 0 }}>
+                  {record.current_team_lead_name}
+                </Tag>
+                {isPrivilegedUser && (
+                  <Button
+                    size="small"
+                    type="text"
+                    danger
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveTeamLeadAssignment(record);
+                    }}
+                    style={{ padding: '0 4px', height: 'auto' }}
+                  >
+                    ×
+                  </Button>
+                )}
+              </Flex>
+            );
+          }
+          
+          return (
+            <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+              Unassigned
+            </Typography.Text>
+          );
+        },
+      },
+      {
+        key: 'actionBtns',
+        width: 120,
+        render: (record: ITeamMemberViewModel) => {
+          const canManage = canManageUser(record.role_name);
+          return (
+            isPrivilegedUser && (
+              <Flex gap={8} style={{ padding: 0 }} className="action-buttons">
+                <Tooltip title={t('editTooltip')}>
+                  <Button
+                    size="small"
+                    icon={<EditOutlined />}
+                    disabled={!canManage}
+                    onClick={() => canManage && record.id && handleMemberClick(record.id)}
+                  />
+                </Tooltip>
+                <Tooltip title={record.active ? t('deactivateTooltip') : t('activateTooltip')}>
+                  <Popconfirm
+                    title={t('confirmActivateTitle')}
+                    icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+                    okText={t('okText')}
+                    cancelText={t('cancelText')}
+                    onConfirm={() => canManage && handleStatusChange(record)}
+                  >
+                    <Button size="small" icon={<UserSwitchOutlined />} disabled={!canManage} />
+                  </Popconfirm>
+                </Tooltip>
+                <Tooltip title={t('deleteTooltip')}>
+                  <Popconfirm
+                    title={t('confirmDeleteTitle')}
+                    icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+                    okText={t('okText')}
+                    cancelText={t('cancelText')}
+                    onConfirm={() => canManage && record.id && handleDeleteMember(record)}
+                  >
+                    <Button size="small" icon={<DeleteOutlined />} disabled={!canManage} />
+                  </Popconfirm>
+                </Tooltip>
+                <Tooltip title={t('assign_team_lead')}>
+                  <Button
+                    size='small'
+                    icon={<UsergroupAddOutlined />}
+                    onClick={() => handleAssignManager(record)}
+                    disabled={!canManageUserRole(currentUserRoleName, record.role_name, currentUser?.owner)}
+                  />
+                </Tooltip>
+              </Flex>
+            )
+          );
+        },
+      },
+    ],
+    [t, isPrivilegedUser, currentUserRoleName, currentUser?.owner]
+  );
+
+  return (
+    <>
+      <Card
+        style={{ width: '100%' }}
+        title={
+          <Flex justify="space-between" align="center">
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              {model.total} {model.total !== 1 ? t('membersCountPlural') : t('memberCount')}
+            </Typography.Title>
+            <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 500 }}>
+              <Tooltip title={t('pinTooltip')}>
+                <Button shape="circle" icon={<SyncOutlined />} onClick={handleRefresh} />
               </Tooltip>
-              <Tooltip title={record.active ? t('deactivateTooltip') : t('activateTooltip')}>
-                <Popconfirm
-                  title={t('confirmActivateTitle')}
-                  icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-                  okText={t('okText')}
-                  cancelText={t('cancelText')}
-                  onConfirm={() => canManage && handleStatusChange(record)}
-                >
-                  <Button size="small" icon={<UserSwitchOutlined />} disabled={!canManage} />
-                </Popconfirm>
-              </Tooltip>
-              <Tooltip title={t('deleteTooltip')}>
-                <Popconfirm
-                  title={t('confirmDeleteTitle')}
-                  icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-                  okText={t('okText')}
-                  cancelText={t('cancelText')}
-                  onConfirm={() => canManage && record.id && handleDeleteMember(record)}
-                >
-                  <Button size="small" icon={<DeleteOutlined />} disabled={!canManage} />
-                </Popconfirm>
-              </Tooltip>
-              <Tooltip title={t('assign_team_lead')}>
-                <Button
-                  size='small'
-                  icon={<UsergroupAddOutlined />}
-                  onClick={() => handleAssignManager(record)}
-                  disabled={!canManageUserRole(currentUserRoleName, record.role_name, currentUser?.owner)}
+              <Input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={t('searchPlaceholder')}
+                style={{ maxWidth: 250 }}
+                suffix={<SearchOutlined />}
+              />
+              <Button type="primary" onClick={() => dispatch(toggleInviteMemberDrawer())}>
+                {t('addMemberButton')}
+              </Button>
+              <Tooltip title={t('pinTooltip')} trigger={'hover'}>
+                <PinRouteToNavbarButton
+                  name="teamMembers"
+                  path="/worklenz/settings/team-members"
+                  adminOnly
                 />
               </Tooltip>
             </Flex>
-          )
-        );
-      },
-    },
-  ];
-
-  return (
-    <div style={{ width: '100%' }}>
-      <Flex align="center" justify="space-between" style={{ marginBlockEnd: 24 }}>
-        <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
-          {model.total} {model.total !== 1 ? t('membersCountPlural') : t('memberCount')}
-        </Typography.Title>
-        <Flex gap={12} align="center" justify="flex-end" style={{ width: '100%' }}>
-          <Tooltip title={t('pinTooltip')}>
-            <Button shape="circle" icon={<SyncOutlined />} onClick={handleRefresh} />
-          </Tooltip>
-          <Input
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder={t('searchPlaceholder')}
-            style={{ width: 250 }}
-            suffix={<SearchOutlined />}
-          />
-          <Button type="primary" onClick={() => dispatch(toggleInviteMemberDrawer())}>
-            {t('addMemberButton')}
-          </Button>
-        </Flex>
-      </Flex>
-      <Card style={{ width: '100%' }}>
+          </Flex>
+        }
+      >
         <Table
           columns={columns}
           size="small"
@@ -449,7 +521,7 @@ const TeamMembersSettings = () => {
         <UpdateMemberDrawer selectedMemberId={selectedMemberId} onRoleUpdate={handleRoleUpdate} />,
         document.body
       )}
-    </div>
+    </>
   );
 };
 
