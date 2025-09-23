@@ -390,14 +390,16 @@ const TeamMembersSettings = () => {
                     <Button size="small" icon={<DeleteOutlined />} disabled={!canManage} />
                   </Popconfirm>
                 </Tooltip>
-                <Tooltip title={t('assign_team_lead')}>
-                  <Button
-                    size='small'
-                    icon={<UsergroupAddOutlined />}
-                    onClick={() => handleAssignManager(record)}
-                    disabled={!canManageUserRole(currentUserRoleName, record.role_name, currentUser?.owner)}
-                  />
-                </Tooltip>
+                {record.role_name !== 'Owner' && record.role_name !== 'Admin' && record.role_name !== 'Team Lead' && (
+                  <Tooltip title={t('assign_team_lead')}>
+                    <Button
+                      size='small'
+                      icon={<UsergroupAddOutlined />}
+                      onClick={() => handleAssignManager(record)}
+                      disabled={!canManageUserRole(currentUserRoleName, record.role_name, currentUser?.owner)}
+                    />
+                  </Tooltip>
+                )}
               </Flex>
             )
           );
