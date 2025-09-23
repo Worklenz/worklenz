@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Card, Table, Typography, Spin, Alert, Avatar, Tag, Space, DatePicker, Row, Col, Statistic, Button, Modal, Pagination, Dropdown, List, Divider, Flex, theme } from '@/shared/antd-imports';
-import { UserOutlined, ClockCircleOutlined, ProjectOutlined, CalendarOutlined, EyeOutlined, CheckCircleOutlined, ExclamationCircleOutlined, DownOutlined } from '@ant-design/icons';
+import { Card, Table, Typography, Spin, Alert, Avatar, Tag, Space, DatePicker, Row, Col, Statistic, Button, Modal, Pagination, Dropdown, List, Divider, Flex, theme, CheckCircleOutlined, Tooltip } from '@/shared/antd-imports';
+import { UserOutlined, ClockCircleOutlined, ProjectOutlined, CalendarOutlined, EyeOutlined, DownOutlined, InfoCircleOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { teamLeadReportsApiService, TeamMember, TimeLogsSummary, DetailedTimeLog, PerformanceStats } from '@/api/team-lead-reports/team-lead-reports.api.service';
 import { getRoleColor } from '@/types/roles/role.types';
@@ -270,9 +270,10 @@ const TeamLeadReports: React.FC = () => {
   };
 
   // Format time duration
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+  const formatDuration = (minutes: number | string | null | undefined) => {
+    const numMinutes = typeof minutes === 'number' ? minutes : parseFloat(minutes as string) || 0;
+    const hours = Math.floor(numMinutes / 60);
+    const mins = numMinutes % 60;
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
@@ -289,30 +290,58 @@ const TeamLeadReports: React.FC = () => {
       ),
     },
     {
-      title: 'Total Time',
+      title: (
+        <Space>
+          Total Time
+          <Tooltip title="Total time logged by this member during the selected date range. Includes all time entries across all projects and tasks.">
+            <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
+      ),
       dataIndex: 'total_time_minutes',
       key: 'total_time',
-      render: (minutes: number) => (
+      render: (minutes: number | string | null | undefined) => (
         <Text strong style={{ color: '#1890ff' }}>
           {formatDuration(minutes)}
         </Text>
       ),
-      sorter: (a, b) => a.total_time_minutes - b.total_time_minutes,
+      sorter: (a, b) => (a.total_time_minutes || 0) - (b.total_time_minutes || 0),
     },
     {
-      title: 'Logs Count',
+      title: (
+        <Space>
+          Logs Count
+          <Tooltip title="Total number of individual time log entries created by this member during the selected date range.">
+            <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
+      ),
       dataIndex: 'total_logs',
       key: 'total_logs',
       sorter: (a, b) => a.total_logs - b.total_logs,
     },
     {
-      title: 'Projects',
+      title: (
+        <Space>
+          Projects
+          <Tooltip title="Number of distinct projects this member logged time on during the selected date range.">
+            <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
+      ),
       dataIndex: 'projects_worked_on',
       key: 'projects',
       sorter: (a, b) => a.projects_worked_on - b.projects_worked_on,
     },
     {
-      title: 'Active Days',
+      title: (
+        <Space>
+          Active Days
+          <Tooltip title="Number of distinct days this member logged time during the selected date range.">
+            <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
+      ),
       dataIndex: 'days_logged',
       key: 'days_logged',
       sorter: (a, b) => a.days_logged - b.days_logged,
@@ -352,7 +381,7 @@ const TeamLeadReports: React.FC = () => {
           <div>
             <Text strong>{record.managed_member_name}</Text>
             <br />
-            <Tag color={getRoleColor(record.managed_member_role_name)} size="small">
+            <Tag color={getRoleColor(record.managed_member_role_name)}>
               {record.managed_member_role_name}
             </Tag>
           </div>
@@ -373,25 +402,49 @@ const TeamLeadReports: React.FC = () => {
       ),
     },
     {
-      title: 'Completion Rate',
+      title: (
+        <Space>
+          Completion Rate
+          <Tooltip title="Percentage of completed tasks out of total assigned tasks. Calculated as: (Completed Tasks ÷ Assigned Tasks) × 100">
+            <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
+      ),
       dataIndex: 'completion_percentage',
       key: 'completion',
-      render: (percentage: number) => (
-        <Text style={{ color: percentage >= 80 ? '#52c41a' : percentage >= 60 ? '#faad14' : '#ff4d4f' }}>
-          {percentage.toFixed(1)}%
-        </Text>
-      ),
-      sorter: (a, b) => a.completion_percentage - b.completion_percentage,
+      render: (percentage: number | string | null | undefined) => {
+        const numPercentage = typeof percentage === 'number' ? percentage : parseFloat(percentage as string) || 0;
+        return (
+          <Text style={{ color: numPercentage >= 80 ? '#52c41a' : numPercentage >= 60 ? '#faad14' : '#ff4d4f' }}>
+            {numPercentage.toFixed(1)}%
+          </Text>
+        );
+      },
+      sorter: (a, b) => (a.completion_percentage || 0) - (b.completion_percentage || 0),
     },
     {
-      title: 'Time Logged',
+      title: (
+        <Space>
+          Time Logged
+          <Tooltip title="Total time logged by this member during the selected date range. Includes all time entries across all projects and tasks.">
+            <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
+      ),
       dataIndex: 'total_time_minutes',
       key: 'time_logged',
-      render: (minutes: number) => formatDuration(minutes),
-      sorter: (a, b) => a.total_time_minutes - b.total_time_minutes,
+      render: (minutes: number | string | null | undefined) => formatDuration(minutes),
+      sorter: (a, b) => (a.total_time_minutes || 0) - (b.total_time_minutes || 0),
     },
     {
-      title: 'Active Projects',
+      title: (
+        <Space>
+          Active Projects
+          <Tooltip title="Number of distinct projects this member logged time on during the selected date range.">
+            <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
+      ),
       dataIndex: 'active_projects',
       key: 'active_projects',
       sorter: (a, b) => a.active_projects - b.active_projects,
@@ -418,7 +471,7 @@ const TeamLeadReports: React.FC = () => {
       title: 'Duration',
       dataIndex: 'time_spent',
       key: 'duration',
-      render: (minutes: number) => (
+      render: (minutes: number | string | null | undefined) => (
         <Text strong>{formatDuration(minutes)}</Text>
       ),
     },
@@ -482,9 +535,6 @@ const TeamLeadReports: React.FC = () => {
   const totalTeamMembers = teamMembers.length;
   const totalTimeLogged = timeLogsSummary.reduce((sum, member) => sum + member.total_time_minutes, 0);
   const totalProjects = Math.max(...timeLogsSummary.map(m => m.projects_worked_on), 0);
-  const avgCompletionRate = performanceStats.length > 0 
-    ? performanceStats.reduce((sum, member) => sum + member.completion_percentage, 0) / performanceStats.length
-    : 0;
 
   return (
     <div style={{ padding: 24 }}>
@@ -582,41 +632,51 @@ const TeamLeadReports: React.FC = () => {
 
       {/* Summary Statistics */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={6}>
+        <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title={t('summary.totalMembers')}
+              title={
+                <Space>
+                  {t('summary.totalMembers')}
+                  <Tooltip title="Total number of team members who have logged time during the selected date range.">
+                    <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                  </Tooltip>
+                </Space>
+              }
               value={totalTeamMembers}
               prefix={<UserOutlined />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={6}>
+        <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title={t('summary.totalTimeLogged')}
+              title={
+                <Space>
+                  {t('summary.totalTimeLogged')}
+                  <Tooltip title="Total time logged by all team members during the selected date range.">
+                    <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                  </Tooltip>
+                </Space>
+              }
               value={formatDuration(totalTimeLogged)}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={6}>
+        <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title={t('summary.activeProjects')}
+              title={
+                <Space>
+                  {t('summary.activeProjects')}
+                  <Tooltip title="Maximum number of projects worked on by any single team member during the selected date range.">
+                    <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                  </Tooltip>
+                </Space>
+              }
               value={totalProjects}
               prefix={<ProjectOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={6}>
-          <Card>
-            <Statistic
-              title={t('summary.avgCompletionRate')}
-              value={avgCompletionRate.toFixed(1)}
-              suffix="%"
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: avgCompletionRate >= 80 ? '#3f8600' : '#cf1322' }}
             />
           </Card>
         </Col>
@@ -653,7 +713,7 @@ const TeamLeadReports: React.FC = () => {
 
       {/* Detailed Logs Modal */}
       <Modal
-        title={`${t('detailedLogs.title')} ${t('detailedLogs.for')} ${selectedMember?.name}`}
+        title={`${t('detailedLogs.title')} ${t('detailedLogs.for')} ${selectedMember?.managed_member_name}`}
         open={logsModalVisible}
         onCancel={() => setLogsModalVisible(false)}
         width={1000}
