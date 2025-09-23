@@ -130,7 +130,7 @@ teamLeadReportingApiRouter.get("/team-lead-hierarchy", teamOwnerOrAdminValidator
       FROM team_members tl
       JOIN users tl_user ON tl.user_id = tl_user.id
       JOIN roles tl_role ON tl.role_id = tl_role.id
-      LEFT JOIN team_lead_member_stats tlms ON tl.id = tlms.team_lead_id
+      LEFT JOIN team_lead_member_stats tlms ON tl.id = tlms.manager_id
       WHERE tl.team_id = $1::UUID 
         AND tl.active = TRUE
         AND tl_role.name = 'Team Lead'
@@ -176,8 +176,8 @@ teamLeadReportingApiRouter.get("/team-lead-performance/:teamLeadId", teamOwnerOr
         tlmp.last_time_log
       FROM team_lead_member_performance tlmp
       JOIN users managed_user ON tlmp.managed_member_user_id = managed_user.id
-      WHERE tlmp.team_lead_id = $1::UUID 
-        AND tlmp.team_lead_user_id IN (
+      WHERE tlmp.manager_id = $1::UUID 
+        AND tlmp.manager_user_id IN (
           SELECT user_id FROM team_members 
           WHERE id = $1::UUID AND team_id = $2::UUID
         )
@@ -229,8 +229,8 @@ teamLeadReportingApiRouter.get("/team-lead-time-logs/:teamLeadId", teamOwnerOrAd
         tlttl.project_id,
         tlttl.project_name
       FROM team_lead_time_logs tlttl
-      WHERE tlttl.team_lead_id = $1::UUID 
-        AND tlttl.team_lead_user_id IN (
+      WHERE tlttl.manager_id = $1::UUID 
+        AND tlttl.manager_user_id IN (
           SELECT user_id FROM team_members 
           WHERE id = $1::UUID AND team_id = $2::UUID
         )
