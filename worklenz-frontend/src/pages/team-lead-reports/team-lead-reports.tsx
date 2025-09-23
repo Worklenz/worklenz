@@ -19,6 +19,7 @@ const TeamLeadReports: React.FC = () => {
   const [timeLogsSummary, setTimeLogsSummary] = useState<TimeLogsSummary[]>([]);
   const [performanceStats, setPerformanceStats] = useState<PerformanceStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dateRangeLoading, setDateRangeLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   
@@ -71,8 +72,13 @@ const TeamLeadReports: React.FC = () => {
 
   // Fetch performance stats
   const fetchPerformanceStats = useCallback(async () => {
+    if (!dateRange) return;
+    
     try {
-      const response = await teamLeadReportsApiService.getTeamPerformanceStats();
+      const startDate = dateRange[0].format('YYYY-MM-DD');
+      const endDate = dateRange[1].format('YYYY-MM-DD');
+      
+      const response = await teamLeadReportsApiService.getTeamPerformanceStats(startDate, endDate);
       if (response.done) {
         setPerformanceStats(response.body);
       }
@@ -80,7 +86,7 @@ const TeamLeadReports: React.FC = () => {
       console.error('Error fetching performance stats:', err);
       setError('Failed to fetch performance stats');
     }
-  }, []);
+  }, [dateRange]);
 
   // Fetch detailed time logs for a member
   const fetchDetailedLogs = useCallback(async (memberId: string, page: number = 1) => {
@@ -128,12 +134,22 @@ const TeamLeadReports: React.FC = () => {
     if (!dateRange) return;
 
     const initializeData = async () => {
-      setLoading(true);
+      // Use different loading states for initial load vs date range changes
+      if (teamMembers.length === 0) {
+        setLoading(true);
+      } else {
+        setDateRangeLoading(true);
+      }
       setError(null);
       
       try {
+        // Only fetch team members once (they don't depend on date range)
+        if (teamMembers.length === 0) {
+          await fetchTeamMembers();
+        }
+        
+        // Fetch date-dependent data
         await Promise.all([
-          fetchTeamMembers(),
           fetchTimeLogsSummary(),
           fetchPerformanceStats(),
         ]);
@@ -141,11 +157,12 @@ const TeamLeadReports: React.FC = () => {
         setError(t('errors.failedToLoad'));
       } finally {
         setLoading(false);
+        setDateRangeLoading(false);
       }
     };
 
     initializeData();
-  }, [dateRange, fetchTeamMembers, fetchTimeLogsSummary, fetchPerformanceStats]);
+  }, [dateRange]); // Removed function dependencies to prevent unnecessary re-renders
 
   // Date range items with translations
   const dateRangeItems = [
@@ -549,85 +566,102 @@ const TeamLeadReports: React.FC = () => {
 
       {/* Date Range Filter */}
       <Card size="small" style={{ marginBottom: 16 }}>
-        <Space>
-          <CalendarOutlined />
-          <Text>{t('dateRange.label')}:</Text>
-          <Dropdown
-            trigger={['click']}
-            dropdownRender={() => (
-              <Card
-                styles={{
-                  body: {
-                    padding: 0,
-                    minWidth: 320,
-                    maxHeight: 400,
-                    overflowY: 'auto',
-                  },
-                }}
-              >
-                <List style={{ padding: 0 }}>
-                  {dateRangeItems.map(item => (
-                    <List.Item
-                      key={item.key}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: 24,
-                        padding: '8px 12px',
-                        backgroundColor:
-                          selectedTimeFrame === item.label ? token.colorPrimaryBg : 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => handleDurationSelect(item)}
-                    >
-                      <Text
+        <Flex justify="space-between" align="center">
+          <Space>
+            <CalendarOutlined />
+            <Text>{t('dateRange.label')}:</Text>
+            <Dropdown
+              trigger={['click']}
+              dropdownRender={() => (
+                <Card
+                  styles={{
+                    body: {
+                      padding: 0,
+                      minWidth: 320,
+                      maxHeight: 400,
+                      overflowY: 'auto',
+                    },
+                  }}
+                >
+                  <List style={{ padding: 0 }}>
+                    {dateRangeItems.map(item => (
+                      <List.Item
+                        key={item.key}
                         style={{
-                          color: selectedTimeFrame === item.label ? token.colorPrimary : 'inherit',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          gap: 24,
+                          padding: '8px 12px',
+                          backgroundColor:
+                            selectedTimeFrame === item.label ? token.colorPrimaryBg : 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
                         }}
+                        onClick={() => handleDurationSelect(item)}
                       >
-                        {t(`dateRange.${item.label}`)}
-                      </Text>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {item.dates
-                          ? dayjs(item.dates.split(' - ')[0]).format('MMM DD, YYYY') +
-                            ' - ' +
-                            dayjs(item.dates.split(' - ')[1]).format('MMM DD, YYYY')
-                          : ''}
-                      </Text>
-                    </List.Item>
-                  ))}
-                </List>
+                        <Text
+                          style={{
+                            color: selectedTimeFrame === item.label ? token.colorPrimary : 'inherit',
+                          }}
+                        >
+                          {t(`dateRange.${item.label}`)}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {item.dates
+                            ? dayjs(item.dates.split(' - ')[0]).format('MMM DD, YYYY') +
+                              ' - ' +
+                              dayjs(item.dates.split(' - ')[1]).format('MMM DD, YYYY')
+                            : ''}
+                        </Text>
+                      </List.Item>
+                    ))}
+                  </List>
 
-                <Divider style={{ marginBlock: 12 }} />
+                  <Divider style={{ marginBlock: 12 }} />
 
-                <Flex vertical gap={8} style={{ padding: 12 }}>
-                  <Text>{t('dateRange.custom')}</Text>
-                  <RangePicker
-                    format={'MMM DD, YYYY'}
-                    onChange={handleCustomDateRangeChange}
-                    value={customRange ? [dayjs(customRange[0]), dayjs(customRange[1])] : null}
-                  />
-                  <Button
-                    type="primary"
-                    size="small"
-                    style={{ width: 'fit-content', alignSelf: 'flex-end' }}
-                    onClick={applyCustomDateFilter}
-                    disabled={!customRange}
-                  >
-                    {t('dateRange.apply')}
-                  </Button>
-                </Flex>
-              </Card>
-            )}
-            onOpenChange={open => setIsDateDropdownOpen(open)}
-            open={isDateDropdownOpen}
-          >
-            <Button icon={<DownOutlined />} iconPosition="end">
-              {getDisplayLabel()}
-            </Button>
-          </Dropdown>
-        </Space>
+                  <Flex vertical gap={8} style={{ padding: 12 }}>
+                    <Text>{t('dateRange.custom')}</Text>
+                    <RangePicker
+                      format={'MMM DD, YYYY'}
+                      onChange={handleCustomDateRangeChange}
+                      value={customRange ? [dayjs(customRange[0]), dayjs(customRange[1])] : null}
+                    />
+                    <Button
+                      type="primary"
+                      size="small"
+                      style={{ width: 'fit-content', alignSelf: 'flex-end' }}
+                      onClick={applyCustomDateFilter}
+                      disabled={!customRange}
+                    >
+                      {t('dateRange.apply')}
+                    </Button>
+                  </Flex>
+                </Card>
+              )}
+              onOpenChange={open => setIsDateDropdownOpen(open)}
+              open={isDateDropdownOpen}
+            >
+              <Button icon={<DownOutlined />} iconPosition="end">
+                {getDisplayLabel()}
+              </Button>
+            </Dropdown>
+          </Space>
+          
+          {/* Selected Date Range Display */}
+          {dateRange && (
+            <Space>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {t('dateRange.showing')}:
+              </Text>
+              <Tag color="blue" style={{ margin: 0 }}>
+                {dayjs(dateRange[0]).format('MMM DD, YYYY')} - {dayjs(dateRange[1]).format('MMM DD, YYYY')}
+              </Tag>
+              {dateRangeLoading && (
+                <Spin size="small" />
+              )}
+            </Space>
+          )}
+        </Flex>
       </Card>
 
       {/* Summary Statistics */}
@@ -694,6 +728,7 @@ const TeamLeadReports: React.FC = () => {
           rowKey="managed_member_id"
           size="small"
           pagination={{ pageSize: 10 }}
+          loading={loading || dateRangeLoading}
         />
       </Card>
 
@@ -708,6 +743,7 @@ const TeamLeadReports: React.FC = () => {
           rowKey="managed_member_id"
           size="small"
           pagination={{ pageSize: 10 }}
+          loading={loading || dateRangeLoading}
         />
       </Card>
 

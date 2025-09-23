@@ -4,6 +4,7 @@
   
   "dateRange": {
     "label": "Date Range",
+    "showing": "Showing",
     "today": "Today",
     "yesterday": "Yesterday",
     "thisWeek": "This Week",

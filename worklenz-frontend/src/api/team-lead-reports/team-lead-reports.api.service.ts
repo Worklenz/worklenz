@@ -102,8 +102,17 @@ export const teamLeadReportsApiService = {
     return response.data;
   },
 
-  getTeamPerformanceStats: async (): Promise<IServerResponse<PerformanceStats[]>> => {
-    const response = await apiClient.get<IServerResponse<PerformanceStats[]>>(`${rootUrl}/team-performance`);
+  getTeamPerformanceStats: async (
+    startDate?: string,
+    endDate?: string
+  ): Promise<IServerResponse<PerformanceStats[]>> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    const response = await apiClient.get<IServerResponse<PerformanceStats[]>>(
+      `${rootUrl}/team-performance${params.toString() ? '?' + params.toString() : ''}`
+    );
     return response.data;
   },
 };
