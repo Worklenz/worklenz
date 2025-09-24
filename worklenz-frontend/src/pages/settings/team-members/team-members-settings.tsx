@@ -215,13 +215,13 @@ const TeamMembersSettings = () => {
 
   const currentUser = auth.getCurrentSession();
   const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })?.role_name;
+  const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
   const canManageUser = useCallback(
     (targetRole: string | undefined) => {
-      return canManageUserRole(currentUserRoleName, targetRole, currentUser?.owner);
+      return canManageUserRole(effectiveRole, targetRole, currentUser?.owner);
     },
-    [currentUserRoleName, currentUser?.owner]
+    [effectiveRole, currentUser?.owner]
   );
-  const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
   const isPrivilegedUser = !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
 
   const columns: TableProps['columns'] = useMemo(
@@ -390,23 +390,21 @@ const TeamMembersSettings = () => {
                     <Button size="small" icon={<DeleteOutlined />} disabled={!canManage} />
                   </Popconfirm>
                 </Tooltip>
-                {record.role_name !== 'Owner' && record.role_name !== 'Admin' && record.role_name !== 'Team Lead' && (
-                  <Tooltip title={t('assign_team_lead')}>
-                    <Button
-                      size='small'
-                      icon={<UsergroupAddOutlined />}
-                      onClick={() => handleAssignManager(record)}
-                      disabled={!canManageUserRole(currentUserRoleName, record.role_name, currentUser?.owner)}
-                    />
-                  </Tooltip>
-                )}
+                <Tooltip title={t('assign_team_lead')}>
+                  <Button
+                    size='small'
+                    icon={<UsergroupAddOutlined />}
+                    onClick={() => handleAssignManager(record)}
+                    disabled={!canManageUserRole(effectiveRole, record.role_name, currentUser?.owner)}
+                  />
+                </Tooltip>
               </Flex>
             )
           );
         },
       },
     ],
-    [t, isPrivilegedUser, currentUserRoleName, currentUser?.owner]
+    [t, isPrivilegedUser, effectiveRole, currentUser?.owner]
   );
 
   return (
