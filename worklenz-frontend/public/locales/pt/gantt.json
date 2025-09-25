@@ -19,5 +19,12 @@
   "common": {
     "noStart": "Sem início",
     "noEnd": "Sem fim"
+  },
+  "businessPlan": {
+    "phaseCreationRestricted": "A criação de fases está disponível apenas para usuários do plano Business",
+    "taskCreationRestricted": "A criação de tarefas está disponível apenas para usuários do plano Business",
+    "phaseEditingRestricted": "A edição de fases está disponível apenas para usuários do plano Business",
+    "taskEditingRestricted": "A edição de tarefas está disponível apenas para usuários do plano Business",
+    "phaseReorderingRestricted": "A reordenação de fases está disponível apenas para usuários do plano Business"
   }
 }

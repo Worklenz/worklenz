@@ -66,4 +66,6 @@ export interface GanttContextType {
   dateRange: { start: Date; end: Date };
   onRefresh: () => void;
   timelineCalculator?: any; // UnifiedTimelineCalculator instance
+  isReadOnly: boolean;
+  hasBusinessAccess: boolean;
 }
