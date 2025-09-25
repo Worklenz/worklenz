@@ -4,11 +4,20 @@
 
 BEGIN;
 
--- Add manual progress fields to tasks table
-ALTER TABLE tasks 
-ADD COLUMN IF NOT EXISTS manual_progress BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS progress_value INTEGER DEFAULT NULL,
-ADD COLUMN IF NOT EXISTS weight INTEGER DEFAULT NULL;
+-- Create ENUM type for progress modes
+CREATE TYPE PROGRESS_MODE_TYPE AS ENUM ('manual', 'weighted', 'time', 'default');
+
+-- Alter tasks table to use ENUM type
+ALTER TABLE tasks
+    ADD COLUMN IF NOT EXISTS manual_progress BOOLEAN            DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS progress_value  INTEGER            DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS progress_mode   PROGRESS_MODE_TYPE DEFAULT 'default',
+    ADD COLUMN IF NOT EXISTS weight          INTEGER            DEFAULT NULL;
+
+ALTER TABLE projects
+    ADD COLUMN IF NOT EXISTS use_manual_progress   BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS use_weighted_progress BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS use_time_progress     BOOLEAN DEFAULT FALSE;
 
 -- Update function to consider manual progress
 CREATE OR REPLACE FUNCTION get_task_complete_ratio(_task_id uuid) RETURNS json
