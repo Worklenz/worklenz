@@ -227,15 +227,19 @@ export class SlackService {
       // Log successful notification
       await this.logNotification(workspaceId, channelId, message, "sent");
     } catch (error) {
-      // Log failed notification
+      const unknownError = error as unknown;
+      const errorMessage =
+        unknownError && typeof unknownError === "object" && "message" in unknownError
+          ? String((unknownError as { message?: unknown }).message)
+          : "Unknown error";
       await this.logNotification(
         workspaceId,
         channelId,
         message,
         "failed",
-        error.message
+        errorMessage
       );
-      throw error;
+      throw unknownError;
     }
   }
 
@@ -305,7 +309,7 @@ export class SlackService {
       );
     } catch (error) {
       console.error("Error fetching channels:", error);
-      throw error;
+      throw error as unknown;
     }
   }
 
@@ -384,9 +388,14 @@ export class SlackService {
         text: `✅ Task "${parts[0]}" created in project "${parts[1]}"`,
       });
     } catch (error) {
+      const unknownError = error as unknown;
+      const errorMessage =
+        unknownError && typeof unknownError === "object" && "message" in unknownError
+          ? String((unknownError as { message?: unknown }).message)
+          : "Unknown error";
       res.json({
         response_type: "ephemeral",
-        text: `❌ Failed to create task: ${error.message}`,
+        text: `❌ Failed to create task: ${errorMessage}`,
       });
     }
   }

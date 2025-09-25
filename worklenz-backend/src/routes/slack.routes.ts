@@ -2,7 +2,6 @@ import { Router } from "express";
 import { SlackService } from "../services/slack/slack.service";
 import { authMiddleware } from "../middlewares/auth";
 
-
 const router = Router();
 const slackService = new SlackService();
 
@@ -10,7 +9,10 @@ const slackService = new SlackService();
 // Get Slack connection status for current team
 router.get("/status", authMiddleware, async (req, res) => {
   try {
-    const teamId = req.user.teamId;
+    const teamId = (req.user as Express.User | undefined)?.team_id;
+    if (!teamId) {
+      return res.status(400).json({ error: "Missing team context" });
+    }
     const workspace = await slackService.getWorkspaceByTeamId(teamId);
 
     res.json({
@@ -30,8 +32,12 @@ router.get("/status", authMiddleware, async (req, res) => {
 // Generate installation URL
 router.get("/install-url", authMiddleware, async (req, res) => {
   try {
-    const teamId = req.user.teamId;
-    const userId = req.user.id;
+    const user = req.user as Express.User | undefined;
+    const teamId = user?.team_id;
+    const userId = user?.id;
+    if (!teamId || !userId) {
+      return res.status(400).json({ error: "Missing user/team context" });
+    }
     const installUrl = slackService.generateInstallUrl(teamId, userId);
 
     res.json({ url: installUrl });
@@ -73,7 +79,10 @@ router.get("/oauth/callback", async (req, res) => {
 // Disconnect Slack
 router.delete("/disconnect", authMiddleware, async (req, res) => {
   try {
-    const teamId = req.user.teamId;
+    const teamId = (req.user as Express.User | undefined)?.team_id;
+    if (!teamId) {
+      return res.status(400).json({ error: "Missing team context" });
+    }
     await slackService.disconnectWorkspace(teamId);
 
     res.json({ success: true });
@@ -85,7 +94,10 @@ router.delete("/disconnect", authMiddleware, async (req, res) => {
 // Get available channels
 router.get("/channels", authMiddleware, async (req, res) => {
   try {
-    const teamId = req.user.teamId;
+    const teamId = (req.user as Express.User | undefined)?.team_id;
+    if (!teamId) {
+      return res.status(400).json({ error: "Missing team context" });
+    }
     const channels = await slackService.getAvailableChannels(teamId);
 
     res.json(channels);
@@ -98,7 +110,6 @@ router.get("/channels", authMiddleware, async (req, res) => {
 router.post("/commands", async (req, res) => {
   await slackService.handleSlashCommand(req, res);
 });
-
 
 // Event subscriptions
 router.post("/events", async (req, res) => {
@@ -119,6 +130,5 @@ router.post("/interactive", async (req, res) => {
   // Handle interactive components
   res.status(200).send();
 });
-
 
 export default router;

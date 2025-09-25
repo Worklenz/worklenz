@@ -33,3 +33,30 @@ export interface GoogleUser {
     domain: string
   }
 }
+
+// Express request user augmentation to include our session shape
+declare global {
+  namespace Express {
+    interface User {
+      id?: string;
+      email?: string;
+      name?: string;
+      owner?: boolean;
+      team_id?: string;
+      team_member_id?: string;
+      team_name?: string;
+      is_admin?: boolean;
+      is_member?: boolean;
+      is_google?: boolean;
+      build_v?: string;
+      timezone?: string;
+      timezone_name?: string;
+      socket_id?: string;
+      is_expired?: boolean;
+      owner_id?: string;
+      subscription_status?: string;
+    }
+  }
+}
+
+export {};
