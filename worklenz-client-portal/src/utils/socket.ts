@@ -54,7 +54,7 @@ class SocketManager {
       
       // Send client portal authentication
       const token = localStorage.getItem('clientToken');
-      if (token) {
+      if (token && this.socket) {
         this.socket.emit('client_portal:connect', {
           token,
           type: 'client'
