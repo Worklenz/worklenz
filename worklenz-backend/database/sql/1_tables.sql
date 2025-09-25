@@ -14,6 +14,8 @@ CREATE TYPE SCHEDULE_TYPE AS ENUM ('daily', 'weekly', 'yearly', 'monthly', 'ever
 
 CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko');
 
+CREATE TYPE PROGRESS_MODE_TYPE AS ENUM ('manual', 'weighted', 'time', 'default');
+
 -- START: Users
 CREATE SEQUENCE IF NOT EXISTS users_user_no_seq START 1;
 
@@ -777,7 +779,10 @@ CREATE TABLE IF NOT EXISTS projects (
     estimated_man_days     INTEGER                  DEFAULT 0,
     hours_per_day          INTEGER                  DEFAULT 8,
     health_id              UUID,
-    estimated_working_days INTEGER                  DEFAULT 0
+    estimated_working_days INTEGER                  DEFAULT 0,
+    use_manual_progress    BOOLEAN                  DEFAULT FALSE              NOT NULL,
+    use_weighted_progress  BOOLEAN                  DEFAULT FALSE              NOT NULL,
+    use_time_progress      BOOLEAN                  DEFAULT FALSE              NOT NULL
 );
 
 ALTER TABLE projects
@@ -1414,7 +1419,11 @@ CREATE TABLE IF NOT EXISTS tasks (
     priority_sort_order INTEGER                  DEFAULT 0                  NOT NULL,
     phase_sort_order    INTEGER                  DEFAULT 0                  NOT NULL,
     billable            BOOLEAN                  DEFAULT TRUE,
-    schedule_id         UUID
+    schedule_id         UUID,
+    manual_progress     BOOLEAN                  DEFAULT FALSE              NOT NULL,
+    progress_value      INTEGER                  DEFAULT NULL,
+    progress_mode       PROGRESS_MODE_TYPE       DEFAULT 'default'          NOT NULL,
+    weight              INTEGER                  DEFAULT NULL
 );
 
 ALTER TABLE tasks

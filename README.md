@@ -180,11 +180,11 @@ psql -U your_username -d worklenz_db -f database/sql/5_database_user.sql
 
 5. Start the development servers:
 ```bash
-# Terminal 1: Start the backend
+# Backend (single command for build, watch, and auto-restart)
 cd worklenz-backend
-npm run dev
+npm run dev:all
 
-# Terminal 2: Start the frontend
+# Frontend (in another terminal)
 cd worklenz-frontend
 npm run dev
 ```
