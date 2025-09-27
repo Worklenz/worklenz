@@ -13,6 +13,7 @@ import {
   UserSwitchOutlined,
   BulbOutlined,
   DeleteOutlined,
+  LinkOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
@@ -29,6 +30,7 @@ const ChangePassword = lazy(() => import('@/pages/settings/change-password/chang
 const LanguageAndRegionSettings = lazy(() => import('@/pages/settings/language-and-region/language-and-region-settings'));
 const AppearanceSettings = lazy(() => import('@/pages/settings/appearance/appearance-settings'));
 const AccountDeletion = lazy(() => import('@/pages/settings/account-deletion/AccountDeletion'));
+const IntegrationsSettings = lazy(() => import('../../pages/settings/integrations/integrations-settings'));
 
 // type of menu item in settings sidebar
 type SettingMenuItems = {
@@ -143,6 +145,14 @@ export const settingsItems: SettingMenuItems[] = [
     element: React.createElement(TeamsSettings),
     adminOnly: true,
   },
+  {
+    key: 'integrations',
+    name: 'integrations',
+    endpoint: 'integrations', 
+    icon: React.createElement(LinkOutlined),
+    element: React.createElement(IntegrationsSettings),
+    adminOnly: true,
+  },
   // Danger zone - always at the bottom
   {
     key: 'account-deletion',
@@ -152,6 +162,7 @@ export const settingsItems: SettingMenuItems[] = [
     element: React.createElement(AccountDeletion),
     isDangerous: true,
   },
+  
 ];
 
 export const getAccessibleSettings = (isAdmin: boolean) => {

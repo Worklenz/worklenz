@@ -183,7 +183,8 @@ export {
   WarningTwoTone,
   ShareAltOutlined,
   CloudDownloadOutlined,
-  CopyOutlined
+  CopyOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 
 // Re-export all components with React
