@@ -23,14 +23,6 @@ async function updateTaskUpdatesStatus(isSent: boolean) {
 }
 
 
-async function addToEmailLogs(email: string, subject: string, html: string) {
-  try {
-    const q = `INSERT INTO email_logs (email, subject, html) VALUES ($1, $2, $3);`;
-    await db.query(q, [email, subject, html]);
-  } catch (error) {
-    log_error(error);
-  }
-}
 
 
 export async function sendAssignmentUpdate(toEmail: string, assignment: ITaskAssignmentsModel) {
@@ -45,7 +37,6 @@ export async function sendAssignmentUpdate(toEmail: string, assignment: ITaskAss
       : true;
 
     await updateTaskUpdatesStatus(!!isSent);
-    addToEmailLogs(toEmail, "You have new assignments on Worklenz", template(assignment));
   } catch (e) {
     log_error(e);
     await updateTaskUpdatesStatus(false);
