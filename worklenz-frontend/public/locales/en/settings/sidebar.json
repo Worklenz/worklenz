@@ -12,5 +12,6 @@
   "change-password": "Change Password",
   "language-and-region": "Language and Region",
   "appearance": "Appearance",
-  "account-deletion": "Delete Account"
+  "account-deletion": "Delete Account",
+  "integrations": "Integrations"
 }

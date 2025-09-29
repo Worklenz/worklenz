@@ -128,9 +128,9 @@ app.use((req, res, next) => {
   if (
     req.path.startsWith("/webhook/") ||
     req.path.startsWith("/secure/") ||
-    req.path.startsWith("/api/") ||
+    req.path.startsWith("/api/slack/") ||
     req.path.startsWith("/public/") ||
-    req.path.includes("/slack/")
+    req.path.startsWith("/slack/")
     //req.path.startsWith("/api/v1/slack")
   ) {
     next();

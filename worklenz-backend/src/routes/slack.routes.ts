@@ -106,6 +106,25 @@ router.get("/channels", authMiddleware, async (req, res) => {
   }
 });
 
+// Get saved channel configurations (e.g. default channel mapping for a team)
+router.get("/channel-configs", authMiddleware, async (req, res) => {
+  try {
+    const teamId = (req.user as Express.User | undefined)?.team_id;
+    if (!teamId) {
+      return res.status(400).json({ error: "Missing team context" });
+    }
+
+    // Fetch channel configs from SlackService (or DB)
+    const configs = await slackService.getChannelConfigs(teamId);
+
+    res.json(configs || []);
+  } catch (error) {
+    console.error("Failed to get channel configs:", error);
+    res.status(500).json({ error: "Failed to get channel configs" });
+  }
+});
+
+
 // Slash commands
 router.post("/commands", async (req, res) => {
   await slackService.handleSlashCommand(req, res);

@@ -82,7 +82,7 @@ export function SlackIntegration() {
 
     const loadProjects = async () => {
         try {
-            const response = await apiClient.get('/api/projects');
+            const response = await apiClient.get('/api/v1/projects');
             setProjects(response.data);
         } catch (error) {
             console.error('Failed to load projects:', error);
