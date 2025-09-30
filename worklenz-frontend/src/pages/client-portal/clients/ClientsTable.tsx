@@ -93,7 +93,7 @@ const ClientsTable = () => {
     page: pagination.page,
     limit: pagination.limit,
     search: filters.search,
-    status: filters.status,
+    status: filters.status === 'all' ? undefined : filters.status,
     sortBy: filters.sortBy,
     sortOrder: filters.sortOrder,
   });
@@ -120,41 +120,41 @@ const ClientsTable = () => {
     );
   }
 
-  // Handle empty state
-  if (!displayClients || displayClients.length === 0) {
-    return (
-      <Card>
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <div>
-              <Typography.Title level={4} style={{ marginBottom: 8 }}>
-                {t('noClientsTitle')}
-              </Typography.Title>
-              <Typography.Text type="secondary">{t('noClientsDescription')}</Typography.Text>
-            </div>
-          }
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '40px 0',
-          }}
-        >
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              dispatch(toggleAddClientDrawer());
-            }}
-          >
-            {t('addClientButton')}
-          </Button>
-        </Empty>
-      </Card>
-    );
-  }
+  // Render empty state with filters still visible
+  const renderEmptyState = () => (
+    <Empty
+      image={Empty.PRESENTED_IMAGE_SIMPLE}
+      description={
+        <div>
+          <Typography.Title level={4} style={{ marginBottom: 8 }}>
+            {t('noClientsTitle') || 'No clients found'}
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            {filters.search || filters.status !== 'all'
+              ? t('noClientsMatchingFilters') || 'No clients match the current filters.'
+              : t('noClientsDescription') || 'Get started by adding your first client.'}
+          </Typography.Text>
+        </div>
+      }
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '40px 0',
+      }}
+    >
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        onClick={() => {
+          dispatch(toggleAddClientDrawer());
+        }}
+      >
+        {t('addClientButton') || 'Add Client'}
+      </Button>
+    </Empty>
+  );
 
   // Handle search
   const handleSearch = (value: string) => {
@@ -387,18 +387,22 @@ const ClientsTable = () => {
 
   // Get action menu items for each row
   const getActionMenuItems = (record: any) => {
-    const menuItems = [
+    const menuItems: any[] = [
       {
         key: 'view',
         label: t('viewDetailsTooltip') || 'View Details',
         icon: <EyeOutlined />,
-        onClick: () => dispatch(toggleClientDetailsDrawer(record.id)),
+        onClick: () => {
+          dispatch(toggleClientDetailsDrawer(record.id));
+        },
       },
       {
         key: 'edit',
         label: t('editClientTooltip') || 'Edit Client',
         icon: <EditOutlined />,
-        onClick: () => dispatch(toggleEditClientDrawer(record.id)),
+        onClick: () => {
+          dispatch(toggleEditClientDrawer(record.id));
+        },
       },
     ];
 
@@ -409,7 +413,9 @@ const ClientsTable = () => {
         key: 'invite',
         label: t('inviteClientTooltip') || 'Generate Invite Link',
         icon: <LinkOutlined />,
-        onClick: () => handleGenerateInviteLink(record.id),
+        onClick: () => {
+          handleGenerateInviteLink(record.id);
+        },
       });
     }
 
@@ -418,13 +424,17 @@ const ClientsTable = () => {
         key: 'projects',
         label: t('manageProjectsTooltip') || 'Manage Projects',
         icon: <SettingOutlined />,
-        onClick: () => dispatch(toggleClientSettingsDrawer(record.id)),
+        onClick: () => {
+          dispatch(toggleClientSettingsDrawer(record.id));
+        },
       },
       {
         key: 'team',
         label: t('manageTeamTooltip') || 'Manage Team',
         icon: <ShareAltOutlined />,
-        onClick: () => dispatch(toggleClientTeamsDrawer(record.id)),
+        onClick: () => {
+          dispatch(toggleClientTeamsDrawer(record.id));
+        },
       },
       {
         type: 'divider' as const,
@@ -434,7 +444,9 @@ const ClientsTable = () => {
         label: t('deleteTooltip') || 'Delete Client',
         icon: <DeleteOutlined />,
         danger: true,
-        onClick: () => handleDeleteClientWithConfirmation(record.id),
+        onClick: () => {
+          handleDeleteClientWithConfirmation(record.id);
+        },
       }
     );
 
@@ -542,6 +554,7 @@ const ClientsTable = () => {
             onChange={handleStatusFilter}
             value={filters.status}
           >
+            <Option value="all">{t('statusAll') || 'All'}</Option>
             <Option value="active">{t('statusActive') || 'Active'}</Option>
             <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
             <Option value="pending">{t('statusPending') || 'Pending'}</Option>
@@ -573,34 +586,38 @@ const ClientsTable = () => {
 
       {/* Table */}
       <Spin spinning={isLoading}>
-        <Table
-          columns={columns}
-          dataSource={displayClients}
-          rowKey="id"
-          pagination={false} // We'll handle pagination manually
-          onChange={handleTableChange}
-          rowSelection={handleRowSelection}
-          scroll={{
-            x: 'max-content',
-          }}
-          size="middle"
-          onRow={record => ({
-            onMouseEnter: e => {
-              const row = e.currentTarget;
-              const actionContainer = row.querySelector('.action-buttons-container') as HTMLElement;
-              if (actionContainer) {
-                actionContainer.style.opacity = '1';
-              }
-            },
-            onMouseLeave: e => {
-              const row = e.currentTarget;
-              const actionContainer = row.querySelector('.action-buttons-container') as HTMLElement;
-              if (actionContainer) {
-                actionContainer.style.opacity = '0';
-              }
-            },
-          })}
-        />
+        {displayClients && displayClients.length > 0 ? (
+          <Table
+            columns={columns}
+            dataSource={displayClients}
+            rowKey="id"
+            pagination={false} // We'll handle pagination manually
+            onChange={handleTableChange}
+            rowSelection={handleRowSelection}
+            scroll={{
+              x: 'max-content',
+            }}
+            size="middle"
+            onRow={record => ({
+              onMouseEnter: e => {
+                const row = e.currentTarget;
+                const actionContainer = row.querySelector('.action-buttons-container') as HTMLElement;
+                if (actionContainer) {
+                  actionContainer.style.opacity = '1';
+                }
+              },
+              onMouseLeave: e => {
+                const row = e.currentTarget;
+                const actionContainer = row.querySelector('.action-buttons-container') as HTMLElement;
+                if (actionContainer) {
+                  actionContainer.style.opacity = '0';
+                }
+              },
+            })}
+          />
+        ) : (
+          renderEmptyState()
+        )}
       </Spin>
 
       {/* Pagination */}

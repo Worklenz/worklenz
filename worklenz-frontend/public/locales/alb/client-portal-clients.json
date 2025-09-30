@@ -19,6 +19,7 @@
   "teamMembersColumn": "Anëtarët e Ekipit",
   "actionBtnsColumn": "Veprimet",
 
+  "statusAll": "Të gjitha",
   "statusActive": "Aktiv",
   "statusInactive": "Joaktiv",
   "statusPending": "Në pritje",
@@ -112,6 +113,7 @@
   "linkActive": "Aktive",
   "noClientsTitle": "Nuk u gjetën klientë",
   "noClientsDescription": "Ju nuk keni shtuar ende asnjë klient. Shtoni klientin tuaj të parë për të filluar të menaxhoni qasjen në portal.",
+  "noClientsMatchingFilters": "Asnjë klient nuk përputhet me filtrat aktualë.",
   "errorLoadingClients": "Gabim gjatë ngarkimit të klientëve",
   "errorLoadingClientsDescription": "Pati një gabim gjatë ngarkimit të klientëve tuaj. Ju lutemi provoni përsëri më vonë.",
 

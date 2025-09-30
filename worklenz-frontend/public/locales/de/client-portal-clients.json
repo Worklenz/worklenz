@@ -19,6 +19,7 @@
   "teamMembersColumn": "Teammitglieder",
   "actionBtnsColumn": "Aktionen",
 
+  "statusAll": "Alle",
   "statusActive": "Aktiv",
   "statusInactive": "Inaktiv",
   "statusPending": "Ausstehend",
@@ -217,6 +218,7 @@
   "linkCopiedMessage": "Link in die Zwischenablage kopiert",
   "noClientsTitle": "Keine Kunden gefunden",
   "noClientsDescription": "Sie haben noch keine Kunden hinzugefügt. Fügen Sie Ihren ersten Kunden hinzu, um die Verwaltung des Portalzugangs zu beginnen.",
+  "noClientsMatchingFilters": "Keine Kunden entsprechen den aktuellen Filtern.",
   "errorLoadingClients": "Fehler beim Laden der Kunden",
   "errorLoadingClientsDescription": "Beim Laden Ihrer Kunden ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
   "inviteTeamMemberLabel": "Teammitglied einladen",
