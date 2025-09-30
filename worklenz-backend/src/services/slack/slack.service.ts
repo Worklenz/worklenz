@@ -315,26 +315,120 @@ export class SlackService {
 
   // Get saved Slack channel configurations for a team
   async getChannelConfigs(teamId: string): Promise<any[]> {
-    // Attempt to read channel configuration mappings for the given team
-    // If the table does not exist yet in a local/dev environment, return an empty list
+    // Query channel configurations and join with projects for display info
     const query = `
             SELECT 
-                id,
-                channel_id,
-                channel_name,
-                notification_types,
-                is_active
-            FROM slack_channel_configs
-            WHERE team_id = $1
-            ORDER BY channel_name ASC
+                scc.id,
+                scc.project_id,
+                p.name AS project_name,
+                scc.channel_id,
+                scc.channel_name,
+                scc.notification_types,
+                scc.is_active
+            FROM slack_channel_configs scc
+            LEFT JOIN projects p ON p.id = scc.project_id
+            WHERE scc.team_id = $1
+            ORDER BY COALESCE(p.name, scc.channel_name) ASC
         `;
 
     try {
       const result = await db.query(query, [teamId]);
-      return result.rows || [];
+      const rows = result.rows || [];
+      // Map DB rows to the shape expected by the frontend component
+      return rows.map((row: any) => ({
+        id: row.id,
+        projectId: row.project_id,
+        projectName: row.project_name || null,
+        slackChannelId: row.channel_id,
+        slackChannelName: row.channel_name || "Unknown",
+        notificationTypes: Array.isArray(row.notification_types)
+          ? row.notification_types
+          : [],
+        isActive: !!row.is_active,
+      }));
     } catch (_error) {
       // Fallback to empty array if the table/query is unavailable
       return [];
+    }
+  }
+
+  // Create a Slack channel configuration mapping
+  async createChannelConfig(teamId: string, data: {
+    projectId: string;
+    slackChannelId: string;
+    notificationTypes: string[];
+  }): Promise<{ id: string } | null> {
+    const insertQuery = `
+            INSERT INTO slack_channel_configs (
+                team_id,
+                project_id,
+                channel_id,
+                notification_types,
+                is_active
+            )
+            VALUES ($1, $2, $3, $4, true)
+            RETURNING id
+        `;
+
+    try {
+      const result = await db.query(insertQuery, [
+        teamId,
+        data.projectId,
+        data.slackChannelId,
+        data.notificationTypes,
+      ]);
+      return result.rows?.[0] || null;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  // Update channel config activation or notification types
+  async updateChannelConfig(teamId: string, id: string, data: {
+    isActive?: boolean;
+    notificationTypes?: string[];
+  }): Promise<boolean> {
+    const updates: string[] = [];
+    const params: any[] = [];
+    let idx = 1;
+
+    if (typeof data.isActive === "boolean") {
+      updates.push(`is_active = $${idx++}`);
+      params.push(data.isActive);
+    }
+    if (data.notificationTypes) {
+      updates.push(`notification_types = $${idx++}`);
+      params.push(data.notificationTypes);
+    }
+
+    if (updates.length === 0) return true;
+
+    const query = `
+            UPDATE slack_channel_configs
+            SET ${updates.join(", ")}, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $${idx++} AND team_id = $${idx}
+        `;
+    params.push(id, teamId);
+
+    try {
+      await db.query(query, params);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  // Delete a channel config
+  async deleteChannelConfig(teamId: string, id: string): Promise<boolean> {
+    const query = `
+            DELETE FROM slack_channel_configs
+            WHERE id = $1 AND team_id = $2
+        `;
+    try {
+      await db.query(query, [id, teamId]);
+      return true;
+    } catch (_error) {
+      return false;
     }
   }
 

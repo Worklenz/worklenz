@@ -129,6 +129,7 @@ app.use((req, res, next) => {
     req.path.startsWith("/webhook/") ||
     req.path.startsWith("/secure/") ||
     req.path.startsWith("/api/slack/") ||
+    req.path.startsWith("/api/integrations/slack/") ||
     req.path.startsWith("/public/") ||
     req.path.startsWith("/slack/")
     //req.path.startsWith("/api/v1/slack")
@@ -198,6 +199,7 @@ const apiLimiter = rateLimit({
 // Routes
 app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
 app.use("/api/slack", slackRouter);
+app.use("/api/integrations/slack", slackRouter);
 app.use("/secure", authRouter);
 app.use("/public", public_router);
 

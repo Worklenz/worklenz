@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Switch, Select, Table, Tag, Modal, Form, message } from 'antd';
 import { SlackOutlined, PlusOutlined, DeleteOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
 import apiClient from '@api/api-client';
 
 
@@ -16,7 +15,7 @@ interface SlackChannel {
 }
 
 export function SlackIntegration() {
-    const { t } = useTranslation();
+    const [messageApi, contextHolder] = message.useMessage();
     const [isConnected, setIsConnected] = useState(false);
     const [workspace, setWorkspace] = useState<any>(null);
     const [channels, setChannels] = useState<SlackChannel[]>([]);
@@ -36,14 +35,14 @@ export function SlackIntegration() {
         const slackStatus = params.get('slack');
         
         if (slackStatus === 'success') {
-            message.success('Slack workspace connected successfully!');
+            messageApi.success('Slack workspace connected successfully!');
             window.history.replaceState({}, '', window.location.pathname);
             checkSlackConnection();
         } else if (slackStatus === 'error') {
-            message.error('Failed to connect Slack workspace');
+            messageApi.error('Failed to connect Slack workspace');
             window.history.replaceState({}, '', window.location.pathname);
         } else if (slackStatus === 'cancelled') {
-            message.info('Slack installation cancelled');
+            messageApi.info('Slack installation cancelled');
             window.history.replaceState({}, '', window.location.pathname);
         }
     }, []);
@@ -115,7 +114,8 @@ export function SlackIntegration() {
                 }
             }, 1000);
         } catch (error) {
-            message.error('Failed to initiate Slack connection');
+            console.error('Failed to initiate Slack connection:', error);
+            messageApi.error('Failed to initiate Slack connection');
             setLoading(false);
         }
     };
@@ -131,9 +131,10 @@ export function SlackIntegration() {
                     setWorkspace(null);
                     setChannels([]);
                     setAvailableChannels([]);
-                    message.success('Slack workspace disconnected successfully');
+                    messageApi.success('Slack workspace disconnected successfully');
                 } catch (error) {
-                    message.error('Failed to disconnect Slack workspace');
+                    console.error('Failed to disconnect Slack workspace:', error);
+                    messageApi.error('Failed to disconnect Slack workspace');
                 }
             }
         });
@@ -141,33 +142,36 @@ export function SlackIntegration() {
 
     const handleAddChannel = async (values: any) => {
         try {
-            await apiClient.post('/api/integrations/slack/channels', values);
-            message.success('Channel configuration added');
+            await apiClient.post('/api/slack/channel-configs', values);
+            messageApi.success('Channel configuration added');
             setModalVisible(false);
             form.resetFields();
             loadChannelConfigurations();
         } catch (error) {
-            message.error('Failed to add channel configuration');
+            console.error('Failed to add channel configuration:', error);
+            messageApi.error('Failed to add channel configuration');
         }
     };
 
     const handleToggleChannel = async (channelId: string, isActive: boolean) => {
         try {
-            await apiClient.patch(`/api/integrations/slack/channels/${channelId}`, { isActive });
-            message.success('Channel status updated');
+            await apiClient.patch(`/api/slack/channel-configs/${channelId}`, { isActive });
+            messageApi.success('Channel status updated');
             loadChannelConfigurations();
         } catch (error) {
-            message.error('Failed to update channel status');
+            console.error('Failed to update channel status:', error);
+            messageApi.error('Failed to update channel status');
         }
     };
 
     const handleDeleteChannel = async (channelId: string) => {
         try {
-            await apiClient.delete(`/api/integrations/slack/channels/${channelId}`);
-            message.success('Channel configuration removed');
+            await apiClient.delete(`/api/slack/channel-configs/${channelId}`);
+            messageApi.success('Channel configuration removed');
             loadChannelConfigurations();
         } catch (error) {
-            message.error('Failed to remove channel configuration');
+            console.error('Failed to remove channel configuration:', error);
+            messageApi.error('Failed to remove channel configuration');
         }
     };
 
@@ -187,10 +191,10 @@ export function SlackIntegration() {
             title: 'Notifications',
             dataIndex: 'notificationTypes',
             key: 'notificationTypes',
-            render: (types: string[]) => (
+            render: (types: string[] | undefined | null) => (
                 <>
-                    {types.map(type => (
-                        <Tag key={type}>{type.replace('_', ' ')}</Tag>
+                    {(types ?? []).map((type) => (
+                        <Tag key={type}>{type.replace(/_/g, ' ')}</Tag>
                     ))}
                 </>
             )
@@ -221,6 +225,8 @@ export function SlackIntegration() {
     ];
 
     return (
+        <>
+        {contextHolder}
         <Card 
             title={
                 <div className="flex items-center gap-2">
@@ -388,5 +394,6 @@ export function SlackIntegration() {
                 </div>
             )}
         </Card>
+        </>
     );
 }

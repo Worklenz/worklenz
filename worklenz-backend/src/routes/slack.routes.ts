@@ -124,6 +124,103 @@ router.get("/channel-configs", authMiddleware, async (req, res) => {
   }
 });
 
+// Create a channel configuration
+router.post("/channel-configs", authMiddleware, async (req, res) => {
+  try {
+    const teamId = (req.user as Express.User | undefined)?.team_id;
+    if (!teamId) {
+      return res.status(400).json({ error: "Missing team context" });
+    }
+
+    const { projectId, slackChannelId, notificationTypes } = req.body || {};
+    if (!projectId || !slackChannelId || !Array.isArray(notificationTypes)) {
+      return res.status(400).json({ error: "Invalid payload" });
+    }
+
+    const created = await slackService.createChannelConfig(teamId, {
+      projectId,
+      slackChannelId,
+      notificationTypes,
+    });
+
+    if (!created) return res.status(500).json({ error: "Failed to create config" });
+
+    res.json(created);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create channel configuration" });
+  }
+});
+
+// Aliases for legacy frontend URLs mounted under /api/integrations/slack
+router.post("/channels", authMiddleware, async (req, res) => {
+  // Delegate to channel-configs create
+  return (router as any).handle({
+    ...req,
+    url: "/channel-configs",
+    method: "POST"
+  }, res);
+});
+
+// Update a channel configuration
+router.patch("/channel-configs/:id", authMiddleware, async (req, res) => {
+  try {
+    const teamId = (req.user as Express.User | undefined)?.team_id;
+    if (!teamId) {
+      return res.status(400).json({ error: "Missing team context" });
+    }
+
+    const { id } = req.params;
+    const { isActive, notificationTypes } = req.body || {};
+
+    const ok = await slackService.updateChannelConfig(teamId, id, {
+      isActive,
+      notificationTypes,
+    });
+
+    if (!ok) return res.status(500).json({ error: "Failed to update config" });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update channel configuration" });
+  }
+});
+
+router.patch("/channels/:id", authMiddleware, async (req, res) => {
+  // Delegate to channel-configs update
+  return (router as any).handle({
+    ...req,
+    url: `/channel-configs/${req.params.id}`,
+    method: "PATCH"
+  }, res);
+});
+
+// Delete a channel configuration
+router.delete("/channel-configs/:id", authMiddleware, async (req, res) => {
+  try {
+    const teamId = (req.user as Express.User | undefined)?.team_id;
+    if (!teamId) {
+      return res.status(400).json({ error: "Missing team context" });
+    }
+
+    const { id } = req.params;
+    const ok = await slackService.deleteChannelConfig(teamId, id);
+    if (!ok) return res.status(500).json({ error: "Failed to delete config" });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete channel configuration" });
+  }
+});
+
+router.delete("/channels/:id", authMiddleware, async (req, res) => {
+  // Delegate to channel-configs delete
+  return (router as any).handle({
+    ...req,
+    url: `/channel-configs/${req.params.id}`,
+    method: "DELETE"
+  }, res);
+});
+
 
 // Slash commands
 router.post("/commands", async (req, res) => {
