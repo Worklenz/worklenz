@@ -1,13 +1,51 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import fs from 'fs';
 
 export default defineConfig(({ command, mode }) => {
   const isProduction = command === 'build';
+  const buildTimestamp = Date.now().toString();
 
   return {
     // **Plugins**
-    plugins: [react()],
+    plugins: [
+      react(),
+      // Custom plugin to inject build timestamp into service worker
+      {
+        name: 'inject-build-timestamp',
+        generateBundle(options, bundle) {
+          // Update service worker with build timestamp
+          if (bundle['sw.js']) {
+            const swContent = bundle['sw.js'].source || bundle['sw.js'].code;
+            if (typeof swContent === 'string') {
+              const updatedSw = swContent.replace(
+                /const BUILD_TIMESTAMP = self\.location\.search\.match[^;]+;/,
+                `const BUILD_TIMESTAMP = '${buildTimestamp}';`
+              );
+              bundle['sw.js'].source = updatedSw;
+              bundle['sw.js'].code = updatedSw;
+            }
+          }
+
+          // Add versioning to service worker file name in production
+          if (isProduction && bundle['sw.js']) {
+            bundle[`sw.js?v=${buildTimestamp}`] = bundle['sw.js'];
+            delete bundle['sw.js'];
+          }
+        },
+        transformIndexHtml: {
+          order: 'post',
+          handler(html) {
+            // Inject build timestamp into HTML for service worker detection
+            return html.replace(
+              '<head>',
+              `<head>\n  <script>window.buildTimestamp = '${buildTimestamp}';</script>`
+            );
+          }
+        }
+      }
+    ],
 
     // **Resolve**
     resolve: {
@@ -137,9 +175,15 @@ export default defineConfig(({ command, mode }) => {
     // **Define global constants**
     define: {
       __DEV__: !isProduction,
+      __BUILD_TIMESTAMP__: JSON.stringify(buildTimestamp),
     },
 
     // **Public Directory** - sw.js will be automatically copied from public/ to build/
     publicDir: 'public',
+
+    // **Experimental - Add versioning to assets**
+    experimental: {
+      buildAdvancedBaseOptions: true,
+    },
   };
 });

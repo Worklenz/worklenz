@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { RouteObject } from 'react-router-dom';
-import { Spin } from 'antd';
+import { Spin } from '@/shared/antd-imports';
 import ClientPortalLayout from '@/layouts/client-portal-layout';
 
 // Lazy load all client portal components
