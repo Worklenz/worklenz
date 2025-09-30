@@ -313,6 +313,31 @@ export class SlackService {
     }
   }
 
+  // Get saved Slack channel configurations for a team
+  async getChannelConfigs(teamId: string): Promise<any[]> {
+    // Attempt to read channel configuration mappings for the given team
+    // If the table does not exist yet in a local/dev environment, return an empty list
+    const query = `
+            SELECT 
+                id,
+                channel_id,
+                channel_name,
+                notification_types,
+                is_active
+            FROM slack_channel_configs
+            WHERE team_id = $1
+            ORDER BY channel_name ASC
+        `;
+
+    try {
+      const result = await db.query(query, [teamId]);
+      return result.rows || [];
+    } catch (_error) {
+      // Fallback to empty array if the table/query is unavailable
+      return [];
+    }
+  }
+
   // Log notification
   private async logNotification(
     workspaceId: string,
