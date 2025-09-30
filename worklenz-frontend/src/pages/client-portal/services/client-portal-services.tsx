@@ -1,9 +1,8 @@
-import React from 'react';
 import { Button, Flex, Typography, Card } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PlusOutlined, AppstoreOutlined } from '@ant-design/icons';
-import ServicesTable from './services-table';
+import ServicesTable from './ServicesTable';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useResponsive } from '@/hooks/useResponsive';
 const ClientPortalServices = () => {
@@ -11,6 +10,7 @@ const ClientPortalServices = () => {
   const { t } = useTranslation('client-portal-services');
   const { isDesktop } = useResponsive();
   const navigate = useNavigate();
+  useDocumentTitle('Services');
 
   return (
     <div

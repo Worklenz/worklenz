@@ -6,7 +6,7 @@ import {
   message,
   Card,
   Tag,
-  Divider,
+  theme,
 } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +31,7 @@ const EditPreviewAndSubmitStep = ({
   // localization
   const { t } = useTranslation('client-portal-services');
   const { id } = useParams<{ id: string }>();
+  const { token } = theme.useToken();
 
   const navigate = useNavigate();
   const [updateService, { isLoading }] = useUpdateOrganizationServiceMutation();
@@ -68,11 +69,11 @@ const EditPreviewAndSubmitStep = ({
           {/* Service Overview Card */}
           <Card
             title={
-              <Typography.Title level={3} style={{ margin: 0, color: '#1890ff' }}>
+              <Typography.Title level={3} style={{ margin: 0, color: token.colorPrimary }}>
                 {service.name}
               </Typography.Title>
             }
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+            style={{ boxShadow: `0 2px 8px ${token.colorBgTextHover}` }}
           >
             <Flex vertical gap={16}>
               {service?.service_data?.images?.[0] && (
@@ -85,7 +86,7 @@ const EditPreviewAndSubmitStep = ({
                       maxHeight: 250,
                       objectFit: 'cover',
                       borderRadius: 8,
-                      border: '1px solid #f0f0f0',
+                      border: `1px solid ${token.colorBorder}`,
                     }}
                   />
                 </div>
@@ -94,7 +95,7 @@ const EditPreviewAndSubmitStep = ({
               <div>
                 <Typography.Text
                   strong
-                  style={{ display: 'block', marginBottom: 8, color: '#666' }}
+                  style={{ display: 'block', marginBottom: 8, color: token.colorTextSecondary }}
                 >
                   {t('addService.serviceDetails.serviceDescription') || 'Description'}:
                 </Typography.Text>
@@ -102,9 +103,9 @@ const EditPreviewAndSubmitStep = ({
                   <div
                     style={{
                       padding: 16,
-                      backgroundColor: '#fafafa',
+                      backgroundColor: token.colorBgLayout,
                       borderRadius: 6,
-                      border: '1px solid #f0f0f0',
+                      border: `1px solid ${token.colorBorder}`,
                     }}
                     dangerouslySetInnerHTML={{
                       __html: service.service_data.description,
@@ -114,9 +115,9 @@ const EditPreviewAndSubmitStep = ({
                   <div
                     style={{
                       padding: 16,
-                      backgroundColor: '#f5f5f5',
+                      backgroundColor: token.colorBgContainer,
                       borderRadius: 6,
-                      border: '1px solid #d9d9d9',
+                      border: `1px solid ${token.colorBorder}`,
                       textAlign: 'center',
                     }}
                   >
@@ -142,7 +143,7 @@ const EditPreviewAndSubmitStep = ({
                   </Tag>
                 </Flex>
               }
-              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+              style={{ boxShadow: `0 2px 8px ${token.colorBgTextHover}` }}
             >
               <Flex vertical gap={12}>
                 {service.service_data.request_form.map(
@@ -151,8 +152,8 @@ const EditPreviewAndSubmitStep = ({
                       key={index}
                       size="small"
                       style={{
-                        backgroundColor: '#f8f9fa',
-                        border: '1px solid #e9ecef',
+                        backgroundColor: token.colorBgLayout,
+                        border: `1px solid ${token.colorBorder}`,
                       }}
                     >
                       <Flex vertical gap={8}>
@@ -203,7 +204,7 @@ const EditPreviewAndSubmitStep = ({
       </div>
 
       {/* Fixed Action Buttons */}
-      <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16, flexShrink: 0 }}>
+      <div style={{ borderTop: `1px solid ${token.colorBorder}`, paddingTop: 16, flexShrink: 0 }}>
         <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
           <Button onClick={() => setCurrent(1)}>{t('previousButton')}</Button>
           <Button type="primary" onClick={handleSave} loading={isLoading}>

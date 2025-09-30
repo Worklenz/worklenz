@@ -8,7 +8,7 @@ const ClientPortalClients = lazy(() => import('@/pages/client-portal/clients/Cli
 const ClientPortalRequests = lazy(() => import('@/pages/client-portal/requests/client-portal-requests'));
 const ClientPortalRequestDetails = lazy(() => import('@/pages/client-portal/requests/request-details/client-portal-request-details'));
 const ClientPortalServices = lazy(() => import('@/pages/client-portal/services/client-portal-services'));
-const ClientPortalAddServices = lazy(() => import('@/pages/client-portal/services/add-service/client-portal-add-service'));
+const ClientPortalAddServices = lazy(() => import('@/pages/client-portal/services/add-service/ClientPortalAddServices'));
 const ClientPortalEditService = lazy(() => import('@/pages/client-portal/services/edit-service/client-portal-edit-service'));
 const ClientPortalChats = lazy(() => import('@/pages/client-portal/chats/client-portal-chats'));
 const ClientPortalSettings = lazy(() => import('@/pages/client-portal/settings/client-portal-settings'));

@@ -513,6 +513,7 @@ export const clientPortalApi = createApi({
       },
     }),
 
+
     // Client Management APIs (Organization-side endpoints)
     getClients: builder.query<
       ClientsResponse,
@@ -751,7 +752,15 @@ export const clientPortalApi = createApi({
     }),
 
     getOrganizationServices: builder.query<
-      any,
+      {
+        done: boolean;
+        body: {
+          data: any[];
+          total: number;
+        };
+        title: string | null;
+        message: string | null;
+      },
       {
         page?: number;
         limit?: number;
@@ -780,6 +789,9 @@ export const clientPortalApi = createApi({
         service_data?: any;
         is_public?: boolean;
         allowed_client_ids?: string[];
+        imageData?: string;
+        imageName?: string;
+        imageType?: string;
       }
     >({
       query: serviceData => ({
@@ -790,7 +802,23 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Services'],
     }),
 
-    updateOrganizationService: builder.mutation<any, { id: string; data: any }>({
+    updateOrganizationService: builder.mutation<
+      any, 
+      { 
+        id: string; 
+        data: {
+          name?: string;
+          description?: string;
+          service_data?: any;
+          is_public?: boolean;
+          allowed_client_ids?: string[];
+          status?: string;
+          imageData?: string;
+          imageName?: string;
+          imageType?: string;
+        }
+      }
+    >({
       query: ({ id, data }) => ({
         url: `/clients/portal/services/${id}`,
         method: 'PUT',
