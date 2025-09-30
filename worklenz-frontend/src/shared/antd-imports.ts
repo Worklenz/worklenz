@@ -71,7 +71,7 @@ import {
   Descriptions,
   Upload,
   UploadProps,
-} from '@/shared/antd-imports';
+} from 'antd/es';
 
 import TextArea from 'antd/es/input/TextArea';
 
