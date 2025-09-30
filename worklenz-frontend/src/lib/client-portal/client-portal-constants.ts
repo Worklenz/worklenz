@@ -14,7 +14,7 @@ const ClientPortalInvoices = lazy(
   () => import('../../pages/client-portal/invoices/client-portal-invoices')
 );
 const ClientPortalSettings = lazy(
-  () => import('../../pages/client-portal/settings/client-portal-settings')
+  () => import('../../pages/client-portal/settings/ClientPortalSettings')
 );
 
 import {

@@ -11,7 +11,7 @@ const ClientPortalServices = lazy(() => import('@/pages/client-portal/services/c
 const ClientPortalAddServices = lazy(() => import('@/pages/client-portal/services/add-service/ClientPortalAddServices'));
 const ClientPortalEditService = lazy(() => import('@/pages/client-portal/services/edit-service/client-portal-edit-service'));
 const ClientPortalChats = lazy(() => import('@/pages/client-portal/chats/client-portal-chats'));
-const ClientPortalSettings = lazy(() => import('@/pages/client-portal/settings/client-portal-settings'));
+const ClientPortalSettings = lazy(() => import('@/pages/client-portal/settings/ClientPortalSettings'));
 const ClientPortalInvoices = lazy(() => import('@/pages/client-portal/invoices/client-portal-invoices'));
 const ClientPortalInvoiceDetails = lazy(() => import('@/pages/client-portal/invoices/invoice-details/client-portal-invoice-details'));
 

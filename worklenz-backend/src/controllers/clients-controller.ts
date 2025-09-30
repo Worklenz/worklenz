@@ -8,6 +8,7 @@ import {sendNewSubscriberNotification} from "../shared/email-templates";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import ClientPortalController from "./client-portal-controller";
+import {uploadBase64, deleteObject} from "../shared/storage";
 
 export default class ClientsController extends WorklenzControllerBase {
 
@@ -398,14 +399,6 @@ export default class ClientsController extends WorklenzControllerBase {
       imageType
     } = req.body;
 
-    console.log("Service creation request received:", {
-      name,
-      hasImageData: !!imageData,
-      imageName,
-      imageType,
-      imageDataLength: imageData?.length,
-      teamId
-    });
 
     if (!name) {
       return res.status(400).send(new ServerResponse(false, null, "Service name is required"));
@@ -415,10 +408,6 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Handle image upload if provided
     if (imageData && imageName && imageType) {
-      console.log("Processing image upload...");
-      
-      // Import uploadBase64 function
-      const { uploadBase64 } = require("../shared/storage");
       
       // Validate image
       const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -453,22 +442,10 @@ export default class ClientsController extends WorklenzControllerBase {
           images: [imageUrl]
         };
 
-        console.log(`Service image uploaded for team ${teamId}:`, {
-          imageName,
-          imageType,
-          storageKey,
-          fileSizeBytes,
-          imageUrl
-        });
       } catch (uploadError) {
-        console.error("Error uploading service image:", uploadError);
         return res.status(500).send(new ServerResponse(false, null, "Failed to upload service image"));
       }
-    } else {
-      console.log("No image data provided in request");
     }
-
-    console.log("Final service data being stored:", finalServiceData);
 
     const q = `
       INSERT INTO client_portal_services (
@@ -492,12 +469,6 @@ export default class ClientsController extends WorklenzControllerBase {
     const result = await db.query(q, values);
     const [data] = result.rows;
 
-    console.log("Service created in database:", {
-      id: data.id,
-      name: data.name,
-      serviceData: data.service_data
-    });
-
     return res.status(200).send(new ServerResponse(true, data, "Service created successfully"));
   }
 
@@ -518,15 +489,6 @@ export default class ClientsController extends WorklenzControllerBase {
       imageType
     } = req.body;
 
-    console.log("Service update request received:", {
-      serviceId,
-      name,
-      hasImageData: !!imageData,
-      imageName,
-      imageType,
-      imageDataLength: imageData?.length,
-      teamId
-    });
 
     // First check if service exists and belongs to team
     const checkQuery = `SELECT id, service_data FROM client_portal_services WHERE id = $1 AND organization_team_id = $2`;
@@ -540,10 +502,6 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Handle image upload if provided
     if (imageData && imageName && imageType) {
-      console.log("Processing image upload for service update...");
-      
-      // Import required functions
-      const { uploadBase64, deleteObject } = require("../shared/storage");
       
       // Validate image
       const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -570,19 +528,9 @@ export default class ClientsController extends WorklenzControllerBase {
             const urlParts = oldImageUrl.split("/");
             const storageKey = urlParts.slice(-4).join("/");
             
-            console.log("Cleaning up old service image:", {
-              serviceId,
-              oldImageUrl,
-              storageKey
-            });
-
             await deleteObject(storageKey);
-            console.log("Successfully deleted old service image:", storageKey);
           } catch (deleteError) {
-            console.error("Error deleting old service image:", {
-              oldImageUrl,
-              error: deleteError
-            });
+            // Don't fail the update if image cleanup fails
           }
         });
       }
@@ -611,21 +559,11 @@ export default class ClientsController extends WorklenzControllerBase {
           images: [imageUrl]
         };
 
-        console.log(`Service image uploaded for team ${teamId}:`, {
-          serviceId,
-          imageName,
-          imageType,
-          storageKey,
-          fileSizeBytes,
-          imageUrl
-        });
       } catch (uploadError) {
-        console.error("Error uploading service image:", uploadError);
         return res.status(500).send(new ServerResponse(false, null, "Failed to upload service image"));
       }
     }
 
-    console.log("Final service data for update:", finalServiceData);
 
     const updateFields = ["updated_at = NOW()"];
     const updateValues = [serviceId, teamId];
@@ -685,12 +623,6 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(500).send(new ServerResponse(false, null, "Failed to update service"));
     }
 
-    console.log("Service updated in database:", {
-      id: data.id,
-      name: data.name,
-      serviceData: data.service_data
-    });
-
     return res.status(200).send(new ServerResponse(true, data, "Service updated successfully"));
   }
 
@@ -699,10 +631,6 @@ export default class ClientsController extends WorklenzControllerBase {
     const teamId = req.user?.team_id;
     const serviceId = req.params.id;
 
-    console.log("Service deletion request received:", {
-      serviceId,
-      teamId
-    });
 
     // Check if service has any requests
     const requestsCheck = await db.query(
@@ -730,7 +658,6 @@ export default class ClientsController extends WorklenzControllerBase {
     const serviceData = serviceResult.rows[0].service_data;
     const imageUrls = serviceData?.images || [];
 
-    console.log("Found images to delete:", imageUrls);
 
     // Delete the service from database first
     const deleteQuery = `
@@ -746,33 +673,21 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Clean up images from S3 storage (async, don't wait for completion)
     if (imageUrls.length > 0) {
-      const { deleteObject } = require("../shared/storage");
       
       imageUrls.forEach(async (imageUrl: string) => {
         try {
           // Extract storage key from URL
           // URL format: https://s3-bucket/client-portal/service-images/teamId/filename
-          const urlParts = imageUrl.split('/');
-          const storageKey = urlParts.slice(-4).join('/'); // client-portal/service-images/teamId/filename
+          const urlParts = imageUrl.split("/");
+          const storageKey = urlParts.slice(-4).join("/"); // client-portal/service-images/teamId/filename
           
-          console.log("Deleting image from S3:", {
-            imageUrl,
-            storageKey
-          });
-
-          await deleteObject(storageKey);
-          console.log("Successfully deleted image from S3:", storageKey);
+            await deleteObject(storageKey);
         } catch (deleteError) {
-          console.error("Error deleting image from S3:", {
-            imageUrl,
-            error: deleteError
-          });
           // Don't fail the service deletion if image cleanup fails
         }
       });
     }
 
-    console.log("Service deleted successfully:", serviceId);
     return res.status(200).send(new ServerResponse(true, null, "Service deleted successfully"));
   }
 
