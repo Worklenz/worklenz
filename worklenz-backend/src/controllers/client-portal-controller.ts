@@ -1702,6 +1702,95 @@ class ClientPortalController {
     }
   }
 
+  static async createChat(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const {clientId} = req;
+      const {organizationId} = req;
+      const {clientEmail} = req;
+      const { recipientType, recipientId, subject, message } = req.body;
+
+      // Validate required fields
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Message content is required"));
+      }
+
+      if (!subject || subject.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Subject is required"));
+      }
+
+      // Get client user ID
+      const clientUserQuery = await db.query(
+        "SELECT id FROM client_users WHERE client_id = $1 AND email = $2",
+        [clientId, clientEmail]
+      );
+
+      if (clientUserQuery.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Client user not found"));
+      }
+
+      const clientUserId = clientUserQuery.rows[0].id;
+
+      // Create the first message with subject in the format "Subject: {subject}\n\n{message}"
+      const fullMessage = `Subject: ${subject.trim()}\n\n${message.trim()}`;
+
+      // Insert message
+      const insertQuery = `
+        INSERT INTO client_portal_chat_messages (
+          client_id, organization_team_id, sender_type, sender_id,
+          message, message_type, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        RETURNING id, sender_type, sender_id, message, message_type, created_at
+      `;
+
+      const result = await db.query(insertQuery, [
+        clientId,
+        organizationId,
+        'client',
+        clientUserId,
+        fullMessage,
+        'text'
+      ]);
+
+      const newMessage = result.rows[0];
+
+      // Emit socket events for real-time updates
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          // Emit to organization team members
+          io.emit(`client_portal:new_message`, {
+            id: newMessage.id,
+            clientId: clientId,
+            organizationId: organizationId,
+            senderName: clientEmail || 'Client',
+            senderType: 'client',
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            createdAt: newMessage.created_at
+          });
+
+          // Emit chat message event
+          io.emit('chat:message_received', {
+            clientId: clientId,
+            organizationId: organizationId,
+            message: newMessage
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting socket events:", socketError);
+        // Continue execution even if socket fails
+      }
+
+      return res.json(new ServerResponse(true, {
+        chatId: newMessage.id,
+        message: "Chat created successfully"
+      }, "Chat created successfully"));
+    } catch (error) {
+      console.error("Error creating chat:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to create chat"));
+    }
+  }
+
   static async getChatDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params; // This would be the date in format YYYY-MM-DD
@@ -1711,7 +1800,7 @@ class ClientPortalController {
 
       // Get messages for a specific date
       const query = `
-        SELECT 
+        SELECT
           m.id,
           m.sender_type,
           m.sender_id,
@@ -1720,19 +1809,19 @@ class ClientPortalController {
           m.file_url,
           m.read_at,
           m.created_at,
-          CASE 
+          CASE
             WHEN m.sender_type = 'team_member' THEN u.first_name || ' ' || u.last_name
             WHEN m.sender_type = 'client' THEN cu.name
           END as sender_name,
-          CASE 
+          CASE
             WHEN m.sender_type = 'team_member' THEN u.avatar_url
             ELSE NULL
           END as sender_avatar
         FROM client_portal_chat_messages m
         LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
         LEFT JOIN client_users cu ON m.sender_type = 'client' AND m.sender_id = cu.id
-        WHERE m.client_id = $1 
-        AND m.organization_team_id = $2 
+        WHERE m.client_id = $1
+        AND m.organization_team_id = $2
         AND DATE(m.created_at) = $3
         ORDER BY m.created_at ASC
         LIMIT $4 OFFSET $5
@@ -1970,10 +2059,13 @@ class ClientPortalController {
   // Settings
   static async getSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_id || req.user?.team_id;
-      if (!organizationTeamId) {
-        return res.status(400).json(new ServerResponse(false, null, "Organization team ID not found"));
+      const teamId = req.user?.team_id;
+      if (!teamId) {
+        return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
       }
+      
+      // For client portal settings, we use the team_id as organization_team_id
+      const organizationTeamId = teamId;
 
       const q = `
         SELECT id, team_id, organization_team_id, logo_url, primary_color, 
@@ -2004,12 +2096,14 @@ class ClientPortalController {
 
   static async updateSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_id || req.user?.team_id;
       const teamId = req.user?.team_id;
       
-      if (!organizationTeamId || !teamId) {
+      if (!teamId) {
         return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
       }
+      
+      // For client portal settings, we use the team_id as both team_id and organization_team_id
+      const organizationTeamId = teamId;
 
       const {
         logo_url,
@@ -2064,10 +2158,14 @@ class ClientPortalController {
 
   static async uploadLogo(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_id || req.user?.team_id;
-      if (!organizationTeamId) {
-        return res.status(400).json(new ServerResponse(false, null, "Organization team ID not found"));
+      const teamId = req.user?.team_id;
+      if (!teamId) {
+        return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
       }
+      
+      // For client portal settings, we use the team_id as both team_id and organization_team_id
+      // since client portal settings are organization-wide
+      const organizationTeamId = teamId;
 
       const { logoData } = req.body;
       if (!logoData) {
@@ -2093,7 +2191,6 @@ class ClientPortalController {
       }
 
       // Update database with logo URL
-      const teamId = req.user?.team_id;
       const checkQ = `SELECT id FROM client_portal_settings WHERE organization_team_id = $1`;
       const existingResult = await db.query(checkQ, [organizationTeamId]);
 
