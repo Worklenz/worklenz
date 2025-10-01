@@ -19,6 +19,7 @@
   "teamMembersColumn": "Team Members",
   "actionBtnsColumn": "Actions",
 
+  "statusAll": "All",
   "statusActive": "Active",
   "statusInactive": "Inactive",
   "statusPending": "Pending",
@@ -219,6 +220,7 @@
   "linkCopiedMessage": "Link copied to clipboard",
   "noClientsTitle": "No Clients Found",
   "noClientsDescription": "You haven't added any clients yet. Add your first client to start managing their portal access.",
+  "noClientsMatchingFilters": "No clients match the current filters.",
   "errorLoadingClients": "Error Loading Clients",
   "errorLoadingClientsDescription": "There was an error loading your clients. Please try again later.",
 

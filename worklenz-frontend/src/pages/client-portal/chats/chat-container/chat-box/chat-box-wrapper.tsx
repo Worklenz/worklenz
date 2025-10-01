@@ -185,6 +185,11 @@ const ChatBoxWrapper = () => {
             {t('startConversation') || 'Start Conversation'}
           </Button>
         </Empty>
+        <NewChatModal
+          open={isNewChatModalOpen}
+          onClose={() => setIsNewChatModalOpen(false)}
+          onSuccess={handleNewChatSuccess}
+        />
       </Card>
     );
   }

@@ -28,6 +28,8 @@ const ServicesTable = () => {
 
   // Fetch services from API
   const { data: servicesData, isLoading, error } = useGetOrganizationServicesQuery({});
+
+  // Debug logging
   const [deleteService] = useDeleteOrganizationServiceMutation();
 
   const navigate = useNavigate();
@@ -165,13 +167,8 @@ const ServicesTable = () => {
     );
   }
 
-  // Extract services from API response
-  // The response structure from backend: { body: { services: Service[], total: number } }
-  const servicesResponse = servicesData?.body || { total: 0, services: [] };
-  const services = servicesResponse.services || [];
-
   // Handle empty state
-  if (!services || services.length === 0) {
+  if (!servicesData || !servicesData.body || !servicesData.body.data || servicesData.body.data.length === 0) {
     return (
       <Card style={{ height: 'calc(100vh - 280px)' }}>
         <Empty
@@ -208,10 +205,10 @@ const ServicesTable = () => {
     <Card style={{ height: 'calc(100vh - 280px)' }}>
       <Table
         columns={columns}
-        dataSource={services}
+        dataSource={servicesData.body.data}
         pagination={{
           size: 'small',
-          total: servicesResponse.total || services.length,
+          total: servicesData.body.total,
           current: 1, // Backend doesn't return current page info
           pageSize: 10, // Default page size
         }}

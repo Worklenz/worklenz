@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { RouteObject } from 'react-router-dom';
-import { Spin } from 'antd';
+import { Spin } from '@/shared/antd-imports';
 import ClientPortalLayout from '@/layouts/client-portal-layout';
 
 // Lazy load all client portal components
@@ -8,10 +8,10 @@ const ClientPortalClients = lazy(() => import('@/pages/client-portal/clients/Cli
 const ClientPortalRequests = lazy(() => import('@/pages/client-portal/requests/client-portal-requests'));
 const ClientPortalRequestDetails = lazy(() => import('@/pages/client-portal/requests/request-details/client-portal-request-details'));
 const ClientPortalServices = lazy(() => import('@/pages/client-portal/services/client-portal-services'));
-const ClientPortalAddServices = lazy(() => import('@/pages/client-portal/services/add-service/client-portal-add-service'));
+const ClientPortalAddServices = lazy(() => import('@/pages/client-portal/services/add-service/ClientPortalAddServices'));
 const ClientPortalEditService = lazy(() => import('@/pages/client-portal/services/edit-service/client-portal-edit-service'));
 const ClientPortalChats = lazy(() => import('@/pages/client-portal/chats/client-portal-chats'));
-const ClientPortalSettings = lazy(() => import('@/pages/client-portal/settings/client-portal-settings'));
+const ClientPortalSettings = lazy(() => import('@/pages/client-portal/settings/ClientPortalSettings'));
 const ClientPortalInvoices = lazy(() => import('@/pages/client-portal/invoices/client-portal-invoices'));
 const ClientPortalInvoiceDetails = lazy(() => import('@/pages/client-portal/invoices/invoice-details/client-portal-invoice-details'));
 

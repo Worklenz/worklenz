@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import React, { useRef } from 'react';
+import { Editor } from '@tinymce/tinymce-react';
+import { Editor as TinyMCEEditor } from 'tinymce';
 import './RichTextEditor.css';
 
 interface RichTextEditorProps {
@@ -20,32 +20,36 @@ export default function RichTextEditor({
   height = 200,
   readOnly = false,
 }: RichTextEditorProps) {
-  const modules = useMemo(
-    () => ({
-      toolbar: [
-        [{ header: [1, 2, 3, false] }],
-        ['bold', 'italic', 'underline'],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        ['link'],
-        ['clean'],
-      ],
-    }),
-    []
-  );
-
-  const formats = ['header', 'bold', 'italic', 'underline', 'list', 'bullet', 'link'];
+  const editorRef = useRef<TinyMCEEditor | null>(null);
 
   return (
     <div className={`rich-text-editor ${themeMode}`} style={{ height }}>
-      <ReactQuill
-        theme="snow"
+      <Editor
+        tinymceScriptSrc="/tinymce/tinymce.min.js"
+        onInit={(_evt, editor) => (editorRef.current = editor)}
         value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        modules={modules}
-        formats={formats}
-        style={{ height: height - 42 }} // Account for toolbar height
+        onEditorChange={onChange}
+        disabled={readOnly}
+        init={{
+          height: height,
+          menubar: false,
+          skin: themeMode === 'dark' ? 'oxide-dark' : 'oxide',
+          content_css: themeMode === 'dark' ? 'dark' : 'default',
+          placeholder: placeholder,
+          plugins: ['lists', 'link', 'autolink'],
+          toolbar:
+            'blocks | bold italic underline | bullist numlist | link | removeformat',
+          content_style: `
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              font-size: 14px;
+              line-height: 1.5;
+            }
+          `,
+          branding: false,
+          promotion: false,
+          statusbar: false,
+        }}
       />
     </div>
   );

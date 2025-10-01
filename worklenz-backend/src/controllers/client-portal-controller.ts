@@ -6,7 +6,7 @@ import { AuthenticatedClientRequest } from "../middlewares/client-auth-middlewar
 import FileConstants from "../shared/file-constants";
 import { IEmailTemplateType } from "../interfaces/email-template-type";
 import { getBaseUrl, getClientPortalBaseUrl } from "../cron_jobs/helpers";
-import { uploadBase64, getClientPortalLogoKey } from "../shared/storage";
+import { uploadBase64, getClientPortalLogoKey, deleteObject } from "../shared/storage";
 import { log_error } from "../shared/utils";
 import { IO } from "../shared/io";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
@@ -679,12 +679,87 @@ class ClientPortalController {
 
   static async createOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const { name, description, service_data, is_public = false, allowed_client_ids = [] } = req.body;
+      const { 
+        name, 
+        description, 
+        service_data, 
+        is_public = false, 
+        allowed_client_ids = [],
+        // Image upload fields
+        imageData,
+        imageName,
+        imageType
+      } = req.body;
       const {organizationId, clientUserId} = req;
+
+      console.log("Service creation request received:", {
+        name,
+        hasImageData: !!imageData,
+        imageName,
+        imageType,
+        imageDataLength: imageData?.length,
+        organizationId
+      });
 
       if (!name) {
         return res.status(400).json(new ServerResponse(false, null, "Service name is required"));
       }
+
+      let finalServiceData = { ...service_data };
+
+      // Handle image upload if provided
+      if (imageData && imageName && imageType) {
+        console.log("Processing image upload...");
+        
+        // Validate image
+        const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedImageTypes.includes(imageType)) {
+          return res.status(400).json(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
+        }
+
+        // Validate file size (assuming base64 data) - 5MB limit
+        const fileSizeBytes = Math.floor((imageData.length * 3) / 4);
+        const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
+        
+        if (fileSizeBytes > maxSizeBytes) {
+          return res.status(400).json(new ServerResponse(false, null, "Image size exceeds 5MB limit"));
+        }
+
+        // Generate unique filename and storage key
+        const fileExtension = imageName.substring(imageName.lastIndexOf('.'));
+        const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+
+        try {
+          // Upload to S3
+          const imageUrl = await uploadBase64(imageData, storageKey);
+          
+          if (!imageUrl) {
+            return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+          }
+
+          // Add image URL to service data
+          finalServiceData = {
+            ...finalServiceData,
+            images: [imageUrl]
+          };
+
+          console.log(`Service image uploaded for organization ${organizationId}:`, {
+            imageName,
+            imageType,
+            storageKey,
+            fileSizeBytes,
+            imageUrl
+          });
+        } catch (uploadError) {
+          console.error("Error uploading service image:", uploadError);
+          return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+        }
+      } else {
+        console.log("No image data provided in request");
+      }
+
+      console.log("Final service data being stored:", finalServiceData);
 
       const query = `
         INSERT INTO client_portal_services (
@@ -697,7 +772,7 @@ class ClientPortalController {
       const result = await db.query(query, [
         name,
         description,
-        service_data,
+        JSON.stringify(finalServiceData), // Ensure proper JSON stringification
         is_public,
         allowed_client_ids,
         organizationId, // team_id
@@ -706,6 +781,12 @@ class ClientPortalController {
       ]);
 
       const service = result.rows[0];
+
+      console.log("Service created in database:", {
+        id: service.id,
+        name: service.name,
+        serviceData: service.service_data
+      });
 
       return res.status(201).json(new ServerResponse(true, {
         id: service.id,
@@ -727,8 +808,29 @@ class ClientPortalController {
   static async updateOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params;
-      const { name, description, service_data, is_public, allowed_client_ids, status } = req.body;
+      const { 
+        name, 
+        description, 
+        service_data, 
+        is_public, 
+        allowed_client_ids, 
+        status,
+        // Image upload fields
+        imageData,
+        imageName,
+        imageType
+      } = req.body;
       const {organizationId} = req;
+
+      console.log("Service update request received:", {
+        id,
+        name,
+        hasImageData: !!imageData,
+        imageName,
+        imageType,
+        imageDataLength: imageData?.length,
+        organizationId
+      });
 
       // First check if service exists and belongs to organization
       const checkQuery = `SELECT id FROM client_portal_services WHERE id = $1 AND organization_team_id = $2`;
@@ -737,6 +839,96 @@ class ClientPortalController {
       if (checkResult.rows.length === 0) {
         return res.status(404).json(new ServerResponse(false, null, "Service not found"));
       }
+
+      let finalServiceData = service_data ? { ...service_data } : undefined;
+
+      // Handle image upload if provided
+      if (imageData && imageName && imageType) {
+        console.log("Processing image upload for service update...");
+        
+        // Validate image
+        const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedImageTypes.includes(imageType)) {
+          return res.status(400).json(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
+        }
+
+        // Validate file size (assuming base64 data) - 5MB limit
+        const fileSizeBytes = Math.floor((imageData.length * 3) / 4);
+        const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
+        
+        if (fileSizeBytes > maxSizeBytes) {
+          return res.status(400).json(new ServerResponse(false, null, "Image size exceeds 5MB limit"));
+        }
+
+        // Generate unique filename and storage key
+        const fileExtension = imageName.substring(imageName.lastIndexOf('.'));
+        const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+
+        try {
+          // Upload to S3
+          const imageUrl = await uploadBase64(imageData, storageKey);
+          
+          if (!imageUrl) {
+            return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+          }
+
+          // Get current service data to check for existing images to clean up
+          const currentServiceQuery = `SELECT service_data FROM client_portal_services WHERE id = $1`;
+          const currentServiceResult = await db.query(currentServiceQuery, [id]);
+          const currentServiceData = currentServiceResult.rows[0]?.service_data || {};
+          const oldImageUrls = currentServiceData?.images || [];
+
+          // Clean up old images from S3 (async, don't wait for completion)
+          if (oldImageUrls.length > 0) {
+            oldImageUrls.forEach(async (oldImageUrl: string) => {
+              try {
+                const urlParts = oldImageUrl.split('/');
+                const storageKey = urlParts.slice(-4).join('/');
+                
+                console.log("Cleaning up old service image:", {
+                  serviceId: id,
+                  oldImageUrl,
+                  storageKey
+                });
+
+                await deleteObject(storageKey);
+                console.log("Successfully deleted old service image:", storageKey);
+              } catch (deleteError) {
+                console.error("Error deleting old service image:", {
+                  oldImageUrl,
+                  error: deleteError
+                });
+              }
+            });
+          }
+
+          // Use current service data as base if finalServiceData wasn't provided
+          if (!finalServiceData) {
+            finalServiceData = currentServiceData;
+          }
+
+          // Add new image URL to service data
+          finalServiceData = {
+            ...finalServiceData,
+            images: [imageUrl]
+          };
+
+          console.log(`Service image uploaded for organization ${organizationId}:`, {
+            serviceId: id,
+            imageName,
+            imageType,
+            storageKey,
+            fileSizeBytes,
+            imageUrl
+          });
+        } catch (uploadError) {
+          console.error("Error uploading service image:", uploadError);
+          return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+        }
+      }
+
+      console.log("Final service data for update:", finalServiceData);
 
       const updateFields = [];
       const queryParams = [];
@@ -752,10 +944,10 @@ class ClientPortalController {
         updateFields.push(`description = $${paramCount}`);
         queryParams.push(description);
       }
-      if (service_data !== undefined) {
+      if (finalServiceData !== undefined) {
         paramCount++;
         updateFields.push(`service_data = $${paramCount}`);
-        queryParams.push(service_data);
+        queryParams.push(JSON.stringify(finalServiceData)); // Ensure proper JSON stringification
       }
       if (is_public !== undefined) {
         paramCount++;
@@ -820,6 +1012,11 @@ class ClientPortalController {
       const { id } = req.params;
       const {organizationId} = req;
 
+      console.log("Service deletion request received:", {
+        serviceId: id,
+        organizationId
+      });
+
       // Check if service has any requests
       const requestsQuery = `SELECT COUNT(*) as count FROM client_portal_requests WHERE service_id = $1`;
       const requestsResult = await db.query(requestsQuery, [id]);
@@ -829,7 +1026,24 @@ class ClientPortalController {
         return res.status(400).json(new ServerResponse(false, null, `Cannot delete service with ${requestsCount} existing requests`));
       }
 
-      // Delete the service
+      // Get service data before deletion to extract image URLs for cleanup
+      const serviceQuery = `
+        SELECT service_data 
+        FROM client_portal_services 
+        WHERE id = $1 AND organization_team_id = $2
+      `;
+      const serviceResult = await db.query(serviceQuery, [id, organizationId]);
+      
+      if (serviceResult.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+      }
+
+      const serviceData = serviceResult.rows[0].service_data;
+      const imageUrls = serviceData?.images || [];
+
+      console.log("Found images to delete:", imageUrls);
+
+      // Delete the service from database first
       const deleteQuery = `
         DELETE FROM client_portal_services 
         WHERE id = $1 AND organization_team_id = $2
@@ -839,9 +1053,36 @@ class ClientPortalController {
       const result = await db.query(deleteQuery, [id, organizationId]);
       
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+        return res.status(500).json(new ServerResponse(false, null, "Failed to delete service from database"));
       }
 
+      // Clean up images from S3 storage (async, don't wait for completion)
+      if (imageUrls.length > 0) {
+        imageUrls.forEach(async (imageUrl: string) => {
+          try {
+            // Extract storage key from URL
+            // URL format: https://s3-bucket/client-portal/service-images/orgId/filename
+            const urlParts = imageUrl.split('/');
+            const storageKey = urlParts.slice(-4).join('/'); // client-portal/service-images/orgId/filename
+            
+            console.log("Deleting image from S3:", {
+              imageUrl,
+              storageKey
+            });
+
+            await deleteObject(storageKey);
+            console.log("Successfully deleted image from S3:", storageKey);
+          } catch (deleteError) {
+            console.error("Error deleting image from S3:", {
+              imageUrl,
+              error: deleteError
+            });
+            // Don't fail the service deletion if image cleanup fails
+          }
+        });
+      }
+
+      console.log("Service deleted successfully:", id);
       return res.json(new ServerResponse(true, null, "Service deleted successfully"));
     } catch (error) {
       console.error("Error deleting service:", error);
@@ -1461,6 +1702,95 @@ class ClientPortalController {
     }
   }
 
+  static async createChat(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const {clientId} = req;
+      const {organizationId} = req;
+      const {clientEmail} = req;
+      const { recipientType, recipientId, subject, message } = req.body;
+
+      // Validate required fields
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Message content is required"));
+      }
+
+      if (!subject || subject.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Subject is required"));
+      }
+
+      // Get client user ID
+      const clientUserQuery = await db.query(
+        "SELECT id FROM client_users WHERE client_id = $1 AND email = $2",
+        [clientId, clientEmail]
+      );
+
+      if (clientUserQuery.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Client user not found"));
+      }
+
+      const clientUserId = clientUserQuery.rows[0].id;
+
+      // Create the first message with subject in the format "Subject: {subject}\n\n{message}"
+      const fullMessage = `Subject: ${subject.trim()}\n\n${message.trim()}`;
+
+      // Insert message
+      const insertQuery = `
+        INSERT INTO client_portal_chat_messages (
+          client_id, organization_team_id, sender_type, sender_id,
+          message, message_type, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        RETURNING id, sender_type, sender_id, message, message_type, created_at
+      `;
+
+      const result = await db.query(insertQuery, [
+        clientId,
+        organizationId,
+        'client',
+        clientUserId,
+        fullMessage,
+        'text'
+      ]);
+
+      const newMessage = result.rows[0];
+
+      // Emit socket events for real-time updates
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          // Emit to organization team members
+          io.emit(`client_portal:new_message`, {
+            id: newMessage.id,
+            clientId: clientId,
+            organizationId: organizationId,
+            senderName: clientEmail || 'Client',
+            senderType: 'client',
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            createdAt: newMessage.created_at
+          });
+
+          // Emit chat message event
+          io.emit('chat:message_received', {
+            clientId: clientId,
+            organizationId: organizationId,
+            message: newMessage
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting socket events:", socketError);
+        // Continue execution even if socket fails
+      }
+
+      return res.json(new ServerResponse(true, {
+        chatId: newMessage.id,
+        message: "Chat created successfully"
+      }, "Chat created successfully"));
+    } catch (error) {
+      console.error("Error creating chat:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to create chat"));
+    }
+  }
+
   static async getChatDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params; // This would be the date in format YYYY-MM-DD
@@ -1470,7 +1800,7 @@ class ClientPortalController {
 
       // Get messages for a specific date
       const query = `
-        SELECT 
+        SELECT
           m.id,
           m.sender_type,
           m.sender_id,
@@ -1479,19 +1809,19 @@ class ClientPortalController {
           m.file_url,
           m.read_at,
           m.created_at,
-          CASE 
+          CASE
             WHEN m.sender_type = 'team_member' THEN u.first_name || ' ' || u.last_name
             WHEN m.sender_type = 'client' THEN cu.name
           END as sender_name,
-          CASE 
+          CASE
             WHEN m.sender_type = 'team_member' THEN u.avatar_url
             ELSE NULL
           END as sender_avatar
         FROM client_portal_chat_messages m
         LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
         LEFT JOIN client_users cu ON m.sender_type = 'client' AND m.sender_id = cu.id
-        WHERE m.client_id = $1 
-        AND m.organization_team_id = $2 
+        WHERE m.client_id = $1
+        AND m.organization_team_id = $2
         AND DATE(m.created_at) = $3
         ORDER BY m.created_at ASC
         LIMIT $4 OFFSET $5
@@ -1729,10 +2059,13 @@ class ClientPortalController {
   // Settings
   static async getSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_id || req.user?.team_id;
-      if (!organizationTeamId) {
-        return res.status(400).json(new ServerResponse(false, null, "Organization team ID not found"));
+      const teamId = req.user?.team_id;
+      if (!teamId) {
+        return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
       }
+      
+      // For client portal settings, we use the team_id as organization_team_id
+      const organizationTeamId = teamId;
 
       const q = `
         SELECT id, team_id, organization_team_id, logo_url, primary_color, 
@@ -1763,12 +2096,14 @@ class ClientPortalController {
 
   static async updateSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_id || req.user?.team_id;
       const teamId = req.user?.team_id;
       
-      if (!organizationTeamId || !teamId) {
+      if (!teamId) {
         return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
       }
+      
+      // For client portal settings, we use the team_id as both team_id and organization_team_id
+      const organizationTeamId = teamId;
 
       const {
         logo_url,
@@ -1823,10 +2158,14 @@ class ClientPortalController {
 
   static async uploadLogo(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_id || req.user?.team_id;
-      if (!organizationTeamId) {
-        return res.status(400).json(new ServerResponse(false, null, "Organization team ID not found"));
+      const teamId = req.user?.team_id;
+      if (!teamId) {
+        return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
       }
+      
+      // For client portal settings, we use the team_id as both team_id and organization_team_id
+      // since client portal settings are organization-wide
+      const organizationTeamId = teamId;
 
       const { logoData } = req.body;
       if (!logoData) {
@@ -1852,7 +2191,6 @@ class ClientPortalController {
       }
 
       // Update database with logo URL
-      const teamId = req.user?.team_id;
       const checkQ = `SELECT id FROM client_portal_settings WHERE organization_team_id = $1`;
       const existingResult = await db.query(checkQ, [organizationTeamId]);
 
@@ -2453,6 +2791,7 @@ class ClientPortalController {
       return res.status(500).json(new ServerResponse(false, null, "Failed to upload file"));
     }
   }
+
 
   // Client Management Methods
   static async getClients(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {

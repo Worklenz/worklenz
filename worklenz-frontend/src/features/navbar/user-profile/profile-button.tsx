@@ -1,4 +1,4 @@
-import { Button, Card, Dropdown, Flex, MenuProps, Tooltip, Typography } from 'antd';
+import { Button, Card, Dropdown, Flex, MenuProps, Tooltip, Typography } from '@/shared/antd-imports';
 import { 
   UserOutlined, 
   SunOutlined, 

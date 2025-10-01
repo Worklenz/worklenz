@@ -9,6 +9,7 @@ import {
   Typography,
   Select,
   Spin,
+  Alert,
 } from '@/shared/antd-imports';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -147,21 +148,17 @@ const AddClientDrawer = () => {
         </Form>
 
         {/* Info Section */}
-        <div
-          style={{
-            marginTop: 24,
-            padding: 16,
-            backgroundColor: '#f0f9ff',
-            borderRadius: 8,
-            border: '1px solid #bae6fd',
-          }}
-        >
-          <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
-            💡{' '}
-            {t('clientPortalAccessInfo') ||
-              'After creating the client, use the organization invite link from the Clients page to give them portal access.'}
-          </Typography.Text>
-        </div>
+        <Alert
+          style={{ marginTop: 24 }}
+          type="info"
+          showIcon
+          message={
+            <Typography.Text>
+              {t('clientPortalAccessInfo') ||
+                'After creating the client, use the organization invite link from the Clients page to give them portal access.'}
+            </Typography.Text>
+          }
+        />
       </Spin>
     </Drawer>
   );

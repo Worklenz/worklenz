@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Checkbox, Dropdown, Space, Typography } from 'antd';
+import { Button, Checkbox, Dropdown, Space, Typography } from '@/shared/antd-imports';
 import { DownOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import CustomPageHeader from '../../page-header/custom-page-header';

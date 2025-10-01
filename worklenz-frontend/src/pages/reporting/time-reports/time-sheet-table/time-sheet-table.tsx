@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MemberLoggedTimeType } from '@/types/timeSheet/project.types';
-import { Empty, Progress, Spin } from 'antd';
+import { Empty, Progress, Spin } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { reportingTimesheetApiService } from '@/api/reporting/reporting.timesheet.api.service';

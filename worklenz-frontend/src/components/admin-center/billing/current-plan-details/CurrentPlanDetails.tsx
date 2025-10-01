@@ -556,6 +556,11 @@ const CurrentPlanDetails = () => {
   const renderSubscriptionContent = useCallback(() => {
     if (!billingInfo) return null;
 
+    // Handle trial users even when subscription_type is null
+    if (billingInfo.trial_in_progress) {
+      return renderTrialDetails();
+    }
+
     switch (billingInfo.subscription_type) {
       case ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL:
         return renderLtdDetails();

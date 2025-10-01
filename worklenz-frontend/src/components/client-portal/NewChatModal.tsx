@@ -3,22 +3,18 @@ import {
   Modal,
   Form,
   Input,
-  Select,
   Button,
   Typography,
   Space,
   message,
-  Spin,
 } from '@/shared/antd-imports';
 import { MessageOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
-  useGetClientsQuery,
   useCreateChatMutation,
 } from '@/api/client-portal/client-portal-api';
 
 const { TextArea } = Input;
-const { Option } = Select;
 
 interface NewChatModalProps {
   open: boolean;
@@ -27,8 +23,6 @@ interface NewChatModalProps {
 }
 
 interface NewChatForm {
-  recipientType: 'client' | 'team';
-  recipientId: string;
   subject: string;
   message: string;
 }
@@ -38,17 +32,16 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess })
   const [form] = Form.useForm<NewChatForm>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Get available clients for team members to message
-  const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery({});
   const [createChat] = useCreateChatMutation();
 
   const handleSubmit = async (values: NewChatForm) => {
     try {
       setIsSubmitting(true);
 
+      // For client portal, always message the team (no recipient selection needed)
       const response = await createChat({
-        recipientType: values.recipientType,
-        recipientId: values.recipientId,
+        recipientType: 'team',
+        recipientId: 'organization', // Backend will use organization context
         subject: values.subject,
         message: values.message,
       }).unwrap();
@@ -69,8 +62,6 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess })
     form.resetFields();
     onClose();
   };
-
-  const clients = clientsData?.body?.clients || [];
 
   return (
     <Modal
@@ -93,73 +84,8 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess })
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        initialValues={{
-          recipientType: 'client',
-        }}
         style={{ marginTop: 24 }}
       >
-        <Form.Item
-          name="recipientType"
-          label={t('recipientType', { ns: 'client-portal-chats' }) || 'Message To'}
-          rules={[{ required: true, message: t('recipientTypeRequired', { ns: 'common' }) || 'Please select recipient type' }]}
-        >
-          <Select placeholder={t('selectRecipientType', { ns: 'client-portal-chats' }) || 'Select who to message'}>
-            <Option value="client">{t('client', { ns: 'common' }) || 'Client'}</Option>
-            <Option value="team">{t('teamMember', { ns: 'common' }) || 'Team Member'}</Option>
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          noStyle
-          shouldUpdate={(prevValues, currentValues) => 
-            prevValues.recipientType !== currentValues.recipientType
-          }
-        >
-          {({ getFieldValue }) => {
-            const recipientType = getFieldValue('recipientType');
-            
-            return (
-              <Form.Item
-                name="recipientId"
-                label={
-                  recipientType === 'client' 
-                    ? (t('selectClient', { ns: 'client-portal-chats' }) || 'Select Client')
-                    : (t('selectTeamMember', { ns: 'client-portal-chats' }) || 'Select Team Member')
-                }
-                rules={[{ required: true, message: t('recipientRequired', { ns: 'common' }) || 'Please select a recipient' }]}
-              >
-                <Select
-                  placeholder={
-                    recipientType === 'client' 
-                      ? (t('chooseClient', { ns: 'client-portal-chats' }) || 'Choose a client')
-                      : (t('chooseTeamMember', { ns: 'client-portal-chats' }) || 'Choose a team member')
-                  }
-                  loading={isLoadingClients}
-                  showSearch
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
-                  }
-                >
-                  {recipientType === 'client' ? (
-                    clients.map((client: any) => (
-                      <Option key={client.id} value={client.id}>
-                        {client.name} {client.company_name && `(${client.company_name})`}
-                      </Option>
-                    ))
-                  ) : (
-                    // For team members, you'd need to fetch team members from API
-                    // For now, showing a placeholder
-                    <Option value="team-placeholder" disabled>
-                      {t('teamMembersNotAvailable', { ns: 'client-portal-chats' }) || 'Team members list not available'}
-                    </Option>
-                  )}
-                </Select>
-              </Form.Item>
-            );
-          }}
-        </Form.Item>
-
         <Form.Item
           name="subject"
           label={t('subject', { ns: 'client-portal-chats' }) || 'Subject'}

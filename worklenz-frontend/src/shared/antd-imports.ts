@@ -70,8 +70,8 @@ import {
   Slider,
   Descriptions,
   Upload,
-  Tree,
-} from 'antd';
+  UploadProps,
+} from 'antd/es';
 
 import TextArea from 'antd/es/input/TextArea';
 
