@@ -218,9 +218,13 @@ const TeamMembersSettings = () => {
   const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
   const canManageUser = useCallback(
     (targetRole: string | undefined) => {
+      // Admin users should have the same permissions as owners (except for other owners)
+      if (currentUser?.is_admin && !currentUser?.owner) {
+        return targetRole?.toLowerCase() !== 'owner';
+      }
       return canManageUserRole(effectiveRole, targetRole, currentUser?.owner);
     },
-    [effectiveRole, currentUser?.owner]
+    [effectiveRole, currentUser?.owner, currentUser?.is_admin]
   );
   const isPrivilegedUser = !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
 
@@ -395,7 +399,7 @@ const TeamMembersSettings = () => {
                     size='small'
                     icon={<UsergroupAddOutlined />}
                     onClick={() => handleAssignManager(record)}
-                    disabled={!canManageUserRole(effectiveRole, record.role_name, currentUser?.owner)}
+                    disabled={!canManage}
                   />
                 </Tooltip>
               </Flex>

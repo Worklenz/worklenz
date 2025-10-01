@@ -57,9 +57,9 @@ export function getAvailableRoleOptions(
     return allOptions;
   }
 
-  // Admin can assign Team Lead and Member roles
+  // Admin can assign Admin, Team Lead and Member roles (same as owner, except Owner role)
   if (currentUserRole?.toLowerCase() === 'admin') {
-    return allOptions.filter(option => ['Member', 'Team Lead'].includes(option.value));
+    return allOptions;
   }
 
   // Team Lead can assign Team Lead and Member roles
