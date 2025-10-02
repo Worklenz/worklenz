@@ -468,8 +468,8 @@ class ClientPortalController {
             requestId: updatedRequest.id,
             requestNumber: updatedRequest.req_no,
             status: updatedRequest.status,
-            clientId: clientId,
-            organizationId: organizationId,
+            clientId,
+            organizationId,
             notes: updatedRequest.notes,
             updatedAt: updatedRequest.updated_at
           });
@@ -556,9 +556,9 @@ class ClientPortalController {
   static async getOrganizationServices(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const {organizationId} = req;
-      const { page = 1, limit = 10, search, sortBy = 'name', sortOrder = 'asc' } = req.query;
+      const { page = 1, limit = 10, search, sortBy = "name", sortOrder = "asc" } = req.query;
 
-      let whereClause = 'WHERE s.organization_team_id = $1';
+      let whereClause = "WHERE s.organization_team_id = $1";
       const queryParams = [organizationId];
       let paramCount = 1;
 
@@ -712,7 +712,7 @@ class ClientPortalController {
         console.log("Processing image upload...");
         
         // Validate image
-        const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
         if (!allowedImageTypes.includes(imageType)) {
           return res.status(400).json(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
         }
@@ -726,7 +726,7 @@ class ClientPortalController {
         }
 
         // Generate unique filename and storage key
-        const fileExtension = imageName.substring(imageName.lastIndexOf('.'));
+        const fileExtension = imageName.substring(imageName.lastIndexOf("."));
         const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
         const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
 
@@ -847,7 +847,7 @@ class ClientPortalController {
         console.log("Processing image upload for service update...");
         
         // Validate image
-        const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
         if (!allowedImageTypes.includes(imageType)) {
           return res.status(400).json(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
         }
@@ -861,7 +861,7 @@ class ClientPortalController {
         }
 
         // Generate unique filename and storage key
-        const fileExtension = imageName.substring(imageName.lastIndexOf('.'));
+        const fileExtension = imageName.substring(imageName.lastIndexOf("."));
         const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
         const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
 
@@ -883,8 +883,8 @@ class ClientPortalController {
           if (oldImageUrls.length > 0) {
             oldImageUrls.forEach(async (oldImageUrl: string) => {
               try {
-                const urlParts = oldImageUrl.split('/');
-                const storageKey = urlParts.slice(-4).join('/');
+                const urlParts = oldImageUrl.split("/");
+                const storageKey = urlParts.slice(-4).join("/");
                 
                 console.log("Cleaning up old service image:", {
                   serviceId: id,
@@ -982,7 +982,7 @@ class ClientPortalController {
 
       const updateQuery = `
         UPDATE client_portal_services 
-        SET ${updateFields.join(', ')}
+        SET ${updateFields.join(", ")}
         WHERE id = $${paramCount - 1} AND organization_team_id = $${paramCount}
         RETURNING *
       `;
@@ -1062,8 +1062,8 @@ class ClientPortalController {
           try {
             // Extract storage key from URL
             // URL format: https://s3-bucket/client-portal/service-images/orgId/filename
-            const urlParts = imageUrl.split('/');
-            const storageKey = urlParts.slice(-4).join('/'); // client-portal/service-images/orgId/filename
+            const urlParts = imageUrl.split("/");
+            const storageKey = urlParts.slice(-4).join("/"); // client-portal/service-images/orgId/filename
             
             console.log("Deleting image from S3:", {
               imageUrl,
@@ -1398,7 +1398,7 @@ class ClientPortalController {
         updatedAt: row.updated_at,
         requestNumber: row.request_number,
         serviceName: row.service_name,
-        isOverdue: row.due_date && new Date(row.due_date) < new Date() && row.status !== 'paid'
+        isOverdue: row.due_date && new Date(row.due_date) < new Date() && row.status !== "paid"
       }));
 
       return res.json(new ServerResponse(true, { 
@@ -1470,7 +1470,7 @@ class ClientPortalController {
         paidAt: invoice.paid_at,
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
-        isOverdue: invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== 'paid',
+        isOverdue: invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "paid",
         request: invoice.request_id ? {
           id: invoice.request_id,
           requestNumber: invoice.request_number,
@@ -1519,7 +1519,7 @@ class ClientPortalController {
       const invoice = invoiceCheck.rows[0];
 
       // Check if invoice is already paid
-      if (invoice.status === 'paid') {
+      if (invoice.status === "paid") {
         return res.status(400).json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
@@ -1564,7 +1564,7 @@ class ClientPortalController {
       const { id } = req.params;
       const {clientId} = req;
       const {organizationId} = req;
-      const { format = 'pdf' } = req.query;
+      const { format = "pdf" } = req.query;
 
       // Verify invoice exists and belongs to client
       const invoiceQuery = `
@@ -1742,10 +1742,10 @@ class ClientPortalController {
       const result = await db.query(insertQuery, [
         clientId,
         organizationId,
-        'client',
+        "client",
         clientUserId,
         fullMessage,
-        'text'
+        "text"
       ]);
 
       const newMessage = result.rows[0];
@@ -1757,19 +1757,19 @@ class ClientPortalController {
           // Emit to organization team members
           io.emit(`client_portal:new_message`, {
             id: newMessage.id,
-            clientId: clientId,
-            organizationId: organizationId,
-            senderName: clientEmail || 'Client',
-            senderType: 'client',
+            clientId,
+            organizationId,
+            senderName: clientEmail || "Client",
+            senderType: "client",
             message: newMessage.message,
             messageType: newMessage.message_type,
             createdAt: newMessage.created_at
           });
 
           // Emit chat message event
-          io.emit('chat:message_received', {
-            clientId: clientId,
-            organizationId: organizationId,
+          io.emit("chat:message_received", {
+            clientId,
+            organizationId,
             message: newMessage
           });
         }
@@ -1847,7 +1847,7 @@ class ClientPortalController {
         fileUrl: row.file_url,
         readAt: row.read_at,
         createdAt: row.created_at,
-        isFromClient: row.sender_type === 'client'
+        isFromClient: row.sender_type === "client"
       }));
 
       // Mark messages as read (for client user)
@@ -1874,7 +1874,7 @@ class ClientPortalController {
       const {clientId} = req;
       const {organizationId} = req;
       const {clientEmail} = req;
-      const { message, messageType = 'text', fileUrl } = req.body;
+      const { message, messageType = "text", fileUrl } = req.body;
 
       // Validate required fields
       if (!message || message.trim().length === 0) {
@@ -1905,7 +1905,7 @@ class ClientPortalController {
       const result = await db.query(insertQuery, [
         clientId,
         organizationId,
-        'client',
+        "client",
         clientUserId,
         message.trim(),
         messageType,
@@ -1921,10 +1921,10 @@ class ClientPortalController {
           // Emit to organization team members
           io.emit(`client_portal:new_message`, {
             id: newMessage.id,
-            clientId: clientId,
-            organizationId: organizationId,
-            senderName: clientEmail || 'Client',
-            senderType: 'client',
+            clientId,
+            organizationId,
+            senderName: clientEmail || "Client",
+            senderType: "client",
             message: newMessage.message,
             messageType: newMessage.message_type,
             fileUrl: newMessage.file_url,
@@ -1932,12 +1932,12 @@ class ClientPortalController {
           });
 
           // Emit chat message event
-          io.emit('chat:message_received', {
+          io.emit("chat:message_received", {
             id: newMessage.id,
             chatId: `client_${clientId}`,
             senderId: clientUserId,
-            senderName: clientEmail || 'Client',
-            senderType: 'client',
+            senderName: clientEmail || "Client",
+            senderType: "client",
             message: newMessage.message,
             messageType: newMessage.message_type,
             fileUrl: newMessage.file_url,
@@ -2038,7 +2038,7 @@ class ClientPortalController {
         fileUrl: row.file_url,
         readAt: row.read_at,
         createdAt: row.created_at,
-        isFromClient: row.sender_type === 'client'
+        isFromClient: row.sender_type === "client"
       }));
 
       return res.json(new ServerResponse(true, {
@@ -2076,7 +2076,7 @@ class ClientPortalController {
       const settings = result.rows[0] || {
         organization_team_id: organizationTeamId,
         logo_url: null,
-        primary_color: '#3b7ad4',
+        primary_color: "#3b7ad4",
         welcome_message: null,
         contact_email: null,
         contact_phone: null,
@@ -2176,7 +2176,7 @@ class ClientPortalController {
       }
 
       const mimeType = mimeMatch[1];
-      const fileExtension = mimeType.split('/')[1];
+      const fileExtension = mimeType.split("/")[1];
       
       // Generate storage key
       const storageKey = getClientPortalLogoKey(organizationTeamId, fileExtension);
@@ -2370,7 +2370,7 @@ class ClientPortalController {
 
           const clientResult = await db.query(clientUpdateQuery, clientUpdateValues);
           if (clientResult.rows.length > 0) {
-            updates.push('client');
+            updates.push("client");
             clientUpdates.push(clientResult.rows[0]);
           }
         }
@@ -2433,7 +2433,7 @@ class ClientPortalController {
 
           const userResult = await db.query(userUpdateQuery, userUpdateValues);
           if (userResult.rows.length > 0) {
-            updates.push('user');
+            updates.push("user");
             userUpdates.push(userResult.rows[0]);
           }
         }
@@ -2596,7 +2596,7 @@ class ClientPortalController {
       notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       // Filter unread only if requested
-      const filteredNotifications = String(unread_only) === 'true'
+      const filteredNotifications = String(unread_only) === "true"
         ? notifications.filter(n => !n.isRead) 
         : notifications;
 
@@ -2624,7 +2624,7 @@ class ClientPortalController {
       const {organizationId} = req;
 
       // Parse notification ID to determine type and reference
-      const [type, referenceId] = id.split('_');
+      const [type, referenceId] = id.split("_");
 
       if (!type || !referenceId) {
         return res.status(400).json(new ServerResponse(false, null, "Invalid notification ID"));
@@ -2633,7 +2633,7 @@ class ClientPortalController {
       let updateResult;
 
       switch (type) {
-        case 'message':
+        case "message":
           // Mark chat message as read
           updateResult = await db.query(
             "UPDATE client_portal_chat_messages SET read_at = NOW() WHERE id = $1 AND client_id = $2 AND organization_team_id = $3 AND sender_type = 'team_member'",
@@ -2641,8 +2641,8 @@ class ClientPortalController {
           );
           break;
 
-        case 'request':
-        case 'invoice':
+        case "request":
+        case "invoice":
           // For request and invoice notifications, we'll simulate marking as read
           // In a full implementation, you'd have a separate notifications table
           updateResult = { rowCount: 1 }; // Simulate successful update
@@ -2689,7 +2689,7 @@ class ClientPortalController {
       return res.json(new ServerResponse(true, {
         markedCount,
         markedAt: new Date(),
-        types: ['chat_messages']
+        types: ["chat_messages"]
       }, "All notifications marked as read"));
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
@@ -2702,7 +2702,7 @@ class ClientPortalController {
     try {
       const {clientId} = req;
       const {organizationId} = req;
-      const { fileData, fileName, fileType, purpose = 'general' } = req.body;
+      const { fileData, fileName, fileType, purpose = "general" } = req.body;
 
       // Validate required fields
       if (!fileData || !fileName) {
@@ -2719,12 +2719,12 @@ class ClientPortalController {
 
       // Validate file type
       const allowedTypes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'application/pdf', 'application/msword', 
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/plain', 'text/csv'
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "application/pdf", "application/msword", 
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain", "text/csv"
       ];
 
       if (fileType && !allowedTypes.includes(fileType)) {
@@ -2732,7 +2732,7 @@ class ClientPortalController {
       }
 
       // Extract file extension
-      const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+      const fileExtension = fileName.substring(fileName.lastIndexOf("."));
       
       // Generate unique filename
       const uniqueFileName = `client_${clientId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
@@ -2740,13 +2740,13 @@ class ClientPortalController {
       // Generate storage key based on purpose
       let storageKey;
       switch (purpose) {
-        case 'avatar':
+        case "avatar":
           storageKey = `client-portal/avatars/${organizationId}/${uniqueFileName}`;
           break;
-        case 'document':
+        case "document":
           storageKey = `client-portal/documents/${organizationId}/${clientId}/${uniqueFileName}`;
           break;
-        case 'chat':
+        case "chat":
           storageKey = `client-portal/chat-files/${organizationId}/${clientId}/${uniqueFileName}`;
           break;
         default:
@@ -2981,7 +2981,7 @@ class ClientPortalController {
       }
 
       // Handle organization-level invite
-      if (clientId === 'organization') {
+      if (clientId === "organization") {
         return ClientPortalController.generateOrganizationInvitationLink(req, res);
       }
 
@@ -3041,7 +3041,7 @@ class ClientPortalController {
           message: "This client is already a Worklenz user. They can access the client portal using their existing login credentials. Access has been automatically granted.",
           clientName: client.name,
           clientEmail: client.email,
-          existingUser: existingUser,
+          existingUser,
           portalUrl: `${getClientPortalBaseUrl()}/login`
         }, "Client is existing Worklenz user - access granted"));
       }
@@ -3101,7 +3101,7 @@ class ClientPortalController {
       // Generate secure token for organization invitation
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
       const inviteToken = TokenService.generateOrganizationInviteToken({
-        teamId: teamId,
+        teamId,
         type: "organization_invite",
         invitedBy: userId,
         expiresAt,
@@ -3184,8 +3184,8 @@ class ClientPortalController {
         if (clientResult.rows.length > 0) {
           // User is already linked to this organization's client portal
           return res.json(new ServerResponse(true, {
-            redirectTo: 'client-portal',
-            message: 'You already have access to this organization\'s client portal'
+            redirectTo: "client-portal",
+            message: "You already have access to this organization's client portal"
           }));
         }
 
@@ -3213,16 +3213,16 @@ class ClientPortalController {
           await db.query(linkUserQuery, [userId, clientId, user.email, user.name]);
 
           return res.json(new ServerResponse(true, {
-            redirectTo: 'client-portal',
-            message: 'Successfully linked to organization\'s client portal'
+            redirectTo: "client-portal",
+            message: "Successfully linked to organization's client portal"
           }));
         }
       }
 
       // User is not authenticated - they need to login/register first
       return res.json(new ServerResponse(true, {
-        redirectTo: 'login',
-        message: 'Please login or create an account to accept the invitation',
+        redirectTo: "login",
+        message: "Please login or create an account to accept the invitation",
         organizationName: invitation.organization_name
       }));
 
@@ -4132,10 +4132,10 @@ class ClientPortalController {
           email: updatedUser.email,
           role: updatedUser.role,
           status: updatedUser.status,
-          type: 'client_user',
+          type: "client_user",
           updatedAt: updatedUser.updated_at
         }, "Team member updated successfully"));
-      } else {
+      } 
         // Try to find pending invitation
         const invitationCheck = await db.query(
           "SELECT id, email, name, role, status FROM client_invitations WHERE id = $1 AND client_id = $2 AND status = 'pending'",
@@ -4185,9 +4185,9 @@ class ClientPortalController {
           name: updatedInvitation.name,
           role: updatedInvitation.role,
           status: updatedInvitation.status,
-          type: 'invitation'
+          type: "invitation"
         }, "Team invitation updated successfully"));
-      }
+      
     } catch (error) {
       console.error("Error updating team member:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to update team member"));
@@ -4233,10 +4233,10 @@ class ClientPortalController {
           name: removedUser.name,
           email: removedUser.email,
           role: removedUser.role,
-          type: 'client_user',
+          type: "client_user",
           removedAt: new Date()
         }, "Team member removed successfully"));
-      } else {
+      } 
         // Try to find and remove pending invitation
         const invitationCheck = await db.query(
           "SELECT id, email, name, role, status FROM client_invitations WHERE id = $1 AND client_id = $2",
@@ -4265,10 +4265,10 @@ class ClientPortalController {
           name: invitation.name,
           role: invitation.role,
           status: invitation.status,
-          type: 'invitation',
+          type: "invitation",
           removedAt: new Date()
         }, "Team invitation removed successfully"));
-      }
+      
     } catch (error) {
       console.error("Error removing team member:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to remove team member"));
@@ -4440,7 +4440,7 @@ class ClientPortalController {
       const dayFilter = `NOW() - INTERVAL '${Number(days)} days'`;
 
       // Get project activities
-      if (!type || type === 'project') {
+      if (!type || type === "project") {
         const projectActivitiesQuery = `
           SELECT 
             'project_update' as activity_type,
@@ -4461,7 +4461,7 @@ class ClientPortalController {
       }
 
       // Get request activities
-      if (!type || type === 'request') {
+      if (!type || type === "request") {
         const requestActivitiesQuery = `
           SELECT 
             'request_' || r.status as activity_type,
@@ -4481,7 +4481,7 @@ class ClientPortalController {
       }
 
       // Get invoice activities
-      if (!type || type === 'invoice') {
+      if (!type || type === "invoice") {
         const invoiceActivitiesQuery = `
           SELECT 
             'invoice_' || i.status as activity_type,
@@ -4505,7 +4505,7 @@ class ClientPortalController {
       }
 
       // Get chat activities
-      if (!type || type === 'chat') {
+      if (!type || type === "chat") {
         const chatActivitiesQuery = `
           SELECT 
             'chat_message' as activity_type,
@@ -4556,7 +4556,7 @@ class ClientPortalController {
         page: Number(page), 
         limit: Number(limit),
         days: Number(days),
-        filter: type || 'all'
+        filter: type || "all"
       }, "Client activity retrieved successfully"));
     } catch (error) {
       console.error("Error fetching client activity:", error);
@@ -4571,10 +4571,10 @@ class ClientPortalController {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
     return date.toLocaleDateString();
   }
 
@@ -4611,7 +4611,7 @@ class ClientPortalController {
       };
 
       // Include projects if requested
-      if (include === 'all' || (typeof include === 'string' && include.includes('projects'))) {
+      if (include === "all" || (typeof include === "string" && include.includes("projects"))) {
         const projectsQuery = `
           SELECT 
             p.id, p.name, p.notes as description, 
@@ -4629,7 +4629,7 @@ class ClientPortalController {
       }
 
       // Include requests if requested
-      if (include === 'all' || (typeof include === 'string' && include.includes('requests'))) {
+      if (include === "all" || (typeof include === "string" && include.includes("requests"))) {
         const requestsQuery = `
           SELECT 
             r.id, r.req_no, r.status, r.request_data, r.notes,
@@ -4645,7 +4645,7 @@ class ClientPortalController {
       }
 
       // Include invoices if requested
-      if (include === 'all' || (typeof include === 'string' && include.includes('invoices'))) {
+      if (include === "all" || (typeof include === "string" && include.includes("invoices"))) {
         const invoicesQuery = `
           SELECT 
             i.id, i.invoice_no, i.amount, i.currency, i.status,
@@ -4659,7 +4659,7 @@ class ClientPortalController {
       }
 
       // Include chat messages if requested
-      if (include === 'all' || (typeof include === 'string' && include.includes('messages'))) {
+      if (include === "all" || (typeof include === "string" && include.includes("messages"))) {
         const messagesQuery = `
           SELECT 
             m.id, m.sender_type, m.message, m.message_type,
@@ -4682,20 +4682,20 @@ class ClientPortalController {
       // Add export metadata
       exportData.exportMetadata = {
         exportedAt: new Date(),
-        exportedBy: (req.user as any)?.email || 'system',
+        exportedBy: (req.user as any)?.email || "system",
         format,
-        includedSections: include === 'all' ? ['client', 'projects', 'requests', 'invoices', 'messages'] : (typeof include === 'string' ? include.split(',') : []),
+        includedSections: include === "all" ? ["client", "projects", "requests", "invoices", "messages"] : (typeof include === "string" ? include.split(",") : []),
         clientId: id,
         clientName: client.name
       };
 
       // For CSV format, flatten the data
-      if (format === 'csv') {
+      if (format === "csv") {
         // In a real implementation, you would convert this to CSV format
         // For now, return instructions for CSV generation
         return res.json(new ServerResponse(true, {
           downloadUrl: `/api/client-portal/clients/${id}/export/download?format=csv&include=${include}`,
-          format: 'csv',
+          format: "csv",
           recordCount: {
             projects: exportData.projects?.length || 0,
             requests: exportData.requests?.length || 0,
@@ -4710,7 +4710,7 @@ class ClientPortalController {
       return res.json(new ServerResponse(true, {
         exportData,
         downloadUrl: `/api/client-portal/clients/${id}/export/download?format=json&include=${include}`,
-        format: 'json'
+        format: "json"
       }, "Client data export completed"));
     } catch (error) {
       console.error("Error exporting client data:", error);
@@ -4844,7 +4844,7 @@ class ClientPortalController {
       // Check if this is an organization invite token
       const orgInvitePayload = TokenService.verifyOrganizationInviteToken(token);
       
-      if (orgInvitePayload && orgInvitePayload.type === 'organization_invite') {
+      if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
         
         // For organization invites, create a new client user account
         // First, check if user already exists
@@ -4885,10 +4885,10 @@ class ClientPortalController {
         // Generate client access token
         const permissions = await TokenService.getClientPermissions(clientId);
         const tokenPayload = {
-          clientId: clientId,
+          clientId,
           organizationId: orgInvitePayload.teamId,
           email: newUser.email,
-          permissions: permissions,
+          permissions,
           type: "client" as const
         };
 
@@ -4901,7 +4901,7 @@ class ClientPortalController {
             email: newUser.email,
             name: newUser.name,
             role: newUser.role,
-            clientId: clientId,
+            clientId,
             clientName: name,
             companyName: orgInvitePayload.organizationName
           },
@@ -4947,7 +4947,7 @@ class ClientPortalController {
         clientId: newUser.client_id,
         organizationId: newUser.team_id,
         email: newUser.email,
-        permissions: permissions,
+        permissions,
         type: "client" as const
       };
 

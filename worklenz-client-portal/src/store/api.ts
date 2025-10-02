@@ -15,7 +15,7 @@ import {
 
 // Base query with authentication
 const baseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/client-portal',
   prepareHeaders: (headers) => {
     const token = localStorage.getItem('clientToken');
     if (token) {
@@ -43,25 +43,25 @@ export const clientPortalApi = createApi({
   endpoints: (builder) => ({
     // Dashboard
     getDashboard: builder.query<ApiResponse<DashboardStats>, void>({
-      query: () => '/client-portal/dashboard',
+      query: () => '/dashboard',
       providesTags: ['Dashboard'],
     }),
 
     // Services
     getServices: builder.query<ApiResponse<ClientService[]>, void>({
-      query: () => '/client-portal/services',
+      query: () => '/services',
       providesTags: ['Services'],
     }),
 
     getServiceDetails: builder.query<ApiResponse<ClientService>, string>({
-      query: (id) => `/client-portal/services/${id}`,
+      query: (id) => `/services/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Services', id }],
     }),
 
     // Requests
     getRequests: builder.query<ApiResponse<PaginatedResponse<ClientRequest>>, { page?: number; limit?: number }>({
       query: (params) => ({
-        url: '/client-portal/requests',
+        url: '/requests',
         params,
       }),
       providesTags: ['Requests'],
@@ -69,7 +69,7 @@ export const clientPortalApi = createApi({
 
     createRequest: builder.mutation<ApiResponse<ClientRequest>, Partial<ClientRequest>>({
       query: (data) => ({
-        url: '/client-portal/requests',
+        url: '/requests',
         method: 'POST',
         body: data,
       }),
@@ -77,13 +77,13 @@ export const clientPortalApi = createApi({
     }),
 
     getRequestDetails: builder.query<ApiResponse<ClientRequest>, string>({
-      query: (id) => `/client-portal/requests/${id}`,
+      query: (id) => `/requests/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Requests', id }],
     }),
 
     updateRequest: builder.mutation<ApiResponse<ClientRequest>, { id: string; data: Partial<ClientRequest> }>({
       query: ({ id, data }) => ({
-        url: `/client-portal/requests/${id}`,
+        url: `/requests/${id}`,
         method: 'PUT',
         body: data,
       }),
@@ -96,7 +96,7 @@ export const clientPortalApi = createApi({
 
     deleteRequest: builder.mutation<ApiResponse<void>, string>({
       query: (id) => ({
-        url: `/client-portal/requests/${id}`,
+        url: `/requests/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Requests', 'Dashboard'],
@@ -105,34 +105,34 @@ export const clientPortalApi = createApi({
     // Projects
     getProjects: builder.query<ApiResponse<PaginatedResponse<ClientProject>>, { page?: number; limit?: number }>({
       query: (params) => ({
-        url: '/client-portal/projects',
+        url: '/projects',
         params,
       }),
       providesTags: ['Projects'],
     }),
 
     getProjectDetails: builder.query<ApiResponse<ClientProject>, string>({
-      query: (id) => `/client-portal/projects/${id}`,
+      query: (id) => `/projects/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Projects', id }],
     }),
 
     // Invoices
     getInvoices: builder.query<ApiResponse<PaginatedResponse<ClientInvoice>>, { page?: number; limit?: number }>({
       query: (params) => ({
-        url: '/client-portal/invoices',
+        url: '/invoices',
         params,
       }),
       providesTags: ['Invoices'],
     }),
 
     getInvoiceDetails: builder.query<ApiResponse<ClientInvoice>, string>({
-      query: (id) => `/client-portal/invoices/${id}`,
+      query: (id) => `/invoices/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Invoices', id }],
     }),
 
     payInvoice: builder.mutation<ApiResponse<void>, { id: string; paymentData: unknown }>({
       query: ({ id, paymentData }) => ({
-        url: `/client-portal/invoices/${id}/pay`,
+        url: `/invoices/${id}/pay`,
         method: 'POST',
         body: paymentData,
       }),
@@ -145,25 +145,25 @@ export const clientPortalApi = createApi({
 
     downloadInvoice: builder.query<Blob, string>({
       query: (id) => ({
-        url: `/client-portal/invoices/${id}/download`,
+        url: `/invoices/${id}/download`,
         responseHandler: (response) => response.blob(),
       }),
     }),
 
     // Chats
     getChats: builder.query<ApiResponse<ClientChat[]>, void>({
-      query: () => '/client-portal/chats',
+      query: () => '/chats',
       providesTags: ['Chats'],
     }),
 
     getChatDetails: builder.query<ApiResponse<ClientChat>, string>({
-      query: (id) => `/client-portal/chats/${id}`,
+      query: (id) => `/chats/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Chats', id }],
     }),
 
     sendMessage: builder.mutation<ApiResponse<void>, { chatId: string; messageData: { content: string; attachments?: string[] } }>({
       query: ({ chatId, messageData }) => ({
-        url: `/client-portal/chats/${chatId}/messages`,
+        url: `/chats/${chatId}/messages`,
         method: 'POST',
         body: messageData,
       }),
@@ -174,19 +174,19 @@ export const clientPortalApi = createApi({
     }),
 
     getMessages: builder.query<ApiResponse<unknown[]>, string>({
-      query: (chatId) => `/client-portal/chats/${chatId}/messages`,
+      query: (chatId) => `/chats/${chatId}/messages`,
       providesTags: (_result, _error, chatId) => [{ type: 'Chats', id: chatId }],
     }),
 
     // Settings
     getSettings: builder.query<ApiResponse<ClientSettings>, void>({
-      query: () => '/client-portal/settings',
+      query: () => '/settings',
       providesTags: ['Settings'],
     }),
 
     updateSettings: builder.mutation<ApiResponse<ClientSettings>, Partial<ClientSettings>>({
       query: (settingsData) => ({
-        url: '/client-portal/settings',
+        url: '/settings',
         method: 'PUT',
         body: settingsData,
       }),
@@ -195,13 +195,13 @@ export const clientPortalApi = createApi({
 
     // Profile
     getProfile: builder.query<ApiResponse<ClientUser>, void>({
-      query: () => '/client-portal/profile',
+      query: () => '/profile',
       providesTags: ['Profile'],
     }),
 
     updateProfile: builder.mutation<ApiResponse<ClientUser>, Partial<ClientUser>>({
       query: (profileData) => ({
-        url: '/client-portal/profile',
+        url: '/profile',
         method: 'PUT',
         body: profileData,
       }),
@@ -211,7 +211,7 @@ export const clientPortalApi = createApi({
     // Notifications
     getNotifications: builder.query<ApiResponse<PaginatedResponse<ClientNotification>>, { page?: number; limit?: number }>({
       query: (params) => ({
-        url: '/client-portal/notifications',
+        url: '/notifications',
         params,
       }),
       providesTags: ['Notifications'],
@@ -219,7 +219,7 @@ export const clientPortalApi = createApi({
 
     markNotificationRead: builder.mutation<ApiResponse<void>, string>({
       query: (id) => ({
-        url: `/client-portal/notifications/${id}/read`,
+        url: `/notifications/${id}/read`,
         method: 'PUT',
       }),
       invalidatesTags: ['Notifications', 'Dashboard'],
@@ -227,7 +227,7 @@ export const clientPortalApi = createApi({
 
     markAllNotificationsRead: builder.mutation<ApiResponse<void>, void>({
       query: () => ({
-        url: '/client-portal/notifications/read-all',
+        url: '/notifications/read-all',
         method: 'PUT',
       }),
       invalidatesTags: ['Notifications', 'Dashboard'],
@@ -239,7 +239,7 @@ export const clientPortalApi = createApi({
         const formData = new FormData();
         formData.append('file', file);
         return {
-          url: '/client-portal/upload',
+          url: '/upload',
           method: 'POST',
           body: formData,
         };
