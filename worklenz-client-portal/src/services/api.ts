@@ -205,6 +205,17 @@ class ClientPortalAPI {
     return response.data;
   }
 
+  // Organizations
+  async getOrganizations(): Promise<ApiResponse<{ organizations: any[] }>> {
+    const response = await this.api.get('/organizations');
+    return response.data;
+  }
+
+  async switchOrganization(organizationId: string): Promise<ApiResponse<{ token: string; organizationId: string; clientId: string; expiresAt: string }>> {
+    const response = await this.api.post('/organizations/switch', { organizationId });
+    return response.data;
+  }
+
   // Dashboard
   async getDashboard() {
     return this.request('/dashboard');

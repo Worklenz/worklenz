@@ -129,6 +129,15 @@ export interface ClientPortalClient {
   status: 'active' | 'inactive' | 'pending';
   created_at: string;
   updated_at: string;
+  // Portal access fields
+  has_portal_access?: boolean;
+  invitation_sent_at?: string;
+  invitation_accepted?: boolean;
+  portal_status?: {
+    status: 'active' | 'invited' | 'not_invited' | 'expired';
+    label: string;
+    color: string;
+  };
 }
 
 export interface ClientPortalTeamMember {

@@ -3008,25 +3008,42 @@ class ClientPortalController {
       const existingUserResult = await db.query(existingUserQuery, [client.email]);
 
       if (existingUserResult.rows.length > 0) {
-        // User already exists in Worklenz - they should use existing login
+        // User already exists in Worklenz - link them to client portal
         const existingUser = existingUserResult.rows[0];
-        
-        // Check if we need to link this user to the client portal
+
+        // Check if this Worklenz user is already linked to the client portal
         const linkCheckQuery = `
-          SELECT id FROM client_users 
+          SELECT id FROM client_users
           WHERE user_id = $1 AND client_id = $2
         `;
         const linkResult = await db.query(linkCheckQuery, [existingUser.id, client.id]);
-        
+
         if (linkResult.rows.length === 0) {
-          // Create the link between existing user and client portal
+          // Create client_users record linking Worklenz user to client portal
+          // Note: password_hash is NULL since they'll authenticate via users table
           const linkUserQuery = `
-            INSERT INTO client_users (user_id, client_id, email, name, role, created_at)
-            VALUES ($1, $2, $3, $4, 'member', NOW())
-            ON CONFLICT (user_id, client_id) DO NOTHING
+            INSERT INTO client_users (id, user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, 'member', $6, 'active', NOW(), NOW())
+            RETURNING id
           `;
-          await db.query(linkUserQuery, [existingUser.id, client.id, client.email, client.name]);
-          
+          const newClientUserId = crypto.randomUUID();
+          await db.query(linkUserQuery, [
+            newClientUserId,
+            existingUser.id,
+            client.id,
+            client.email,
+            client.name,
+            teamId
+          ]);
+
+          // Create organization access record for multi-org support
+          const orgAccessQuery = `
+            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+            VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+            ON CONFLICT (client_user_id, team_id) DO NOTHING
+          `;
+          await db.query(orgAccessQuery, [newClientUserId, teamId, client.id]);
+
           // Update client status to active since user already exists
           const updateClientQuery = `
             UPDATE clients SET status = 'active', updated_at = NOW()
@@ -3034,14 +3051,13 @@ class ClientPortalController {
           `;
           await db.query(updateClientQuery, [client.id, teamId]);
         }
-        
-        // Instead of generating invite token, return a different response
+
+        // Return response indicating user can use existing Worklenz credentials
         return res.json(new ServerResponse(true, {
           isExistingUser: true,
-          message: "This client is already a Worklenz user. They can access the client portal using their existing login credentials. Access has been automatically granted.",
+          message: "This client is already a Worklenz user!",
           clientName: client.name,
           clientEmail: client.email,
-          existingUser,
           portalUrl: `${getClientPortalBaseUrl()}/login`
         }, "Client is existing Worklenz user - access granted"));
       }
@@ -4911,15 +4927,29 @@ class ClientPortalController {
 
       // Regular invitation flow
       const invitation = await TokenService.getInvitationByToken(token);
-      
+
       if (!invitation) {
         return res.status(400).json(new ServerResponse(false, null, "Invalid or expired invitation"));
       }
 
-      // Accept the invitation
+      // Check if user email exists in Worklenz users table
+      const existingWorklenzUserQuery = `
+        SELECT id, email, name FROM users
+        WHERE LOWER(email) = LOWER($1)
+      `;
+      const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [invitation.email]);
+
+      let userId = null;
+      if (existingWorklenzUserResult.rows.length > 0) {
+        // User already exists in Worklenz - link them instead of creating password
+        userId = existingWorklenzUserResult.rows[0].id;
+      }
+
+      // Accept the invitation (will link if userId is provided, otherwise create password)
       const newUser = await TokenService.acceptInvitation(token, {
         password,
-        name
+        name,
+        userId
       });
 
       // Send welcome email
@@ -4993,22 +5023,36 @@ class ClientPortalController {
         return res.status(401).json(new ServerResponse(false, null, "Invalid email or password"));
       }
 
-      // Generate client access token
+      // Get all organizations accessible by this user
+      const organizations = await TokenService.getClientUserOrganizations(clientUser.id);
+
+      // Use default organization or first available
+      const defaultOrg = organizations.find(org => org.isDefault) || organizations[0];
+      const organizationId = defaultOrg?.teamId || clientUser.team_id;
+      const clientId = defaultOrg?.clientId || clientUser.client_id;
+
+      // Generate client access token with organization information
       const tokenPayload = {
-        clientId: clientUser.client_id,
-        organizationId: clientUser.team_id,
+        clientId,
+        organizationId,
+        clientUserId: clientUser.id,
         email: clientUser.email,
-        permissions: await TokenService.getClientPermissions(clientUser.client_id),
+        permissions: await TokenService.getClientPermissions(clientId),
+        availableOrganizations: organizations,
         type: "client" as const
       };
 
       const accessToken = TokenService.generateClientToken(tokenPayload);
 
-      // Update last login
+      // Update last login and organization access
       await db.query(
         "UPDATE client_users SET last_login = NOW() WHERE id = $1",
         [clientUser.id]
       );
+
+      if (defaultOrg) {
+        await TokenService.updateOrganizationAccess(clientUser.id, organizationId);
+      }
 
       return res.json(new ServerResponse(true, {
         token: accessToken,
@@ -5017,10 +5061,13 @@ class ClientPortalController {
           email: clientUser.email,
           name: clientUser.name,
           role: clientUser.role,
-          clientId: clientUser.client_id,
+          clientId,
+          organizationId,
           clientName: clientUser.client_name,
-          companyName: clientUser.company_name
-        }
+          companyName: clientUser.company_name,
+          organizations
+        },
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       }, "Login successful"));
     } catch (error) {
       console.error("Error during client login:", error);
@@ -5069,6 +5116,82 @@ class ClientPortalController {
     } catch (error) {
       console.error("Error during client logout:", error);
       return res.status(500).json(new ServerResponse(false, null, "Logout failed"));
+    }
+  }
+
+  static async getClientOrganizations(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const clientUserId = (req as any).clientUserId;
+
+      if (!clientUserId) {
+        return res.status(400).json(new ServerResponse(false, null, "Client user ID not found"));
+      }
+
+      // Get all organizations accessible by this user
+      const organizations = await TokenService.getClientUserOrganizations(clientUserId);
+
+      return res.json(new ServerResponse(true, { organizations }, "Organizations retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching client organizations:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve organizations"));
+    }
+  }
+
+  static async switchOrganization(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const clientUserId = (req as any).clientUserId;
+      const { organizationId } = req.body;
+
+      if (!clientUserId) {
+        return res.status(400).json(new ServerResponse(false, null, "Client user ID not found"));
+      }
+
+      if (!organizationId) {
+        return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+
+      // Verify user has access to this organization
+      const hasAccess = await TokenService.hasOrganizationAccess(clientUserId, organizationId);
+
+      if (!hasAccess) {
+        return res.status(403).json(new ServerResponse(false, null, "Access denied to this organization"));
+      }
+
+      // Get client_id for this organization
+      const clientId = await TokenService.getClientIdForOrganization(clientUserId, organizationId);
+
+      if (!clientId) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found for this organization"));
+      }
+
+      // Get all organizations for token payload
+      const organizations = await TokenService.getClientUserOrganizations(clientUserId);
+
+      // Generate new token with updated organization
+      const tokenPayload = {
+        clientId,
+        organizationId,
+        clientUserId,
+        email: (req as any).clientEmail || "",
+        permissions: await TokenService.getClientPermissions(clientId),
+        availableOrganizations: organizations,
+        type: "client" as const
+      };
+
+      const newToken = TokenService.generateClientToken(tokenPayload);
+
+      // Update last accessed timestamp
+      await TokenService.updateOrganizationAccess(clientUserId, organizationId);
+
+      return res.json(new ServerResponse(true, {
+        token: newToken,
+        organizationId,
+        clientId,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      }, "Organization switched successfully"));
+    } catch (error) {
+      console.error("Error switching organization:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to switch organization"));
     }
   }
 

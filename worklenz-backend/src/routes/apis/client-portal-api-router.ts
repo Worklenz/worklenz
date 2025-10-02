@@ -66,6 +66,10 @@ router.put("/profile", safeControllerFunction(ClientPortalController.updateClien
 // Authentication
 router.post("/auth/logout", safeControllerFunction(ClientPortalController.clientLogout));
 
+// Organizations
+router.get("/organizations", safeControllerFunction(ClientPortalController.getClientOrganizations));
+router.post("/organizations/switch", safeControllerFunction(ClientPortalController.switchOrganization));
+
 // Notifications
 router.get("/notifications", safeControllerFunction(ClientPortalController.getNotifications));
 router.put("/notifications/:id/read", safeControllerFunction(ClientPortalController.markNotificationRead));

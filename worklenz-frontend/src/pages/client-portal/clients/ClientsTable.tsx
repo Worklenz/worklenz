@@ -53,6 +53,7 @@ import {
   useDeleteClientMutation,
   useBulkDeleteClientsMutation,
   useBulkUpdateClientsMutation,
+  useGenerateClientInvitationLinkMutation,
 } from '@/api/client-portal/client-portal-api';
 import { TempClientPortalClientType } from '@/types/client-portal/temp-client-portal.types';
 import { useState } from 'react';
@@ -101,6 +102,7 @@ const ClientsTable = () => {
   const [deleteClient, { isLoading: isDeleting }] = useDeleteClientMutation();
   const [bulkDeleteClients, { isLoading: isBulkDeleting }] = useBulkDeleteClientsMutation();
   const [bulkUpdateClients, { isLoading: isBulkUpdating }] = useBulkUpdateClientsMutation();
+  const [generateInvitationLink] = useGenerateClientInvitationLinkMutation();
 
   // Use API data - handle the ServerResponse wrapper
   const displayClients = clientsData?.body?.clients || [];
@@ -268,52 +270,39 @@ const ClientsTable = () => {
     setIsGeneratingLink(true);
 
     try {
-      const response = await fetch('/api/clients/portal/generate-invitation-link', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`, // Adjust based on your auth system
-        },
-        body: JSON.stringify({ clientId }),
-      });
+      const result = await generateInvitationLink({ clientId }).unwrap();
 
-      const data = await response.json();
-
-      if (data.done) {
-        if (data.body?.isExistingUser) {
-          // Handle existing Worklenz user
-          message.success({
-            content: (
-              <div>
-                <div>{data.body.message}</div>
-                {data.body.portalUrl && (
-                  <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
-                    Portal URL:{' '}
-                    <a href={data.body.portalUrl} target="_blank" rel="noopener noreferrer">
-                      {data.body.portalUrl}
-                    </a>
-                  </div>
-                )}
-              </div>
-            ),
-            duration: 8,
-          });
-          // Refresh the client list to show updated status
-          refetch();
-        } else if (data.body?.invitationLink) {
-          // Handle new user invitation
-          setInvitationLink(data.body.invitationLink);
-          setInviteModalOpen(true);
-          message.success('Invitation link generated successfully!');
-        } else {
-          message.error('Failed to generate invitation link');
-        }
+      if (result.body?.isExistingUser) {
+        // Handle existing Worklenz user
+        message.success({
+          content: (
+            <div>
+              <div>{result.body.message}</div>
+              {result.body.portalUrl && (
+                <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
+                  Portal URL:{' '}
+                  <a href={result.body.portalUrl} target="_blank" rel="noopener noreferrer">
+                    {result.body.portalUrl}
+                  </a>
+                </div>
+              )}
+            </div>
+          ),
+          duration: 8,
+        });
+        // Refresh the client list to show updated status
+        refetch();
+      } else if (result.body?.invitationLink) {
+        // Handle new user invitation
+        setInvitationLink(result.body.invitationLink);
+        setInviteModalOpen(true);
+        message.success(t('inviteLinkGeneratedSuccess') || 'Invitation link generated successfully!');
       } else {
-        message.error('Failed to generate invitation link');
+        message.error(t('inviteLinkGeneratedError') || 'Failed to generate invitation link');
       }
     } catch (error) {
       console.error('Failed to generate invitation link:', error);
-      message.error('Failed to generate invitation link');
+      message.error(t('inviteLinkGeneratedError') || 'Failed to generate invitation link');
     } finally {
       setIsGeneratingLink(false);
     }
@@ -343,36 +332,79 @@ const ClientsTable = () => {
     },
   };
 
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'green';
-      case 'inactive':
-        return 'red';
-      case 'pending':
-        return 'orange';
-      default:
-        return 'default';
+  // Get portal status details
+  const getPortalStatus = (record: any) => {
+    // If portal_status exists in the record, use it
+    if (record.portal_status) {
+      return record.portal_status;
+    }
+
+    // Otherwise, infer from available data
+    if (record.has_portal_access) {
+      return { status: 'active', label: 'Active', color: 'green' };
+    } else if (record.invitation_sent_at && !record.invitation_accepted) {
+      const invitationDate = new Date(record.invitation_sent_at);
+      const expiryDate = new Date(invitationDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const isExpired = expiryDate < new Date();
+
+      if (isExpired) {
+        return { status: 'expired', label: 'Expired', color: 'red' };
+      }
+      return { status: 'invited', label: 'Invited', color: 'orange' };
+    }
+
+    return { status: 'not_invited', label: 'Not Invited', color: 'default' };
+  };
+
+  // Handle bulk portal invitations
+  const handleBulkInvite = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning(t('selectClientsToInvite') || 'Please select clients to invite');
+      return;
+    }
+
+    try {
+      setBulkActionLoading(true);
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const clientId of selectedRowKeys) {
+        try {
+          await handleGenerateInviteLink(clientId);
+          successCount++;
+        } catch (error) {
+          failCount++;
+          console.error(`Failed to invite client ${clientId}:`, error);
+        }
+      }
+
+      if (successCount > 0) {
+        message.success(
+          `${successCount} ${t('bulkInviteSuccessMessage') || 'invitation(s) generated successfully'}`
+        );
+      }
+      if (failCount > 0) {
+        message.warning(
+          `${failCount} ${t('bulkInvitePartialFailMessage') || 'invitation(s) failed'}`
+        );
+      }
+
+      setSelectedRowKeys([]);
+      refetch();
+    } catch (error) {
+      message.error(t('bulkInviteErrorMessage') || 'Failed to generate invitations');
+    } finally {
+      setBulkActionLoading(false);
     }
   };
 
   // Bulk action menu items
   const bulkActionMenuItems = [
     {
-      key: 'activate',
-      label: t('activateSelected') || 'Activate Selected',
-      onClick: () => handleBulkStatusUpdate('active'),
-    },
-    {
-      key: 'deactivate',
-      label: t('deactivateSelected') || 'Deactivate Selected',
-      onClick: () => handleBulkStatusUpdate('inactive'),
-    },
-    {
-      key: 'pending',
-      label: t('markPendingSelected') || 'Mark Pending',
-      onClick: () => handleBulkStatusUpdate('pending'),
+      key: 'invite',
+      label: t('inviteSelectedToPortal') || 'Send Portal Invitations',
+      icon: <LinkOutlined />,
+      onClick: handleBulkInvite,
     },
     {
       type: 'divider' as const,
@@ -387,6 +419,8 @@ const ClientsTable = () => {
 
   // Get action menu items for each row
   const getActionMenuItems = (record: any) => {
+    const portalStatus = getPortalStatus(record);
+
     const menuItems: any[] = [
       {
         key: 'view',
@@ -406,13 +440,30 @@ const ClientsTable = () => {
       },
     ];
 
-    // Show invite link only if client hasn't accepted invite yet
-    // pending = invitation not accepted, active = invitation accepted or already signed up
-    if (record.status === 'pending' || record.status === 'inactive') {
+    // Portal invitation actions based on status
+    if (portalStatus.status === 'not_invited') {
       menuItems.push({
         key: 'invite',
-        label: t('inviteClientTooltip') || 'Generate Invite Link',
+        label: t('inviteToPortalTooltip') || 'Invite to Portal',
         icon: <LinkOutlined />,
+        onClick: () => {
+          handleGenerateInviteLink(record.id);
+        },
+      });
+    } else if (portalStatus.status === 'expired') {
+      menuItems.push({
+        key: 'resend',
+        label: t('resendInvitationTooltip') || 'Resend Invitation',
+        icon: <ShareAltOutlined />,
+        onClick: () => {
+          handleGenerateInviteLink(record.id);
+        },
+      });
+    } else if (portalStatus.status === 'invited') {
+      menuItems.push({
+        key: 'copyInvite',
+        label: t('copyInviteLinkTooltip') || 'Copy Invitation Link',
+        icon: <CopyOutlined />,
         onClick: () => {
           handleGenerateInviteLink(record.id);
         },
@@ -482,15 +533,18 @@ const ClientsTable = () => {
       }),
     },
     {
-      key: 'status',
-      title: t('statusColumn') || 'Status',
-      dataIndex: 'status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)} style={{ textTransform: 'capitalize' }}>
-          {status || 'active'}
-        </Tag>
-      ),
-      width: 120,
+      key: 'portalStatus',
+      title: t('portalStatusColumn') || 'Portal Status',
+      dataIndex: 'portal_status',
+      render: (_: any, record: any) => {
+        const portalStatus = getPortalStatus(record);
+        return (
+          <Tag color={portalStatus.color} style={{ textTransform: 'capitalize' }}>
+            {t(`portalStatus.${portalStatus.status}`) || portalStatus.label}
+          </Tag>
+        );
+      },
+      width: 140,
     },
     {
       key: 'assignedProjects',
@@ -548,16 +602,17 @@ const ClientsTable = () => {
           />
 
           <Select
-            placeholder={t('statusFilterPlaceholder') || 'Filter by status'}
+            placeholder={t('portalStatusFilterPlaceholder') || 'Filter by portal status'}
             allowClear
-            style={{ width: 150 }}
+            style={{ width: 180 }}
             onChange={handleStatusFilter}
             value={filters.status}
           >
             <Option value="all">{t('statusAll') || 'All'}</Option>
-            <Option value="active">{t('statusActive') || 'Active'}</Option>
-            <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
-            <Option value="pending">{t('statusPending') || 'Pending'}</Option>
+            <Option value="active">{t('portalStatus.active') || 'Active'}</Option>
+            <Option value="invited">{t('portalStatus.invited') || 'Invited'}</Option>
+            <Option value="not_invited">{t('portalStatus.not_invited') || 'Not Invited'}</Option>
+            <Option value="expired">{t('portalStatus.expired') || 'Expired'}</Option>
           </Select>
 
           <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={isLoading}>

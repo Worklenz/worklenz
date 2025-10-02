@@ -9,5 +9,12 @@
     "signin": "Anmelden",
     "signup": "Registrieren",
     "no_account": "Sie haben kein Konto?"
+  },
+  "organizations": {
+    "switch": "Organisation wechseln",
+    "current": "Aktuelle Organisation",
+    "select": "Organisation auswählen",
+    "switch_success": "Organisation erfolgreich gewechselt",
+    "switch_error": "Fehler beim Wechseln der Organisation"
   }
 } 

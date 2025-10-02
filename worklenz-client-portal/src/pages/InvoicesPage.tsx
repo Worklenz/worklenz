@@ -38,8 +38,8 @@ const InvoicesPage: React.FC = () => {
 
       if (response.done) {
         const data = response.body as any;
-        setInvoices(data.data || data || []);
-        setTotalInvoices(data.total || (data.data?.length || data.length || 0));
+        setInvoices(data.invoices || []);
+        setTotalInvoices(data.total || 0);
       } else {
         setError("Failed to load invoices");
       }

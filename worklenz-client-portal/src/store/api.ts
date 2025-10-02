@@ -31,14 +31,15 @@ export const clientPortalApi = createApi({
   baseQuery,
   tagTypes: [
     'Dashboard',
-    'Services', 
-    'Requests', 
-    'Projects', 
-    'Invoices', 
-    'Chats', 
-    'Settings', 
-    'Profile', 
-    'Notifications'
+    'Services',
+    'Requests',
+    'Projects',
+    'Invoices',
+    'Chats',
+    'Settings',
+    'Profile',
+    'Notifications',
+    'Organizations'
   ],
   endpoints: (builder) => ({
     // Dashboard
@@ -245,6 +246,22 @@ export const clientPortalApi = createApi({
         };
       },
     }),
+
+    // Organizations
+    getOrganizations: builder.query<ApiResponse<{ organizations: any[] }>, void>({
+      query: () => '/organizations',
+      providesTags: ['Organizations'],
+    }),
+
+    switchOrganization: builder.mutation<ApiResponse<{ token: string; organizationId: string; clientId: string; expiresAt: string }>, string>({
+      query: (organizationId) => ({
+        url: '/organizations/switch',
+        method: 'POST',
+        body: { organizationId },
+      }),
+      // Invalidate all tags when switching organizations to refetch all data
+      invalidatesTags: ['Dashboard', 'Services', 'Requests', 'Projects', 'Invoices', 'Chats', 'Settings', 'Profile', 'Notifications'],
+    }),
   }),
 });
 
@@ -295,4 +312,8 @@ export const {
   
   // File upload
   useUploadFileMutation,
+
+  // Organizations
+  useGetOrganizationsQuery,
+  useSwitchOrganizationMutation,
 } = clientPortalApi; 

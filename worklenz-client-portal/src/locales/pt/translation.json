@@ -9,5 +9,12 @@
     "signin": "Entrar",
     "signup": "Inscrever-se",
     "no_account": "Não tem uma conta?"
+  },
+  "organizations": {
+    "switch": "Mudar Organização",
+    "current": "Organização Atual",
+    "select": "Selecionar Organização",
+    "switch_success": "Organização alterada com sucesso",
+    "switch_error": "Falha ao mudar de organização"
   }
 } 

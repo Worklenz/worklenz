@@ -140,5 +140,23 @@
   "projectAssignedSuccessMessage": "Projekti u caktua me sukses",
   "projectAssignedErrorMessage": "Dështoi caktimi i projektit",
   "projectRemovedSuccessMessage": "Projekti u hoq me sukses",
-  "projectRemovedErrorMessage": "Dështoi heqja e projektit"
+  "projectRemovedErrorMessage": "Dështoi heqja e projektit",
+
+  "portalStatusColumn": "Statusi i Portalit",
+  "portalStatus": {
+    "active": "Aktiv",
+    "invited": "I Ftuar",
+    "not_invited": "Nuk është Ftuar",
+    "expired": "Ka Skaduar"
+  },
+
+  "inviteToPortalTooltip": "Fto në Portal",
+  "resendInvitationTooltip": "Ridërgo Ftesën",
+  "copyInviteLinkTooltip": "Kopjo Linkun e Ftesës",
+
+  "inviteSelectedToPortal": "Dërgo Ftesa për Portal",
+  "selectClientsToInvite": "Ju lutemi zgjidhni klientët për t'i ftuar",
+  "bulkInviteSuccessMessage": "ftesë(a) u gjenerua me sukses",
+  "bulkInvitePartialFailMessage": "ftesë(a) dështoi",
+  "bulkInviteErrorMessage": "Dështoi gjenerimi i ftesave"
 }

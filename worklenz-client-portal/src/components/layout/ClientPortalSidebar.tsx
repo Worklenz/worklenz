@@ -152,12 +152,12 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
       {/* Header with title and collapse button */}
       <div
         style={{
-          padding: collapsed ? '17px 16px' : '17px 24px',
+          padding: collapsed ? '15px 16px' : '15px 24px',
           borderBottom: `1px solid ${themeWiseColor('#e8e8e8', '#2a2a2a', themeMode)}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
-          minHeight: 72,
+          minHeight: 64,
           background: themeWiseColor('#fff', '#262626', themeMode),
         }}
       >

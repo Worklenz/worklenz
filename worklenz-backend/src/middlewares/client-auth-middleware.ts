@@ -8,6 +8,7 @@ export interface AuthenticatedClientRequest extends Request {
   clientUserId?: string;
   clientAccess?: any;
   clientEmail?: string;
+  availableOrganizations?: any[];
 }
 
 export const authenticateClient = async (
@@ -48,11 +49,27 @@ export const authenticateClient = async (
       canUpdateProfile: permissions.includes("write:profile")
     };
 
+    // Validate organization access if clientUserId is present (multi-org support)
+    if (tokenPayload.clientUserId && tokenPayload.organizationId) {
+      const hasAccess = await TokenService.hasOrganizationAccess(
+        tokenPayload.clientUserId,
+        tokenPayload.organizationId
+      );
+
+      if (!hasAccess) {
+        return res.status(403).json(
+          new ServerResponse(false, null, "Access denied to this organization")
+        );
+      }
+    }
+
     // Attach client data to request
     req.clientId = tokenPayload.clientId;
     req.organizationId = tokenPayload.organizationId;
+    req.clientUserId = tokenPayload.clientUserId;
     req.clientEmail = tokenPayload.email;
     req.clientAccess = clientAccess;
+    req.availableOrganizations = tokenPayload.availableOrganizations;
 
     next();
   } catch (error) {

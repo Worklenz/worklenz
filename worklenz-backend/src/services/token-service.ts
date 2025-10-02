@@ -1,12 +1,23 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 import db from "../config/db";
+
+interface ClientOrganization {
+  id: string;
+  name: string;
+  teamId: string;
+  clientId: string;
+  isDefault: boolean;
+}
 
 interface ClientTokenPayload {
   clientId: string;
   organizationId: string;
+  clientUserId?: string;
   email: string;
   permissions: string[];
+  availableOrganizations?: ClientOrganization[];
   type: "client" | "invite";
 }
 
@@ -163,6 +174,7 @@ class TokenService {
   async acceptInvitation(token: string, userData: {
     password: string;
     name: string;
+    userId?: string | null; // Optional Worklenz user ID for linking
   }): Promise<any> {
     const invitation = await this.getInvitationByToken(token);
     if (!invitation) {
@@ -174,26 +186,56 @@ class TokenService {
     try {
       await client.query("BEGIN");
 
-      // Create client user account
-      const createUserQuery = `
-        INSERT INTO client_users (
-          id, client_id, email, name, password_hash, role, status, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-        RETURNING id, email, name, role, client_id
-      `;
+      let createUserQuery: string;
+      let queryParams: any[];
+      const clientUserId = crypto.randomUUID();
 
-      const userId = crypto.randomUUID();
-      const passwordHash = crypto.createHash("sha256").update(userData.password).digest("hex");
-      
-      const userResult = await client.query(createUserQuery, [
-        userId,
-        invitation.client_id,
-        invitation.email,
-        userData.name,
-        passwordHash,
-        invitation.role,
-        "active"
-      ]);
+      if (userData.userId) {
+        // Linking existing Worklenz user - no password_hash needed
+        createUserQuery = `
+          INSERT INTO client_users (
+            id, user_id, client_id, email, name, role, team_id, status, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())
+          RETURNING id, email, name, role, client_id
+        `;
+        queryParams = [
+          clientUserId,
+          userData.userId,
+          invitation.client_id,
+          invitation.email,
+          userData.name,
+          invitation.role,
+          invitation.team_id
+        ];
+      } else {
+        // Standalone client portal user - create with password_hash
+        const passwordHash = crypto.createHash("sha256").update(userData.password).digest("hex");
+        createUserQuery = `
+          INSERT INTO client_users (
+            id, client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())
+          RETURNING id, email, name, role, client_id
+        `;
+        queryParams = [
+          clientUserId,
+          invitation.client_id,
+          invitation.email,
+          userData.name,
+          passwordHash,
+          invitation.role,
+          invitation.team_id
+        ];
+      }
+
+      const userResult = await client.query(createUserQuery, queryParams);
+
+      // Create organization access record for multi-org support
+      const orgAccessQuery = `
+        INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+        VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+        ON CONFLICT (client_user_id, team_id) DO NOTHING
+      `;
+      await client.query(orgAccessQuery, [clientUserId, invitation.team_id, invitation.client_id]);
 
       // Update invitation status
       await client.query(
@@ -208,7 +250,7 @@ class TokenService {
       );
 
       await client.query("COMMIT");
-      
+
       // Return complete user data with client information
       const createdUser = userResult.rows[0];
       return {
@@ -232,16 +274,54 @@ class TokenService {
   // Authenticate client user
   async authenticateClient(email: string, password: string): Promise<any> {
     const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
-    
-    const query = `
+
+    // First, try to find the client user by email
+    const clientUserQuery = `
       SELECT cu.*, c.name as client_name, c.company_name, c.team_id
       FROM client_users cu
       JOIN clients c ON cu.client_id = c.id
-      WHERE cu.email = $1 AND cu.password_hash = $2 AND cu.status = 'active'
+      WHERE LOWER(cu.email) = LOWER($1) AND cu.status = 'active'
     `;
-    
-    const result = await db.query(query, [email, passwordHash]);
-    return result.rows[0] || null;
+
+    const clientUserResult = await db.query(clientUserQuery, [email]);
+
+    if (clientUserResult.rows.length === 0) {
+      return null; // No client user found with this email
+    }
+
+    const clientUser = clientUserResult.rows[0];
+
+    // Check if this is a linked Worklenz user (has user_id)
+    if (clientUser.user_id) {
+      // Authenticate against Worklenz users table
+      const worklenzAuthQuery = `
+        SELECT u.id, u.email, u.name, u.password
+        FROM users u
+        WHERE u.id = $1
+      `;
+      const worklenzUserResult = await db.query(worklenzAuthQuery, [clientUser.user_id]);
+
+      if (worklenzUserResult.rows.length === 0) {
+        return null; // Linked Worklenz user not found
+      }
+
+      const worklenzUser = worklenzUserResult.rows[0];
+
+      // Verify password against Worklenz user password (bcrypt)
+      const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+      if (passwordMatch) {
+        return clientUser; // Password matches, return client user info
+      }
+
+      return null; // Password doesn't match
+    } else {
+      // Standalone client portal user - authenticate against password_hash (SHA256)
+      if (clientUser.password_hash === passwordHash) {
+        return clientUser; // Password matches
+      }
+
+      return null; // Password doesn't match
+    }
   }
 
   // Get client permissions
@@ -302,6 +382,81 @@ class TokenService {
   // Generate secure random token
   generateSecureToken(): string {
     return crypto.randomBytes(32).toString("hex");
+  }
+
+  // Get all organizations accessible by a client user
+  async getClientUserOrganizations(clientUserId: string): Promise<ClientOrganization[]> {
+    try {
+      const query = `
+        SELECT
+          cuo.id,
+          t.name,
+          cuo.team_id as "teamId",
+          cuo.client_id as "clientId",
+          cuo.is_default as "isDefault"
+        FROM client_user_organizations cuo
+        JOIN teams t ON cuo.team_id = t.id
+        WHERE cuo.client_user_id = $1
+        ORDER BY cuo.is_default DESC, t.name ASC
+      `;
+
+      const result = await db.query(query, [clientUserId]);
+      return result.rows;
+    } catch (error) {
+      console.error("Error fetching client user organizations:", error);
+      return [];
+    }
+  }
+
+  // Check if a client user has access to a specific organization
+  async hasOrganizationAccess(clientUserId: string, teamId: string): Promise<boolean> {
+    try {
+      const query = `
+        SELECT 1
+        FROM client_user_organizations
+        WHERE client_user_id = $1 AND team_id = $2
+        LIMIT 1
+      `;
+
+      const result = await db.query(query, [clientUserId, teamId]);
+      return result.rows.length > 0;
+    } catch (error) {
+      console.error("Error checking organization access:", error);
+      return false;
+    }
+  }
+
+  // Update last accessed timestamp for an organization
+  async updateOrganizationAccess(clientUserId: string, teamId: string): Promise<void> {
+    try {
+      const query = `
+        UPDATE client_user_organizations
+        SET last_accessed_at = NOW()
+        WHERE client_user_id = $1 AND team_id = $2
+      `;
+
+      await db.query(query, [clientUserId, teamId]);
+    } catch (error) {
+      console.error("Error updating organization access:", error);
+    }
+  }
+
+  // Get client_id for a specific organization
+  async getClientIdForOrganization(clientUserId: string, teamId: string): Promise<string | null> {
+    try {
+      const query = `
+        SELECT client_id
+        FROM client_user_organizations
+        WHERE client_user_id = $1 AND team_id = $2
+        LIMIT 1
+      `;
+
+      const result = await db.query(query, [clientUserId, teamId]);
+      return result.rows[0]?.client_id || null;
+    } catch (error) {
+      console.error("Error fetching client_id for organization:", error);
+      return null;
+    }
   }
 }
 

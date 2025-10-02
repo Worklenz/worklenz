@@ -9,5 +9,12 @@
     "signin": "登录",
     "signup": "注册",
     "no_account": "没有账户？"
+  },
+  "organizations": {
+    "switch": "切换组织",
+    "current": "当前组织",
+    "select": "选择组织",
+    "switch_success": "组织切换成功",
+    "switch_error": "切换组织失败"
   }
 } 

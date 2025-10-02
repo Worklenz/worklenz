@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { ClientUser, ClientToken } from '@/types';
+import { ClientUser, ClientToken, ClientOrganization } from '@/types';
 import { clientPortalAPI } from '@/services/api';
 
 interface AuthState {
@@ -20,6 +20,9 @@ interface AuthState {
     isOrganizationInvite?: boolean;
   } | null;
   tokenExpiry: string | null;
+  organizations: ClientOrganization[];
+  currentOrganizationId: string | null;
+  switchingOrganization: boolean;
 }
 
 // Async thunks for authentication
@@ -137,6 +140,40 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+export const switchOrganization = createAsyncThunk(
+  'auth/switchOrganization',
+  async (organizationId: string, { rejectWithValue }) => {
+    try {
+      const response = await clientPortalAPI.switchOrganization(organizationId);
+      if (response.done) {
+        // Set new token in API service
+        clientPortalAPI.setToken(response.body.token);
+        return response.body;
+      } else {
+        throw new Error(response.message || 'Failed to switch organization');
+      }
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to switch organization');
+    }
+  }
+);
+
+export const fetchOrganizations = createAsyncThunk(
+  'auth/fetchOrganizations',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await clientPortalAPI.getOrganizations();
+      if (response.done) {
+        return response.body.organizations;
+      } else {
+        throw new Error(response.message || 'Failed to fetch organizations');
+      }
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch organizations');
+    }
+  }
+);
+
 const initialState: AuthState = {
   user: null,
   token: localStorage.getItem('clientToken'),
@@ -148,6 +185,9 @@ const initialState: AuthState = {
   inviteLoading: false,
   inviteDetails: null,
   tokenExpiry: localStorage.getItem('clientTokenExpiry'),
+  organizations: [],
+  currentOrganizationId: null,
+  switchingOrganization: false,
 };
 
 const authSlice = createSlice({
@@ -241,6 +281,8 @@ const authSlice = createSlice({
         state.tokenExpiry = action.payload.expiresAt;
         state.isAuthenticated = true;
         state.error = null;
+        state.organizations = action.payload.user.organizations || [];
+        state.currentOrganizationId = action.payload.user.organizationId || null;
         localStorage.setItem('clientToken', action.payload.token);
         if (action.payload.expiresAt) {
           localStorage.setItem('clientTokenExpiry', action.payload.expiresAt);
@@ -376,8 +418,49 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         state.inviteToken = null;
         state.inviteValid = false;
+        state.organizations = [];
+        state.currentOrganizationId = null;
         localStorage.removeItem('clientToken');
         localStorage.removeItem('clientTokenExpiry');
+      });
+
+    // Switch Organization
+    builder
+      .addCase(switchOrganization.pending, (state) => {
+        state.switchingOrganization = true;
+        state.error = null;
+      })
+      .addCase(switchOrganization.fulfilled, (state, action) => {
+        state.switchingOrganization = false;
+        state.token = action.payload.token;
+        state.tokenExpiry = action.payload.expiresAt;
+        state.currentOrganizationId = action.payload.organizationId;
+        if (state.user) {
+          state.user.organizationId = action.payload.organizationId;
+        }
+        localStorage.setItem('clientToken', action.payload.token);
+        if (action.payload.expiresAt) {
+          localStorage.setItem('clientTokenExpiry', action.payload.expiresAt);
+        }
+      })
+      .addCase(switchOrganization.rejected, (state, action) => {
+        state.switchingOrganization = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch Organizations
+    builder
+      .addCase(fetchOrganizations.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrganizations.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.organizations = action.payload;
+      })
+      .addCase(fetchOrganizations.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
       });
   },
 });

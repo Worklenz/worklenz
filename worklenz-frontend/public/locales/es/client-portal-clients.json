@@ -245,5 +245,23 @@
   "projectAssignedSuccessMessage": "Proyecto asignado exitosamente",
   "projectAssignedErrorMessage": "Error al asignar el proyecto",
   "projectRemovedSuccessMessage": "Proyecto eliminado exitosamente",
-  "projectRemovedErrorMessage": "Error al eliminar el proyecto"
+  "projectRemovedErrorMessage": "Error al eliminar el proyecto",
+
+  "portalStatusColumn": "Estado del Portal",
+  "portalStatus": {
+    "active": "Activo",
+    "invited": "Invitado",
+    "not_invited": "No Invitado",
+    "expired": "Expirado"
+  },
+
+  "inviteToPortalTooltip": "Invitar al Portal",
+  "resendInvitationTooltip": "Reenviar Invitación",
+  "copyInviteLinkTooltip": "Copiar Enlace de Invitación",
+
+  "inviteSelectedToPortal": "Enviar Invitaciones al Portal",
+  "selectClientsToInvite": "Por favor seleccione clientes para invitar",
+  "bulkInviteSuccessMessage": "invitación(es) generada(s) exitosamente",
+  "bulkInvitePartialFailMessage": "invitación(es) fallida(s)",
+  "bulkInviteErrorMessage": "Error al generar invitaciones"
 }

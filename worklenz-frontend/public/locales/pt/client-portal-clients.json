@@ -191,5 +191,23 @@
   "statusColumn": "Status",
   "removeConfirmationOk": "Remover",
   "removeConfirmationCancel": "Cancelar",
-  "removeProjectTooltip": "Remover Projeto"
+  "removeProjectTooltip": "Remover Projeto",
+
+  "portalStatusColumn": "Status do Portal",
+  "portalStatus": {
+    "active": "Ativo",
+    "invited": "Convidado",
+    "not_invited": "Não Convidado",
+    "expired": "Expirado"
+  },
+
+  "inviteToPortalTooltip": "Convidar para o Portal",
+  "resendInvitationTooltip": "Reenviar Convite",
+  "copyInviteLinkTooltip": "Copiar Link de Convite",
+
+  "inviteSelectedToPortal": "Enviar Convites ao Portal",
+  "selectClientsToInvite": "Por favor selecione clientes para convidar",
+  "bulkInviteSuccessMessage": "convite(s) gerado(s) com sucesso",
+  "bulkInvitePartialFailMessage": "convite(s) falhado(s)",
+  "bulkInviteErrorMessage": "Falha ao gerar convites"
 }
