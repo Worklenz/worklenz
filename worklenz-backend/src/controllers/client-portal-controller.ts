@@ -120,7 +120,9 @@ class ClientPortalController {
         serviceData: row.service_data,
         isPublic: row.is_public,
         createdAt: row.created_at,
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
+        price: row.service_data?.price || 0,
+        currency: row.service_data?.currency || "USD"
       }));
 
       return res.json(new ServerResponse(true, services, "Services retrieved successfully"));
@@ -2215,6 +2217,42 @@ class ClientPortalController {
     } catch (error) {
       log_error(error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to upload logo"));
+    }
+  }
+
+  // Get organization settings for client users
+  static async getOrganizationSettings(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { organizationId } = req;
+      
+      if (!organizationId) {
+        return res.status(400).json(new ServerResponse(false, null, "Organization ID not found"));
+      }
+
+      const q = `
+        SELECT id, team_id, organization_team_id, logo_url, primary_color, 
+               welcome_message, contact_email, contact_phone, terms_of_service, 
+               privacy_policy, created_at, updated_at
+        FROM client_portal_settings 
+        WHERE organization_team_id = $1
+      `;
+      
+      const result = await db.query(q, [organizationId]);
+      const settings = result.rows[0] || {
+        organization_team_id: organizationId,
+        logo_url: null,
+        primary_color: "#3b7ad4",
+        welcome_message: null,
+        contact_email: null,
+        contact_phone: null,
+        terms_of_service: null,
+        privacy_policy: null
+      };
+
+      return res.json(new ServerResponse(true, settings, null));
+    } catch (error) {
+      log_error(error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve organization settings"));
     }
   }
 
@@ -5121,7 +5159,7 @@ class ClientPortalController {
 
   static async getClientOrganizations(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const clientUserId = (req as any).clientUserId;
+      const {clientUserId} = (req as any);
 
       if (!clientUserId) {
         return res.status(400).json(new ServerResponse(false, null, "Client user ID not found"));
@@ -5139,7 +5177,7 @@ class ClientPortalController {
 
   static async switchOrganization(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const clientUserId = (req as any).clientUserId;
+      const {clientUserId} = (req as any);
       const { organizationId } = req.body;
 
       if (!clientUserId) {

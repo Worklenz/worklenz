@@ -17,15 +17,13 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { logout, setUser } from '@/store/slices/authSlice';
 import { toggleSidebar, setTheme, setLanguage } from '@/store/slices/uiSlice';
-import { useGetProfileQuery, useGetNotificationsQuery, useGetSettingsQuery } from '@/store/api';
+import { useGetProfileQuery, useGetNotificationsQuery } from '@/store/api';
 import type { RootState } from '@/store';
 import { useTranslation } from 'react-i18next';
 import ClientPortalSidebar from './ClientPortalSidebar';
 import { useResponsive } from '@/hooks/useResponsive';
 import NotificationCenter from '../NotificationCenter';
 import OrganizationSwitcher from '../OrganizationSwitcher';
-import worklenzLightLogo from '@/assets/images/worklenz-light-mode.png';
-import worklenzDarkLogo from '@/assets/images/worklenz-dark-mode.png';
 
 const { Header, Sider, Content } = Layout;
 
@@ -53,7 +51,6 @@ const ClientLayout: React.FC = () => {
   // RTK Query hooks
   const { data: profileData } = useGetProfileQuery();
   const { data: notificationsData } = useGetNotificationsQuery({ limit: 10 });
-  const { data: settingsData } = useGetSettingsQuery();
 
   // Update user data when profile is loaded
   React.useEffect(() => {
@@ -196,30 +193,9 @@ const ClientLayout: React.FC = () => {
             paddingInline: isMobile ? 24 : 48,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
           }}>
-            {/* Logo Section */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <img
-                src={(() => {
-                  // Check for custom organization logo from API first
-                  if (settingsData?.body?.logo_url) {
-                    return settingsData.body.logo_url;
-                  }
-                  // Fallback to Worklenz logo based on theme
-                  return currentTheme === 'dark' ? worklenzDarkLogo : worklenzLightLogo;
-                })()}
-                alt="Logo"
-                style={{ 
-                  width: '100%', 
-                  maxWidth: 140,
-                  maxHeight: 40,
-                  objectFit: 'contain'
-                }}
-              />
-            </div>
-
-            {/* Right Section - Actions */}
+            {/* Actions Section */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
               {/* Theme & Language Controls */}
               {!isMobile && (

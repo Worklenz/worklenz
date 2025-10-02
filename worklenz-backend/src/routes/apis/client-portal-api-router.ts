@@ -54,10 +54,13 @@ router.get("/chats/:id", requireClientPermission("canChat"), safeControllerFunct
 router.post("/chats/:id/messages", requireClientPermission("canWriteChat"), safeControllerFunction(ClientPortalController.sendMessage));
 router.get("/chats/:id/messages", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getMessages));
 
-// Settings
+// Settings (for organization management - requires team_id)
 router.get("/settings", safeControllerFunction(ClientPortalController.getSettings));
 router.put("/settings", safeControllerFunction(ClientPortalController.updateSettings));
 router.post("/settings/upload-logo", safeControllerFunction(ClientPortalController.uploadLogo));
+
+// Organization Settings (for client users - uses organizationId from token)
+router.get("/organization-settings", safeControllerFunction(ClientPortalController.getOrganizationSettings));
 
 // Profile
 router.get("/profile", safeControllerFunction(ClientPortalController.getClientProfile));

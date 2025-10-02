@@ -179,7 +179,7 @@ export const clientPortalApi = createApi({
       providesTags: (_result, _error, chatId) => [{ type: 'Chats', id: chatId }],
     }),
 
-    // Settings
+    // Settings (organization-side - requires team_id)
     getSettings: builder.query<ApiResponse<ClientSettings>, void>({
       query: () => '/settings',
       providesTags: ['Settings'],
@@ -192,6 +192,12 @@ export const clientPortalApi = createApi({
         body: settingsData,
       }),
       invalidatesTags: ['Settings'],
+    }),
+
+    // Organization Settings (client-side - uses organizationId from token)
+    getOrganizationSettings: builder.query<ApiResponse<ClientSettings>, void>({
+      query: () => '/organization-settings',
+      providesTags: ['Settings'],
     }),
 
     // Profile
@@ -300,6 +306,7 @@ export const {
   // Settings
   useGetSettingsQuery,
   useUpdateSettingsMutation,
+  useGetOrganizationSettingsQuery,
   
   // Profile
   useGetProfileQuery,
