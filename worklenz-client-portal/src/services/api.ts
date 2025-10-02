@@ -49,9 +49,9 @@ class ClientPortalAPI {
             originalRequest.headers['x-client-token'] = newToken;
             return this.api(originalRequest);
           } catch (refreshError) {
-            // If refresh fails, redirect to login
+            // If refresh fails, clear token and let the app handle the redirect
             this.clearToken();
-            window.location.href = '/auth/login';
+            // Don't force redirect here - let the auth state handle it
             return Promise.reject(refreshError);
           }
         }
@@ -113,13 +113,13 @@ class ClientPortalAPI {
 
   // Authentication endpoints
   async login(credentials: { email: string; password: string }): Promise<ApiResponse<{ user: ClientUser; token: string; expiresAt: string }>> {
-    const response = await this.api.post('/login', credentials);
+    const response = await this.api.post('/auth/login', credentials);
     return response.data;
   }
 
   async logout(): Promise<void> {
     try {
-      await this.api.post('/logout');
+      await this.api.post('/auth/logout');
     } catch (error) {
       // Ignore errors during logout
       console.warn('Logout request failed:', error);
@@ -160,23 +160,8 @@ class ClientPortalAPI {
     name: string; 
     password: string; 
   }): Promise<ApiResponse<{ user: ClientUser; token: string; expiresAt: string }>> {
-    // Check if this is an organization invite token
-    try {
-      const payload = JSON.parse(atob(inviteData.token.split('.')[1]));
-      if (payload.type === 'organization_invite') {
-        // For organization invites, just handle the invite (user should already be authenticated)
-        const response = await this.api.post('/handle-organization-invite', { token: inviteData.token });
-        if (response.data.body.redirectTo === 'login') {
-          // User needs to login first, redirect them
-          window.location.href = '/auth/login';
-          return response.data;
-        }
-        return response.data;
-      }
-    } catch (error) {
-      console.log('Not an organization invite, processing as regular invite');
-    }
-    
+    // Note: Both organization invites and regular invites can now create new accounts
+    // The backend will handle the logic
     const response = await this.api.post('/invitation/accept', inviteData);
     return response.data;
   }
@@ -216,7 +201,7 @@ class ClientPortalAPI {
   }
 
   async getCurrentUser(): Promise<ApiResponse<ClientUser>> {
-    const response = await this.api.get('/auth/me');
+    const response = await this.api.get('/profile');
     return response.data;
   }
 

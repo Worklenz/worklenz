@@ -4801,7 +4801,7 @@ class ClientPortalController {
   }
 
   // Client Portal Authentication Endpoints
-  static async validateInvitation(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async validateInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { token } = req.query;
 
@@ -4836,12 +4836,87 @@ class ClientPortalController {
     }
   }
 
-  static async acceptInvitation(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async acceptInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { token, password, name } = req.body;
 
       if (!token || !password || !name) {
         return res.status(400).json(new ServerResponse(false, null, "Token, password, and name are required"));
+      }
+
+      // Check if this is an organization invite token
+      const orgInvitePayload = TokenService.verifyOrganizationInviteToken(token);
+      
+      if (orgInvitePayload && orgInvitePayload.type === 'organization_invite') {
+        
+        // For organization invites, create a new client user account
+        // First, check if user already exists
+        const existingUserCheck = await db.query(
+          "SELECT id FROM client_users WHERE email = $1",
+          [req.body.email || name] // Use email from form if provided
+        );
+
+        if (existingUserCheck.rows.length > 0) {
+          return res.status(400).json(new ServerResponse(false, null, "A user with this email already exists. Please login instead."));
+        }
+
+        // Create a client record for this organization
+        const clientResult = await db.query(
+          `INSERT INTO clients (name, team_id, status, created_at, updated_at)
+           VALUES ($1, $2, 'active', NOW(), NOW())
+           RETURNING id`,
+          [name, orgInvitePayload.teamId]
+        );
+        
+        const clientId = clientResult.rows[0].id;
+        
+        // Create the client user
+        const userResult = await db.query(
+          `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
+           RETURNING id, email, name, role, client_id`,
+          [
+            clientId,
+            req.body.email || name,
+            name,
+            crypto.createHash("sha256").update(password).digest("hex")
+          ]
+        );
+
+        const newUser = userResult.rows[0];
+
+        // Generate client access token
+        const permissions = await TokenService.getClientPermissions(clientId);
+        const tokenPayload = {
+          clientId: clientId,
+          organizationId: orgInvitePayload.teamId,
+          email: newUser.email,
+          permissions: permissions,
+          type: "client" as const
+        };
+
+        const accessToken = TokenService.generateClientToken(tokenPayload);
+
+        return res.json(new ServerResponse(true, {
+          token: accessToken,
+          user: {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            clientId: clientId,
+            clientName: name,
+            companyName: orgInvitePayload.organizationName
+          },
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        }, "Account created successfully"));
+      }
+
+      // Regular invitation flow
+      const invitation = await TokenService.getInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid or expired invitation"));
       }
 
       // Accept the invitation
@@ -4851,34 +4926,31 @@ class ClientPortalController {
       });
 
       // Send welcome email
-      const invitation = await TokenService.getInvitationByToken(token);
-      if (invitation) {
-        const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/login`;
-        
-        // Generate welcome email HTML
-        const emailHtml = ClientPortalController.generateWelcomeEmailHTML({
-          userName: newUser.name,
-          clientName: invitation.client_name,
-          companyName: invitation.company_name,
-          portalLink
-        });
+      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/login`;
+      
+      const emailHtml = ClientPortalController.generateWelcomeEmailHTML({
+        userName: newUser.name,
+        clientName: invitation.client_name,
+        companyName: invitation.company_name,
+        portalLink
+      });
 
-        // Send welcome email using shared email function
-        const emailRequest = new EmailRequest(
-          [newUser.email],
-          `Welcome to ${invitation.client_name} on Worklenz`,
-          emailHtml
-        );
+      const emailRequest = new EmailRequest(
+        [newUser.email],
+        `Welcome to ${invitation.client_name} on Worklenz`,
+        emailHtml
+      );
 
-        await sendEmail(emailRequest);
-      }
+      await sendEmail(emailRequest);
 
       // Generate client access token for automatic login
+      const permissions = await TokenService.getClientPermissions(newUser.client_id);
+      
       const tokenPayload = {
         clientId: newUser.client_id,
         organizationId: newUser.team_id,
         email: newUser.email,
-        permissions: await TokenService.getClientPermissions(newUser.client_id),
+        permissions: permissions,
         type: "client" as const
       };
 
@@ -4909,7 +4981,7 @@ class ClientPortalController {
     }
   }
 
-  static async clientLogin(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async clientLogin(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { email, password } = req.body;
 
@@ -4959,7 +5031,7 @@ class ClientPortalController {
     }
   }
 
-  static async refreshClientToken(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async refreshClientToken(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { token } = req.body;
 

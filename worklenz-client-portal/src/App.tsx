@@ -42,7 +42,6 @@ const AppContent: React.FC = () => {
     if (token) {
       // Socket manager is already initialized as singleton
       // Additional setup if needed can be done here
-      console.log('Client portal app loaded with socket connection');
     }
     
     // Cleanup on unmount
@@ -58,6 +57,7 @@ const AppContent: React.FC = () => {
         token: {
           colorPrimary: '#1890ff',
           borderRadius: 6,
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
           colorBgLayout: currentTheme === 'dark' ? '#141414' : '#f0f2f5',
           colorBgContainer: currentTheme === 'dark' ? '#1f1f1f' : '#ffffff',
           colorText: currentTheme === 'dark' ? '#ffffff' : '#000000',

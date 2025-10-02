@@ -148,7 +148,7 @@ class TokenService {
   // Get invitation by token
   async getInvitationByToken(token: string): Promise<any> {
     const query = `
-      SELECT ci.*, c.name as client_name, c.company_name, t.name as team_name
+      SELECT ci.*, c.name as client_name, c.company_name, c.team_id, t.name as team_name
       FROM client_invitations ci
       JOIN clients c ON ci.client_id = c.id
       LEFT JOIN teams t ON c.team_id = t.id
@@ -179,7 +179,7 @@ class TokenService {
         INSERT INTO client_users (
           id, client_id, email, name, password_hash, role, status, created_at
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-        RETURNING id, email, name, role
+        RETURNING id, email, name, role, client_id
       `;
 
       const userId = crypto.randomUUID();
@@ -208,7 +208,19 @@ class TokenService {
       );
 
       await client.query("COMMIT");
-      return userResult.rows[0];
+      
+      // Return complete user data with client information
+      const createdUser = userResult.rows[0];
+      return {
+        id: createdUser.id,
+        email: createdUser.email,
+        name: createdUser.name,
+        role: createdUser.role,
+        client_id: createdUser.client_id,
+        team_id: invitation.team_id,
+        client_name: invitation.client_name,
+        company_name: invitation.company_name
+      };
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
@@ -234,17 +246,57 @@ class TokenService {
 
   // Get client permissions
   async getClientPermissions(clientId: string): Promise<string[]> {
-    // Define default permissions for client users
-    return [
-      "read:services",
-      "create:requests",
-      "read:projects",
-      "read:invoices",
-      "read:chats",
-      "write:chats",
-      "read:profile",
-      "write:profile"
-    ];
+    try {
+      // Check if client has active portal access
+      const accessQuery = `
+        SELECT is_active
+        FROM client_portal_access
+        WHERE client_id = $1
+        LIMIT 1
+      `;
+      const accessResult = await db.query(accessQuery, [clientId]);
+
+      // If no active access, return minimal permissions
+      if (!accessResult.rows.length || !accessResult.rows[0].is_active) {
+        return [
+          "read:services",
+          "read:profile"
+        ];
+      }
+
+      // Get specific permissions from database
+      const permissionsQuery = `
+        SELECT DISTINCT cpp.permission_key, cpp.is_granted
+        FROM client_portal_permissions cpp
+        INNER JOIN client_relationships cr ON cpp.client_relationship_id = cr.id
+        WHERE cr.client_id = $1 AND cpp.is_granted = TRUE
+      `;
+      const permissionsResult = await db.query(permissionsQuery, [clientId]);
+
+      // If no specific permissions found, return default active client permissions
+      if (!permissionsResult.rows.length) {
+        return [
+          "read:services",
+          "create:requests",
+          "read:projects",
+          "read:invoices",
+          "read:chats",
+          "write:chats",
+          "read:profile",
+          "write:profile"
+        ];
+      }
+
+      // Return permissions from database
+      return permissionsResult.rows.map((row: any) => row.permission_key);
+    } catch (error) {
+      console.error("Error fetching client permissions:", error);
+      // Return minimal permissions on error
+      return [
+        "read:services",
+        "read:profile"
+      ];
+    }
   }
 
   // Generate secure random token

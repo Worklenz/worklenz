@@ -36,10 +36,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch(checkTokenExpiry());
 
     // Set up periodic token expiry checks
-    const stopExpiryCheck = TokenManager.startTokenExpiryCheck(handleTokenExpiry, 30000); // Check every 30 seconds
+    const stopExpiryCheck = TokenManager.startTokenExpiryCheck(handleTokenExpiry, 300000); // Check every 5 minutes
     
     // Set up periodic token refresh checks
-    const stopRefreshCheck = TokenManager.startTokenRefreshCheck(handleTokenRefresh, 60000); // Check every minute
+    const stopRefreshCheck = TokenManager.startTokenRefreshCheck(handleTokenRefresh, 300000); // Check every 5 minutes
 
     return () => {
       stopExpiryCheck();
@@ -51,11 +51,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && isAuthenticated) {
-        dispatch(checkTokenExpiry());
-        
-        // Check if token should be refreshed
-        if (TokenManager.shouldRefreshToken()) {
-          dispatch(refreshToken());
+        // Only check if token is actually expired, not just close to expiry
+        if (TokenManager.isTokenExpired()) {
+          dispatch(checkTokenExpiry());
         }
       }
     };

@@ -14,16 +14,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const dispatch = useAppDispatch();
   const location = useLocation();
 
-  // Check token expiry on mount and periodically
+  // Check token expiry on mount only (AuthProvider handles periodic checks)
   useEffect(() => {
     dispatch(checkTokenExpiry());
-    
-    // Check token expiry every 5 minutes
-    const interval = setInterval(() => {
-      dispatch(checkTokenExpiry());
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
   }, [dispatch]);
 
   // If we're still loading, show a loading spinner
