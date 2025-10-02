@@ -1227,10 +1227,9 @@ class ClientPortalController {
 
       // Get project team members
       const teamQuery = `
-        SELECT 
+        SELECT
           u.id,
-          u.first_name,
-          u.last_name,
+          u.name,
           u.email,
           u.avatar_url,
           pmu.role_id,
@@ -1239,15 +1238,14 @@ class ClientPortalController {
         JOIN users u ON pmu.user_id = u.id
         LEFT JOIN roles r ON pmu.role_id = r.id
         WHERE pmu.project_id = $1
-        ORDER BY u.first_name, u.last_name
+        ORDER BY u.name
       `;
 
       const teamResult = await db.query(teamQuery, [id]);
       const teamMembers = teamResult.rows.map((row: any) => ({
         id: row.id,
-        firstName: row.first_name,
-        lastName: row.last_name,
-        fullName: `${row.first_name} ${row.last_name}`,
+        name: row.name,
+        fullName: row.name,
         email: row.email,
         avatarUrl: row.avatar_url,
         roleId: row.role_id,
@@ -1444,8 +1442,7 @@ class ClientPortalController {
           c.name as client_name,
           c.company_name,
           c.email as client_email,
-          u.first_name as created_by_first_name,
-          u.last_name as created_by_last_name
+          u.name as created_by_name
         FROM client_portal_invoices i
         LEFT JOIN client_portal_requests r ON i.request_id = r.id
         LEFT JOIN client_portal_services s ON r.service_id = s.id
@@ -1490,8 +1487,8 @@ class ClientPortalController {
           companyName: invoice.company_name,
           email: invoice.client_email
         },
-        createdBy: invoice.created_by_first_name ? {
-          name: `${invoice.created_by_first_name} ${invoice.created_by_last_name}`
+        createdBy: invoice.created_by_name ? {
+          name: invoice.created_by_name
         } : null
       };
 
@@ -1810,7 +1807,7 @@ class ClientPortalController {
           m.read_at,
           m.created_at,
           CASE
-            WHEN m.sender_type = 'team_member' THEN u.first_name || ' ' || u.last_name
+            WHEN m.sender_type = 'team_member' THEN u.name
             WHEN m.sender_type = 'client' THEN cu.name
           END as sender_name,
           CASE
@@ -1986,8 +1983,8 @@ class ClientPortalController {
           m.file_url,
           m.read_at,
           m.created_at,
-          CASE 
-            WHEN m.sender_type = 'team_member' THEN u.first_name || ' ' || u.last_name
+          CASE
+            WHEN m.sender_type = 'team_member' THEN u.name
             WHEN m.sender_type = 'client' THEN cu.name
           END as sender_name,
           CASE 
@@ -2556,14 +2553,14 @@ class ClientPortalController {
 
       // Get new chat messages as notifications
       const chatNotificationsQuery = `
-        SELECT 
+        SELECT
           'new_message' as type,
           m.id as reference_id,
           DATE(m.created_at)::text as reference_number,
           m.message,
           m.created_at,
-          u.first_name || ' ' || u.last_name as sender_name,
-          'New message from ' || u.first_name || ' ' || u.last_name as notification_message,
+          u.name as sender_name,
+          'New message from ' || u.name as notification_message,
           CASE WHEN m.read_at IS NULL THEN false ELSE true END as is_read
         FROM client_portal_chat_messages m
         LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
@@ -4515,9 +4512,9 @@ class ClientPortalController {
             m.id as reference_id,
             DATE(m.created_at)::text as reference_name,
             m.created_at as activity_date,
-            CASE 
+            CASE
               WHEN m.sender_type = 'client' THEN 'You sent a message'
-              ELSE u.first_name || ' ' || u.last_name || ' sent a message'
+              ELSE u.name || ' sent a message'
             END as description,
             'active' as status,
             'chat' as category
@@ -4667,8 +4664,8 @@ class ClientPortalController {
           SELECT 
             m.id, m.sender_type, m.message, m.message_type,
             m.created_at, m.read_at,
-            CASE 
-              WHEN m.sender_type = 'team_member' THEN u.first_name || ' ' || u.last_name
+            CASE
+              WHEN m.sender_type = 'team_member' THEN u.name
               WHEN m.sender_type = 'client' THEN cu.name
             END as sender_name
           FROM client_portal_chat_messages m

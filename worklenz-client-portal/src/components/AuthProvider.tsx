@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { checkTokenExpiry, refreshToken, logoutUser } from '@/store/slices/authSlice';
+import { checkTokenExpiry, refreshToken, logoutUser, fetchCurrentUser } from '@/store/slices/authSlice';
 import { TokenManager } from '@/utils/tokenManager';
 import { clientPortalAPI } from '@/services/api';
 
@@ -11,7 +11,7 @@ interface AuthProviderProps {
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const dispatch = useAppDispatch();
-  const { token, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { token, isAuthenticated, user } = useAppSelector((state) => state.auth);
 
   const handleTokenExpiry = useCallback(() => {
     dispatch(logoutUser());
@@ -23,12 +23,16 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [dispatch, isAuthenticated, token]);
 
-  // Initialize token in API service on mount
+  // Initialize token in API service and fetch user info on mount
   useEffect(() => {
     if (token) {
       clientPortalAPI.setToken(token);
+      // If we have a token but no user info, fetch it
+      if (!user && isAuthenticated) {
+        dispatch(fetchCurrentUser());
+      }
     }
-  }, [token]);
+  }, [token, user, isAuthenticated, dispatch]);
 
   // Check token expiry and set up periodic checks
   useEffect(() => {

@@ -369,7 +369,7 @@ class ClientPortalAPI {
   }
 
   // Notifications
-  async getNotifications(params?: { page?: number; limit?: number; unread_only?: boolean }): Promise<ApiResponse<any>> {
+  async getNotifications(params?: { page?: number; limit?: number; unread_only?: boolean }): Promise<ApiResponse<{notifications: ClientNotification[], total: number, unreadCount: number, page: number, limit: number}>> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());

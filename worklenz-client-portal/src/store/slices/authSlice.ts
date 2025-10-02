@@ -108,6 +108,22 @@ export const refreshToken = createAsyncThunk(
   }
 );
 
+export const fetchCurrentUser = createAsyncThunk(
+  'auth/fetchCurrentUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await clientPortalAPI.getCurrentUser();
+      if (response.done) {
+        return response.body;
+      } else {
+        throw new Error(response.message || 'Failed to fetch user information');
+      }
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch user information');
+    }
+  }
+);
+
 export const logoutUser = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
@@ -310,6 +326,29 @@ const authSlice = createSlice({
         localStorage.removeItem('clientTokenExpiry');
       });
 
+    // Fetch current user
+    builder
+      .addCase(fetchCurrentUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchCurrentUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+        // If fetching user fails, we might want to logout since token might be invalid
+        state.user = null;
+        state.token = null;
+        state.tokenExpiry = null;
+        state.isAuthenticated = false;
+        localStorage.removeItem('clientToken');
+        localStorage.removeItem('clientTokenExpiry');
+      });
+
     // Logout
     builder
       .addCase(logoutUser.pending, (state) => {
@@ -343,12 +382,12 @@ const authSlice = createSlice({
   },
 });
 
-export const { 
-  setUser, 
-  setToken, 
+export const {
+  setUser,
+  setToken,
   setTokenWithExpiry,
-  logout, 
-  setLoading, 
+  logout,
+  setLoading,
   setError,
   clearAuth,
   setInviteToken,

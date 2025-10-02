@@ -38,13 +38,13 @@ const NotificationCenter: React.FC = () => {
   const loadNotifications = async () => {
     try {
       setIsLoading(true);
-      const response: ApiResponse<ClientNotification[]> = await clientPortalAPI.getNotifications({
+      const response = await clientPortalAPI.getNotifications({
         page: 1,
         limit: 10,
         unread_only: false
       });
       if (response.done && response.body) {
-        setNotifications(response.body);
+        setNotifications(response.body.notifications || []);
       }
     } catch (error) {
       console.error('Failed to load notifications:', error);
