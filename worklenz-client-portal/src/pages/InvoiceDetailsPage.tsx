@@ -22,7 +22,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
 import { InvoiceDetails } from "@/types";
 import type { UploadFile } from "antd/es/upload/interface";
-import { useTranslation } from "react-i18next";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -30,7 +29,6 @@ const { TextArea } = Input;
 const InvoiceDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const [invoice, setInvoice] = useState<InvoiceDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

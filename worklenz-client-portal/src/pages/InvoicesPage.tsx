@@ -14,12 +14,10 @@ import { useNavigate } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
 import { ClientInvoice } from "@/types";
 import type { TableProps } from "antd/lib";
-import { useTranslation } from "react-i18next";
 
 const { Title, Text } = Typography;
 
 const InvoicesPage: React.FC = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);

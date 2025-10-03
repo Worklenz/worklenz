@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { ApiResponse, ClientSettings, ClientUser, ClientToken } from '@/types';
+import { ApiResponse, ClientSettings, ClientUser, ClientToken, ClientNotification } from '@/types';
 
 class ClientPortalAPI {
   private api: AxiosInstance;

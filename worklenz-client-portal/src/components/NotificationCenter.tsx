@@ -20,7 +20,7 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import clientPortalAPI from '@/services/api';
-import { ClientNotification, ApiResponse } from '@/types';
+import { ClientNotification } from '@/types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 const { Text } = Typography;
