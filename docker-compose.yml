@@ -63,6 +63,8 @@ services:
   db:
     image: postgres:15
     container_name: worklenz_db
+    env_file:
+      - ./worklenz-backend/.env
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_DB: ${DB_NAME:-worklenz_db}
