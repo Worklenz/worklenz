@@ -248,7 +248,7 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
             : tier.monthly_base_price?.toString() || '',
           annual_total: tier.annual_base_price?.toString() || 
                        (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
-          users_included: `Up to ${tier.max_users || 100} users`,
+          users_included: tier.included_users?.toString() || tier.max_users?.toString() || '100',
           max_users: tier.max_users?.toString() || '100',
           additional_user_price: '0',
           
@@ -256,9 +256,9 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
           monthly_base_price: tier.monthly_base_price?.toString() || '',
           annual_base_price: tier.annual_base_price?.toString() || 
                             (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
-          monthly_per_user_price: '0',
-          annual_per_user_price: '0',
-          included_users: `Up to ${tier.max_users || 100} users`,
+          monthly_per_user_price: tier.monthly_per_user_price?.toString() || '0',
+          annual_per_user_price: tier.annual_per_user_price?.toString() || '0',
+          included_users: tier.included_users?.toString() || tier.max_users?.toString() || '100',
           
           pricing_model: 'promo_flat_rate',
           monthly_plan_id: getPlanId(tier, false),
@@ -275,17 +275,17 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
             : tier.monthly_base_price?.toString() || '',
           annual_total: tier.annual_base_price?.toString() || 
                        (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
-          users_included: 'Unlimited',
-          max_users: 'Unlimited',
+          users_included: '-1',
+          max_users: '-1',
           additional_user_price: '0',
           
           // New API fields
           monthly_base_price: tier.monthly_base_price?.toString() || '',
           annual_base_price: tier.annual_base_price?.toString() || 
                             (tier.monthly_base_price ? (parseFloat(tier.monthly_base_price) * 12).toFixed(2) : ''),
-          monthly_per_user_price: '0',
-          annual_per_user_price: '0',
-          included_users: 'Unlimited',
+          monthly_per_user_price: tier.monthly_per_user_price?.toString() || '0',
+          annual_per_user_price: tier.annual_per_user_price?.toString() || '0',
+          included_users: '-1',
           
           pricing_model: 'promo_unlimited',
           monthly_plan_id: getPlanId(tier, false),

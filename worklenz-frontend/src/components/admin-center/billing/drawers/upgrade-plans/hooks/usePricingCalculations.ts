@@ -24,8 +24,9 @@ export const usePricingCalculations = (
         planData = pricingData.enterprise;
       }
 
-      // Handle AppSumo promo plans first
-      if (isAppSumoUser && planData?.pricing_model?.startsWith('promo_')) {
+      // Handle AppSumo promo plans first (check pricing_model regardless of isAppSumoUser flag)
+      // This ensures correct pricing even if isAppSumoUser flag has issues
+      if (planData?.pricing_model?.startsWith('promo_')) {
         finalPrice = parseFloat(planData.monthly_base_price || '0');
         if (!finalPrice && planData.annual_base_price) {
           finalPrice = parseFloat(planData.annual_base_price) / 12;
@@ -90,8 +91,9 @@ export const usePricingCalculations = (
         planData = pricingData.enterprise;
       }
 
-      // Handle AppSumo promo plans first
-      if (isAppSumoUser && planData?.pricing_model?.startsWith('promo_')) {
+      // Handle AppSumo promo plans first (check pricing_model regardless of isAppSumoUser flag)
+      // This ensures correct pricing even if isAppSumoUser flag has issues
+      if (planData?.pricing_model?.startsWith('promo_')) {
         finalPrice = parseFloat(planData.annual_base_price || '0');
         if (!finalPrice && planData.monthly_base_price) {
           finalPrice = parseFloat(planData.monthly_base_price) * 12;
@@ -155,8 +157,8 @@ export const usePricingCalculations = (
         planData = pricingData.enterprise;
       }
 
-      // Handle AppSumo promo plans
-      if (isAppSumoUser && planData?.pricing_model?.startsWith('promo_')) {
+      // Handle AppSumo promo plans (check pricing_model regardless of isAppSumoUser flag)
+      if (planData?.pricing_model?.startsWith('promo_')) {
         if (planData.pricing_model === 'promo_unlimited') {
           return t('pricing-modal:pricing.perMonth');
         }
@@ -223,26 +225,42 @@ export const usePricingCalculations = (
   // Calculate original pricing (before 50% AppSumo discount) for strikethrough display
   const calculateOriginalMonthlyTotal = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
-      if (!isAppSumoUser) return null;
+      // Only show original price for AppSumo promo plans
+      const planData = planType === 'pro' ? pricingData.pro : 
+                       planType === 'business' ? pricingData.business : 
+                       pricingData.enterprise;
       
-      // For AppSumo users, calculate what the price would be without the 50% discount
-      const discountedPrice = parseFloat(calculateMonthlyTotal(planType));
-      const originalPrice = discountedPrice * 2; // Reverse the 50% discount
+      if (!planData?.pricing_model?.startsWith('promo_')) {
+        return null;
+      }
+      
+      // AppSumo prices from API are already the FINAL discounted prices (50% off already applied)
+      // To show the original price, multiply by 2 to reverse the 50% discount
+      const appSumoPrice = parseFloat(calculateMonthlyTotal(planType));
+      const originalPrice = appSumoPrice * 2;
       return originalPrice.toFixed(2);
     },
-    [isAppSumoUser, calculateMonthlyTotal]
+    [calculateMonthlyTotal, pricingData]
   );
 
   const calculateOriginalAnnualTotal = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
-      if (!isAppSumoUser) return null;
+      // Only show original price for AppSumo promo plans
+      const planData = planType === 'pro' ? pricingData.pro : 
+                       planType === 'business' ? pricingData.business : 
+                       pricingData.enterprise;
       
-      // For AppSumo users, calculate what the price would be without the 50% discount
-      const discountedPrice = parseFloat(calculateAnnualTotal(planType));
-      const originalPrice = discountedPrice * 2; // Reverse the 50% discount
+      if (!planData?.pricing_model?.startsWith('promo_')) {
+        return null;
+      }
+      
+      // AppSumo prices from API are already the FINAL discounted prices (50% off already applied)
+      // Calculate original by multiplying by 2 (reverse 50% discount)
+      const appSumoPrice = parseFloat(calculateAnnualTotal(planType));
+      const originalPrice = appSumoPrice * 2;
       return originalPrice.toFixed(2);
     },
-    [isAppSumoUser, calculateAnnualTotal]
+    [calculateAnnualTotal, pricingData]
   );
 
   return {

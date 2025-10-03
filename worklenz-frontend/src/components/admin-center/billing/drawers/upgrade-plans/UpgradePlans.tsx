@@ -207,8 +207,9 @@ const UpgradePlans = () => {
       }
 
 
-      // Handle AppSumo promo plans first
-      if (isAppSumoUser && planData?.pricing_model?.startsWith('promo_')) {
+      // Handle AppSumo promo plans first (check pricing_model regardless of isAppSumoUser flag)
+      // This ensures correct pricing even if isAppSumoUser flag has issues
+      if (planData?.pricing_model?.startsWith('promo_')) {
         finalPrice = parseFloat(planData.monthly_base_price || '0');
         if (!finalPrice && planData.annual_base_price) {
           finalPrice = parseFloat(planData.annual_base_price) / 12;
