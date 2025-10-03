@@ -9,12 +9,18 @@ import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { MixpanelBillingEvents, BusinessTrialEventProps, BusinessTrialStartEventProps, BusinessTrialStatusEventProps } from '@/types/mixpanel-events.types';
+import { authApiService } from '@/api/auth/auth.api.service';
+import { setSession } from '@/utils/session-helper';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { setUser } from '@/features/user/userSlice';
+import logger from '@/utils/errorLogger';
 
 const DISMISS_KEY = 'business-trial-alert-dismissed';
 
 export const BusinessPlanTrialAlert = () => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const authService = useAuthService();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [visible, setVisible] = useState(false);
@@ -56,7 +62,7 @@ export const BusinessPlanTrialAlert = () => {
       return;
     }
 
-    // Don't show for self-hosted or business/enterprise users
+    // Don't show for self-hosted or Annual Business license users
     const subscriptionType = currentSession?.subscription_type;
     if (
       subscriptionType === ISUBSCRIPTION_TYPE.SELF_HOSTED ||
@@ -66,10 +72,15 @@ export const BusinessPlanTrialAlert = () => {
       return;
     }
 
-    // Check if already on paid Business/Enterprise plan
-    if (subscriptionType === ISUBSCRIPTION_TYPE.PADDLE) {
-      const planName = currentSession?.plan_name?.toLowerCase() || '';
-      if (planName.includes('business') || planName.includes('enterprise')) {
+    // Check if already on Business/Enterprise plan (both regular Paddle and AppSumo/Lifetime deals)
+    const planName = currentSession?.plan_name?.toLowerCase() || '';
+    const hasBusinessOrEnterprise = planName.includes('business') || planName.includes('enterprise');
+    
+    if (
+      subscriptionType === ISUBSCRIPTION_TYPE.PADDLE ||
+      subscriptionType === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL
+    ) {
+      if (hasBusinessOrEnterprise) {
         setVisible(false);
         return;
       }
@@ -147,9 +158,27 @@ export const BusinessPlanTrialAlert = () => {
         // Track successful trial start
         trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_STARTED, startEventProps);
 
-        message.success(t('business-trial-started', { defaultValue: 'Business trial started successfully! Refreshing...' }));
-        // Refresh to update session
-        setTimeout(() => window.location.reload(), 1500);
+        message.success(t('business-trial-started', { defaultValue: 'Business trial started successfully! Updating...' }));
+        
+        // Refetch user session data to get updated subscription info
+        try {
+          const authorizeResponse = await authApiService.verify();
+          if (authorizeResponse.authenticated) {
+            setSession(authorizeResponse.user);
+            dispatch(setUser(authorizeResponse.user));
+            authService.setCurrentSession(authorizeResponse.user);
+            
+            // Hide the alert after session update
+            setVisible(false);
+            
+            // Optionally reload after a short delay to ensure all components are updated
+            setTimeout(() => window.location.reload(), 1000);
+          }
+        } catch (verifyError) {
+          logger.error('Error refreshing session after trial start', verifyError);
+          // Fallback to full page reload if session refresh fails
+          setTimeout(() => window.location.reload(), 1500);
+        }
       } else {
         message.error(response.message || t('business-trial-start-failed', { defaultValue: 'Failed to start trial' }));
       }

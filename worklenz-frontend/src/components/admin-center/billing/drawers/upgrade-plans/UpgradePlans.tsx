@@ -81,7 +81,8 @@ const UpgradePlans = () => {
   // Redux state
   const { billingInfo } = useAppSelector(state => state.adminCenterReducer);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const currentSession = useAuthService().getCurrentSession();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
   
   // Component state
   const [plans, setPlans] = useState<IPricingPlans>({});
@@ -635,6 +636,20 @@ const UpgradePlans = () => {
         
         message.success('Subscription updated successfully!');
         setPaddleLoading(true);
+        
+        // Refetch user session data to get updated subscription info
+        authApiService.verify()
+          .then(authorizeResponse => {
+            if (authorizeResponse.authenticated) {
+              setSession(authorizeResponse.user);
+              dispatch(setUser(authorizeResponse.user));
+              authService.setCurrentSession(authorizeResponse.user);
+            }
+          })
+          .catch(error => {
+            logger.error('Error refreshing session after checkout', error);
+          });
+        
         setTimeout(() => {
           dispatch(fetchBillingInfo());
           dispatch(toggleUpgradeModal());
