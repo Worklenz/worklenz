@@ -28,17 +28,27 @@ const MainLayout = memo(() => {
   const isAppSumoUser = useMemo(() => {
     const planName = billingInfo?.plan_name?.toLowerCase() || '';
     const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
+    const subscriptionStatus = currentSession?.subscription_status?.toLowerCase() || '';
+    const billingSubscriptionType = billingInfo?.subscription_type?.toLowerCase() || '';
     
-    // First check if user is on trial - trial users should never be considered AppSumo users
-    if (currentSession?.subscription_type === 'TRIAL') {
-      return false;
-    }
-    
+    // Check if user has AppSumo/Lifetime subscription in any of their subscription data
+    // Note: Users on trial who were originally AppSumo users should still be considered AppSumo users
+    // They get to see AppSumo pricing even during trial period
+    // Important: subscription_status persists as "life_time_deal" even during trial!
     return (
       planName.includes('appsumo') ||
-      subscriptionType.includes('appsumo') ||
       planName.includes('life_time_deal') ||
-      subscriptionType.includes('life_time_deal')
+      planName.includes('lifetime') ||
+      planName.includes('life time') ||
+      subscriptionType.includes('appsumo') ||
+      subscriptionType.includes('life_time_deal') ||
+      subscriptionStatus.includes('life_time_deal') ||
+      subscriptionStatus.includes('lifetime') ||
+      subscriptionStatus.includes('life time') ||
+      billingSubscriptionType.includes('appsumo') ||
+      billingSubscriptionType.includes('life_time_deal') ||
+      billingSubscriptionType.includes('lifetime') ||
+      billingSubscriptionType.includes('life time')
     );
   }, [billingInfo, currentSession]);
 
@@ -85,7 +95,7 @@ const MainLayout = memo(() => {
       <Modal
         open={isUpgradeModalOpen}
         onCancel={() => dispatch(toggleUpgradeModal())}
-        width={isAppSumoUser ? 900 : 1400}
+        width={isAppSumoUser ? 700 : 1400}
         centered
         okButtonProps={{ hidden: true }}
         cancelButtonProps={{ hidden: true }}

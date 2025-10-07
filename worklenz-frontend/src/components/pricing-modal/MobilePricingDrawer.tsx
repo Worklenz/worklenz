@@ -350,7 +350,7 @@ const MobilePricingDrawer: React.FC<MobilePricingDrawerProps> = ({
         {/* User Personalization Banner */}
         {userPersonalization?.userType === 'appsumo' && (
           <Alert
-            message="AppSumo Special: 50% off Business+ plans!"
+            message="AppSumo Special: 70% off Business plans!"
             type="error"
             showIcon
             banner

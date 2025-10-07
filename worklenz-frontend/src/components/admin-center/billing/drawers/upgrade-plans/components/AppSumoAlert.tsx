@@ -19,7 +19,7 @@ export const AppSumoAlert: React.FC<AppSumoAlertProps> = ({ appSumoDiscountInfo 
                   color: '#f57c00',
                 }}
               >
-                {t('pricing-modal:appsumo.exclusiveTitle', '🎉 AppSumo Exclusive: 50% OFF Business & Enterprise Plans!')}
+                {t('pricing-modal:appsumo.exclusiveTitle', '🎉 AppSumo Exclusive: 70% OFF Business Plans!')}
               </Typography.Title>
               {appSumoDiscountInfo.remainingDays > 0 && (
                 <Space size="large" align="center" wrap>
@@ -73,7 +73,7 @@ export const AppSumoAlert: React.FC<AppSumoAlertProps> = ({ appSumoDiscountInfo 
           description={
             <Space direction="vertical" size="small">
               <Typography.Text>
-                {t('pricing-modal:appsumo.discountExpired', 'Your 50% discount period has expired, but you can still upgrade to Business or Enterprise plans at standard pricing.')}
+                {t('pricing-modal:appsumo.discountExpired', 'Your 70% discount period has expired, but you can still upgrade to Business or Enterprise plans at standard pricing.')}
               </Typography.Text>
               <Typography.Text>
                 {t('pricing-modal:appsumo.watchOffers', '💡 Watch for future campaigns and special offers!')}

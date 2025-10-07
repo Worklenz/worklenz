@@ -305,7 +305,7 @@
     }
   },
   "appsumo": {
-    "exclusiveTitle": "🎉 AppSumo Exclusive: 50% OFF Business & Enterprise Plans!",
+    "exclusiveTitle": "🎉 AppSumo Exclusive: 70% OFF Business Plans!",
     "timeRemaining": "{{days}}d {{hours}}h {{minutes}}m remaining",
     "urgency": {
       "finalHours": "FINAL HOURS",
@@ -315,9 +315,9 @@
     "specialPricing": "🎯 Special pricing for AppSumo lifetime deal members",
     "businessUsers": "💪 Business plans support up to 50 users (normally 25)",
     "lifetimeTitle": "AppSumo Lifetime Deal Member",
-    "discountExpired": "Your 50% discount period has expired, but you can still upgrade to Business or Enterprise plans at standard pricing.",
+    "discountExpired": "Your 70% discount period has expired, but you can still upgrade to Business plans at standard pricing.",
     "watchOffers": "💡 Watch for future campaigns and special offers!",
-    "discountApplied": "50% AppSumo Discount Applied"
+    "discountApplied": "70% AppSumo Discount Applied"
   },
   "billing": {
     "billedAnnually": "(billed annually)",

@@ -13,7 +13,7 @@ export const usePricingCalculations = (
   const calculateMonthlyTotal = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       let finalPrice = 0;
-      
+
       // Get the appropriate plan data
       let planData;
       if (planType === 'pro') {
@@ -80,7 +80,7 @@ export const usePricingCalculations = (
   const calculateAnnualTotal = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       let finalPrice = 0;
-      
+
       // Get the appropriate plan data
       let planData;
       if (planType === 'pro') {
@@ -176,13 +176,13 @@ export const usePricingCalculations = (
   const getEffectivePricingModel = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       if (planType === 'enterprise') return 'base_plan';
-      
+
       // Check if small plans exist and have valid plan IDs (consistent with plan selection logic)
-      const hasValidProSmall = pricingData.pro_small && 
-                              (pricingData.pro_small.monthly_plan_id || pricingData.pro_small.annual_plan_id);
-      const hasValidBusinessSmall = pricingData.business_small && 
-                                   (pricingData.business_small.monthly_plan_id || pricingData.business_small.annual_plan_id);
-      
+      const hasValidProSmall = pricingData.pro_small &&
+        (pricingData.pro_small.monthly_plan_id || pricingData.pro_small.annual_plan_id);
+      const hasValidBusinessSmall = pricingData.business_small &&
+        (pricingData.business_small.monthly_plan_id || pricingData.business_small.annual_plan_id);
+
       return teamSize <= TEAM_SIZE_THRESHOLD &&
         ((planType === 'pro' && hasValidProSmall) ||
           (planType === 'business' && hasValidBusinessSmall))
@@ -195,13 +195,13 @@ export const usePricingCalculations = (
   const getPerUserMonthlyPrice = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       if (teamSize > TEAM_SIZE_THRESHOLD) return null;
-      
+
       if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
         return pricingData.pro_small.monthly_per_user_price || '0';
       } else if (planType === 'business' && pricingData.business_small?.pricing_model === 'per_user') {
         return pricingData.business_small.monthly_per_user_price || '0';
       }
-      
+
       return null;
     },
     [teamSize, pricingData]
@@ -210,34 +210,35 @@ export const usePricingCalculations = (
   const getPerUserAnnualPrice = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       if (teamSize > TEAM_SIZE_THRESHOLD) return null;
-      
+
       if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
         return pricingData.pro_small.annual_per_user_price || '0';
       } else if (planType === 'business' && pricingData.business_small?.pricing_model === 'per_user') {
         return pricingData.business_small.annual_per_user_price || '0';
       }
-      
+
       return null;
     },
     [teamSize, pricingData]
   );
 
-  // Calculate original pricing (before 50% AppSumo discount) for strikethrough display
+  // Calculate original pricing (before 70% AppSumo discount) for strikethrough display
   const calculateOriginalMonthlyTotal = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       // Only show original price for AppSumo promo plans
-      const planData = planType === 'pro' ? pricingData.pro : 
-                       planType === 'business' ? pricingData.business : 
-                       pricingData.enterprise;
-      
+      const planData = planType === 'pro' ? pricingData.pro :
+        planType === 'business' ? pricingData.business :
+          pricingData.enterprise;
+
       if (!planData?.pricing_model?.startsWith('promo_')) {
         return null;
       }
-      
-      // AppSumo prices from API are already the FINAL discounted prices (50% off already applied)
-      // To show the original price, multiply by 2 to reverse the 50% discount
+
+      // AppSumo prices from API are already the FINAL discounted prices (70% off already applied)
+      // To show the original price, divide by 0.3 (30% remaining) to reverse the 70% discount
+      // Formula: discountedPrice = originalPrice * 0.3, so originalPrice = discountedPrice / 0.3
       const appSumoPrice = parseFloat(calculateMonthlyTotal(planType));
-      const originalPrice = appSumoPrice * 2;
+      const originalPrice = appSumoPrice / 0.3;
       return originalPrice.toFixed(2);
     },
     [calculateMonthlyTotal, pricingData]
@@ -246,18 +247,19 @@ export const usePricingCalculations = (
   const calculateOriginalAnnualTotal = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       // Only show original price for AppSumo promo plans
-      const planData = planType === 'pro' ? pricingData.pro : 
-                       planType === 'business' ? pricingData.business : 
-                       pricingData.enterprise;
-      
+      const planData = planType === 'pro' ? pricingData.pro :
+        planType === 'business' ? pricingData.business :
+          pricingData.enterprise;
+
       if (!planData?.pricing_model?.startsWith('promo_')) {
         return null;
       }
-      
-      // AppSumo prices from API are already the FINAL discounted prices (50% off already applied)
-      // Calculate original by multiplying by 2 (reverse 50% discount)
+
+      // AppSumo prices from API are already the FINAL discounted prices (70% off already applied)
+      // To show the original price, divide by 0.3 (30% remaining) to reverse the 70% discount
+      // Formula: discountedPrice = originalPrice * 0.3, so originalPrice = discountedPrice / 0.3
       const appSumoPrice = parseFloat(calculateAnnualTotal(planType));
-      const originalPrice = appSumoPrice * 2;
+      const originalPrice = appSumoPrice / 0.3;
       return originalPrice.toFixed(2);
     },
     [calculateAnnualTotal, pricingData]

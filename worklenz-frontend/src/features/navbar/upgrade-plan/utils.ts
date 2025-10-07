@@ -200,9 +200,9 @@ export const formatPricing = (
 export const getAvailableUpgradePlans = (userInfo: UserSubscriptionInfo): PlanTier[] => {
   const { planTier, isAppSumoUser } = userInfo;
 
-  // AppSumo users can only upgrade to Business or Enterprise
+  // AppSumo users can only upgrade to Business plans
   if (isAppSumoUser) {
-    return [PlanTier.BUSINESS, PlanTier.ENTERPRISE];
+    return [PlanTier.BUSINESS];
   }
 
   // Regular users can upgrade to any plan higher than their current
