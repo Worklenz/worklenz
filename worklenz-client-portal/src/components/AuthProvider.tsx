@@ -1,9 +1,8 @@
 import React, { useEffect, useCallback } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { checkTokenExpiry, refreshToken, logoutUser, fetchCurrentUser } from '@/store/slices/authSlice';
+import { refreshToken, logoutUser, initializeAuth } from '@/store/slices/authSlice';
 import { TokenManager } from '@/utils/tokenManager';
-import { clientPortalAPI } from '@/services/api';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -11,7 +10,7 @@ interface AuthProviderProps {
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const dispatch = useAppDispatch();
-  const { token, isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const { token, isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
 
   const handleTokenExpiry = useCallback(() => {
     dispatch(logoutUser());
@@ -23,33 +22,26 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [dispatch, isAuthenticated, token]);
 
-  // Initialize token in API service and fetch user info on mount
+  // Initialize authentication on app load
   useEffect(() => {
-    if (token) {
-      clientPortalAPI.setToken(token);
-      // If we have a token but no user info, fetch it
-      if (!user && isAuthenticated) {
-        dispatch(fetchCurrentUser());
-      }
+    dispatch(initializeAuth());
+  }, [dispatch]);
+
+  // Set up periodic checks after authentication is initialized
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      // Set up periodic token expiry checks
+      const stopExpiryCheck = TokenManager.startTokenExpiryCheck(handleTokenExpiry, 300000); // Check every 5 minutes
+      
+      // Set up periodic token refresh checks
+      const stopRefreshCheck = TokenManager.startTokenRefreshCheck(handleTokenRefresh, 300000); // Check every 5 minutes
+
+      return () => {
+        stopExpiryCheck();
+        stopRefreshCheck();
+      };
     }
-  }, [token, user, isAuthenticated, dispatch]);
-
-  // Check token expiry and set up periodic checks
-  useEffect(() => {
-    // Initial check
-    dispatch(checkTokenExpiry());
-
-    // Set up periodic token expiry checks
-    const stopExpiryCheck = TokenManager.startTokenExpiryCheck(handleTokenExpiry, 300000); // Check every 5 minutes
-    
-    // Set up periodic token refresh checks
-    const stopRefreshCheck = TokenManager.startTokenRefreshCheck(handleTokenRefresh, 300000); // Check every 5 minutes
-
-    return () => {
-      stopExpiryCheck();
-      stopRefreshCheck();
-    };
-  }, [dispatch, handleTokenExpiry, handleTokenRefresh]);
+  }, [isLoading, isAuthenticated, handleTokenExpiry, handleTokenRefresh]);
 
   // Set up visibility change listener to check token when tab becomes visible
   useEffect(() => {
@@ -57,7 +49,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!document.hidden && isAuthenticated) {
         // Only check if token is actually expired, not just close to expiry
         if (TokenManager.isTokenExpired()) {
-          dispatch(checkTokenExpiry());
+          dispatch(logoutUser());
         }
       }
     };

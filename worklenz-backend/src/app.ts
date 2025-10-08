@@ -57,6 +57,9 @@ const allowedOrigins = [
     ? [
         `http://localhost:5000`,
         `http://127.0.0.1:5000`,
+        `https://app.worklenz.com`,
+        `https://www.app.worklenz.com`,
+        `https://clients.worklenz.com`,
         process.env.SERVER_CORS || "",  // Add hostname from env
         process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
       ].filter(Boolean)  // Remove empty strings

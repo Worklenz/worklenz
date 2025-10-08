@@ -39,6 +39,11 @@ class ClientPortalAPI {
       async (error) => {
         const originalRequest = error.config;
 
+        // Skip retry if the request has _skipRetry flag (used for initialization)
+        if (originalRequest._skipRetry) {
+          return Promise.reject(error);
+        }
+
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
@@ -203,6 +208,27 @@ class ClientPortalAPI {
   async getCurrentUser(): Promise<ApiResponse<ClientUser>> {
     const response = await this.api.get('/profile');
     return response.data;
+  }
+
+  // Special method for initialization that bypasses interceptors
+  async validateTokenForInit(): Promise<ApiResponse<ClientUser>> {
+    try {
+      const response = await this.api.get('/profile', {
+        // Add a flag to bypass the retry logic in interceptor
+        _skipRetry: true
+      } as any);
+      return response.data;
+    } catch (error) {
+      // If it's a 401, return a structured error instead of throwing
+      if (error.response?.status === 401) {
+        return {
+          done: false,
+          message: 'Token invalid',
+          body: null
+        } as any;
+      }
+      throw error;
+    }
   }
 
   // Organizations

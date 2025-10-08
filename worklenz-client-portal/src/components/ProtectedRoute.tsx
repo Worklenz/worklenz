@@ -1,9 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Spin, Layout } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { checkTokenExpiry } from '@/store/slices/authSlice';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,13 +9,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading, token } = useAppSelector((state) => state.auth);
-  const dispatch = useAppDispatch();
   const location = useLocation();
-
-  // Check token expiry on mount only (AuthProvider handles periodic checks)
-  useEffect(() => {
-    dispatch(checkTokenExpiry());
-  }, [dispatch]);
 
   // If we're still loading, show a loading spinner
   if (isLoading) {

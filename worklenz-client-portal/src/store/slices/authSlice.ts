@@ -174,11 +174,60 @@ export const fetchOrganizations = createAsyncThunk(
   }
 );
 
+export const initializeAuth = createAsyncThunk(
+  'auth/initialize',
+  async (_, { dispatch }) => {
+    try {
+      const token = localStorage.getItem('clientToken');
+      const tokenExpiry = localStorage.getItem('clientTokenExpiry');
+      
+      // If no token exists, user is not authenticated
+      if (!token) {
+        dispatch(clearAuth());
+        return { isAuthenticated: false };
+      }
+
+      // Check if token is expired
+      if (tokenExpiry) {
+        const now = new Date().getTime();
+        const expiry = new Date(tokenExpiry).getTime();
+        if (now >= expiry) {
+          dispatch(clearAuth());
+          return { isAuthenticated: false };
+        }
+      }
+
+      // Set token in API service
+      clientPortalAPI.setToken(token);
+
+      // Validate token by fetching current user (bypasses interceptor retry)
+      const response = await clientPortalAPI.validateTokenForInit();
+      
+      if (response.done) {
+        return {
+          isAuthenticated: true,
+          user: response.body,
+          token,
+          tokenExpiry
+        };
+      } else {
+        // Token is invalid, clear auth
+        dispatch(clearAuth());
+        return { isAuthenticated: false };
+      }
+    } catch {
+      // If we get a 401 or any error, clear auth state and return unauthenticated
+      dispatch(clearAuth());
+      return { isAuthenticated: false };
+    }
+  }
+);
+
 const initialState: AuthState = {
   user: null,
   token: localStorage.getItem('clientToken'),
-  isAuthenticated: !!localStorage.getItem('clientToken'),
-  isLoading: false,
+  isAuthenticated: false, // Don't assume authentication until validated
+  isLoading: true, // Start with loading state during initialization
   error: null,
   inviteToken: null,
   inviteValid: false,
@@ -235,6 +284,7 @@ const authSlice = createSlice({
       state.token = null;
       state.tokenExpiry = null;
       state.isAuthenticated = false;
+      state.isLoading = false;
       state.error = null;
       state.inviteToken = null;
       state.inviteValid = false;
@@ -422,6 +472,28 @@ const authSlice = createSlice({
         state.currentOrganizationId = null;
         localStorage.removeItem('clientToken');
         localStorage.removeItem('clientTokenExpiry');
+      });
+
+    // Initialize Auth
+    builder
+      .addCase(initializeAuth.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(initializeAuth.fulfilled, (state, action) => {
+        state.isLoading = false;
+        if (action.payload.isAuthenticated) {
+          state.user = action.payload.user || null;
+          state.token = action.payload.token || null;
+          state.tokenExpiry = action.payload.tokenExpiry || null;
+          state.isAuthenticated = true;
+        } else {
+          state.user = null;
+          state.token = null;
+          state.tokenExpiry = null;
+          state.isAuthenticated = false;
+        }
+        state.error = null;
       });
 
     // Switch Organization
